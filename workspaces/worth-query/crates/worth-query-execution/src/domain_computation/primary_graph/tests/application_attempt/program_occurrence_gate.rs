@@ -62,8 +62,14 @@ fn program_activation_changed_after_preparation_cannot_readmit_the_old_program()
     ));
     let request = live_scope();
     let prepared = prepare_relational_mutation_on_application(&world.application, batch, &request);
-    let worth_runtime_world::facade::RuntimeWorldPublicationOutcome::Performed(performed) =
-        prepared.execute()
+    let outcome = crate::domain_computation::primary_graph::with_test_advancement(|phase| {
+        prepared.execute(
+            phase
+                .request_for_source(0)
+                .expect("bounded standalone fixture request"),
+        )
+    });
+    let worth_runtime_world::facade::RuntimeWorldPublicationOutcome::Performed(performed) = outcome
     else {
         panic!("activation seed must publish through World");
     };
@@ -109,11 +115,18 @@ fn program_activation_changed_after_preparation_cannot_readmit_the_old_program()
     let before = world.selected_product().product().selected_commit().clone();
     let outcome = world
         .application
-        .compare_and_commit_application_for_program_action(
-            &presented,
-            program,
-            idempotency(73, 73),
-        );
+        .with_host_advancement(|active_phase| {
+            let phase = &active_phase;
+            world
+                .application
+                .compare_and_commit_application_for_program_action(
+                    phase,
+                    &presented,
+                    program,
+                    idempotency(73, 73),
+                )
+        })
+        .expect("fixture owner admits its advancement");
     assert_unresolved_activation(
         outcome,
         "branch program activation names no rostered program",
@@ -147,11 +160,18 @@ fn a_program_action_on_an_unseeded_occurrence_names_the_unresolved_activation() 
 
     let outcome = world
         .application
-        .compare_and_commit_application_for_program_action(
-            &presented,
-            program,
-            idempotency(71, 71),
-        );
+        .with_host_advancement(|active_phase| {
+            let phase = &active_phase;
+            world
+                .application
+                .compare_and_commit_application_for_program_action(
+                    phase,
+                    &presented,
+                    program,
+                    idempotency(71, 71),
+                )
+        })
+        .expect("fixture owner admits its advancement");
 
     assert_unresolved_activation(outcome, "branch program activation was never published");
     assert_eq!(
@@ -183,11 +203,18 @@ fn a_required_output_source_on_an_unseeded_occurrence_is_gated_like_its_siblings
 
     let outcome = world
         .application
-        .compare_and_commit_application_for_required_output_source(
-            &presented,
-            program,
-            idempotency(72, 72),
-        );
+        .with_host_advancement(|active_phase| {
+            let phase = &active_phase;
+            world
+                .application
+                .compare_and_commit_application_for_required_output_source(
+                    phase,
+                    &presented,
+                    program,
+                    idempotency(72, 72),
+                )
+        })
+        .expect("fixture owner admits its advancement");
 
     assert_unresolved_activation(outcome, "branch program activation was never published");
     assert_eq!(

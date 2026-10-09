@@ -111,12 +111,27 @@ fn partial_recovery_preserves_movement_rejects_foreign_and_only_releases_obligat
 #[test]
 fn performed_capability_loss_reopens_one_claim_and_consumption_closes_it() {
     let court = CompositeSupplyChainCourt::compile();
+    let policy = match court.world.execution_placement() {
+        worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy)
+        | worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Leased { policy, .. } => {
+            policy
+        }
+    };
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::from_policy(&policy),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let root = court.bootstrap();
     let prepared = court.prepare_cargo(&root, "5");
-    let RuntimeWorldPublicationOutcome::Performed(done) = court
-        .world
-        .publication_port()
-        .execute_without_signal(prepared, &RuntimeWorldCancellationSource::new().token())
+    let RuntimeWorldPublicationOutcome::Performed(done) =
+        court.world.publication_port().execute_without_signal(
+            execution,
+            prepared,
+            &RuntimeWorldCancellationSource::new().token(),
+        )
     else {
         panic!("healthy publication")
     };

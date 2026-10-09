@@ -126,6 +126,7 @@ impl WorthQueryOperationExecutorFailure {
 }
 
 pub struct WorthQueryOperationExecutionContext<'a> {
+    execution: worth_execution::ExecutionRequest<'a, 'a>,
     operation: &'a worth_query_installation::facade::WorthQueryPortableDomainOperationDefinition,
     binding_identity: &'a str,
     basis_identity: &'a str,
@@ -158,7 +159,12 @@ impl<'a> WorthQueryOperationWorkspace<'a> {
 }
 
 impl<'a> WorthQueryOperationExecutionContext<'a> {
+    pub fn execution_request(&self) -> worth_execution::ExecutionRequest<'_, '_> {
+        self.execution
+    }
+
     pub(crate) fn new(
+        execution: worth_execution::ExecutionRequest<'a, 'a>,
         operation: &'a worth_query_installation::facade::WorthQueryPortableDomainOperationDefinition,
         binding_identity: &'a str,
         basis_identity: &'a str,
@@ -169,6 +175,7 @@ impl<'a> WorthQueryOperationExecutionContext<'a> {
         provider_session_identity: &'a str,
     ) -> Self {
         Self {
+            execution,
             operation,
             binding_identity,
             basis_identity,

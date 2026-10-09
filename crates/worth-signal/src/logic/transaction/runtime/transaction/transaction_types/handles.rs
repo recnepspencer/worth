@@ -26,6 +26,7 @@ where
     I: Copy + Ord,
     T: Copy + Ord,
 {
+    pub(in crate::logic::transaction::runtime) execution: worth_execution::ExecutionRequest<'a, 'a>,
     pub(in crate::logic::transaction::runtime) runtime_ctx: &'a mut Ctx,
     pub(in crate::logic::transaction::runtime) observations:
         &'a RuntimeObservationRegistry<D, I, E, Ctx, T>,

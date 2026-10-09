@@ -1,5 +1,9 @@
 //! Contribution-owned application handler and invariant configuration.
 
+pub use crate::domain_computation::primary_graph::{
+    WorthQueryAdvancementDenial, WorthQueryAdvancementPhase, WorthQueryForeignAdvancementPhase,
+};
+
 /// How a partitioned computation's run ran, for the test observer only.
 #[cfg(feature = "test-query-execution-observer")]
 pub use crate::domain_computation::primary_graph::{
@@ -40,3 +44,7 @@ pub use crate::domain_computation::primary_graph::{
 /// identity of a planned item, and execution's refusal before dispatch.
 pub use worth_execution::{CanonicalBits, ChargedBytes, PartitionItemId};
 pub use worth_query_declaration::facade::application_schema::ApplicationSchemaComposition;
+
+pub use crate::domain_computation::primary_graph::with_bootstrap_advancement;
+
+pub use crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase;

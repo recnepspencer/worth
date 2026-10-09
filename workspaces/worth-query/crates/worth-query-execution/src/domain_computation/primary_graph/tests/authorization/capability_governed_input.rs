@@ -169,11 +169,17 @@ fn execute_touch_handler(
     .expect("the request encodes");
     world
         .application
-        .execute_mutation_handler::<CapabilityTouchMutationBinding>(
-            &identities,
-            principal.principal_identity(),
-            admission,
-        )
+        .with_application_advancement(&request, |phase| {
+            world
+                .application
+                .execute_mutation_handler::<CapabilityTouchMutationBinding>(
+                    &phase,
+                    &identities,
+                    principal.principal_identity(),
+                    admission,
+                )
+        })
+        .expect("the fixture policy admits its handler call")
 }
 
 /// The governed input, encoded once: 289 encoded bytes, hashed with 88 bytes

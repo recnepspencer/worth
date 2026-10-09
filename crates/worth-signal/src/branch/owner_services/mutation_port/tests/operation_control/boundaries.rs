@@ -82,7 +82,17 @@ fn exercise_advance_boundary(expected: AdvanceBoundaryCost) {
         &world.owner.operation_control(),
         expected.boundary,
         move || {
+            let serial_request = worth_execution::SerialRequest::from_memory(
+                worth_execution::SerialMemoryBudget::new(
+                    crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+                ),
+                worth_execution::CancellationToken::new(),
+                None,
+            );
+            let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
             port.advance_exact(
+                request_execution,
                 &basis,
                 &mut (),
                 &SignalOwnerCancellationSource::new().token(),

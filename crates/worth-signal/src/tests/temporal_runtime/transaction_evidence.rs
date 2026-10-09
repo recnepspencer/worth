@@ -8,6 +8,16 @@ use std::sync::atomic::{AtomicU32, Ordering};
 
 #[test]
 fn transaction_temporal_evidence_freezes_wake_and_reconstructability_artifacts() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -16,7 +26,7 @@ fn transaction_temporal_evidence_freezes_wake_and_reconstructability_artifacts()
     let calls = AtomicU32::new(0);
 
     let deferred = runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.evaluate_with_plan(
                 node,
                 &|_ctx| {
@@ -69,7 +79,7 @@ fn transaction_temporal_evidence_freezes_wake_and_reconstructability_artifacts()
         ))
         .unwrap();
     let admitted = runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.evaluate_with_plan(
                 node,
                 &|_ctx| {
@@ -104,13 +114,23 @@ fn transaction_temporal_evidence_freezes_wake_and_reconstructability_artifacts()
 
 #[test]
 fn transaction_debounce_burst_records_supersession_evidence_and_digest() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
     let node = runtime.graph_mut().node().debounce(5).unwrap().build();
 
     let first = runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.evaluate_with_plan(
                 node,
                 &|_ctx| {
@@ -133,7 +153,7 @@ fn transaction_debounce_burst_records_supersession_evidence_and_digest() {
         ))
         .unwrap();
     let rescheduled = runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.evaluate_with_plan(
                 node,
                 &|_ctx| {
@@ -181,13 +201,23 @@ fn transaction_debounce_burst_records_supersession_evidence_and_digest() {
 
 #[test]
 fn transaction_throttle_burst_records_reuse_evidence_and_digest() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
     let node = runtime.graph_mut().node().throttle(5).unwrap().build();
 
     let first = runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.evaluate_with_plan(
                 node,
                 &|_ctx| {
@@ -210,7 +240,7 @@ fn transaction_throttle_burst_records_reuse_evidence_and_digest() {
         ))
         .unwrap();
     let reused = runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.evaluate_with_plan(
                 node,
                 &|_ctx| {

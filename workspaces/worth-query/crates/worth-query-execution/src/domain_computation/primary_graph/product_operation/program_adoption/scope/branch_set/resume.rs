@@ -111,11 +111,16 @@ impl WorthQueryPreparedBranchSetAdoption {
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn resume_branch_set_adoption(
         &self,
-        mut adoption: WorthQueryStoppedBranchSetAdoption,
+        adoption: WorthQueryStoppedBranchSetAdoption,
         coverage: WorthQueryOrderedProgramAdoptionCoverage,
         maximum_selection_work_per_branch: usize,
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryPreparedBranchSetAdoption, WorthQueryBranchSetAdoptionResumeFailure> {
+        let mut retained = Some(adoption);
+        let result = self.with_application_advancement(request, |phase| {
+        let phase = &phase;
+            let mut adoption = retained.take().expect("one admitted resume");
+
         if coverage.branches() != adoption.remaining.as_ref() {
             return Err(resume_failure(
                 WorthQueryBranchSetAdoptionResumeDenial::CoverageMismatch,
@@ -123,6 +128,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             ));
         }
         let (pending, resumed_work) = match self.prepare_branch_set_targets(
+            phase,
             coverage.branches(),
             &adoption.target,
             maximum_selection_work_per_branch,
@@ -158,7 +164,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         assert!(
             matches!(
                 &superseded,
-                WorthQueryBranchSetAdoptionProgress::NoEffect { branch, .. }
+                WorthQueryBranchSetAdoptionProgress::NoEffect { branch, .. } | WorthQueryBranchSetAdoptionProgress::ExecutionDenied { branch, .. }
                     if Some(*branch) == adoption.remaining.first().copied()
             ),
             "a stopped branch-set adoption retains the no-effect disposition for its first remaining branch"
@@ -170,6 +176,17 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             target: adoption.target,
             total_selection_work_units,
         })
+
+        });
+        match result {
+            Ok(result) => result,
+            Err(cause) => Err(resume_failure(
+                WorthQueryBranchSetAdoptionResumeDenial::Preparation(
+                    WorthQueryBranchSetAdoptionPreparationDenial::ExecutionDenied(cause),
+                ),
+                retained.expect("refusal precedes admission"),
+            )),
+        }
     }
 }
 

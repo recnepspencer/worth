@@ -14,6 +14,16 @@ struct BuildState {
 }
 
 fn main() -> Result<(), SignalError> {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            worth_signal::facade::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     // One source file changes.
     // We want the symbol index, diagnostics panel, and one build target to update.
     // We also want to be able to ask the runtime why the bundle reran.
@@ -80,7 +90,7 @@ fn main() -> Result<(), SignalError> {
         .observe_signal_branch_basis(runtime.current_branch())
         .expect("the live branch should admit a basis");
     let basis = runtime
-        .advance_signal_branch(&mut state, &basis, |tx| {
+        .advance_signal_branch(request_execution, &mut state, &basis, |tx| {
             tx.read_many(
                 &[source_file, symbol_index, diagnostics_panel, app_bundle],
                 &evaluate,
@@ -101,7 +111,7 @@ fn main() -> Result<(), SignalError> {
     state.bundle_version += 1;
 
     let _basis = runtime
-        .advance_signal_branch(&mut state, &basis, |tx| {
+        .advance_signal_branch(request_execution, &mut state, &basis, |tx| {
             tx.mark_changed(source_file, SOURCE_TEXT)?;
             tx.read_many(&[diagnostics_panel, app_bundle], &evaluate)?;
             Ok(())

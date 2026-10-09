@@ -61,21 +61,39 @@ fn verified_second_callback_is_accepted_while_publication_slot_is_busy() {
             .accepted_occurrences(),
         2
     );
+    world
+        .application
+        .with_host_advancement(|active_phase| {
+            let phase = &active_phase;
 
-    assert_eq!(
-        world
-            .application
-            .progress_accepted_inbound_occurrence(first_accepted, &request)
-            .unwrap(),
-        Posture::Performed
-    );
-    assert_eq!(
-        world
-            .application
-            .progress_retained_inbound_occurrence(*second_record.correlation().bytes(), &request)
-            .unwrap(),
-        Posture::Performed
-    );
+            assert_eq!(
+                world
+                    .application
+                    .progress_accepted_inbound_occurrence(phase, first_accepted, &request)
+                    .unwrap(),
+                Posture::Performed
+            );
+        })
+        .expect("fixture owner admits its advancement");
+
+    world
+        .application
+        .with_host_advancement(|active_phase| {
+            let phase = &active_phase;
+            assert_eq!(
+                world
+                    .application
+                    .progress_retained_inbound_occurrence(
+                        phase,
+                        *second_record.correlation().bytes(),
+                        &request
+                    )
+                    .unwrap(),
+                Posture::Performed
+            );
+        })
+        .expect("fixture owner admits its advancement");
+
     assert_eq!(completion_records(&world), 2);
 }
 
@@ -172,13 +190,23 @@ fn dropping_admitted_public_phase_releases_publication_slot_but_keeps_custody() 
             .posture(),
         Posture::Performed
     );
-    assert_eq!(
-        world
-            .application
-            .progress_retained_inbound_occurrence(*record.correlation().bytes(), &request)
-            .unwrap(),
-        Posture::Performed
-    );
+    world
+        .application
+        .with_host_advancement(|active_phase| {
+            let phase = &active_phase;
+            assert_eq!(
+                world
+                    .application
+                    .progress_retained_inbound_occurrence(
+                        phase,
+                        *record.correlation().bytes(),
+                        &request
+                    )
+                    .unwrap(),
+                Posture::Performed
+            );
+        })
+        .expect("fixture owner admits its advancement");
 }
 
 #[test]
@@ -223,11 +251,21 @@ fn old_executed_phase_drop_cannot_release_a_new_publication_claim() {
             .unwrap(),
         WorthQueryInboundAdmission::Duplicate(_, WorthQueryInboundPublicationClaim::Publishing)
     ));
-    assert_eq!(
-        world
-            .application
-            .progress_accepted_inbound_occurrence(accepted, &super::super::fixture::live_scope())
-            .unwrap(),
-        Posture::Performed
-    );
+    world
+        .application
+        .with_host_advancement(|active_phase| {
+            let phase = &active_phase;
+            assert_eq!(
+                world
+                    .application
+                    .progress_accepted_inbound_occurrence(
+                        phase,
+                        accepted,
+                        &super::super::fixture::live_scope()
+                    )
+                    .unwrap(),
+                Posture::Performed
+            );
+        })
+        .expect("fixture owner admits its advancement");
 }

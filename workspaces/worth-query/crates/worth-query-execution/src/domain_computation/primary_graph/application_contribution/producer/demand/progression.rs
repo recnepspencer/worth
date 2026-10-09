@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
 };
@@ -53,6 +54,8 @@ where
     /// spent progressing other dirty required records from the shared queue.
     pub fn advance_output_demand<Family>(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
@@ -67,8 +70,17 @@ where
         FamilySourceValue<Schema, Family>: 'static,
         FamilySourceQuery<Schema, Family>: 'static,
     {
+        phase
+            .execution_request_for(&self.product_runtime)
+            .map_err(|cause| {
+                denial(
+                    WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
+                    "foreign advancement phase",
+                )
+            })?;
         self.advance_as_caller(demand, |demand, admission| {
             self.advance_output_demand_with_commit_authority(
+                phase,
                 demand,
                 principal,
                 request_scope,
@@ -84,6 +96,8 @@ where
     /// scope only if its existing Ready cannot be certified on this call.
     pub fn advance_output_demand_from_retained<Family>(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
@@ -98,8 +112,17 @@ where
                 > + 'static,
         FamilySourceQuery<Schema, Family>: 'static,
     {
+        phase
+            .execution_request_for(&self.product_runtime)
+            .map_err(|cause| {
+                denial(
+                    WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
+                    "foreign advancement phase",
+                )
+            })?;
         self.advance_as_caller(demand, |demand, admission| {
             self.advance_retained_with_commit_authority(
+                phase,
                 demand,
                 principal,
                 request_scope,
@@ -114,6 +137,8 @@ where
     /// issued with, on the caller's request meter.
     pub(super) fn advance_retained_with_commit_authority<Family>(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
@@ -132,6 +157,7 @@ where
     {
         let limits = demand.limits;
         self.advance_output_demand_with_prepared_source(
+            phase,
             demand,
             principal,
             request_scope,
@@ -155,6 +181,8 @@ where
 
     pub(in crate::domain_computation::primary_graph) fn advance_program_output_demand<Family>(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
@@ -169,8 +197,17 @@ where
         FamilySourceValue<Schema, Family>: 'static,
         FamilySourceQuery<Schema, Family>: 'static,
     {
+        phase
+            .execution_request_for(&self.product_runtime)
+            .map_err(|cause| {
+                denial(
+                    WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
+                    "the phase belongs to another installed runtime",
+                )
+            })?;
         self.advance_as_caller(demand, |demand, admission| {
             self.advance_output_demand_with_commit_authority(
+                phase,
                 demand,
                 principal,
                 request_scope,
@@ -212,6 +249,8 @@ where
         Family,
     >(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
@@ -230,6 +269,7 @@ where
     {
         let mut disclosure = Some(disclosure);
         self.advance_output_demand_with_prepared_source(
+            phase,
             demand,
             principal,
             request_scope,

@@ -164,6 +164,7 @@ impl domain::WorthQueryGraphCommitProvider<SharedCommit> for SelectiveProvider {
 
     fn admit_commit(
         &self,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
         call: &domain::WorthQueryGraphCommitCall,
     ) -> Result<domain::WorthQueryGraphProviderReceipt, domain::WorthQueryGraphProviderFailure>
     {

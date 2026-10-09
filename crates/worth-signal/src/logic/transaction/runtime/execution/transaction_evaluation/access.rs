@@ -101,7 +101,7 @@ where
                     stage_task_candidates: false,
                 },
                 evaluator,
-                worth_execution::ExecutionRequest::serial(&self.graph.bounded_serial_request()),
+                self.execution,
             )?;
         }
         nodes
@@ -116,11 +116,7 @@ where
         F: for<'ctx> Fn(&mut EvaluationContext<'ctx, Ctx>) -> Result<O, SignalError> + Sync,
         O: IntoEvaluationOutput,
     {
-        self.execute_evaluation(
-            TransactionExecutionIntent::Dirty,
-            evaluator,
-            worth_execution::ExecutionRequest::serial(&self.graph.bounded_serial_request()),
-        )
+        self.execute_evaluation(TransactionExecutionIntent::Dirty, evaluator, self.execution)
     }
 
     pub(super) fn collect_dirty_targets(&self) -> Vec<NodeId> {

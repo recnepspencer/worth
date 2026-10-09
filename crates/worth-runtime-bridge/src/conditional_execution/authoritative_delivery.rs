@@ -7,6 +7,7 @@ use worth_proof::TransitionOutcome;
 impl BridgeOwnedSignalRuntime {
     pub fn deliver_owned_authoritative_change(
         &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
         signal_basis: &super::BridgeConditionalSignalBasisBinding,
         dependency_ordinal: usize,
     ) -> Result<crate::correspondence::CorrespondenceDeliveryOutcome, BridgeConditionalDenial> {
@@ -36,6 +37,7 @@ impl BridgeOwnedSignalRuntime {
         let mut counters = crate::correspondence::CorrespondenceDeliveryCounters::zero();
         counters.correspondence_lookups = 1;
         Ok(self.deliver_prepared_correspondence(
+            execution,
             signal_basis,
             correspondence,
             &targets,
@@ -74,6 +76,7 @@ impl BridgeOwnedSignalRuntime {
 
     pub fn deliver_authoritative_change(
         &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
         signal_basis: &super::BridgeConditionalSignalBasisBinding,
         dependency_ordinal: usize,
         request: crate::adapter::RelationalCommittedPatchRequest,
@@ -122,6 +125,7 @@ impl BridgeOwnedSignalRuntime {
             ));
         }
         Ok(self.deliver_prepared_correspondence(
+            execution,
             signal_basis,
             correspondence,
             &correspondence.targets,
@@ -132,6 +136,7 @@ impl BridgeOwnedSignalRuntime {
 
     fn deliver_prepared_correspondence(
         &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
         signal_basis: &super::BridgeConditionalSignalBasisBinding,
         correspondence: &crate::correspondence::BridgeInstalledSemanticCorrespondence,
         targets: &crate::correspondence::ProvenCorrespondenceTargets,
@@ -156,11 +161,12 @@ impl BridgeOwnedSignalRuntime {
             }
             TransitionOutcome::Failed(failure) => return TransitionOutcome::Failed(failure),
         };
-        self.perform_prepared_correspondence(signal_basis, prepared)
+        self.perform_prepared_correspondence(execution, signal_basis, prepared)
     }
 
     fn perform_prepared_correspondence(
         &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
         signal_basis: &super::BridgeConditionalSignalBasisBinding,
         prepared: crate::correspondence::BridgePreparedCorrespondenceDelivery,
     ) -> crate::correspondence::CorrespondenceDeliveryOutcome {
@@ -179,6 +185,7 @@ impl BridgeOwnedSignalRuntime {
             );
         };
         let completion = match signal_basis.signal_port.deliver_committed_patch(
+            execution,
             signal_basis.lowering.signal_contract(),
             prepared_signal.signal_delivery_request(),
         ) {

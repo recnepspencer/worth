@@ -38,31 +38,49 @@ struct WorkflowPendingRecovery {
 
 #[test]
 fn direct_readmission_cleanup_pending_retry_preserves_the_exact_epoch() {
-    complete_direct_pending(direct_pending(direct_cleanup_required()));
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
+
+        complete_direct_pending(direct_pending(direct_cleanup_required(execution)));
+    });
 }
 
 #[test]
 fn workflow_readmission_cleanup_pending_retry_preserves_the_exact_epoch() {
-    complete_workflow_pending(workflow_pending(workflow_cleanup_required()));
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
+
+        complete_workflow_pending(workflow_pending(workflow_cleanup_required(execution)));
+    });
 }
 
 #[test]
 fn same_scope_and_stage_terminal_recovery_peers_keep_their_cleanup_owners() {
-    let direct_a = direct_pending(direct_cleanup_required());
-    let direct_b = direct_pending(direct_cleanup_required());
-    assert_ne!(direct_a.epoch_identity, direct_b.epoch_identity);
-    complete_direct_pending(direct_a);
-    complete_direct_pending(direct_b);
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
 
-    let workflow_a = workflow_pending(workflow_cleanup_required());
-    let workflow_b = workflow_pending(workflow_cleanup_required());
-    assert_ne!(workflow_a.epoch_identity, workflow_b.epoch_identity);
-    complete_workflow_pending(workflow_a);
-    complete_workflow_pending(workflow_b);
+        let direct_a = direct_pending(direct_cleanup_required(execution));
+        let direct_b = direct_pending(direct_cleanup_required(execution));
+        assert_ne!(direct_a.epoch_identity, direct_b.epoch_identity);
+        complete_direct_pending(direct_a);
+        complete_direct_pending(direct_b);
+
+        let workflow_a = workflow_pending(workflow_cleanup_required(execution));
+        let workflow_b = workflow_pending(workflow_cleanup_required(execution));
+        assert_ne!(workflow_a.epoch_identity, workflow_b.epoch_identity);
+        complete_workflow_pending(workflow_a);
+        complete_workflow_pending(workflow_b);
+    });
 }
 
 fn direct_cleanup_required(
+    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
 ) -> RecoveryCleanup<WorthQueryDirectConvergenceReadmissionCleanupRequired> {
+    let active_request = execution;
+
     let DirectAdmissionFixture {
         runtime,
         operation,
@@ -77,9 +95,9 @@ fn direct_cleanup_required(
         .unwrap_or_else(|_| panic!("direct cleanup fixture authorities must admit"))
         .start();
     let started = epoch
-        .begin_iteration(call("direct-readmission-cleanup"))
+        .begin_iteration(execution, call("direct-readmission-cleanup"))
         .unwrap_or_else(|_| panic!("direct cleanup fixture iteration must start"));
-    let paused = match started.advance() {
+    let paused = match started.advance(execution) {
         WorthQueryDirectConvergenceStepOutcome::Continue(paused) => paused,
         _ => panic!("direct cleanup fixture must reach a yield safe point"),
     };
@@ -88,7 +106,7 @@ fn direct_cleanup_required(
         _ => panic!("direct cleanup fixture must yield"),
     };
     let epoch_identity = yielded.epoch_identity().to_owned();
-    match yielded.readmit_same_runtime(&runtime, &bridge) {
+    match yielded.readmit_same_runtime(active_request, &runtime, &bridge) {
         WorthQueryDirectConvergenceReadmissionOutcome::RecoveryRequired(
             WorthQueryDirectConvergenceReadmissionRecoveryRequired::TerminalCleanup(recovery),
         ) => RecoveryCleanup {
@@ -101,7 +119,10 @@ fn direct_cleanup_required(
 }
 
 fn workflow_cleanup_required(
+    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
 ) -> RecoveryCleanup<WorthQueryWorkflowConvergenceReadmissionCleanupRequired> {
+    let active_request = execution;
+
     let WorkflowAdmissionFixture {
         runtime,
         operation,
@@ -117,9 +138,13 @@ fn workflow_cleanup_required(
         .start()
         .unwrap_or_else(|_| panic!("workflow cleanup fixture must start"));
     let started = epoch
-        .begin_stage_iteration(WORKFLOW_STAGE, call("workflow-readmission-cleanup"))
+        .begin_stage_iteration(
+            execution,
+            WORKFLOW_STAGE,
+            call("workflow-readmission-cleanup"),
+        )
         .unwrap_or_else(|_| panic!("workflow cleanup fixture iteration must start"));
-    let paused = match started.advance() {
+    let paused = match started.advance(execution) {
         WorthQueryWorkflowConvergenceStepOutcome::Continue(paused) => paused,
         _ => panic!("workflow cleanup fixture must reach a yield safe point"),
     };
@@ -128,7 +153,7 @@ fn workflow_cleanup_required(
         _ => panic!("workflow cleanup fixture must yield"),
     };
     let epoch_identity = yielded.epoch_identity().to_owned();
-    match yielded.readmit_same_runtime(&runtime, &bridge) {
+    match yielded.readmit_same_runtime(active_request, &runtime, &bridge) {
         WorthQueryWorkflowConvergenceReadmissionOutcome::RecoveryRequired(
             WorthQueryWorkflowConvergenceReadmissionRecoveryRequired::TerminalCleanup(recovery),
         ) => RecoveryCleanup {

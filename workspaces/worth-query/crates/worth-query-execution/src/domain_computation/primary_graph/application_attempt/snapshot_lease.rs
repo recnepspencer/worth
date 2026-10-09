@@ -192,9 +192,7 @@ impl Drop for WorthQueryApplicationSnapshotLease {
 fn release_custody(custody: SnapshotCustody) -> WorthQueryApplicationSnapshotRelease {
     match custody {
         SnapshotCustody::Owned { handle, snapshot } => {
-            handle.with_runtime_mut(|runtime| {
-                crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
-            });
+            handle.release_query_snapshot(&snapshot);
             WorthQueryApplicationSnapshotRelease::NativeSnapshotReleased
         }
         SnapshotCustody::Shared(basis) => {

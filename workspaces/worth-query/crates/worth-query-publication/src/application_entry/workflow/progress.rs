@@ -7,6 +7,7 @@ use worth_query_declaration::facade::{
     },
     application_program::ApplicationWorkflowSpec,
 };
+use worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase as AdvancementPhase;
 use worth_query_execution::facade::application_installation::WorthQueryWorkflowVocabulary;
 use worth_query_execution::publication_boundary::workflow_advance::{
     PreparedWorkflowAdvance, PublishedWorkflowInstanceRef, RequiredWorkflowAssessment,
@@ -213,7 +214,7 @@ where
     }
 
     pub(super) fn prepare_workflow_request<Spec>(
-        mut self,
+        self,
         workflow: WorthQueryWorkflowVocabulary<'application, Schema, Spec>,
         instance: PublishedWorkflowInstanceRef,
         action: WorkflowRequestedAction,
@@ -221,6 +222,23 @@ where
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
+        let request_scope = self.request_scope().clone();
+        let runtime = self.application_runtime();
+        runtime.with_application_advancement(&request_scope, |phase| {
+                self.prepare_workflow_request_in_advancement(&phase ,workflow, instance, action)
+            }).map_err(|cause| WorthQueryWorkflowAdvancePreparationDenial::RequestAdmission(WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause)))?
+    }
+
+    pub(super) fn prepare_workflow_request_in_advancement<Spec>(
+        mut self, _phase: &AdvancementPhase<'_>,
+        workflow: WorthQueryWorkflowVocabulary<'application, Schema, Spec>,
+        instance: PublishedWorkflowInstanceRef,
+        action: WorkflowRequestedAction,
+    ) -> WorkflowAdvancePreparationResult<'application, 'principal, 'scope, Schema, Spec, Intent>
+    where
+        Spec: ApplicationWorkflowSpec<Schema = Schema>,
+    {
+
         let application = self.application_runtime();
         if !std::ptr::eq(application, workflow.runtime()) {
             return Err(WorthQueryWorkflowAdvancePreparationDenial::RuntimeMismatch);
@@ -299,6 +317,8 @@ where
             prepared,
             idempotency: mutation.idempotency,
         })
+
+
     }
 }
 
@@ -346,7 +366,24 @@ where
     Input: Clone + Send + Sync + 'static,
 {
     pub fn execute(self) -> WorkflowProgressOutcome {
+        self.application
+            .with_application_advancement(self.scope, |phase| self.execute_in_advancement(&phase))
+            .unwrap_or_else(|cause| {
+                WorkflowProgressOutcome::Application(
+                    cause
+                        .into_commit_outcome()
+                        .landed()
+                        .expect_err("request admission cannot commit"),
+                )
+            })
+    }
+
+    pub(in crate::application_entry) fn execute_in_advancement(
+        self,
+        phase: &AdvancementPhase<'_>,
+    ) -> WorkflowProgressOutcome {
         WorthQueryWorkflowAdvanceAdapter::compare_and_commit(
+            phase,
             self.application,
             self.prepared,
             self.idempotency,

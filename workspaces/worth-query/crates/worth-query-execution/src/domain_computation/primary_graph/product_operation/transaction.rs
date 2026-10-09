@@ -68,20 +68,27 @@ where
     pub fn commit(
         self,
     ) -> Result<WorthQueryApplicationCommitOutcome, WorthQueryProductTransactionCommitError> {
-        let application = self.entry.application;
-        if !self.change.program.belongs_to_application(
-            application.runtime.authority_identity(),
-            &application.installed_schema.binding_identity(),
-        ) {
-            return Err(WorthQueryProductTransactionCommitError::ApplicationMismatch);
-        }
-        if self.change.program.product_branch() != self.entry.branch {
-            return Err(WorthQueryProductTransactionCommitError::BranchMismatch);
-        }
-        Ok(
-            application
-                .compare_and_commit_application(self.change.program, self.change.idempotency),
-        )
+        let request = self.change.program.request_scope().clone();
+        let runtime = self.entry.application;
+        runtime
+            .with_application_advancement(&request, |phase| {
+                let application = self.entry.application;
+                if !self.change.program.belongs_to_application(
+                    application.runtime.authority_identity(),
+                    &application.installed_schema.binding_identity(),
+                ) {
+                    return Err(WorthQueryProductTransactionCommitError::ApplicationMismatch);
+                }
+                if self.change.program.product_branch() != self.entry.branch {
+                    return Err(WorthQueryProductTransactionCommitError::BranchMismatch);
+                }
+                Ok(application.compare_and_commit_application_in_advancement(
+                    &phase,
+                    self.change.program,
+                    self.change.idempotency,
+                ))
+            })
+            .unwrap_or_else(|cause| Ok(cause.into_commit_outcome()))
     }
 
     /// Commits an already admitted change only through the installed program
@@ -95,6 +102,9 @@ where
             Schema,
         >,
     {
+        let request = self.change.program.request_scope().clone();
+        let runtime = self.entry.application;
+        runtime.with_application_advancement(&request, |phase| {
         let application = self.entry.application;
         if !std::ptr::eq(application, admitted.runtime.runtime())
             || !self.change.program.belongs_to_application(
@@ -121,11 +131,13 @@ where
             ));
         };
         Ok(
-            application.compare_and_commit_application_for_program_action(
+            application.compare_and_commit_application_for_program_action(&phase,
                 &presented,
                 self.change.program,
                 self.change.idempotency,
             ),
         )
+
+        }).unwrap_or_else(|cause| Ok(cause.into_commit_outcome()))
     }
 }

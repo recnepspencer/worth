@@ -57,6 +57,16 @@ fn stale_ready_owned_wake_is_superseded_before_temporal_lowering() {
 
 #[test]
 fn transaction_stale_ready_policy_drift_records_supersession_evidence() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -78,7 +88,7 @@ fn transaction_stale_ready_policy_drift_records_supersession_evidence() {
     let calls = AtomicU32::new(0);
 
     let outcome = runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.evaluate_with_plan(
                 node,
                 &|_ctx| {

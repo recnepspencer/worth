@@ -58,6 +58,10 @@ where
         Input: ApplicationCapabilityRequest<Schema, Capability, Scope = Scope<Schema, Intent>>
             + 'static,
     {
+        let application = self.application;
+        let request_scope = self.scope;
+        application.with_application_advancement(request_scope, |_phase| {
+
         if self.retained.is_some() {
             return Err(WorthQueryApplicationLiveOpenRequestDenial::RetainedBasis);
         }
@@ -156,5 +160,7 @@ where
             self.branch,
             lease,
         ))
+
+        }).map_err(WorthQueryApplicationLiveOpenRequestDenial::ExecutionRequest)?
     }
 }

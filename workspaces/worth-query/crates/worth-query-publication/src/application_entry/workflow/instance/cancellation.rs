@@ -1,4 +1,5 @@
 //! Explicit cancellation of a live workflow instance.
+use crate::application_entry::WorthQueryApplicationRequestMutationDenial;
 
 use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityRequest,
@@ -73,6 +74,10 @@ where
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
+        let request_scope = self.request_scope().clone();
+        let runtime = self.application_runtime();
+        runtime.with_application_advancement(&request_scope, |_phase| {
+
         let (application, prepared, idempotency) =
             self.prepare_instance(workflow, |selected, installed, key, admission| {
                 WorthQueryWorkflowInstanceAdapter::prepare_cancellation::<
@@ -89,6 +94,10 @@ where
             prepared,
             idempotency,
         })
+
+        }).map_err(|cause| WorthQueryWorkflowInstancePreparationDenial::RequestAdmission(
+            WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause),
+        ))?
     }
 }
 
@@ -116,10 +125,22 @@ where
     Input: Clone + Send + Sync + 'static,
 {
     pub fn execute(self) -> WorkflowInstanceCancellationOutcome {
-        WorthQueryWorkflowInstanceAdapter::compare_and_commit_cancellation(
-            self.application,
-            self.prepared,
-            self.idempotency,
-        )
+        self.application
+            .with_application_advancement(&self.prepared.request_scope().clone(), |phase| {
+                WorthQueryWorkflowInstanceAdapter::compare_and_commit_cancellation(
+                    &phase,
+                    self.application,
+                    self.prepared,
+                    self.idempotency,
+                )
+            })
+            .unwrap_or_else(|cause| {
+                WorkflowInstanceCancellationOutcome::Application(
+                    cause
+                        .into_commit_outcome()
+                        .landed()
+                        .expect_err("request admission cannot commit"),
+                )
+            })
     }
 }

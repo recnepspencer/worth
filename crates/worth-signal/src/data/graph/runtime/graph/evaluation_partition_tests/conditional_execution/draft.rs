@@ -101,19 +101,35 @@ fn assert_restored_contents(
 
 #[test]
 fn returned_finalization_failure_retains_rejected_diagnostics_without_installing_them() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (mut graph, contract) = installed_with(
         SignalConditionalCondition::Always,
         SignalConditionalArtifactReuse::RuntimeResolved,
     );
     graph.set_runtime_policy(SignalRuntimePolicy::forensic());
     let mut partition = SignalEvaluationPartition::retain_basis_storage(&mut graph);
-    let (decision, observation, rejected) = partition
-        .execute_conditional(
-            &mut graph,
-            SignalConditionalExecutionRequest::new(&contract, "storage", "warm", 1),
-            &mut NoPredicate,
-            &mut DefaultComparatorPolicyResolver::default(),
-            || Ok(output(4).with_label("accepted output")),
+    let (decision, observation, rejected) =
+        crate::data::graph::storage::evaluation_partition::conditional_test_scope::run(
+            request_execution,
+            |work| {
+                partition.execute_conditional(
+                    work,
+                    &mut graph,
+                    SignalConditionalExecutionRequest::new(&contract, "storage", "warm", 1),
+                    &mut NoPredicate,
+                    &mut DefaultComparatorPolicyResolver::default(),
+                    || Ok(output(4).with_label("accepted output")),
+                )
+            },
         )
         .unwrap()
         .into_parts();
@@ -122,14 +138,20 @@ fn returned_finalization_failure_retains_rejected_diagnostics_without_installing
     assert!(rejected.is_none());
     let before = snapshot(&mut partition, &mut graph, &contract);
 
-    let (decision, observation, rejected) = partition
-        .execute_conditional(
-            &mut graph,
-            SignalConditionalExecutionRequest::new(&contract, "storage", "declined", 2)
-                .force_on_demand(),
-            &mut NoPredicate,
-            &mut DeclineReuse,
-            || Ok(output(4).with_label("rejected output")),
+    let (decision, observation, rejected) =
+        crate::data::graph::storage::evaluation_partition::conditional_test_scope::run(
+            request_execution,
+            |work| {
+                partition.execute_conditional(
+                    work,
+                    &mut graph,
+                    SignalConditionalExecutionRequest::new(&contract, "storage", "declined", 2)
+                        .force_on_demand(),
+                    &mut NoPredicate,
+                    &mut DeclineReuse,
+                    || Ok(output(4).with_label("rejected output")),
+                )
+            },
         )
         .unwrap()
         .into_parts();
@@ -155,14 +177,20 @@ fn returned_finalization_failure_retains_rejected_diagnostics_without_installing
     );
     assert_restored_contents(&before, snapshot(&mut partition, &mut graph, &contract));
 
-    let (decision, observation, retry_rejected) = partition
-        .execute_conditional(
-            &mut graph,
-            SignalConditionalExecutionRequest::new(&contract, "storage", "retry", 3)
-                .force_on_demand(),
-            &mut NoPredicate,
-            &mut DefaultComparatorPolicyResolver::default(),
-            || Ok(output(8).with_label("retry output")),
+    let (decision, observation, retry_rejected) =
+        crate::data::graph::storage::evaluation_partition::conditional_test_scope::run(
+            request_execution,
+            |work| {
+                partition.execute_conditional(
+                    work,
+                    &mut graph,
+                    SignalConditionalExecutionRequest::new(&contract, "storage", "retry", 3)
+                        .force_on_demand(),
+                    &mut NoPredicate,
+                    &mut DefaultComparatorPolicyResolver::default(),
+                    || Ok(output(8).with_label("retry output")),
+                )
+            },
         )
         .unwrap()
         .into_parts();
@@ -187,19 +215,35 @@ fn returned_finalization_failure_retains_rejected_diagnostics_without_installing
 
 #[test]
 fn observation_unwind_rejects_computed_output_but_retains_performed_decision_and_draft() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (mut graph, contract) = installed_with(
         SignalConditionalCondition::Always,
         SignalConditionalArtifactReuse::RuntimeResolved,
     );
     graph.set_runtime_policy(SignalRuntimePolicy::forensic());
     let mut partition = SignalEvaluationPartition::retain_basis_storage(&mut graph);
-    let (decision, observation, rejected) = partition
-        .execute_conditional(
-            &mut graph,
-            SignalConditionalExecutionRequest::new(&contract, "storage", "warm", 1),
-            &mut NoPredicate,
-            &mut DefaultComparatorPolicyResolver::default(),
-            || Ok(output(4).with_label("accepted output")),
+    let (decision, observation, rejected) =
+        crate::data::graph::storage::evaluation_partition::conditional_test_scope::run(
+            request_execution,
+            |work| {
+                partition.execute_conditional(
+                    work,
+                    &mut graph,
+                    SignalConditionalExecutionRequest::new(&contract, "storage", "warm", 1),
+                    &mut NoPredicate,
+                    &mut DefaultComparatorPolicyResolver::default(),
+                    || Ok(output(4).with_label("accepted output")),
+                )
+            },
         )
         .unwrap()
         .into_parts();
@@ -213,13 +257,19 @@ fn observation_unwind_rejects_computed_output_but_retains_performed_decision_and
         })
         .unwrap();
     assert!(catch_unwind(AssertUnwindSafe(|| {
-        let _ = partition.execute_conditional(
-            &mut graph,
-            SignalConditionalExecutionRequest::new(&contract, "storage", "finish-fault", 2)
-                .force_on_demand(),
-            &mut NoPredicate,
-            &mut super::finalization::PoisonReuse(bindings.clone()),
-            || Ok(output(4).with_label("rejected computed output")),
+        let _ = crate::data::graph::storage::evaluation_partition::conditional_test_scope::run(
+            request_execution,
+            |work| {
+                partition.execute_conditional(
+                    work,
+                    &mut graph,
+                    SignalConditionalExecutionRequest::new(&contract, "storage", "finish-fault", 2)
+                        .force_on_demand(),
+                    &mut NoPredicate,
+                    &mut super::finalization::PoisonReuse(bindings.clone()),
+                    || Ok(output(4).with_label("rejected computed output")),
+                )
+            },
         );
     }))
     .is_err());
@@ -247,14 +297,20 @@ fn observation_unwind_rejects_computed_output_but_retains_performed_decision_and
     assert_eq!(graph.observation_session_active_generation(), 0);
 
     bindings.clear_poison(); // Repair only the explicit fixture fault.
-    let (decision, observation, retry_rejected) = partition
-        .execute_conditional(
-            &mut graph,
-            SignalConditionalExecutionRequest::new(&contract, "storage", "retry", 3)
-                .force_on_demand(),
-            &mut NoPredicate,
-            &mut DefaultComparatorPolicyResolver::default(),
-            || Ok(output(6)),
+    let (decision, observation, retry_rejected) =
+        crate::data::graph::storage::evaluation_partition::conditional_test_scope::run(
+            request_execution,
+            |work| {
+                partition.execute_conditional(
+                    work,
+                    &mut graph,
+                    SignalConditionalExecutionRequest::new(&contract, "storage", "retry", 3)
+                        .force_on_demand(),
+                    &mut NoPredicate,
+                    &mut DefaultComparatorPolicyResolver::default(),
+                    || Ok(output(6)),
+                )
+            },
         )
         .unwrap()
         .into_parts();

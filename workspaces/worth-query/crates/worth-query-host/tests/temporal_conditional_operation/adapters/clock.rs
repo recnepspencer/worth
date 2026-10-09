@@ -15,6 +15,9 @@ pub struct ClockController {
 }
 
 impl ClockController {
+    pub fn observations(&self) -> u64 {
+        self.state.lock().unwrap().observations
+    }
     pub fn push(&self, sequence: u64, now: u64) {
         self.state
             .lock()
@@ -29,6 +32,7 @@ pub struct ClockSource {
 }
 
 struct ClockSourceState {
+    observations: u64,
     sequence: u64,
     now: u64,
     scripted: VecDeque<(u64, u64)>,
@@ -38,6 +42,7 @@ impl ClockSource {
     pub fn due() -> (Self, ClockController) {
         let controller = ClockController {
             state: Arc::new(Mutex::new(ClockSourceState {
+                observations: 0,
                 sequence: 0,
                 now: 10,
                 scripted: VecDeque::new(),
@@ -70,6 +75,7 @@ impl domain::WorthQueryNamedClockSource<CourtroomClock> for ClockSource {
         domain::WorthQueryNamedClockFailure,
     > {
         let mut state = self.controller.state.lock().unwrap();
+        state.observations += 1;
         if let Some((sequence, now)) = state.scripted.pop_front() {
             state.sequence = sequence;
             state.now = now;

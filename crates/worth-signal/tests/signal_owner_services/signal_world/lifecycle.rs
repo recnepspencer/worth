@@ -11,6 +11,16 @@ use super::world::{populated_world, CargoContext, CargoOutputs};
 
 #[test]
 fn same_branch_stale_and_retired_postures_are_exact_and_recoverable() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            worth_signal::facade::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (world, _) = populated_world();
     let expected = world.main_basis.clone();
     let mut storm_context = CargoContext::storm_front();
@@ -30,6 +40,7 @@ fn same_branch_stale_and_retired_postures_are_exact_and_recoverable() {
 
     let mut stale_context = CargoContext::berth_maintenance();
     let stale = world.services.mutation_port().advance_exact(
+        request_execution,
         &expected,
         &mut stale_context,
         &SignalOwnerCancellationSource::new().token(),
@@ -133,6 +144,16 @@ fn unrelated_branch_mutations_make_progress_and_keep_effects_separate() {
 
 #[test]
 fn retired_child_denies_new_work_while_the_owner_and_unrelated_branch_remain_healthy() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            worth_signal::facade::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (mut world, _) = populated_world();
     let (child, child_basis) = world.fork(&world.main_basis, "retirement-child");
     let child_reference = world.reference(&child_basis);
@@ -181,6 +202,7 @@ fn retired_child_denies_new_work_while_the_owner_and_unrelated_branch_remain_hea
     ));
     assert!(matches!(
         world.services.mutation_port().advance_exact(
+            request_execution,
             &world.main_basis,
             &mut CargoContext::baseline(),
             &SignalOwnerCancellationSource::new().token(),

@@ -70,3 +70,6 @@ fn provider_commit_admission_work_report(
 ) -> worth_query::facade::domain::WorthQueryProviderWorkReport {
     worth_query::facade::domain::WorthQueryProviderWorkReport::new(1, 0, 0, 0)
 }
+
+#[cfg(feature = "test-query-execution-observer")]
+mod advancement_custody;

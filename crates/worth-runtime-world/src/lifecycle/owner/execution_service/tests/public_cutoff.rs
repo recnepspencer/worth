@@ -11,6 +11,13 @@ impl RuntimeWorldClockSource for PanickingClock {
 #[test]
 fn final_clock_panic_keeps_owner_effects_without_product_movement() {
     let (fixture, owner, expected) = setup();
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::from_policy(&owner.state.execution.request_policy()),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let cancellation = RuntimeWorldCancellationSource::new();
     let intent =
         CompositePublicationIntent::without_signal(RelationalTransactionIntent::ordinary())
@@ -25,7 +32,7 @@ fn final_clock_panic_keeps_owner_effects_without_product_movement() {
             Some(RuntimeWorldInstant::from_ticks(10)),
         )
         .unwrap();
-    let settlement = settled(execute_without_signal(&owner, prepared));
+    let settlement = settled(execute_without_signal(execution, &owner, prepared));
     let successor = settlement.successor_basis().unwrap().clone();
     let ready = settlement.ready(successor).unwrap();
     let cell = owner.state.branches.root_cell().unwrap();
@@ -64,6 +71,13 @@ impl RuntimeWorldClockSource for CancellingClock {
 #[test]
 fn cancellation_during_clock_check_prevents_product_movement() {
     let (fixture, owner, expected) = setup();
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::from_policy(&owner.state.execution.request_policy()),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = Arc::new(RuntimeWorldCancellationSource::new());
     let intent =
         CompositePublicationIntent::without_signal(RelationalTransactionIntent::ordinary())
@@ -78,7 +92,7 @@ fn cancellation_during_clock_check_prevents_product_movement() {
             Some(RuntimeWorldInstant::from_ticks(10)),
         )
         .unwrap();
-    let settlement = settled(execute_without_signal(&owner, prepared));
+    let settlement = settled(execute_without_signal(execution, &owner, prepared));
     let successor = settlement.successor_basis().unwrap().clone();
     let ready = settlement.ready(successor).unwrap();
     let cell = owner.state.branches.root_cell().unwrap();

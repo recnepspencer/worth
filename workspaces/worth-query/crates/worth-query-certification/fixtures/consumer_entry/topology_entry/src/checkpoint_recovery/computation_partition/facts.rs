@@ -234,6 +234,7 @@ pub(super) struct Entry {
 impl Entry {
     /// Independent installations bind these same Native entities under
     /// different projection authorities; compare the carried entity and kind.
+    #[cfg(feature = "test-query-execution-observer")]
     pub(super) fn same_binding_as(&self, other: &Self) -> bool {
         self.number == other.number
             && self.entity.entity_id() == other.entity.entity_id()

@@ -48,6 +48,8 @@ where
 
     pub fn advance_exact_with_completion<F>(
         &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+
         admitted: AdmittedSignalConditionalDefinitionPublication,
         expected: &AdmittedSignalBranchBasis,
         runtime_ctx: &mut Ctx,
@@ -59,6 +61,7 @@ where
     {
         self.mutation
             .advance_conditional_definition_exact_with_completion(
+                execution,
                 admitted.operation,
                 expected,
                 runtime_ctx,

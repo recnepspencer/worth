@@ -42,6 +42,16 @@ pub(super) fn fintech_session(
     policy: SignalRuntimePolicy,
     workers: Option<usize>,
 ) -> (SignalAdversarialHarness, ReplaySlice, Vec<LineageRecord>) {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let policy = policy
         .with_observation_activation(worth_foundational::ObservationActivationProfile::Continuous);
     if workers.is_some() {
@@ -161,26 +171,32 @@ pub(super) fn fintech_session(
                 let next_a = current.a + delta;
                 fixture
                     .runtime
-                    .transaction(&mut ctx, |tx: &mut FintechTransaction<'_>| {
-                        tx.mark_dirty(fixture.ticks, ASPECT_A)?;
-                        tx.read(fixture.ticks, &move |view| {
-                            Ok(view.finish(
-                                NodeEvaluationResult::from_version(version_ab(next_a, 0))
-                                    .with_output_identity(format!("ticks-{next_a}")),
-                            ))
-                        })?;
-                        tx.evaluate_keyed(fixture.keyed, &fixture.memo_key, &|view| {
-                            Ok(view.finish(
-                                NodeEvaluationResult::from_version(version_ab(next_a, current.b))
+                    .transaction(
+                        request_execution,
+                        &mut ctx,
+                        |tx: &mut FintechTransaction<'_>| {
+                            tx.mark_dirty(fixture.ticks, ASPECT_A)?;
+                            tx.read(fixture.ticks, &move |view| {
+                                Ok(view.finish(
+                                    NodeEvaluationResult::from_version(version_ab(next_a, 0))
+                                        .with_output_identity(format!("ticks-{next_a}")),
+                                ))
+                            })?;
+                            tx.evaluate_keyed(fixture.keyed, &fixture.memo_key, &|view| {
+                                Ok(view.finish(
+                                    NodeEvaluationResult::from_version(version_ab(
+                                        next_a, current.b,
+                                    ))
                                     .with_output_identity(format!(
                                         "risk-keyed-{next_a}-{}",
                                         current.b
                                     ))
                                     .with_output_change(OutputChange::Refreshed),
-                            ))
-                        })?;
-                        Ok(())
-                    })
+                                ))
+                            })?;
+                            Ok(())
+                        },
+                    )
                     .unwrap();
                 model.branch_mut(model.active).a = next_a;
                 evaluate_fintech_dirty(&mut fixture, workers);
@@ -200,16 +216,20 @@ pub(super) fn fintech_session(
                 let next_b = current.b + delta;
                 fixture
                     .runtime
-                    .transaction(&mut ctx, |tx: &mut FintechTransaction<'_>| {
-                        tx.mark_dirty(fixture.volatility, ASPECT_B)?;
-                        tx.read(fixture.volatility, &move |view| {
-                            Ok(view.finish(
-                                NodeEvaluationResult::from_version(version_ab(0, next_b))
-                                    .with_output_identity(format!("volatility-{next_b}")),
-                            ))
-                        })?;
-                        Ok(())
-                    })
+                    .transaction(
+                        request_execution,
+                        &mut ctx,
+                        |tx: &mut FintechTransaction<'_>| {
+                            tx.mark_dirty(fixture.volatility, ASPECT_B)?;
+                            tx.read(fixture.volatility, &move |view| {
+                                Ok(view.finish(
+                                    NodeEvaluationResult::from_version(version_ab(0, next_b))
+                                        .with_output_identity(format!("volatility-{next_b}")),
+                                ))
+                            })?;
+                            Ok(())
+                        },
+                    )
                     .unwrap();
                 model.branch_mut(model.active).b = next_b;
                 evaluate_fintech_dirty(&mut fixture, workers);
@@ -225,22 +245,20 @@ pub(super) fn fintech_session(
             }
             3 => {
                 let current = model.branch(model.active).clone();
-                let err =
-                    fixture
-                        .runtime
-                        .transaction(&mut ctx, |tx: &mut FintechTransaction<'_>| {
-                            tx.mark_dirty(fixture.ticks, ASPECT_A)?;
-                            tx.read(fixture.ticks, &move |view| {
-                                Ok(view.finish(
-                                    NodeEvaluationResult::from_version(version_ab(
-                                        current.a + 10,
-                                        0,
-                                    ))
+                let err = fixture.runtime.transaction(
+                    request_execution,
+                    &mut ctx,
+                    |tx: &mut FintechTransaction<'_>| {
+                        tx.mark_dirty(fixture.ticks, ASPECT_A)?;
+                        tx.read(fixture.ticks, &move |view| {
+                            Ok(view.finish(
+                                NodeEvaluationResult::from_version(version_ab(current.a + 10, 0))
                                     .with_output_identity("bad-ticks"),
-                                ))
-                            })?;
-                            Err(SignalError::invalid_input("synthetic branch-local failure"))
-                        });
+                            ))
+                        })?;
+                        Err(SignalError::invalid_input("synthetic branch-local failure"))
+                    },
+                );
                 assert!(err.is_err());
                 harness.record(
                     &fixture.runtime,

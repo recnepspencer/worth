@@ -5,6 +5,7 @@
 //! effect is prepared, so a handle onto a rostered peer program cannot commit
 //! on an occurrence that never activated it.
 
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use std::any::TypeId;
 
 use worth_query_declaration::facade::application_operation::{
@@ -29,6 +30,8 @@ type ActionProgram<Schema, Binding> = WorthQueryApplicationEffectProgram<
 >;
 
 pub(super) fn commit_program_action<Schema, Binding, Owner>(
+    phase: &WorthQueryAdvancementPhase<'_>,
+
     owner: &Owner,
     program: ActionProgram<Schema, Binding>,
     idempotency: WorthQueryApplicationIdempotencyBinding,
@@ -56,10 +59,17 @@ where
         Ok(presented) => presented,
         Err(denial) => return WorthQueryApplicationCommitOutcome::Denied(denial),
     };
-    runtime.compare_and_commit_application_for_program_action(&presented, program, idempotency)
+    runtime.compare_and_commit_application_for_program_action(
+        phase,
+        &presented,
+        program,
+        idempotency,
+    )
 }
 
 pub(super) fn commit_program_action_retained<Schema, Binding, Owner>(
+    phase: &WorthQueryAdvancementPhase<'_>,
+
     owner: &Owner,
     program: ActionProgram<Schema, Binding>,
     idempotency: WorthQueryApplicationIdempotencyBinding,
@@ -71,6 +81,7 @@ where
     Owner: WorthQueryProgramOwner<Schema> + ?Sized,
 {
     let outcome = commit_program_action::<Schema, Binding, Owner>(
+        phase,
         owner,
         program.with_client_observation(),
         idempotency,

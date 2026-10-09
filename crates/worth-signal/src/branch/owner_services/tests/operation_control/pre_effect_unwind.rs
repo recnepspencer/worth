@@ -125,6 +125,16 @@ fn target_and_basis_preflight_faults_preserve_exact_no_movement_truth() {
 }
 
 fn exercise_advance_pre_effect_fault(boundary: SignalOwnerOperationBoundary) {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (mut runtime, sibling, branch, basis) = runtime_with_two_branches();
     let (_, mutation, _) = runtime.owner_port_slots().expect("advance owner seals");
     let owner = mutation
@@ -146,6 +156,7 @@ fn exercise_advance_pre_effect_fault(boundary: SignalOwnerOperationBoundary) {
             .expect("advance output reserves");
         let _ = reservation
             .advance::<(), (), _>(
+                request_execution,
                 &basis,
                 &mut (),
                 &SignalOwnerCancellationSource::new().token(),

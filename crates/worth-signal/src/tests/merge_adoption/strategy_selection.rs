@@ -7,6 +7,16 @@ use crate::tests::support::{version_ab, GraphDependencyBatchExt, ASPECT_A};
 
 #[test]
 fn runtime_merge_strategy_hint_selects_registered_descriptor() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -14,7 +24,7 @@ fn runtime_merge_strategy_hint_selects_registered_descriptor() {
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(shared, &|view| {
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(1, 0))))
             })?;
@@ -31,7 +41,7 @@ fn runtime_merge_strategy_hint_selects_registered_descriptor() {
         .append_dependency(feature_only, shared, ASPECT_A)
         .unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(feature_only, &|view| {
                 let upstream = view.read_aspect_version(shared, ASPECT_A)?;
                 Ok(view.finish(NodeEvaluationResult::from_version(upstream)))
@@ -61,6 +71,16 @@ fn runtime_merge_strategy_hint_selects_registered_descriptor() {
 
 #[test]
 fn runtime_merge_strategy_named_selects_registered_descriptor() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -68,7 +88,7 @@ fn runtime_merge_strategy_named_selects_registered_descriptor() {
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(shared, &|view| {
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(1, 0))))
             })?;
@@ -85,7 +105,7 @@ fn runtime_merge_strategy_named_selects_registered_descriptor() {
         .append_dependency(feature_only, shared, ASPECT_A)
         .unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(feature_only, &|view| {
                 let upstream = view.read_aspect_version(shared, ASPECT_A)?;
                 Ok(view.finish(NodeEvaluationResult::from_version(upstream)))
@@ -115,6 +135,16 @@ fn runtime_merge_strategy_named_selects_registered_descriptor() {
 
 #[test]
 fn runtime_merge_base_named_selects_registered_descriptor_and_lowers_plan() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -122,7 +152,7 @@ fn runtime_merge_base_named_selects_registered_descriptor_and_lowers_plan() {
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(shared, &|view| {
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(1, 0))))
             })?;
@@ -139,7 +169,7 @@ fn runtime_merge_base_named_selects_registered_descriptor_and_lowers_plan() {
         .append_dependency(feature_only, shared, ASPECT_A)
         .unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(feature_only, &|view| {
                 let upstream = view.read_aspect_version(shared, ASPECT_A)?;
                 Ok(view.finish(NodeEvaluationResult::from_version(upstream)))
@@ -209,6 +239,16 @@ fn runtime_proof_report_carries_merge_base_registry_digest() {
 
 #[test]
 fn runtime_merge_uses_schema_default_strategy_when_request_is_silent() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let graph = SignalGraph::new().with_schema_registry(merge_schema_registry(
         "signal.merge.rebase-source-onto-target",
         None,
@@ -219,7 +259,7 @@ fn runtime_merge_uses_schema_default_strategy_when_request_is_silent() {
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(shared, &|view| {
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(1, 0))))
             })?;
@@ -243,7 +283,7 @@ fn runtime_merge_uses_schema_default_strategy_when_request_is_silent() {
         .append_dependency(feature_only, shared, ASPECT_A)
         .unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(feature_only, &|view| {
                 let upstream = view.read_aspect_version(shared, ASPECT_A)?;
                 Ok(view.finish(NodeEvaluationResult::from_version(upstream)))
@@ -272,6 +312,16 @@ fn runtime_merge_uses_schema_default_strategy_when_request_is_silent() {
 
 #[test]
 fn runtime_merge_node_override_precedes_schema_default_strategy() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let graph = SignalGraph::new().with_schema_registry(merge_schema_registry(
         "signal.merge.rebase-source-onto-target",
         None,
@@ -282,7 +332,7 @@ fn runtime_merge_node_override_precedes_schema_default_strategy() {
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(shared, &|view| {
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(1, 0))))
             })?;
@@ -307,7 +357,7 @@ fn runtime_merge_node_override_precedes_schema_default_strategy() {
         .append_dependency(feature_only, shared, ASPECT_A)
         .unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(feature_only, &|view| {
                 let upstream = view.read_aspect_version(shared, ASPECT_A)?;
                 Ok(view.finish(NodeEvaluationResult::from_version(upstream)))

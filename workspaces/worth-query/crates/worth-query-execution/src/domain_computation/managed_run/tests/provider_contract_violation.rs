@@ -93,72 +93,78 @@ impl WorthQueryGraphParticipationProvider<ManagedGraph> for HostileProvider {
 
 #[test]
 fn ignored_governed_denials_and_zero_progress_completion_cannot_advance() {
-    for (port, expected_denial) in [
-        (
-            HostilePort::Effect,
-            WorthQueryGraphProviderStepDenialKind::UnexpectedEffect,
-        ),
-        (
-            HostilePort::Output,
-            WorthQueryGraphProviderStepDenialKind::ChunkWidthExceeded,
-        ),
-        (
-            HostilePort::Scratch,
-            WorthQueryGraphProviderStepDenialKind::ScratchBudgetExceeded,
-        ),
-        (
-            HostilePort::Retained,
-            WorthQueryGraphProviderStepDenialKind::RetainedBudgetExceeded,
-        ),
-        (
-            HostilePort::Artifact,
-            WorthQueryGraphProviderStepDenialKind::ArtifactAdmissionDenied,
-        ),
-        (
-            HostilePort::Checkpoint,
-            WorthQueryGraphProviderStepDenialKind::MultipleCheckpoints,
-        ),
-        (
-            HostilePort::NoProgress,
-            WorthQueryGraphProviderStepDenialKind::NoProgress,
-        ),
-    ] {
-        let (access, kind) = if matches!(port, HostilePort::Output) {
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
+
+        for (port, expected_denial) in [
             (
-                WorthQueryOperationGraphAccess::Project,
-                WorthQueryGraphProviderCallKind::Project,
-            )
-        } else {
+                HostilePort::Effect,
+                WorthQueryGraphProviderStepDenialKind::UnexpectedEffect,
+            ),
             (
-                WorthQueryOperationGraphAccess::Observe,
-                WorthQueryGraphProviderCallKind::Observe,
-            )
-        };
-        let (running, graph) = managed_graph_run_with_provider(access, HostileProvider(port));
-        let active = running
-            .begin_graph_execution(
-                &graph,
-                WorthQueryManagedGraphCallRequest::new(kind, "hostile-port"),
-            )
-            .expect("hostile fixture should reach its governed step");
-        let terminal = match active.advance() {
-            WorthQueryDirectGraphStepOutcome::Failed(terminal) => terminal,
-            _ => panic!("hostile governed port advanced the managed lane"),
-        };
-        assert_eq!(terminal.provider_work().abandoned_call_count(), 1);
-        let failure = terminal
-            .provider_work()
-            .last_step_failure()
-            .expect("failed provider step should retain its exact cause");
-        assert_eq!(
-            failure.invocation(),
-            WorthQueryGraphProviderStepInvocationDisposition::Returned
-        );
-        assert_eq!(failure.governed_denial_kind(), Some(expected_denial));
-        terminal
-            .cleanup()
-            .expect("failed hostile step should clean up");
-    }
+                HostilePort::Output,
+                WorthQueryGraphProviderStepDenialKind::ChunkWidthExceeded,
+            ),
+            (
+                HostilePort::Scratch,
+                WorthQueryGraphProviderStepDenialKind::ScratchBudgetExceeded,
+            ),
+            (
+                HostilePort::Retained,
+                WorthQueryGraphProviderStepDenialKind::RetainedBudgetExceeded,
+            ),
+            (
+                HostilePort::Artifact,
+                WorthQueryGraphProviderStepDenialKind::ArtifactAdmissionDenied,
+            ),
+            (
+                HostilePort::Checkpoint,
+                WorthQueryGraphProviderStepDenialKind::MultipleCheckpoints,
+            ),
+            (
+                HostilePort::NoProgress,
+                WorthQueryGraphProviderStepDenialKind::NoProgress,
+            ),
+        ] {
+            let (access, kind) = if matches!(port, HostilePort::Output) {
+                (
+                    WorthQueryOperationGraphAccess::Project,
+                    WorthQueryGraphProviderCallKind::Project,
+                )
+            } else {
+                (
+                    WorthQueryOperationGraphAccess::Observe,
+                    WorthQueryGraphProviderCallKind::Observe,
+                )
+            };
+            let (running, graph) = managed_graph_run_with_provider(access, HostileProvider(port));
+            let active = running
+                .begin_graph_execution(
+                    execution,
+                    &graph,
+                    WorthQueryManagedGraphCallRequest::new(kind, "hostile-port"),
+                )
+                .expect("hostile fixture should reach its governed step");
+            let terminal = match active.advance(execution) {
+                WorthQueryDirectGraphStepOutcome::Failed(terminal) => terminal,
+                _ => panic!("hostile governed port advanced the managed lane"),
+            };
+            assert_eq!(terminal.provider_work().abandoned_call_count(), 1);
+            let failure = terminal
+                .provider_work()
+                .last_step_failure()
+                .expect("failed provider step should retain its exact cause");
+            assert_eq!(
+                failure.invocation(),
+                WorthQueryGraphProviderStepInvocationDisposition::Returned
+            );
+            assert_eq!(failure.governed_denial_kind(), Some(expected_denial));
+            terminal
+                .cleanup()
+                .expect("failed hostile step should clean up");
+        }
+    });
 }
 
 struct HostileArtifact;
@@ -179,38 +185,44 @@ impl WorthQueryArtifactProviderResource for HostileArtifact {
 
 #[test]
 fn failed_provider_output_is_released_without_queue_publication() {
-    let (running, graph) = managed_graph_run_with_provider(
-        WorthQueryOperationGraphAccess::Project,
-        HostileProvider(HostilePort::OutputThenFailure),
-    );
-    let active = running
-        .begin_graph_execution(
-            &graph,
-            WorthQueryManagedGraphCallRequest::new(
-                WorthQueryGraphProviderCallKind::Project,
-                "output-then-failure",
-            ),
-        )
-        .expect("hostile output provider should reach its governed step");
-    let terminal = match active.advance() {
-        WorthQueryDirectGraphStepOutcome::Failed(terminal) => terminal,
-        _ => panic!("failed provider output became a promotable chunk"),
-    };
-    assert_eq!(terminal.provider_work().queue_state_mutation_count(), 0);
-    assert_eq!(terminal.provider_work().retained_bytes(), 0);
-    assert!(terminal.provider_work().peak_retained_bytes() > 0);
-    let failure = terminal.provider_work().last_step_failure().unwrap();
-    assert_eq!(
-        failure.invocation(),
-        WorthQueryGraphProviderStepInvocationDisposition::Rejected
-    );
-    assert_eq!(
-        failure.provider_failure_detail(),
-        Some("provider failed after producing unpublished output")
-    );
-    terminal
-        .cleanup()
-        .expect("failed unpublished output preserves cleanup authority");
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
+
+        let (running, graph) = managed_graph_run_with_provider(
+            WorthQueryOperationGraphAccess::Project,
+            HostileProvider(HostilePort::OutputThenFailure),
+        );
+        let active = running
+            .begin_graph_execution(
+                execution,
+                &graph,
+                WorthQueryManagedGraphCallRequest::new(
+                    WorthQueryGraphProviderCallKind::Project,
+                    "output-then-failure",
+                ),
+            )
+            .expect("hostile output provider should reach its governed step");
+        let terminal = match active.advance(execution) {
+            WorthQueryDirectGraphStepOutcome::Failed(terminal) => terminal,
+            _ => panic!("failed provider output became a promotable chunk"),
+        };
+        assert_eq!(terminal.provider_work().queue_state_mutation_count(), 0);
+        assert_eq!(terminal.provider_work().retained_bytes(), 0);
+        assert!(terminal.provider_work().peak_retained_bytes() > 0);
+        let failure = terminal.provider_work().last_step_failure().unwrap();
+        assert_eq!(
+            failure.invocation(),
+            WorthQueryGraphProviderStepInvocationDisposition::Rejected
+        );
+        assert_eq!(
+            failure.provider_failure_detail(),
+            Some("provider failed after producing unpublished output")
+        );
+        terminal
+            .cleanup()
+            .expect("failed unpublished output preserves cleanup authority");
+    });
 }
 
 fn graph_material() -> WorthQueryGraphReadMaterial {

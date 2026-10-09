@@ -148,10 +148,13 @@ where
         self.context_use
             .set(self.context_use.get().request_context());
         self.execution
-            .request()
             .interruption()
             .map_or(Ok(()), |interruption| {
-                Err(HandlerInterruption::from(interruption))
+                use crate::domain_computation::primary_graph::WorthQueryManagedComputationInterruption as Stop;
+                Err(match interruption {
+                    Stop::Cancelled => HandlerInterruption::Cancelled,
+                    Stop::DeadlineExceeded => HandlerInterruption::DeadlineExceeded,
+                })
             })
     }
 

@@ -72,8 +72,12 @@ pub use producer::{
 pub(in crate::domain_computation::primary_graph) use request_execution::QueryRequestExecution;
 #[cfg(feature = "test-query-execution-observer")]
 pub use request_execution::{
+    bound_advancement_requests_on_this_thread_for_test,
     place_managed_computations_on_this_thread_for_test, test_execution_workers,
     WorthQueryExecutionPlacementForTest,
+};
+pub use request_execution::{
+    WorthQueryAdvancementDenial, WorthQueryAdvancementPhase, WorthQueryForeignAdvancementPhase,
 };
 pub use setup::WorthQueryApplicationContributionSetup;
 
@@ -84,3 +88,19 @@ pub(in crate::domain_computation::primary_graph) use partitioned_computation::se
 pub(in crate::domain_computation) use partitioned_computation::observe_discarded;
 #[cfg(feature = "test-query-execution-observer")]
 pub(in crate::domain_computation::primary_graph) use partitioned_computation::observe_published;
+
+pub(in crate::domain_computation::primary_graph) use request_execution::{
+    with_serial_host_advancement, with_world_advancement,
+};
+
+#[cfg(feature = "test-query-execution-observer")]
+pub use request_execution::{
+    advancement_requests_on_this_thread_for_test, caller_pass_reports_on_this_thread_for_test,
+};
+
+#[cfg(test)]
+pub(crate) use request_execution::with_test_advancement;
+
+pub use request_execution::with_bootstrap_advancement;
+
+pub use request_execution::WorthQueryBootstrapAdvancementPhase;

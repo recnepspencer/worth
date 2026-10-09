@@ -33,6 +33,10 @@ pub enum WorthQueryApplicationProgramAdoptionRecoveryFailure {
 /// Why the branch's adopted program could not be inspected.
 #[derive(Debug)]
 pub enum WorthQueryApplicationProgramInspectionDenial {
+    /// The host call could not admit its execution request before reading.
+    ExecutionRequest(
+        worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
+    ),
     ProductSelection(
         worth_query_execution::facade::primary_graph::WorthQueryProductBranchAdmissionDenial,
     ),
@@ -78,12 +82,18 @@ where
         WorthQueryProgramAdoptionRequirements,
         WorthQueryApplicationProgramAdoptionPreparationDenial,
     > {
+        let request_scope = self.scope.clone();
+        let runtime = self.application;
+        runtime.with_application_advancement(&request_scope, |_phase| {
+
         self.application
             .on_branch(self.branch)
             .select()
             .map_err(WorthQueryApplicationProgramAdoptionPreparationDenial::ProductSelection)?
             .branch_adoption_requirements(target)
             .map_err(WorthQueryApplicationProgramAdoptionPreparationDenial::Adoption)
+
+        }).map_err(|cause| WorthQueryApplicationProgramAdoptionPreparationDenial::Adoption(worth_query_execution::facade::primary_graph::WorthQueryBranchAdoptionPreparationDenial::ExecutionDenied(cause)))?
     }
 
     /// Reports the rostered program carried by this exact selected branch
@@ -95,12 +105,20 @@ where
         worth_query_execution::facade::primary_graph::WorthQuerySelectedProgramInspection,
         WorthQueryApplicationProgramInspectionDenial,
     > {
-        self.application
-            .on_branch(self.branch)
-            .select()
-            .map_err(WorthQueryApplicationProgramInspectionDenial::ProductSelection)?
-            .inspect_selected_program()
-            .map_err(WorthQueryApplicationProgramInspectionDenial::Inspection)
+        let request_scope = self.scope.clone();
+        let runtime = self.application;
+        runtime
+            .with_application_advancement(&request_scope, |_phase| {
+                self.application
+                    .on_branch(self.branch)
+                    .select()
+                    .map_err(WorthQueryApplicationProgramInspectionDenial::ProductSelection)?
+                    .inspect_selected_program()
+                    .map_err(WorthQueryApplicationProgramInspectionDenial::Inspection)
+            })
+            .map_err(|cause| {
+                WorthQueryApplicationProgramInspectionDenial::ExecutionRequest(cause)
+            })?
     }
 
     /// Adopts the target that `requirements`, as [`Self::compare`] returned

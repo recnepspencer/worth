@@ -73,7 +73,17 @@ fn cancel_after_performed_advance() {
         &world.owner.operation_control(),
         SignalOwnerOperationBoundary::AfterCanonicalMovement,
         move || {
+            let serial_request = worth_execution::SerialRequest::from_memory(
+                worth_execution::SerialMemoryBudget::new(
+                    crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+                ),
+                worth_execution::CancellationToken::new(),
+                None,
+            );
+            let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
             port.advance_exact(
+                request_execution,
                 &basis,
                 &mut (),
                 &worker_cancellation.token(),
@@ -128,6 +138,16 @@ fn cancel_after_performed_capture() {
 }
 
 fn cancel_after_performed_restore() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let world = MutationWorld::<()>::new();
     let captured = world
         .port
@@ -139,6 +159,7 @@ fn cancel_after_performed_restore() {
     let current = world
         .port
         .advance_exact(
+            request_execution,
             captured.captured_basis(),
             &mut (),
             &SignalOwnerCancellationSource::new().token(),

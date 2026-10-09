@@ -33,6 +33,7 @@ impl WorthQueryConditionalEvaluationEntry {
 
     pub(super) fn execute(
         &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
         session: &BridgeConditionalEvaluationSession,
         installed: &WorthQueryInstalledProduct,
         request: BridgeConditionalExecutionRequest<'_>,
@@ -45,7 +46,7 @@ impl WorthQueryConditionalEvaluationEntry {
         };
         let decision = installed
             .conditional
-            .execute_admitted_conditional(session, request, context)?;
+            .execute_admitted_conditional(execution, session, request, context)?;
         Ok(WorthQueryExecutedConditional {
             decision,
             product: Arc::clone(&self.product),

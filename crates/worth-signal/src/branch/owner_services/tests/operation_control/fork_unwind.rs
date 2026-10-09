@@ -27,6 +27,16 @@ fn fork_post_capture_faults_preserve_performed_destination_and_release_source_cu
 }
 
 fn exercise_fork_post_install_fault(boundary: SignalOwnerOperationBoundary) {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let upstream = graph.create_node();
     let replacement = graph.create_node();
@@ -48,12 +58,18 @@ fn exercise_fork_post_install_fault(boundary: SignalOwnerOperationBoundary) {
     let advanced = owner
         .reserve_advance_output(&admission, &source_cell)
         .expect("source output retention reserves")
-        .advance::<(), (), _>(&basis, &mut (), &cancellation.token(), |transaction| {
-            transaction.set_dependencies(
-                dependent,
-                [DependencyEdge::new(replacement, Aspect::new(7))],
-            )
-        })
+        .advance::<(), (), _>(
+            request_execution,
+            &basis,
+            &mut (),
+            &cancellation.token(),
+            |transaction| {
+                transaction.set_dependencies(
+                    dependent,
+                    [DependencyEdge::new(replacement, Aspect::new(7))],
+                )
+            },
+        )
         .into_result()
         .expect("source journal receives a real canonical mutation");
     let (basis, transaction) = advanced.into_parts();
@@ -182,6 +198,16 @@ fn assert_fork_fault_costs(
 
 #[test]
 fn fork_source_capture_fault_quarantines_only_source_and_releases_destination_custody() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let upstream = graph.create_node();
     let replacement = graph.create_node();
@@ -206,6 +232,7 @@ fn fork_source_capture_fault_quarantines_only_source_and_releases_destination_cu
         .reserve_advance_output(&admission, &source_cell)
         .expect("source-fault output retention reserves")
         .advance::<(), (), _>(
+            request_execution,
             &basis,
             &mut (),
             &SignalOwnerCancellationSource::new().token(),

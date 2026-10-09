@@ -9,8 +9,13 @@ fn execute_session(
     session: &crate::facade::BridgeConditionalEvaluationSession,
     attempt: u64,
 ) -> crate::facade::BridgeConditionalDecisionEvidence {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     owner
         .execute_admitted_conditional(
+            request_execution,
             session,
             crate::facade::BridgeConditionalExecutionRequest {
                 lowering,
@@ -49,6 +54,10 @@ fn admit_source_session(
 
 #[test]
 fn owned_correspondence_delivery_and_execution_share_the_sealed_signal_root() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (owner, lowering) = install(always_eligible_contract("query:one"), "bridge-main");
     let source = crate::truth_identity_fixtures::truth_snapshot(1, 1);
     let pinned = admit_source_session(&owner, &lowering, &source);
@@ -61,7 +70,7 @@ fn owned_correspondence_delivery_and_execution_share_the_sealed_signal_root() {
         .admit_conditional_signal_basis(&lowering, owner.admitted_signal_basis())
         .unwrap();
     let TransitionOutcome::Success(receipt) = owner
-        .deliver_owned_authoritative_change(&signal_basis, 0)
+        .deliver_owned_authoritative_change(request_execution, &signal_basis, 0)
         .expect("the retained owned dependency admits publication")
     else {
         panic!("owned correspondence delivery must complete through Signal owner services")
@@ -117,6 +126,10 @@ fn empty_conditional_root_seals_without_inventing_a_lowering() {
 
 #[test]
 fn successor_admission_recomputes_affected_lowering_and_reuses_unaffected_lowering() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut owner = super::owned_runtime_builder(runtime(exact_mapping(), Vec::new())).unwrap();
     let install = |owner: &mut BridgeConditionalRuntimeBuilder, identity: &'static str, output| {
         owner
@@ -143,7 +156,7 @@ fn successor_admission_recomputes_affected_lowering_and_reuses_unaffected_loweri
         .admit_conditional_signal_basis(&affected, owner.admitted_signal_basis())
         .unwrap();
     let TransitionOutcome::Success(receipt) = owner
-        .deliver_owned_authoritative_change(&signal_basis, 0)
+        .deliver_owned_authoritative_change(request_execution, &signal_basis, 0)
         .unwrap()
     else {
         panic!("affected change publishes a successor basis")
@@ -177,6 +190,10 @@ fn successor_admission_recomputes_affected_lowering_and_reuses_unaffected_loweri
 
 #[test]
 fn successor_readmission_requires_the_exact_ordered_chain_and_allows_fresh_fallback() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (owner, lowering) = install(always_eligible_contract("query:one"), "bridge-main");
     let source = crate::truth_identity_fixtures::truth_snapshot(1, 1);
     let a = admit_source_session(&owner, &lowering, &source);
@@ -185,13 +202,13 @@ fn successor_readmission_requires_the_exact_ordered_chain_and_allows_fresh_fallb
         .admit_conditional_signal_basis(&lowering, owner.admitted_signal_basis())
         .unwrap();
     let TransitionOutcome::Success(ab) = owner
-        .deliver_owned_authoritative_change(&signal_basis, 0)
+        .deliver_owned_authoritative_change(request_execution, &signal_basis, 0)
         .unwrap()
     else {
         panic!("A to B delivery must publish")
     };
     let TransitionOutcome::Success(bc) = owner
-        .deliver_owned_authoritative_change(&signal_basis, 0)
+        .deliver_owned_authoritative_change(request_execution, &signal_basis, 0)
         .unwrap()
     else {
         panic!("B to C delivery must publish")
@@ -264,7 +281,7 @@ fn successor_readmission_requires_the_exact_ordered_chain_and_allows_fresh_fallb
         .admit_conditional_signal_basis(&foreign_lowering, foreign.admitted_signal_basis())
         .unwrap();
     let TransitionOutcome::Success(foreign_receipt) = foreign
-        .deliver_owned_authoritative_change(&foreign_basis, 0)
+        .deliver_owned_authoritative_change(request_execution, &foreign_basis, 0)
         .unwrap()
     else {
         panic!("foreign fixture delivery must publish")

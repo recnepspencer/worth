@@ -8,6 +8,16 @@ use super::super::super::SignalOwnerCancellationSource;
 
 #[test]
 fn capture_restore_capture_preserves_old_contents_and_issues_a_fresh_key() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let weather = graph.create_node();
     let berth = graph.create_node();
@@ -31,6 +41,7 @@ fn capture_restore_capture_preserves_old_contents_and_issues_a_fresh_key() {
 
     let changed = cell
         .advance_exact::<(), (), _>(
+            request_execution,
             &admission,
             &initial,
             &mut (),
@@ -84,6 +95,7 @@ fn capture_restore_capture_preserves_old_contents_and_issues_a_fresh_key() {
 
     let reverted = cell
         .advance_exact::<(), (), _>(
+            request_execution,
             &admission,
             &basis_a,
             &mut (),
@@ -159,6 +171,7 @@ fn capture_restore_capture_preserves_old_contents_and_issues_a_fresh_key() {
     );
     let changed_again = cell
         .advance_exact::<(), (), _>(
+            request_execution,
             &admission,
             &restored_a_basis,
             &mut (),

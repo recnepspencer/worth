@@ -14,6 +14,7 @@ use crate::domain_computation::primary_graph::application_output_demand::WorthQu
 use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceSettlementCurrentness;
 use crate::domain_computation::primary_graph::provider::FactlessCurrentness;
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 
 /// Check actual selected required work before the caller's ordinary Ready
 /// result can be accepted. The caller keeps the successors its own chain
@@ -22,6 +23,8 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     Schema,
     Family,
 >(
+    phase: &WorthQueryAdvancementPhase<'_>,
+
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
@@ -153,6 +156,7 @@ where
     // unfinished successors go to registry custody when the wave ends.
     let mut frame_custody = RequiredContinuations::default();
     let result = drive_required_wave(
+        phase,
         runtime,
         demand,
         principal,

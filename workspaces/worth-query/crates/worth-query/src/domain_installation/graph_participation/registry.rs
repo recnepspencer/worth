@@ -18,6 +18,8 @@ mod capability_registration;
 pub(crate) trait ErasedGraphCommitProvider: Send + Sync {
     fn admit_commit(
         &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+
         call: &WorthQueryGraphCommitCall,
     ) -> Result<WorthQueryGraphProviderReceipt, WorthQueryGraphProviderFailure>;
 }
@@ -32,9 +34,11 @@ impl<C: 'static, P: WorthQueryGraphCommitProvider<C>> ErasedGraphCommitProvider
 {
     fn admit_commit(
         &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+
         call: &WorthQueryGraphCommitCall,
     ) -> Result<WorthQueryGraphProviderReceipt, WorthQueryGraphProviderFailure> {
-        self.provider.admit_commit(call)
+        self.provider.admit_commit(execution, call)
     }
 }
 

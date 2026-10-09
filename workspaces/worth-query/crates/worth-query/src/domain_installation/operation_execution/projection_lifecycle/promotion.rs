@@ -25,11 +25,46 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane>
         self,
         workspace: &mut WorthQueryWorkspace,
     ) -> WorthQueryProjectionPromotionOutcome<D, O, F, L> {
+        let owner = workspace.advancement_owner();
+        let mut retained = Some(self);
+        match owner.with_advancement(|phase| {
+            let current = retained
+                .take()
+                .expect("host call retains its projection before admission");
+            current.promote_in_advancement(
+                phase
+                    .execution_request_for(&owner)
+                    .expect("the opener lent this owner its phase"),
+                workspace,
+            )
+        }) {
+            Ok(outcome) => outcome,
+            Err(denial) => {
+                let current = retained
+                    .take()
+                    .expect("refused request ran no projection work");
+                WorthQueryProjectionPromotionOutcome::Denied(
+                    super::WorthQueryProjectionPromotionStop::new(
+                        current,
+                        super::WorthQueryProjectionPromotionDenialKind::ExecutionRequest(denial),
+                        "advancement admission refused",
+                        Default::default(),
+                    ),
+                )
+            }
+        }
+    }
+
+    fn promote_in_advancement(
+        self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+        workspace: &mut WorthQueryWorkspace,
+    ) -> WorthQueryProjectionPromotionOutcome<D, O, F, L> {
         let admitted = match admit_projection_promotion(self, workspace) {
             WorthQueryProjectionPreflightOutcome::Admitted(admitted) => admitted,
             WorthQueryProjectionPreflightOutcome::Stopped(outcome) => return *outcome,
         };
-        let ready = match evaluate_fresh_conditionals(*admitted, workspace) {
+        let ready = match evaluate_fresh_conditionals(execution, *admitted, workspace) {
             WorthQueryConditionalPromotionOutcome::Ready(ready) => ready,
             WorthQueryConditionalPromotionOutcome::Stopped(outcome) => return *outcome,
         };

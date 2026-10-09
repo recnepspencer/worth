@@ -1,6 +1,8 @@
 mod support;
 
 mod ordinary_reads {
+    #[cfg(feature = "test-request-lifetime-probes")]
+    mod advancement_custody;
     mod application_query;
     mod authority;
     mod canonical_scale_fixture;

@@ -84,6 +84,16 @@ impl EventSubscriber for RecordingSubscriber {
 
 #[test]
 fn failed_event_flush_triggers_compensating_rollbacks_for_flushed_subscribers() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let graph = SignalGraph::new();
     let mut runtime = SignalRuntime::builder(graph)
         .with_kernel_defaults()
@@ -118,7 +128,7 @@ fn failed_event_flush_triggers_compensating_rollbacks_for_flushed_subscribers() 
 
     let before = runtime.graph().get_state(node).unwrap();
     let mut ctx = ();
-    let mut tx = runtime.begin(&mut ctx);
+    let mut tx = runtime.begin(request_execution, &mut ctx);
     tx.mark_dirty(node, ASPECT_A).unwrap();
     tx.emit_event(Ev::Tick);
     tx.flush_events(CheckpointBarrier::PerOperation).unwrap();
@@ -135,6 +145,16 @@ fn failed_event_flush_triggers_compensating_rollbacks_for_flushed_subscribers() 
 
 #[test]
 fn failed_commit_discards_staged_key_registry_growth_and_created_keyed_nodes() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let graph = SignalGraph::new();
     let mut runtime = SignalRuntime::builder(graph)
         .with_kernel_defaults()
@@ -164,7 +184,7 @@ fn failed_commit_discards_staged_key_registry_growth_and_created_keyed_nodes() {
     let memo_name = "rollback-fresh-memo";
 
     let err = {
-        let mut tx = runtime.begin(&mut ctx);
+        let mut tx = runtime.begin(request_execution, &mut ctx);
         let keyed_def = rollback_family.keyed(key_name);
         let keyed = keyed_def.node_in_transaction(&mut tx);
         let computation = keyed_def.memoized(memo_name);
@@ -208,6 +228,16 @@ fn failed_commit_discards_staged_key_registry_growth_and_created_keyed_nodes() {
 
 #[test]
 fn failed_commit_preserves_preexisting_memo_cache_while_discarding_new_staged_growth() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let graph = SignalGraph::new();
     let mut runtime = SignalRuntime::builder(graph)
         .with_kernel_defaults()
@@ -224,7 +254,7 @@ fn failed_commit_preserves_preexisting_memo_cache_while_discarding_new_staged_gr
     let mut ctx = ();
 
     runtime
-        .transaction(&mut ctx, |tx| {
+        .transaction(request_execution, &mut ctx, |tx| {
             tx.evaluate_keyed(stable_keyed, &stable_computation, &|view| {
                 stable_compute_calls.fetch_add(1, Ordering::Relaxed);
                 Ok(view.finish(
@@ -251,7 +281,7 @@ fn failed_commit_preserves_preexisting_memo_cache_while_discarding_new_staged_gr
         .unwrap();
 
     let err = runtime
-        .transaction(&mut ctx, |tx| {
+        .transaction(request_execution, &mut ctx, |tx| {
             let keyed_def = fresh_def.keyed("fresh-key");
             let keyed = keyed_def.node_in_transaction(tx);
             let fresh = keyed_def.memoized("fresh");
@@ -276,7 +306,7 @@ fn failed_commit_preserves_preexisting_memo_cache_while_discarding_new_staged_gr
 
     mark_dirty(runtime.graph_mut(), stable_keyed, ASPECT_A).unwrap();
     runtime
-        .transaction(&mut ctx, |tx| {
+        .transaction(request_execution, &mut ctx, |tx| {
             tx.evaluate_keyed(stable_keyed, &stable_computation, &|view| {
                 stable_compute_calls.fetch_add(1, Ordering::Relaxed);
                 Ok(view.finish(

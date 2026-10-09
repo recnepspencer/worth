@@ -13,20 +13,26 @@ enum ReadyVerdict {
     Unavailable,
 }
 
+/// Selected waves supply their own currentness proof; ordinary Ready uses a branch.
+pub(super) enum ReadyCertification {
+    SelectedWave,
+    OnBranch(crate::basis::WorthQueryProductBranch),
+}
+
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema + 'static,
 {
     pub(super) fn advance_validated_ready<Family>(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
         disclosure: ValidatedOutputDisclosure<
             FamilySourceQuery<Schema, Family>,
             FamilySourceValue<Schema, Family>,
         >,
         completion: ReadyCompletion,
-        delivery_branch: crate::basis::WorthQueryProductBranch,
-        selected: bool,
+        certification: ReadyCertification,
         request_admission: &mut InvalidationEditAdmission,
     ) -> Result<OwnStages, WorthQueryOutputDemandDenial>
     where
@@ -34,15 +40,18 @@ where
         FamilySourceValue<Schema, Family>: 'static,
         FamilySourceQuery<Schema, Family>: 'static,
     {
-        if selected {
+        let delivery_branch = match certification {
             // Exact Ready still needs the wave's registry and
             // actor/native proof before it can be Current.
-            return Ok(OwnStages::Answer(WorthQueryOutputDemandAdvance::Pending));
-        }
+            ReadyCertification::SelectedWave => {
+                return Ok(OwnStages::Answer(WorthQueryOutputDemandAdvance::Pending));
+            }
+            ReadyCertification::OnBranch(branch) => branch,
+        };
         // The disclosed source is the one this demand names: a replaced
         // source left through `leave_replaced_source` before the row began.
         if let ReadyVerdict::Settled(settlement) =
-            self.certify_ready(demand, &completion, delivery_branch)?
+            self.certify_ready(phase, demand, &completion, delivery_branch)?
         {
             return Ok(OwnStages::Answer(WorthQueryOutputDemandAdvance::Settled(
                 settlement,
@@ -64,6 +73,7 @@ where
     /// waits for the next advance to refresh it from a new one.
     pub(super) fn settle_own_ready<Family>(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
         demand: &WorthQueryAdmittedOutputDemand<Schema, Family>,
         completion: &ReadyCompletion,
         delivery_branch: crate::basis::WorthQueryProductBranch,
@@ -72,7 +82,7 @@ where
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
         Ok(
-            match self.certify_ready(demand, completion, delivery_branch)? {
+            match self.certify_ready(phase, demand, completion, delivery_branch)? {
                 ReadyVerdict::Settled(settlement) => {
                     WorthQueryOutputDemandAdvance::Settled(settlement)
                 }
@@ -83,6 +93,7 @@ where
 
     fn certify_ready<Family>(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
         demand: &WorthQueryAdmittedOutputDemand<Schema, Family>,
         completion: &ReadyCompletion,
         delivery_branch: crate::basis::WorthQueryProductBranch,
@@ -110,6 +121,7 @@ where
         // restored output that comparison is what gives it its marks.
         let alias = |settlement: std::sync::Arc<Settlement>| {
             let proof = current.require_current_output_settlements(
+                phase,
                 [settlement.as_ref()],
                 demand.currentness_work_limit(),
             );
@@ -117,8 +129,11 @@ where
         };
         let settlement = match &completion.authority {
             Authority::Committed(receipt) => {
-                let proof = current
-                    .require_current_output_receipts([receipt], demand.currentness_work_limit());
+                let proof = current.require_current_output_receipts(
+                    phase,
+                    [receipt],
+                    demand.currentness_work_limit(),
+                );
                 if unavailable(proof)? {
                     return Ok(ReadyVerdict::Unavailable);
                 }

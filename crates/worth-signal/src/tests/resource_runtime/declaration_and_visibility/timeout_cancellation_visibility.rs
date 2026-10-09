@@ -2,6 +2,16 @@ use super::*;
 
 #[test]
 fn resource_timeout_reclassifies_hidden_pending_output_when_terminal_policy_preserves() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let node = graph.node().build();
     let mut runtime = TestRuntime::build(graph);
@@ -31,7 +41,7 @@ fn resource_timeout_reclassifies_hidden_pending_output_when_terminal_policy_pres
         .expect("initial completion should admit");
     let mut ctx = ();
     runtime
-        .transaction(&mut ctx, |tx| {
+        .transaction(request_execution, &mut ctx, |tx| {
             let staging = tx.stage_admitted_resource_completion(first_completion)?;
             tx.commit_staged_resource_completion(staging.staged_effect())?;
             Ok(())
@@ -148,6 +158,16 @@ fn resource_timeout_without_prior_output_does_not_charge_terminal_visibility_cla
 
 #[test]
 fn resource_cancellation_reclassifies_hidden_pending_output_when_terminal_policy_preserves() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let node = graph.node().build();
     let mut runtime = TestRuntime::build(graph);
@@ -171,7 +191,7 @@ fn resource_cancellation_reclassifies_hidden_pending_output_when_terminal_policy
         .expect("initial completion should admit");
     let mut ctx = ();
     runtime
-        .transaction(&mut ctx, |tx| {
+        .transaction(request_execution, &mut ctx, |tx| {
             let staging = tx.stage_admitted_resource_completion(first_completion)?;
             tx.commit_staged_resource_completion(staging.staged_effect())?;
             Ok(())
@@ -266,6 +286,16 @@ fn resource_timeout_visibility_hide_and_preserve_share_lifecycle_but_not_visibil
         ResourceReplayReconstructionReport,
         TestRuntime,
     ) {
+        // This standalone caller declares the operational serial memory policy.
+        let serial_request = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(
+                crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+            ),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
         let mut graph = SignalGraph::new();
         let node = graph.node().build();
         let mut runtime = TestRuntime::build(graph);
@@ -297,7 +327,7 @@ fn resource_timeout_visibility_hide_and_preserve_share_lifecycle_but_not_visibil
             .expect("initial completion should admit");
         let mut ctx = ();
         runtime
-            .transaction(&mut ctx, |tx| {
+            .transaction(request_execution, &mut ctx, |tx| {
                 let staging = tx.stage_admitted_resource_completion(first_completion)?;
                 tx.commit_staged_resource_completion(staging.staged_effect())?;
                 Ok(())

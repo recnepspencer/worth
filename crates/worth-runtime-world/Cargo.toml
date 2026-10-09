@@ -10,6 +10,7 @@ categories = ["data-structures", "database-implementations"]
 
 [features]
 default = []
+test-execution-observer = []
 test-operation-control = [
     "worth-relational/test-operation-control",
     "worth-signal/test-operation-control",

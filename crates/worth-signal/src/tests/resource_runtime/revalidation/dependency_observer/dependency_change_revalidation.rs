@@ -153,6 +153,16 @@ fn resource_dependency_change_revalidation_does_not_bypass_active_request_rule()
 #[test]
 fn resource_observer_demand_and_dependency_change_revalidation_do_not_coalesce_across_distinct_freshness_causes(
 ) {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let source = graph.node().build();
     let node = graph.node().build();
@@ -174,7 +184,7 @@ fn resource_observer_demand_and_dependency_change_revalidation_do_not_coalesce_a
     );
 
     let mut ctx = ();
-    let mut tx = runtime.begin(&mut ctx);
+    let mut tx = runtime.begin(request_execution, &mut ctx);
     tx.evaluate_with_plan(
         node,
         &|view| Ok(view.finish(NodeEvaluationResult::from_version(version_ab(1, 0)))),
@@ -224,6 +234,16 @@ fn resource_observer_demand_and_dependency_change_revalidation_do_not_coalesce_a
 
 #[test]
 fn resource_observer_demand_revalidation_revalidates_using_committed_observation_truth() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let node = graph.node().build();
     let mut runtime = TestRuntime::build(graph);
@@ -239,7 +259,7 @@ fn resource_observer_demand_revalidation_revalidates_using_committed_observation
         }),
     );
     let mut ctx = ();
-    let mut tx = runtime.begin(&mut ctx);
+    let mut tx = runtime.begin(request_execution, &mut ctx);
     tx.evaluate_with_plan(
         node,
         &|view| Ok(view.finish(NodeEvaluationResult::from_version(version_ab(1, 0)))),

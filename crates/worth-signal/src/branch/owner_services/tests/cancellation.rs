@@ -12,6 +12,16 @@ mod retirement;
 
 #[test]
 fn cancellation_while_waiting_for_same_cell_denies_without_movement() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (mut runtime, _, branch, expected) = runtime_with_two_branches();
     let (_, mutation, _) = runtime.owner_port_slots().expect("runtime seals");
     let owner = mutation.upgrade_owner().expect("owner remains live");
@@ -40,9 +50,19 @@ fn cancellation_while_waiting_for_same_cell_denies_without_movement() {
     let waiter_owner = Arc::clone(&owner);
     let (waiter_done_tx, waiter_done_rx) = mpsc::sync_channel(1);
     thread::spawn(move || {
+        let serial_request = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(
+                crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+            ),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
         let waiter_admission = waiter_owner.admit().expect("waiter admits in its worker");
         let result = waiter_cell
             .advance_exact::<(), (), _>(
+                request_execution,
                 &waiter_admission,
                 &waiter_expected,
                 &mut (),
@@ -75,6 +95,7 @@ fn cancellation_while_waiting_for_same_cell_denies_without_movement() {
     let healthy = SignalOwnerCancellationSource::new();
     let healthy_admission = owner.admit().expect("healthy twin admits");
     cell.advance_exact::<(), (), _>(
+        request_execution,
         &healthy_admission,
         &expected,
         &mut (),

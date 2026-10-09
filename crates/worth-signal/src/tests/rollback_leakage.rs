@@ -152,6 +152,16 @@ impl EventSubscriber for FailOnBarrier {
 
 #[test]
 fn failed_commit_cannot_leak_key_registry_growth() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .with_domains::<Domain>()
@@ -167,7 +177,7 @@ fn failed_commit_cannot_leak_key_registry_growth() {
     let mut ctx = ();
 
     let err = runtime
-        .transaction(&mut ctx, |tx| {
+        .transaction(request_execution, &mut ctx, |tx| {
             let keyed_def = tripwire_family.keyed("tripwire-key");
             let keyed = keyed_def.node_in_transaction(tx);
             let computation = keyed_def.memoized("tripwire");
@@ -186,6 +196,16 @@ fn failed_commit_cannot_leak_key_registry_growth() {
 
 #[test]
 fn failed_commit_preserves_preexisting_memoized_state() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .with_domains::<Domain>()
@@ -200,7 +220,7 @@ fn failed_commit_preserves_preexisting_memoized_state() {
     let compute_calls = AtomicU32::new(0);
 
     runtime
-        .transaction(&mut ctx, |tx| {
+        .transaction(request_execution, &mut ctx, |tx| {
             tx.evaluate_keyed(keyed, &computation, &|view| {
                 compute_calls.fetch_add(1, Ordering::Relaxed);
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(1, 0))))
@@ -216,7 +236,7 @@ fn failed_commit_preserves_preexisting_memoized_state() {
     let fresh_def = define_keyed_computation(&mut runtime, "fresh-family", ());
 
     let err = runtime
-        .transaction(&mut ctx, |tx| {
+        .transaction(request_execution, &mut ctx, |tx| {
             let keyed_def = fresh_def.keyed("fresh-key");
             let other = keyed_def.node_in_transaction(tx);
             let fresh = keyed_def.memoized("fresh");
@@ -232,7 +252,7 @@ fn failed_commit_preserves_preexisting_memoized_state() {
 
     mark_dirty(runtime.graph_mut(), keyed, ASPECT_A).unwrap();
     runtime
-        .transaction(&mut ctx, |tx| {
+        .transaction(request_execution, &mut ctx, |tx| {
             tx.evaluate_keyed(keyed, &computation, &|view| {
                 compute_calls.fetch_add(1, Ordering::Relaxed);
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(9, 0))))
@@ -254,6 +274,16 @@ fn failed_commit_preserves_preexisting_memoized_state() {
 
 #[test]
 fn failed_later_epoch_keeps_committed_context_and_records_coherent_diagnostics() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .with_domains::<Domain>()
@@ -278,7 +308,7 @@ fn failed_later_epoch_keeps_committed_context_and_records_coherent_diagnostics()
     let mut ctx = ();
 
     runtime
-        .transaction(&mut ctx, |tx| {
+        .transaction(request_execution, &mut ctx, |tx| {
             tx.emit_event(Ev::Tick);
             tx.flush_events(CheckpointBarrier::PerOperation)?;
             Ok(())
@@ -295,7 +325,7 @@ fn failed_later_epoch_keeps_committed_context_and_records_coherent_diagnostics()
     let replay_len_before = runtime.graph().replay_events().len();
     *fail_on.lock().unwrap() = Some(CheckpointBarrier::PerCommit);
     let err = runtime
-        .transaction(&mut ctx, |tx| {
+        .transaction(request_execution, &mut ctx, |tx| {
             tx.emit_event(Ev::Tick);
             tx.flush_events(CheckpointBarrier::PerOperation)?;
             tx.emit_event(Ev::Tick);

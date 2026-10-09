@@ -32,6 +32,9 @@ fn a_start_between_preparation_and_publication_stales_the_adoption() {
     let second = expect_started(start_instance(&application, definition, 85_310));
 
     match prepared.publish() {
+        WorthQueryBranchAdoptionPublicationOutcome::ExecutionDenied(cause) => {
+            panic!("the declared host policy admits adoption: {cause:?}")
+        }
         WorthQueryBranchAdoptionPublicationOutcome::NoEffect(no_effect) => assert_eq!(
             no_effect.cause(),
             NoEffectCause::StaleExpectedProductHead,

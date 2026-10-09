@@ -194,6 +194,10 @@ fn observation_affinity_and_ordering_fail_without_due_progress() {
 
 #[test]
 fn managed_due_wake_executes_only_its_exact_conditional_lowering() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (owner, binding, lowering) = installed_clock(1, 1);
     let signal_basis = owner
         .admit_conditional_signal_basis(&lowering, owner.admitted_signal_basis())
@@ -218,6 +222,7 @@ fn managed_due_wake_executes_only_its_exact_conditional_lowering() {
 
     let missing = owner
         .execute_managed_due_wake(
+            request_execution,
             BridgeManagedConditionalExecutionRequest {
                 due_wake: &due,
                 lowering: &lowering,
@@ -243,6 +248,7 @@ fn managed_due_wake_executes_only_its_exact_conditional_lowering() {
 
     let decision = owner
         .execute_managed_due_wake(
+            request_execution,
             BridgeManagedConditionalExecutionRequest {
                 due_wake: &due,
                 lowering: &lowering,
@@ -268,6 +274,7 @@ fn managed_due_wake_executes_only_its_exact_conditional_lowering() {
     let (_foreign_owner, foreign_lowering) =
         install(always_eligible_contract("query:one"), "managed-time");
     let result = owner.execute_managed_due_wake(
+        request_execution,
         BridgeManagedConditionalExecutionRequest {
             due_wake: &due,
             lowering: &foreign_lowering,

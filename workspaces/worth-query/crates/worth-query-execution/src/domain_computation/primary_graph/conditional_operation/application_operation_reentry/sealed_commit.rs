@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_query_installation::facade::{
     ApplicationFieldUnit, ApplicationReadableScalarValueBinding, ApplicationScalarValueBinding,
     ApplicationSchema, DeclaredApplicationFieldValue, OperationReads, OperationWrites,
@@ -43,6 +44,8 @@ where
 {
     pub(super) fn commit_projected_temporal_effect<Clock>(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         candidate: &WorthQueryTemporalIntentCandidate<Clock, Input>,
         current: WorthQueryCurrentTemporalIntent<Schema, IntentEntity, IdentityValue, RevisionValue>,
@@ -91,7 +94,7 @@ where
             .map_err(|denial| denial.to_string())?;
         let program = effects.finish().map_err(|denial| denial.to_string())?;
         Ok(classify_commit(
-            runtime.compare_and_commit_conditional_operation(program, idempotency.binding()),
+            runtime.compare_and_commit_conditional_operation(phase, program, idempotency.binding()),
         ))
     }
 }

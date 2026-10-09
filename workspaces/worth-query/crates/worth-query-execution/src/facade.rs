@@ -158,6 +158,7 @@ pub mod integration {
     };
 
     pub fn prepare_primary_graph_with_relational_runtime<Schema>(
+        phase: &crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase<'_>,
         authority: &WorthQueryExecutionInstallationAuthority,
         runtime: &WorthQueryExecutionRuntime,
         installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
@@ -168,6 +169,7 @@ pub mod integration {
         Schema: ApplicationSchema,
     {
         authority.prepare_primary_graph_with_relational_runtime(
+            phase,
             runtime,
             installed_schema,
             relational_runtime,
@@ -176,6 +178,7 @@ pub mod integration {
     }
 
     pub fn prepare_primary_graph_with_relational_runtime_and_invariants<Schema>(
+        phase: &crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase<'_>,
         authority: &WorthQueryExecutionInstallationAuthority,
         runtime: &WorthQueryExecutionRuntime,
         installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
@@ -187,6 +190,7 @@ pub mod integration {
         Schema: ApplicationSchema,
     {
         authority.prepare_primary_graph_with_relational_runtime_and_invariants(
+            phase,
             runtime,
             installed_schema,
             relational_runtime,
@@ -206,6 +210,7 @@ pub mod integration {
     #[doc(hidden)]
     #[cfg(feature = "test-primary-graph-faults")]
     pub fn prepare_primary_graph_with_active_snapshot_limit_for_test<Schema>(
+        phase: &crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase<'_>,
         authority: &WorthQueryExecutionInstallationAuthority,
         runtime: &WorthQueryExecutionRuntime,
         installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
@@ -231,6 +236,7 @@ pub mod integration {
             })
             .build();
         prepare_primary_graph_with_relational_runtime(
+            phase,
             authority,
             runtime,
             installed_schema,
@@ -266,6 +272,7 @@ pub mod integration {
     }
 
     pub fn publish_primary_graph<Schema>(
+        phase: &crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase<'_>,
         bootstrap: WorthQueryPrimaryGraphBootstrap<Schema>,
         runtime: &mut WorthQueryExecutionRuntime,
         authority: &WorthQueryExecutionInstallationAuthority,
@@ -273,7 +280,7 @@ pub mod integration {
     where
         Schema: ApplicationSchema,
     {
-        bootstrap.publish(runtime, authority)
+        bootstrap.publish(phase, runtime, authority)
     }
 
     #[doc(hidden)]

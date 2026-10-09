@@ -5,6 +5,15 @@ use crate::tests::support::{evaluate_on_demand, version_ab};
 
 #[test]
 fn conditional_application_preserves_installed_scoped_topology_through_warm_reuse() {
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (mut graph, contract) = installed();
     let source = graph.node().build();
     evaluate_on_demand(&mut graph, source, &mut |_, _| Ok(version_ab(0, 3))).unwrap();
@@ -48,15 +57,21 @@ fn conditional_application_preserves_installed_scoped_topology_through_warm_reus
         } else {
             request
         };
-        let (decision, observation, rejected) = partition
-            .execute_conditional(
-                &mut graph,
-                request,
-                &mut NoPredicate,
-                &mut DefaultComparatorPolicyResolver::default(),
-                || {
-                    computes += 1;
-                    Ok(output(9))
+        let (decision, observation, rejected) =
+            crate::data::graph::storage::evaluation_partition::conditional_test_scope::run(
+                request_execution,
+                |work| {
+                    partition.execute_conditional(
+                        work,
+                        &mut graph,
+                        request,
+                        &mut NoPredicate,
+                        &mut DefaultComparatorPolicyResolver::default(),
+                        || {
+                            computes += 1;
+                            Ok(output(9))
+                        },
+                    )
                 },
             )
             .unwrap()
@@ -95,6 +110,16 @@ fn conditional_application_preserves_installed_scoped_topology_through_warm_reus
 
 #[test]
 fn conditional_refresh_still_removes_retired_edges_before_application() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (mut graph, contract) = installed();
     graph.set_runtime_policy(SignalRuntimePolicy::forensic());
     let source = graph.node().build();
@@ -117,14 +142,20 @@ fn conditional_refresh_still_removes_retired_edges_before_application() {
         1
     );
     let mut partition = SignalEvaluationPartition::retain_basis_storage(&mut graph);
-    let (decision, observation, rejected) = partition
-        .execute_conditional(
-            &mut graph,
-            SignalConditionalExecutionRequest::new(&contract, "source", "pruned", 1)
-                .force_on_demand(),
-            &mut NoPredicate,
-            &mut DefaultComparatorPolicyResolver::default(),
-            || Ok(output(9)),
+    let (decision, observation, rejected) =
+        crate::data::graph::storage::evaluation_partition::conditional_test_scope::run(
+            request_execution,
+            |work| {
+                partition.execute_conditional(
+                    work,
+                    &mut graph,
+                    SignalConditionalExecutionRequest::new(&contract, "source", "pruned", 1)
+                        .force_on_demand(),
+                    &mut NoPredicate,
+                    &mut DefaultComparatorPolicyResolver::default(),
+                    || Ok(output(9)),
+                )
+            },
         )
         .unwrap()
         .into_parts();

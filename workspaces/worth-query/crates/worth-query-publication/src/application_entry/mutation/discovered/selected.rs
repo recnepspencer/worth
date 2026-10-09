@@ -55,6 +55,11 @@ where
         RootConnection<Schema, Root>:
             WorthQueryApplicationDiscoveredOutputConnection<Schema, Source = Intent::Binding>,
     {
+        let request_scope = self.request_scope().clone();
+        let runtime = self.request.application;
+        runtime.with_application_advancement(&request_scope, |active_phase| {
+            let phase = &active_phase;
+
         crate::application_entry::mutation::performed_source::require_program_output_root::<
             Schema,
             Program,
@@ -82,7 +87,7 @@ where
         let source =
             crate::application_entry::mutation::performed_source::PerformedSourceCommit::default();
         let outcome = self
-            .execute_with_preparation_and_commit(
+            .execute_with_preparation_and_commit(phase,
                 move |request, identities, staged| {
                     crate::application_entry::mutation::authorization::prepare_selected(
                         request, identities, staged, &selected,
@@ -92,6 +97,7 @@ where
                     source.record(
                         application
                             .compare_and_commit_selected_discovered_output_source::<Root, Intent::Binding>(
+                                phase,
                                 &worth_query_execution::publication_boundary::program_publication_access(),
                                 &owner,
                                 program,
@@ -103,5 +109,7 @@ where
             )
             .map_err(WorthQueryPerformedMutationExecutionDenial::Mutation)?;
         Ok(discovered_outcome(application, discovery, outcome, source))
+
+        }).map_err(|cause| WorthQueryPerformedMutationExecutionDenial::Mutation(WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause)))?
     }
 }

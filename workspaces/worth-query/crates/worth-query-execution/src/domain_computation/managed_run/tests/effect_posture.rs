@@ -89,120 +89,146 @@ impl WorthQueryGraphParticipationProvider<ManagedGraph> for EffectProvider {
 
 #[test]
 fn touch_effect_cannot_cross_an_effect_free_step_contract() {
-    let applied_effects = Arc::new(AtomicUsize::new(0));
-    let (running, graph) = managed_graph_effect_run_with_provider(EffectProvider {
-        partial_effects_may_remain: false,
-        applied_effects: Arc::clone(&applied_effects),
-        reject_effect: false,
-        panic_after_effect: false,
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
+
+        let applied_effects = Arc::new(AtomicUsize::new(0));
+        let (running, graph) = managed_graph_effect_run_with_provider(EffectProvider {
+            partial_effects_may_remain: false,
+            applied_effects: Arc::clone(&applied_effects),
+            reject_effect: false,
+            panic_after_effect: false,
+        });
+        let active = start_effect(execution, running, &graph, "effect-free");
+        let terminal = match active.advance(execution) {
+            WorthQueryDirectGraphStepOutcome::Failed(terminal) => terminal,
+            _ => panic!("effect-free bounded step admitted an applied effect"),
+        };
+        assert_eq!(applied_effects.load(Ordering::Relaxed), 0);
+        assert_eq!(terminal.provider_work().attempted_effect_count(), 0);
+        assert_eq!(terminal.provider_work().applied_effect_count(), 0);
+        assert_eq!(terminal.provider_work().abandoned_call_count(), 1);
+        terminal
+            .cleanup()
+            .expect("denied effect must preserve cleanup authority");
     });
-    let active = start_effect(running, &graph, "effect-free");
-    let terminal = match active.advance() {
-        WorthQueryDirectGraphStepOutcome::Failed(terminal) => terminal,
-        _ => panic!("effect-free bounded step admitted an applied effect"),
-    };
-    assert_eq!(applied_effects.load(Ordering::Relaxed), 0);
-    assert_eq!(terminal.provider_work().attempted_effect_count(), 0);
-    assert_eq!(terminal.provider_work().applied_effect_count(), 0);
-    assert_eq!(terminal.provider_work().abandoned_call_count(), 1);
-    terminal
-        .cleanup()
-        .expect("denied effect must preserve cleanup authority");
 }
 
 #[test]
 fn declared_partial_effect_posture_carries_exact_applied_effect_evidence() {
-    let applied_effects = Arc::new(AtomicUsize::new(0));
-    let (running, graph) = managed_graph_effect_run_with_provider(EffectProvider {
-        partial_effects_may_remain: true,
-        applied_effects: Arc::clone(&applied_effects),
-        reject_effect: false,
-        panic_after_effect: false,
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
+
+        let applied_effects = Arc::new(AtomicUsize::new(0));
+        let (running, graph) = managed_graph_effect_run_with_provider(EffectProvider {
+            partial_effects_may_remain: true,
+            applied_effects: Arc::clone(&applied_effects),
+            reject_effect: false,
+            panic_after_effect: false,
+        });
+        let completion =
+            match start_effect(execution, running, &graph, "partial-effect").advance(execution) {
+                WorthQueryDirectGraphStepOutcome::Completed(completion) => completion,
+                _ => panic!("declared partial-effect posture did not admit the governed effect"),
+            };
+        assert_eq!(applied_effects.load(Ordering::Relaxed), 1);
+        assert_eq!(completion.receipt().work_report().applied_effect_count(), 1);
+        let terminal = completion.into_running().completed().unwrap();
+        assert_eq!(terminal.provider_work().attempted_effect_count(), 1);
+        assert_eq!(terminal.provider_work().applied_effect_count(), 1);
+        terminal
+            .cleanup()
+            .expect("completed declared effect must retain cleanup authority");
     });
-    let completion = match start_effect(running, &graph, "partial-effect").advance() {
-        WorthQueryDirectGraphStepOutcome::Completed(completion) => completion,
-        _ => panic!("declared partial-effect posture did not admit the governed effect"),
-    };
-    assert_eq!(applied_effects.load(Ordering::Relaxed), 1);
-    assert_eq!(completion.receipt().work_report().applied_effect_count(), 1);
-    let terminal = completion.into_running().completed().unwrap();
-    assert_eq!(terminal.provider_work().attempted_effect_count(), 1);
-    assert_eq!(terminal.provider_work().applied_effect_count(), 1);
-    terminal
-        .cleanup()
-        .expect("completed declared effect must retain cleanup authority");
 }
 
 #[test]
 fn rejected_effect_closure_cannot_claim_an_applied_effect() {
-    let applied_effects = Arc::new(AtomicUsize::new(0));
-    let (running, graph) = managed_graph_effect_run_with_provider(EffectProvider {
-        partial_effects_may_remain: true,
-        applied_effects: Arc::clone(&applied_effects),
-        reject_effect: true,
-        panic_after_effect: false,
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
+
+        let applied_effects = Arc::new(AtomicUsize::new(0));
+        let (running, graph) = managed_graph_effect_run_with_provider(EffectProvider {
+            partial_effects_may_remain: true,
+            applied_effects: Arc::clone(&applied_effects),
+            reject_effect: true,
+            panic_after_effect: false,
+        });
+        let terminal =
+            match start_effect(execution, running, &graph, "rejected-effect").advance(execution) {
+                WorthQueryDirectGraphStepOutcome::Failed(terminal) => terminal,
+                _ => panic!("rejected provider effect advanced the managed run"),
+            };
+        assert_eq!(applied_effects.load(Ordering::Relaxed), 1);
+        assert_eq!(terminal.provider_work().attempted_effect_count(), 1);
+        assert_eq!(terminal.provider_work().applied_effect_count(), 0);
+        assert_eq!(
+            terminal.provider_work().session_disposition(),
+            WorthQueryManagedProviderSessionDisposition::Uncertain
+        );
+        let failure = terminal.provider_work().last_step_failure().unwrap();
+        assert_eq!(
+            failure.invocation(),
+            WorthQueryGraphProviderStepInvocationDisposition::Returned
+        );
+        assert_eq!(failure.invocation_failure_detail(), None);
+        assert_eq!(
+            failure.latched_provider_failure_detail(),
+            Some("provider effect rejected")
+        );
+        terminal.cleanup().expect("rejected effect should clean up");
     });
-    let terminal = match start_effect(running, &graph, "rejected-effect").advance() {
-        WorthQueryDirectGraphStepOutcome::Failed(terminal) => terminal,
-        _ => panic!("rejected provider effect advanced the managed run"),
-    };
-    assert_eq!(applied_effects.load(Ordering::Relaxed), 1);
-    assert_eq!(terminal.provider_work().attempted_effect_count(), 1);
-    assert_eq!(terminal.provider_work().applied_effect_count(), 0);
-    assert_eq!(
-        terminal.provider_work().session_disposition(),
-        WorthQueryManagedProviderSessionDisposition::Uncertain
-    );
-    let failure = terminal.provider_work().last_step_failure().unwrap();
-    assert_eq!(
-        failure.invocation(),
-        WorthQueryGraphProviderStepInvocationDisposition::Returned
-    );
-    assert_eq!(failure.invocation_failure_detail(), None);
-    assert_eq!(
-        failure.latched_provider_failure_detail(),
-        Some("provider effect rejected")
-    );
-    terminal.cleanup().expect("rejected effect should clean up");
 }
 
 #[test]
 fn panic_after_effect_attempt_preserves_effect_uncertainty() {
-    let applied_effects = Arc::new(AtomicUsize::new(0));
-    let (running, graph) = managed_graph_effect_run_with_provider(EffectProvider {
-        partial_effects_may_remain: true,
-        applied_effects: Arc::clone(&applied_effects),
-        reject_effect: false,
-        panic_after_effect: true,
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
+
+        let applied_effects = Arc::new(AtomicUsize::new(0));
+        let (running, graph) = managed_graph_effect_run_with_provider(EffectProvider {
+            partial_effects_may_remain: true,
+            applied_effects: Arc::clone(&applied_effects),
+            reject_effect: false,
+            panic_after_effect: true,
+        });
+        let terminal =
+            match start_effect(execution, running, &graph, "panicked-effect").advance(execution) {
+                WorthQueryDirectGraphStepOutcome::Failed(terminal) => terminal,
+                _ => panic!("panicked provider effect advanced the managed run"),
+            };
+        assert_eq!(applied_effects.load(Ordering::Relaxed), 1);
+        assert_eq!(terminal.provider_work().attempted_effect_count(), 1);
+        assert_eq!(terminal.provider_work().applied_effect_count(), 0);
+        assert_eq!(
+            terminal.provider_work().session_disposition(),
+            WorthQueryManagedProviderSessionDisposition::Uncertain
+        );
+        let failure = terminal.provider_work().last_step_failure().unwrap();
+        assert_eq!(
+            failure.invocation(),
+            WorthQueryGraphProviderStepInvocationDisposition::Panicked
+        );
+        terminal
+            .cleanup()
+            .expect("panicked effect should preserve cleanup");
     });
-    let terminal = match start_effect(running, &graph, "panicked-effect").advance() {
-        WorthQueryDirectGraphStepOutcome::Failed(terminal) => terminal,
-        _ => panic!("panicked provider effect advanced the managed run"),
-    };
-    assert_eq!(applied_effects.load(Ordering::Relaxed), 1);
-    assert_eq!(terminal.provider_work().attempted_effect_count(), 1);
-    assert_eq!(terminal.provider_work().applied_effect_count(), 0);
-    assert_eq!(
-        terminal.provider_work().session_disposition(),
-        WorthQueryManagedProviderSessionDisposition::Uncertain
-    );
-    let failure = terminal.provider_work().last_step_failure().unwrap();
-    assert_eq!(
-        failure.invocation(),
-        WorthQueryGraphProviderStepInvocationDisposition::Panicked
-    );
-    terminal
-        .cleanup()
-        .expect("panicked effect should preserve cleanup");
 }
 
 fn start_effect(
+    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+
     running: WorthQueryRunningDirectRun,
     graph: &WorthQueryInstalledGraphParticipationAuthority,
     scope: &str,
 ) -> crate::domain_computation::WorthQueryActiveDirectGraphExecution {
     running
         .begin_graph_execution(
+            execution,
             graph,
             WorthQueryManagedGraphCallRequest::new(
                 WorthQueryGraphProviderCallKind::TouchEffect,

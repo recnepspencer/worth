@@ -8,12 +8,14 @@ fn overlay(identity: &str) -> Overlay {
 
 #[test]
 fn foreign_overlay_evidence_is_noninterfering_before_exact_discard() {
-    let mut phase = AttemptPhase::registered();
-    phase.stage_overlay(overlay("overlay:owner")).unwrap();
+    crate::domain_computation::primary_graph::with_test_advancement(|_active_phase| {
+        let mut phase = AttemptPhase::registered();
+        phase.stage_overlay(overlay("overlay:owner")).unwrap();
 
-    assert!(!phase.discard_overlay("overlay:foreign"));
-    assert_eq!(phase.overlay().expect("staged").identity(), "overlay:owner");
+        assert!(!phase.discard_overlay("overlay:foreign"));
+        assert_eq!(phase.overlay().expect("staged").identity(), "overlay:owner");
 
-    assert!(phase.discard_overlay("overlay:owner"));
-    assert!(phase.accepts_overlay());
+        assert!(phase.discard_overlay("overlay:owner"));
+        assert!(phase.accepts_overlay());
+    });
 }

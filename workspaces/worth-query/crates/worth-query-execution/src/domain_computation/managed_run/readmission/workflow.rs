@@ -60,10 +60,23 @@ struct WorthQueryWorkflowBridgeReadmissionPending {
 }
 
 pub(in crate::domain_computation::managed_run) fn readmit_workflow(
+    active_request: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+
     yielded: WorthQueryYieldedWorkflowRun,
     query_runtime: &WorthQueryExecutionRuntime,
     bridge_runtime: &RuntimeBridge,
 ) -> WorthQueryWorkflowReadmissionOutcome {
+    let active_request = match yielded.request_for_phase(active_request) {
+        Ok(request) => request,
+        Err(_) => {
+            return denied(
+                WorthQueryWorkflowReadmissionDenialKind::ForeignAdvancementPhase,
+                "the phase belongs to another installed runtime",
+                yielded,
+                WorthQueryReadmissionProgress::default(),
+            )
+        }
+    };
     let owner = WorthQueryWorkflowReadmissionProgressionPermit::mint();
     let mut progress = WorthQueryReadmissionProgress::default();
     progress.checked_preflight();
@@ -77,7 +90,7 @@ pub(in crate::domain_computation::managed_run) fn readmit_workflow(
         Ok(pending) => pending,
         Err(outcome) => return outcome,
     };
-    restore_workflow(pending, bridge_runtime, &owner)
+    restore_workflow(active_request, pending, bridge_runtime, &owner)
 }
 
 fn begin_bridge_readmission(
@@ -98,6 +111,8 @@ fn begin_bridge_readmission(
 }
 
 fn restore_workflow(
+    active_request: worth_execution::ExecutionRequest<'_, '_>,
+
     pending: WorthQueryWorkflowBridgeReadmissionPending,
     bridge_runtime: &RuntimeBridge,
     owner: &WorthQueryWorkflowReadmissionProgressionPermit,
@@ -110,7 +125,7 @@ fn restore_workflow(
     } = pending;
     progress.attempted_provider_restore();
     association
-        .owner_restore_provider(contract, owner)
+        .owner_restore_provider(active_request, contract, owner)
         .owner_resolve(stage_identity, bridge_runtime, progress, owner)
 }
 

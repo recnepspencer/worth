@@ -176,146 +176,173 @@ impl WorthQueryGraphParticipationProvider<ManagedGraph> for MultipleAdmissionPro
 
 #[test]
 fn admission_from_a_prior_start_cannot_enter_a_fresh_provider_start() {
-    let retained = Arc::new(Mutex::new(None));
-    let (running, graph) = managed_graph_run_with_provider(
-        WorthQueryOperationGraphAccess::Observe,
-        ForeignAdmissionProvider {
-            retained: Arc::clone(&retained),
-        },
-    );
-    let first_failure = match running.begin_graph_execution(
-        &graph,
-        WorthQueryManagedGraphCallRequest::new(
-            WorthQueryGraphProviderCallKind::Observe,
-            "retain-first-admission",
-        ),
-    ) {
-        Ok(_) => panic!("the hostile provider admitted after retaining the first admission"),
-        Err(failure) => failure,
-    };
-    assert_eq!(
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
+
+        let retained = Arc::new(Mutex::new(None));
+        let (running, graph) = managed_graph_run_with_provider(
+            WorthQueryOperationGraphAccess::Observe,
+            ForeignAdmissionProvider {
+                retained: Arc::clone(&retained),
+            },
+        );
+        let first_failure = match running.begin_graph_execution(
+            execution,
+            &graph,
+            WorthQueryManagedGraphCallRequest::new(
+                WorthQueryGraphProviderCallKind::Observe,
+                "retain-first-admission",
+            ),
+        ) {
+            Ok(_) => panic!("the hostile provider admitted after retaining the first admission"),
+            Err(failure) => failure,
+        };
+        assert_eq!(
         first_failure.kind(),
         crate::domain_computation::WorthQueryDirectGraphExecutionStartFailureKind::ProviderStart
     );
 
-    let foreign_failure = match first_failure.into_running().begin_graph_execution(
-        &graph,
-        WorthQueryManagedGraphCallRequest::new(
-            WorthQueryGraphProviderCallKind::Observe,
-            "return-foreign-admission",
-        ),
-    ) {
-        Ok(_) => panic!("an admission from another start arena entered the fresh start"),
-        Err(failure) => failure,
-    };
-    assert_eq!(
+        let foreign_failure = match first_failure.into_running().begin_graph_execution(
+            execution,
+            &graph,
+            WorthQueryManagedGraphCallRequest::new(
+                WorthQueryGraphProviderCallKind::Observe,
+                "return-foreign-admission",
+            ),
+        ) {
+            Ok(_) => panic!("an admission from another start arena entered the fresh start"),
+            Err(failure) => failure,
+        };
+        assert_eq!(
         foreign_failure.kind(),
         crate::domain_computation::WorthQueryDirectGraphExecutionStartFailureKind::
             ProviderStartContractDenied
     );
+    });
 }
 
 #[test]
 fn ignored_second_execution_admission_denies_the_provider_start() {
-    let (running, graph) = managed_graph_run_with_provider(
-        WorthQueryOperationGraphAccess::Observe,
-        MultipleAdmissionProvider,
-    );
-    let failure = match running.begin_graph_execution(
-        &graph,
-        WorthQueryManagedGraphCallRequest::new(
-            WorthQueryGraphProviderCallKind::Observe,
-            "multiple-admissions",
-        ),
-    ) {
-        Ok(_) => panic!("ignoring a second-admission denial admitted the first execution"),
-        Err(failure) => failure,
-    };
-    assert_eq!(
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
+
+        let (running, graph) = managed_graph_run_with_provider(
+            WorthQueryOperationGraphAccess::Observe,
+            MultipleAdmissionProvider,
+        );
+        let failure = match running.begin_graph_execution(
+            execution,
+            &graph,
+            WorthQueryManagedGraphCallRequest::new(
+                WorthQueryGraphProviderCallKind::Observe,
+                "multiple-admissions",
+            ),
+        ) {
+            Ok(_) => panic!("ignoring a second-admission denial admitted the first execution"),
+            Err(failure) => failure,
+        };
+        assert_eq!(
         failure.kind(),
         crate::domain_computation::WorthQueryDirectGraphExecutionStartFailureKind::
             ProviderStartContractDenied
     );
-    assert!(
-        failure.provider_execution_release().is_some(),
-        "the denied execution must be explicitly released"
-    );
+        assert!(
+            failure.provider_execution_release().is_some(),
+            "the denied execution must be explicitly released"
+        );
+    });
 }
 
 #[test]
 fn rejection_after_admission_releases_the_runtime_owned_execution_explicitly() {
-    let disposal_attempts = Arc::new(AtomicUsize::new(0));
-    let destructor_attempts = Arc::new(AtomicUsize::new(0));
-    let failure = post_admission_failure(
-        PostAdmissionBehavior::Reject,
-        false,
-        Arc::clone(&disposal_attempts),
-        Arc::clone(&destructor_attempts),
-    );
-    assert_eq!(
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
+
+        let disposal_attempts = Arc::new(AtomicUsize::new(0));
+        let destructor_attempts = Arc::new(AtomicUsize::new(0));
+        let failure = post_admission_failure(
+            execution,
+            PostAdmissionBehavior::Reject,
+            false,
+            Arc::clone(&disposal_attempts),
+            Arc::clone(&destructor_attempts),
+        );
+        assert_eq!(
         failure.kind(),
         crate::domain_computation::WorthQueryDirectGraphExecutionStartFailureKind::ProviderStart
     );
-    let release = failure
-        .provider_execution_release()
-        .expect("post-admission rejection must carry physical-release evidence");
-    assert_eq!(
-        release.disposal(),
-        WorthQueryProviderExecutionDisposalDisposition::Completed
-    );
-    assert_eq!(
-        release.destructor(),
-        WorthQueryProviderExecutionDestructorDisposition::Completed
-    );
-    assert_eq!(disposal_attempts.load(Ordering::Acquire), 1);
-    assert_eq!(destructor_attempts.load(Ordering::Acquire), 1);
-    failure
-        .into_running()
-        .terminate_for_convergence(WorthQueryManagedRunTerminalKind::Failed)
-        .cleanup()
-        .expect("contained start rejection preserves cleanup authority");
+        let release = failure
+            .provider_execution_release()
+            .expect("post-admission rejection must carry physical-release evidence");
+        assert_eq!(
+            release.disposal(),
+            WorthQueryProviderExecutionDisposalDisposition::Completed
+        );
+        assert_eq!(
+            release.destructor(),
+            WorthQueryProviderExecutionDestructorDisposition::Completed
+        );
+        assert_eq!(disposal_attempts.load(Ordering::Acquire), 1);
+        assert_eq!(destructor_attempts.load(Ordering::Acquire), 1);
+        failure
+            .into_running()
+            .terminate_for_convergence(WorthQueryManagedRunTerminalKind::Failed)
+            .cleanup()
+            .expect("contained start rejection preserves cleanup authority");
+    });
 }
 
 #[test]
 fn panic_after_admission_contains_an_independent_destructor_panic() {
-    let disposal_attempts = Arc::new(AtomicUsize::new(0));
-    let destructor_attempts = Arc::new(AtomicUsize::new(0));
-    let failure = post_admission_failure(
-        PostAdmissionBehavior::Panic,
-        true,
-        Arc::clone(&disposal_attempts),
-        Arc::clone(&destructor_attempts),
-    );
-    assert_eq!(
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
+
+        let disposal_attempts = Arc::new(AtomicUsize::new(0));
+        let destructor_attempts = Arc::new(AtomicUsize::new(0));
+        let failure = post_admission_failure(
+            execution,
+            PostAdmissionBehavior::Panic,
+            true,
+            Arc::clone(&disposal_attempts),
+            Arc::clone(&destructor_attempts),
+        );
+        assert_eq!(
         failure.kind(),
         crate::domain_computation::WorthQueryDirectGraphExecutionStartFailureKind::
             ProviderStartReleaseRecoveryRequired
     );
-    let release = failure
-        .provider_execution_release()
-        .expect("post-admission panic must carry physical-release evidence");
-    assert_eq!(
-        release.disposal(),
-        WorthQueryProviderExecutionDisposalDisposition::Completed
-    );
-    assert_eq!(
-        release.destructor(),
-        WorthQueryProviderExecutionDestructorDisposition::Panicked
-    );
-    assert_eq!(disposal_attempts.load(Ordering::Acquire), 1);
-    assert_eq!(destructor_attempts.load(Ordering::Acquire), 1);
-    let cleanup = failure
-        .into_running()
-        .terminate_for_convergence(WorthQueryManagedRunTerminalKind::Failed)
-        .cleanup()
-        .expect("contained start panic preserves lower cleanup authority");
-    assert_eq!(
-        cleanup.inspection().disposition(),
-        WorthQueryManagedRunCleanupDisposition::RecoveryRequired
-    );
+        let release = failure
+            .provider_execution_release()
+            .expect("post-admission panic must carry physical-release evidence");
+        assert_eq!(
+            release.disposal(),
+            WorthQueryProviderExecutionDisposalDisposition::Completed
+        );
+        assert_eq!(
+            release.destructor(),
+            WorthQueryProviderExecutionDestructorDisposition::Panicked
+        );
+        assert_eq!(disposal_attempts.load(Ordering::Acquire), 1);
+        assert_eq!(destructor_attempts.load(Ordering::Acquire), 1);
+        let cleanup = failure
+            .into_running()
+            .terminate_for_convergence(WorthQueryManagedRunTerminalKind::Failed)
+            .cleanup()
+            .expect("contained start panic preserves lower cleanup authority");
+        assert_eq!(
+            cleanup.inspection().disposition(),
+            WorthQueryManagedRunCleanupDisposition::RecoveryRequired
+        );
+    });
 }
 
 fn post_admission_failure(
+    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+
     behavior: PostAdmissionBehavior,
     destructor_panics: bool,
     disposal_attempts: Arc<AtomicUsize>,
@@ -331,6 +358,7 @@ fn post_admission_failure(
         },
     );
     match running.begin_graph_execution(
+        execution,
         &graph,
         WorthQueryManagedGraphCallRequest::new(
             WorthQueryGraphProviderCallKind::Observe,

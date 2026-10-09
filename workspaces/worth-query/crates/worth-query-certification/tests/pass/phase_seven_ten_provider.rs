@@ -161,6 +161,7 @@ impl provider::WorthQueryProvisionalGraphProvider for ConsumerCombinedProvider {
 
     fn discard_provisional_overlay(
         &self,
+        _execution: worth_query_host::facade::installed::provider_session::ExecutionRequest<'_, '_>,
         _evidence: provider::WorthQueryProvisionalOverlayEvidenceView<'_>,
     ) -> Result<(), provider::WorthQueryProvisionalFailure> {
         Ok(())

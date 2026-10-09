@@ -131,6 +131,13 @@ pub(super) fn seed_relational_source(
     fixture: &mut crate::branch::reference_test_fixture::RealReferenceFixture,
     initial: ProductBranchObservation,
 ) {
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::from_policy(&owner.state.execution.request_policy()),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let cancellation = RuntimeWorldCancellationSource::new();
     let prepared = RuntimeWorldPreparationService::prepare_publication(
         owner,
@@ -145,6 +152,7 @@ pub(super) fn seed_relational_source(
     .expect("the source seed reserves its bounded publication resources");
     let settlement = match RuntimeWorldOwnerExecutionService::execute_without_signal(
         owner,
+        execution,
         prepared,
         &cancellation.token(),
     ) {

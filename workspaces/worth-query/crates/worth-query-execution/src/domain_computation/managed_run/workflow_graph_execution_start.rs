@@ -24,6 +24,8 @@ struct WorthQueryReadyWorkflowGraphStart {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryWorkflowGraphExecutionStartFailureKind {
+    /// The phase belongs to another installed runtime.
+    ForeignAdvancementPhase,
     StageResourcesUnavailable,
     ProviderBinding,
     MissingInstalledProvider,
@@ -88,14 +90,25 @@ impl std::fmt::Debug for WorthQueryWorkflowGraphExecutionStartFailure {
 }
 
 pub(super) fn begin(
+    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     running: WorthQueryRunningWorkflowRun,
     stage_identity: &str,
     graph_authority: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
     request: WorthQueryManagedGraphCallRequest,
 ) -> Result<WorthQueryActiveWorkflowGraphExecution, WorthQueryWorkflowGraphExecutionStartFailure> {
+    if execution
+        .request_for_managed(running.relational_basis())
+        .is_err()
+    {
+        return Err(start_failure(
+            WorthQueryWorkflowGraphExecutionStartFailureKind::ForeignAdvancementPhase,
+            "phase belongs to another advancement runtime",
+            running,
+        ));
+    }
     WorthQueryBoundWorkflowGraphStart::bind(running, stage_identity, graph_authority, request)?
         .validate_contract(stage_identity)?
-        .start_provider()
+        .start_provider(execution)
 }
 
 impl WorthQueryBoundWorkflowGraphStart {
@@ -193,10 +206,14 @@ impl WorthQueryBoundWorkflowGraphStart {
 impl WorthQueryReadyWorkflowGraphStart {
     fn start_provider(
         mut self,
+        execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     ) -> Result<WorthQueryActiveWorkflowGraphExecution, WorthQueryWorkflowGraphExecutionStartFailure>
     {
         self.bound.running.begin_provider_step_call();
         let started = match super::provider_start::start_managed_provider(
+            execution
+                .request_for_managed(self.bound.running.relational_basis())
+                .expect("start admitted this runtime phase"),
             &self.bound.anchor,
             &self.bound.call,
             self.contract.installed().retained_bytes_ceiling(),

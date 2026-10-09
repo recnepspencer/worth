@@ -11,6 +11,7 @@ use worth_query_declaration::facade::{
     },
 };
 use worth_query_execution::facade::{
+    application_contribution::WorthQueryAdvancementDenial,
     application_installation::WorthQueryProgramApplicationRuntime,
     primary_graph::{
         WorthQueryAdmittedApplicationOperation, WorthQueryApplicationCommitOutcome,
@@ -31,6 +32,8 @@ use worth_query_execution::publication_boundary::{
 /// was already recorded with a different intent.
 #[derive(Debug)]
 pub enum WorthQueryApplicationCapabilityDelegationDenial<PreparationDenial> {
+    /// The request was refused before its first principal or projection read.
+    ExecutionRequest(WorthQueryAdvancementDenial),
     Program(worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitDenial),
     ProgramMismatch,
     PrincipalBindingInstallation(
@@ -137,114 +140,127 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
             + Sync
             + 'static,
     {
-        use WorthQueryApplicationCapabilityDelegationDenial as Denial;
+        self.application
+            .with_application_advancement(self.scope, |phase| {
+                use WorthQueryApplicationCapabilityDelegationDenial as Denial;
 
-        if !std::ptr::eq(program.runtime(), self.application) {
-            return Err(Denial::ProgramMismatch);
-        }
-        let program_action = program
-            .admit_program_operation::<Operation>()
-            .map_err(Denial::Program)?;
-        let installed = self.application.installed_schema();
-        let command_capability = installed
-            .capability(command_capability, operation)
-            .map_err(Denial::CapabilityInstallation)?;
-        let target_capability = installed
-            .capability(target_capability, target_operation)
-            .map_err(Denial::CapabilityInstallation)?;
-        let principal_binding = installed
-            .principal_binding(principal_binding)
-            .map_err(Denial::PrincipalBindingInstallation)?;
-        let selected = self
-            .application
-            .on_branch(self.branch)
-            .select()
-            .map_err(Denial::ProductSelection)?;
-        let principal = selected
-            .resolve_authenticated_principal(
-                &principal_binding,
-                self.principal,
-                self.scope,
-                WorthQueryPrincipalResolutionMode::Ordinary,
-            )
-            .map_err(Denial::PrincipalResolution)?;
-        let input = ApplicationEncodedInput::<Operation::InputBinding>::encode(input)
-            .map_err(Denial::IdentityEncoding)?;
-        let workflow = WorthQueryCapabilityWorkflowIdempotency::bind::<
-            Schema,
-            Operation,
-            Key,
-            PrincipalIdentity,
-            PrincipalIdentityBinding,
-        >(key, &input, principal.principal_identity())
-        .map_err(Denial::IdentityEncoding)?;
-        let idempotency = workflow.binding();
-        let publication = program_publication_access();
-        let replay_input = input.clone();
-        let mut access = selected
-            .admit_encoded_capability_access(
-                &publication,
-                &principal,
-                &command_capability,
-                input,
-                self.scope,
-            )
-            .map_err(Denial::Authorization)?;
-        access.record_request_identity_work(&publication, workflow.key_work());
-        let operation = installed
-            .installed_operation(operation)
-            .map_err(Denial::OperationInstallation)?;
-        let admission = match self.application.authorize_capability_delegation(
-            access,
-            &target_capability,
-            &operation,
-            preconditions.clone(),
-        ) {
-            Ok(admission) => admission,
-            Err(denial) => {
-                if let Ok(mut replay_access) = selected.admit_encoded_capability_access(
-                    &publication,
-                    &principal,
-                    &command_capability,
-                    replay_input,
-                    self.scope,
-                ) {
-                    replay_access.record_request_identity_work(&publication, workflow.key_work());
-
-                    match self
-                        .application
-                        .replay_capability_delegation_after_fresh_denial(
-                            replay_access,
-                            &target_capability,
-                            &operation,
-                            preconditions,
-                            idempotency,
-                        ) {
-                        Ok(Some(outcome)) => return Ok(outcome),
-                        Ok(None) => {}
-                        Err(lookup_denial) => return Err(Denial::Idempotency(lookup_denial)),
-                    }
+                if !std::ptr::eq(program.runtime(), self.application) {
+                    return Err(Denial::ProgramMismatch);
                 }
-                return Err(Denial::Authorization(denial));
-            }
-        };
-        match self
-            .application
-            .resolve_admitted_application_idempotency(&admission, idempotency)
-            .map_err(Denial::Idempotency)?
-            .into_resolution()
-        {
-            WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => {
-                return Ok(WorthQueryApplicationCommitOutcome::AlreadyCommitted(
-                    receipt,
-                ));
-            }
-            WorthQueryApplicationIdempotencyResolution::IntentDrift => {
-                return Err(Denial::IdempotencyIntentDrift);
-            }
-            WorthQueryApplicationIdempotencyResolution::Unseen => {}
-        }
-        let prepared = prepare(admission).map_err(Denial::Preparation)?;
-        Ok(program_action.compare_and_commit_capability_delegation(prepared, idempotency))
+                let program_action = program
+                    .admit_program_operation::<Operation>()
+                    .map_err(Denial::Program)?;
+                let installed = self.application.installed_schema();
+                let command_capability = installed
+                    .capability(command_capability, operation)
+                    .map_err(Denial::CapabilityInstallation)?;
+                let target_capability = installed
+                    .capability(target_capability, target_operation)
+                    .map_err(Denial::CapabilityInstallation)?;
+                let principal_binding = installed
+                    .principal_binding(principal_binding)
+                    .map_err(Denial::PrincipalBindingInstallation)?;
+                let selected = self
+                    .application
+                    .on_branch(self.branch)
+                    .select()
+                    .map_err(Denial::ProductSelection)?;
+                let principal = selected
+                    .resolve_authenticated_principal(
+                        &principal_binding,
+                        self.principal,
+                        self.scope,
+                        WorthQueryPrincipalResolutionMode::Ordinary,
+                    )
+                    .map_err(Denial::PrincipalResolution)?;
+                let input = ApplicationEncodedInput::<Operation::InputBinding>::encode(input)
+                    .map_err(Denial::IdentityEncoding)?;
+                let workflow = WorthQueryCapabilityWorkflowIdempotency::bind::<
+                    Schema,
+                    Operation,
+                    Key,
+                    PrincipalIdentity,
+                    PrincipalIdentityBinding,
+                >(key, &input, principal.principal_identity())
+                .map_err(Denial::IdentityEncoding)?;
+                let idempotency = workflow.binding();
+                let publication = program_publication_access();
+                let replay_input = input.clone();
+                let mut access = selected
+                    .admit_encoded_capability_access(
+                        &publication,
+                        &principal,
+                        &command_capability,
+                        input,
+                        self.scope,
+                    )
+                    .map_err(Denial::Authorization)?;
+                access.record_request_identity_work(&publication, workflow.key_work());
+                let operation = installed
+                    .installed_operation(operation)
+                    .map_err(Denial::OperationInstallation)?;
+                let admission = match self.application.authorize_capability_delegation(
+                    access,
+                    &target_capability,
+                    &operation,
+                    preconditions.clone(),
+                ) {
+                    Ok(admission) => admission,
+                    Err(denial) => {
+                        if let Ok(mut replay_access) = selected.admit_encoded_capability_access(
+                            &publication,
+                            &principal,
+                            &command_capability,
+                            replay_input,
+                            self.scope,
+                        ) {
+                            replay_access
+                                .record_request_identity_work(&publication, workflow.key_work());
+
+                            match self
+                                .application
+                                .replay_capability_delegation_after_fresh_denial(
+                                    replay_access,
+                                    &target_capability,
+                                    &operation,
+                                    preconditions,
+                                    idempotency,
+                                ) {
+                                Ok(Some(outcome)) => return Ok(outcome),
+                                Ok(None) => {}
+                                Err(lookup_denial) => {
+                                    return Err(Denial::Idempotency(lookup_denial))
+                                }
+                            }
+                        }
+                        return Err(Denial::Authorization(denial));
+                    }
+                };
+                match self
+                    .application
+                    .resolve_admitted_application_idempotency(&admission, idempotency)
+                    .map_err(Denial::Idempotency)?
+                    .into_resolution()
+                {
+                    WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => {
+                        return Ok(WorthQueryApplicationCommitOutcome::AlreadyCommitted(
+                            receipt,
+                        ));
+                    }
+                    WorthQueryApplicationIdempotencyResolution::IntentDrift => {
+                        return Err(Denial::IdempotencyIntentDrift);
+                    }
+                    WorthQueryApplicationIdempotencyResolution::Unseen => {}
+                }
+                let prepared = prepare(admission).map_err(Denial::Preparation)?;
+                Ok(
+                    program_action.compare_and_commit_capability_delegation_in_advancement(
+                        &phase,
+                        prepared,
+                        idempotency,
+                    ),
+                )
+            })
+            .map_err(WorthQueryApplicationCapabilityDelegationDenial::ExecutionRequest)?
     }
 }

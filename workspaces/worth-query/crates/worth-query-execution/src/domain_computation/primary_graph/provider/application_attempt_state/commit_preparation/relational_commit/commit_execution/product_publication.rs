@@ -23,6 +23,7 @@ pub(super) enum WorthQueryApplicationProductPublicationOutcome {
 }
 
 pub(super) fn publish(
+    execution: worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,
     attempt: &mut WorthQueryPrimaryGraphApplicationAttempt,
     candidate: worth_relational::facade::mvcc::PreparedRelationalCommitCandidate,
@@ -72,7 +73,7 @@ pub(super) fn publish(
                 recovery.clone(),
             )
             .map_err(|()| capacity_exhausted())?;
-        return match prepared.execute() {
+        return match prepared.execute(execution) {
             RuntimeWorldPublicationOutcome::Performed(publication) => {
                 reservation.release();
                 Ok(WorthQueryApplicationProductPublicationOutcome::Performed(
@@ -146,7 +147,7 @@ pub(super) fn publish(
                 recovery.clone(),
             )
             .map_err(|()| capacity_exhausted())?;
-        match prepared.execute(bridge_prepared, &bridge) {
+        match prepared.execute(execution, bridge_prepared, &bridge) {
             RuntimeWorldConditionalDefinitionPublicationOutcome::Performed {
                 publication,
                 lowering,

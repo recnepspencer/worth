@@ -243,6 +243,16 @@ fn successful_execution_automatically_records_flow_and_history_diagnostics() {
 
 #[test]
 fn execution_failures_and_rollbacks_automatically_record_diagnostics() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -250,7 +260,7 @@ fn execution_failures_and_rollbacks_automatically_record_diagnostics() {
     let mut runtime_ctx = ();
 
     let err = runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.mark_dirty(node, ASPECT_A)?;
             tx.evaluate_with_plan(
                 node,
@@ -281,6 +291,16 @@ fn execution_failures_and_rollbacks_automatically_record_diagnostics() {
 
 #[test]
 fn repeated_rollbacks_keep_latest_rollback_current_and_bounded() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -291,7 +311,7 @@ fn repeated_rollbacks_keep_latest_rollback_current_and_bounded() {
     let mut runtime_ctx = ();
 
     for _ in 0..100 {
-        let err = runtime.transaction(&mut runtime_ctx, |tx| {
+        let err = runtime.transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.mark_dirty(node, ASPECT_A)?;
             Err(SignalError::invalid_input("force rollback"))
         });
@@ -318,6 +338,16 @@ fn repeated_rollbacks_keep_latest_rollback_current_and_bounded() {
 
 #[test]
 fn commit_promotion_failures_record_failure_and_rollback_diagnostics() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .with_events::<DiagnosticsEvent>()
@@ -331,7 +361,7 @@ fn commit_promotion_failures_record_failure_and_rollback_diagnostics() {
 
     let mut runtime_ctx = ();
     let err = runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.mark_dirty(node, ASPECT_A)?;
             tx.emit_event(DiagnosticsEvent::Tick);
             tx.flush_events(CheckpointBarrier::PerOperation)?;
@@ -357,41 +387,5 @@ fn commit_promotion_failures_record_failure_and_rollback_diagnostics() {
         .contains("event bus flush failed"));
 }
 
-#[test]
-fn event_bus_begin_failures_record_failure_and_rollback_diagnostics() {
-    let mut runtime = SignalRuntime::builder(SignalGraph::new())
-        .with_kernel_defaults()
-        .with_events::<DiagnosticsEvent>()
-        .with_domains::<DiagnosticsDomain>()
-        .build();
-    let node = runtime.graph_mut().node().build();
-    runtime
-        .event_bus_mut()
-        .subscribe(Box::new(NeedsMissingProviderSubscriber))
-        .unwrap();
-
-    let mut runtime_ctx = ();
-    let err = runtime
-        .transaction(&mut runtime_ctx, |tx| {
-            tx.mark_dirty(node, ASPECT_A)?;
-            Ok(())
-        })
-        .unwrap_err();
-    assert!(format!("{err}").contains("event bus begin failed"));
-
-    let failure = runtime
-        .observe()
-        .latest_failure_diagnostics()
-        .expect("begin failure diagnostics should be retained");
-    assert_eq!(failure.phase, ExecutionFailurePhase::CommitPromotion);
-    let rollback = runtime
-        .observe()
-        .latest_rollback_diagnostics()
-        .expect("begin rollback diagnostics should be retained");
-    assert!(rollback.rolled_back);
-    assert!(rollback
-        .reason
-        .as_deref()
-        .unwrap_or_default()
-        .contains("event bus begin failed"));
-}
+#[path = "recorder_state_lifecycle/event_bus_begin_failures_record_failure_and_rollback_diagnostics.rs"]
+mod event_bus_begin_failures_record_failure_and_rollback_diagnostics;

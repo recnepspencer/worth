@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use std::sync::Arc;
 
 use worth_query_installation::facade::{
@@ -222,6 +223,8 @@ where
 
     fn observe_clock(
         &mut self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         bridge: &BridgeSealedRuntimeAssembly,
         runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
             Schema,
@@ -250,7 +253,7 @@ where
                 entities: self.commit_watch.entities(),
                 every_commit: self.commit_watch.includes_whole_graph() || self.bootstrap_commit_catch_up_pending,
             };
-            let stop = match authoritative_clock_progression::reconsider_authoritative_clock_work(
+            let stop = match authoritative_clock_progression::reconsider_authoritative_clock_work(phase,
                 authoritative_clock_progression::AuthoritativeClockWork {
                     runtime,
                     bridge,
@@ -296,7 +299,7 @@ where
             .managed_clock
             .as_ref()
             .expect("selected conditional operation retains a managed clock");
-        super::super::authoritative_reconsideration::reconsider_retained_wakes_for_deliveries(
+        super::super::authoritative_reconsideration::reconsider_retained_wakes_for_deliveries(phase,
             bridge,
             self.pending_invalidations.direct(),
             &mut self.retained_wakes,
@@ -320,7 +323,7 @@ where
         // any other outcome leaves it owed to the next one.
         let retain_and_reenter = |accepted| {
             let mut released = self.pending_invalidations.release();
-            let receipt = due_wake_retention::retain_due(
+            let receipt = due_wake_retention::retain_due(phase,
                 accepted,
                 bridge,
                 truth,
@@ -338,7 +341,7 @@ where
                 .node()
                 .operation()
                 .application_operation();
-            let counts = super::super::application_operation_reentry::reenter_retained_wakes(
+            let counts = super::super::application_operation_reentry::reenter_retained_wakes(phase,
                 runtime,
                 truth.product(),
                 bridge,

@@ -34,6 +34,7 @@ where
 {
     pub fn publish_application_runtime(
         self,
+        phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
         runtime: WorthQueryExecutionRuntime,
         authority: WorthQueryExecutionInstallationAuthority,
         installed_schema: WorthQueryInstalledApplicationSchema<Schema>,
@@ -44,6 +45,7 @@ where
     > {
         installation::require_no_conditional_bindings(&runtime, &installed_schema)?;
         installation::publish_application_runtime_with_clock(
+            phase,
             installation::ApplicationRuntimePublication {
                 bootstrap: self,
                 runtime,
@@ -62,6 +64,7 @@ where
     /// here before the application runtime can become visible.
     pub fn conditional_application_runtime_installation(
         self,
+        phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
         runtime: WorthQueryExecutionRuntime,
         authority: WorthQueryExecutionInstallationAuthority,
         installed_schema: WorthQueryInstalledApplicationSchema<Schema>,
@@ -71,6 +74,7 @@ where
         WorthQueryConditionalRuntimeInstallationDenial,
     > {
         WorthQueryConditionalApplicationRuntimeInstallation::new(
+            phase,
             installation::ApplicationRuntimePublication {
                 bootstrap: self,
                 runtime,
@@ -87,6 +91,7 @@ where
     /// mechanism fixed for the lifetime of the resulting runtime.
     pub fn conditional_application_runtime_installation_with_authorization_time_source(
         self,
+        phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
         runtime: WorthQueryExecutionRuntime,
         authority: WorthQueryExecutionInstallationAuthority,
         installed_schema: WorthQueryInstalledApplicationSchema<Schema>,
@@ -97,6 +102,7 @@ where
         WorthQueryConditionalRuntimeInstallationDenial,
     > {
         WorthQueryConditionalApplicationRuntimeInstallation::new(
+            phase,
             installation::ApplicationRuntimePublication {
                 bootstrap: self,
                 runtime,
@@ -116,6 +122,7 @@ where
     /// no Query authority and is never exposed to operation callers.
     pub fn publish_application_runtime_with_authorization_time_source(
         self,
+        phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
         runtime: WorthQueryExecutionRuntime,
         authority: WorthQueryExecutionInstallationAuthority,
         installed_schema: WorthQueryInstalledApplicationSchema<Schema>,
@@ -126,6 +133,7 @@ where
         WorthQueryPrimaryGraphInstallationDenial,
     > {
         self.publish_application_runtime_with_ports(
+            phase,
             runtime,
             authority,
             installed_schema,
@@ -137,6 +145,7 @@ where
 
     pub(in crate::domain_computation::primary_graph) fn publish_application_runtime_with_ports(
         self,
+        phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
         runtime: WorthQueryExecutionRuntime,
         authority: WorthQueryExecutionInstallationAuthority,
         installed_schema: WorthQueryInstalledApplicationSchema<Schema>,
@@ -148,6 +157,7 @@ where
         WorthQueryPrimaryGraphInstallationDenial,
     > {
         installation::publish_application_runtime_with_clock(
+            phase,
             installation::ApplicationRuntimePublication {
                 bootstrap: self,
                 runtime,

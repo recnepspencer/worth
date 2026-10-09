@@ -25,14 +25,25 @@ fn retained_world_unpublished_completion_settles_and_publishes_without_recreatin
     assert_eq!(owner_commits(&world), before_relational + 1);
     assert_eq!(product_commit(&world), before_product);
     assert_eq!(completion_records(&world), 0);
+    world
+        .application
+        .with_host_advancement(|active_phase| {
+            let phase = &active_phase;
 
-    assert_eq!(
-        world
-            .application
-            .progress_retained_inbound_occurrence(*record.correlation().bytes(), &request,)
-            .unwrap(),
-        Posture::Performed,
-    );
+            assert_eq!(
+                world
+                    .application
+                    .progress_retained_inbound_occurrence(
+                        phase,
+                        *record.correlation().bytes(),
+                        &request,
+                    )
+                    .unwrap(),
+                Posture::Performed,
+            );
+        })
+        .expect("fixture owner admits its advancement");
+
     assert_eq!(owner_commits(&world), before_relational + 1);
     assert_ne!(product_commit(&world), before_product);
     assert_eq!(completion_records(&world), 1);
@@ -75,18 +86,36 @@ fn revoked_source_preserves_accepted_world_recovery_without_new_consumption() {
     assert_eq!(retained.posture(), Posture::AcceptedPending);
     assert_eq!(retained.pending_reason(), Some(Reason::SourceRevoked));
     assert!(retained.requires_maintenance_cue());
-    assert!(matches!(
-        world
-            .application
-            .progress_retained_inbound_occurrence(*record.correlation().bytes(), &request),
-        Err(Denial::SourceRevoked),
-    ));
-    assert!(matches!(
-        world
-            .application
-            .progress_retained_inbound_occurrence(*record.correlation().bytes(), &request),
-        Err(Denial::SourceRevoked),
-    ));
+    world
+        .application
+        .with_host_advancement(|active_phase| {
+            let phase = &active_phase;
+            assert!(matches!(
+                world.application.progress_retained_inbound_occurrence(
+                    phase,
+                    *record.correlation().bytes(),
+                    &request
+                ),
+                Err(Denial::SourceRevoked),
+            ));
+        })
+        .expect("fixture owner admits its advancement");
+
+    world
+        .application
+        .with_host_advancement(|active_phase| {
+            let phase = &active_phase;
+            assert!(matches!(
+                world.application.progress_retained_inbound_occurrence(
+                    phase,
+                    *record.correlation().bytes(),
+                    &request
+                ),
+                Err(Denial::SourceRevoked),
+            ));
+        })
+        .expect("fixture owner admits its advancement");
+
     assert_eq!(owner_commits(&world), relational);
     assert_eq!(product_commit(&world), product);
     assert_eq!(completion_records(&world), 0);

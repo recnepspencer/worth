@@ -120,7 +120,14 @@ impl WorthQueryActiveWorkflowGraphExecution {
         self.abandoned_terminal(WorthQueryManagedRunTerminalKind::Failed)
     }
 
-    pub fn advance(mut self) -> WorthQueryWorkflowGraphStepOutcome {
+    pub fn advance(
+        mut self,
+        execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    ) -> WorthQueryWorkflowGraphStepOutcome {
+        let request = match execution.request_for_managed(self.running.relational_basis()) {
+            Ok(request) => request,
+            Err(_) => return WorthQueryWorkflowGraphStepOutcome::ForeignAdvancementPhase(self),
+        };
         let before = match self.observe_safe_point() {
             Ok(observation) => observation,
             Err(_) => return self.abandoned_terminal(WorthQueryManagedRunTerminalKind::Failed),
@@ -138,7 +145,7 @@ impl WorthQueryActiveWorkflowGraphExecution {
         };
 
         self.running.record_provider_step_attempt();
-        match self.execution.advance_provider(admitted) {
+        match self.execution.advance_provider(request, admitted) {
             WorthQueryManagedProviderStep::Failed(evidence) => {
                 self.admit_provider_step(evidence.into_report())
             }

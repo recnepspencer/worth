@@ -7,6 +7,16 @@ use std::sync::atomic::{AtomicU32, Ordering};
 
 #[test]
 fn memoization_is_scoped_by_family() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -22,7 +32,7 @@ fn memoization_is_scoped_by_family() {
     let compute_calls = AtomicU32::new(0);
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.evaluate_keyed(node_a, &computation_a, &|view| {
                 compute_calls.fetch_add(1, Ordering::Relaxed);
                 Ok(view.finish(
@@ -34,7 +44,7 @@ fn memoization_is_scoped_by_family() {
         .unwrap();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.evaluate_keyed(node_b, &computation_b, &|view| {
                 compute_calls.fetch_add(1, Ordering::Relaxed);
                 Ok(view.finish(
@@ -50,6 +60,16 @@ fn memoization_is_scoped_by_family() {
 
 #[test]
 fn memoization_write_is_discarded_on_rollback() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -60,7 +80,7 @@ fn memoization_write_is_discarded_on_rollback() {
     let mut runtime_ctx = ();
     let compute_calls = AtomicU32::new(0);
 
-    let err = runtime.transaction(&mut runtime_ctx, |tx| {
+    let err = runtime.transaction(request_execution, &mut runtime_ctx, |tx| {
         tx.evaluate_keyed(node, &computation, &|view| {
             compute_calls.fetch_add(1, Ordering::Relaxed);
             Ok(view.finish(
@@ -72,7 +92,7 @@ fn memoization_write_is_discarded_on_rollback() {
     assert!(err.is_err());
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.evaluate_keyed(node, &computation, &|view| {
                 compute_calls.fetch_add(1, Ordering::Relaxed);
                 Ok(view.finish(
@@ -92,6 +112,16 @@ fn memoization_write_is_discarded_on_rollback() {
 
 #[test]
 fn aborted_keyed_evaluation_does_not_leak_key_registry_growth() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -101,7 +131,7 @@ fn aborted_keyed_evaluation_does_not_leak_key_registry_growth() {
     let before = runtime.config().test_registry_counts();
     let mut runtime_ctx = ();
 
-    let err = runtime.transaction(&mut runtime_ctx, |tx| {
+    let err = runtime.transaction(request_execution, &mut runtime_ctx, |tx| {
         tx.evaluate_keyed(node, &computation, &|view| {
             Ok(view.finish(
                 NodeEvaluationResult::from_version(version_ab(1, 0)).with_output_identity("cached"),

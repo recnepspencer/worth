@@ -37,6 +37,16 @@ pub(in crate::branch::owner_services) fn seed_nonempty_persistent_branch_state(
     runtime: &mut SignalRuntime<(), (), (), (), ()>,
     resource_node: crate::data::handle::NodeId,
 ) {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     runtime.set_node_tier(resource_node, ());
     runtime.set_domain_checkpoint_barrier((), CheckpointBarrier::PerCommit);
     runtime
@@ -66,7 +76,7 @@ pub(in crate::branch::owner_services) fn seed_nonempty_persistent_branch_state(
     let keyed_node = keyed.node(runtime);
     let mut context = ();
     runtime
-        .transaction(&mut context, |transaction| {
+        .transaction(request_execution, &mut context, |transaction| {
             transaction.record_effect::<ForkCheckpointEffect>(&());
             keyed.evaluate_memoized(transaction, "persistent-memo")?;
             Ok(())

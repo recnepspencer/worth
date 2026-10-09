@@ -200,6 +200,31 @@ fn suspend_and_restore(
         .expect("the current branch is selectable")
         .suspend_current_generated_output::<Final>(scope, source)
         .unwrap_or_else(|_| panic!("the generated final output suspends"));
+    let completed = reconstruct_ring(application, suspended, ring);
+    application
+        .restore_generated_output(completed, scope)
+        .unwrap_or_else(|_| panic!("the reconstructed output is restored"));
+}
+
+fn generated<Denial: std::fmt::Debug>(
+    entity: Result<WorthQueryReconstructedOutputEntity<CheckpointSchema, Body>, Denial>,
+) -> WorthQueryGeneratedEntity<CheckpointSchema, Body> {
+    match entity.expect("the typed role resolves its retained identity") {
+        WorthQueryReconstructedOutputEntity::Generated(entity) => entity,
+        WorthQueryReconstructedOutputEntity::Retained(_) => {
+            panic!("a created ring vertex is in generated custody")
+        }
+    }
+}
+
+fn reconstruct_ring(
+    application: &support::Application,
+    suspended: worth_query_host::facade::primary_graph::WorthQuerySuspendedGeneratedOutput,
+    ring: &[Vertex],
+) -> worth_query_host::facade::primary_graph::WorthQueryCompletedGeneratedOutputReconstruction<
+    CheckpointSchema,
+    Final,
+> {
     let mut reconstruction = application
         .reconstruct_generated_output::<Final>(suspended)
         .unwrap_or_else(|_| panic!("the creating producer reconstructs its output"));
@@ -235,21 +260,10 @@ fn suspend_and_restore(
             )
             .expect("custody retains the exact relation endpoints");
     }
-    let completed = reconstruction
+    reconstruction
         .finish()
-        .unwrap_or_else(|_| panic!("every suspended record is reconstructed once"));
-    application
-        .restore_generated_output(completed, scope)
-        .unwrap_or_else(|_| panic!("the reconstructed output is restored"));
+        .unwrap_or_else(|_| panic!("every suspended record is reconstructed once"))
 }
 
-fn generated<Denial: std::fmt::Debug>(
-    entity: Result<WorthQueryReconstructedOutputEntity<CheckpointSchema, Body>, Denial>,
-) -> WorthQueryGeneratedEntity<CheckpointSchema, Body> {
-    match entity.expect("the typed role resolves its retained identity") {
-        WorthQueryReconstructedOutputEntity::Generated(entity) => entity,
-        WorthQueryReconstructedOutputEntity::Retained(_) => {
-            panic!("a created ring vertex is in generated custody")
-        }
-    }
-}
+#[cfg(feature = "test-query-execution-observer")]
+mod advancement_custody;

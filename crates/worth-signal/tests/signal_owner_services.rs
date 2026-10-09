@@ -29,3 +29,7 @@ mod compiler;
 
 #[path = "signal_owner_services/conditional_nested_reuse.rs"]
 mod conditional_nested_reuse;
+
+#[cfg(feature = "test-operation-control")]
+#[path = "signal_owner_services/execution_custody.rs"]
+mod execution_custody;

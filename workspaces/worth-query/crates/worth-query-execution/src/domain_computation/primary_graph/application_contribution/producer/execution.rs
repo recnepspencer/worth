@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use std::{any::Any, sync::Arc};
 
 use worth_query_admission::facade::authenticated_principal::{
@@ -67,6 +68,7 @@ pub(super) trait InstalledProducerExecutor<Schema>:
 {
     fn execute(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
@@ -163,6 +165,7 @@ where
 
     fn execute(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
@@ -194,6 +197,7 @@ where
             })?;
         let outcome = match input {
             ValidatedOutputDisclosure::Fresh(proof) => execute_fresh::<Schema, Binding>(
+                phase,
                 runtime,
                 principal,
                 request_scope,
@@ -231,6 +235,7 @@ where
                     edition,
                 )?;
                 execute_fresh::<Schema, Binding>(
+                    phase,
                     runtime,
                     principal,
                     request_scope,

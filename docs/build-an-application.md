@@ -672,7 +672,7 @@ let runtime = application_installation::in_memory_program(
     declaration,                                   // ApplicationSchemaDeclaration<S>
     (TemporalContributionConfiguration { clock_source },), // one entry per contribution
     example_limits(),                              // WorthQueryInMemoryApplicationLimits
-    |graph, installed| {                           // seed the primary graph
+    |_phase, graph, installed| {                           // seed the primary graph
         let principal_binding = installed
             .principal_binding(TemporalPrincipalBinding::reference())
             .expect("the temporal principal binding must install");
@@ -713,7 +713,7 @@ let runtime = in_memory_rostered_program(
     declaration,
     ((), (), ()),          // three contributions, none configured
     limits,
-    initialize,            // |graph, installed| { ... Ok(()) }
+    initialize,            // |_phase, graph, installed| { ... Ok(()) }
 )?;
 ```
 
@@ -797,6 +797,28 @@ graph.bind_principal(
     declaration::authentication::WorthQueryPrincipalMappingStatus::Enabled,
 )?;
 ```
+
+Each executing host call opens one advancement under its installed execution
+policy before its first read. Bootstrap installation lends that one request to
+preparation, recovery, seeding, and publication. Its memory and aggregate work
+limits apply in serial placement as well as leased placement. Internal phases
+borrow custody; staged products carry facts and never retain the request.
+
+Reentering an executing public door on the same thread as an active host
+callback is refused with `ExecutionRequest(NestedOpening)`. An unrelated
+execution lease remains the separate `Resource(NestedLeaseMisuse)` cause.
+Another thread's public call owns its own request. Borrow the callback's phase
+for internal execution rather than opening another budget. A request
+already canceled or past its deadline is refused at request admission as
+`ExecutionRequest(Interrupted(Cancelled))` or
+`ExecutionRequest(Interrupted(DeadlineExceeded))`, before principal resolution
+or a reader. Mutation opening refusals use the same cause projection as
+queries. An open live subscription is the exception: its `next` ends the
+subscription with the `Cancelled` or `DeadlineExceeded` outcome, and every
+later `next` reports `Closed`.
+An opening refusal is `ExecutionRequest`, not a handler failure: no handler ran.
+Zero memory reports `PolicyMemoryLimit` at serial placement and a policy
+`MemoryLimit { requested, admitted: 0 }` at leased placement.
 
 A **request scope** carries only a deadline and a cancellation token. It is
 not an entity and grants nothing:

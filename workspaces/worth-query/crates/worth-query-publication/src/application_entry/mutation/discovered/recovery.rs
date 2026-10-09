@@ -80,24 +80,36 @@ where
                 <RootSource<Schema, Root> as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
             >,
     {
-        if !std::ptr::eq(application.runtime(), self.application) {
-            return Err(WorthQueryRequiredOutputPreparationDenial::ForeignProgram);
-        }
-        let (discovery, retained, prepared) = application
-            .recover_discovered_program_source::<Root>(
-                &worth_query_execution::publication_boundary::program_publication_access(),
-                receipt,
-            )
-            .map_err(WorthQueryRequiredOutputPreparationDenial::DemandExecution)?;
-        super::resolve::start_discovered_roots::<Schema, Program, Root>(
-            application,
-            self,
-            receipt,
-            discovery,
-            WorthQueryApplicationReadObservation::new(retained),
-            &prepared,
-            controls,
-            super::resolve::DiscoveredRootStartKind::Recovery,
-        )
+        application
+            .runtime()
+            .with_application_advancement(self.scope, |phase| {
+                if !std::ptr::eq(application.runtime(), self.application) {
+                    return Err(WorthQueryRequiredOutputPreparationDenial::ForeignProgram);
+                }
+                let (discovery, retained, prepared) = application
+                    .recover_discovered_program_source::<Root>(
+                        &worth_query_execution::publication_boundary::program_publication_access(),
+                        receipt,
+                    )
+                    .map_err(WorthQueryRequiredOutputPreparationDenial::DemandExecution)?;
+                super::resolve::start_discovered_roots::<Schema, Program, Root>(
+                    application,
+                    &phase,
+                    self,
+                    receipt,
+                    discovery,
+                    WorthQueryApplicationReadObservation::new(retained),
+                    &prepared,
+                    controls,
+                    super::resolve::DiscoveredRootStartKind::Recovery,
+                )
+            })
+            .map_err(|cause| {
+                WorthQueryRequiredOutputPreparationDenial::Demand(
+                    crate::application_entry::WorthQueryApplicationOutputDemandDenial::advancement(
+                        cause,
+                    ),
+                )
+            })?
     }
 }

@@ -9,6 +9,16 @@ fn build_scoped_candidate_runtime() -> (
     NodeId,
     NodeId,
 ) {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let graph = SignalGraph::new();
     let mut runtime = SignalRuntime::builder(graph).with_kernel_defaults().build();
     let support = runtime
@@ -36,7 +46,7 @@ fn build_scoped_candidate_runtime() -> (
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(support, &|view| {
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(1, 0))))
             })?;
@@ -55,7 +65,7 @@ fn build_scoped_candidate_runtime() -> (
     let feature = runtime.create_branch("feature-candidate-scope").unwrap();
     runtime.switch_branch(feature.clone()).unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.mark_dirty(primary, ASPECT_A)?;
             tx.read(primary, &|view| {
                 let upstream = view.read_aspect_version(support, ASPECT_A)?;

@@ -92,6 +92,8 @@ where
     }
     pub fn execute_without_signal(
         &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+
         prepared: PreparedCompositePublicationWithoutSignal,
         cancellation: &RuntimeWorldCancellationToken,
     ) -> RuntimeWorldPublicationOutcome {
@@ -102,11 +104,13 @@ where
         if prepared.expected_head().owner_identity() != owner.owner_identity() {
             return foreign(prepared.expected_head().clone());
         }
-        let outcome = owner.execute_without_signal(prepared, cancellation);
+        let outcome = owner.execute_without_signal(execution, prepared, cancellation);
         owner.finish_publication(outcome, cancellation)
     }
     pub fn execute_with_signal<F>(
         &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+
         prepared: PreparedCompositePublicationWithSignal,
         context: &mut Ctx,
         cancellation: &RuntimeWorldCancellationToken,
@@ -122,12 +126,14 @@ where
         if prepared.expected_head().owner_identity() != owner.owner_identity() {
             return foreign(prepared.expected_head().clone());
         }
-        let outcome = owner.execute_with_signal(prepared, context, cancellation, apply);
+        let outcome = owner.execute_with_signal(execution, prepared, context, cancellation, apply);
         owner.finish_publication(outcome, cancellation)
     }
 
     pub(crate) fn execute_conditional_definition_with_signal<F, H>(
         &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+
         mut prepared: PreparedCompositePublicationWithSignal,
         publication: worth_signal::facade::branch::SignalConditionalDefinitionPublicationOperation,
         context: &mut Ctx,
@@ -157,6 +163,7 @@ where
             return (foreign(prepared.expected_head().clone()), custody);
         }
         let outcome = owner.execute_conditional_definition_with_signal(
+            execution,
             prepared,
             publication,
             context,
@@ -174,6 +181,8 @@ impl RuntimeWorldPublicationPort<(), (), (), (), ()> {
     /// product publication returns `Performed`.
     pub fn publish_bridge_conditional_definition(
         &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+
         prepared: PreparedCompositePublicationWithSignal,
         mut bridge_prepared: worth_runtime_bridge::facade::BridgePreparedConditionalInstallationExtension,
         bridge: &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
@@ -186,6 +195,7 @@ impl RuntimeWorldPublicationPort<(), (), (), (), ()> {
 
         let publication = bridge_prepared.take_runtime_world_publication_operation();
         let (outcome, custody) = self.execute_conditional_definition_with_signal(
+            execution,
             prepared,
             publication,
             &mut (),

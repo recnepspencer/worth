@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use std::sync::Arc;
 
 use super::*;
@@ -98,6 +99,8 @@ impl WorthQueryInstalledConditionalOperation<TestSchema> for InstalledClock {
 
     fn observe_clock(
         &mut self,
+        _phase: &WorthQueryAdvancementPhase<'_>,
+
         _bridge: &BridgeSealedRuntimeAssembly,
         _runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
                 TestSchema,

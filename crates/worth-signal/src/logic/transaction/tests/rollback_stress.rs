@@ -9,6 +9,16 @@ use crate::tests::support::{
 
 #[test]
 fn hostile_rollback_and_commit_cycles_do_not_leak_semantic_events() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = crate::data::graph::SignalGraph::new();
     let a = graph.node().build();
     let mut runtime = build_runtime(graph);
@@ -17,7 +27,7 @@ fn hostile_rollback_and_commit_cycles_do_not_leak_semantic_events() {
     let baseline_events = runtime.graph().replay_events().len();
     for cycle in 0..12 {
         let before_state = runtime.graph().get_state(a).unwrap();
-        let mut tx = runtime.begin(&mut ctx);
+        let mut tx = runtime.begin(request_execution, &mut ctx);
         tx.mark_dirty(a, ASPECT_B).unwrap();
         tx.emit_event(Ev::Tick);
         if cycle % 2 == 0 {
@@ -48,6 +58,16 @@ fn hostile_rollback_and_commit_cycles_do_not_leak_semantic_events() {
 
 #[test]
 fn hostile_commit_failure_does_not_leak_committed_semantic_outcome() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = crate::data::graph::SignalGraph::new();
     let a = graph.node().build();
     let mut runtime = build_runtime(graph);
@@ -58,7 +78,7 @@ fn hostile_commit_failure_does_not_leak_committed_semantic_outcome() {
 
     let replay_len_before = runtime.graph().replay_events().len();
     let mut ctx = ();
-    let mut tx = runtime.begin(&mut ctx);
+    let mut tx = runtime.begin(request_execution, &mut ctx);
     tx.mark_dirty(a, ASPECT_B).unwrap();
     tx.emit_event(Ev::Tick);
     tx.flush_events(CheckpointBarrier::PerOperation).unwrap();
@@ -86,6 +106,16 @@ fn hostile_commit_failure_does_not_leak_committed_semantic_outcome() {
 
 #[test]
 fn transaction_created_keyed_nodes_are_removed_on_rollback() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let graph = crate::data::graph::SignalGraph::new();
     let mut runtime = build_runtime(graph);
     let positions = define_keyed_computation(&mut runtime, "positions", Tier::A);
@@ -93,7 +123,7 @@ fn transaction_created_keyed_nodes_are_removed_on_rollback() {
     let active_before = runtime.graph().active_node_count();
     let mut ctx = ();
 
-    let mut tx = runtime.begin(&mut ctx);
+    let mut tx = runtime.begin(request_execution, &mut ctx);
     let created = positions.keyed("wing-root").node_in_transaction(&mut tx);
     assert!(tx.staged_graph().is_alive(created));
     assert_eq!(
@@ -115,6 +145,16 @@ fn transaction_created_keyed_nodes_are_removed_on_rollback() {
 
 #[test]
 fn repeated_created_node_rollbacks_do_not_accumulate_storage_debris() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let graph = crate::data::graph::SignalGraph::new();
     let mut runtime = build_runtime(graph);
     let positions = define_keyed_computation(&mut runtime, "positions", Tier::A);
@@ -127,7 +167,7 @@ fn repeated_created_node_rollbacks_do_not_accumulate_storage_debris() {
     ) = runtime.graph().storage_counts();
 
     for _ in 0..12 {
-        let mut tx = runtime.begin(&mut ctx);
+        let mut tx = runtime.begin(request_execution, &mut ctx);
         let created = positions.keyed("wing-root").node_in_transaction(&mut tx);
         tx.evaluate_with_plan(
             created,
@@ -156,6 +196,16 @@ fn repeated_created_node_rollbacks_do_not_accumulate_storage_debris() {
 
 #[test]
 fn committed_source_delta_stages_downstream_cause_and_rollback_restores_baseline() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = crate::data::graph::SignalGraph::new();
     let source = graph.node().build();
     let downstream = graph.node().build();
@@ -171,7 +221,7 @@ fn committed_source_delta_stages_downstream_cause_and_rollback_restores_baseline
     evaluate(runtime.graph_mut(), source, &mut seed).unwrap();
     evaluate(runtime.graph_mut(), downstream, &mut seed).unwrap();
 
-    let mut tx = runtime.begin(&mut ctx);
+    let mut tx = runtime.begin(request_execution, &mut ctx);
     tx.mark_dirty(source, ASPECT_A).unwrap();
     tx.evaluate_with_plan(
         source,
@@ -199,6 +249,16 @@ fn committed_source_delta_stages_downstream_cause_and_rollback_restores_baseline
 
 #[test]
 fn evaluate_dirty_rollback_restores_preexisting_dirty_nodes() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = crate::data::graph::SignalGraph::new();
     let source = graph.node().build();
     graph
@@ -209,7 +269,7 @@ fn evaluate_dirty_rollback_restores_preexisting_dirty_nodes() {
     let mut runtime = build_runtime(graph);
     let mut ctx = ();
 
-    let mut tx = runtime.begin(&mut ctx);
+    let mut tx = runtime.begin(request_execution, &mut ctx);
     tx.evaluate_dirty(&|view| {
         let current = view
             .graph()

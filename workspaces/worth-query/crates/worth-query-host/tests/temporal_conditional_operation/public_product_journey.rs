@@ -99,8 +99,12 @@ pub(super) fn selected_sibling_mutation_carries_one_world_occurrence() {
         change.product_commit(),
         sibling_after.product().selected_commit()
     );
-    let delivery = sibling_after
-        .deliver_relational_change_to_conditional(&world.clock, 0, change)
+    let delivery = world
+        .application
+        .with_application_advancement(&world::request_scope(), |phase| {
+            sibling_after.deliver_relational_change_to_conditional(&phase, &world.clock, 0, change)
+        })
+        .expect("the declared host request admits delivery")
         .expect("the performed sibling patch belongs to this selected product");
     let runtime::WorthQueryPerformedRelationalProductChangeDeliveryOutcome::Success(delivery) =
         delivery

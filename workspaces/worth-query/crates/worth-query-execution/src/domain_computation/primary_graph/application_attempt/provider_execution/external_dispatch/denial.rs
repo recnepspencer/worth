@@ -259,3 +259,30 @@ impl WorthQueryExternalDispatchPreparationDenial {
         redispatch_preparation(self)
     }
 }
+
+impl WorthQueryExternalRedispatchDenial {
+    pub(super) fn advancement(
+        cause: crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
+    ) -> Self {
+        let stage = Stage::ResourceAdmission;
+        use crate::domain_computation::primary_graph::{
+            WorthQueryAdvancementDenial as Advancement,
+            WorthQueryManagedComputationInterruption as Interruption,
+        };
+        match cause {
+            Advancement::Interrupted(Interruption::Cancelled) => return Self::AdmissionCancelled,
+            Advancement::Interrupted(Interruption::DeadlineExceeded) => {
+                return Self::AdmissionDeadlineExceeded;
+            }
+            Advancement::Resource(_)
+            | Advancement::NestedOpening
+            | Advancement::ForeignPhase
+            | Advancement::NestedStopped
+            | Advancement::Panicked => {}
+        }
+        match cause.provider_denial_cause() {
+            Ok(kind) => Self::CompletionExecutionDenied { stage, kind },
+            Err(kind) => Self::CompletionExecutionControlStopped { stage, kind },
+        }
+    }
+}

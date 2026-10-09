@@ -191,10 +191,21 @@ impl CargoRoutingWorld {
         changed_node: NodeId,
         changed_aspect: Aspect,
     ) -> Result<(SignalBranchAdvanceOutcome, CargoOutputs), SignalBranchAdvanceDenial> {
+        // This standalone caller declares the operational serial memory policy.
+        let serial_request = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(
+                worth_signal::facade::SignalRuntimePolicy::operational().serial_memory_bytes,
+            ),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
         let nodes = self.nodes;
         let evaluator = cargo_evaluator(nodes);
         let mut outputs = None;
         let outcome = self.services.mutation_port().advance_exact(
+            request_execution,
             expected,
             context,
             &SignalOwnerCancellationSource::new().token(),

@@ -53,6 +53,8 @@ where
     /// separate owner operation and never reaches this path.
     pub(super) fn execute_signal<F, H>(
         &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+
         attempt: &mut crate::publication::ReservedCompositePublicationAttempt,
         progress: &mut crate::publication::CompositeAttemptProgress,
         request: SignalExecutionRequest<'_, Ctx, F, H>,
@@ -86,6 +88,7 @@ where
                     .signal
                     .mutation_port()
                     .advance_exact_with_completion(
+                        execution,
                         attempt.plan().signal().expected(),
                         runtime_ctx,
                         signal_cancellation,
@@ -133,6 +136,7 @@ where
                     .state
                     .signal_definition_publication
                     .advance_exact_with_completion(
+                        execution,
                         publication,
                         attempt.plan().signal().expected(),
                         runtime_ctx,

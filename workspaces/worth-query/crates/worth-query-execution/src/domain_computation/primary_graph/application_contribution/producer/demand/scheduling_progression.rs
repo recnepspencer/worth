@@ -4,6 +4,7 @@ use super::super::{
 };
 use super::bridge_denial::bridge_denial;
 use super::progression::denial;
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use crate::domain_computation::primary_graph::{
     application_output_demand::WorthQueryOutputSchedulingResult,
     conditional_operation::WorthQuerySelectedSignalProjections,
@@ -26,6 +27,8 @@ where
         Query,
     >(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         selected: &WorthQuerySelectedApplicationProducer,
         branch: crate::basis::WorthQueryProductBranch,
         observed_source: &WorthQueryObservedSource<Query>,
@@ -75,6 +78,7 @@ where
             truth.signal_basis(),
             |bridge, route, signal_basis, query_identity, attempt| {
                 schedule_output_producer(
+                    phase,
                     bridge,
                     route,
                     &truth,
@@ -95,6 +99,8 @@ where
         Query,
     >(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         selected: &WorthQuerySelectedApplicationProducer,
         branch: crate::basis::WorthQueryProductBranch,
         observed_source: &WorthQueryObservedSource<Query>,
@@ -195,6 +201,7 @@ where
             selected_product.product().signal_basis(),
             |bridge, route, signal_basis, query_identity, attempt| {
                 schedule_output_producer_on_selected(
+                    phase,
                     bridge,
                     route,
                     &truth,

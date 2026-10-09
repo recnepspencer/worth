@@ -1,6 +1,7 @@
 //! Installed producer execution on the required wave's one selected Product.
 
 use super::*;
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use crate::domain_computation::primary_graph::{
     application_contribution::producer::demand::{
         MatchedRequiredPredecessors, ResolvedRequiredPredecessors,
@@ -21,6 +22,8 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     #[allow(clippy::too_many_arguments)]
     fn advance_ready_on_selected<'basis>(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
@@ -43,6 +46,8 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     #[allow(clippy::too_many_arguments)]
     fn execute_on_selected(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
@@ -114,6 +119,8 @@ where
     #[allow(clippy::too_many_arguments)]
     fn advance_ready_on_selected<'basis>(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
@@ -207,6 +214,7 @@ where
                 )?;
                 let progress = runtime
                     .continue_required_fresh::<Binding::OutputFamily>(
+                        phase,
                         fresh,
                         shared,
                         claim,
@@ -226,6 +234,8 @@ where
     #[allow(clippy::too_many_arguments)]
     fn execute_on_selected(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
@@ -317,6 +327,7 @@ where
         )
         .map_err(|stop| super::selected_public::preparation_stop::<Schema, Binding>(stop))?;
         let outcome = super::post_authorization::execute_authorized::<Schema, Binding>(
+            phase,
             runtime,
             shared.selected(),
             prepared.principal.principal(),

@@ -26,6 +26,9 @@ fn close_fences_new_work_but_releases_an_already_admitted_operation() {
         scope.spawn(move || {
             let result = mutation
                 .advance_exact(
+                    worth_execution::ExecutionRequest::serial(
+                        &crate::execution_custody::operational_serial_request(),
+                    ),
                     &basis,
                     &mut (),
                     &SignalOwnerCancellationSource::new().token(),
@@ -44,6 +47,9 @@ fn close_fences_new_work_but_releases_an_already_admitted_operation() {
         );
 
         let late = world.mutation.advance_exact(
+            worth_execution::ExecutionRequest::serial(
+                &crate::execution_custody::operational_serial_request(),
+            ),
             &world.root_basis,
             &mut (),
             &SignalOwnerCancellationSource::new().token(),
@@ -83,6 +89,9 @@ fn dropping_a_public_pause_is_a_release_guard() {
         scope.spawn(move || {
             let result = mutation
                 .advance_exact(
+                    worth_execution::ExecutionRequest::serial(
+                        &crate::execution_custody::operational_serial_request(),
+                    ),
                     &basis,
                     &mut (),
                     &SignalOwnerCancellationSource::new().token(),
@@ -121,6 +130,9 @@ fn close_batch_pause_is_releasable_and_cannot_admit_new_work() {
             SignalOwnerLifecycleObservation::Closing
         );
         let late = world.mutation.advance_exact(
+            worth_execution::ExecutionRequest::serial(
+                &crate::execution_custody::operational_serial_request(),
+            ),
             &world.root_basis,
             &mut (),
             &SignalOwnerCancellationSource::new().token(),

@@ -109,6 +109,17 @@ pub struct WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope> {
         Option<super::super::OutputCurrentnessFacts>,
 }
 
+impl<Schema, Operation, Input, Scope>
+    WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>
+{
+    /// Original host controls, carried as facts rather than execution custody.
+    pub fn request_scope(
+        &self,
+    ) -> &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope {
+        self.read_set.admission.publication_request()
+    }
+}
+
 #[cfg(all(test, not(feature = "certification-invalidation-equivalence")))]
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>

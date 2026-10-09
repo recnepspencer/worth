@@ -27,7 +27,13 @@ where
         mut self,
     ) -> Result<WorthQueryCurrentAuthorizationAssessment, WorthQueryApplicationRequestMutationDenial>
     {
-        super::authorization::assess(&mut self)?;
-        Ok(WorthQueryCurrentAuthorizationAssessment { private: () })
+        let application = self.application;
+        let scope = self.scope.clone();
+        application
+            .with_application_advancement(&scope, |_phase| {
+                super::authorization::assess(&mut self)?;
+                Ok(WorthQueryCurrentAuthorizationAssessment { private: () })
+            })
+            .map_err(WorthQueryApplicationRequestMutationDenial::ExecutionRequest)?
     }
 }

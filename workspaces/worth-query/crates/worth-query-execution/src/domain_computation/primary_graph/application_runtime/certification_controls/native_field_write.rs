@@ -48,6 +48,7 @@ where
         Field: DeclaredApplicationFieldValue<Value = Value>,
         Unit: ApplicationFieldUnit,
     {
+        self.with_application_advancement(request, |phase| {
         let value = Field::Binding::encode(&value).expect("the native field value encodes");
         let entity_id = EntityId::new(
             PartitionId(record.partition_id()),
@@ -92,7 +93,7 @@ where
             .publication_binding()
             .prepare_relational_candidate(candidate, request, false)
             .expect("the native World publication prepares")
-            .execute();
+            .execute(phase.execution_request_for(&self.product_runtime).expect("private progression uses its admitted runtime phase"));
         let RuntimeWorldPublicationOutcome::Performed(performed) = outcome else {
             panic!("the native World publication must perform: {outcome:?}");
         };
@@ -115,5 +116,6 @@ where
             )
             .expect("the native publication refreshes its exact indexes");
         });
+        }).expect("the declared native writer policy admits its host call");
     }
 }

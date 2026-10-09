@@ -2,6 +2,7 @@
 //! first replaced its Ready with a row admitted under the disclosed source.
 
 use super::*;
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 
 /// What one pass of a caller over its own row answered.
 pub(super) enum CallerPass {
@@ -33,6 +34,8 @@ where
         Family,
     >(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
@@ -53,7 +56,8 @@ where
         FamilySourceQuery<Schema, Family>: 'static,
     {
         for _ in 0..2 {
-            if let CallerPass::Answer(advance) = self.advance_caller_pass(
+            let result = self.advance_caller_pass(
+                phase,
                 demand,
                 principal,
                 request_scope,
@@ -61,7 +65,10 @@ where
                 &mut disclosure,
                 commit_authority.clone(),
                 request_admission,
-            )? {
+            );
+            #[cfg(feature = "test-query-execution-observer")]
+            super::super::super::super::request_execution::record_caller_pass(&result);
+            if let CallerPass::Answer(advance) = result? {
                 return Ok(advance);
             }
         }
@@ -71,6 +78,8 @@ where
 
     fn advance_caller_pass<Family>(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
@@ -136,6 +145,7 @@ where
             request_admission,
         )?;
         if let Some(advance) = required_wave::advance_required_before_caller(
+            phase,
             self,
             demand,
             principal,
@@ -164,6 +174,7 @@ where
             entry.edition,
         )?;
         self.advance_validated_output_demand(
+            phase,
             demand,
             principal,
             request_scope,

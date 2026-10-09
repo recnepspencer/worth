@@ -156,6 +156,7 @@ impl DirectAssociatedStartRejection {
 
 impl DirectIterationAssociation<WorthQueryActiveDirectGraphExecution> {
     pub(super) fn begin(
+        execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         epoch: DirectIteratingEpochAssociation,
         request: WorthQueryManagedGraphCallRequest,
     ) -> Result<Self, DirectAssociatedStartRejection> {
@@ -172,7 +173,7 @@ impl DirectIterationAssociation<WorthQueryActiveDirectGraphExecution> {
             graph,
             provider,
         } = epoch;
-        let managed = match managed_run.begin_graph_execution(&graph, request) {
+        let managed = match managed_run.begin_graph_execution(execution, &graph, request) {
             Ok(managed) => managed,
             Err(failure) => {
                 let detail = Arc::from(failure.detail());

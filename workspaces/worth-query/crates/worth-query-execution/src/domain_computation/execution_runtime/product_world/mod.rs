@@ -58,3 +58,11 @@ pub use source_installation::WorthQueryProductRelationalInstallation;
 pub use source_owner::{
     WorthQueryRelationalSourceInstallationDenial, WorthQueryRelationalSourceOwner,
 };
+
+#[cfg(feature = "test-query-execution-observer")]
+mod read_observation;
+#[cfg(feature = "test-query-execution-observer")]
+pub use read_observation::installed_source_reads_on_this_thread_for_test;
+
+#[cfg(feature = "test-query-execution-observer")]
+pub(crate) use read_observation::record_read as record_installed_source_read_for_test;

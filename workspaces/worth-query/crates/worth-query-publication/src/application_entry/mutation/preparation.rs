@@ -9,6 +9,7 @@ use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationIdentities, ApplicationMutationIntent,
     ApplicationMutationScopeBinding, ApplicationMutationScopeResolution,
 };
+use worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase as AdvancementPhase;
 use worth_query_execution::facade::primary_graph::{
     HandlerResult, MutationHandlerExecutionDenial, WorthQueryApplicationEffectProgram,
 };
@@ -59,6 +60,7 @@ where
 {
     pub(super) fn prepare_candidate<'request>(
         &'request mut self,
+        phase: &AdvancementPhase<'_>,
         prepare: impl FnOnce(
             &Self,
             &ApplicationMutationIdentities<'_, Schema, Intent::Binding>,
@@ -101,6 +103,7 @@ where
             .request
             .application
             .execute_mutation_handler::<Intent::Binding>(
+                phase,
                 &identities,
                 &principal_identity,
                 admission,

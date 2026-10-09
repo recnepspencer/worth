@@ -4,7 +4,7 @@ use worth_query_host::facade::{primary_graph, runtime};
 
 use super::super::adapters::{CompletingExternalTransport, ReplacementPredicate};
 use super::super::courtroom_lifecycle::assert_conditional_resources_empty;
-use super::super::world::CourtroomWorld;
+use super::super::world::{self, CourtroomWorld};
 
 pub(crate) fn application_commits_relational_and_signal_in_one_world_publication() {
     let mut world = CourtroomWorld::publish("blocked");
@@ -69,8 +69,12 @@ pub(crate) fn application_commits_relational_and_signal_in_one_world_publication
         .expect("fresh combined publication retains one Relational delivery");
     assert_eq!(performed.product_commit(), &composite_commit);
     let selected = world.application.on_branch(branch).select().unwrap();
-    let delivery = selected
-        .deliver_relational_change_to_conditional(&world.clock, 0, performed)
+    let delivery = world
+        .application
+        .with_application_advancement(&world::request_scope(), |phase| {
+            selected.deliver_relational_change_to_conditional(&phase, &world.clock, 0, performed)
+        })
+        .expect("the declared host request admits delivery")
         .expect("the performed patch and conditional handle belong to this product");
     let runtime::WorthQueryPerformedRelationalProductChangeDeliveryOutcome::Success(delivery) =
         delivery

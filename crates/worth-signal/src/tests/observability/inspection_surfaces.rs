@@ -41,6 +41,16 @@ fn dot_export_contains_state_color_and_edge_labels() {
 
 #[test]
 fn metrics_snapshots_reflect_runtime_activity() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let source = graph.node().build();
     let dependent = graph.node().build();
@@ -50,7 +60,7 @@ fn metrics_snapshots_reflect_runtime_activity() {
     let mut runtime = build_runtime(graph);
 
     let outcome = runtime
-        .transaction(&mut (), |transaction| {
+        .transaction(request_execution, &mut (), |transaction| {
             transaction.mark_dirty(source, ASPECT_A)?;
             transaction.emit_event(Ev::Tick);
             transaction.flush_events(CheckpointBarrier::PerOperation)?;

@@ -54,12 +54,13 @@ impl WorthQueryIteratingDirectConvergenceEpoch {
 
     pub fn begin_iteration(
         self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         request: WorthQueryManagedGraphCallRequest,
     ) -> Result<
         WorthQueryStartedDirectConvergenceIteration,
         WorthQueryDirectConvergenceIterationStartRejection,
     > {
-        DirectIterationAssociation::begin(self.association, request)
+        DirectIterationAssociation::begin(phase, self.association, request)
             .map(|association| WorthQueryStartedDirectConvergenceIteration { association })
             .map_err(start::admit_start_rejection)
     }
@@ -84,8 +85,11 @@ impl WorthQueryStartedDirectConvergenceIteration {
         self.association.request_cancellation(reason)
     }
 
-    pub fn advance(self) -> WorthQueryDirectConvergenceStepOutcome {
-        admit_associated_step(self.association.advance())
+    pub fn advance(
+        self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    ) -> WorthQueryDirectConvergenceStepOutcome {
+        admit_associated_step(self.association.advance(phase))
     }
 
     pub fn abandon(self) -> WorthQueryDirectConvergenceIterationOutcome {
@@ -94,6 +98,8 @@ impl WorthQueryStartedDirectConvergenceIteration {
 }
 
 pub enum WorthQueryDirectConvergenceStepOutcome {
+    /// Refused before observation; retains the active iteration.
+    ForeignAdvancementPhase(WorthQueryStartedDirectConvergenceIteration),
     Continue(WorthQueryPausedDirectConvergenceIteration),
     ChunkReady(WorthQueryPendingDirectConvergenceChunk),
     Completed(WorthQueryDirectConvergenceIterationOutcome),
@@ -105,8 +111,11 @@ pub struct WorthQueryPausedDirectConvergenceIteration {
 }
 
 impl WorthQueryPausedDirectConvergenceIteration {
-    pub fn advance(self) -> WorthQueryDirectConvergenceStepOutcome {
-        admit_associated_step(self.association.advance())
+    pub fn advance(
+        self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    ) -> WorthQueryDirectConvergenceStepOutcome {
+        admit_associated_step(self.association.advance(phase))
     }
 
     pub fn yield_iteration(self) -> WorthQueryDirectConvergenceYieldOutcome {
@@ -155,6 +164,11 @@ fn admit_associated_step(
     outcome: DirectAssociatedStepOutcome,
 ) -> WorthQueryDirectConvergenceStepOutcome {
     match outcome {
+        DirectAssociatedStepOutcome::ForeignAdvancementPhase(association) => {
+            WorthQueryDirectConvergenceStepOutcome::ForeignAdvancementPhase(
+                WorthQueryStartedDirectConvergenceIteration { association },
+            )
+        }
         DirectAssociatedStepOutcome::Continue(association) => {
             WorthQueryDirectConvergenceStepOutcome::Continue(
                 WorthQueryPausedDirectConvergenceIteration { association },

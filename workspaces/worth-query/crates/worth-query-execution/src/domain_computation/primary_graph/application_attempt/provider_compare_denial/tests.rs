@@ -18,98 +18,100 @@ fn denied(compare: Compare) -> Denial {
 
 #[test]
 fn commit_preparation_keeps_every_execution_kind_typed() {
-    let mut kinds = vec![
-        (
-            Session::ExecutionNestedPatternStopped {
-                partition_identity: Some(7),
+    crate::domain_computation::primary_graph::with_test_advancement(|_active_phase| {
+        let mut kinds = vec![
+            (
+                Session::ExecutionNestedPatternStopped {
+                    partition_identity: Some(7),
+                },
+                Application::ExecutionNestedPatternStopped {
+                    partition_identity: Some(7),
+                },
+            ),
+            (
+                Session::ExecutionWorkerPanicked {
+                    partition_identity: Some(7),
+                },
+                Application::ExecutionWorkerPanicked {
+                    partition_identity: Some(7),
+                },
+            ),
+            (
+                Session::ExecutionUncheckedCustomKernel {
+                    partition_identity: Some(7),
+                },
+                Application::ExecutionUncheckedCustomKernel {
+                    partition_identity: Some(7),
+                },
+            ),
+            (
+                Session::ExecutionIdentitiesNotCanonical {
+                    partition_identity: Some(7),
+                },
+                Application::ExecutionIdentitiesNotCanonical {
+                    partition_identity: Some(7),
+                },
+            ),
+        ];
+        for resource in [
+            Resource::WorkExhausted,
+            Resource::WorkCounterOverflow,
+            Resource::RetainedBytesExhausted,
+            Resource::ScratchCapacityExceeded,
+            Resource::ResultCapacityExceeded,
+            Resource::CapacityOverflow,
+            Resource::ChargedBytesOverflow,
+            Resource::WorkerLimit,
+            Resource::PolicyMemoryLimit,
+            Resource::WorkLimit,
+            Resource::NestedLeaseMisuse,
+            Resource::NoActiveExecutionScope,
+            Resource::EquivalenceContractUnavailable,
+            Resource::MemoryLimit {
+                requested: 31,
+                admitted: 17,
+                level: Level::Policy,
             },
-            Application::ExecutionNestedPatternStopped {
-                partition_identity: Some(7),
+            Resource::MemoryLimit {
+                requested: 31,
+                admitted: 17,
+                level: Level::Process,
             },
-        ),
-        (
-            Session::ExecutionWorkerPanicked {
-                partition_identity: Some(7),
+            Resource::MemoryLimit {
+                requested: 31,
+                admitted: 17,
+                level: Level::Declared,
             },
-            Application::ExecutionWorkerPanicked {
-                partition_identity: Some(7),
-            },
-        ),
-        (
-            Session::ExecutionUncheckedCustomKernel {
-                partition_identity: Some(7),
-            },
-            Application::ExecutionUncheckedCustomKernel {
-                partition_identity: Some(7),
-            },
-        ),
-        (
-            Session::ExecutionIdentitiesNotCanonical {
-                partition_identity: Some(7),
-            },
-            Application::ExecutionIdentitiesNotCanonical {
-                partition_identity: Some(7),
-            },
-        ),
-    ];
-    for resource in [
-        Resource::WorkExhausted,
-        Resource::WorkCounterOverflow,
-        Resource::RetainedBytesExhausted,
-        Resource::ScratchCapacityExceeded,
-        Resource::ResultCapacityExceeded,
-        Resource::CapacityOverflow,
-        Resource::ChargedBytesOverflow,
-        Resource::WorkerLimit,
-        Resource::PolicyMemoryLimit,
-        Resource::WorkLimit,
-        Resource::NestedLeaseMisuse,
-        Resource::NoActiveExecutionScope,
-        Resource::EquivalenceContractUnavailable,
-        Resource::MemoryLimit {
-            requested: 31,
-            admitted: 17,
-            level: Level::Policy,
-        },
-        Resource::MemoryLimit {
-            requested: 31,
-            admitted: 17,
-            level: Level::Process,
-        },
-        Resource::MemoryLimit {
-            requested: 31,
-            admitted: 17,
-            level: Level::Declared,
-        },
-    ] {
-        kinds.push((
-            Session::ExecutionResource {
-                denial: resource,
-                partition_identity: Some(7),
-                policy_ancestor: None,
-            },
-            Application::ExecutionResource {
-                denial: resource,
-                partition_identity: Some(7),
-                policy_ancestor: None,
-            },
-        ));
-    }
-    for (kind, expected) in kinds {
-        let failure = WorthQueryProviderSessionFailure::new(
-            kind,
-            WorthQueryProviderSessionProtocolStage::Commit,
-            "owner evidence",
-            Default::default(),
-        );
-        let application = denied(Compare::ProviderSession(failure));
-        assert_eq!(
-            application.kind(),
-            expected,
-            "execution category folded: {kind:?}"
-        );
-        assert_eq!(application.stage(), Stage::ProviderCommit);
-    }
+        ] {
+            kinds.push((
+                Session::ExecutionResource {
+                    denial: resource,
+                    partition_identity: Some(7),
+                    policy_ancestor: None,
+                },
+                Application::ExecutionResource {
+                    denial: resource,
+                    partition_identity: Some(7),
+                    policy_ancestor: None,
+                },
+            ));
+        }
+        for (kind, expected) in kinds {
+            let failure = WorthQueryProviderSessionFailure::new(
+                kind,
+                WorthQueryProviderSessionProtocolStage::Commit,
+                "owner evidence",
+                Default::default(),
+            );
+            let application = denied(Compare::ProviderSession(failure));
+            assert_eq!(
+                application.kind(),
+                expected,
+                "execution category folded: {kind:?}"
+            );
+            assert_eq!(application.stage(), Stage::ProviderCommit);
+        }
+    });
 }
 
 #[test]
@@ -194,44 +196,42 @@ fn preparation_control_refusal_and_ordinary_interruption_keep_different_head_pos
 
 #[test]
 fn real_pending_refusal_keeps_idempotency_category_stage_and_evidence() {
-    use crate::domain_computation::primary_graph::bootstrap_publication::{
-        commit_refusals::work_refusal, execution_refusals::isolated,
-    };
-    isolated(
-        concat!(
-            module_path!(),
-            "::real_pending_refusal_keeps_idempotency_category_stage_and_evidence"
-        ),
-        || {
-            let error = work_refusal();
-            let worth_relational::facade::transactions::TransactionCommitError::Execution {
-                denial,
-                ..
-            } = error
-            else {
-                panic!("probe must enter through a real execution refusal");
-            };
-            // A new public denial kind must force an explicit decision here.
-            #[allow(clippy::infallible_destructuring_match)]
-            let cause = match denial.kind {
-                worth_relational::facade::transactions::CommitExecutionDenialKind::Cause(cause) => {
-                    cause
+    crate::domain_computation::primary_graph::with_test_advancement(|_active_phase| {
+        use crate::domain_computation::primary_graph::bootstrap_publication::{
+            commit_refusals::work_refusal, execution_refusals::isolated,
+        };
+        isolated(
+            concat!(
+                module_path!(),
+                "::real_pending_refusal_keeps_idempotency_category_stage_and_evidence"
+            ),
+            || {
+                let error = work_refusal();
+                let worth_relational::facade::transactions::TransactionCommitError::Execution {
+                    denial,
+                    ..
+                } = error
+                else {
+                    panic!("probe must enter through a real execution refusal");
+                };
+                let worth_relational::facade::transactions::CommitExecutionDenialKind::Cause(cause) =
+                    denial.kind;
+                let kind = crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_kind(cause, denial.partition_identity).unwrap();
+                for stage in [Stage::Idempotency, Stage::InvariantExecution] {
+                    let application =
+                        provider_session_kind_denied(kind, stage, "the refusing owner");
+                    assert_eq!(application.kind(), Application::ProviderRejected);
+                    assert_eq!(application.stage(), stage);
+                    assert_eq!(
+                        application.execution_denial_cause(),
+                        Some(Ok(Session::ExecutionResource {
+                            denial: Resource::WorkExhausted,
+                            partition_identity: Some(1),
+                            policy_ancestor: None,
+                        }))
+                    );
                 }
-            };
-            let kind = crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_kind(cause, denial.partition_identity).unwrap();
-            for stage in [Stage::Idempotency, Stage::InvariantExecution] {
-                let application = provider_session_kind_denied(kind, stage, "the refusing owner");
-                assert_eq!(application.kind(), Application::ProviderRejected);
-                assert_eq!(application.stage(), stage);
-                assert_eq!(
-                    application.execution_denial_cause(),
-                    Some(Ok(Session::ExecutionResource {
-                        denial: Resource::WorkExhausted,
-                        partition_identity: Some(1),
-                        policy_ancestor: None,
-                    }))
-                );
-            }
-        },
-    );
+            },
+        );
+    });
 }

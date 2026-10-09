@@ -5,6 +5,7 @@ use super::*;
 use crate::domain_computation::primary_graph::application_output_demand::{
     HeldRequiredSuccessor, WorthQueryOutputDemandKey,
 };
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 
 /// The registry's copy of one frame successor and the custody it is funded by.
 struct HeldFrameSuccessor<Schema>
@@ -86,6 +87,8 @@ pub(in crate::domain_computation::primary_graph) enum HeldUpstream {
 /// resolves through it. One whose source moved before it published is
 /// dropped, and its occurrence goes back to the Ready it replaced.
 pub(in crate::domain_computation::primary_graph) fn resume_held_upstream<Schema>(
+    phase: &WorthQueryAdvancementPhase<'_>,
+
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request: &WorthQueryRequestScope,
@@ -98,7 +101,8 @@ where
     Schema: ApplicationSchema + 'static,
 {
     if let Some(index) = custody.position_of(key, admission)? {
-        let result = custody.entries[index].resume(runtime, principal, request, branch, admission);
+        let result =
+            custody.entries[index].resume(phase, runtime, principal, request, branch, admission);
         let finished = matches!(result, Ok(Some(_)));
         if finished || result.is_err() {
             let moved = (custody.entries.len() - index)
@@ -135,7 +139,7 @@ where
         .unwrap_or_else(|_| unreachable!("the registry holds only this runtime's successors"));
     let result = held
         .progress
-        .resume(runtime, principal, request, branch, admission);
+        .resume(phase, runtime, principal, request, branch, admission);
     let ready = match result {
         Ok(Some(ready)) => ready,
         Err(stop)
@@ -187,6 +191,8 @@ where
     /// row already Ready is not run again.
     fn resume(
         &mut self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
@@ -201,12 +207,12 @@ where
             return Ok(None);
         }
         self.successor
-            .resume(runtime, principal, request, branch, admission)?;
+            .resume(phase, runtime, principal, request, branch, admission)?;
         loop {
             if let Some(ready) = registry.interest_ready_readmission(self.interest(), admission)? {
                 return Ok(Some(ready));
             }
-            if !self.advance_checkpoint(runtime, request, admission)? {
+            if !self.advance_checkpoint(phase, runtime, request, admission)? {
                 return Ok(None);
             }
         }
@@ -225,6 +231,8 @@ where
     /// authority that issued it.
     pub(super) fn run_again(
         &mut self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
@@ -248,7 +256,7 @@ where
             .commit_authority()
             .clone();
         runtime.advance_retained_with_commit_authority(
-            demand, principal, request, branch, authority, admission,
+            phase, demand, principal, request, branch, authority, admission,
         )
     }
 }

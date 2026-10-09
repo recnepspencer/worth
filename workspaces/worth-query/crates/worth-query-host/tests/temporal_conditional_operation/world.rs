@@ -197,6 +197,10 @@ impl CourtroomWorld {
     where
         Provider: domain::WorthQueryHostConditionalPredicateProvider<TemporalReadyNode> + 'static,
     {
+        worth_query_host::facade::application_contribution::with_bootstrap_advancement(
+            resources::execution_policy(),
+            |phase| {
+
         let declaration = TemporalHostSchema::declaration().unwrap();
         let conditional_binding = contract::conditional_binding();
         let package = domain::WorthQueryPortableDomainPackage::new(
@@ -262,6 +266,7 @@ impl CourtroomWorld {
         let mut graph = match (maximum_active_snapshots, maximum_world_history) {
             (Some(maximum_active_snapshots), None) => {
                 worth_query_execution::facade::integration::prepare_primary_graph_with_active_snapshot_limit_for_test(
+                    &phase,
                     &authority,
                     &runtime,
                     &schema,
@@ -273,6 +278,7 @@ impl CourtroomWorld {
             (None, Some(maximum_world_history)) => {
                 authority
                     .prepare_primary_graph(
+                    &phase,
                         &runtime,
                         &schema,
                         resources::product_world_resources(maximum_world_history),
@@ -281,6 +287,7 @@ impl CourtroomWorld {
             }
             (None, None) => authority
                 .prepare_primary_graph(
+                    &phase,
                     &runtime,
                     &schema,
                     resources::product_world_resources(1_024),
@@ -319,6 +326,7 @@ impl CourtroomWorld {
         .unwrap();
         let mut conditional_installation = graph
             .conditional_application_runtime_installation(
+                &phase,
                 runtime,
                 authority,
                 schema,
@@ -328,7 +336,7 @@ impl CourtroomWorld {
         let clock = conditional_installation
             .bind_temporal_operation(conditional, execution, reconstruction)
             .unwrap();
-        let application = conditional_installation.publish().unwrap();
+        let application = conditional_installation.publish(&phase).unwrap();
         Self {
             application,
             clock,
@@ -341,6 +349,9 @@ impl CourtroomWorld {
             installation: installed_packages,
             amendment_ordinal: 0,
         }
+
+            },
+        ).expect("the declared courtroom policy admits installation")
     }
 }
 

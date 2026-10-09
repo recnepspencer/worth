@@ -4,6 +4,7 @@
 //! copy moves to the registry's retained readmission owner. This child is
 //! registered only with the selected execution continuation.
 
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
@@ -30,6 +31,8 @@ where
         Family,
     >(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         fresh: FreshOutputDisclosure<
             FamilySourceQuery<Schema, Family>,
             FamilySourceValue<Schema, Family>,
@@ -84,6 +87,7 @@ where
                     Some(()) => {
                         let mode = slot.claim().commit_authority().clone();
                         self.advance_validated_required_fresh_on_selected(
+                            phase,
                             &mut successor,
                             principal,
                             request_scope,

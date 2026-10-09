@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryRequestInterruption, WorthQueryRequestScope,
 };
@@ -16,6 +17,8 @@ where
 {
     pub(super) fn evaluate_current_output_readiness(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         producer_identity: &str,
         receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
         delivery: Option<&worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryReceipt>,
@@ -23,7 +26,13 @@ where
         crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputReadinessDeliveryEvidence,
         WorthQueryOutputDemandDenial,
     >{
-        self.evaluate_current_output_readiness_core(producer_identity, receipt, delivery, None)
+        self.evaluate_current_output_readiness_core(
+            phase,
+            producer_identity,
+            receipt,
+            delivery,
+            None,
+        )
     }
 
     /// The required Fresh continuation uses the actual newly published head.
@@ -31,6 +40,8 @@ where
     /// Bridge/Signal conditional keeps its installed serial admission class.
     pub(super) fn evaluate_current_output_readiness_admitted(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         producer_identity: &str,
         receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
         delivery: Option<&worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryReceipt>,
@@ -41,6 +52,7 @@ where
         WorthQueryOutputDemandDenial,
     >{
         self.evaluate_current_output_readiness_core(
+            phase,
             producer_identity,
             receipt,
             delivery,
@@ -50,6 +62,8 @@ where
 
     fn evaluate_current_output_readiness_core(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         producer_identity: &str,
         receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
         delivery: Option<&worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryReceipt>,
@@ -151,6 +165,9 @@ where
             })?;
         let bridge = self.bridge.conditional();
         let execution = super::super::evaluate_output_readiness(
+            phase
+                .request_for_owner(truth.owner_identity())
+                .expect("readiness uses its admitted runtime"),
             &bridge,
             &route.lowering,
             &truth,

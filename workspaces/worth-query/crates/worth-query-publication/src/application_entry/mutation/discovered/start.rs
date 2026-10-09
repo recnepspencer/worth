@@ -127,6 +127,37 @@ where
         WorthQueryStartedDiscoveredOutputs<'application, Schema, Intent, Program, Root>,
         WorthQueryDiscoveredOutputStartFailure<'application, Schema, Intent, Program, Root>,
     > {
+        let application = self.application.runtime();
+        let mut retained = Some(self);
+        match application.with_application_advancement(request.scope, |phase| {
+            retained
+                .take()
+                .expect("host call retains its performed facts")
+                .start_required_outputs_in_advancement(&phase, request, controls)
+        }) {
+            Ok(outcome) => outcome,
+            Err(cause) => Err(WorthQueryDiscoveredOutputStartFailure {
+                performed: retained.take().expect("refused request performs no work"),
+                denial: WorthQueryRequiredOutputPreparationDenial::Demand(
+                    crate::application_entry::WorthQueryApplicationOutputDemandDenial::advancement(
+                        cause,
+                    ),
+                ),
+            }),
+        }
+    }
+
+    fn start_required_outputs_in_advancement(
+        self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
+        request: &WorthQueryApplicationRequest<'application, '_, '_, Schema>,
+        controls: WorthQueryOutputDemandControls,
+    ) -> Result<
+        WorthQueryStartedDiscoveredOutputs<'application, Schema, Intent, Program, Root>,
+        WorthQueryDiscoveredOutputStartFailure<'application, Schema, Intent, Program, Root>,
+    > {
         if let Err(denial) = self
             .application
             .validate_program_discovered_root_artifact_source::<Root, Intent::Binding>(
@@ -146,6 +177,7 @@ where
             WorthQueryApplicationReadObservation::new(std::sync::Arc::clone(&self.retained_source));
         let required_output = match super::resolve::start_discovered_roots::<Schema, Program, Root>(
             self.application,
+            phase,
             request,
             &self.receipt,
             self.discovery.clone(),

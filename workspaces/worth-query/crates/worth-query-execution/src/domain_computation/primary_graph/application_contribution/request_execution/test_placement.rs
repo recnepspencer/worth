@@ -37,12 +37,10 @@ pub enum WorthQueryExecutionPlacementForTest {
 }
 
 thread_local! {
+    static REQUEST_BUDGET: Cell<Option<ExecutionBudget>> = const { Cell::new(None) };
     static PLACEMENT: Cell<WorthQueryExecutionPlacementForTest> =
         const { Cell::new(WorthQueryExecutionPlacementForTest::World) };
 }
-
-/// The memory each test policy admits.
-const POLICY_MEMORY: u64 = 1 << 36;
 
 /// Places the managed computations of the requests this thread opens from
 /// now on, and returns the placement it replaces.
@@ -74,6 +72,7 @@ pub(in crate::domain_computation::primary_graph) fn test_authority() -> &'static
 
 /// A canonical, automatic policy of `workers` and `memory`, with no work
 /// limit beyond each computation's own.
+#[cfg(test)]
 pub(in crate::domain_computation::primary_graph) fn test_policy(
     workers: NonZeroUsize,
     memory: u64,
@@ -81,7 +80,15 @@ pub(in crate::domain_computation::primary_graph) fn test_policy(
     ExecutionRequestPolicy::new(
         ExecutionPosture::Automatic,
         DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(workers, memory, u64::MAX),
+        REQUEST_BUDGET
+            .get()
+            .map_or(ExecutionBudget::new(workers, memory, u64::MAX), |budget| {
+                ExecutionBudget::new(
+                    workers,
+                    budget.charged_memory_bytes(),
+                    budget.work_ceiling(),
+                )
+            }),
     )
 }
 
@@ -89,16 +96,51 @@ pub(in crate::domain_computation::primary_graph) fn test_policy(
 pub(super) fn placed(
     world: RuntimeWorldExecutionPlacement<'_>,
 ) -> RuntimeWorldExecutionPlacement<'_> {
-    match PLACEMENT.get() {
+    let policy = match world {
+        RuntimeWorldExecutionPlacement::Serial(policy)
+        | RuntimeWorldExecutionPlacement::Leased { policy, .. } => policy,
+    };
+    let request_policy = |workers| {
+        let budget = REQUEST_BUDGET.get().unwrap_or(policy.budget());
+        ExecutionRequestPolicy::new(
+            ExecutionPosture::Automatic,
+            DeterminismContract::CanonicalBitwise,
+            ExecutionBudget::new(
+                workers,
+                budget.charged_memory_bytes(),
+                budget.work_ceiling(),
+            ),
+        )
+    };
+    // A whole host integration binary can certify its declared policy on a
+    // lease, including worker threads; explicit per-thread placement wins.
+    let placement = match PLACEMENT.get() {
+        WorthQueryExecutionPlacementForTest::World => {
+            std::env::var("WORTH_QUERY_TEST_REQUEST_WORKERS")
+                .ok()
+                .map(|value| {
+                    WorthQueryExecutionPlacementForTest::Leased(
+                        value
+                            .parse::<usize>()
+                            .ok()
+                            .and_then(NonZeroUsize::new)
+                            .expect("test request workers is a positive width"),
+                    )
+                })
+                .unwrap_or(WorthQueryExecutionPlacementForTest::World)
+        }
+        chosen => chosen,
+    };
+    match placement {
         WorthQueryExecutionPlacementForTest::World => world,
         WorthQueryExecutionPlacementForTest::Serial => {
-            RuntimeWorldExecutionPlacement::Serial(test_policy(NonZeroUsize::MIN, POLICY_MEMORY))
+            RuntimeWorldExecutionPlacement::Serial(request_policy(NonZeroUsize::MIN))
         }
         WorthQueryExecutionPlacementForTest::Leased(workers)
         | WorthQueryExecutionPlacementForTest::Certified { workers, .. } => {
             RuntimeWorldExecutionPlacement::Leased {
                 authority: test_authority(),
-                policy: test_policy(workers, POLICY_MEMORY),
+                policy: request_policy(workers),
             }
         }
     }
@@ -156,4 +198,12 @@ pub(super) fn certify<T, K, R, E, Kernel, Combine>(
         certified_report.charged_work(),
         "the run's charged work differs from the certified one under seed {seed}"
     );
+}
+
+/// Bounds the test thread's requests with a host's declared budget.
+/// Placement still decides the backing; a serial request has no policy work ceiling.
+pub fn bound_advancement_requests_on_this_thread_for_test(
+    budget: Option<ExecutionBudget>,
+) -> Option<ExecutionBudget> {
+    REQUEST_BUDGET.replace(budget)
 }

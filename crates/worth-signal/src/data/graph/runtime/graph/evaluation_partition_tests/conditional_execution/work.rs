@@ -6,6 +6,16 @@ use crate::facade::SignalRuntimePolicy;
 
 #[test]
 fn selected_attempt_work_is_not_replenished_before_application_or_finalization() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     // Observe one completed execution's work, then require that exact allowance
     // through the retained kernel. The short twin fails during final evidence
     // construction, after output application. Fork/mutation byte reservation
@@ -35,16 +45,23 @@ fn selected_attempt_work_is_not_replenished_before_application_or_finalization()
         // or larger allowance when its storage is activated.
         graph.set_runtime_policy(SignalRuntimePolicy::forensic());
         let mut computes = 0;
-        let completion = partition.execute_conditional(
-            &mut graph,
-            SignalConditionalExecutionRequest::new(&contract, "selected", "budget", 1),
-            &mut NoPredicate,
-            &mut DefaultComparatorPolicyResolver::default(),
-            || {
-                computes += 1;
-                Ok(output(9).with_label("attempt output"))
-            },
-        );
+        let completion =
+            crate::data::graph::storage::evaluation_partition::conditional_test_scope::run(
+                request_execution,
+                |work| {
+                    partition.execute_conditional(
+                        work,
+                        &mut graph,
+                        SignalConditionalExecutionRequest::new(&contract, "selected", "budget", 1),
+                        &mut NoPredicate,
+                        &mut DefaultComparatorPolicyResolver::default(),
+                        || {
+                            computes += 1;
+                            Ok(output(9).with_label("attempt output"))
+                        },
+                    )
+                },
+            );
         if maximum < draft {
             assert!(matches!(
                 completion,

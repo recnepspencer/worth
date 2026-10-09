@@ -62,6 +62,19 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         handle: &WorthQueryInboundVerifierHandle,
         envelope: &'a [u8],
     ) -> Result<WorthQueryAuthenticatedInboundOccurrence<'a, Schema>, Denial> {
+        self.with_host_advancement(|phase| {
+            self.authenticate_inbound_in_advancement(&phase, handle, envelope)
+        })
+        .map_err(Denial::advancement)?
+    }
+
+    /// The phase witnesses admission before verifier, provenance, or custody access.
+    pub(super) fn authenticate_inbound_in_advancement<'a>(
+        &'a self,
+        _phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        handle: &WorthQueryInboundVerifierHandle,
+        envelope: &'a [u8],
+    ) -> Result<WorthQueryAuthenticatedInboundOccurrence<'a, Schema>, Denial> {
         let installed = self
             .installed_inbound_verifier(handle)
             .ok_or(Denial::ForeignVerifier)?;
@@ -122,6 +135,17 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 impl<'a, Schema: ApplicationSchema> WorthQueryAuthenticatedInboundOccurrence<'a, Schema> {
     /// Resolve exact owner provenance. This does not yet reserve accepted custody.
     pub fn correlate(self) -> Result<WorthQueryCorrelatedInboundOccurrence<'a, Schema>, Denial> {
+        let runtime = self.runtime;
+        runtime
+            .with_host_advancement(|phase| self.correlate_in_advancement(&phase))
+            .map_err(Denial::advancement)?
+    }
+
+    /// The phase witnesses admission before verifier, provenance, or custody access.
+    pub(super) fn correlate_in_advancement(
+        self,
+        _phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    ) -> Result<WorthQueryCorrelatedInboundOccurrence<'a, Schema>, Denial> {
         self.runtime.correlate_authenticated_inbound(self)
     }
 }
@@ -129,6 +153,17 @@ impl<'a, Schema: ApplicationSchema> WorthQueryAuthenticatedInboundOccurrence<'a,
 impl<'a, Schema: ApplicationSchema> WorthQueryCorrelatedInboundOccurrence<'a, Schema> {
     /// Reserve finite owner custody or return the already retained terminal.
     pub fn accept(self) -> Result<WorthQueryAdmittedInboundOccurrence<'a, Schema>, Denial> {
+        let runtime = self.authenticated.runtime;
+        runtime
+            .with_host_advancement(|phase| self.accept_in_advancement(&phase))
+            .map_err(Denial::advancement)?
+    }
+
+    /// The phase witnesses admission before verifier, provenance, or custody access.
+    pub(super) fn accept_in_advancement(
+        self,
+        _phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    ) -> Result<WorthQueryAdmittedInboundOccurrence<'a, Schema>, Denial> {
         self.authenticated.runtime.accept_correlated_inbound(self)
     }
 }
@@ -139,18 +174,32 @@ impl<Schema: ApplicationSchema> WorthQueryAdmittedInboundOccurrence<'_, Schema> 
         mut self,
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryInboundReceipt, Denial> {
-        self.progress(request)
+        self.runtime
+            .with_host_advancement(|phase| {
+                let phase = &phase;
+                self.progress(phase, request)
+            })
+            .map_err(Denial::advancement)?
+    }
+
+    pub(super) fn execute_in_advancement(
+        mut self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        request: &WorthQueryRequestScope,
+    ) -> Result<WorthQueryInboundReceipt, Denial> {
+        self.progress(phase, request)
     }
 
     fn progress(
         &mut self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryInboundReceipt, Denial> {
         // Progression owns settlement of this claim. Disarm Drop before it can
         // become retryable and another caller can claim the same custody slot.
         let admission = self.admission.take().expect("sealed admitted phase");
         self.runtime
-            .execute_inbound_admission(admission, self.envelope, request)
+            .execute_inbound_admission(phase, admission, self.envelope, request)
     }
 
     #[cfg(test)]
@@ -158,7 +207,12 @@ impl<Schema: ApplicationSchema> WorthQueryAdmittedInboundOccurrence<'_, Schema> 
         &mut self,
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryInboundReceipt, Denial> {
-        self.progress(request)
+        self.runtime
+            .with_host_advancement(|phase| {
+                let phase = &phase;
+                self.progress(phase, request)
+            })
+            .map_err(Denial::advancement)?
     }
 
     #[cfg(test)]

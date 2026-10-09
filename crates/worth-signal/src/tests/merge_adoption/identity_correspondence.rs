@@ -7,6 +7,16 @@ use crate::tests::support::version_ab;
 
 #[test]
 fn runtime_merge_identity_matcher_changes_source_only_correspondence_behavior() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let graph = SignalGraph::new().with_schema_registry(cross_identity_merge_schema_registry(None));
     let mut runtime = SignalRuntime::builder(graph).with_kernel_defaults().build();
     let mut runtime_ctx = ();
@@ -24,7 +34,7 @@ fn runtime_merge_identity_matcher_changes_source_only_correspondence_behavior() 
         .output_identity()
         .build();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(feature_only, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(10, 0))
@@ -44,7 +54,7 @@ fn runtime_merge_identity_matcher_changes_source_only_correspondence_behavior() 
         .output_identity()
         .build();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(target_only, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(11, 0))
@@ -99,7 +109,7 @@ fn runtime_merge_identity_matcher_changes_source_only_correspondence_behavior() 
         .output_identity()
         .build();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(feature_only, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(10, 0))
@@ -119,7 +129,7 @@ fn runtime_merge_identity_matcher_changes_source_only_correspondence_behavior() 
         .output_identity()
         .build();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(target_only, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(11, 0))
@@ -180,6 +190,16 @@ fn runtime_merge_identity_matcher_changes_source_only_correspondence_behavior() 
 
 #[test]
 fn runtime_merge_output_identity_matcher_fails_closed_without_explicit_admissibility() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -192,7 +212,7 @@ fn runtime_merge_output_identity_matcher_fails_closed_without_explicit_admissibi
     runtime.switch_branch(feature.clone()).unwrap();
     let feature_only = runtime.graph_mut().node().output_identity().build();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(feature_only, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(20, 0))
@@ -206,7 +226,7 @@ fn runtime_merge_output_identity_matcher_fails_closed_without_explicit_admissibi
     runtime.switch_branch(main.clone()).unwrap();
     let target_only = runtime.graph_mut().node().output_identity().build();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(target_only, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(21, 0))

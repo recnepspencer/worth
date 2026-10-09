@@ -53,6 +53,16 @@ fn operational_profile_repeated_waves_stay_bounded_and_shallow() {
 
 #[test]
 fn repeated_failure_capture_stays_current_and_bounded() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -64,7 +74,7 @@ fn repeated_failure_capture_stays_current_and_bounded() {
 
     for cycle in 0..100 {
         let err = runtime
-            .transaction(&mut runtime_ctx, |tx| {
+            .transaction(request_execution, &mut runtime_ctx, |tx| {
                 tx.mark_dirty(node, ASPECT_A)?;
                 tx.evaluate_with_plan(
                     node,
@@ -97,6 +107,16 @@ fn repeated_failure_capture_stays_current_and_bounded() {
 
 #[test]
 fn repeated_memoized_execution_retains_bounded_diagnostics() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -114,7 +134,7 @@ fn repeated_memoized_execution_retains_bounded_diagnostics() {
     for cycle in 0..50 {
         let compute_value = cycle as u64 + 1;
         runtime
-            .transaction(&mut runtime_ctx, |tx| {
+            .transaction(request_execution, &mut runtime_ctx, |tx| {
                 tx.evaluate_keyed(node, &computation, &|view| {
                     Ok(view.finish(
                         NodeEvaluationResult::from_version(version_ab(compute_value, 0))

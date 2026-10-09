@@ -97,11 +97,19 @@ fn execute_while_signal_is_parked(
     relational: PreparedCompositePublicationWithoutSignal,
     signal: PreparedCompositePublicationWithSignal,
 ) -> (OwnerExecutionSettlement, OwnerExecutionSettlement) {
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::from_policy(&owner.state.execution.request_policy()),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     std::thread::scope(|scope| {
         let (reached, reached_rx) = sync_channel(1);
         let (resume, resume_rx) = sync_channel(1);
         let signal_worker = scope.spawn(move || {
             owner.execute_with_signal(
+                execution,
                 signal,
                 &mut (),
                 &RuntimeWorldCancellationSource::new().token(),
@@ -123,7 +131,7 @@ fn execute_while_signal_is_parked(
         let (completed, completed_rx) = sync_channel(1);
         let relational_worker = scope.spawn(move || {
             completed
-                .send(execute_without_signal(owner, relational))
+                .send(execute_without_signal(execution, owner, relational))
                 .unwrap();
         });
         let relational_result = completed_rx.recv_timeout(REHEARSAL_HANDSHAKE_BUDGET);

@@ -1,3 +1,4 @@
+use worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase as AdvancementPhase;
 mod advance;
 mod selected_program;
 mod types;
@@ -67,12 +68,19 @@ where
         WorthQueryApplicationOutputDemandHandle<'application, Schema, Demand>,
         WorthQueryApplicationOutputDemandDenial,
     > {
-        let source_result = self.query_source()?;
-        self.start_ordinary(source_result.into_output_demand_source())
+        let application = self.application;
+        let scope = self.scope;
+        application
+            .with_application_advancement(scope, |phase| {
+                let source_result = self.query_source(&phase)?;
+                self.start_ordinary(source_result.into_output_demand_source())
+            })
+            .map_err(WorthQueryApplicationOutputDemandDenial::advancement)?
     }
 
     pub(in crate::application_entry) fn start_for_program<Program, Root>(
         self,
+        phase: &AdvancementPhase<'_>,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
     ) -> Result<
         (
@@ -98,7 +106,7 @@ where
             .as_ref()
             .cloned()
             .ok_or(WorthQueryApplicationOutputDemandDenial::FreshRequestMismatch)?;
-        let source_result = self.query_source()?;
+        let source_result = self.query_source(phase)?;
         let limits = self.resolved_limits();
         let admitted = application
             .admit_program_root_output::<Root>(
@@ -120,6 +128,7 @@ where
 
     pub(in crate::application_entry) fn start_recovery<Program, Root>(
         self,
+        phase: &AdvancementPhase<'_>,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
         source_receipt: &worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
     ) -> Result<
@@ -159,11 +168,11 @@ where
                     ),
                 )
                 .query(self.demand.source_intent())
-                .execute()
+                .execute_in_advancement(phase)
                 .map_err(WorthQueryApplicationOutputDemandDenial::Source)?
         };
         let source_result = source_result.into_output_demand_source();
-        let current = self.query_source()?.into_output_demand_source();
+        let current = self.query_source(phase)?.into_output_demand_source();
         application
             .validate_recovered_program_root_currentness::<Root>(
                 &worth_query_execution::publication_boundary::program_publication_access(),
@@ -202,6 +211,7 @@ where
 
     pub(in crate::application_entry) fn start_dependent<Program, ParentDemand, Connection>(
         self,
+        phase: &AdvancementPhase<'_>,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
         parent: &worth_query_execution::facade::application_installation::WorthQuerySettledProgramOutput<
             Schema,
@@ -229,7 +239,7 @@ where
             .as_ref()
             .cloned()
             .ok_or(WorthQueryApplicationOutputDemandDenial::FreshRequestMismatch)?;
-        let source_result = self.query_source()?;
+        let source_result = self.query_source(phase)?;
         let limits = self.resolved_limits();
         let admitted = application
             .admit_program_dependent_output::<ParentDemand, Connection>(
@@ -251,6 +261,7 @@ where
 
     fn query_source(
         &self,
+        phase: &AdvancementPhase<'_>,
     ) -> Result<
         crate::domain_computation::WorthQueryPublishedApplicationResult<
             SourceQuery<Schema, Demand>,
@@ -272,47 +283,13 @@ where
                     ),
                 )
                 .query(self.demand.source_intent())
-                .execute()
+                .execute_in_advancement(phase)
         } else {
-            request.query(self.demand.source_intent()).execute()
+            request
+                .query(self.demand.source_intent())
+                .execute_in_advancement(phase)
         }
         .map_err(WorthQueryApplicationOutputDemandDenial::Source)
-    }
-
-    pub(in crate::application_entry) fn start_performed<Program, Root>(
-        self,
-        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
-        prepared: &worth_query_execution::facade::primary_graph::WorthQueryPreparedRequiredOutputSource,
-        source_result: WorthQueryApplicationOutputDemandSource<
-            SourceQuery<Schema, Demand>,
-            SourceValue<Schema, Demand>,
-        >,
-    ) -> Result<
-        super::WorthQueryApplicationProgramDemandHandle<'application, Schema, Program, Demand>,
-        WorthQueryApplicationOutputDemandDenial,
-    >
-    where
-        Program: ApplicationProgramDefinition<Schema>,
-        Root: ApplicationOutputGraphShape<Schema>
-            + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
-        RootConnection<Schema, Root>:
-            WorthQueryApplicationRequiredOutputConnection<Schema, Demand = Demand>,
-    {
-        let limits = self.resolved_limits();
-        let admitted = application
-            .admit_performed_program_root_output::<Root>(
-                &worth_query_execution::publication_boundary::program_publication_access(),
-                source_result,
-                limits,
-                prepared,
-            )
-            .map_err(WorthQueryApplicationOutputDemandDenial::Demand)?;
-        Ok(super::WorthQueryApplicationProgramDemandHandle::new(
-            application,
-            admitted,
-            self.demand,
-            None,
-        ))
     }
 
     fn resolved_limits(
@@ -379,3 +356,5 @@ where
         }
     }
 }
+
+mod performed_source;

@@ -31,6 +31,7 @@ where
 {
     pub(in crate::branch::owner_services) fn deliver_committed_patch(
         &self,
+        work: &mut worth_execution::MapKernelContext<'_, '_>,
         admission: &SignalOwnerOperationAdmission<'_>,
         basis: &AdmittedSignalBranchBasis,
         definition: &SignalInstalledDefinitionBinding,
@@ -109,8 +110,22 @@ where
         debug_assert_eq!(fork_work.copied_mutable_graph_nodes(), 0);
         let staged_changes = admit_changes(&mut staged_graph, targets)?;
         apply_staged_changes(&mut staged_graph, staged_changes)?;
+        let maximum_visits = staged_graph
+            .installed_runtime_policy()
+            .conditional_evaluation_budget()
+            .maximum_attempt_visits;
+        let mut preparation =
+            crate::data::retained_storage::RetainedStoragePreparation::new(maximum_visits);
+        let mut checkpoint = |units| {
+            work.checkpoint(units as u64).map_err(|stop| {
+                crate::data::retained_storage::RetainedStoragePreparationDenial::ExecutionStopped(
+                    stop.into(),
+                )
+            })
+        };
+        let mut charged = preparation.reborrow_with_checkpoint(&mut checkpoint);
         let successor = state
-            .capture_conditional_basis_from_graph(&mut staged_graph, ledger)
+            .capture_conditional_basis_from_graph(&mut staged_graph, ledger, &mut charged)
             .map_err(map_capture_denial)?;
 
         let canonical_changes = admit_changes(state.committed_patch_graph_mut(), targets)

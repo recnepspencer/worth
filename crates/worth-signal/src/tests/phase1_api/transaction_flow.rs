@@ -73,11 +73,21 @@ fn settle(world: &mut World) {
 /// Marks `source` dirty, evaluates the dirty set, then settles `consumer` as
 /// standing demand: the wasm commit path.
 fn commit_with_demand(world: &mut World) {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let evaluator = evaluator(world.calls.clone(), world.consumer, world.source);
     let (source, consumer) = (world.source, world.consumer);
     world
         .runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.mark_dirty(source, ASPECT_A)?;
             tx.evaluate_dirty(&evaluator)?;
             tx.evaluate_demand(&evaluator, &[consumer])?;
@@ -222,13 +232,23 @@ fn outside_a_transaction_each_execution_is_its_own_flow() {
 
 #[test]
 fn a_rolled_back_transaction_does_not_leak_its_change_into_the_next_flow() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut world = build();
     settle(&mut world);
     let evaluator = evaluator(world.calls.clone(), world.consumer, world.source);
     let (source, consumer) = (world.source, world.consumer);
     let rolled_back: Result<(), SignalError> = world
         .runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.mark_dirty(source, ASPECT_A)?;
             tx.evaluate_dirty(&evaluator)?;
             tx.evaluate_demand(&evaluator, &[consumer])?;

@@ -58,15 +58,23 @@ pub struct BridgeConditionalQueryContinuationAdmission<'a> {
 impl BridgeOwnedSignalRuntime {
     pub fn execute(
         &self,
+        execution_request: worth_execution::ExecutionRequest<'_, '_>,
         signal_basis: &super::BridgeConditionalSignalBasisBinding,
         request: BridgeConditionalExecutionRequest<'_>,
         compute_context: &mut dyn std::any::Any,
     ) -> Result<BridgeConditionalDecisionEvidence, BridgeConditionalDenial> {
-        self.execute_with_managed_source_record(signal_basis, request, None, compute_context)
+        self.execute_with_managed_source_record(
+            execution_request,
+            signal_basis,
+            request,
+            None,
+            compute_context,
+        )
     }
 
     pub(super) fn execute_with_managed_source_record(
         &self,
+        execution_request: worth_execution::ExecutionRequest<'_, '_>,
         signal_basis: &super::BridgeConditionalSignalBasisBinding,
         request: BridgeConditionalExecutionRequest<'_>,
         managed_source_record: Option<
@@ -102,11 +110,12 @@ impl BridgeOwnedSignalRuntime {
                 }
                 denial.with_bridge_execution_counters(admission_counters)
             })?;
-        self.execute_admitted_conditional(&session, request, compute_context)
+        self.execute_admitted_conditional(execution_request, &session, request, compute_context)
     }
 
     pub fn execute_admitted_conditional(
         &self,
+        execution_request: worth_execution::ExecutionRequest<'_, '_>,
         session: &BridgeConditionalEvaluationSession,
         request: BridgeConditionalExecutionRequest<'_>,
         compute_context: &mut dyn std::any::Any,
@@ -120,12 +129,6 @@ impl BridgeOwnedSignalRuntime {
             .map_err(|denial| denial.with_bridge_execution_counters(counters))?;
         let decision_reservation = super::retention::reserve_decision(&self.retention, &request)?;
         let context_reservation = super::retention::reserve_context(&self.retention, &request)?;
-        let serial = self
-            .bridge
-            .policy()
-            .execution()
-            .serial_request(worth_execution::CancellationToken::new(), None);
-        let execution_request = worth_execution::ExecutionRequest::serial(&serial);
         let execution = execution_request
             .in_scope(|_| {
                 self.execute_installed_signal_conditional(
@@ -213,6 +216,7 @@ impl BridgeOwnedSignalRuntime {
         let completion = session
             .signal_port
             .execute(
+                execution,
                 &session.signal,
                 signal_request,
                 &mut condition,
@@ -232,7 +236,7 @@ impl BridgeOwnedSignalRuntime {
         let signal = admit_signal_execution(signal, &mut condition)?;
         let performed_signal_invalidation = performed_signal_invalidation.map_err(|error| {
             BridgeConditionalDenial::new(
-                BridgeConditionalDenialKind::SignalExecution,
+                super::signal_execution_denial::kind(&error),
                 error.to_string(),
             )
         })?;
@@ -300,9 +304,10 @@ fn admit_signal_execution(
             if let Some(denial) = condition.take_observation_denial() {
                 return Err(denial.with_execution_counters(counters, observation_reads));
             }
+            let error = failure.into_error();
             Err(BridgeConditionalDenial::new(
-                BridgeConditionalDenialKind::SignalExecution,
-                format!("{:?}", failure.into_error()),
+                super::signal_execution_denial::kind(&error),
+                format!("{error:?}"),
             )
             .with_execution_counters(counters, observation_reads))
         }
@@ -331,8 +336,8 @@ pub(super) fn signal_service_denial(
         | Denial::NestedOperationScopeMismatch
         | Denial::EvaluationIdentityExhausted
         | Denial::AdmissionUnavailable
-        | Denial::SlotAdmission(_)
         | Denial::ObservationAdmission(_) => BridgeConditionalDenialKind::SignalExecution,
+        Denial::SlotAdmission(ref cause) => super::signal_execution_denial::kind(cause),
     };
     BridgeConditionalDenial::new(
         kind,

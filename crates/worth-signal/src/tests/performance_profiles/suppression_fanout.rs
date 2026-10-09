@@ -17,6 +17,16 @@ use super::{eval_metrics_delta, hot_family_contract, ZERO_BROAD_ENTRY_ACCESS};
 #[test]
 #[ignore = "performance baseline capture; run with -- --ignored --nocapture"]
 fn perf_suppression_wide_fanout_serial() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let samples = with_perf_topology_asserts_disabled(|| {
         capture_and_certify_perf_samples(
             hot_family_contract(
@@ -94,7 +104,7 @@ fn perf_suppression_wide_fanout_serial() {
                 let access_before_transaction = crate::data::access_counters::snapshot();
                 let transaction_start = Instant::now();
                 runtime
-                    .transaction(&mut (), |tx| {
+                    .transaction(request_execution, &mut (), |tx| {
                         tx.mark_dirty(source, ASPECT_A)?;
                         tx.read(source, &|ctx| {
                             Ok(ctx.finish(NodeEvaluationResult::from_version(version_ab(12, 0))))

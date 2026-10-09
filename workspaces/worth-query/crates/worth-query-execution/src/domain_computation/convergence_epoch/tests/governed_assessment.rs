@@ -14,78 +14,86 @@ use crate::domain_computation::{
 
 #[test]
 fn query_counts_each_governed_domain_port_and_contains_rejection_or_panic() {
-    let cases = [
-        (
-            FixtureDisposition::ComparatorFailure,
-            Phase::Comparator,
-            FailureKind::Rejected,
-            [1, 0, 0],
-        ),
-        (
-            FixtureDisposition::ComparatorPanic,
-            Phase::Comparator,
-            FailureKind::Panicked,
-            [1, 0, 0],
-        ),
-        (
-            FixtureDisposition::ProgressFailure,
-            Phase::ProgressMeasure,
-            FailureKind::Rejected,
-            [1, 1, 0],
-        ),
-        (
-            FixtureDisposition::ProgressPanic,
-            Phase::ProgressMeasure,
-            FailureKind::Panicked,
-            [1, 1, 0],
-        ),
-        (
-            FixtureDisposition::RepeatedStateFailure,
-            Phase::RepeatedStateDetector,
-            FailureKind::Rejected,
-            [1, 1, 1],
-        ),
-        (
-            FixtureDisposition::RepeatedStatePanic,
-            Phase::RepeatedStateDetector,
-            FailureKind::Panicked,
-            [1, 1, 1],
-        ),
-    ];
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
 
-    for (disposition, expected_phase, expected_kind, expected_work) in cases {
-        let (terminal, provider_probe) = indeterminate_terminal_with_probe(disposition);
-        assert_eq!(provider_probe.entries(), expected_work);
-        assert_domain_invocation_cause(
-            terminal.indeterminate_cause(),
-            expected_phase,
-            expected_kind,
-            expected_work,
-        );
-        assert_eq!(
-            [
-                terminal.counters().comparator_call_count(),
-                terminal.counters().progress_check_count(),
-                terminal.counters().repeated_state_probe_count(),
-            ],
-            expected_work
-        );
-        let cleanup = match terminal.cleanup() {
-            Ok(cleanup) => cleanup,
-            Err(_) => panic!("contained domain failure must retain direct cleanup authority"),
-        };
-        assert_domain_invocation_cause(
-            cleanup.indeterminate_cause(),
-            expected_phase,
-            expected_kind,
-            expected_work,
-        );
-        assert_eq!(cleanup.counters().cleanup_attempt_count(), 1);
-        assert_eq!(cleanup.counters().cleanup_completion_count(), 1);
-    }
+        let cases = [
+            (
+                FixtureDisposition::ComparatorFailure,
+                Phase::Comparator,
+                FailureKind::Rejected,
+                [1, 0, 0],
+            ),
+            (
+                FixtureDisposition::ComparatorPanic,
+                Phase::Comparator,
+                FailureKind::Panicked,
+                [1, 0, 0],
+            ),
+            (
+                FixtureDisposition::ProgressFailure,
+                Phase::ProgressMeasure,
+                FailureKind::Rejected,
+                [1, 1, 0],
+            ),
+            (
+                FixtureDisposition::ProgressPanic,
+                Phase::ProgressMeasure,
+                FailureKind::Panicked,
+                [1, 1, 0],
+            ),
+            (
+                FixtureDisposition::RepeatedStateFailure,
+                Phase::RepeatedStateDetector,
+                FailureKind::Rejected,
+                [1, 1, 1],
+            ),
+            (
+                FixtureDisposition::RepeatedStatePanic,
+                Phase::RepeatedStateDetector,
+                FailureKind::Panicked,
+                [1, 1, 1],
+            ),
+        ];
+
+        for (disposition, expected_phase, expected_kind, expected_work) in cases {
+            let (terminal, provider_probe) =
+                indeterminate_terminal_with_probe(execution, disposition);
+            assert_eq!(provider_probe.entries(), expected_work);
+            assert_domain_invocation_cause(
+                terminal.indeterminate_cause(),
+                expected_phase,
+                expected_kind,
+                expected_work,
+            );
+            assert_eq!(
+                [
+                    terminal.counters().comparator_call_count(),
+                    terminal.counters().progress_check_count(),
+                    terminal.counters().repeated_state_probe_count(),
+                ],
+                expected_work
+            );
+            let cleanup = match terminal.cleanup() {
+                Ok(cleanup) => cleanup,
+                Err(_) => panic!("contained domain failure must retain direct cleanup authority"),
+            };
+            assert_domain_invocation_cause(
+                cleanup.indeterminate_cause(),
+                expected_phase,
+                expected_kind,
+                expected_work,
+            );
+            assert_eq!(cleanup.counters().cleanup_attempt_count(), 1);
+            assert_eq!(cleanup.counters().cleanup_completion_count(), 1);
+        }
+    });
 }
 
 fn indeterminate_terminal_with_probe(
+    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+
     disposition: FixtureDisposition,
 ) -> (
     crate::domain_computation::WorthQueryDirectConvergenceTerminal<
@@ -96,12 +104,15 @@ fn indeterminate_terminal_with_probe(
     let (fixture, probe) = direct_admission_fixture_with_domain_port_probe(disposition);
     let epoch = fixture.admit();
     let started = epoch
-        .begin_iteration(WorthQueryManagedGraphCallRequest::new(
-            WorthQueryGraphProviderCallKind::Observe,
-            "governed-domain-port-probe",
-        ))
+        .begin_iteration(
+            execution,
+            WorthQueryManagedGraphCallRequest::new(
+                WorthQueryGraphProviderCallKind::Observe,
+                "governed-domain-port-probe",
+            ),
+        )
         .unwrap_or_else(|_| panic!("governed probe iteration must start"));
-    let outcome = match started.advance() {
+    let outcome = match started.advance(execution) {
         WorthQueryDirectConvergenceStepOutcome::Completed(outcome) => outcome,
         _ => panic!("governed probe provider must complete"),
     };
@@ -114,23 +125,30 @@ fn indeterminate_terminal_with_probe(
 
 #[test]
 fn workflow_cleanup_preserves_a_typed_governed_domain_panic() {
-    let terminal = workflow_indeterminate_terminal(FixtureDisposition::ProgressPanic);
-    assert_domain_invocation_cause(
-        terminal.indeterminate_cause(),
-        Phase::ProgressMeasure,
-        FailureKind::Panicked,
-        [1, 1, 0],
-    );
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
 
-    let WorthQueryWorkflowConvergenceCleanupOutcome::Complete(cleanup) = terminal.cleanup() else {
-        panic!("contained domain panic must retain workflow cleanup authority");
-    };
-    assert_domain_invocation_cause(
-        cleanup.indeterminate_cause(),
-        Phase::ProgressMeasure,
-        FailureKind::Panicked,
-        [1, 1, 0],
-    );
+        let terminal =
+            workflow_indeterminate_terminal(execution, FixtureDisposition::ProgressPanic);
+        assert_domain_invocation_cause(
+            terminal.indeterminate_cause(),
+            Phase::ProgressMeasure,
+            FailureKind::Panicked,
+            [1, 1, 0],
+        );
+
+        let WorthQueryWorkflowConvergenceCleanupOutcome::Complete(cleanup) = terminal.cleanup()
+        else {
+            panic!("contained domain panic must retain workflow cleanup authority");
+        };
+        assert_domain_invocation_cause(
+            cleanup.indeterminate_cause(),
+            Phase::ProgressMeasure,
+            FailureKind::Panicked,
+            [1, 1, 0],
+        );
+    });
 }
 
 #[test]

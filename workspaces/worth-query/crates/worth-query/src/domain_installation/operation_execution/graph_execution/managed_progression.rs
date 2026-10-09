@@ -7,6 +7,8 @@ use super::WorthQueryBoundGraphExecutionReceipt;
 use crate::domain_installation::WorthQueryGraphProviderCallKind;
 
 pub(super) fn execute_direct_graph(
+    execution: &'_ worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
+
     running: WorthQueryRunningDirectRun,
     graph: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
     kind: WorthQueryGraphProviderCallKind,
@@ -23,6 +25,7 @@ pub(super) fn execute_direct_graph(
 > {
     let active = running
         .begin_graph_execution(
+            execution,
             graph,
             WorthQueryManagedGraphCallRequest::new(kind, scope_identity),
         )
@@ -30,10 +33,13 @@ pub(super) fn execute_direct_graph(
             let detail = failure.detail().to_owned();
             (detail, failure.into_running().abandon())
         })?;
-    let mut outcome = active.advance();
+    let mut outcome = active.advance(execution);
     loop {
         outcome = match outcome {
-            WorthQueryDirectGraphStepOutcome::Continue(paused) => paused.advance(),
+            WorthQueryDirectGraphStepOutcome::ForeignAdvancementPhase(_) => {
+                unreachable!("the same checked phase starts and advances this managed run")
+            }
+            WorthQueryDirectGraphStepOutcome::Continue(paused) => paused.advance(execution),
             WorthQueryDirectGraphStepOutcome::ChunkReady(chunk) => chunk.acknowledge(),
             WorthQueryDirectGraphStepOutcome::Completed(completed) => {
                 let receipt = completed.receipt().clone();
@@ -55,6 +61,8 @@ pub(super) fn execute_direct_graph(
 }
 
 pub(super) fn execute_workflow_graph(
+    execution: &'_ worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
+
     running: WorthQueryRunningWorkflowRun,
     stage_identity: &str,
     graph: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
@@ -72,6 +80,7 @@ pub(super) fn execute_workflow_graph(
 > {
     let active = running
         .begin_stage_graph_execution(
+            execution,
             stage_identity,
             graph,
             WorthQueryManagedGraphCallRequest::new(kind, scope_identity),
@@ -80,10 +89,13 @@ pub(super) fn execute_workflow_graph(
             let detail = failure.detail().to_owned();
             (detail, failure.into_running().abandon())
         })?;
-    let mut outcome = active.advance();
+    let mut outcome = active.advance(execution);
     loop {
         outcome = match outcome {
-            WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused.advance(),
+            WorthQueryWorkflowGraphStepOutcome::ForeignAdvancementPhase(_) => {
+                unreachable!("the same checked phase starts and advances this managed run")
+            }
+            WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused.advance(execution),
             WorthQueryWorkflowGraphStepOutcome::ChunkReady(chunk) => chunk.acknowledge(),
             WorthQueryWorkflowGraphStepOutcome::Completed(completed) => {
                 let receipt = completed.receipt().clone();

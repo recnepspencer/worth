@@ -16,6 +16,15 @@ fn activation_unwind_retains_complete_definition_custody_in_first_catalog_observ
             None,
         )
         .unwrap();
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::from_policy(
+            &fixture.owner.root.state.execution.request_policy(),
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let predecessor = fixture
         .bridge
         .admit_conditional_signal_basis(&fixture.lowering, fixture.root.basis().signal_basis())
@@ -33,6 +42,7 @@ fn activation_unwind_retains_complete_definition_custody_in_first_catalog_observ
             .owner
             .publication_port()
             .execute_conditional_definition_with_signal(
+                execution,
                 prepared_world,
                 publication,
                 &mut (),
@@ -135,6 +145,15 @@ fn activation_denial_retains_signal_successor_without_bridge_or_product_visibili
             None,
         )
         .unwrap();
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::from_policy(
+            &fixture.owner.root.state.execution.request_policy(),
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let predecessor = fixture
         .bridge
         .admit_conditional_signal_basis(&fixture.lowering, fixture.root.basis().signal_basis())
@@ -151,6 +170,7 @@ fn activation_denial_retains_signal_successor_without_bridge_or_product_visibili
         .owner
         .publication_port()
         .execute_conditional_definition_with_signal(
+            execution,
             prepared_world,
             publication,
             &mut (),

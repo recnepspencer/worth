@@ -72,10 +72,14 @@ impl WorthQueryGraphParticipationProvider<ManagedGraph> for StageQueueContractPr
 
 #[test]
 fn stage_contract_wider_than_the_signal_queue_denies_before_provider_construction() {
-    let installer = WorthQueryExecutionRuntimeInstaller::new();
-    let begins = Arc::new(AtomicUsize::new(0));
-    let advances = Arc::new(AtomicUsize::new(0));
-    let provider_anchor = Arc::new(
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
+
+        let installer = WorthQueryExecutionRuntimeInstaller::new();
+        let begins = Arc::new(AtomicUsize::new(0));
+        let advances = Arc::new(AtomicUsize::new(0));
+        let provider_anchor = Arc::new(
         crate::domain_computation::provider_session::graph_provider::bounded_step::provider_anchor::WorthQueryGraphProviderAnchor::install::<ManagedGraph, _>(
             StageQueueContractProvider {
                 begins: Arc::clone(&begins),
@@ -83,69 +87,71 @@ fn stage_contract_wider_than_the_signal_queue_denies_before_provider_constructio
             },
         ),
     );
-    let provider_support = provider_anchor.resource_support().clone();
-    let graph = super::workflow_provider_steps::installed_graph(
-        &installer,
-        "stage-queue-contract-graph",
-        provider_anchor,
-    );
-    let runtime =
-        super::workflow_provider_steps::installed_runtime(installer, "stage queue contract");
-    let operation_resources = admitted_plan("stage-queue-contract", 4);
-    let stage_resources = admitted_plan_with_graph_support(
-        "stage-queue-contract:stage",
-        4,
-        graph.role(),
-        provider_support,
-    );
-    let resources = WorthQueryAdmittedWorkflowResourcePlan::assemble(
-        operation_resources,
-        BTreeMap::from([("stage".to_owned(), stage_resources)]),
-    );
-    let operation = workflow_authority_with_stage_graph(
-        &runtime,
-        &resources,
-        "stage",
-        &graph,
-        WorthQueryOperationGraphAccess::Project,
-    );
-    let running =
-        super::workflow_provider_steps::admitted_workflow(&runtime, &operation, resources);
-    let failure = match running.begin_stage_graph_execution(
-        "stage",
-        &graph,
-        WorthQueryManagedGraphCallRequest::new(
-            WorthQueryGraphProviderCallKind::Project,
-            "stage-queue-contract",
-        ),
-    ) {
-        Ok(_) => panic!("a stage contract wider than Signal started its provider"),
-        Err(failure) => failure,
-    };
-    assert_eq!(
+        let provider_support = provider_anchor.resource_support().clone();
+        let graph = super::workflow_provider_steps::installed_graph(
+            &installer,
+            "stage-queue-contract-graph",
+            provider_anchor,
+        );
+        let runtime =
+            super::workflow_provider_steps::installed_runtime(installer, "stage queue contract");
+        let operation_resources = admitted_plan("stage-queue-contract", 4);
+        let stage_resources = admitted_plan_with_graph_support(
+            "stage-queue-contract:stage",
+            4,
+            graph.role(),
+            provider_support,
+        );
+        let resources = WorthQueryAdmittedWorkflowResourcePlan::assemble(
+            operation_resources,
+            BTreeMap::from([("stage".to_owned(), stage_resources)]),
+        );
+        let operation = workflow_authority_with_stage_graph(
+            &runtime,
+            &resources,
+            "stage",
+            &graph,
+            WorthQueryOperationGraphAccess::Project,
+        );
+        let running =
+            super::workflow_provider_steps::admitted_workflow(&runtime, &operation, resources);
+        let failure = match running.begin_stage_graph_execution(
+            execution,
+            "stage",
+            &graph,
+            WorthQueryManagedGraphCallRequest::new(
+                WorthQueryGraphProviderCallKind::Project,
+                "stage-queue-contract",
+            ),
+        ) {
+            Ok(_) => panic!("a stage contract wider than Signal started its provider"),
+            Err(failure) => failure,
+        };
+        assert_eq!(
         failure.kind(),
         crate::domain_computation::WorthQueryWorkflowGraphExecutionStartFailureKind::StepContract(
             crate::domain_computation::WorthQueryManagedStepContractDenialKind::QueueDepthExceeded,
         )
     );
-    assert_eq!(begins.load(Ordering::Relaxed), 0);
-    assert_eq!(advances.load(Ordering::Relaxed), 0);
-    let terminal = failure
-        .into_running()
-        .terminal(WorthQueryManagedRunTerminalKind::Cancelled);
-    assert_eq!(terminal.provider_work().provider_step_attempt_count(), 0);
-    assert_eq!(
-        terminal
-            .provider_work()
-            .output_capacity_classification_count(),
-        0
-    );
-    assert_eq!(terminal.provider_work().completed_work_units(), 0);
-    assert_eq!(terminal.provider_work().retained_bytes(), 0);
-    match terminal.cleanup() {
-        WorthQueryWorkflowRunCleanupOutcome::Complete(_) => {}
-        _ => panic!("contract-denied workflow should clean up"),
-    }
+        assert_eq!(begins.load(Ordering::Relaxed), 0);
+        assert_eq!(advances.load(Ordering::Relaxed), 0);
+        let terminal = failure
+            .into_running()
+            .terminal(WorthQueryManagedRunTerminalKind::Cancelled);
+        assert_eq!(terminal.provider_work().provider_step_attempt_count(), 0);
+        assert_eq!(
+            terminal
+                .provider_work()
+                .output_capacity_classification_count(),
+            0
+        );
+        assert_eq!(terminal.provider_work().completed_work_units(), 0);
+        assert_eq!(terminal.provider_work().retained_bytes(), 0);
+        match terminal.cleanup() {
+            WorthQueryWorkflowRunCleanupOutcome::Complete(_) => {}
+            _ => panic!("contract-denied workflow should clean up"),
+        }
+    });
 }
 
 fn step_failure(

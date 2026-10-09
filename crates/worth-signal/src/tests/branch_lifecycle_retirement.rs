@@ -179,6 +179,16 @@ fn one_thousand_retired_siblings_leave_no_live_branch_residue() {
 
 #[test]
 fn retirement_plan_is_invalidated_by_a_snapshot_free_branch_transaction() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let node = graph.node().build();
     let mut runtime = SignalRuntime::builder(graph).with_kernel_defaults().build();
@@ -200,9 +210,12 @@ fn retirement_plan_is_invalidated_by_a_snapshot_free_branch_transaction() {
         other => panic!("expected targeted transaction plan, got {other:?}"),
     };
     assert!(matches!(
-        runtime.execute_branch_targeted_transaction(&mut (), transaction, |tx| {
-            tx.mark_dirty(node, Aspect::new(0))
-        }),
+        runtime.execute_branch_targeted_transaction(
+            request_execution,
+            &mut (),
+            transaction,
+            |tx| { tx.mark_dirty(node, Aspect::new(0)) }
+        ),
         TransitionOutcome::Success(_)
     ));
 

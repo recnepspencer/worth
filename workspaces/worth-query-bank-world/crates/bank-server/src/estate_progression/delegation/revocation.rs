@@ -240,6 +240,9 @@ fn map_revocation_denial(
 ) -> BankEstateProgressionDenial {
     use WorthQueryApplicationCapabilityRevocationDenial as Query;
     match denial {
+        Query::ExecutionRequest(cause) => BankEstateProgressionDenial::ApplicationEntry(
+            worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause),
+        ),
         Query::Program(denial) => BankEstateProgressionDenial::ProgramAction(denial),
         Query::ProgramMismatch => BankEstateProgressionDenial::ProgramMismatch,
         Query::PrincipalBindingInstallation(denial) => {

@@ -193,9 +193,7 @@ where
         ) = match projected {
             Ok(completed) => completed,
             Err(payload) => {
-                self.graph.with_runtime_mut(|runtime| {
-                    crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
-                });
+                self.graph.release_query_snapshot(&snapshot);
                 resume_unwind(payload)
             }
         };
@@ -209,9 +207,7 @@ where
             })
         };
         if let Some(denial) = stopped {
-            self.graph.with_runtime_mut(|runtime| {
-                crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
-            });
+            self.graph.release_query_snapshot(&snapshot);
             return Err(denial);
         }
         Ok(WorthQueryCompletedInvariantProjection {

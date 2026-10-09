@@ -14,6 +14,9 @@ use super::super::protocol::{
 
 pub(super) fn query_denial(denial: BankApplicationQueryDenial) -> BankHttpDenial {
     match denial {
+        BankApplicationQueryDenial::ExecutionRequest(cause) => {
+            super::advancement_denial::advancement(cause)
+        }
         BankApplicationQueryDenial::RequestMode
         | BankApplicationQueryDenial::LiveRetainedBasis
         | BankApplicationQueryDenial::LiveControls(_) => malformed(),
@@ -199,6 +202,7 @@ fn entity(kind: BankEntityResolutionDenialKind) -> BankHttpDenial {
 fn output_settlement(kind: BankApplicationOutputSettlementDenialKind) -> BankHttpDenial {
     use BankApplicationOutputSettlementDenialKind as Settlement;
     match kind {
+        Settlement::ExecutionRequest(cause) => super::advancement_denial::advancement(cause),
         Settlement::SourceQueryInstallation(_) => unavailable(),
         Settlement::SourcePrincipal(_) => stale(),
         Settlement::SourceScope(kind) => entity(kind),

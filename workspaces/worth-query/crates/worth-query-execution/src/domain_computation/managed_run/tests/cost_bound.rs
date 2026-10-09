@@ -47,20 +47,25 @@ fn managed_run_work_is_invariant_to_unrelated_live_authority_width() {
 
 #[test]
 fn readmission_work_is_invariant_to_same_runtime_unrelated_authority_width() {
-    let direct_empty = direct_readmission_work(0);
-    let direct_wide = direct_readmission_work(UNRELATED_RUN_COUNT);
-    assert_eq!(direct_empty, direct_wide);
-    assert_exact_direct_readmission_work(direct_wide);
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
 
-    let workflow_empty = workflow_readmission_work(0);
-    let workflow_wide = workflow_readmission_work(UNRELATED_RUN_COUNT);
-    assert_eq!(workflow_empty, workflow_wide);
-    assert_exact_workflow_readmission_work(workflow_wide);
+        let direct_empty = direct_readmission_work(execution, 0);
+        let direct_wide = direct_readmission_work(execution, UNRELATED_RUN_COUNT);
+        assert_eq!(direct_empty, direct_wide);
+        assert_exact_direct_readmission_work(direct_wide);
 
-    let denial_empty = denied_readmission_work(0);
-    let denial_wide = denied_readmission_work(UNRELATED_RUN_COUNT);
-    assert_eq!(denial_empty, denial_wide);
-    assert_exact_preflight_denial_work(denial_wide);
+        let workflow_empty = workflow_readmission_work(execution, 0);
+        let workflow_wide = workflow_readmission_work(execution, UNRELATED_RUN_COUNT);
+        assert_eq!(workflow_empty, workflow_wide);
+        assert_exact_workflow_readmission_work(workflow_wide);
+
+        let denial_empty = denied_readmission_work(execution, 0);
+        let denial_wide = denied_readmission_work(execution, UNRELATED_RUN_COUNT);
+        assert_eq!(denial_empty, denial_wide);
+        assert_exact_preflight_denial_work(denial_wide);
+    });
 }
 
 pub(super) fn unrelated_artifact_run(
@@ -127,10 +132,15 @@ fn unrelated_artifact_run_in_runtime(
     (running, handle)
 }
 
-fn direct_readmission_work(unrelated_width: usize) -> WorthQueryReadmissionEvidence {
-    let (yielded, bridge, runtime) = super::readmission_direct::yielded_direct();
+fn direct_readmission_work(
+    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    unrelated_width: usize,
+) -> WorthQueryReadmissionEvidence {
+    let active_request = execution;
+
+    let (yielded, bridge, runtime) = super::readmission_direct::yielded_direct(execution);
     let (unrelated, disposed) = unrelated_authority(&runtime, unrelated_width);
-    let readmitted = match yielded.readmit_same_runtime(&runtime, &bridge) {
+    let readmitted = match yielded.readmit_same_runtime(active_request, &runtime, &bridge) {
         WorthQueryDirectReadmissionOutcome::Readmitted(readmitted) => readmitted,
         _ => panic!("direct cost target should readmit"),
     };
@@ -146,12 +156,18 @@ fn direct_readmission_work(unrelated_width: usize) -> WorthQueryReadmissionEvide
     evidence
 }
 
-fn workflow_readmission_work(unrelated_width: usize) -> WorthQueryReadmissionEvidence {
+fn workflow_readmission_work(
+    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    unrelated_width: usize,
+) -> WorthQueryReadmissionEvidence {
+    let active_request = execution;
+
     let (yielded, bridge, runtime, old_producer) = super::readmission_workflow::yielded_workflow(
+        execution,
         super::yield_fixture::YieldProvider::installed(7),
     );
     let (unrelated, disposed) = unrelated_authority(&runtime, unrelated_width);
-    let readmitted = match yielded.readmit_same_runtime(&runtime, &bridge) {
+    let readmitted = match yielded.readmit_same_runtime(active_request, &runtime, &bridge) {
         WorthQueryWorkflowReadmissionOutcome::Readmitted(readmitted) => readmitted,
         _ => panic!("workflow cost target should readmit"),
     };
@@ -169,11 +185,16 @@ fn workflow_readmission_work(unrelated_width: usize) -> WorthQueryReadmissionEvi
     evidence
 }
 
-fn denied_readmission_work(unrelated_width: usize) -> WorthQueryReadmissionEvidence {
-    let (yielded, bridge, runtime) = super::readmission_direct::yielded_direct();
+fn denied_readmission_work(
+    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    unrelated_width: usize,
+) -> WorthQueryReadmissionEvidence {
+    let active_request = execution;
+
+    let (yielded, bridge, runtime) = super::readmission_direct::yielded_direct(execution);
     let (unrelated, disposed) = unrelated_authority(&runtime, unrelated_width);
     let foreign = query_runtime();
-    let denial = match yielded.readmit_same_runtime(&foreign, &bridge) {
+    let denial = match yielded.readmit_same_runtime(active_request, &foreign, &bridge) {
         WorthQueryDirectReadmissionOutcome::Denied(denial) => denial,
         _ => panic!("foreign Query runtime should deny readmission"),
     };

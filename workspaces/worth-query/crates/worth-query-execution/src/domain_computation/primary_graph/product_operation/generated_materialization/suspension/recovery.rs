@@ -19,6 +19,8 @@ use settlement::PublishedSuspensionSettlement;
 /// handed back to continue again.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryGeneratedOutputSuspensionRecoveryStage {
+    /// The host request was refused before inspecting recovery facts.
+    ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
     /// The unpublished product state could not be inspected.
     Inspection,
     /// Owner settlement of the unpublished effects did not finish.
@@ -158,75 +160,95 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     where
         Producer: WorthQueryApplicationProducerBinding<Schema>,
     {
-        if !retry_matches::<Schema, Producer>(self, recovery.state.retry()) {
-            return Err(failure(
-                WorthQueryGeneratedOutputSuspensionRecoveryStage::StaleOccurrence,
-                recovery.state,
-            ));
-        }
-        match recovery.state {
-            RecoveryState::Unpublished { product, retry } => {
-                let needs_settlement = product.relational_requires_settlement();
-                self.continue_world(product.into_recovery(), retry, needs_settlement, request)
+        let mut retained = Some(recovery);
+        let result = self.with_application_advancement(request, |phase| {
+            let phase = &phase;
+            let recovery = retained.take().expect("one admitted recovery");
+
+            if !retry_matches::<Schema, Producer>(self, recovery.state.retry()) {
+                return Err(failure(
+                    WorthQueryGeneratedOutputSuspensionRecoveryStage::StaleOccurrence,
+                    recovery.state,
+                ));
             }
-            RecoveryState::World { recovery, retry } => {
-                let needs_settlement = match recovery.inspect() {
-                    Ok(product) => product.relational_requires_settlement(),
-                    Err(_) => {
-                        return Err(failure(
-                            WorthQueryGeneratedOutputSuspensionRecoveryStage::Inspection,
-                            RecoveryState::World { recovery, retry },
-                        ));
-                    }
-                };
-                self.continue_world(recovery, retry, needs_settlement, request)
-            }
-            RecoveryState::HandoffWorld { old, next, retry } => {
-                self.finish_handoff(old, next, retry)
-            }
-            RecoveryState::HandoffCleanup {
-                cleanup,
-                next,
-                retry,
-            } => match cleanup.retry() {
-                Ok(_) => Err(failure(
-                    WorthQueryGeneratedOutputSuspensionRecoveryStage::AdoptionPublication,
-                    RecoveryState::World {
-                        recovery: next,
+            match recovery.state {
+                RecoveryState::Unpublished { product, retry } => {
+                    let needs_settlement = product.relational_requires_settlement();
+                    self.continue_world(
+                        phase,
+                        product.into_recovery(),
                         retry,
-                    },
-                )),
-                Err(failed) => Err(failure(
-                    WorthQueryGeneratedOutputSuspensionRecoveryStage::OwnerCleanup,
-                    RecoveryState::HandoffCleanup {
-                        cleanup: failed.into_cleanup(),
-                        next,
-                        retry,
-                    },
-                )),
-            },
-            RecoveryState::PublishedWorld {
-                recovery,
-                settlement,
-            } => self.finish_published(recovery, settlement),
-            RecoveryState::PublishedCleanup {
-                cleanup,
-                settlement,
-            } => match cleanup.retry() {
-                Ok(_) => Ok(settlement.finish()),
-                Err(failed) => Err(failure(
-                    WorthQueryGeneratedOutputSuspensionRecoveryStage::OwnerCleanup,
-                    RecoveryState::PublishedCleanup {
-                        cleanup: failed.into_cleanup(),
-                        settlement,
-                    },
-                )),
-            },
+                        needs_settlement,
+                        request,
+                    )
+                }
+                RecoveryState::World { recovery, retry } => {
+                    let needs_settlement = match recovery.inspect() {
+                        Ok(product) => product.relational_requires_settlement(),
+                        Err(_) => {
+                            return Err(failure(
+                                WorthQueryGeneratedOutputSuspensionRecoveryStage::Inspection,
+                                RecoveryState::World { recovery, retry },
+                            ));
+                        }
+                    };
+                    self.continue_world(phase, recovery, retry, needs_settlement, request)
+                }
+                RecoveryState::HandoffWorld { old, next, retry } => {
+                    self.finish_handoff(old, next, retry)
+                }
+                RecoveryState::HandoffCleanup {
+                    cleanup,
+                    next,
+                    retry,
+                } => match cleanup.retry() {
+                    Ok(_) => Err(failure(
+                        WorthQueryGeneratedOutputSuspensionRecoveryStage::AdoptionPublication,
+                        RecoveryState::World {
+                            recovery: next,
+                            retry,
+                        },
+                    )),
+                    Err(failed) => Err(failure(
+                        WorthQueryGeneratedOutputSuspensionRecoveryStage::OwnerCleanup,
+                        RecoveryState::HandoffCleanup {
+                            cleanup: failed.into_cleanup(),
+                            next,
+                            retry,
+                        },
+                    )),
+                },
+                RecoveryState::PublishedWorld {
+                    recovery,
+                    settlement,
+                } => self.finish_published(recovery, settlement),
+                RecoveryState::PublishedCleanup {
+                    cleanup,
+                    settlement,
+                } => match cleanup.retry() {
+                    Ok(_) => Ok(settlement.finish()),
+                    Err(failed) => Err(failure(
+                        WorthQueryGeneratedOutputSuspensionRecoveryStage::OwnerCleanup,
+                        RecoveryState::PublishedCleanup {
+                            cleanup: failed.into_cleanup(),
+                            settlement,
+                        },
+                    )),
+                },
+            }
+        });
+        match result {
+            Ok(result) => result,
+            Err(cause) => Err(failure(
+                WorthQueryGeneratedOutputSuspensionRecoveryStage::ExecutionDenied(cause),
+                retained.expect("refusal precedes admission").state,
+            )),
         }
     }
 
     fn continue_world(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         recovery: WorthQueryProductUnpublishedRecovery,
         retry: SuspensionRetry,
         needs_settlement: bool,
@@ -241,11 +263,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 RecoveryState::World { recovery, retry },
             ));
         }
-        self.adopt_settled(recovery, retry, request)
+        self.adopt_settled(phase, recovery, retry, request)
     }
 
     fn adopt_settled(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         recovery: WorthQueryProductUnpublishedRecovery,
         retry: SuspensionRetry,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
@@ -291,7 +314,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             }
         };
         drop(unpublished);
-        match prepared.execute() {
+        match prepared.execute(
+            phase
+                .execution_request_for(&self.product_runtime)
+                .expect("private progression uses its admitted runtime phase"),
+        ) {
             worth_runtime_world::facade::RuntimeWorldPublicationOutcome::Performed(performed) => {
                 let commit = performed
                     .component_results()
@@ -329,47 +356,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     }
 }
 
-fn retry_matches<Schema, Producer>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    retry: &SuspensionRetry,
-) -> bool
-where
-    Schema: ApplicationSchema,
-    Producer: WorthQueryApplicationProducerBinding<Schema>,
-{
-    if retry.producer.runtime_authority != runtime.runtime.authority_identity().as_u64()
-        || retry.producer.schema != runtime.installed_schema.binding_identity()
-        || retry.producer.binding_type != std::any::TypeId::of::<Producer>()
-        || retry.producer.binding_identity != Producer::IDENTITY
-        || retry.producer.provider_identity != Producer::Provider::SEMANTIC_IDENTITY
-        || runtime.installed_producers.provider::<Producer>().is_none()
-    {
-        return false;
-    }
-    runtime
-        .primary_provider
-        .graph
-        .output_lineage
-        .lock()
-        .expect("application output lineage lock is available")
-        .qualified_output::<Producer::Operation>(
-            retry.producer.runtime_authority,
-            &retry.producer.schema,
-            retry.producer.scope,
-            retry.producer.output_occurrence,
-            retry.producer.output_generation,
-            retry.producer.runtime_source_identity,
-            retry.producer.checkpoint_source_identity,
-        )
-        .is_some_and(|exact| {
-            exact.source_identity == retry.producer.recorded_source_identity
-                && exact.runtime_authority == retry.producer.runtime_authority
-                && exact.schema == retry.producer.schema
-                && exact.scope == retry.producer.scope
-                && Arc::ptr_eq(&exact.correspondence, &retry.correspondence)
-        })
-}
-
 fn failure(
     stage: WorthQueryGeneratedOutputSuspensionRecoveryStage,
     state: RecoveryState,
@@ -379,3 +365,6 @@ fn failure(
         recovery: WorthQueryGeneratedOutputSuspensionRecovery { state },
     }
 }
+
+mod retry_identity;
+use retry_identity::retry_matches;

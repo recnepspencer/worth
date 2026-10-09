@@ -4,7 +4,9 @@ use bank_server::{queries, BankApplicationQueryDenial, BankReadControls};
 use worth_query_host::facade::admission::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
 };
-use worth_query_host::facade::primary_graph::WorthQueryPrincipalResolutionDenialKind;
+use worth_query_host::facade::application_contribution::{
+    WorthQueryAdvancementDenial, WorthQueryManagedComputationInterruption,
+};
 
 use super::fixture::{ordinary_read_world, APPROVER, AUDITOR, OWNER, STRANGER, TELLER, VIEWER};
 use crate::support::request_scope;
@@ -137,6 +139,8 @@ fn payment_and_audit_reads_preserve_distinct_authority_paths() {
 fn cancellation_and_deadline_are_typed_before_projection() {
     let fixture = ordinary_read_world("read-interruption", 0);
     let owner = fixture.authenticate(OWNER);
+    // Admission now stops before principal resolution; the opening owner retains
+    // cancellation and deadline as execution-request causes.
     let cancellation = WorthQueryCancellationSource::new();
     cancellation.cancel();
     let cancelled = BankReadControls::current(
@@ -156,8 +160,10 @@ fn cancellation_and_deadline_are_typed_before_projection() {
             .as_principal(&owner)
             .controls(cancelled)
             .execute(),
-        Err(BankApplicationQueryDenial::PrincipalResolution(
-            WorthQueryPrincipalResolutionDenialKind::Cancelled
+        Err(BankApplicationQueryDenial::ExecutionRequest(
+            WorthQueryAdvancementDenial::Interrupted(
+                WorthQueryManagedComputationInterruption::Cancelled
+            )
         ))
     ));
 
@@ -176,8 +182,10 @@ fn cancellation_and_deadline_are_typed_before_projection() {
             .as_principal(&owner)
             .controls(expired)
             .execute(),
-        Err(BankApplicationQueryDenial::PrincipalResolution(
-            WorthQueryPrincipalResolutionDenialKind::DeadlineExceeded
+        Err(BankApplicationQueryDenial::ExecutionRequest(
+            WorthQueryAdvancementDenial::Interrupted(
+                WorthQueryManagedComputationInterruption::DeadlineExceeded
+            )
         ))
     ));
 }

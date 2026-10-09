@@ -60,13 +60,23 @@ where
     where
         Program: ApplicationProgramDefinition<Schema>,
     {
-        let mut request = self;
-        match request.prepare_in_program(application)? {
-            super::WorthQueryApplicationProgramMutationPreparation::Prepared(candidate) => {
-                Ok(candidate.commit())
-            }
-            super::WorthQueryApplicationProgramMutationPreparation::Settled(outcome) => Ok(outcome),
-        }
+        let request_scope = self.request_scope().clone();
+        let runtime = self.request.application;
+        runtime
+            .with_application_advancement(&request_scope, |active_phase| {
+                let phase = &active_phase;
+
+                let mut request = self;
+                match request.prepare_in_program_in_advancement(phase, application)? {
+                    super::WorthQueryApplicationProgramMutationPreparation::Prepared(candidate) => {
+                        Ok(candidate.commit_in_advancement(phase))
+                    }
+                    super::WorthQueryApplicationProgramMutationPreparation::Settled(outcome) => {
+                        Ok(outcome)
+                    }
+                }
+            })
+            .map_err(WorthQueryApplicationRequestMutationDenial::ExecutionRequest)?
     }
 
     /// Capability counterpart to [`Self::execute_in_program`],
@@ -93,44 +103,59 @@ where
                 >>::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
             >,
     {
-        if !std::ptr::eq(application.runtime(), self.request.application) {
-            return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramMismatch);
-        }
-        let selected = self
-            .request
-            .application
-            .on_branch(self.request.branch)
-            .select()
-            .map_err(WorthQueryApplicationRequestMutationDenial::ProductSelection)?;
-        let owner = application
-            .selected_program_owner(&selected)
-            .map_err(map_selected_program_owner_denial)?;
-        let selected_owns_action = owner.contains_action::<Intent::Binding>();
-        if !selected_owns_action && !application.contains_action::<Intent::Binding>() {
-            return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired);
-        }
-        self.execute_with_preparation_and_commit(
-            move |request, identities, staged| {
-                super::authorization::prepare_capability_selected(
-                    request, identities, staged, &selected,
-                )
-            },
-            |_, program, binding| {
-                if selected_owns_action {
-                    owner.compare_and_commit_program_action(
-                        program,
-                        binding.identities(),
-                        |idempotency| binding.extension().apply(idempotency),
-                    )
-                } else {
-                    application.compare_and_commit_program_action(
-                        program,
-                        binding.identities(),
-                        |idempotency| binding.extension().apply(idempotency),
-                    )
+        let request_scope = self.request_scope().clone();
+        let runtime = self.request.application;
+        runtime
+            .with_application_advancement(&request_scope, |active_phase| {
+                let phase = &active_phase;
+
+                if !std::ptr::eq(application.runtime(), self.request.application) {
+                    return Err(
+                        WorthQueryApplicationRequestMutationDenial::ApplicationProgramMismatch,
+                    );
                 }
-            },
-        )
+                let selected = self
+                    .request
+                    .application
+                    .on_branch(self.request.branch)
+                    .select()
+                    .map_err(WorthQueryApplicationRequestMutationDenial::ProductSelection)?;
+                let owner = application
+                    .selected_program_owner(&selected)
+                    .map_err(map_selected_program_owner_denial)?;
+                let selected_owns_action = owner.contains_action::<Intent::Binding>();
+                if !selected_owns_action && !application.contains_action::<Intent::Binding>() {
+                    return Err(
+                        WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired,
+                    );
+                }
+                self.execute_with_preparation_and_commit(
+                    phase,
+                    move |request, identities, staged| {
+                        super::authorization::prepare_capability_selected(
+                            request, identities, staged, &selected,
+                        )
+                    },
+                    |_, program, binding| {
+                        if selected_owns_action {
+                            owner.commit_program_action_in_advancement(
+                                phase,
+                                program,
+                                binding.identities(),
+                                |idempotency| binding.extension().apply(idempotency),
+                            )
+                        } else {
+                            application.commit_program_action_in_advancement(
+                                phase,
+                                program,
+                                binding.identities(),
+                                |idempotency| binding.extension().apply(idempotency),
+                            )
+                        }
+                    },
+                )
+            })
+            .map_err(WorthQueryApplicationRequestMutationDenial::ExecutionRequest)?
     }
 }
 

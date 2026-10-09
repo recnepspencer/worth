@@ -91,6 +91,16 @@ pub(super) struct WorthQueryYieldedWorkflowCleanupAssociation {
 }
 
 impl WorthQueryYieldedWorkflowRun {
+    pub(super) fn request_for_phase<'a>(
+        &self,
+        phase: &'a crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    ) -> Result<
+        worth_execution::ExecutionRequest<'a, 'a>,
+        crate::domain_computation::primary_graph::WorthQueryForeignAdvancementPhase,
+    > {
+        phase.request_for_managed(&self.relational_basis)
+    }
+
     pub(super) fn owner_from_yield_transition(
         minted: super::workflow_yield_transition::WorthQueryWorkflowYieldMintedOwner,
         _owner: super::workflow_yield_transition::WorthQueryWorkflowYieldMint,
@@ -255,10 +265,12 @@ impl WorthQueryYieldedWorkflowRun {
 
     pub fn readmit_same_runtime(
         self,
+        active_request: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+
         query_runtime: &crate::domain_computation::WorthQueryExecutionRuntime,
         bridge_runtime: &worth_runtime_bridge::facade::RuntimeBridge,
     ) -> super::WorthQueryWorkflowReadmissionOutcome {
-        super::readmission::readmit_workflow(self, query_runtime, bridge_runtime)
+        super::readmission::readmit_workflow(active_request, self, query_runtime, bridge_runtime)
     }
 }
 

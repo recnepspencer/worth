@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityMarkerIdentity,
     application_program::ApplicationWorkflowSpec,
@@ -344,6 +345,8 @@ impl WorthQueryWorkflowInstanceAdapter {
     }
 
     pub fn compare_and_commit_cancellation<Schema, Operation, Input, Scope>(
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         prepared: PreparedWorkflowInstanceCancellation<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
@@ -353,10 +356,12 @@ impl WorthQueryWorkflowInstanceAdapter {
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        runtime.compare_and_commit_workflow_instance_cancellation(prepared, idempotency)
+        runtime.compare_and_commit_workflow_instance_cancellation(phase, prepared, idempotency)
     }
 
     pub fn compare_and_commit<Schema, Operation, Input, Scope>(
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         prepared: PreparedWorkflowInstanceStart<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
@@ -366,6 +371,6 @@ impl WorthQueryWorkflowInstanceAdapter {
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        runtime.compare_and_commit_workflow_instance_start(prepared, idempotency)
+        runtime.compare_and_commit_workflow_instance_start(phase, prepared, idempotency)
     }
 }

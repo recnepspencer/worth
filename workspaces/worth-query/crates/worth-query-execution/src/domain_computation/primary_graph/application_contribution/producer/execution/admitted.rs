@@ -1,6 +1,9 @@
 use super::*;
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 
 pub(super) fn execute_fresh<Schema, Binding>(
+    phase: &WorthQueryAdvancementPhase<'_>,
+
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     external_principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request_scope: &WorthQueryRequestScope,
@@ -76,6 +79,7 @@ where
         )
         .map_err(|error| request_authority_denied(Binding::IDENTITY, error))?;
     post_authorization::execute_authorized::<Schema, Binding>(
+        phase,
         runtime,
         &selected,
         &principal,

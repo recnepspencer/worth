@@ -211,6 +211,16 @@ fn tier_matrix_public_observer_surfaces_preserve_truth_while_availability_change
 
 #[test]
 fn ordinary_observer_access_never_increments_cold_or_denial_counters_across_tiers() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     for tier in [
         DiagnosticsTier::Operational,
         DiagnosticsTier::Development,
@@ -222,7 +232,7 @@ fn ordinary_observer_access_never_increments_cold_or_denial_counters_across_tier
         let mut runtime_ctx = ();
 
         runtime
-            .transaction(&mut runtime_ctx, |tx| {
+            .transaction(request_execution, &mut runtime_ctx, |tx| {
                 tx.read(source, &|view| {
                     Ok(view.finish(
                         NodeEvaluationResult::from_version(version_ab(1, 0))

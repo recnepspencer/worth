@@ -130,6 +130,16 @@ impl CompiledFinancialLocalityWorld {
         batch_index: usize,
         capture_physical_witness: bool,
     ) -> Result<LocalityExecutionSettlement, SignalError> {
+        // This standalone caller declares the operational serial memory policy.
+        let serial_request = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(
+                crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+            ),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
         let shocked_values = runtime_shocked_values_for_batch(
             self.locality_definition(),
             &self.baseline_values,
@@ -151,8 +161,9 @@ impl CompiledFinancialLocalityWorld {
             let before = physical_ready
                 .as_ref()
                 .map(|_| captured_bindings(self.runtime.graph()));
-            self.runtime
-                .transaction(&mut (), |tx| tx.read(source, &evaluator).map(|_| ()))?;
+            self.runtime.transaction(request_execution, &mut (), |tx| {
+                tx.read(source, &evaluator).map(|_| ())
+            })?;
             if let (Some(before), Some(witness)) = (before, physical_ready.as_mut()) {
                 witness.record_transaction(
                     source,
@@ -236,7 +247,17 @@ impl CompiledFinancialLocalityWorld {
         &mut self,
         mutations: &[FinancialLocalityMutation],
     ) -> Result<(), SignalError> {
-        self.runtime.transaction(&mut (), |tx| {
+        // This standalone caller declares the operational serial memory policy.
+        let serial_request = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(
+                crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+            ),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
+        self.runtime.transaction(request_execution, &mut (), |tx| {
             let mut batch = tx.batch_changes();
             for mutation in mutations {
                 let source = self.handles[&mutation.producer];

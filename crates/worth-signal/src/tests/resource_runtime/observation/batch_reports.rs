@@ -2,6 +2,16 @@ use super::*;
 
 #[test]
 fn resource_observation_batch_report_respects_lifecycle_only_and_output_policies_per_node() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let lifecycle_only_node = graph.node().build();
     let lifecycle_and_output_node = graph.node().build();
@@ -59,7 +69,7 @@ fn resource_observation_batch_report_respects_lifecycle_only_and_output_policies
 
     let mut ctx = ();
     runtime
-        .transaction(&mut ctx, |tx| {
+        .transaction(request_execution, &mut ctx, |tx| {
             let first = tx.stage_admitted_resource_completion(lifecycle_only_completion)?;
             let second = tx.stage_admitted_resource_completion(lifecycle_and_output_completion)?;
             tx.commit_staged_resource_completion(first.staged_effect())?;
@@ -138,6 +148,16 @@ fn resource_observation_batch_report_respects_lifecycle_only_and_output_policies
 
 #[test]
 fn resource_observation_batch_report_remains_rollback_safe() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let node = graph.node().build();
     let mut runtime = TestRuntime::build(graph);
@@ -167,7 +187,7 @@ fn resource_observation_batch_report_remains_rollback_safe() {
     );
 
     let mut ctx = ();
-    let mut tx = runtime.begin(&mut ctx);
+    let mut tx = runtime.begin(request_execution, &mut ctx);
     let staging = tx
         .stage_admitted_resource_completion(admitted_completion)
         .expect("completion should stage");

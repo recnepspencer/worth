@@ -8,41 +8,53 @@ use crate::domain_computation::{
 
 #[test]
 fn successful_direct_readmission_carries_exact_query_and_bridge_work() {
-    let (yielded, bridge, runtime) = super::readmission_direct::yielded_direct();
-    let readmitted = match yielded.readmit_same_runtime(&runtime, &bridge) {
-        WorthQueryDirectReadmissionOutcome::Readmitted(readmitted) => readmitted,
-        _ => panic!("owner runtime must readmit the direct yielded authority"),
-    };
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
+        let active_request = execution;
 
-    assert_committed_owner_work(readmitted.readmission_evidence(), 0);
-    let terminal = match readmitted.into_active().abandon() {
-        WorthQueryDirectGraphStepOutcome::Failed(terminal) => terminal,
-        _ => panic!("readmitted direct execution must terminalize"),
-    };
-    terminal
-        .cleanup()
-        .expect("readmitted direct execution must release its authorities");
+        let (yielded, bridge, runtime) = super::readmission_direct::yielded_direct(execution);
+        let readmitted = match yielded.readmit_same_runtime(active_request, &runtime, &bridge) {
+            WorthQueryDirectReadmissionOutcome::Readmitted(readmitted) => readmitted,
+            _ => panic!("owner runtime must readmit the direct yielded authority"),
+        };
+
+        assert_committed_owner_work(readmitted.readmission_evidence(), 0);
+        let terminal = match readmitted.into_active().abandon() {
+            WorthQueryDirectGraphStepOutcome::Failed(terminal) => terminal,
+            _ => panic!("readmitted direct execution must terminalize"),
+        };
+        terminal
+            .cleanup()
+            .expect("readmitted direct execution must release its authorities");
+    });
 }
 
 #[test]
 fn successful_workflow_readmission_carries_exact_query_and_bridge_work() {
-    let (yielded, bridge, runtime, old_producer) =
-        super::readmission_workflow::yielded_workflow(YieldProvider::installed(7));
-    let readmitted = match yielded.readmit_same_runtime(&runtime, &bridge) {
-        WorthQueryWorkflowReadmissionOutcome::Readmitted(readmitted) => readmitted,
-        _ => panic!("owner runtime must readmit the workflow yielded authority"),
-    };
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
+        let active_request = execution;
 
-    assert_committed_owner_work(readmitted.readmission_evidence(), 1);
-    drop(old_producer);
-    let terminal = match readmitted.into_active().abandon() {
-        WorthQueryWorkflowGraphStepOutcome::Failed(terminal) => terminal,
-        _ => panic!("readmitted workflow execution must terminalize"),
-    };
-    assert!(matches!(
-        terminal.cleanup(),
-        WorthQueryWorkflowRunCleanupOutcome::Complete(_)
-    ));
+        let (yielded, bridge, runtime, old_producer) =
+            super::readmission_workflow::yielded_workflow(execution, YieldProvider::installed(7));
+        let readmitted = match yielded.readmit_same_runtime(active_request, &runtime, &bridge) {
+            WorthQueryWorkflowReadmissionOutcome::Readmitted(readmitted) => readmitted,
+            _ => panic!("owner runtime must readmit the workflow yielded authority"),
+        };
+
+        assert_committed_owner_work(readmitted.readmission_evidence(), 1);
+        drop(old_producer);
+        let terminal = match readmitted.into_active().abandon() {
+            WorthQueryWorkflowGraphStepOutcome::Failed(terminal) => terminal,
+            _ => panic!("readmitted workflow execution must terminalize"),
+        };
+        assert!(matches!(
+            terminal.cleanup(),
+            WorthQueryWorkflowRunCleanupOutcome::Complete(_)
+        ));
+    });
 }
 
 fn assert_committed_owner_work(evidence: WorthQueryReadmissionEvidence, artifact_attempts: usize) {

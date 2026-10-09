@@ -16,8 +16,8 @@ use crate::domain_computation::primary_graph::tests::application_attempt::{
     authenticated_principal, idempotency, resolved_account,
 };
 use crate::domain_computation::primary_graph::tests::fixture::{
-    installed_authorization_world, live_scope, Account, AuthorizationWorld,
-    ExactStatusRetentionInput, ExactStatusRetentionOperation, IdentityExecutionSchema,
+    live_scope, Account, AuthorizationWorld, ExactStatusRetentionInput,
+    ExactStatusRetentionOperation, IdentityExecutionSchema,
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitDenialStage, WorthQueryApplicationCommitOutcome,
@@ -41,25 +41,39 @@ type RunningRetainedCommit = WorthQueryRunningApplicationCommit<
 
 #[test]
 fn occupied_real_registration_cleans_the_conflict_and_preserves_an_interleaved_peer() {
-    let world = installed_authorization_world(true);
-    let (victim, peer) = equivalent_programs(&world, "occupied-registration");
-    let victim = start(&world, victim, idempotency(181, 182));
-    let peer = start(&world, peer, idempotency(183, 184));
-    let victim = while_peer_is_registered(&world, peer, || {
-        reject_occupied_registration(&world, victim)
-    });
-    assert!(matches!(
-        victim,
-        WorthQueryApplicationCommitOutcome::Denied(ref denial)
-            if denial.stage() == WorthQueryApplicationCommitDenialStage::ProviderPlan
-    ));
-    assert_eq!(world.application.provider_session_resource_count(), 0);
+    let world =
+        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
+            true,
+        );
+    world
+        .application
+        .with_host_advancement(|active_phase| {
+            let phase = &active_phase;
+
+            let (victim, peer) = equivalent_programs(&world, "occupied-registration");
+            let victim = start(phase, &world, victim, idempotency(181, 182));
+            let peer = start(phase, &world, peer, idempotency(183, 184));
+            let victim = while_peer_is_registered(phase, &world, peer, || {
+                reject_occupied_registration(phase, &world, victim)
+            });
+            assert!(matches!(
+                victim,
+                WorthQueryApplicationCommitOutcome::Denied(ref denial)
+                    if denial.stage() == WorthQueryApplicationCommitDenialStage::ProviderPlan
+            ));
+            assert_eq!(world.application.provider_session_resource_count(), 0);
+        })
+        .expect("fixture owner admits its advancement");
 }
 
 fn reject_occupied_registration(
+    phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+
     world: &AuthorizationWorld,
     victim: RunningRetainedCommit,
 ) -> WorthQueryApplicationCommitOutcome {
+    let execution = phase;
+
     let WorthQueryRunningApplicationCommit {
         admission,
         lease,
@@ -81,6 +95,7 @@ fn reject_occupied_registration(
     )
     .expect("the real running attempt must recapture its own exact basis");
     let admitted_session = admit_provider_session(
+        execution,
         &mut running,
         &world.application.primary_graph_authority,
         attempt_basis.retained_product(),
@@ -138,6 +153,7 @@ fn reject_occupied_registration(
     drop(reservation);
 
     finish_application_commit(
+        phase,
         &world.application,
         WorthQueryProgressedApplicationCommit {
             workflow_settlement_publication: None,
@@ -151,10 +167,14 @@ fn reject_occupied_registration(
 }
 
 fn while_peer_is_registered(
+    phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+
     world: &AuthorizationWorld,
     peer: RunningRetainedCommit,
     while_registered: impl FnOnce() -> WorthQueryApplicationCommitOutcome,
 ) -> WorthQueryApplicationCommitOutcome {
+    let execution = phase;
+
     let WorthQueryRunningApplicationCommit {
         admission,
         lease,
@@ -170,6 +190,7 @@ fn while_peer_is_registered(
     } = peer;
     let product = attempt_basis.retained_product();
     let admitted = admit_provider_session(
+        execution,
         &mut running,
         &world.application.primary_graph_authority,
         product.retained_clone(),
@@ -229,6 +250,7 @@ fn while_peer_is_registered(
         aftermath_causality,
     };
     let peer = finish_application_commit(
+        phase,
         &world.application,
         registered.progress(&authority).finish(
             lease,
@@ -245,6 +267,8 @@ fn while_peer_is_registered(
 }
 
 fn start(
+    phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+
     world: &AuthorizationWorld,
     program: RetainedProgram,
     idempotency: WorthQueryApplicationIdempotencyBinding,
@@ -255,13 +279,14 @@ fn start(
     Account,
 > {
     let prepared = prepare_application_commit(
+        phase,
         &world.application,
         WorthQueryApplicationCommitPreparationRequest::new(program, idempotency, None, None),
     );
     let WorthQueryApplicationCommitPreparation::Ready(prepared) = prepared else {
         panic!("registration fixture must reach ordinary prepared posture")
     };
-    start_managed_application_commit(&world.application, prepared)
+    start_managed_application_commit(phase, &world.application, prepared)
         .unwrap_or_else(|outcome| panic!("registration fixture must start: {outcome:?}"))
 }
 

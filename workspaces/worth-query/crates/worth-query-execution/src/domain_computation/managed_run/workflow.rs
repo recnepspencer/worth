@@ -187,6 +187,31 @@ pub struct WorthQueryRunningWorkflowRun {
 }
 
 impl WorthQueryRunningWorkflowRun {
+    /// Borrows the request for this run only after checking its installed owner.
+    /// This view carries custody into the host executor; it starts no work itself.
+    pub fn request_in_advancement<'a>(
+        &self,
+        phase: &'a crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    ) -> Result<
+        worth_execution::ExecutionRequest<'a, 'a>,
+        crate::domain_computation::primary_graph::WorthQueryForeignAdvancementPhase,
+    > {
+        phase.request_for_managed(&self.relational_basis)
+    }
+
+    pub(super) fn relational_basis(&self) -> &WorthQueryManagedRelationalObservation {
+        &self.relational_basis
+    }
+
+    pub(in crate::domain_computation) fn execution_owner_identity(
+        &self,
+    ) -> Option<worth_runtime_world::facade::RuntimeWorldOwnerIdentity> {
+        self.relational_basis.owner_identity()
+    }
+    pub(in crate::domain_computation) fn execution_source_instance_id(&self) -> u64 {
+        self.relational_basis.identity().runtime_instance_id()
+    }
+
     pub fn abandon(self) -> WorthQueryWorkflowRunTerminal {
         self.terminal(WorthQueryManagedRunTerminalKind::Failed)
     }

@@ -43,6 +43,16 @@ fn repeated_edge_churn_preserves_dependency_and_subscriber_integrity() {
 
 #[test]
 fn rollback_after_dynamic_dependency_churn_restores_original_dependencies() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -52,7 +62,7 @@ fn rollback_after_dynamic_dependency_churn_restores_original_dependencies() {
     let mut ctx = ();
 
     runtime
-        .transaction(&mut ctx, |tx| {
+        .transaction(request_execution, &mut ctx, |tx| {
             tx.evaluate_with_plan(
                 dependent,
                 &|view| {
@@ -72,7 +82,7 @@ fn rollback_after_dynamic_dependency_churn_restores_original_dependencies() {
         })
         .unwrap();
 
-    let err = runtime.transaction(&mut ctx, |tx| {
+    let err = runtime.transaction(request_execution, &mut ctx, |tx| {
         tx.mark_dirty(source_b, ASPECT_A)?;
         tx.evaluate_with_plan(
             dependent,
@@ -145,6 +155,16 @@ fn unregister_and_slot_reuse_after_churn_leave_no_ghost_edges() {
 
 #[test]
 fn snapshot_churn_reorders_dependencies_without_ghost_snapshots() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -154,7 +174,7 @@ fn snapshot_churn_reorders_dependencies_without_ghost_snapshots() {
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(b, &|view| {
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(2, 0))))
             })?;
@@ -197,7 +217,7 @@ fn snapshot_churn_reorders_dependencies_without_ghost_snapshots() {
         .unwrap();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.mark_dirty(b, ASPECT_A)?;
             tx.read(b, &|view| {
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(3, 0))))
@@ -206,7 +226,7 @@ fn snapshot_churn_reorders_dependencies_without_ghost_snapshots() {
         })
         .unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.evaluate_with_plan(
                 dependent,
                 &|view| {

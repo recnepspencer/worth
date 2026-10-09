@@ -2,6 +2,16 @@ use super::*;
 
 #[test]
 fn resource_observer_demand_revalidation_requires_committed_not_rollback_suppressed_observation() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let node = graph.node().build();
     let mut runtime = TestRuntime::build(graph);
@@ -17,7 +27,7 @@ fn resource_observer_demand_revalidation_requires_committed_not_rollback_suppres
     );
 
     let mut ctx = ();
-    let mut tx = runtime.begin(&mut ctx);
+    let mut tx = runtime.begin(request_execution, &mut ctx);
     tx.evaluate_with_plan(
         node,
         &|view| Ok(view.finish(NodeEvaluationResult::from_version(version_ab(1, 0)))),
@@ -38,6 +48,16 @@ fn resource_observer_demand_revalidation_requires_committed_not_rollback_suppres
 
 #[test]
 fn resource_observer_demand_revalidation_denies_forged_observation_proof() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let node = graph.node().build();
     let mut runtime = TestRuntime::build(graph);
@@ -52,7 +72,7 @@ fn resource_observer_demand_revalidation_denies_forged_observation_proof() {
         }),
     );
     let mut ctx = ();
-    let mut tx = runtime.begin(&mut ctx);
+    let mut tx = runtime.begin(request_execution, &mut ctx);
     tx.evaluate_with_plan(
         node,
         &|view| Ok(view.finish(NodeEvaluationResult::from_version(version_ab(1, 0)))),
@@ -97,6 +117,16 @@ fn resource_observer_demand_revalidation_denies_forged_observation_proof() {
 
 #[test]
 fn resource_observer_demand_revalidation_does_not_bypass_active_request_rule() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let node = graph.node().build();
     let mut runtime = TestRuntime::build(graph);
@@ -116,7 +146,7 @@ fn resource_observer_demand_revalidation_does_not_bypass_active_request_rule() {
         }),
     );
     let mut ctx = ();
-    let mut tx = runtime.begin(&mut ctx);
+    let mut tx = runtime.begin(request_execution, &mut ctx);
     tx.evaluate_with_plan(
         node,
         &|view| Ok(view.finish(NodeEvaluationResult::from_version(version_ab(1, 0)))),

@@ -1,6 +1,6 @@
 //! Fail-closed evidence for an indeterminate provider commit result.
 
-pub(super) fn unknown_commit_recovery_evidence(
+pub(in crate::domain_computation::primary_graph::application_attempt) fn unknown_commit_recovery_evidence(
     detail: &'static str,
 ) -> super::super::WorthQueryApplicationUnresolvedCommitEvidence {
     let failure = crate::domain_computation::provider_session::WorthQueryProviderSessionFailure::new(

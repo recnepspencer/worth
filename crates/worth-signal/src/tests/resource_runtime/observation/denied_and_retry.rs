@@ -2,6 +2,16 @@ use super::*;
 
 #[test]
 fn resource_observation_batch_report_can_include_denied_completion_without_applying_it() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let node = graph.node().build();
     let mut runtime = TestRuntime::build(graph);
@@ -34,7 +44,7 @@ fn resource_observation_batch_report_can_include_denied_completion_without_apply
     assert_eq!(denied.class(), CompletionDenialClass::Malformed);
 
     let mut ctx = ();
-    let mut tx = runtime.begin(&mut ctx);
+    let mut tx = runtime.begin(request_execution, &mut ctx);
     tx.evaluate_with_plan(
         node,
         &|view| Ok(view.finish(NodeEvaluationResult::from_version(version_ab(1, 0)))),
@@ -93,6 +103,16 @@ fn resource_observation_batch_report_can_include_denied_completion_without_apply
 
 #[test]
 fn resource_observation_clears_stale_denied_completion_after_authoritative_progress() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let source = graph.node().build();
     let node = graph.node().build();
@@ -141,7 +161,7 @@ fn resource_observation_clears_stale_denied_completion_after_authoritative_progr
 
     let mut ctx = ();
     runtime
-        .transaction(&mut ctx, |tx| {
+        .transaction(request_execution, &mut ctx, |tx| {
             let staging = tx.stage_admitted_resource_completion(admitted_completion)?;
             tx.commit_staged_resource_completion(staging.staged_effect())?;
             Ok(())
@@ -150,7 +170,7 @@ fn resource_observation_clears_stale_denied_completion_after_authoritative_progr
 
     mark_dirty(runtime.graph_mut(), source, Aspect::new(0))
         .expect("dependency invalidation should create a fresh observation boundary");
-    let mut tx = runtime.begin(&mut ctx);
+    let mut tx = runtime.begin(request_execution, &mut ctx);
     tx.evaluate_with_plan(
         node,
         &|view| Ok(view.finish(NodeEvaluationResult::from_version(version_ab(1, 0)))),
@@ -172,6 +192,16 @@ fn resource_observation_clears_stale_denied_completion_after_authoritative_progr
 
 #[test]
 fn resource_observation_batch_report_can_include_retry_schedule_without_retry_apply() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let node = graph.node().build();
     let mut runtime = TestRuntime::build(graph);
@@ -192,7 +222,7 @@ fn resource_observation_batch_report_can_include_retry_schedule_without_retry_ap
         .expect("timed out request should schedule retry");
 
     let mut ctx = ();
-    let mut tx = runtime.begin(&mut ctx);
+    let mut tx = runtime.begin(request_execution, &mut ctx);
     tx.evaluate_with_plan(
         node,
         &|view| Ok(view.finish(NodeEvaluationResult::from_version(version_ab(1, 0)))),
@@ -266,6 +296,16 @@ fn resource_observation_batch_report_can_include_retry_schedule_without_retry_ap
 
 #[test]
 fn resource_observation_clears_superseded_retry_schedule_when_fresh_request_admits() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let source = graph.node().build();
     let node = graph.node().build();
@@ -300,7 +340,7 @@ fn resource_observation_clears_superseded_retry_schedule_when_fresh_request_admi
     );
 
     let mut ctx = ();
-    let mut tx = runtime.begin(&mut ctx);
+    let mut tx = runtime.begin(request_execution, &mut ctx);
     tx.evaluate_with_plan(
         node,
         &|view| Ok(view.finish(NodeEvaluationResult::from_version(version_ab(1, 0)))),

@@ -82,13 +82,14 @@ impl WorthQueryIteratingWorkflowConvergenceEpoch {
 
     pub fn begin_stage_iteration(
         self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         stage_identity: &str,
         request: WorthQueryManagedGraphCallRequest,
     ) -> Result<
         WorthQueryStartedWorkflowConvergenceIteration,
         WorthQueryWorkflowConvergenceIterationStartRejection,
     > {
-        WorkflowIterationAssociation::begin(self.association, stage_identity, request)
+        WorkflowIterationAssociation::begin(phase, self.association, stage_identity, request)
             .map(|association| WorthQueryStartedWorkflowConvergenceIteration { association })
             .map_err(start::admit_start_rejection)
     }
@@ -113,8 +114,11 @@ impl WorthQueryStartedWorkflowConvergenceIteration {
         self.association.request_cancellation(reason)
     }
 
-    pub fn advance(self) -> WorthQueryWorkflowConvergenceStepOutcome {
-        admit_associated_step(self.association.advance())
+    pub fn advance(
+        self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    ) -> WorthQueryWorkflowConvergenceStepOutcome {
+        admit_associated_step(self.association.advance(phase))
     }
 
     pub fn abandon(self) -> WorthQueryWorkflowConvergenceIterationOutcome {
@@ -123,6 +127,8 @@ impl WorthQueryStartedWorkflowConvergenceIteration {
 }
 
 pub enum WorthQueryWorkflowConvergenceStepOutcome {
+    /// Refused before observation; retains the active iteration.
+    ForeignAdvancementPhase(WorthQueryStartedWorkflowConvergenceIteration),
     Continue(WorthQueryPausedWorkflowConvergenceIteration),
     ChunkReady(WorthQueryPendingWorkflowConvergenceChunk),
     Completed(WorthQueryWorkflowConvergenceIterationOutcome),
@@ -134,8 +140,11 @@ pub struct WorthQueryPausedWorkflowConvergenceIteration {
 }
 
 impl WorthQueryPausedWorkflowConvergenceIteration {
-    pub fn advance(self) -> WorthQueryWorkflowConvergenceStepOutcome {
-        admit_associated_step(self.association.advance())
+    pub fn advance(
+        self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    ) -> WorthQueryWorkflowConvergenceStepOutcome {
+        admit_associated_step(self.association.advance(phase))
     }
 
     pub fn yield_iteration(self) -> WorthQueryWorkflowConvergenceYieldOutcome {
@@ -184,6 +193,11 @@ fn admit_associated_step(
     outcome: WorkflowAssociatedStepOutcome,
 ) -> WorthQueryWorkflowConvergenceStepOutcome {
     match outcome {
+        WorkflowAssociatedStepOutcome::ForeignAdvancementPhase(association) => {
+            WorthQueryWorkflowConvergenceStepOutcome::ForeignAdvancementPhase(
+                WorthQueryStartedWorkflowConvergenceIteration { association },
+            )
+        }
         WorkflowAssociatedStepOutcome::Continue(association) => {
             WorthQueryWorkflowConvergenceStepOutcome::Continue(
                 WorthQueryPausedWorkflowConvergenceIteration { association },

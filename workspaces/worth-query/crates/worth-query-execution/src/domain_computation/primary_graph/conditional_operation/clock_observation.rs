@@ -54,6 +54,8 @@ impl WorthQueryConditionalClockObservationDenial {
 /// Why a clock observation failed.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryConditionalClockObservationFailureKind {
+    /// The host's request could not enter this wake advancement.
+    ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
     /// The clock source was unavailable.
     SourceUnavailable,
     /// The clock source failed to produce a reading.
@@ -264,19 +266,34 @@ where
     Schema: ApplicationSchema,
 {
     pub fn observe(&mut self) -> WorthQueryConditionalClockObservationOutcome<Clock> {
-        let granular_invalidation_installation = self.runtime.granular_invalidation_installation();
-        let granular_source_read_basis = self.truth.granular_source_read_basis();
-        let bridge_root = self.runtime.bridge.conditional_operations();
-        let bridge = bridge_root
-            .read()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let outcome = self
-            .operation
-            .observe_clock(&bridge, self.runtime, &self.truth);
-        outcome.typed(
-            granular_invalidation_installation,
-            Some(granular_source_read_basis),
-        )
+        self.runtime
+            .with_host_advancement(|active_phase| {
+                let phase = &active_phase;
+                let granular_invalidation_installation =
+                    self.runtime.granular_invalidation_installation();
+                let granular_source_read_basis = self.truth.granular_source_read_basis();
+                let bridge_root = self.runtime.bridge.conditional_operations();
+                let bridge = bridge_root
+                    .read()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner);
+                let outcome =
+                    self.operation
+                        .observe_clock(phase, &bridge, self.runtime, &self.truth);
+                outcome.typed(
+                    granular_invalidation_installation,
+                    Some(granular_source_read_basis),
+                )
+            })
+            .unwrap_or_else(|cause| {
+                WorthQueryConditionalClockObservationOutcome::Failed(
+                    WorthQueryConditionalClockObservationFailure {
+                        kind: WorthQueryConditionalClockObservationFailureKind::ExecutionRequest(
+                            cause,
+                        ),
+                        detail: String::new(),
+                    },
+                )
+            })
     }
 }
 

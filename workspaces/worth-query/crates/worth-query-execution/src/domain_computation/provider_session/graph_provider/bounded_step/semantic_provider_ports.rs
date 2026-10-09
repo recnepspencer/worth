@@ -41,6 +41,7 @@ pub(super) trait WorthQueryErasedProvisionalGraphProvider: Send + Sync {
 
     fn discard(
         &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
         evidence: WorthQueryProvisionalOverlayEvidenceView<'_>,
     ) -> Result<(), WorthQueryProvisionalFailure>;
 }
@@ -93,9 +94,10 @@ impl<P: WorthQueryProvisionalGraphProvider> WorthQueryErasedProvisionalGraphProv
 
     fn discard(
         &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
         evidence: WorthQueryProvisionalOverlayEvidenceView<'_>,
     ) -> Result<(), WorthQueryProvisionalFailure> {
-        self.discard_provisional_overlay(evidence)
+        self.discard_provisional_overlay(execution, evidence)
     }
 }
 
@@ -178,6 +180,7 @@ pub(super) fn stage_provisional_overlay(
 
 pub(super) fn discard_provisional_overlay(
     provider: &Option<Arc<dyn WorthQueryErasedProvisionalGraphProvider>>,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
     evidence: WorthQueryProvisionalOverlayEvidenceView<'_>,
 ) -> Result<(), WorthQueryProvisionalFailure> {
     let provider = provider.as_ref().ok_or_else(|| {
@@ -186,13 +189,15 @@ pub(super) fn discard_provisional_overlay(
             "provider did not install provisional overlay authority",
         )
     })?;
-    std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| provider.discard(evidence)))
-        .unwrap_or_else(|_| {
-            Err(WorthQueryProvisionalFailure::new(
-                WorthQueryProvisionalDenialKind::ProviderPanicked,
-                "provider panicked while discarding provisional overlay",
-            ))
-        })
+    std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        provider.discard(execution, evidence)
+    }))
+    .unwrap_or_else(|_| {
+        Err(WorthQueryProvisionalFailure::new(
+            WorthQueryProvisionalDenialKind::ProviderPanicked,
+            "provider panicked while discarding provisional overlay",
+        ))
+    })
 }
 
 pub(super) fn load_invariant_state(

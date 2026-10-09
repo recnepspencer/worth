@@ -78,6 +78,19 @@ fn committed_patch_delivery_changes_the_installed_graph_before_world_sealing() {
         installed,
         budgets::court(),
     );
+    let policy = match court.world.execution_placement() {
+        worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy)
+        | worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Leased { policy, .. } => {
+            policy
+        }
+    };
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::from_policy(&policy),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let root = court.bootstrap();
     let mut context = court.context(&root);
     assert_eq!(context.records.get().unwrap(), &oracle.records);
@@ -92,7 +105,7 @@ fn committed_patch_delivery_changes_the_installed_graph_before_world_sealing() {
         )
         .unwrap();
     let mut routed = None;
-    let outcome = port.execute_with_signal(prepared, &mut context, &token, |tx| {
+    let outcome = port.execute_with_signal(execution, prepared, &mut context, &token, |tx| {
         // No manual invalidation: the installed graph carries Bridge's change.
         routed = Some(
             tx.read(nodes.route, &|view| nodes.evaluate(view))?

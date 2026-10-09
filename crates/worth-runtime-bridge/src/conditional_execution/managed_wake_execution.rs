@@ -25,6 +25,7 @@ pub struct BridgeManagedConditionalExecutionRequest<'a> {
 impl BridgeOwnedSignalRuntime {
     pub fn execute_managed_due_wake(
         &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
         request: BridgeManagedConditionalExecutionRequest<'_>,
         compute_context: &mut dyn std::any::Any,
     ) -> Result<BridgeConditionalDecisionEvidence, BridgeConditionalDenial> {
@@ -66,6 +67,7 @@ impl BridgeOwnedSignalRuntime {
         )?;
         session.observation_baselines = Arc::clone(&request.due_wake.observation_baselines);
         let mut evidence = self.execute_admitted_conditional(
+            execution,
             &session,
             BridgeConditionalExecutionRequest {
                 lowering: request.lowering,

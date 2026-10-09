@@ -139,10 +139,21 @@ fn foreign_mutation_port_cannot_consume_another_owner_reservation() {
 
 #[test]
 fn stale_source_denies_before_any_destination_reservation_effect() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let world = MutationWorld::<()>::new();
     world
         .port
         .advance_exact(
+            request_execution,
             &world.source_basis,
             &mut (),
             &SignalOwnerCancellationSource::new().token(),
@@ -165,6 +176,16 @@ fn stale_source_denies_before_any_destination_reservation_effect() {
 
 #[test]
 fn source_staleness_after_issuance_denies_on_consume_and_releases_capacity() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let world = MutationWorld::<()>::new();
     let before = world.owner.retention_ledger_observation();
     let reservation = world
@@ -174,6 +195,7 @@ fn source_staleness_after_issuance_denies_on_consume_and_releases_capacity() {
     world
         .port
         .advance_exact(
+            request_execution,
             &world.source_basis,
             &mut (),
             &SignalOwnerCancellationSource::new().token(),

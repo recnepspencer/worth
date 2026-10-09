@@ -16,6 +16,16 @@ fn build_scoped_canonical_runtime() -> (
     NodeId,
     NodeId,
 ) {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let graph = SignalGraph::new();
     let mut runtime = SignalRuntime::builder(graph).with_kernel_defaults().build();
     let support = runtime
@@ -35,7 +45,7 @@ fn build_scoped_canonical_runtime() -> (
         .append_dependency(primary, support, ASPECT_A)
         .unwrap();
     runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.read(support, &|view| {
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(1, 0))))
             })?;
@@ -50,7 +60,7 @@ fn build_scoped_canonical_runtime() -> (
     let feature = runtime.create_branch("feature-phase8-canonical").unwrap();
     runtime.switch_branch(feature.clone()).unwrap();
     runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.mark_dirty(primary, ASPECT_A)?;
             tx.read(primary, &|view| {
                 let _ = view.read_aspect_version(support, ASPECT_A)?;
@@ -66,6 +76,16 @@ fn build_scoped_canonical_runtime() -> (
 
 #[test]
 fn branch_basis_canonical_projection_is_stable_across_equivalent_producers() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let graph = SignalGraph::new();
     let mut runtime = SignalRuntime::builder(graph).with_kernel_defaults().build();
     let node = runtime
@@ -74,7 +94,7 @@ fn branch_basis_canonical_projection_is_stable_across_equivalent_producers() {
         .produces_aspects([ASPECT_A])
         .build();
     runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.read(node, &|view| {
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(1, 0))))
             })?;

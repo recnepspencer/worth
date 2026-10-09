@@ -19,6 +19,16 @@ pub(super) fn perform_real(
     operation: OperationKind,
     step: usize,
 ) -> RealResult {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            worth_signal::facade::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     match operation {
         OperationKind::Fork => {
             let name = court.child_name(step);
@@ -45,6 +55,7 @@ pub(super) fn perform_real(
         OperationKind::Advance => {
             let expected = court.root.basis.clone();
             match court.mutation.advance_exact(
+                request_execution,
                 &expected,
                 &mut (),
                 &SignalOwnerCancellationSource::new().token(),

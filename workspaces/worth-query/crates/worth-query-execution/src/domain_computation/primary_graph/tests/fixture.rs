@@ -373,3 +373,8 @@ worth_query_application_schema! {
         }
     }
 }
+
+#[cfg(feature = "test-query-execution-observer")]
+mod advancement_host;
+#[cfg(feature = "test-query-execution-observer")]
+pub(crate) use advancement_host::AdvancementHost;

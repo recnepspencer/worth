@@ -201,10 +201,16 @@ fn execute_with_key(
     let idempotency = WorthQueryApplicationIdempotencyBinding::for_mutation_identities(&identities);
     let execution = world
         .application
-        .execute_mutation_handler::<OptionalOutputMutationBinding>(
-            &identities,
-            principal.principal_identity(),
-            admission,
-        );
+        .with_application_advancement(&request, |phase| {
+            world
+                .application
+                .execute_mutation_handler::<OptionalOutputMutationBinding>(
+                    &phase,
+                    &identities,
+                    principal.principal_identity(),
+                    admission,
+                )
+        })
+        .expect("the fixture policy admits its handler call");
     (execution, idempotency)
 }

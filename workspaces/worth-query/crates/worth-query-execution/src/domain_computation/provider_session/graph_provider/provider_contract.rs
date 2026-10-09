@@ -29,6 +29,8 @@ pub trait WorthQueryGraphCommitProvider<C>: Send + Sync + 'static {
 
     fn admit_commit(
         &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+
         call: &WorthQueryGraphCommitCall,
     ) -> Result<WorthQueryGraphProviderReceipt, WorthQueryGraphProviderFailure>;
 }

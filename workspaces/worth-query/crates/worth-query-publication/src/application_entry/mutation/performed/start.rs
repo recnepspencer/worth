@@ -1,4 +1,5 @@
 use super::*;
+use worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase as AdvancementPhase;
 
 impl<'application, Schema, Intent, Program, Root>
     WorthQueryPerformedApplicationMutation<'application, Schema, Intent, Program, Root>
@@ -33,6 +34,33 @@ where
 {
     pub fn start_required_outputs<'principal, 'scope>(
         self,
+        request: &crate::application_entry::WorthQueryApplicationRequest<
+            'application,
+            'principal,
+            'scope,
+            Schema,
+        >,
+        controls: crate::application_entry::WorthQueryOutputDemandControls,
+    ) -> Result<
+        WorthQueryStartedRequiredOutputs<'application, Schema, Intent, Program, Root>,
+        WorthQueryRequiredOutputStartFailure<'application, Schema, Intent, Program, Root>,
+    > {
+        let application = self.application.runtime();
+        let mut retained = Some(self);
+        match application.with_application_advancement(request.scope, |phase| {
+            retained.take().expect("host call retains its performed facts").start_required_outputs_in_advancement(&phase, request, controls)
+        }) {
+            Ok(outcome) => outcome,
+            Err(cause) => Err(WorthQueryRequiredOutputStartFailure {
+                performed: retained.take().expect("refused request performs no work"),
+                denial: WorthQueryRequiredOutputPreparationDenial::Demand(crate::application_entry::WorthQueryApplicationOutputDemandDenial::advancement(cause)),
+            }),
+        }
+    }
+
+    fn start_required_outputs_in_advancement<'principal, 'scope>(
+        self,
+        phase: &AdvancementPhase<'_>,
         request: &crate::application_entry::WorthQueryApplicationRequest<
             'application,
             'principal,
@@ -80,7 +108,7 @@ where
         let source_result = match request
             .at(&retained_source)
             .query(demand.source_intent())
-            .execute()
+            .execute_in_advancement(phase)
         {
             Ok(source) => source,
             Err(denial) => {
@@ -140,6 +168,7 @@ where
             .demand(demand.clone())
             .controls(controls)
             .start_performed::<Program, Root>(
+                phase,
                 application,
                 &prepared,
                 output_source,

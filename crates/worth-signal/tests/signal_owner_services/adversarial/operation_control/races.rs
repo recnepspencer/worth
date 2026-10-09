@@ -64,6 +64,9 @@ pub(super) fn advance(
 ) -> Result<(), &'static str> {
     mutation
         .advance_exact(
+            worth_execution::ExecutionRequest::serial(
+                &crate::execution_custody::operational_serial_request(),
+            ),
             basis,
             &mut (),
             &SignalOwnerCancellationSource::new().token(),

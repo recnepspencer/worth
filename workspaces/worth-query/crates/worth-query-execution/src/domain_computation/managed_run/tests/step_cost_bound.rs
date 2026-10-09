@@ -84,60 +84,70 @@ struct StepCostEvidence {
 
 #[test]
 fn one_provider_step_has_constant_work_under_unrelated_authority_width() {
-    let baseline = execute_target(0);
-    let wide = execute_target(UNRELATED_WIDTH);
-    assert_eq!(baseline, wide);
-    assert_eq!(
-        baseline,
-        StepCostEvidence {
-            issued_calls: 1,
-            admitted_receipts: 1,
-            completed_work_units: 1,
-            provider_steps: 1,
-            safe_point_lookups: 3,
-            pressure_classifications: 3,
-            output_capacity_classifications: 1,
-            queue_lookups: 2,
-            queue_mutations: 2,
-            retained_bytes: 0,
-        }
-    );
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
+
+        let baseline = execute_target(execution, 0);
+        let wide = execute_target(execution, UNRELATED_WIDTH);
+        assert_eq!(baseline, wide);
+        assert_eq!(
+            baseline,
+            StepCostEvidence {
+                issued_calls: 1,
+                admitted_receipts: 1,
+                completed_work_units: 1,
+                provider_steps: 1,
+                safe_point_lookups: 3,
+                pressure_classifications: 3,
+                output_capacity_classifications: 1,
+                queue_lookups: 2,
+                queue_mutations: 2,
+                retained_bytes: 0,
+            }
+        );
+    });
 }
 
 #[test]
 fn admitted_chunk_count_has_only_the_declared_linear_step_cost() {
-    let one_chunk = execute_target_with_chunks(0, 1);
-    let four_chunks = execute_target_with_chunks(0, 4);
-    assert_eq!(
-        one_chunk,
-        StepCostEvidence {
-            issued_calls: 1,
-            admitted_receipts: 1,
-            completed_work_units: 1,
-            provider_steps: 1,
-            safe_point_lookups: 3,
-            pressure_classifications: 3,
-            output_capacity_classifications: 1,
-            queue_lookups: 2,
-            queue_mutations: 2,
-            retained_bytes: 0,
-        }
-    );
-    assert_eq!(
-        four_chunks,
-        StepCostEvidence {
-            issued_calls: 1,
-            admitted_receipts: 1,
-            completed_work_units: 4,
-            provider_steps: 4,
-            safe_point_lookups: 12,
-            pressure_classifications: 12,
-            output_capacity_classifications: 4,
-            queue_lookups: 8,
-            queue_mutations: 8,
-            retained_bytes: 0,
-        }
-    );
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
+
+        let one_chunk = execute_target_with_chunks(execution, 0, 1);
+        let four_chunks = execute_target_with_chunks(execution, 0, 4);
+        assert_eq!(
+            one_chunk,
+            StepCostEvidence {
+                issued_calls: 1,
+                admitted_receipts: 1,
+                completed_work_units: 1,
+                provider_steps: 1,
+                safe_point_lookups: 3,
+                pressure_classifications: 3,
+                output_capacity_classifications: 1,
+                queue_lookups: 2,
+                queue_mutations: 2,
+                retained_bytes: 0,
+            }
+        );
+        assert_eq!(
+            four_chunks,
+            StepCostEvidence {
+                issued_calls: 1,
+                admitted_receipts: 1,
+                completed_work_units: 4,
+                provider_steps: 4,
+                safe_point_lookups: 12,
+                pressure_classifications: 12,
+                output_capacity_classifications: 4,
+                queue_lookups: 8,
+                queue_mutations: 8,
+                retained_bytes: 0,
+            }
+        );
+    });
 }
 
 #[test]
@@ -168,16 +178,22 @@ fn isolated_provider_step_allocation_slope_probe() {
     assert_eq!(baseline.reallocations, wide.reallocations);
 }
 
-fn execute_target(unrelated_width: usize) -> StepCostEvidence {
-    execute_target_with_chunks(unrelated_width, 1)
+fn execute_target(
+    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    unrelated_width: usize,
+) -> StepCostEvidence {
+    execute_target_with_chunks(execution, unrelated_width, 1)
 }
 
 fn execute_target_with_chunks(
+    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+
     unrelated_width: usize,
     admitted_chunk_count: usize,
 ) -> StepCostEvidence {
-    let (active, unrelated, advances) = prepared_target(unrelated_width, admitted_chunk_count);
-    let completion = complete_target(active);
+    let (active, unrelated, advances) =
+        prepared_target(execution, unrelated_width, admitted_chunk_count);
+    let completion = complete_target(execution, active);
     assert_eq!(advances.load(Ordering::Relaxed), admitted_chunk_count);
     let terminal = completion.into_running().completed().unwrap();
     super::cost_bound::assert_exact_admission_work(terminal.counters());
@@ -201,21 +217,26 @@ fn execute_target_with_chunks(
 
 #[cfg(feature = "allocation-probes")]
 fn measured_target(unrelated_width: usize) -> stats_alloc::Stats {
-    let (active, unrelated, _) = prepared_target(unrelated_width, 1);
-    let region = stats_alloc::Region::new(&stats_alloc::INSTRUMENTED_SYSTEM);
-    let completion = complete_target(active);
-    let stats = region.change();
-    completion
-        .into_running()
-        .completed()
-        .unwrap()
-        .cleanup()
-        .expect("measured target should clean up");
-    drop(unrelated);
-    stats
+    crate::domain_computation::primary_graph::with_test_advancement(|execution| {
+        let execution = &execution;
+        let (active, unrelated, _) = prepared_target(execution, unrelated_width, 1);
+        let region = stats_alloc::Region::new(&stats_alloc::INSTRUMENTED_SYSTEM);
+        let completion = complete_target(execution, active);
+        let stats = region.change();
+        completion
+            .into_running()
+            .completed()
+            .unwrap()
+            .cleanup()
+            .expect("measured target should clean up");
+        drop(unrelated);
+        stats
+    })
 }
 
 fn prepared_target(
+    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+
     unrelated_width: usize,
     admitted_chunk_count: usize,
 ) -> (
@@ -240,6 +261,7 @@ fn prepared_target(
     );
     let active = running
         .begin_graph_execution(
+            execution,
             &graph,
             WorthQueryManagedGraphCallRequest::new(
                 WorthQueryGraphProviderCallKind::Project,
@@ -251,13 +273,15 @@ fn prepared_target(
 }
 
 fn complete_target(
+    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+
     active: crate::domain_computation::WorthQueryActiveDirectGraphExecution,
 ) -> crate::domain_computation::WorthQueryCompletedDirectGraphExecution {
-    let mut outcome = active.advance();
+    let mut outcome = active.advance(execution);
     loop {
         outcome = match outcome {
             WorthQueryDirectGraphStepOutcome::ChunkReady(pending) => pending.acknowledge(),
-            WorthQueryDirectGraphStepOutcome::Continue(paused) => paused.advance(),
+            WorthQueryDirectGraphStepOutcome::Continue(paused) => paused.advance(execution),
             WorthQueryDirectGraphStepOutcome::Completed(completion) => return completion,
             _ => panic!("cost-slope provider left the admitted chunk progression"),
         };

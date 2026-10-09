@@ -17,6 +17,8 @@ where
 {
     pub(in crate::branch::owner_services) fn advance<E, Ctx, F>(
         self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+
         expected: &AdmittedSignalBranchBasis,
         runtime_ctx: &mut Ctx,
         cancellation: &SignalOwnerCancellationToken,
@@ -25,11 +27,20 @@ where
     where
         F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
     {
-        self.advance_with_definition_publication(expected, runtime_ctx, cancellation, apply, None)
+        self.advance_with_definition_publication(
+            execution,
+            expected,
+            runtime_ctx,
+            cancellation,
+            apply,
+            None,
+        )
     }
 
     pub(in crate::branch::owner_services) fn advance_conditional_definition<E, Ctx, F>(
         self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+
         expected: &AdmittedSignalBranchBasis,
         runtime_ctx: &mut Ctx,
         cancellation: &SignalOwnerCancellationToken,
@@ -41,6 +52,7 @@ where
     {
         let (scope, mint) = publication.into_advance_parts();
         self.advance_with_definition_publication(
+            execution,
             expected,
             runtime_ctx,
             cancellation,
@@ -51,6 +63,8 @@ where
 
     fn advance_with_definition_publication<E, Ctx, F>(
         self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+
         expected: &AdmittedSignalBranchBasis,
         runtime_ctx: &mut Ctx,
         cancellation: &SignalOwnerCancellationToken,
@@ -68,6 +82,7 @@ where
         let mut completed = None;
         let execution = catch_unwind(AssertUnwindSafe(|| {
             self.cell.advance_into(
+                execution,
                 self.admission,
                 expected,
                 runtime_ctx,

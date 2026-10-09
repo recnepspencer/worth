@@ -77,6 +77,16 @@ fn output(value: u64) -> NodeEvaluationResult {
 
 #[test]
 fn typed_source_postures_deny_mismatch_and_keep_source_free_reuse_isolated() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (mut runtime, claimant, source_free, source_present, source_owner) =
         runtime_with_source_variants();
     let basis = runtime
@@ -131,6 +141,7 @@ fn typed_source_postures_deny_mismatch_and_keep_source_free_reuse_isolated() {
     ] {
         let completion = service
             .execute(
+                request_execution,
                 &first,
                 Request::new(attempt),
                 &mut NoPredicate,

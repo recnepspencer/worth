@@ -7,6 +7,16 @@ use crate::tests::support::{version_ab, GraphDependencyBatchExt, ASPECT_A};
 #[test]
 fn retained_vs_reconstructed_artifacts_match_after_long_churn() {
     fn run(policy: SignalRuntimePolicy) -> (ReplaySlice, Vec<LineageRecord>, NodeExplanation) {
+        // This standalone caller declares the operational serial memory policy.
+        let serial_request = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(
+                crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+            ),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
         let mut runtime = SignalRuntime::builder(SignalGraph::new())
             .with_kernel_defaults()
             .build();
@@ -22,7 +32,7 @@ fn retained_vs_reconstructed_artifacts_match_after_long_churn() {
         let mut runtime_ctx = ();
 
         runtime
-            .transaction(&mut runtime_ctx, |tx| {
+            .transaction(request_execution, &mut runtime_ctx, |tx| {
                 tx.read(source, &|view| {
                     Ok(view.finish(
                         NodeEvaluationResult::from_version(version_ab(1, 0))
@@ -49,7 +59,7 @@ fn retained_vs_reconstructed_artifacts_match_after_long_churn() {
 
         for step in 0..12 {
             runtime
-                .transaction(&mut runtime_ctx, |tx| {
+                .transaction(request_execution, &mut runtime_ctx, |tx| {
                     tx.mark_dirty(source, ASPECT_A)?;
                     tx.read(source, &|view| {
                         Ok(view.finish(

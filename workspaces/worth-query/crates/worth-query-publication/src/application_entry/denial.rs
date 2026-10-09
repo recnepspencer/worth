@@ -18,6 +18,9 @@ use worth_query_installation::facade::{
 /// The kind of a `WorthQueryApplicationRequestQueryDenial`, without its detail.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationRequestQueryDenialKind {
+    ExecutionRequest(
+        worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
+    ),
     BindingInstallation,
     Limit,
     ProductSelection,
@@ -35,6 +38,9 @@ pub enum WorthQueryApplicationRequestQueryDenialKind {
 /// Why an application query request was refused before or during execution.
 #[derive(Debug)]
 pub enum WorthQueryApplicationRequestQueryDenial {
+    ExecutionRequest(
+        worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
+    ),
     BindingInstallation(WorthQueryApplicationQueryInstallationDenial),
     Limit(WorthQueryApplicationQueryLimitDenial),
     ProductSelection(WorthQueryProductBranchAdmissionDenial),
@@ -54,6 +60,9 @@ pub enum WorthQueryApplicationRequestQueryDenial {
 impl WorthQueryApplicationRequestQueryDenial {
     pub const fn kind(&self) -> WorthQueryApplicationRequestQueryDenialKind {
         match self {
+            Self::ExecutionRequest(cause) => {
+                WorthQueryApplicationRequestQueryDenialKind::ExecutionRequest(*cause)
+            }
             Self::BindingInstallation(_) => {
                 WorthQueryApplicationRequestQueryDenialKind::BindingInstallation
             }
@@ -101,6 +110,10 @@ impl std::error::Error for WorthQueryApplicationRequestQueryDenial {}
 /// The kind of a `WorthQueryApplicationRequestMutationDenial`, without its detail.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationRequestMutationDenialKind {
+    /// Request admission refused before any application effect.
+    ExecutionRequest(
+        worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
+    ),
     BindingInstallation,
     CapabilityInstallation,
     ProductSelection,
@@ -159,6 +172,10 @@ pub enum WorthQueryApplicationRequestMutationDenialKind {
 /// Why an application mutation request was refused before its commit was attempted.
 #[derive(Debug)]
 pub enum WorthQueryApplicationRequestMutationDenial {
+    /// Request admission refused before any application effect.
+    ExecutionRequest(
+        worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
+    ),
     BindingInstallation(WorthQueryApplicationOperationInstallationDenial),
     CapabilityInstallation(WorthQueryApplicationCapabilityInstallationDenial),
     ProductSelection(WorthQueryProductBranchAdmissionDenial),
@@ -213,6 +230,11 @@ impl WorthQueryApplicationRequestMutationDenial {
             }
             Self::Idempotency(denial) => idempotency_kind(denial.kind()),
             Self::Identity(_) => WorthQueryApplicationRequestMutationDenialKind::Identity,
+            Self::Handler(MutationHandlerExecutionDenial::ForeignAdvancementPhase) => {
+                WorthQueryApplicationRequestMutationDenialKind::ExecutionRequest(
+                    worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial::ForeignPhase,
+                )
+            }
             Self::Handler(MutationHandlerExecutionDenial::WorkflowControl) => {
                 WorthQueryApplicationRequestMutationDenialKind::WorkflowControl
             }
@@ -222,7 +244,14 @@ impl WorthQueryApplicationRequestMutationDenial {
             Self::Handler(MutationHandlerExecutionDenial::HandlerNotInstalled) => {
                 WorthQueryApplicationRequestMutationDenialKind::HandlerNotInstalled
             }
-            Self::Handler(_) => WorthQueryApplicationRequestMutationDenialKind::Handler,
+            Self::ExecutionRequest(cause) => {
+                WorthQueryApplicationRequestMutationDenialKind::ExecutionRequest(*cause)
+            }
+            Self::Handler(
+                MutationHandlerExecutionDenial::Projection(_)
+                | MutationHandlerExecutionDenial::Attempt(_)
+                | MutationHandlerExecutionDenial::Handler(_),
+            ) => WorthQueryApplicationRequestMutationDenialKind::Handler,
             Self::SourceExpectation(_) => {
                 WorthQueryApplicationRequestMutationDenialKind::SourceExpectation
             }
@@ -288,3 +317,23 @@ impl std::error::Error for WorthQueryApplicationRequestMutationDenial {}
 #[cfg(test)]
 #[path = "denial/idempotency_kind_tests.rs"]
 mod idempotency_kind_tests;
+
+#[cfg(test)]
+mod advancement_tests {
+    use super::*;
+    #[test]
+    fn mutation_handler_opening_refusal_keeps_the_typed_kind() {
+        use worth_query_execution::facade::application_contribution::{
+            WorthQueryAdvancementDenial as Denial,
+            WorthQueryManagedComputationResourceDenial as Resource,
+        };
+        let cause = Denial::Resource(Resource::WorkExhausted);
+        let denial = WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause);
+        {
+            assert_eq!(
+                denial.kind(),
+                WorthQueryApplicationRequestMutationDenialKind::ExecutionRequest(cause)
+            );
+        }
+    }
+}

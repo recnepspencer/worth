@@ -55,14 +55,23 @@ fn completed_transport_recovery_publishes_without_a_second_physical_attempt() {
         .unwrap();
     let request = super::super::fixture::live_scope();
     world.application.fail_next_durable_append_for_test();
-    assert_eq!(
-        world
-            .application
-            .resume_installed_transport_completion(&correlation, &request),
-        InstalledTransportResumeOutcome::Pending(
-            InstalledTransportPendingReason::ProductRecoveryRequired
-        ),
-    );
+    world
+        .application
+        .with_host_advancement(|active_phase| {
+            let phase = &active_phase;
+            assert_eq!(
+                world.application.resume_installed_transport_completion(
+                    phase,
+                    &correlation,
+                    &request
+                ),
+                InstalledTransportResumeOutcome::Pending(
+                    InstalledTransportPendingReason::ProductRecoveryRequired
+                ),
+            );
+        })
+        .expect("fixture owner admits its advancement");
+
     assert_eq!(transport.0.load(Ordering::Acquire), 1);
     assert!(world
         .application
@@ -79,12 +88,21 @@ fn completed_transport_recovery_publishes_without_a_second_physical_attempt() {
             .is_err(),
         "transport Completed before World settlement grants no workflow completion"
     );
-    assert_eq!(
-        world
-            .application
-            .resume_installed_transport_completion(&correlation, &request),
-        InstalledTransportResumeOutcome::Performed,
-    );
+    world
+        .application
+        .with_host_advancement(|active_phase| {
+            let phase = &active_phase;
+            assert_eq!(
+                world.application.resume_installed_transport_completion(
+                    phase,
+                    &correlation,
+                    &request
+                ),
+                InstalledTransportResumeOutcome::Performed,
+            );
+        })
+        .expect("fixture owner admits its advancement");
+
     assert_eq!(transport.0.load(Ordering::Acquire), 1);
     assert!(world
         .application
@@ -128,18 +146,27 @@ fn host_maintenance_recovers_unpublished_transport_after_request_is_gone() {
         )
         .unwrap();
     world.application.fail_next_durable_append_for_test();
-    {
-        let original_request = super::super::fixture::live_scope();
-        assert_eq!(
-            world
-                .application
-                .resume_installed_transport_completion(&correlation, &original_request),
-            InstalledTransportResumeOutcome::Pending(
-                InstalledTransportPendingReason::ProductRecoveryRequired
-            ),
-        );
-    }
-    assert_eq!(transport.0.load(Ordering::Acquire), 1);
+    world
+        .application
+        .with_host_advancement(|active_phase| {
+            let phase = &active_phase;
+            {
+                let original_request = super::super::fixture::live_scope();
+                assert_eq!(
+                    world.application.resume_installed_transport_completion(
+                        phase,
+                        &correlation,
+                        &original_request
+                    ),
+                    InstalledTransportResumeOutcome::Pending(
+                        InstalledTransportPendingReason::ProductRecoveryRequired
+                    ),
+                );
+            }
+            assert_eq!(transport.0.load(Ordering::Acquire), 1);
+        })
+        .expect("fixture owner admits its advancement");
+
     assert!(world
         .application
         .primary_provider
@@ -217,12 +244,21 @@ fn callback_winner_is_recognized_before_transport_world_publication() {
         .unwrap()
         .completion_world_commit()
         .clone();
-    assert_eq!(
-        world
-            .application
-            .resume_installed_transport_completion(&correlation, &request),
-        InstalledTransportResumeOutcome::Performed
-    );
+    world
+        .application
+        .with_host_advancement(|active_phase| {
+            let phase = &active_phase;
+            assert_eq!(
+                world.application.resume_installed_transport_completion(
+                    phase,
+                    &correlation,
+                    &request
+                ),
+                InstalledTransportResumeOutcome::Performed
+            );
+        })
+        .expect("fixture owner admits its advancement");
+
     let after = world
         .application
         .primary_provider
@@ -272,42 +308,78 @@ fn transport_publication_and_recovery_obey_shared_operation_capacity() {
         .application
         .reserve_installed_transport_publication(&binding)
         .unwrap();
-    assert_eq!(
-        world
-            .application
-            .resume_installed_transport_completion(&correlation, &request),
-        InstalledTransportResumeOutcome::Pending(
-            InstalledTransportPendingReason::PublicationAtCapacity
-        )
-    );
+    world
+        .application
+        .with_host_advancement(|active_phase| {
+            let phase = &active_phase;
+            assert_eq!(
+                world.application.resume_installed_transport_completion(
+                    phase,
+                    &correlation,
+                    &request
+                ),
+                InstalledTransportResumeOutcome::Pending(
+                    InstalledTransportPendingReason::PublicationAtCapacity
+                )
+            );
+        })
+        .expect("fixture owner admits its advancement");
+
     drop(held);
     world.application.fail_next_durable_append_for_test();
-    assert_eq!(
-        world
-            .application
-            .resume_installed_transport_completion(&correlation, &request),
-        InstalledTransportResumeOutcome::Pending(
-            InstalledTransportPendingReason::ProductRecoveryRequired
-        )
-    );
+    world
+        .application
+        .with_host_advancement(|active_phase| {
+            let phase = &active_phase;
+            assert_eq!(
+                world.application.resume_installed_transport_completion(
+                    phase,
+                    &correlation,
+                    &request
+                ),
+                InstalledTransportResumeOutcome::Pending(
+                    InstalledTransportPendingReason::ProductRecoveryRequired
+                )
+            );
+        })
+        .expect("fixture owner admits its advancement");
+
     let held = world
         .application
         .reserve_installed_transport_publication(&binding)
         .unwrap();
-    assert_eq!(
-        world
-            .application
-            .resume_installed_transport_completion(&correlation, &request),
-        InstalledTransportResumeOutcome::Pending(
-            InstalledTransportPendingReason::PublicationAtCapacity
-        )
-    );
+    world
+        .application
+        .with_host_advancement(|active_phase| {
+            let phase = &active_phase;
+            assert_eq!(
+                world.application.resume_installed_transport_completion(
+                    phase,
+                    &correlation,
+                    &request
+                ),
+                InstalledTransportResumeOutcome::Pending(
+                    InstalledTransportPendingReason::PublicationAtCapacity
+                )
+            );
+        })
+        .expect("fixture owner admits its advancement");
+
     drop(held);
-    assert_eq!(
-        world
-            .application
-            .resume_installed_transport_completion(&correlation, &request),
-        InstalledTransportResumeOutcome::Performed
-    );
+    world
+        .application
+        .with_host_advancement(|active_phase| {
+            let phase = &active_phase;
+            assert_eq!(
+                world.application.resume_installed_transport_completion(
+                    phase,
+                    &correlation,
+                    &request
+                ),
+                InstalledTransportResumeOutcome::Performed
+            );
+        })
+        .expect("fixture owner admits its advancement");
+
     assert_eq!(transport.0.load(Ordering::Acquire), 1);
 }

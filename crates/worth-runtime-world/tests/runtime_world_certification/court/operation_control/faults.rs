@@ -6,6 +6,12 @@ fn cancellation_before_and_after_signal_movement_has_honest_terminal_truth() {
         Boundary::AfterCanonicalMovement,
     ] {
         let mut court = CompositeSupplyChainCourt::compile();
+        let policy = match court.world.execution_placement() {
+            worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy)
+            | worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Leased {
+                policy, ..
+            } => policy,
+        };
         let root = court.bootstrap();
         let source = RuntimeWorldCancellationSource::new();
         let token = source.token();
@@ -25,7 +31,13 @@ fn cancellation_before_and_after_signal_movement_has_honest_terminal_truth() {
         std::thread::scope(|scope| {
             let pause = control.arm_pause_once(boundary);
             let worker = scope.spawn(move || {
-                port.execute_with_signal(prepared, &mut context, &token, |_| Ok(()))
+                port.execute_with_signal(
+                    worth_execution::ExecutionRequest::serial(&super::serial_request(policy)),
+                    prepared,
+                    &mut context,
+                    &token,
+                    |_| Ok(()),
+                )
             });
             assert!(pause.wait_until_reached(WAIT));
             source.cancel();
@@ -67,6 +79,12 @@ fn injected_signal_unwind_retains_any_moved_truth() {
         Boundary::OutcomeConstruction,
     ] {
         let mut court = CompositeSupplyChainCourt::compile();
+        let policy = match court.world.execution_placement() {
+            worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy)
+            | worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Leased {
+                policy, ..
+            } => policy,
+        };
         let root = court.bootstrap();
         let token = RuntimeWorldCancellationSource::new().token();
         let prepared = signal_prepared(&court, &root, &token);
@@ -86,6 +104,7 @@ fn injected_signal_unwind_retains_any_moved_truth() {
             .inject_panic_once(boundary);
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             court.world.publication_port().execute_with_signal(
+                worth_execution::ExecutionRequest::serial(&super::serial_request(policy)),
                 prepared,
                 &mut court.context(&root),
                 &token,

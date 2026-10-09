@@ -6,6 +6,7 @@ pub(super) enum ConditionalWorkflowStartStop {
 }
 
 pub(super) struct ConditionalWorkflowStartEvaluationPass<'a> {
+    pub(super) execution: worth_execution::ExecutionRequest<'a, 'a>,
     pub(super) workspace: &'a mut crate::runtime::WorthQueryWorkspace,
     pub(super) snapshot: &'a crate::memory_workspace::WorthQuerySnapshotIdentity,
     pub(super) run_identity: &'a str,
@@ -23,6 +24,7 @@ pub(super) fn evaluate<D: 'static, O: 'static, F: 'static, L: BasisOperationLane
     ConditionalWorkflowStartStop,
 > {
     let ConditionalWorkflowStartEvaluationPass {
+        execution,
         workspace,
         snapshot,
         run_identity,
@@ -36,6 +38,7 @@ pub(super) fn evaluate<D: 'static, O: 'static, F: 'static, L: BasisOperationLane
     let outcome = crate::domain_installation::evaluate_bound_conditionals(
         bound,
         crate::domain_installation::WorthQueryConditionalEvaluationPass {
+            execution,
             workspace,
             snapshot,
             execution_identity: &execution_identity,

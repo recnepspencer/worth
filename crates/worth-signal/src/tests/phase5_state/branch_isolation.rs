@@ -5,6 +5,16 @@ use crate::tests::support::{version_ab, GraphDependencyBatchExt, ASPECT_A};
 
 #[test]
 fn runtime_branches_keep_evaluation_state_isolated_across_switches() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let source = graph.node().output_identity().build();
     let dependent = graph.node().build();
@@ -16,7 +26,7 @@ fn runtime_branches_keep_evaluation_state_isolated_across_switches() {
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.mark_dirty(source, ASPECT_A)?;
             tx.read(dependent, &|view| {
                 let result = if view.node() == source {
@@ -39,7 +49,7 @@ fn runtime_branches_keep_evaluation_state_isolated_across_switches() {
 
     runtime.switch_branch(feature_branch.clone()).unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.mark_dirty(source, ASPECT_A)?;
             tx.read(dependent, &|view| {
                 let result = if view.node() == source {

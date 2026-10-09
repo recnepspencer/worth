@@ -155,6 +155,9 @@ where
         backend: &mut dyn WorthQueryRuntimeBackend,
         product_world_resources: worth_query_execution::facade::integration::WorthQueryProductWorldResources,
     ) -> Result<PendingPrimaryGraphInstallationOutcome, WorthQueryRuntimeError> {
+        let policy = product_world_resources.execution_policy();
+        worth_query_execution::facade::application_contribution::with_bootstrap_advancement(
+            policy, |phase| {
         let declaration = Schema::declaration().map_err(|denial| {
             primary_graph_runtime_error("primary_graph_schema_declaration", format!("{denial:?}"))
         })?;
@@ -171,6 +174,7 @@ where
             .surrender_unpublished_primary_graph_runtime()
             .map_err(WorthQueryRuntimeError::Workspace)?;
         let mut bootstrap = prepare_primary_graph_with_relational_runtime(
+            &phase,
             installation_authority,
             execution_runtime,
             &installed_schema,
@@ -192,7 +196,7 @@ where
             primary_graph_runtime_error("primary_graph_configuration", denial.to_string())
         })?;
         let publication =
-            publish_primary_graph(bootstrap, execution_runtime, installation_authority).map_err(
+            publish_primary_graph(&phase, bootstrap, execution_runtime, installation_authority).map_err(
                 |denial| {
                     primary_graph_runtime_error(
                         "primary_graph_publication",
@@ -221,6 +225,16 @@ where
             publication,
             product_bridge,
         })
+
+            },
+        ).map_err(|cause| {
+            use worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial as Denial;
+            match cause {
+                Denial::Resource(_) | Denial::Interrupted(_) | Denial::NestedOpening
+                    | Denial::ForeignPhase | Denial::NestedStopped | Denial::Panicked =>
+                    primary_graph_runtime_error("primary_graph_request_admission", format!("{cause:?}")),
+            }
+        })?
     }
 }
 

@@ -62,6 +62,9 @@ impl WorthQueryApplicationLiveLimits {
 /// on a request pinned to a retained observation.
 #[derive(Debug)]
 pub enum WorthQueryApplicationLiveOpenRequestDenial {
+    ExecutionRequest(
+        worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
+    ),
     RetainedBasis,
     BindingInstallation(
         worth_query_installation::facade::WorthQueryApplicationQueryInstallationDenial,
@@ -88,6 +91,9 @@ pub enum WorthQueryApplicationLiveOpenRequestDenial {
 /// `ForeignBranch` mean the fresh request came from another runtime or branch.
 #[derive(Debug)]
 pub enum WorthQueryApplicationLiveNextDenial {
+    ExecutionRequest(
+        worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
+    ),
     ForeignApplication,
     ForeignBranch,
     BindingInstallation(
@@ -144,15 +150,57 @@ where
         WorthQueryApplicationLiveOutcome<Query<Schema, Intent>, QueryResult<Schema, Intent>>,
         WorthQueryApplicationLiveNextDenial,
     > {
+        // A request for another application or branch is refused before it can open an
+        // advancement: its interruption is not this subscription's to observe.
         if !std::ptr::eq(self.application, fresh_request.application) {
             return Err(WorthQueryApplicationLiveNextDenial::ForeignApplication);
         }
         if self.branch != fresh_request.branch {
             return Err(WorthQueryApplicationLiveNextDenial::ForeignBranch);
         }
+        // The subscription's terminal law comes before the open: an interrupted request
+        // ends the subscription with its own terminal outcome, and a later call reports
+        // `Closed`. Neither check reads.
         if let Some(outcome) = self.lease.observe_interruption(fresh_request.scope) {
             return Ok(outcome);
         }
+        let result = self
+            .application
+            .with_application_advancement(fresh_request.scope, |phase| {
+                self.next_in_advancement(&phase, fresh_request)
+            });
+        match result {
+            Ok(outcome) => outcome,
+            Err(cause) => {
+                use worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial as Denial;
+                match cause {
+                    // An interruption that lands between the check above and the open
+                    // follows the same terminal law.
+                    Denial::Interrupted(_) => {
+                        if let Some(outcome) = self.lease.observe_interruption(fresh_request.scope)
+                        {
+                            return Ok(outcome);
+                        }
+                    }
+                    Denial::Resource(_)
+                    | Denial::NestedOpening
+                    | Denial::ForeignPhase
+                    | Denial::NestedStopped
+                    | Denial::Panicked => {}
+                }
+                Err(WorthQueryApplicationLiveNextDenial::ExecutionRequest(cause))
+            }
+        }
+    }
+
+    fn next_in_advancement(
+        &mut self,
+        _phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
+        fresh_request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
+    ) -> Result<
+        WorthQueryApplicationLiveOutcome<Query<Schema, Intent>, QueryResult<Schema, Intent>>,
+        WorthQueryApplicationLiveNextDenial,
+    > {
         let binding = self
             .application
             .installed_schema()
@@ -190,6 +238,18 @@ where
                 | WorthQueryPrincipalResolutionDenialKind::StalePrincipalProof => {
                     return Ok(self.lease.terminate_stale_principal());
                 }
+                WorthQueryPrincipalResolutionDenialKind::PrimaryGraphNotInstalled
+                | WorthQueryPrincipalResolutionDenialKind::BindingNotInstalled
+                | WorthQueryPrincipalResolutionDenialKind::BranchMaterializationSuspended
+                | WorthQueryPrincipalResolutionDenialKind::IdentityIndexUnavailable
+                | WorthQueryPrincipalResolutionDenialKind::ProjectionWorkBudgetExceeded
+                | WorthQueryPrincipalResolutionDenialKind::ProjectionPreparationMemoryExhausted
+                | WorthQueryPrincipalResolutionDenialKind::CorruptIdentityIndex
+                | WorthQueryPrincipalResolutionDenialKind::ActiveSnapshotCapacityExhausted { .. }
+                | WorthQueryPrincipalResolutionDenialKind::SnapshotIdentityExhausted
+                | WorthQueryPrincipalResolutionDenialKind::RetentionCapacityExhausted
+                | WorthQueryPrincipalResolutionDenialKind::RetentionIdentityExhausted => return Err(WorthQueryApplicationLiveNextDenial::PrincipalResolution(denial)),
+                // The provider enum is non-exhaustive outside its defining crate.
                 _ => return Err(WorthQueryApplicationLiveNextDenial::PrincipalResolution(denial)),
             },
         };

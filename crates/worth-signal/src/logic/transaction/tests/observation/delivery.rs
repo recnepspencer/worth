@@ -11,6 +11,16 @@ use std::sync::{Arc, Mutex};
 
 #[test]
 fn observation_phase3_commit_dispatches_once_per_observer_per_transaction() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = crate::data::graph::SignalGraph::new();
     let source = graph
         .node()
@@ -30,7 +40,7 @@ fn observation_phase3_commit_dispatches_once_per_observer_per_transaction() {
     );
 
     let mut ctx = ();
-    let mut tx = runtime.begin(&mut ctx);
+    let mut tx = runtime.begin(request_execution, &mut ctx);
     tx.mark_dirty(source, ASPECT_A).unwrap();
     tx.evaluate_dirty(&|view| {
         if view.node() == source {
@@ -67,6 +77,16 @@ fn observation_phase3_commit_dispatches_once_per_observer_per_transaction() {
 
 #[test]
 fn observation_phase3_touched_observer_fires_for_commit_without_execution_report() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = crate::data::graph::SignalGraph::new();
     let source = graph.node().build();
     let mut runtime = build_runtime(graph);
@@ -81,7 +101,7 @@ fn observation_phase3_touched_observer_fires_for_commit_without_execution_report
 
     let mut ctx = ();
     let result = runtime
-        .transaction(&mut ctx, |tx| {
+        .transaction(request_execution, &mut ctx, |tx| {
             tx.mark_dirty(source, ASPECT_A)?;
             Ok(())
         })
@@ -112,6 +132,16 @@ fn observation_phase3_touched_observer_fires_for_commit_without_execution_report
 
 #[test]
 fn observation_phase3_rollback_suppresses_normal_delivery_and_records_boundary_summary() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = crate::data::graph::SignalGraph::new();
     let source = graph
         .node()
@@ -129,7 +159,7 @@ fn observation_phase3_rollback_suppresses_normal_delivery_and_records_boundary_s
     );
 
     let mut ctx = ();
-    let mut tx = runtime.begin(&mut ctx);
+    let mut tx = runtime.begin(request_execution, &mut ctx);
     tx.evaluate_with_plan(
         source,
         &|view| Ok(view.finish(NodeEvaluationResult::from_version(version_ab(1, 0)))),
@@ -165,6 +195,16 @@ fn observation_phase3_rollback_suppresses_normal_delivery_and_records_boundary_s
 
 #[test]
 fn observation_phase3_failed_commit_suppresses_delivery_during_fail_and_rollback() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = crate::data::graph::SignalGraph::new();
     let source = graph
         .node()
@@ -186,7 +226,7 @@ fn observation_phase3_failed_commit_suppresses_delivery_during_fail_and_rollback
     );
 
     let mut ctx = ();
-    let mut tx = runtime.begin(&mut ctx);
+    let mut tx = runtime.begin(request_execution, &mut ctx);
     tx.evaluate_with_plan(
         source,
         &|view| Ok(view.finish(NodeEvaluationResult::from_version(version_ab(1, 0)))),

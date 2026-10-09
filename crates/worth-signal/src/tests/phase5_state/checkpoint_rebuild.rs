@@ -214,6 +214,16 @@ fn restore_uses_checkpoint_authority_even_when_rich_snapshot_node_cold_payloads_
 
 #[test]
 fn restore_snapshot_with_active_policy_prunes_cold_richness_without_changing_operational_truth() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -222,7 +232,7 @@ fn restore_snapshot_with_active_policy_prunes_cold_richness_without_changing_ope
 
     runtime.set_runtime_policy(SignalRuntimePolicy::development());
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(node, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(1, 0))
@@ -267,7 +277,7 @@ fn restore_snapshot_with_active_policy_prunes_cold_richness_without_changing_ope
             ),
     );
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.mark_dirty(node, ASPECT_A)?;
             tx.read(node, &|view| {
                 Ok(view.finish(

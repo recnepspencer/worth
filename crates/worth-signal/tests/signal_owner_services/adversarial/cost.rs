@@ -8,6 +8,16 @@ use super::world::AdversarialWorld;
 
 #[test]
 fn public_advances_report_actual_diagnostic_retention_and_eviction() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            worth_signal::facade::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     use worth_signal::facade::{SignalGraph, SignalRuntime, SignalRuntimePolicy};
     for capture in [false, true] {
         let policy = if capture {
@@ -28,6 +38,7 @@ fn public_advances_report_actual_diagnostic_retention_and_eviction() {
             basis = services
                 .mutation_port()
                 .advance_exact(
+                    request_execution,
                     &basis,
                     &mut (),
                     &SignalOwnerCancellationSource::new().token(),
@@ -56,6 +67,16 @@ fn public_advances_report_actual_diagnostic_retention_and_eviction() {
 
 #[test]
 fn one_public_advance_reports_one_local_structural_delta() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            worth_signal::facade::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let world = AdversarialWorld::new();
     let before = world
         .basis
@@ -64,6 +85,7 @@ fn one_public_advance_reports_one_local_structural_delta() {
     world
         .mutation
         .advance_exact(
+            request_execution,
             &world.child_basis,
             &mut (),
             &SignalOwnerCancellationSource::new().token(),
@@ -255,6 +277,16 @@ fn fork_and_exact_retention_report_their_owned_work_once() {
 
 #[test]
 fn target_work_cost_is_independent_of_unrelated_live_branch_count() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            worth_signal::facade::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let small = AdversarialWorld::new();
     let small_before = small
         .basis
@@ -263,6 +295,7 @@ fn target_work_cost_is_independent_of_unrelated_live_branch_count() {
     small
         .mutation
         .advance_exact(
+            request_execution,
             &small.child_basis,
             &mut (),
             &SignalOwnerCancellationSource::new().token(),
@@ -300,6 +333,7 @@ fn target_work_cost_is_independent_of_unrelated_live_branch_count() {
     large
         .mutation
         .advance_exact(
+            request_execution,
             &large.child_basis,
             &mut (),
             &SignalOwnerCancellationSource::new().token(),
@@ -333,62 +367,5 @@ fn target_work_cost_is_independent_of_unrelated_live_branch_count() {
 }
 
 #[cfg(feature = "test-operation-control")]
-#[test]
-fn unarmed_operation_control_is_cost_neutral() {
-    let controlled = AdversarialWorld::new();
-    let ordinary = AdversarialWorld::new();
-    controlled
-        .runtime
-        .as_ref()
-        .expect("the controlled root remains live")
-        .owner_operation_control()
-        .expect("obtaining the unarmed control handle succeeds");
-    let controlled_before = controlled
-        .basis
-        .owner_service_cost_snapshot()
-        .expect("the controlled owner is open");
-    let ordinary_before = ordinary
-        .basis
-        .owner_service_cost_snapshot()
-        .expect("the ordinary owner is open");
-    controlled
-        .mutation
-        .advance_exact(
-            &controlled.child_basis,
-            &mut (),
-            &SignalOwnerCancellationSource::new().token(),
-            |_| Ok(()),
-        )
-        .expect("the controlled operation succeeds");
-    ordinary
-        .mutation
-        .advance_exact(
-            &ordinary.child_basis,
-            &mut (),
-            &SignalOwnerCancellationSource::new().token(),
-            |_| Ok(()),
-        )
-        .expect("the ordinary operation succeeds");
-    let controlled_after = controlled
-        .basis
-        .owner_service_cost_snapshot()
-        .expect("the controlled owner remains open");
-    let ordinary_after = ordinary
-        .basis
-        .owner_service_cost_snapshot()
-        .expect("the ordinary owner remains open");
-    assert_eq!(
-        controlled_after.canonical_movements() - controlled_before.canonical_movements(),
-        ordinary_after.canonical_movements() - ordinary_before.canonical_movements()
-    );
-    assert_eq!(
-        controlled_after.target_cell_contacts() - controlled_before.target_cell_contacts(),
-        ordinary_after.target_cell_contacts() - ordinary_before.target_cell_contacts()
-    );
-    assert_eq!(
-        controlled_after.branch_registry_entries_scanned()
-            - controlled_before.branch_registry_entries_scanned(),
-        ordinary_after.branch_registry_entries_scanned()
-            - ordinary_before.branch_registry_entries_scanned()
-    );
-}
+#[path = "cost/unarmed_operation_control_is_cost_neutral.rs"]
+mod unarmed_operation_control_is_cost_neutral;

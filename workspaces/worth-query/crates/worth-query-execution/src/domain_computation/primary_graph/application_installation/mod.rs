@@ -50,6 +50,7 @@ pub fn in_memory<Schema>(
     configuration: <Schema::Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
     limits: WorthQueryInMemoryApplicationLimits,
     initial_state: impl FnOnce(
+        &super::WorthQueryBootstrapAdvancementPhase<'_>,
         &mut WorthQueryPrimaryGraphBootstrap<Schema>,
         &WorthQueryInstalledApplicationSchema<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
@@ -74,6 +75,45 @@ pub(super) fn in_memory_with_contributions<Schema, Contributions>(
     configuration: <Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
     limits: WorthQueryInMemoryApplicationLimits,
     initial_state: impl FnOnce(
+        &super::WorthQueryBootstrapAdvancementPhase<'_>,
+        &mut WorthQueryPrimaryGraphBootstrap<Schema>,
+        &WorthQueryInstalledApplicationSchema<Schema>,
+    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
+    authorization_time_source: Option<
+        Box<dyn crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSource>,
+    >,
+    program_admission: Option<WorthQueryProgramAdmissionStep<'_, Schema>>,
+    checkpoint: Option<super::WorthQueryApplicationCheckpoint>,
+) -> Result<WorthQueryPrimaryGraphApplicationRuntime<Schema>, WorthQueryInMemoryApplicationDenial>
+where
+    Schema: ApplicationSchemaComposition,
+    Contributions: WorthQueryApplicationContributionTuple<Schema>,
+{
+    let policy = limits.world.execution_policy();
+    super::application_contribution::with_bootstrap_advancement(policy, |phase| {
+        in_memory_with_contributions_in_advancement::<Schema, Contributions>(
+            &phase,
+            declaration,
+            configuration,
+            limits,
+            initial_state,
+            authorization_time_source,
+            program_admission,
+            checkpoint,
+        )
+    })
+    .map_err(|cause| {
+        WorthQueryInMemoryApplicationDenial::Graph(super::bootstrap::request_denial(cause))
+    })?
+}
+
+fn in_memory_with_contributions_in_advancement<Schema, Contributions>(
+    phase: &super::WorthQueryBootstrapAdvancementPhase<'_>,
+    declaration: ApplicationSchemaDeclaration<Schema>,
+    configuration: <Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
+    limits: WorthQueryInMemoryApplicationLimits,
+    initial_state: impl FnOnce(
+        &super::WorthQueryBootstrapAdvancementPhase<'_>,
         &mut WorthQueryPrimaryGraphBootstrap<Schema>,
         &WorthQueryInstalledApplicationSchema<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
@@ -167,6 +207,7 @@ where
     let restoring = decoded_checkpoint.is_some();
     let mut graph = match decoded_checkpoint.as_ref() {
         Some(checkpoint) => authority.prepare_primary_graph_from_native_checkpoint_with_invariants(
+            phase,
             &runtime,
             &installed,
             relational_runtime,
@@ -175,6 +216,7 @@ where
             checkpoint,
         ),
         None => authority.prepare_primary_graph_with_relational_runtime_and_invariants(
+            phase,
             &runtime,
             &installed,
             relational_runtime,
@@ -187,6 +229,7 @@ where
     if restoring {
         if let Some(support) = &admitted_program_support {
             super::bootstrap::recover_program_activation(
+                phase,
                 &graph.graph,
                 &support.roster,
                 &activation,
@@ -203,7 +246,7 @@ where
                 ),
             );
         }
-        initial_state(&mut graph, &installed).map_err(Denial::InitialState)?;
+        initial_state(phase, &mut graph, &installed).map_err(Denial::InitialState)?;
     }
     // This is the exact support object moved into the final graph provider.
     // Cold producer executors become installable only after it exists.
@@ -214,6 +257,7 @@ where
         if conditionals.is_empty() && producers.is_empty() {
             let application = match authorization_time_source {
                 Some(source) => graph.publish_application_runtime_with_authorization_time_source(
+                    phase,
                     runtime,
                     authority,
                     installed,
@@ -221,6 +265,7 @@ where
                     source,
                 ),
                 None => graph.publish_application_runtime(
+                    phase,
                     runtime,
                     authority,
                     installed,
@@ -233,6 +278,7 @@ where
             let mut publication = match authorization_time_source {
                 Some(source) => graph
                     .conditional_application_runtime_installation_with_authorization_time_source(
+                        phase,
                         runtime,
                         authority,
                         installed,
@@ -240,6 +286,7 @@ where
                         source,
                     ),
                 None => graph.conditional_application_runtime_installation(
+                    phase,
                     runtime,
                     authority,
                     installed,
@@ -252,7 +299,7 @@ where
                 .install_all(&producers, &mut publication)
                 .map_err(Denial::ConditionalPublication)?;
             let application = publication
-                .publish()
+                .publish(phase)
                 .map_err(Denial::ConditionalPublication)?;
             (application, installed_conditionals)
         };

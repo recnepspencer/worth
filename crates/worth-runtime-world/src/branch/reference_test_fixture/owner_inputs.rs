@@ -75,6 +75,15 @@ impl RealReferenceFixture {
     pub(crate) fn perform_signal_owner_change(
         &mut self,
     ) -> worth_signal::facade::branch::SignalBranchAdvanceOutcome {
+        let serial_request = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(
+                self._signal_runtime.runtime_policy().serial_memory_bytes,
+            ),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
         let services = self
             ._signal_runtime
             .owner_component_services()
@@ -86,7 +95,9 @@ impl RealReferenceFixture {
         let cancellation = worth_signal::facade::branch::SignalOwnerCancellationSource::new();
         services
             .mutation_port()
-            .advance_exact(&expected, &mut (), &cancellation.token(), |_| Ok(()))
+            .advance_exact(execution, &expected, &mut (), &cancellation.token(), |_| {
+                Ok(())
+            })
             .expect("real Signal owner performs the empty bounded transaction")
     }
 

@@ -7,6 +7,16 @@ use crate::tests::support::*;
 
 #[test]
 fn restore_branch_snapshot_uses_captured_branch_semantic_state_not_active_branch_config() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -21,7 +31,7 @@ fn restore_branch_snapshot_uses_captured_branch_semantic_state_not_active_branch
     let feature_node = keyed.node(&mut runtime);
     let feature_compute_calls = AtomicU32::new(0);
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.evaluate_keyed(feature_node, &computation, &|view| {
                 feature_compute_calls.fetch_add(1, Ordering::Relaxed);
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(1, 0))))
@@ -76,7 +86,7 @@ fn restore_branch_snapshot_uses_captured_branch_semantic_state_not_active_branch
     let main_node = keyed.node(&mut runtime);
     let main_compute_calls = AtomicU32::new(0);
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.evaluate_keyed(main_node, &computation, &|view| {
                 main_compute_calls.fetch_add(1, Ordering::Relaxed);
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(9, 0))))
@@ -91,7 +101,7 @@ fn restore_branch_snapshot_uses_captured_branch_semantic_state_not_active_branch
     runtime.switch_branch(feature.clone()).unwrap();
     mark_dirty(runtime.graph_mut(), feature_node, ASPECT_A).unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.evaluate_keyed(feature_node, &computation, &|view| {
                 feature_compute_calls.fetch_add(1, Ordering::Relaxed);
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(99, 0))))
@@ -140,6 +150,16 @@ fn restore_snapshot_rejects_missing_reconstructability_proof_before_mutation() {
 
 #[test]
 fn restore_branch_snapshot_keeps_sibling_branch_keyed_bindings_isolated() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -154,7 +174,7 @@ fn restore_branch_snapshot_keeps_sibling_branch_keyed_bindings_isolated() {
     runtime.switch_branch(feature.clone()).unwrap();
     let feature_node = keyed.node(&mut runtime);
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.evaluate_keyed(feature_node, &computation, &|view| {
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(3, 0))))
             })?;
@@ -168,7 +188,7 @@ fn restore_branch_snapshot_keeps_sibling_branch_keyed_bindings_isolated() {
     runtime.switch_branch(sibling.clone()).unwrap();
     let sibling_node = keyed.node(&mut runtime);
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.evaluate_keyed(sibling_node, &computation, &|view| {
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(8, 0))))
             })?;

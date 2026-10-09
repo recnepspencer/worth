@@ -143,46 +143,60 @@ where
         self,
         settlement: &super::super::WorthQueryWorkflowAssessmentDemandSettlement<Query>,
     ) -> Result<WorkflowProgressOutcome, WorthQueryWorkflowAssessmentAcceptanceDenial> {
-        if WorthQueryWorkflowAdvanceAdapter::requested_instance(&self.prepared)
-            != settlement.required().instance()
-        {
-            return Err(WorthQueryWorkflowAssessmentAcceptanceDenial::RequirementMismatch);
-        }
-        if let Some(replayed) = WorthQueryWorkflowAdvanceAdapter::resolve_assessment_replay(
-            self.application,
-            &self.prepared,
-            settlement.required(),
-            settlement.owner_settlement().retained(),
-            settlement.owner_settlement().observed_source(),
-            settlement.posture(),
-            self.idempotency,
-        )
-        .map_err(WorthQueryWorkflowAssessmentAcceptanceDenial::Replay)?
-        {
-            return Ok(replayed);
-        }
-        let prepared = match self.prepared {
-            PreparedWorkflowAdvance::AwaitingAssessment(prepared) => prepared,
-            PreparedWorkflowAdvance::Transition { .. }
-            | PreparedWorkflowAdvance::AwaitingCondition(_)
-            | PreparedWorkflowAdvance::AwaitingOperation(_)
-            | PreparedWorkflowAdvance::AwaitingEvidence { .. }
-            | PreparedWorkflowAdvance::AwaitingApproval { .. }
-            | PreparedWorkflowAdvance::ReplayOnly { .. } => {
-                return Err(WorthQueryWorkflowAssessmentAcceptanceDenial::NotAwaitingAssessment)
-            }
-        };
-        if !same_requirement(prepared.required(), settlement.required()) {
-            return Err(WorthQueryWorkflowAssessmentAcceptanceDenial::RequirementMismatch);
-        }
-        WorthQueryWorkflowAdvanceAdapter::compare_and_commit_assessment(
-            self.application,
-            prepared,
-            settlement.owner_settlement().retained(),
-            settlement.owner_settlement().observed_source(),
-            settlement.posture(),
-            self.idempotency,
-        )
-        .map_err(WorthQueryWorkflowAssessmentAcceptanceDenial::Attempt)
+        self.application
+            .with_application_advancement(self.scope, |phase| {
+                if WorthQueryWorkflowAdvanceAdapter::requested_instance(&self.prepared)
+                    != settlement.required().instance()
+                {
+                    return Err(WorthQueryWorkflowAssessmentAcceptanceDenial::RequirementMismatch);
+                }
+                if let Some(replayed) = WorthQueryWorkflowAdvanceAdapter::resolve_assessment_replay(
+                    self.application,
+                    &self.prepared,
+                    settlement.required(),
+                    settlement.owner_settlement().retained(),
+                    settlement.owner_settlement().observed_source(),
+                    settlement.posture(),
+                    self.idempotency,
+                )
+                .map_err(WorthQueryWorkflowAssessmentAcceptanceDenial::Replay)?
+                {
+                    return Ok(replayed);
+                }
+                let prepared = match self.prepared {
+                    PreparedWorkflowAdvance::AwaitingAssessment(prepared) => prepared,
+                    PreparedWorkflowAdvance::Transition { .. }
+                    | PreparedWorkflowAdvance::AwaitingCondition(_)
+                    | PreparedWorkflowAdvance::AwaitingOperation(_)
+                    | PreparedWorkflowAdvance::AwaitingEvidence { .. }
+                    | PreparedWorkflowAdvance::AwaitingApproval { .. }
+                    | PreparedWorkflowAdvance::ReplayOnly { .. } => {
+                        return Err(
+                            WorthQueryWorkflowAssessmentAcceptanceDenial::NotAwaitingAssessment,
+                        )
+                    }
+                };
+                if !same_requirement(prepared.required(), settlement.required()) {
+                    return Err(WorthQueryWorkflowAssessmentAcceptanceDenial::RequirementMismatch);
+                }
+                WorthQueryWorkflowAdvanceAdapter::compare_and_commit_assessment(
+                    &phase,
+                    self.application,
+                    prepared,
+                    settlement.owner_settlement().retained(),
+                    settlement.owner_settlement().observed_source(),
+                    settlement.posture(),
+                    self.idempotency,
+                )
+                .map_err(WorthQueryWorkflowAssessmentAcceptanceDenial::Attempt)
+            })
+            .unwrap_or_else(|cause| {
+                Ok(WorkflowProgressOutcome::Application(
+                    cause
+                        .into_commit_outcome()
+                        .landed()
+                        .expect_err("request admission cannot commit"),
+                ))
+            })
     }
 }

@@ -269,51 +269,61 @@ impl AggregateWorld {
         values: Vec<Option<i64>>,
         ambiguous: bool,
     ) -> Self {
-        let installed = runtime
-            .installed_packages()
-            .bind_application_schema(AggregateSchema::declaration().expect("schema redeclares"))
-            .expect("aggregate schema binds");
-        let mut bootstrap = authority
-            .prepare_primary_graph(&runtime, &installed, crate::domain_computation::execution_runtime::product_world::test_product_world_resources())
+        crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+            let phase = &active_phase;
+
+            let installed = runtime
+                .installed_packages()
+                .bind_application_schema(AggregateSchema::declaration().expect("schema redeclares"))
+                .expect("aggregate schema binds");
+            let mut bootstrap = authority
+            .prepare_primary_graph(&phase.bootstrap_for_test(), &runtime, &installed, crate::domain_computation::execution_runtime::product_world::test_product_world_resources())
             .expect("primary graph prepares");
-        let binding = installed
-            .principal_binding(AggregateIdentityBinding::reference())
-            .expect("aggregate principal binding is installed");
-        bootstrap
-            .bind_principal(
-                &binding,
-                WorthQueryApplicationPrincipalKey::new("aggregate-principal")
-                    .expect("principal key is valid"),
-                1,
-                WorthQueryExternalPrincipalIdentity::new(
-                    "https://aggregate.test",
-                    "aggregate-principal",
+            let binding = installed
+                .principal_binding(AggregateIdentityBinding::reference())
+                .expect("aggregate principal binding is installed");
+            bootstrap
+                .bind_principal(
+                    &binding,
+                    WorthQueryApplicationPrincipalKey::new("aggregate-principal")
+                        .expect("principal key is valid"),
+                    1,
+                    WorthQueryExternalPrincipalIdentity::new(
+                        "https://aggregate.test",
+                        "aggregate-principal",
+                    )
+                    .expect("external principal identity is valid"),
+                    WorthQueryPrincipalMappingStatus::Enabled,
                 )
-                .expect("external principal identity is valid"),
-                WorthQueryPrincipalMappingStatus::Enabled,
-            )
-            .expect("aggregate principal binds");
-        bind_world(&mut bootstrap, values, ambiguous);
-        let projection = bootstrap.retain_invariant_projection_authority();
-        let budget =
-            worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development();
-        let runtime = bootstrap
-            .publish_application_runtime(runtime, authority, installed, budget)
-            .expect("primary graph publishes");
-        let target = projection
-            .project(|reader| {
-                reader.resolve_entity(TargetIdentity::reference(), "target".to_owned())
-            })
-            .expect("target projection")
-            .output()
-            .as_ref()
-            .expect("target resolves")
-            .clone();
-        Self {
-            _runtime: runtime,
-            authority: projection,
-            target,
-        }
+                .expect("aggregate principal binds");
+            bind_world(&mut bootstrap, values, ambiguous);
+            let projection = bootstrap.retain_invariant_projection_authority();
+            let budget =
+                worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development();
+            let runtime = bootstrap
+                .publish_application_runtime(
+                    &phase.bootstrap_for_test(),
+                    runtime,
+                    authority,
+                    installed,
+                    budget,
+                )
+                .expect("primary graph publishes");
+            let target = projection
+                .project(|reader| {
+                    reader.resolve_entity(TargetIdentity::reference(), "target".to_owned())
+                })
+                .expect("target projection")
+                .output()
+                .as_ref()
+                .expect("target resolves")
+                .clone();
+            Self {
+                _runtime: runtime,
+                authority: projection,
+                target,
+            }
+        })
     }
 }
 

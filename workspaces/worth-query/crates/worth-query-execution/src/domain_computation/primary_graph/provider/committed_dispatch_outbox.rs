@@ -221,6 +221,8 @@ impl WorthQueryPrimaryGraphProvider {
             .acquire(expected_commit.commit_id)
             .ok_or(Denial::ExactCommitUnavailable)?;
         self.graph.with_runtime_mut(|runtime| {
+            #[cfg(feature = "test-query-execution-observer")]
+            crate::domain_computation::execution_runtime::product_world::record_installed_source_read_for_test();
             CommittedOutboxRead {
                 runtime,
                 layout: &layout,

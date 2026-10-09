@@ -6,6 +6,16 @@ use crate::tests::support::version_ab;
 
 #[test]
 fn runtime_merge_request_named_identity_matcher_selects_registered_descriptor() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -13,7 +23,7 @@ fn runtime_merge_request_named_identity_matcher_selects_registered_descriptor() 
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(shared, &|view| {
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(1, 0))))
             })?;
@@ -28,7 +38,7 @@ fn runtime_merge_request_named_identity_matcher_selects_registered_descriptor() 
     runtime.switch_branch(feature.clone()).unwrap();
     let feature_only = runtime.graph_mut().node().output_identity().build();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(feature_only, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(2, 0))
@@ -68,6 +78,16 @@ fn runtime_merge_request_named_identity_matcher_selects_registered_descriptor() 
 
 #[test]
 fn runtime_merge_uses_schema_default_identity_matcher_when_request_is_silent() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let graph = SignalGraph::new().with_schema_registry(merge_schema_registry(
         "signal.merge.rebase-source-onto-target",
         None,
@@ -78,7 +98,7 @@ fn runtime_merge_uses_schema_default_identity_matcher_when_request_is_silent() {
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(shared, &|view| {
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(1, 0))))
             })?;
@@ -99,7 +119,7 @@ fn runtime_merge_uses_schema_default_identity_matcher_when_request_is_silent() {
         .output_identity()
         .build();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(feature_only, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(2, 0))
@@ -130,6 +150,16 @@ fn runtime_merge_uses_schema_default_identity_matcher_when_request_is_silent() {
 
 #[test]
 fn runtime_merge_node_identity_matcher_override_precedes_schema_default() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let graph = SignalGraph::new().with_schema_registry(merge_schema_registry(
         "signal.merge.rebase-source-onto-target",
         None,
@@ -140,7 +170,7 @@ fn runtime_merge_node_identity_matcher_override_precedes_schema_default() {
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(shared, &|view| {
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(1, 0))))
             })?;
@@ -162,7 +192,7 @@ fn runtime_merge_node_identity_matcher_override_precedes_schema_default() {
         .output_identity()
         .build();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(feature_only, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(2, 0))

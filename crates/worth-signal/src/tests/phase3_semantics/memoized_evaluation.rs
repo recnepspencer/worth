@@ -8,6 +8,16 @@ use std::sync::atomic::{AtomicU32, Ordering};
 
 #[test]
 fn keyed_evaluation_can_reuse_memoized_result() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -19,7 +29,7 @@ fn keyed_evaluation_can_reuse_memoized_result() {
     let compute_calls = AtomicU32::new(0);
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.evaluate_keyed(node, &computation, &|view| {
                 compute_calls.fetch_add(1, Ordering::Relaxed);
                 Ok(view.finish(
@@ -35,7 +45,7 @@ fn keyed_evaluation_can_reuse_memoized_result() {
     mark_dirty(runtime.graph_mut(), node, ASPECT_A).unwrap();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.evaluate_keyed(node, &computation, &|view| {
                 compute_calls.fetch_add(1, Ordering::Relaxed);
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(99, 0))))
@@ -66,6 +76,16 @@ fn keyed_evaluation_can_reuse_memoized_result() {
 
 #[test]
 fn defined_computation_evaluate_memoized_reuses_cached_result() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -91,7 +111,7 @@ fn defined_computation_evaluate_memoized_reuses_cached_result() {
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             bulkhead.evaluate_memoized(tx, "shape-v1")
         })
         .unwrap();
@@ -99,7 +119,7 @@ fn defined_computation_evaluate_memoized_reuses_cached_result() {
     mark_dirty(runtime.graph_mut(), node, ASPECT_A).unwrap();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             bulkhead.evaluate_memoized(tx, "shape-v1")
         })
         .unwrap();
@@ -122,6 +142,16 @@ fn defined_computation_evaluate_memoized_reuses_cached_result() {
 
 #[test]
 fn defined_computation_evaluate_cross_identity_reuses_cached_result_via_public_api() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -150,13 +180,13 @@ fn defined_computation_evaluate_cross_identity_reuses_cached_result_via_public_a
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             source.evaluate_memoized(tx, "shape-v1")
         })
         .unwrap();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             alias.evaluate_cross_identity(tx, "source", "shape-v1", "mesh-001")
         })
         .unwrap();

@@ -14,12 +14,21 @@ use crate::domain_computation::primary_graph::{
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     /// Checks retained output settlements, including outputs readmitted from an
     /// accepted checkpoint that intentionally have no fresh commit receipt.
+    /// The phase witnesses request custody; lower Relational accounting follows in part two.
     pub fn require_current_output_settlements<'settlement>(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         settlements: impl IntoIterator<Item = &'settlement WorthQueryOutputDemandSettlement>,
         maximum_work: NonZeroUsize,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let runtime = self.application();
+        phase
+            .execution_request_for(&runtime.product_runtime)
+            .map_err(|cause| {
+                denial(WorthQueryOutputDemandDenialKind::ExecutionRequest(
+                    cause.into(),
+                ))
+            })?;
         let mut admission = self.request_admission(maximum_work);
         runtime.primary_provider.graph.with_runtime(|relational| {
             for settlement in settlements {
@@ -73,12 +82,21 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
 
     /// Checks a set of retained producer receipts against this exact product
     /// observation, including their observed source facts.
+    /// The phase witnesses request custody; lower Relational accounting follows in part two.
     pub fn require_current_output_receipts<'receipt>(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         receipts: impl IntoIterator<Item = &'receipt WorthQueryApplicationCommitReceipt>,
         maximum_work: NonZeroUsize,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let runtime = self.application();
+        phase
+            .execution_request_for(&runtime.product_runtime)
+            .map_err(|cause| {
+                denial(WorthQueryOutputDemandDenialKind::ExecutionRequest(
+                    cause.into(),
+                ))
+            })?;
         let mut admission = self.request_admission(maximum_work);
         runtime.primary_provider.graph.with_runtime(|relational| {
             for receipt in receipts {

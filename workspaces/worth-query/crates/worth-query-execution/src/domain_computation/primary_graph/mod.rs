@@ -148,3 +148,16 @@ pub(in crate::domain_computation) use application_contribution::SealedComputatio
 
 #[cfg(feature = "test-query-execution-observer")]
 pub(in crate::domain_computation) use application_contribution::observe_discarded;
+
+#[cfg(test)]
+pub(crate) use application_contribution::with_test_advancement;
+
+pub use application_contribution::with_bootstrap_advancement;
+
+pub use application_contribution::WorthQueryBootstrapAdvancementPhase;
+
+#[cfg(all(test, feature = "test-query-execution-observer"))]
+pub use crate::domain_computation::execution_runtime::product_world::installed_source_reads_on_this_thread_for_test;
+
+#[cfg(all(test, feature = "test-query-execution-observer"))]
+pub(crate) use tests::fixture::AdvancementHost;

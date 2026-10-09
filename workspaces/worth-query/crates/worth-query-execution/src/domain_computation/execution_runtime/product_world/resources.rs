@@ -29,6 +29,11 @@ pub(crate) struct WorthQueryProductExecution {
 }
 
 impl WorthQueryProductWorldResources {
+    /// The declared host policy used by the complete installation advancement.
+    pub fn execution_policy(&self) -> ExecutionRequestPolicy {
+        self.execution.policy
+    }
+
     pub fn install(
         budgets: worth_runtime_world::facade::RuntimeWorldBudgetInstallation,
         clock: WorthQueryProductWorldClock,

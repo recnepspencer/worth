@@ -30,6 +30,8 @@ where
 {
     pub fn advance_signal_branch<F>(
         &mut self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+
         runtime_ctx: &mut Ctx,
         expected: &AdmittedSignalBranchBasis,
         apply: F,
@@ -48,10 +50,17 @@ where
     {
         if let Some((_, mutation, _)) = self.sealed_owner_port_slots() {
             let cancellation = crate::branch::SignalOwnerCancellationSource::new();
-            return mutation.advance_exact(expected, runtime_ctx, &cancellation.token(), apply);
+            return mutation.advance_exact(
+                execution,
+                expected,
+                runtime_ctx,
+                &cancellation.token(),
+                apply,
+            );
         }
         let preflight = self.preflight_signal_branch_advance(expected)?;
-        let transaction = self.execute_signal_branch_advance(runtime_ctx, &preflight, apply)?;
+        let transaction =
+            self.execute_signal_branch_advance(execution, runtime_ctx, &preflight, apply)?;
         let advanced_basis = self
             .admit_signal_branch_with_retention(preflight.branch, preflight.retention)
             .expect("retained live branch must remain admissible after canonical advance");
@@ -97,6 +106,8 @@ where
 
     fn execute_signal_branch_advance<F>(
         &mut self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+
         runtime_ctx: &mut Ctx,
         preflight: &SignalBranchAdvancePreflight,
         apply: F,
@@ -115,9 +126,10 @@ where
     {
         match preflight.lane {
             SignalBranchAdvanceLane::Active => self
-                .transaction(runtime_ctx, apply)
+                .transaction(execution, runtime_ctx, apply)
                 .map_err(|error| SignalBranchAdvanceDenial::MutationFailedNoMovement { error }),
             SignalBranchAdvanceLane::Stored => self.execute_stored_signal_branch_advance(
+                execution,
                 runtime_ctx,
                 preflight.branch.clone(),
                 apply,
@@ -127,6 +139,8 @@ where
 
     fn execute_stored_signal_branch_advance<F>(
         &mut self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+
         runtime_ctx: &mut Ctx,
         branch: SignalBranchHandle,
         apply: F,
@@ -152,7 +166,7 @@ where
             .plan_branch_targeted_transaction(BranchTargetedTransactionRequest::new(branch, head))
             .into_result()
             .map_err(advance_engine_denial)?;
-        match self.execute_branch_targeted_transaction(runtime_ctx, plan, apply) {
+        match self.execute_branch_targeted_transaction(execution, runtime_ctx, plan, apply) {
             TransitionOutcome::Success(receipt) => Ok(receipt.transaction().clone()),
             TransitionOutcome::Denied(denial) => Err(advance_engine_denial(denial)),
             TransitionOutcome::Failed(error) => {

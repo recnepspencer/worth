@@ -1,4 +1,5 @@
 use super::*;
+use worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase as AdvancementPhase;
 
 struct CompleteContinuation {
     open: bool,
@@ -13,6 +14,7 @@ where
 {
     fn advance(
         &mut self,
+        _phase: &AdvancementPhase<'_>,
         _: &WorthQueryApplicationRequest<'application, '_, '_, Schema>,
     ) -> Result<ProgramOutputContinuationProgress, WorthQueryRequiredOutputPreparationDenial> {
         if std::mem::take(&mut self.open) {
@@ -35,6 +37,7 @@ where
     ParentDemand: WorthQueryApplicationOutputDemand<Schema>,
 {
     fn start(
+        _phase: &AdvancementPhase<'_>,
         _: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
         _: &ParentDemand,
         _: &WorthQueryApplicationOutputDemandSettlement<SourceQuery<Schema, ParentDemand>>,

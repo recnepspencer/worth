@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::WorthQuerySelectedProductOperation;
@@ -14,6 +15,8 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
     /// publication to one admitted conditional dependency.
     pub fn deliver_relational_change_to_conditional<Node, Clock>(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         handle: &WorthQueryConditionalClockHandle<Schema, Node, Clock>,
         dependency_ordinal: usize,
         change: WorthQueryPerformedRelationalProductChange,
@@ -23,6 +26,15 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
     > {
         use WorthQueryPerformedRelationalProductChangeDeliveryDenialKind as Kind;
 
+        if let Err(cause) = phase.execution_request_for(&self.application().product_runtime) {
+            return Err(
+                WorthQueryPerformedRelationalProductChangeDeliveryDenial::new(
+                    Kind::ExecutionRequest(cause.into()),
+                    "delivery phase belongs to another installed runtime",
+                    change,
+                ),
+            );
+        }
         if change.product_branch_identity() != self.product().branch_identity()
             || change.product_commit() != self.product().selected_commit()
         {
@@ -82,7 +94,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             .application()
             .granular_invalidation_installation()
             .retain_product_shared_root()
-            .deliver_performed_relational_change(&lowering, dependency_ordinal, change)?;
+            .deliver_performed_relational_change(phase, &lowering, dependency_ordinal, change)?;
         if let WorthQueryPerformedRelationalProductChangeDeliveryOutcome::Success(receipt) =
             &outcome
         {

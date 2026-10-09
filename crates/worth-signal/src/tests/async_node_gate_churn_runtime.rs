@@ -168,6 +168,16 @@ fn async_node_interior_gate_timeout_visibility_reflects_output_continuity_policy
 #[test]
 fn async_node_active_gate_legality_drift_revalidates_without_new_lineage_and_replays_after_restore()
 {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let source = graph.node().build();
     let gate = graph
@@ -209,7 +219,7 @@ fn async_node_active_gate_legality_drift_revalidates_without_new_lineage_and_rep
         .expect("snapshot capture should succeed without managed queue bindings");
 
     let mut ctx = ();
-    let mut tx = runtime.begin(&mut ctx);
+    let mut tx = runtime.begin(request_execution, &mut ctx);
     tx.mark_dirty(source, Aspect::new(1))
         .expect("transaction-local legality drift should stage");
     let rollback = tx

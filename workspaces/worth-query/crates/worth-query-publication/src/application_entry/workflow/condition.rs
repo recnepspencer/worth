@@ -136,40 +136,55 @@ where
             required,
             sources,
         } = self;
-        if !sources.supplies(required) {
-            return Err(WorthQueryWorkflowConditionAcceptanceDenial::RequirementMismatch);
-        }
-        if let Some(replayed) = WorthQueryWorkflowAdvanceAdapter::resolve_condition_replay(
-            request.application,
-            &request.prepared,
-            required,
-            &sources,
-            request.idempotency,
-        )
-        .map_err(WorthQueryWorkflowConditionAcceptanceDenial::Replay)?
-        {
-            return Ok(replayed);
-        }
-        let prepared = match request.prepared {
-            PreparedWorkflowAdvance::AwaitingCondition(prepared) => prepared,
-            PreparedWorkflowAdvance::Transition { .. }
-            | PreparedWorkflowAdvance::AwaitingAssessment(_)
-            | PreparedWorkflowAdvance::AwaitingOperation(_)
-            | PreparedWorkflowAdvance::AwaitingEvidence { .. }
-            | PreparedWorkflowAdvance::AwaitingApproval { .. }
-            | PreparedWorkflowAdvance::ReplayOnly { .. } => {
-                return Err(WorthQueryWorkflowConditionAcceptanceDenial::NotAwaitingCondition)
-            }
-        };
-        if prepared.required() != required {
-            return Err(WorthQueryWorkflowConditionAcceptanceDenial::RequirementMismatch);
-        }
-        WorthQueryWorkflowAdvanceAdapter::compare_and_commit_condition(
-            request.application,
-            prepared,
-            sources,
-            request.idempotency,
-        )
-        .map_err(WorthQueryWorkflowConditionAcceptanceDenial::Attempt)
+        request
+            .application
+            .with_application_advancement(request.scope, |phase| {
+                if !sources.supplies(required) {
+                    return Err(WorthQueryWorkflowConditionAcceptanceDenial::RequirementMismatch);
+                }
+                if let Some(replayed) = WorthQueryWorkflowAdvanceAdapter::resolve_condition_replay(
+                    request.application,
+                    &request.prepared,
+                    required,
+                    &sources,
+                    request.idempotency,
+                )
+                .map_err(WorthQueryWorkflowConditionAcceptanceDenial::Replay)?
+                {
+                    return Ok(replayed);
+                }
+                let prepared = match request.prepared {
+                    PreparedWorkflowAdvance::AwaitingCondition(prepared) => prepared,
+                    PreparedWorkflowAdvance::Transition { .. }
+                    | PreparedWorkflowAdvance::AwaitingAssessment(_)
+                    | PreparedWorkflowAdvance::AwaitingOperation(_)
+                    | PreparedWorkflowAdvance::AwaitingEvidence { .. }
+                    | PreparedWorkflowAdvance::AwaitingApproval { .. }
+                    | PreparedWorkflowAdvance::ReplayOnly { .. } => {
+                        return Err(
+                            WorthQueryWorkflowConditionAcceptanceDenial::NotAwaitingCondition,
+                        )
+                    }
+                };
+                if prepared.required() != required {
+                    return Err(WorthQueryWorkflowConditionAcceptanceDenial::RequirementMismatch);
+                }
+                WorthQueryWorkflowAdvanceAdapter::compare_and_commit_condition(
+                    &phase,
+                    request.application,
+                    prepared,
+                    sources,
+                    request.idempotency,
+                )
+                .map_err(WorthQueryWorkflowConditionAcceptanceDenial::Attempt)
+            })
+            .unwrap_or_else(|cause| {
+                Ok(WorkflowProgressOutcome::Application(
+                    cause
+                        .into_commit_outcome()
+                        .landed()
+                        .expect_err("request admission cannot commit"),
+                ))
+            })
     }
 }

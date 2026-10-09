@@ -103,42 +103,65 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane>
         mut self,
         workspace: &mut WorthQueryWorkspace,
     ) -> WorthQueryWorkflowStageAttemptOutcome<D, O, F, L> {
-        match self.run.advance_once(
-            &self.stage_identity,
-            self.input
-                .runtime_value()
-                .expect("stage-attempt preparation rejected managed artifact intent"),
-            workspace,
-        ) {
-            Ok(WorthQueryWorkflowAdvanceStep::Advanced) => {
-                WorthQueryWorkflowStageAttemptOutcome::Success(self.run)
-            }
-            Ok(WorthQueryWorkflowAdvanceStep::Deferred(conditional)) => {
-                WorthQueryWorkflowStageAttemptOutcome::Deferred(WorthQueryDeferredStageAttempt {
-                    run: self.run,
-                    conditional,
-                    attempt_identity: self.identity,
-                })
-            }
-            Err(denial)
-                if denial.executed_effects().is_empty()
-                    && matches!(
-                        denial.kind(),
-                        WorthQueryWorkflowAdvanceDenialKind::StageExecutor { .. }
-                    ) =>
-            {
-                WorthQueryWorkflowStageAttemptOutcome::Retryable(WorthQueryRetryableStageFailure {
-                    attempt: self,
-                    denial,
-                })
-            }
-            Err(denial) => WorthQueryWorkflowStageAttemptOutcome::Failed(
-                WorthQueryTerminalStageAttemptFailure {
-                    attempt_identity: self.identity,
-                    denial,
-                },
-            ),
-        }
+        let owner = workspace.advancement_owner();
+        let identity = self.identity.clone();
+        owner
+            .with_advancement(|phase| {
+                let execution = &phase;
+
+                match self.run.advance_once(
+                    execution,
+                    &self.stage_identity,
+                    self.input
+                        .runtime_value()
+                        .expect("stage-attempt preparation rejected managed artifact intent"),
+                    workspace,
+                ) {
+                    Ok(WorthQueryWorkflowAdvanceStep::Advanced) => {
+                        WorthQueryWorkflowStageAttemptOutcome::Success(self.run)
+                    }
+                    Ok(WorthQueryWorkflowAdvanceStep::Deferred(conditional)) => {
+                        WorthQueryWorkflowStageAttemptOutcome::Deferred(
+                            WorthQueryDeferredStageAttempt {
+                                run: self.run,
+                                conditional,
+                                attempt_identity: self.identity,
+                            },
+                        )
+                    }
+                    Err(denial)
+                        if denial.executed_effects().is_empty()
+                            && matches!(
+                                denial.kind(),
+                                WorthQueryWorkflowAdvanceDenialKind::StageExecutor { .. }
+                            ) =>
+                    {
+                        WorthQueryWorkflowStageAttemptOutcome::Retryable(
+                            WorthQueryRetryableStageFailure {
+                                attempt: self,
+                                denial,
+                            },
+                        )
+                    }
+                    Err(denial) => WorthQueryWorkflowStageAttemptOutcome::Failed(
+                        WorthQueryTerminalStageAttemptFailure {
+                            attempt_identity: self.identity,
+                            denial,
+                        },
+                    ),
+                }
+            })
+            .unwrap_or_else(|cause| {
+                WorthQueryWorkflowStageAttemptOutcome::Failed(
+                    WorthQueryTerminalStageAttemptFailure {
+                        attempt_identity: identity,
+                        denial: WorthQueryWorkflowAdvanceDenial::new(
+                            WorthQueryWorkflowAdvanceDenialKind::ExecutionRequest(cause),
+                            Default::default(),
+                        ),
+                    },
+                )
+            })
     }
 }
 

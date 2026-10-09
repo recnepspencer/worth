@@ -40,6 +40,16 @@ impl CompiledFinancialWorld {
         changes: &[(FinancialWorldDefinition, MarketFactorKey)],
         affected_instrument: InstrumentId,
     ) -> Result<FinancialFactorSequenceEvidence, SignalError> {
+        // This standalone caller declares the operational serial memory policy.
+        let serial_request = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(
+                crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+            ),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
         self.ledger.clear();
         for (next_definition, factor) in changes {
             self.commit_factor_source_change(next_definition, *factor)?;
@@ -83,7 +93,7 @@ impl CompiledFinancialWorld {
                         .is_ok_and(|state| !matches!(state, NodeState::Clean))
                 })
                 .collect::<Vec<_>>();
-            self.runtime.transaction(&mut (), |tx| {
+            self.runtime.transaction(request_execution, &mut (), |tx| {
                 for node in &dirty {
                     tx.read(*node, &evaluator)?;
                 }
@@ -103,7 +113,7 @@ impl CompiledFinancialWorld {
                     .flatten()
                     .is_some_and(|pending| !pending.is_resolved())
         });
-        self.runtime.transaction(&mut (), |tx| {
+        self.runtime.transaction(request_execution, &mut (), |tx| {
             for consumer in &consumer_wave {
                 tx.read(*consumer, &evaluator)?;
             }
@@ -120,6 +130,16 @@ impl CompiledFinancialWorld {
         next_definition: &FinancialWorldDefinition,
         factor: MarketFactorKey,
     ) -> Result<(), SignalError> {
+        // This standalone caller declares the operational serial memory policy.
+        let serial_request = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(
+                crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+            ),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
         let next_snapshot = runtime_financial_snapshot(next_definition);
         let next_projection = self.projection.advance(&next_snapshot);
         let program = FinancialEvaluationProgram::new(
@@ -131,7 +151,7 @@ impl CompiledFinancialWorld {
         let source = self.handles.factor(factor).0;
         let result = source_result(&program, factor);
         let ledger = self.ledger.clone();
-        self.runtime.transaction(&mut (), |tx| {
+        self.runtime.transaction(request_execution, &mut (), |tx| {
             tx.mark_changed(source, factor_signal_aspect(next_definition, factor))?;
             ledger.record(SemanticOutputKey::Factor(factor));
             tx.target(source)
@@ -151,6 +171,16 @@ impl CompiledFinancialWorld {
         affected_instrument: InstrumentId,
         consumer_role: super::super::FinancialConsumerRole,
     ) -> Result<FinancialGatedSequenceEvidence, SignalError> {
+        // This standalone caller declares the operational serial memory policy.
+        let serial_request = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(
+                crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+            ),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
         let risk_key = SemanticOutputKey::Risk(affected_instrument);
         let baseline_revision = self.projection.output(risk_key).revision;
         self.ledger.clear();
@@ -167,7 +197,7 @@ impl CompiledFinancialWorld {
             let source = self.handles.factor(*factor).0;
             let result = source_result(&program, *factor);
             let ledger = self.ledger.clone();
-            self.runtime.transaction(&mut (), |tx| {
+            self.runtime.transaction(request_execution, &mut (), |tx| {
                 tx.mark_changed(source, factor_signal_aspect(next_definition, *factor))?;
                 ledger.record(SemanticOutputKey::Factor(*factor));
                 tx.target(source)
@@ -195,7 +225,7 @@ impl CompiledFinancialWorld {
                             .is_ok_and(|state| !matches!(state, NodeState::Clean))
                     })
                     .collect::<Vec<_>>();
-                self.runtime.transaction(&mut (), |tx| {
+                self.runtime.transaction(request_execution, &mut (), |tx| {
                     for node in &dirty {
                         tx.read(*node, &evaluator)?;
                     }
@@ -209,7 +239,7 @@ impl CompiledFinancialWorld {
         let program = self.program();
         let evaluator = program.evaluator();
         let consumer = self.handles.consumer(consumer_role).0;
-        self.runtime.transaction(&mut (), |tx| {
+        self.runtime.transaction(request_execution, &mut (), |tx| {
             tx.read(consumer, &evaluator)?;
             Ok(())
         })?;

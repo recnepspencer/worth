@@ -47,6 +47,8 @@ pub enum WorthQueryBranchAdoptionActivationDenial {
 /// Why a branch adoption could not be prepared. Nothing was published.
 #[derive(Debug)]
 pub enum WorthQueryBranchAdoptionPreparationDenial {
+    /// The preparation call could not enter its execution request.
+    ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
     /// The runtime has no installed program support.
     ProgramSupportUnavailable,
     /// No program activation is published.
@@ -158,6 +160,10 @@ impl From<crate::domain_computation::execution_runtime::product_world::activatio
 /// candidate make it impossible to construct from a target revision alone.
 #[must_use = "a prepared adoption owns a reserved publication attempt"]
 pub struct WorthQueryPreparedBranchAdoption {
+    pub(super) owner: std::sync::Weak<worth_runtime_world::facade::RuntimeWorldOwner<(), (), (), (), ()>>,
+    pub(super) owner_identity: worth_runtime_world::facade::RuntimeWorldOwnerIdentity,
+    pub(super) host_policy: worth_foundational::ExecutionRequestPolicy,
+    pub(super) host_request: worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     pub(super) source: ApplicationProgramRevision,
     pub(super) target: ApplicationProgramRevision,
     pub(super) requirements: WorthQueryProgramAdoptionRequirements,
@@ -204,6 +210,7 @@ impl WorthQueryPreparedBranchAdoption {
 }
 
 pub(super) fn prepare<Schema: ApplicationSchema>(
+    phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     selected: &WorthQuerySelectedProductOperation<'_, Schema>,
     target: &ApplicationProgramRevision,
     expected_requirements: &WorthQueryProgramAdoptionRequirements,
@@ -215,6 +222,7 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
 ) -> Result<WorthQueryPreparedBranchAdoption, WorthQueryBranchAdoptionPreparationDenial> {
     state::prepare(
+        phase,
         selected,
         target,
         expected_requirements,

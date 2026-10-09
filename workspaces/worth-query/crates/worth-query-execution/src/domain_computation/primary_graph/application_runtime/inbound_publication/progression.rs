@@ -1,4 +1,5 @@
 use crate::domain_computation::primary_graph::provider::WorthQueryInboundCompletionPreparationDenial as Preparation;
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use worth_relational::facade::mvcc::PreparedRelationalCommitCandidate;
@@ -22,6 +23,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     /// terminal completion; an unpublished Relational effect stays in custody.
     pub(in crate::domain_computation) fn publish_inbound_completion(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         accepted: Arc<WorthQueryAcceptedInboundOccurrence>,
         request: &WorthQueryRequestScope,
     ) -> Outcome {
@@ -111,7 +114,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         cost.cost
             .world_publication_attempts
             .fetch_add(1, Ordering::Relaxed);
-        match prepared.execute() {
+        match prepared.execute(
+            phase
+                .execution_request_for(&self.product_runtime)
+                .expect("private progression uses its admitted runtime phase"),
+        ) {
             RuntimeWorldPublicationOutcome::Performed(publication) => {
                 cost.cost
                     .world_performed_publications

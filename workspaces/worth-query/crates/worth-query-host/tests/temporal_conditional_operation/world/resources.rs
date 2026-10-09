@@ -9,16 +9,7 @@ use worth_query_host::facade::runtime::{
 pub(crate) fn product_world_resources(
     retained_composite_commits: u64,
 ) -> WorthQueryProductWorldResources {
-    // Bounds this fixture World's serial request memory and deterministic work.
-    let execution_policy = worth_foundational::ExecutionRequestPolicy::new(
-        worth_foundational::ExecutionPosture::Serial,
-        worth_foundational::DeterminismContract::CanonicalBitwise,
-        worth_foundational::ExecutionBudget::new(
-            std::num::NonZeroUsize::MIN,
-            64 * 1024 * 1024,
-            8_000_000,
-        ),
-    );
+    let execution_policy = execution_policy();
     WorthQueryProductWorldResources::install(
         RuntimeWorldBudgetInstallation {
             branches: RuntimeWorldBranchBudgetInstallation {
@@ -59,4 +50,18 @@ pub(crate) fn product_world_resources(
         execution_policy,
     )
     .expect("the courtroom Product World resources are valid")
+}
+
+/// The named policy shared by installation and every executing fixture door.
+pub(super) fn execution_policy() -> worth_foundational::ExecutionRequestPolicy {
+    // Bounds this fixture World's serial request memory and deterministic work.
+    worth_foundational::ExecutionRequestPolicy::new(
+        worth_foundational::ExecutionPosture::Serial,
+        worth_foundational::DeterminismContract::CanonicalBitwise,
+        worth_foundational::ExecutionBudget::new(
+            std::num::NonZeroUsize::MIN,
+            64 * 1024 * 1024,
+            8_000_000,
+        ),
+    )
 }

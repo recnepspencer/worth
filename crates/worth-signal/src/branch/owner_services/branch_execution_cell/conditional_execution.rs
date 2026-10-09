@@ -229,6 +229,7 @@ where
     #[allow(clippy::too_many_arguments)]
     pub(in crate::branch::owner_services) fn execute_conditional(
         &self,
+        work: &mut worth_execution::MapKernelContext<'_, '_>,
         admission: &SignalOwnerOperationAdmission<'_>,
         basis: &AdmittedSignalBranchBasis,
         definition: &SignalInstalledDefinitionBinding,
@@ -280,6 +281,7 @@ where
         }
         let execution = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             super::super::conditional_execution::execute_conditional_against_graph(
+                work,
                 state.conditional_execution_graph_mut(),
                 evaluation,
                 evaluation_state,

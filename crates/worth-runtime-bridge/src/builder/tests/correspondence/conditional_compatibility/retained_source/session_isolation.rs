@@ -2,6 +2,10 @@ use super::*;
 
 #[test]
 fn retained_sessions_execute_b_a_b_without_reopening_sources_or_readmitting_slots() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     use worth_signal::facade::SignalConditionalDecisionClass;
 
     let opened = Arc::new(AtomicUsize::new(0));
@@ -58,6 +62,7 @@ fn retained_sessions_execute_b_a_b_without_reopening_sources_or_readmitting_slot
                    attempt| {
         owner
             .execute_admitted_conditional(
+                request_execution,
                 session,
                 BridgeConditionalExecutionRequest {
                     lowering: &lowering,
@@ -76,7 +81,7 @@ fn retained_sessions_execute_b_a_b_without_reopening_sources_or_readmitting_slot
     let first_b = execute(&session_b, &source_b, "B", 1);
     let first_a = execute(&session_a, &source_a, "A", 1);
     let worth_proof::TransitionOutcome::Success(delivery) = owner
-        .deliver_owned_authoritative_change(&signal_basis, 0)
+        .deliver_owned_authoritative_change(request_execution, &signal_basis, 0)
         .unwrap()
     else {
         panic!("B/A/B proof requires one performed dependency transition")

@@ -36,6 +36,9 @@ fn assert_root_progress_with_basis(
 ) {
     mutation
         .advance_exact(
+            worth_execution::ExecutionRequest::serial(
+                &crate::execution_custody::operational_serial_request(),
+            ),
             root_basis,
             &mut (),
             &SignalOwnerCancellationSource::new().token(),
@@ -48,6 +51,9 @@ fn assert_root_progress(world: &AdversarialWorld) {
     world
         .mutation
         .advance_exact(
+            worth_execution::ExecutionRequest::serial(
+                &crate::execution_custody::operational_serial_request(),
+            ),
             &world.root_basis,
             &mut (),
             &SignalOwnerCancellationSource::new().token(),

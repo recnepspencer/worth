@@ -2,6 +2,9 @@ use super::WorthQueryProjectionPromotionCounters;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryProjectionTransitionDenialKind {
+    ExecutionRequest(
+        worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
+    ),
     Authority(crate::domain_installation::WorthQueryDomainHandleDenialKind),
     BoundAuthorityMismatch,
     WrongCompatibilityPair,

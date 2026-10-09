@@ -16,6 +16,7 @@ use super::{
 
 #[allow(clippy::too_many_arguments)]
 pub(in crate::branch::owner_services) fn execute_conditional_against_graph(
+    request_work: &mut worth_execution::MapKernelContext<'_, '_>,
     graph: &mut SignalGraph,
     evaluation: &SignalConditionalEvaluationAdmission,
     evaluation_state: &mut SignalConditionalEvaluationState,
@@ -31,10 +32,19 @@ pub(in crate::branch::owner_services) fn execute_conditional_against_graph(
             .installed_runtime_policy()
             .conditional_evaluation_budget()
             .maximum_attempt_visits;
+        let mut checkpoint = |units: usize| {
+            request_work.checkpoint(units as u64).map_err(|stop| {
+                crate::data::retained_storage::RetainedStoragePreparationDenial::ExecutionStopped(
+                    stop.into(),
+                )
+            })
+        };
+        let mut work = RetainedStoragePreparation::new(maximum_visits);
+        let mut scoped_work = work.reborrow_with_checkpoint(&mut checkpoint);
         let partition = evaluation
             .retained_basis
             .new_evaluation_partition_with_reserved_slot(
-                &mut RetainedStoragePreparation::new(maximum_visits),
+                &mut scoped_work,
                 &mut evaluation_state.admission_custody,
             )
             .map_err(Denial::SlotAdmission)?;
@@ -46,7 +56,7 @@ pub(in crate::branch::owner_services) fn execute_conditional_against_graph(
             .as_mut()
             .expect("slot was admitted above")
             .partition
-            .execute_conditional(graph, request, condition, comparator, compute)
+            .execute_conditional(request_work, graph, request, condition, comparator, compute)
     }));
     match execution {
         Ok(Ok(completion)) => Ok(SignalConditionalServiceCompletion::from_partition(

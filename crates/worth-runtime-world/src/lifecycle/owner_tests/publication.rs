@@ -134,9 +134,17 @@ pub(super) fn ready_from_prepared(
     prepared: PreparedCompositePublicationWithoutSignal,
     context: &str,
 ) -> crate::publication::CompositePublicationReady {
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::from_policy(&owner.state.execution.request_policy()),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let cancellation = crate::publication::RuntimeWorldCancellationSource::new();
     let outcome = RuntimeWorldOwnerExecutionService::execute_without_signal(
         owner,
+        execution,
         prepared,
         &cancellation.token(),
     );

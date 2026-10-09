@@ -19,104 +19,8 @@ fn reviewed_identities<'a>(
     ApplicationMutationIdentities::encode(key, input).expect("key and input must encode")
 }
 
-#[test]
-fn guarded_action_cannot_commit_through_public_program_owner_without_workflow_authority() {
-    let application =
-        super::super::document_retention_model::host::publish_workflow_on_first_program();
-    let runtime = application.runtime();
-    let branch = application.program_runtime().current_world();
-    let scope = request_scope();
-    let external = authenticate_operator(runtime.installed_schema(), &scope);
-    let selected = runtime
-        .on_branch(branch)
-        .select()
-        .expect("branch must select");
-    let principal_binding = runtime
-        .installed_schema()
-        .principal_binding(
-            super::super::document_retention_model::schema::DocumentPrincipalBinding::reference(),
-        )
-        .expect("principal binding must install");
-    let principal = selected
-        .resolve_authenticated_principal(
-            &principal_binding,
-            &external,
-            &scope,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .expect("operator must resolve");
-    let document = selected
-        .resolve_entity(
-            DocumentIdentityField::reference(),
-            DOCUMENT_IDENTITY.to_owned(),
-            &scope,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .expect("document must resolve");
-    let operation = runtime
-        .installed_schema()
-        .installed_operation(SetRetention::reference())
-        .expect("operation must install");
-    let input = SetRetentionInput {
-        identity: DOCUMENT_IDENTITY.to_owned(),
-        retention_days: SEED_RETENTION + 1,
-    };
-    let candidate = |key: u64| {
-        let admission = selected
-            .authorize_operation(
-                &principal,
-                &document,
-                &operation,
-                Default::default(),
-                &scope,
-            )
-            .expect("ordinary operation admission must succeed");
-        let HandlerResult::Completed(completed) = runtime
-            .execute_mutation_handler::<ReviewedSetRetentionBinding>(
-                &reviewed_identities(&key, &input),
-                principal.principal_identity(),
-                admission,
-            )
-            .expect("handler may prepare a candidate")
-        else {
-            panic!("handler must produce a candidate");
-        };
-        completed.into_parts().0
-    };
-    let key = 950_u64;
-    let outcome = application
-        .program_runtime()
-        .compare_and_commit_program_action(
-            candidate(key),
-            &reviewed_identities(&key, &input),
-            std::convert::identity,
-        );
-    assert!(matches!(
-        outcome,
-        WorthQueryApplicationCommitOutcome::Denied(denial)
-            if denial.kind() == WorthQueryApplicationCommitDenialKind::WorkflowAuthorityRequired
-    ));
-    assert_eq!(read_retention(runtime, branch), SEED_RETENTION);
-    let admission = application
-        .program_runtime()
-        .admit_program_operation::<SetRetention>();
-    assert!(matches!(
-        admission,
-        Err(denial)
-            if denial.kind() == WorthQueryApplicationCommitDenialKind::WorkflowAuthorityRequired
-    ));
-    assert_eq!(read_retention(runtime, branch), SEED_RETENTION);
-    assert_eq!(
-        settle(set_retention(
-            application.program_runtime(),
-            branch,
-            SEED_RETENTION + 1,
-            key + 2,
-        )),
-        RetentionVerdict::Performed(SEED_RETENTION + 1),
-        "the ordinary binding remains independently usable"
-    );
-}
+#[path = "commit_boundary/guarded_program.rs"]
+mod guarded_program;
 
 #[test]
 fn one_approval_transition_cannot_commit_twice_under_different_client_keys() {
@@ -183,11 +87,15 @@ fn one_approval_transition_cannot_commit_twice_under_different_client_keys() {
             )
             .unwrap();
         let HandlerResult::Completed(completed) = runtime
-            .execute_mutation_handler::<ReviewedSetRetentionBinding>(
-                &reviewed_identities(&key, &input),
-                principal.principal_identity(),
-                admission,
-            )
+            .with_application_advancement(&scope, |phase| {
+                runtime.execute_mutation_handler::<ReviewedSetRetentionBinding>(
+                    &phase,
+                    &reviewed_identities(&key, &input),
+                    principal.principal_identity(),
+                    admission,
+                )
+            })
+            .expect("the fixture policy admits its handler advancement")
             .unwrap()
         else {
             panic!("the reviewed handler must produce a candidate");
@@ -215,10 +123,11 @@ fn one_approval_transition_cannot_commit_twice_under_different_client_keys() {
         )
         .unwrap();
     let HandlerResult::Completed(sibling) = runtime
-        .execute_mutation_handler::<
+        .with_application_advancement(&scope, |phase| {
+            runtime.execute_mutation_handler::<
             super::super::document_retention_model::retention_entry::SetRetentionBinding,
-        >(
-            &ApplicationMutationIdentities::<DocumentRetentionSchema, SetRetentionBinding>::encode(
+        >(&phase,
+&ApplicationMutationIdentities::<DocumentRetentionSchema, SetRetentionBinding>::encode(
                 &sibling_key,
                 &input,
             )
@@ -226,6 +135,8 @@ fn one_approval_transition_cannot_commit_twice_under_different_client_keys() {
             principal.principal_identity(),
             sibling_admission,
         )
+        })
+        .expect("the fixture policy admits its handler advancement")
         .unwrap()
     else {
         panic!("the ordinary sibling handler must produce a candidate");
@@ -278,4 +189,142 @@ fn one_approval_transition_cannot_commit_twice_under_different_client_keys() {
             if denial.kind() == WorthQueryApplicationCommitDenialKind::IdempotencyIntentDrift
     ));
     assert_eq!(read_retention(runtime, instance.branch()), 8);
+}
+
+// This court alone exercises the workflow owner below publication.
+#[cfg(feature = "request-lifetime-probes")]
+mod advancement_identity {
+    //! The real workflow publication adapter accepts only its installed owner's phase.
+    use super::super::super::document_retention_model::{
+        schema::{Document, DocumentPrincipalBinding, DocumentRetentionSchema},
+        workflow::{WorkflowAdvanceCapability, WorkflowAdvanceInput, WorkflowAdvanceOperation},
+    };
+    use super::*;
+    use worth_query_execution::publication_boundary::workflow_advance::{
+        PreparedWorkflowAdvance, WorthQueryWorkflowAdvanceAdapter as Adapter,
+    };
+    use worth_query_host::facade::{
+        application_contribution::WorthQueryManagedComputationResourceDenial as Resource,
+        primary_graph::{
+            advancement_requests_on_this_thread_for_test as reports,
+            installed_source_reads_on_this_thread_for_test as reads,
+            place_managed_computations_on_this_thread_for_test as place,
+            WorthQueryApplicationIdempotencyBinding,
+            WorthQueryExecutionPlacementForTest as Placement, WorthQueryPrincipalResolutionMode,
+        },
+    };
+    type Prepared = PreparedWorkflowAdvance<
+        DocumentRetentionSchema,
+        WorkflowAdvanceOperation,
+        WorkflowAdvanceInput,
+        Document,
+    >;
+    fn fixture(
+        key: u64,
+    ) -> (
+        DocumentWorkflowRuntime,
+        Prepared,
+        WorthQueryApplicationIdempotencyBinding,
+    ) {
+        let (application, _, instance, _, _, _) = approval_journey("identity", key);
+        let runtime = application.runtime();
+        let scope = request_scope();
+        let external = authenticate_operator(runtime.installed_schema(), &scope);
+        let prepared = runtime
+            .with_application_advancement(&scope, |_phase| {
+                let selected = runtime.on_branch(instance.branch()).select().unwrap();
+                let binding = runtime
+                    .installed_schema()
+                    .principal_binding(DocumentPrincipalBinding::reference())
+                    .unwrap();
+                let principal = selected
+                    .resolve_authenticated_principal(
+                        &binding,
+                        &external,
+                        &scope,
+                        WorthQueryPrincipalResolutionMode::Ordinary,
+                    )
+                    .unwrap();
+                let operation = runtime
+                    .installed_schema()
+                    .installed_operation(WorkflowAdvanceOperation::reference())
+                    .unwrap();
+                let capability = runtime
+                    .installed_schema()
+                    .capability(
+                        WorkflowAdvanceCapability::reference(),
+                        WorkflowAdvanceOperation::reference(),
+                    )
+                    .unwrap();
+                let access = selected
+                    .admit_capability_access(
+                        &principal,
+                        &capability,
+                        WorkflowAdvanceInput {
+                            document_identity: DOCUMENT_IDENTITY.to_owned(),
+                        },
+                        &scope,
+                    )
+                    .unwrap();
+                let admission = runtime
+                    .authorize_capability_operation(access, &operation, Default::default())
+                    .unwrap();
+                Adapter::prepare::<_, WorkflowAdvanceCapability, _, _, _, _>(
+                    &selected,
+                    application.vocabulary().workflow_spec_for(&selected),
+                    instance,
+                    admission,
+                )
+                .unwrap()
+            })
+            .unwrap();
+        let idempotency = WorthQueryApplicationIdempotencyBinding::for_host_commit::<
+            DocumentRetentionSchema,
+            WorkflowAdvanceOperation,
+            _,
+            _,
+        >(&key, &"cross-runtime-phase")
+        .unwrap();
+        (application, prepared, idempotency)
+    }
+    #[test]
+    fn foreign_phase_cannot_advance_another_workflow() {
+        for placement in [
+            Placement::Serial,
+            Placement::Leased(std::num::NonZeroUsize::MIN),
+        ] {
+            let previous = place(placement);
+            let (a, ap, ai) = fixture(1_400);
+            let (b, bp, bi) = fixture(1_500);
+            let scope = request_scope();
+            reports();
+            a.runtime().with_application_advancement(&scope, |phase| {
+            let before = reads();
+            let stopped = Adapter::compare_and_commit(&phase, b.runtime(), bp, bi);
+            assert!(matches!(stopped, WorkflowProgressOutcome::Application(
+                WorthQueryApplicationUncommitted::Denied(ref denial)
+            ) if matches!(denial.kind(), WorthQueryApplicationCommitDenialKind::ExecutionResource {
+                denial: Resource::ForeignAdvancementPhase, partition_identity: None, policy_ancestor: None,
+            })));
+            assert_eq!(reads(), before);
+        }).unwrap();
+            let refused = reports();
+            assert_eq!(refused.len(), 1);
+            assert_eq!(refused[0].as_ref().unwrap().charged_work(), 0);
+            a.runtime()
+                .with_application_advancement(&scope, |phase| {
+                    let before = reads();
+                    assert!(matches!(
+                        Adapter::compare_and_commit(&phase, a.runtime(), ap, ai),
+                        WorkflowProgressOutcome::AwaitingApproval(_)
+                    ));
+                    assert!(
+                        reads() > before,
+                        "A's same workflow door revalidates its own source"
+                    );
+                })
+                .unwrap();
+            place(previous);
+        }
+    }
 }

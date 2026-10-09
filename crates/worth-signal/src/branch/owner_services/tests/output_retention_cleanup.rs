@@ -12,6 +12,16 @@ const MAXIMUM_ACTIVE_LEASES: usize = 4_096;
 
 #[test]
 fn named_output_capacity_returns_after_real_cancellation_and_callback_panic() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (mut runtime, _, branch, basis) = runtime_with_two_branches();
     let (_, mutation, _) = runtime.owner_port_slots().expect("runtime seals");
     let owner = mutation.upgrade_owner().expect("owner remains live");
@@ -28,9 +38,13 @@ fn named_output_capacity_returns_after_real_cancellation_and_callback_panic() {
     let before_cancel = cell.cost_snapshot();
     assert!(matches!(
         cancelled_output
-            .advance::<(), (), _>(&basis, &mut (), &cancelled.token(), |_| panic!(
-                "cancelled callback must remain unreachable"
-            ),)
+            .advance::<(), (), _>(
+                request_execution,
+                &basis,
+                &mut (),
+                &cancelled.token(),
+                |_| panic!("cancelled callback must remain unreachable"),
+            )
             .into_result(),
         Err(SignalBranchAdvanceDenial::CancelledNoMovement)
     ));
@@ -46,7 +60,7 @@ fn named_output_capacity_returns_after_real_cancellation_and_callback_panic() {
     let open = SignalOwnerCancellationSource::new();
     let panic = catch_unwind(AssertUnwindSafe(|| {
         let _ = panicking_output
-            .advance::<(), (), _>(&basis, &mut (), &open.token(), |_| {
+            .advance::<(), (), _>(request_execution, &basis, &mut (), &open.token(), |_| {
                 panic!("inject output-reservation callback unwind")
             })
             .into_result();
@@ -103,6 +117,16 @@ fn pending_output_keeps_its_admitted_call_in_closing_until_capacity_releases() {
 
 #[test]
 fn prior_admission_reserves_and_converts_populated_advance_after_closing() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let weather = graph.create_node();
     let berth = graph.create_node();
@@ -144,9 +168,15 @@ fn prior_admission_reserves_and_converts_populated_advance_after_closing() {
     );
     let cancellation = SignalOwnerCancellationSource::new();
     let completed = output
-        .advance::<(), (), _>(&basis, &mut (), &cancellation.token(), |transaction| {
-            transaction.set_dependencies(dispatch, [DependencyEdge::new(berth, Aspect::new(0))])
-        })
+        .advance::<(), (), _>(
+            request_execution,
+            &basis,
+            &mut (),
+            &cancellation.token(),
+            |transaction| {
+                transaction.set_dependencies(dispatch, [DependencyEdge::new(berth, Aspect::new(0))])
+            },
+        )
         .into_result()
         .expect("meaningful pre-admitted work performs while Closing");
     assert_eq!(

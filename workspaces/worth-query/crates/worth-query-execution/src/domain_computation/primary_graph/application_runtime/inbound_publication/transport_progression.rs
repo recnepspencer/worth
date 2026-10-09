@@ -1,5 +1,6 @@
 //! World publication from one installed transport's observed completion.
 use crate::domain_computation::primary_graph::provider::WorthQueryInboundCompletionPreparationDenial as Preparation;
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_relational::facade::mvcc::PreparedRelationalCommitCandidate;
 
 use std::sync::Arc;
@@ -25,6 +26,8 @@ where
     /// no signature claim and keeps the actual dispatch proof in every result.
     pub(in crate::domain_computation::primary_graph) fn publish_installed_transport_completion(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         evidence: Arc<InstalledTransportCompletion>,
         request: &WorthQueryRequestScope,
     ) -> Outcome {
@@ -108,7 +111,11 @@ where
         let correlation = *owner.record().correlation();
         self.primary_provider
             .mark_inbound_completion_publication_pending(&correlation);
-        match prepared.execute() {
+        match prepared.execute(
+            phase
+                .execution_request_for(&self.product_runtime)
+                .expect("private progression uses its admitted runtime phase"),
+        ) {
             RuntimeWorldPublicationOutcome::Performed(performed) => {
                 Outcome::Performed(PerformedInstalledTransportCompletion::new(
                     evidence,

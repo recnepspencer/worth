@@ -14,6 +14,16 @@ pub(in crate::tests::resource_runtime) fn exercise_resource_async_hostile_suffix
     ReplaySlice,
     ResourceReplayReconstructionReport,
 ) {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let digest = runtime
         .resource_descriptor_for_node(ResourceNodeId::from_node(lifecycle_node))
         .expect("resource descriptor should exist")
@@ -60,7 +70,7 @@ pub(in crate::tests::resource_runtime) fn exercise_resource_async_hostile_suffix
         .admitted_completion()
         .expect("current lifecycle completion should admit");
     let mut ctx = ();
-    let mut tx = runtime.begin(&mut ctx);
+    let mut tx = runtime.begin(request_execution, &mut ctx);
     let tx_staging = tx
         .stage_admitted_resource_completion(tx_admitted_completion)
         .expect("transactional lifecycle completion should stage");

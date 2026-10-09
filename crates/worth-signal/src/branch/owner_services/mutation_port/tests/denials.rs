@@ -8,6 +8,16 @@ use super::world::{set_dependency, MutationWorld};
 
 #[test]
 fn stale_matrix_cleans_every_reservation_and_allows_healthy_follow_up() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let world = MutationWorld::<()>::new();
     let cancellation = SignalOwnerCancellationSource::new();
     let captured = world
@@ -18,6 +28,7 @@ fn stale_matrix_cleans_every_reservation_and_allows_healthy_follow_up() {
     let current = world
         .port
         .advance_exact(
+            request_execution,
             captured.captured_basis(),
             &mut runtime_ctx,
             &cancellation.token(),
@@ -39,9 +50,13 @@ fn stale_matrix_cleans_every_reservation_and_allows_healthy_follow_up() {
         Err(SignalBranchForkOperationDenial::BasisMismatch { .. })
     ));
     assert!(matches!(
-        world
-            .port
-            .advance_exact(stale, &mut runtime_ctx, &cancellation.token(), |_| Ok(())),
+        world.port.advance_exact(
+            request_execution,
+            stale,
+            &mut runtime_ctx,
+            &cancellation.token(),
+            |_| Ok(())
+        ),
         Err(SignalBranchAdvanceDenial::BasisMismatch { .. })
     ));
     assert!(matches!(
@@ -69,6 +84,7 @@ fn stale_matrix_cleans_every_reservation_and_allows_healthy_follow_up() {
     let healthy = world
         .port
         .advance_exact(
+            request_execution,
             current.advanced_basis(),
             &mut runtime_ctx,
             &cancellation.token(),
@@ -80,6 +96,16 @@ fn stale_matrix_cleans_every_reservation_and_allows_healthy_follow_up() {
 
 #[test]
 fn pre_movement_cancellation_matrix_is_no_effect_and_releases_capacity() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let world = MutationWorld::<()>::new();
     let captured = world
         .port
@@ -106,9 +132,13 @@ fn pre_movement_cancellation_matrix_is_no_effect_and_releases_capacity() {
         Err(SignalBranchForkOperationDenial::CancelledNoMovement)
     ));
     assert!(matches!(
-        world
-            .port
-            .advance_exact(current, &mut (), &cancelled.token(), |_| Ok(())),
+        world.port.advance_exact(
+            request_execution,
+            current,
+            &mut (),
+            &cancelled.token(),
+            |_| Ok(())
+        ),
         Err(SignalBranchAdvanceDenial::CancelledNoMovement)
     ));
     assert!(matches!(
@@ -136,6 +166,7 @@ fn pre_movement_cancellation_matrix_is_no_effect_and_releases_capacity() {
     world
         .port
         .advance_exact(
+            request_execution,
             current,
             &mut (),
             &SignalOwnerCancellationSource::new().token(),
@@ -146,6 +177,16 @@ fn pre_movement_cancellation_matrix_is_no_effect_and_releases_capacity() {
 
 #[test]
 fn advance_cancellation_requested_after_cutoff_cannot_erase_performed_truth() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let world = MutationWorld::<()>::new();
     let cancellation = SignalOwnerCancellationSource::new();
     let callback_cancellation = cancellation.clone();
@@ -153,6 +194,7 @@ fn advance_cancellation_requested_after_cutoff_cannot_erase_performed_truth() {
     let outcome = world
         .port
         .advance_exact(
+            request_execution,
             &world.source_basis,
             &mut (),
             &cancellation.token(),
@@ -176,6 +218,16 @@ fn advance_cancellation_requested_after_cutoff_cannot_erase_performed_truth() {
 
 #[test]
 fn output_retention_exhaustion_denies_every_method_pre_effect_then_recovers() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let world = MutationWorld::<()>::new();
     let captured = world
         .port
@@ -204,6 +256,7 @@ fn output_retention_exhaustion_denies_every_method_pre_effect_then_recovers() {
     ));
     assert!(matches!(
         world.port.advance_exact(
+            request_execution,
             current,
             &mut (),
             &SignalOwnerCancellationSource::new().token(),
@@ -233,6 +286,7 @@ fn output_retention_exhaustion_denies_every_method_pre_effect_then_recovers() {
     world
         .port
         .advance_exact(
+            request_execution,
             current,
             &mut (),
             &SignalOwnerCancellationSource::new().token(),
@@ -243,6 +297,16 @@ fn output_retention_exhaustion_denies_every_method_pre_effect_then_recovers() {
 
 #[test]
 fn weak_port_owner_loss_is_stable_for_all_four_methods() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let world = MutationWorld::<()>::new();
     let captured = world
         .port
@@ -267,6 +331,7 @@ fn weak_port_owner_loss_is_stable_for_all_four_methods() {
     ));
     assert!(matches!(
         port.advance_exact(
+            request_execution,
             &current,
             &mut (),
             &SignalOwnerCancellationSource::new().token(),

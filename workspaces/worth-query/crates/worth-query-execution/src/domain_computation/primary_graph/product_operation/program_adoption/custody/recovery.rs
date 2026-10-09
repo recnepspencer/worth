@@ -1,3 +1,4 @@
+mod readmission;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
 use worth_query_installation::facade::ApplicationSchema;
@@ -82,6 +83,8 @@ impl WorthQueryBranchAdoptionRecovery {
 /// published, and the recovery is handed back to continue again.
 #[derive(Debug)]
 pub enum WorthQueryBranchAdoptionRecoveryDenial {
+    /// The recovery call was refused before inspecting its owners.
+    ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
     /// The recovery expects a different product than the one selected.
     ProductAffinityMismatch,
     /// Runtime World could not inspect the unpublished owner effects.
@@ -147,123 +150,22 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryBranchAdoptionRecoveryOutcome, WorthQueryBranchAdoptionRecoveryFailure>
     {
-        let inspected = match recovery.product.inspect() {
-            Ok(inspected) => inspected,
-            Err(denial) => {
-                return Err(failure(
-                    WorthQueryBranchAdoptionRecoveryDenial::Inspection(denial),
-                    recovery,
-                ))
-            }
-        };
-        if inspected.expected_product() != self.product().publication_binding().observation() {
-            drop(inspected);
-            return Err(failure(
-                WorthQueryBranchAdoptionRecoveryDenial::ProductAffinityMismatch,
-                recovery,
-            ));
-        }
-        let needs_settlement = inspected.relational_requires_settlement();
-        drop(inspected);
-        if needs_settlement {
-            if let Err(denial) = recovery.product.continue_owner_settlement() {
-                return Err(failure(
-                    WorthQueryBranchAdoptionRecoveryDenial::OwnerSettlement(denial),
-                    recovery,
-                ));
-            }
-        }
-        let unpublished = match recovery.product.inspect() {
-            Ok(unpublished) => unpublished,
-            Err(denial) => {
-                return Err(failure(
-                    WorthQueryBranchAdoptionRecoveryDenial::Inspection(denial),
-                    recovery,
-                ))
-            }
-        };
-        let prepared = match self
-            .product()
-            .publication_binding()
-            .prepare_settled_relational_adoption(&unpublished, request)
-        {
-            Ok(prepared) => prepared,
-            Err(denial) => {
-                drop(unpublished);
-                return Err(failure(
-                    WorthQueryBranchAdoptionRecoveryDenial::AdoptionPreparation(denial),
-                    recovery,
-                ));
-            }
-        };
-        drop(unpublished);
-        let binding = self.product().publication_binding().clone();
-        let WorthQueryBranchAdoptionRecovery {
-            source,
-            target,
-            selected_entity_count,
-            migration,
-            custody,
-            product,
-            support_custody,
-        } = recovery;
-        match prepared.execute() {
-            worth_runtime_world::facade::RuntimeWorldPublicationOutcome::Performed(performed) => {
-                let adoption = WorthQueryPerformedBranchAdoption::new(
-                    performed.consume(),
-                    source,
-                    target,
-                    selected_entity_count,
-                    migration,
-                    custody,
-                );
-                let cleanup = self.application().release_product_publication_recovery(
-                    product,
-                    IMMEDIATE_RECOVERY_RELEASE_AGE_TICKS,
-                );
-                Ok(WorthQueryBranchAdoptionRecoveryOutcome::Performed { adoption, cleanup })
-            }
-            worth_runtime_world::facade::RuntimeWorldPublicationOutcome::NoEffect(no_effect) => {
-                Ok(WorthQueryBranchAdoptionRecoveryOutcome::NoEffect {
-                    no_effect,
-                    recovery: WorthQueryBranchAdoptionRecovery {
-                        source,
-                        target,
-                        selected_entity_count,
-                        migration,
-                        custody,
-                        product,
-                        support_custody,
-                    },
-                })
-            }
-            worth_runtime_world::facade::RuntimeWorldPublicationOutcome::ProductUnpublished(
-                effects,
-            ) => {
-                let next = WorthQueryUnpublishedBranchAdoption::new(
-                    source,
-                    target,
-                    selected_entity_count,
-                    migration,
-                    custody,
-                    effects,
-                    binding.recovery(),
-                    self.application()
-                        .primary_provider
-                        .unpublished_idempotency_disposition(),
-                    support_custody,
-                );
-                let prior_cleanup = self.application().release_product_publication_recovery(
-                    product,
-                    IMMEDIATE_RECOVERY_RELEASE_AGE_TICKS,
-                );
-                Ok(
-                    WorthQueryBranchAdoptionRecoveryOutcome::ProductUnpublished {
-                        next,
-                        prior_cleanup,
-                    },
+        let mut retained = Some(recovery);
+        let result = self
+            .application()
+            .with_application_advancement(request, |phase| {
+                self.recover_branch_adoption_in_advancement(
+                    &phase,
+                    retained.take().expect("one admitted recovery"),
+                    request,
                 )
-            }
+            });
+        match result {
+            Ok(result) => result,
+            Err(cause) => Err(WorthQueryBranchAdoptionRecoveryFailure {
+                denial: WorthQueryBranchAdoptionRecoveryDenial::ExecutionDenied(cause),
+                recovery: retained.expect("refusal precedes admission"),
+            }),
         }
     }
 }
@@ -282,18 +184,29 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             WorthQueryBranchAdoptionRecovery,
         ),
     > {
-        let product = match self
-            .product_runtime
-            .admit_product_occurrence(branch.occurrence())
-        {
-            Ok(product) => product,
-            Err(denial) => return Err((denial, recovery)),
-        };
-        let selected = match self.on_product_for_adoption_recovery(product) {
-            Ok(selected) => selected,
-            Err(denial) => return Err((denial, recovery)),
-        };
-        Ok(selected.recover_branch_adoption(recovery, request))
+        let mut retained = Some(recovery);
+        self.with_application_advancement(request, |phase| {
+            let recovery = retained.take().expect("one admitted recovery");
+
+            let product = match self
+                .product_runtime
+                .admit_product_occurrence(branch.occurrence())
+            {
+                Ok(product) => product,
+                Err(denial) => return Err((denial, recovery)),
+            };
+            let selected = match self.on_product_for_adoption_recovery(product) {
+                Ok(selected) => selected,
+                Err(denial) => return Err((denial, recovery)),
+            };
+            Ok(selected.recover_branch_adoption_in_advancement(&phase, recovery, request))
+        })
+        .unwrap_or_else(|cause| {
+            Ok(Err(failure(
+                WorthQueryBranchAdoptionRecoveryDenial::ExecutionDenied(cause),
+                retained.expect("a refused root keeps recovery facts"),
+            )))
+        })
     }
 }
 

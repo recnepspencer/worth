@@ -314,6 +314,7 @@ pub trait WorthQueryProvisionalGraphProvider: Send + Sync + 'static {
 
     fn discard_provisional_overlay(
         &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
         evidence: WorthQueryProvisionalOverlayEvidenceView<'_>,
     ) -> Result<(), WorthQueryProvisionalFailure>;
 }

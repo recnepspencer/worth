@@ -234,6 +234,16 @@ fn parallel_fintech_hostile_session_matches_serial_truth() {
 
 #[test]
 fn focused_parallel_branch_restore_and_evaluate_dirty_regression() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     trace_adv("[parallel-test] focused-regression:start");
     let mut fixture =
         build_geometry_fixture(SignalRuntimePolicy::development().with_history_limit(8));
@@ -248,16 +258,20 @@ fn focused_parallel_branch_restore_and_evaluate_dirty_regression() {
     let mut ctx = ();
     fixture
         .runtime
-        .transaction(&mut ctx, |tx: &mut GeometryTransaction<'_>| {
-            tx.mark_dirty(fixture.source_a, ASPECT_A)?;
-            tx.read(fixture.source_a, &|view| {
-                Ok(view.finish(
-                    NodeEvaluationResult::from_version(version_ab(4, 1))
-                        .with_output_identity("source-a-4"),
-                ))
-            })?;
-            Ok(())
-        })
+        .transaction(
+            request_execution,
+            &mut ctx,
+            |tx: &mut GeometryTransaction<'_>| {
+                tx.mark_dirty(fixture.source_a, ASPECT_A)?;
+                tx.read(fixture.source_a, &|view| {
+                    Ok(view.finish(
+                        NodeEvaluationResult::from_version(version_ab(4, 1))
+                            .with_output_identity("source-a-4"),
+                    ))
+                })?;
+                Ok(())
+            },
+        )
         .unwrap();
     trace_adv("[parallel-test] focused-regression:mutated-feature");
 

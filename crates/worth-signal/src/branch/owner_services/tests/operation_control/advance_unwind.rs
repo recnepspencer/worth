@@ -11,6 +11,16 @@ use super::super::runtime_root::runtime_with_two_branches_from_graph;
 
 #[test]
 fn advance_outcome_construction_fault_preserves_performed_truth_and_releases_output_custody() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let original = graph.create_node();
     let replacement = graph.create_node();
@@ -41,6 +51,7 @@ fn advance_outcome_construction_fault_preserves_performed_truth_and_releases_out
             .reserve_advance_output(&admission, &cell)
             .expect("advance output custody reserves")
             .advance::<(), (), _>(
+                request_execution,
                 &basis,
                 &mut (),
                 &SignalOwnerCancellationSource::new().token(),
@@ -100,6 +111,7 @@ fn advance_outcome_construction_fault_preserves_performed_truth_and_releases_out
         .reserve_advance_output(&admission, &cell)
         .expect("outcome unwind returns output capacity")
         .advance::<(), (), _>(
+            request_execution,
             &readmitted,
             &mut (),
             &SignalOwnerCancellationSource::new().token(),

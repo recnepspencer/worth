@@ -1,4 +1,5 @@
 use super::super::canonical_identity::WorthQueryTemporalRuntimeBindingIdentity;
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind as CommitKind;
 use std::collections::BTreeMap;
 
@@ -68,6 +69,8 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) fn reent
     Authorization,
     Clock,
 >(
+    phase: &WorthQueryAdvancementPhase<'_>,
+
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     product: &crate::basis::WorthQueryProductBranchLease,
     bridge: &BridgeSealedRuntimeAssembly,
@@ -305,6 +308,7 @@ where
         }
         wake.application_attempted = true;
         let attempt = reenter_temporal_operation(
+            phase,
             runtime,
             product,
             operation,

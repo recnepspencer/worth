@@ -2,6 +2,16 @@ use super::*;
 
 #[test]
 fn resource_pending_visibility_can_preserve_prior_output_without_mutating_lifecycle() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let node = graph.node().build();
     let mut runtime = TestRuntime::build(graph);
@@ -25,7 +35,7 @@ fn resource_pending_visibility_can_preserve_prior_output_without_mutating_lifecy
         .expect("matching completion should admit");
     let mut ctx = ();
     runtime
-        .transaction(&mut ctx, |tx| {
+        .transaction(request_execution, &mut ctx, |tx| {
             let staging = tx.stage_admitted_resource_completion(admitted_completion)?;
             tx.commit_staged_resource_completion(staging.staged_effect())?;
             Ok(())
@@ -72,6 +82,16 @@ fn resource_pending_visibility_hide_and_preserve_share_lifecycle_but_not_visibil
         ResourceReplayReconstructionReport,
         TestRuntime,
     ) {
+        // This standalone caller declares the operational serial memory policy.
+        let serial_request = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(
+                crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+            ),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
         let mut graph = SignalGraph::new();
         let node = graph.node().build();
         let mut runtime = TestRuntime::build(graph);
@@ -99,7 +119,7 @@ fn resource_pending_visibility_hide_and_preserve_share_lifecycle_but_not_visibil
             .expect("matching completion should admit");
         let mut ctx = ();
         runtime
-            .transaction(&mut ctx, |tx| {
+            .transaction(request_execution, &mut ctx, |tx| {
                 let staging = tx.stage_admitted_resource_completion(admitted_completion)?;
                 tx.commit_staged_resource_completion(staging.staged_effect())?;
                 Ok(())

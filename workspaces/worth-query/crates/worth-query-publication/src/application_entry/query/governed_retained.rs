@@ -68,86 +68,93 @@ where
         Input: ApplicationCapabilityRequest<Schema, Capability, Scope = Scope<Schema, Intent>>
             + 'static,
     {
-        let observation = self
-            .retained
-            .as_ref()
-            .ok_or(WorthQueryApplicationRequestQueryDenial::RequestMode)?;
-        let parameters = self.intent.parameters();
-        let scope_binding = self.intent.into_scope();
-        let binding = self
-            .application
-            .installed_schema()
-            .installed_query_binding::<Intent::Binding>()
-            .map_err(WorthQueryApplicationRequestQueryDenial::BindingInstallation)?;
-        let limits = match self.limits {
-            Some((results, work)) => self
-                .application
-                .resolve_application_query_limits(binding.limits())
-                .narrow(results, work)
-                .map_err(WorthQueryApplicationRequestQueryDenial::Limit)?,
-            None => self
-                .application
-                .resolve_application_query_limits(binding.limits()),
-        };
-        let selected = self
-            .application
-            .on_branch(self.branch)
-            .select()
-            .map_err(WorthQueryApplicationRequestQueryDenial::ProductSelection)?;
-        let retained = self
-            .application
-            .select_application_read_observation(observation)
-            .map_err(WorthQueryApplicationRequestQueryDenial::ProductSelection)?;
-        let installed_capability = self
-            .application
-            .installed_schema()
-            .capability(capability, operation)
-            .map_err(WorthQueryApplicationRequestQueryDenial::CapabilityInstallation)?;
-        let principal = selected
-            .resolve_authenticated_principal(
-                binding.principal_binding(),
-                self.principal,
-                self.scope,
-                WorthQueryPrincipalResolutionMode::Ordinary,
-            )
-            .map_err(WorthQueryApplicationRequestQueryDenial::PrincipalResolution)?;
-        let capability_access = selected
-            .admit_approved_elevation_access(
-                approved,
-                &principal,
-                &installed_capability,
-                input,
-                self.scope,
-            )
-            .map_err(WorthQueryApplicationRequestQueryDenial::CapabilityAdmission)?;
-        let (scope_field, scope_value) =
-            scope_binding.into_field_parts(principal.principal_identity());
-        let scope = selected
-            .resolve_entity(
-                scope_field,
-                scope_value,
-                self.scope,
-                WorthQueryPrincipalResolutionMode::Ordinary,
-            )
-            .map_err(WorthQueryApplicationRequestQueryDenial::ScopeResolution)?;
-        let access = WorthQueryApplicationQueryAccessContext::new(&principal, &scope);
-        let query_maximum = NonZeroUsize::new(binding.query().read_graph().maximum_result_count())
-            .unwrap_or(NonZeroUsize::MAX);
-        let controls = WorthQueryProductQueryControls::new(
-            limits.maximum_results().min(query_maximum),
-            limits.maximum_work(),
-            self.scope,
-        );
-        let plan = selected
-            .admit_retained_governed_application_query(
-                retained,
-                binding.query(),
-                &access,
-                capability_access,
-                parameters,
-                controls,
-            )
-            .map_err(WorthQueryApplicationRequestQueryDenial::Admission)?;
-        Ok(after_admission(self.application, plan))
+        let application = self.application;
+        let request_scope = self.scope;
+        application
+            .with_application_advancement(request_scope, |_phase| {
+                let observation = self
+                    .retained
+                    .as_ref()
+                    .ok_or(WorthQueryApplicationRequestQueryDenial::RequestMode)?;
+                let parameters = self.intent.parameters();
+                let scope_binding = self.intent.into_scope();
+                let binding = self
+                    .application
+                    .installed_schema()
+                    .installed_query_binding::<Intent::Binding>()
+                    .map_err(WorthQueryApplicationRequestQueryDenial::BindingInstallation)?;
+                let limits = match self.limits {
+                    Some((results, work)) => self
+                        .application
+                        .resolve_application_query_limits(binding.limits())
+                        .narrow(results, work)
+                        .map_err(WorthQueryApplicationRequestQueryDenial::Limit)?,
+                    None => self
+                        .application
+                        .resolve_application_query_limits(binding.limits()),
+                };
+                let selected = self
+                    .application
+                    .on_branch(self.branch)
+                    .select()
+                    .map_err(WorthQueryApplicationRequestQueryDenial::ProductSelection)?;
+                let retained = self
+                    .application
+                    .select_application_read_observation(observation)
+                    .map_err(WorthQueryApplicationRequestQueryDenial::ProductSelection)?;
+                let installed_capability = self
+                    .application
+                    .installed_schema()
+                    .capability(capability, operation)
+                    .map_err(WorthQueryApplicationRequestQueryDenial::CapabilityInstallation)?;
+                let principal = selected
+                    .resolve_authenticated_principal(
+                        binding.principal_binding(),
+                        self.principal,
+                        self.scope,
+                        WorthQueryPrincipalResolutionMode::Ordinary,
+                    )
+                    .map_err(WorthQueryApplicationRequestQueryDenial::PrincipalResolution)?;
+                let capability_access = selected
+                    .admit_approved_elevation_access(
+                        approved,
+                        &principal,
+                        &installed_capability,
+                        input,
+                        self.scope,
+                    )
+                    .map_err(WorthQueryApplicationRequestQueryDenial::CapabilityAdmission)?;
+                let (scope_field, scope_value) =
+                    scope_binding.into_field_parts(principal.principal_identity());
+                let scope = selected
+                    .resolve_entity(
+                        scope_field,
+                        scope_value,
+                        self.scope,
+                        WorthQueryPrincipalResolutionMode::Ordinary,
+                    )
+                    .map_err(WorthQueryApplicationRequestQueryDenial::ScopeResolution)?;
+                let access = WorthQueryApplicationQueryAccessContext::new(&principal, &scope);
+                let query_maximum =
+                    NonZeroUsize::new(binding.query().read_graph().maximum_result_count())
+                        .unwrap_or(NonZeroUsize::MAX);
+                let controls = WorthQueryProductQueryControls::new(
+                    limits.maximum_results().min(query_maximum),
+                    limits.maximum_work(),
+                    self.scope,
+                );
+                let plan = selected
+                    .admit_retained_governed_application_query(
+                        retained,
+                        binding.query(),
+                        &access,
+                        capability_access,
+                        parameters,
+                        controls,
+                    )
+                    .map_err(WorthQueryApplicationRequestQueryDenial::Admission)?;
+                Ok(after_admission(self.application, plan))
+            })
+            .map_err(WorthQueryApplicationRequestQueryDenial::ExecutionRequest)?
     }
 }

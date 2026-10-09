@@ -162,6 +162,7 @@ where
 
     pub(crate) fn execute_branch_targeted_transaction<F>(
         &mut self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
         runtime_ctx: &mut Ctx,
         plan: LoweredBranchTargetedTransactionPlan,
         apply: F,
@@ -196,7 +197,8 @@ where
         self.apply_branch_lifecycle_transfer(BranchLifecycleTransfer::Move(target_packet))
             .expect("validated targeted transaction transfer must preserve branch identity");
 
-        let transaction_result = self.execute_branch_local_transaction(runtime_ctx, apply);
+        let transaction_result =
+            self.execute_branch_local_transaction(execution, runtime_ctx, apply);
         let targeted_transaction_telemetry = self.telemetry_snapshot().transaction;
         let target_state = self
             .take_heavy_active_branch_state()
@@ -250,6 +252,7 @@ where
 
     fn execute_branch_local_transaction<F>(
         &mut self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
         runtime_ctx: &mut Ctx,
         apply: F,
     ) -> Result<TransactionResult, SignalError>
@@ -266,6 +269,7 @@ where
             .branches
             .transaction_branch_state_mut(current_branch.id, current_branch.head_snapshot_id);
         let mut transaction = SignalTransaction {
+            execution,
             runtime_ctx,
             observations: &self.observations,
             config: &mut self.config,

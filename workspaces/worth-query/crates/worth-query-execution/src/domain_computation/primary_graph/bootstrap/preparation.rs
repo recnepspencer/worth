@@ -3,6 +3,7 @@ use super::*;
 impl WorthQueryExecutionInstallationAuthority {
     pub fn prepare_primary_graph<Schema>(
         &self,
+        phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
         runtime: &WorthQueryExecutionRuntime,
         installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
         product_world_resources: crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldResources,
@@ -10,9 +11,12 @@ impl WorthQueryExecutionInstallationAuthority {
     where
         Schema: ApplicationSchema,
     {
+        // Installation has no World identity yet; this borrows its admitted root.
+        let _execution = phase.execution_request();
         let factories =
             WorthQueryApplicationInvariantFactories::for_installed_schema(installed_schema);
         self.prepare_primary_graph_with_relational_runtime_and_invariants(
+            phase,
             runtime,
             installed_schema,
             RelationalRuntimeApi::builder().build(),
@@ -23,6 +27,7 @@ impl WorthQueryExecutionInstallationAuthority {
 
     pub(crate) fn prepare_primary_graph_with_relational_runtime<Schema>(
         &self,
+        phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
         runtime: &WorthQueryExecutionRuntime,
         installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
         relational_runtime: RelationalRuntime,
@@ -34,6 +39,7 @@ impl WorthQueryExecutionInstallationAuthority {
         let factories =
             WorthQueryApplicationInvariantFactories::for_installed_schema(installed_schema);
         self.prepare_primary_graph_with_relational_runtime_and_invariants(
+            phase,
             runtime,
             installed_schema,
             relational_runtime,
@@ -44,6 +50,7 @@ impl WorthQueryExecutionInstallationAuthority {
 
     pub(crate) fn prepare_primary_graph_with_relational_runtime_and_invariants<Schema>(
         &self,
+        phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
         runtime: &WorthQueryExecutionRuntime,
         installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
         relational_runtime: RelationalRuntime,
@@ -54,6 +61,7 @@ impl WorthQueryExecutionInstallationAuthority {
         Schema: ApplicationSchema,
     {
         self.prepare_primary_graph_with_optional_checkpoint(
+            phase,
             runtime,
             installed_schema,
             relational_runtime,
@@ -63,8 +71,10 @@ impl WorthQueryExecutionInstallationAuthority {
         )
     }
 
+    /// The phase witnesses admission before inline Relational schema and recovery reads.
     pub(super) fn prepare_primary_graph_with_optional_checkpoint<Schema>(
         &self,
+        _phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
         runtime: &WorthQueryExecutionRuntime,
         installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
         mut relational_runtime: RelationalRuntime,

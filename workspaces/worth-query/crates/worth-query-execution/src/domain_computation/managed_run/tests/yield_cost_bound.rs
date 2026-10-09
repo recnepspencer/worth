@@ -119,22 +119,27 @@ struct YieldCostEvidence {
 
 #[test]
 fn yield_transition_work_is_invariant_to_unrelated_live_authority_width() {
-    let baseline = execute_target(0);
-    let wide = execute_target(UNRELATED_WIDTH);
-    assert_eq!(baseline, wide);
-    assert_eq!(
-        baseline,
-        YieldCostEvidence {
-            provider_steps: 1,
-            safe_point_lookups: 2,
-            pressure_classifications: 2,
-            output_capacity_classifications: 0,
-            suspension_count: 1,
-            retained_probe_count: 1,
-            retained_capacity_count: 2,
-            yield_counters: expected_direct_yield_counters(),
-        }
-    );
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
+
+        let baseline = execute_target(execution, 0);
+        let wide = execute_target(execution, UNRELATED_WIDTH);
+        assert_eq!(baseline, wide);
+        assert_eq!(
+            baseline,
+            YieldCostEvidence {
+                provider_steps: 1,
+                safe_point_lookups: 2,
+                pressure_classifications: 2,
+                output_capacity_classifications: 0,
+                suspension_count: 1,
+                retained_probe_count: 1,
+                retained_capacity_count: 2,
+                yield_counters: expected_direct_yield_counters(),
+            }
+        );
+    });
 }
 
 #[test]
@@ -181,21 +186,12 @@ fn workflow_yield_transition_allocation_is_unrelated_authority_invariant() {
     );
 }
 
-#[test]
-#[cfg(feature = "allocation-probes")]
-fn isolated_workflow_yield_transition_allocation_slope_probe() {
-    if std::env::var_os("WORTH_QUERY_WORKFLOW_YIELD_ALLOCATION_PROBE").is_none() {
-        return;
-    }
-    let baseline = measured_workflow_target(0);
-    let wide = measured_workflow_target(UNRELATED_WIDTH);
-    assert_eq!(baseline.allocations, wide.allocations);
-    assert_eq!(baseline.reallocations, wide.reallocations);
-}
-
-fn execute_target(unrelated_width: usize) -> YieldCostEvidence {
+fn execute_target(
+    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    unrelated_width: usize,
+) -> YieldCostEvidence {
     let (paused, unrelated, suspension_count, retained_probe_count) =
-        prepared_target(unrelated_width);
+        prepared_target(execution, unrelated_width);
     let yielded = yield_target(paused);
     let work = yielded.inspection().provider_work();
     let evidence = YieldCostEvidence {
@@ -214,38 +210,13 @@ fn execute_target(unrelated_width: usize) -> YieldCostEvidence {
 }
 
 #[cfg(feature = "allocation-probes")]
-fn measured_workflow_target(unrelated_width: usize) -> stats_alloc::Stats {
-    let (paused, unrelated) = prepared_workflow_target(unrelated_width);
-    let region = stats_alloc::Region::new(&stats_alloc::INSTRUMENTED_SYSTEM);
-    let yielded = match paused.yield_run() {
-        crate::domain_computation::WorthQueryWorkflowYieldOutcome::Yielded(yielded) => yielded,
-        _ => panic!("eligible workflow cost target did not yield"),
-    };
-    let stats = region.change();
-    assert_eq!(
-        yielded.inspection().yield_counters(),
-        expected_workflow_yield_counters()
-    );
-    match yielded.cleanup() {
-        crate::domain_computation::WorthQueryWorkflowYieldCleanupOutcome::Complete(_) => {}
-        _ => panic!("artifact-free workflow cost target did not clean up"),
-    }
-    drop(unrelated);
-    stats
-}
-
+mod allocation_measurement;
 #[cfg(feature = "allocation-probes")]
-fn measured_target(unrelated_width: usize) -> stats_alloc::Stats {
-    let (paused, unrelated, _, _) = prepared_target(unrelated_width);
-    let region = stats_alloc::Region::new(&stats_alloc::INSTRUMENTED_SYSTEM);
-    let yielded = yield_target(paused);
-    let stats = region.change();
-    let _ = yielded.cleanup();
-    drop(unrelated);
-    stats
-}
+use allocation_measurement::{measured_target, measured_workflow_target};
 
 fn prepared_target(
+    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+
     unrelated_width: usize,
 ) -> (
     crate::domain_computation::WorthQueryPausedDirectGraphExecution,
@@ -271,6 +242,7 @@ fn prepared_target(
     );
     let active = running
         .begin_graph_execution(
+            execution,
             &graph,
             WorthQueryManagedGraphCallRequest::new(
                 WorthQueryGraphProviderCallKind::Observe,
@@ -278,7 +250,7 @@ fn prepared_target(
             ),
         )
         .expect("yield cost provider should begin");
-    let paused = match active.advance() {
+    let paused = match active.advance(execution) {
         WorthQueryDirectGraphStepOutcome::Continue(paused) => paused,
         _ => panic!("yield cost provider did not pause"),
     };
@@ -287,6 +259,7 @@ fn prepared_target(
 
 #[cfg(feature = "allocation-probes")]
 fn prepared_workflow_target(
+    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     unrelated_width: usize,
 ) -> (
     crate::domain_computation::WorthQueryPausedWorkflowGraphExecution,
@@ -339,6 +312,7 @@ fn prepared_workflow_target(
         super::workflow_provider_steps::admitted_workflow(&runtime, &operation, resources);
     let active = running
         .begin_stage_graph_execution(
+            execution,
             "stage",
             &graph,
             WorthQueryManagedGraphCallRequest::new(
@@ -347,7 +321,7 @@ fn prepared_workflow_target(
             ),
         )
         .expect("workflow yield cost provider should begin");
-    let paused = match active.advance() {
+    let paused = match active.advance(execution) {
         WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused,
         _ => panic!("workflow yield cost provider did not pause"),
     };
@@ -390,3 +364,6 @@ fn expected_workflow_yield_counters() -> crate::domain_computation::WorthQueryYi
     counters.validated_retained_resources();
     counters
 }
+
+#[path = "yield_cost_bound/isolated_workflow_yield_transition_allocation_slope_probe.rs"]
+mod isolated_workflow_yield_transition_allocation_slope_probe;

@@ -58,6 +58,7 @@ pub use super::application_checkpoint::{
 };
 #[cfg(feature = "test-query-execution-observer")]
 pub use super::application_contribution::{
+    bound_advancement_requests_on_this_thread_for_test,
     discarded_computation_retention_on_this_thread_for_test,
     partitioned_computation_runs_on_this_thread_for_test,
     place_managed_computations_on_this_thread_for_test,
@@ -66,8 +67,8 @@ pub use super::application_contribution::{
     WorthQueryPartitionedComputationRun, WorthQueryPublishedComputationStateForTest,
 };
 pub use super::application_contribution::{
-    WorthQueryAdmittedOutputDemand, WorthQueryApplicationConditionalBinding,
-    WorthQueryApplicationConditionalPackageContract,
+    WorthQueryAdmittedOutputDemand, WorthQueryAdvancementDenial, WorthQueryAdvancementPhase,
+    WorthQueryApplicationConditionalBinding, WorthQueryApplicationConditionalPackageContract,
     WorthQueryApplicationConditionalProducerAccess, WorthQueryApplicationContractCatalog,
     WorthQueryApplicationContribution, WorthQueryApplicationContributionContracts,
     WorthQueryApplicationContributionSetup, WorthQueryApplicationContributionTuple,
@@ -78,7 +79,8 @@ pub use super::application_contribution::{
     WorthQueryComputationPartitionStop, WorthQueryComputationPartitionView,
     WorthQueryComputationReadDenial, WorthQueryComputationReader,
     WorthQueryConfiguredApplicationContributions, WorthQueryDecisionContextDependencies,
-    WorthQueryDeterministicReducer, WorthQueryInstalledApplicationConditionalRegistry,
+    WorthQueryDeterministicReducer, WorthQueryForeignAdvancementPhase,
+    WorthQueryInstalledApplicationConditionalRegistry,
     WorthQueryInstalledApplicationProducerRegistry, WorthQueryInstalledManagedComputation,
     WorthQueryInstalledPartitionedComputation, WorthQueryManagedComputationCheckpoint,
     WorthQueryManagedComputationCheckpointDenial, WorthQueryManagedComputationDenial,
@@ -339,3 +341,8 @@ pub use crate::domain_computation::{
 
 /// Exhaustive translation of a Relational execution refusal.
 pub use super::provider::relational_execution_denial::relational_execution_kind;
+
+#[cfg(feature = "test-query-execution-observer")]
+pub use super::application_contribution::{
+    advancement_requests_on_this_thread_for_test, caller_pass_reports_on_this_thread_for_test,
+};

@@ -66,40 +66,41 @@ pub(in crate::domain_computation::primary_graph) fn refused_commit(
 
 #[test]
 fn bootstrap_commit_preserves_real_leased_work_refusal() {
-    isolated(
-        concat!(
-            module_path!(),
-            "::bootstrap_commit_preserves_real_leased_work_refusal"
-        ),
-        || {
-            let mut request = request();
-            request.policy = ExecutionRequestPolicy::new(
-                ExecutionPosture::Automatic,
-                DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::MIN, 64 * 1024, 0),
-            );
-            let error = refused_commit(request);
-            let worth_relational::facade::transactions::TransactionCommitError::Execution {
-                denial,
-                ..
-            } = &error
-            else {
-                panic!("real execution refusal required");
-            };
-            assert_eq!(
-                denial.kind,
-                worth_relational::facade::transactions::CommitExecutionDenialKind::Cause(
-                    Cause::WorkExhausted
-                )
-            );
-            let partition_identity = denial.partition_identity;
-            assert_eq!(
-                partition_identity,
-                Some(1),
-                "the entity-kind packet boundary survives"
-            );
-            let validation = crate::domain_computation::primary_graph::provider::invariant_execution_failure::map_validation_failure(error.clone());
-            assert_eq!(
+    crate::domain_computation::primary_graph::with_test_advancement(|_active_phase| {
+        isolated(
+            concat!(
+                module_path!(),
+                "::bootstrap_commit_preserves_real_leased_work_refusal"
+            ),
+            || {
+                let mut request = request();
+                request.policy = ExecutionRequestPolicy::new(
+                    ExecutionPosture::Automatic,
+                    DeterminismContract::CanonicalBitwise,
+                    ExecutionBudget::new(NonZeroUsize::MIN, 64 * 1024, 0),
+                );
+                let error = refused_commit(request);
+                let worth_relational::facade::transactions::TransactionCommitError::Execution {
+                    denial,
+                    ..
+                } = &error
+                else {
+                    panic!("real execution refusal required");
+                };
+                assert_eq!(
+                    denial.kind,
+                    worth_relational::facade::transactions::CommitExecutionDenialKind::Cause(
+                        Cause::WorkExhausted
+                    )
+                );
+                let partition_identity = denial.partition_identity;
+                assert_eq!(
+                    partition_identity,
+                    Some(1),
+                    "the entity-kind packet boundary survives"
+                );
+                let validation = crate::domain_computation::primary_graph::provider::invariant_execution_failure::map_validation_failure(error.clone());
+                assert_eq!(
                 validation.kind(),
                 crate::domain_computation::WorthQueryInvariantExecutionDenialKind::ExecutionDenied(
                     QueryKind::ExecutionResource {
@@ -109,35 +110,35 @@ fn bootstrap_commit_preserves_real_leased_work_refusal() {
                     }
                 )
             );
-            let denied = map_bootstrap_commit_denial(error);
-            assert_eq!(
-                denied.kind(),
-                WorthQueryPrimaryGraphInstallationDenialKind::ExecutionDenied {
-                    kind: QueryKind::ExecutionResource {
-                        denial: Resource::WorkExhausted,
-                        partition_identity,
-                        policy_ancestor: None
-                    },
-                }
-            );
-            let WorthQueryPrimaryGraphInstallationDenialKind::ExecutionDenied { kind } =
-                denied.kind()
-            else {
-                panic!("installation lost the execution refusal");
-            };
-            let application = crate::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_denied(
+                let denied = map_bootstrap_commit_denial(error);
+                assert_eq!(
+                    denied.kind(),
+                    WorthQueryPrimaryGraphInstallationDenialKind::ExecutionDenied {
+                        kind: QueryKind::ExecutionResource {
+                            denial: Resource::WorkExhausted,
+                            partition_identity,
+                            policy_ancestor: None
+                        },
+                    }
+                );
+                let WorthQueryPrimaryGraphInstallationDenialKind::ExecutionDenied { kind } =
+                    denied.kind()
+                else {
+                    panic!("installation lost the execution refusal");
+                };
+                let application = crate::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_denied(
             crate::domain_computation::WorthQueryProviderSessionFailure::new(
                 kind, crate::domain_computation::WorthQueryProviderSessionProtocolStage::Commit,
                 "commit preparation execution refused", Default::default(),
             ),
         );
-            let observed = WorthQueryApplicationCommitOutcome::Denied(application)
-                .require_committed()
-                .expect_err("the receipt requirement preserves a refusal");
-            let WorthQueryApplicationCommitOutcome::Denied(observed) = observed else {
-                panic!("the receipt requirement folded the refusal");
-            };
-            assert_eq!(
+                let observed = WorthQueryApplicationCommitOutcome::Denied(application)
+                    .require_committed()
+                    .expect_err("the receipt requirement preserves a refusal");
+                let WorthQueryApplicationCommitOutcome::Denied(observed) = observed else {
+                    panic!("the receipt requirement folded the refusal");
+                };
+                assert_eq!(
                 observed.kind(),
                 crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind::ExecutionResource {
                     denial: Resource::WorkExhausted,
@@ -145,8 +146,9 @@ fn bootstrap_commit_preserves_real_leased_work_refusal() {
                     policy_ancestor: None,
                 }
             );
-        },
-    );
+            },
+        );
+    });
 }
 
 #[test]

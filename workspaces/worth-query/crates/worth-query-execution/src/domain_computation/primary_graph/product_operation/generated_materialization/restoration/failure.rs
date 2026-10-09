@@ -111,3 +111,14 @@ pub(super) fn restoration_failure(
 
 #[cfg(test)]
 mod tests;
+
+impl WorthQueryGeneratedOutputRestorationFailureCause {
+    pub(super) fn advancement(
+        cause: crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
+    ) -> Self {
+        match cause.provider_denial_cause() {
+            Ok(kind) => Self::ExecutionDenied(kind),
+            Err(kind) => Self::ExecutionControlStopped(kind),
+        }
+    }
+}

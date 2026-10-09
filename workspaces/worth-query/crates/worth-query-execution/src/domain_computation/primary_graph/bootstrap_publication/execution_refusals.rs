@@ -158,32 +158,34 @@ fn refused_index_build(request: LeaseRequest) -> DerivedIndexBuildOutcome {
 }
 #[test]
 fn result_refusal_is_typed_with_partition_identity() {
-    isolated(
-        concat!(
-            module_path!(),
-            "::result_refusal_is_typed_with_partition_identity"
-        ),
-        || {
-            let build = refused_index_build(request());
-            let refusal = build.execution_denial.expect("real execution refusal");
-            assert!(refusal.partition_identity.is_some());
-            assert_eq!(
-                refusal.kind,
-                DerivedIndexExecutionDenialKind::Cause(Cause::ResultCapacityExceeded)
-            );
-            let denied = identity_indexes_built(build, 1).unwrap_err();
-            assert_eq!(
-                denied.kind(),
-                WorthQueryPrimaryGraphInstallationDenialKind::ExecutionDenied {
-                    kind: QueryKind::ExecutionResource {
-                        denial: Resource::ResultCapacityExceeded,
-                        partition_identity: refusal.partition_identity,
-                        policy_ancestor: None,
-                    },
-                }
-            );
-        },
-    );
+    crate::domain_computation::primary_graph::with_test_advancement(|_active_phase| {
+        isolated(
+            concat!(
+                module_path!(),
+                "::result_refusal_is_typed_with_partition_identity"
+            ),
+            || {
+                let build = refused_index_build(request());
+                let refusal = build.execution_denial.expect("real execution refusal");
+                assert!(refusal.partition_identity.is_some());
+                assert_eq!(
+                    refusal.kind,
+                    DerivedIndexExecutionDenialKind::Cause(Cause::ResultCapacityExceeded)
+                );
+                let denied = identity_indexes_built(build, 1).unwrap_err();
+                assert_eq!(
+                    denied.kind(),
+                    WorthQueryPrimaryGraphInstallationDenialKind::ExecutionDenied {
+                        kind: QueryKind::ExecutionResource {
+                            denial: Resource::ResultCapacityExceeded,
+                            partition_identity: refusal.partition_identity,
+                            policy_ancestor: None,
+                        },
+                    }
+                );
+            },
+        );
+    });
 }
 
 #[test]

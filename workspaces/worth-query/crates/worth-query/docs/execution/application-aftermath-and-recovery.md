@@ -547,7 +547,10 @@ When the admitted request lapses before resolution takes effect, resolution
 names the lapse: `AdmissionCancelled`, `AdmissionDeadlineExceeded` or
 `AdmissionAuthenticationExpired`. A fresh request clears it.
 `FreshAuthorityDenied` means the presented effect authority is not this
-handle's, which a fresh request does not clear.
+handle's, which a fresh request does not clear. Redispatch opens custody before
+checking fresh authority. An already canceled or expired request therefore
+reports `AdmissionCancelled` or `AdmissionDeadlineExceeded`, even when its effect
+authority is stale. Cancellation does not become a completion-publication stop.
 
 ## Program Adoption Recovery And Support Retirement
 
@@ -673,3 +676,8 @@ owner's ledger.
 - [Query Operating Modes](../foundations/query-operating-modes.md)
 - [Typed Stops And Remediation Guidance](../domain-capabilities/typed-stops-and-remediation-guidance.md)
 - [worth-proof Authority And Workflow Contracts](../../../../../../crates/worth-proof/docs/features/authority-and-workflow-contracts.md)
+
+For live `next`, cancellation or expiration already present when the call opens
+its request is an `ExecutionRequest(Interrupted)` refusal. If it arrives after
+the opening, the live lease returns its terminal delivery outcome; hosts handle
+both forms.

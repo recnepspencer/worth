@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_proof::TransitionOutcome;
 use worth_relational::facade::publication::PatchStreamPosition;
 use worth_runtime_bridge::facade::{
@@ -53,6 +54,8 @@ pub(super) fn relevant_authoritative_commits<Schema>(
 /// are owed on `pending`, so they survive a later failure in this batch.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn deliver_authoritative_commits(
+    phase: &WorthQueryAdvancementPhase<'_>,
+
     bridge: &BridgeSealedRuntimeAssembly,
     signal_basis: &BridgeConditionalSignalBasisBinding,
     cursor: &mut Option<PatchStreamPosition>,
@@ -73,6 +76,9 @@ pub(super) fn deliver_authoritative_commits(
         // Bridge deliveries only feed Signal-hosted nodes. Which wakes are
         // reconsidered is decided by the owner's retained touches.
         let delivered = deliver_commit_dependencies(
+            phase
+                .request_for_owner(truth.owner_identity())
+                .expect("private conditional progression uses its admitted runtime"),
             bridge,
             signal_basis,
             touched.commit,
@@ -96,6 +102,9 @@ pub(super) fn deliver_authoritative_commits(
                         .any(|change| change.relational_record_identity() == Some(record))
                 });
             reconsider_retained_wake(
+                phase
+                    .request_for_owner(truth.owner_identity())
+                    .expect("private conditional progression uses its admitted runtime"),
                 bridge,
                 wake,
                 signal_basis,
@@ -144,6 +153,8 @@ pub(super) fn promote_performed_signal_deliveries(
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn reconsider_retained_wakes_for_deliveries(
+    phase: &WorthQueryAdvancementPhase<'_>,
+
     bridge: &BridgeSealedRuntimeAssembly,
     deliveries: &[worth_runtime_bridge::facade::BridgeGranularInvalidationDelivery],
     wakes: &mut [WorthQueryRetainedConditionalWake],
@@ -160,6 +171,9 @@ pub(super) fn reconsider_retained_wakes_for_deliveries(
             })
         }) {
             reconsider_retained_wake(
+                phase
+                    .request_for_owner(truth.owner_identity())
+                    .expect("private conditional progression uses its admitted runtime"),
                 bridge,
                 wake,
                 signal_basis,
@@ -199,6 +213,8 @@ fn retained_decision_evidence_mut(
 }
 
 fn deliver_commit_dependencies(
+    execution: worth_execution::ExecutionRequest<'_, '_>,
+
     bridge: &BridgeSealedRuntimeAssembly,
     signal_basis: &BridgeConditionalSignalBasisBinding,
     commit: worth_relational::facade::history::CommitId,
@@ -218,6 +234,7 @@ fn deliver_commit_dependencies(
         }
         let outcome = bridge
             .deliver_authoritative_change(
+                execution,
                 signal_basis,
                 dependency_ordinal,
                 RelationalCommittedPatchRequest::at_snapshot(

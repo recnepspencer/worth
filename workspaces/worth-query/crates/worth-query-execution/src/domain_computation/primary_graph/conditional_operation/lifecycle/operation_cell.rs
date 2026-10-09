@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use std::sync::{Arc, Mutex, MutexGuard};
 
 use worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly;
@@ -52,6 +53,8 @@ impl<Schema> WorthQueryConditionalOperationCell<Schema> {
 
     pub(in crate::domain_computation::primary_graph::conditional_operation) fn observe_clock(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         bridge: &BridgeSealedRuntimeAssembly,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         truth: &WorthQueryConditionalTruthBasis,
@@ -63,7 +66,7 @@ impl<Schema> WorthQueryConditionalOperationCell<Schema> {
                 detail: denial.subject().to_string(),
             };
         }
-        operation.observe_clock(bridge, runtime, truth)
+        operation.observe_clock(phase, bridge, runtime, truth)
     }
 
     pub(in crate::domain_computation::primary_graph::conditional_operation) fn admit_product_binding(

@@ -59,26 +59,58 @@ impl WorthQueryWorkflowStageCompletion {
 
 impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkflowRun<D, O, F, L> {
     pub fn advance(
-        mut self,
+        self,
         stage_identity: &str,
         input: WorthQueryWorkflowValue,
         workspace: &mut WorthQueryWorkspace,
     ) -> WorthQueryWorkflowAdvanceOutcome<D, O, F, L> {
+        let owner = workspace.advancement_owner();
+        owner
+            .with_advancement(|phase| {
+                self.advance_in_advancement(&phase, stage_identity, input, workspace)
+            })
+            .unwrap_or_else(|cause| {
+                TransitionOutcome::Denied(WorthQueryWorkflowAdvanceDenial::new(
+                    WorthQueryWorkflowAdvanceDenialKind::ExecutionRequest(cause),
+                    Default::default(),
+                ))
+            })
+    }
+
+    pub(super) fn advance_in_advancement(
+        mut self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
+        stage_identity: &str,
+        input: WorthQueryWorkflowValue,
+        workspace: &mut WorthQueryWorkspace,
+    ) -> WorthQueryWorkflowAdvanceOutcome<D, O, F, L> {
+        let execution = phase;
         let runtime_admission = match self.admit_stage_runtime_authority(workspace) {
             Ok(admission) => admission,
             Err(denial) => return self.outcome_from_denial(denial),
         };
-        self.advance_with_runtime_admission(stage_identity, input, workspace, runtime_admission)
+        self.advance_with_runtime_admission(
+            execution,
+            stage_identity,
+            input,
+            workspace,
+            runtime_admission,
+        )
     }
 
     pub(super) fn advance_with_runtime_admission(
         mut self,
+        execution: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
+
         stage_identity: &str,
         input: WorthQueryWorkflowValue,
         workspace: &mut WorthQueryWorkspace,
         runtime_admission: WorthQueryWorkflowStageRuntimeAdmission,
     ) -> WorthQueryWorkflowAdvanceOutcome<D, O, F, L> {
         match self.advance_once_with_runtime_admission(
+            execution,
             stage_identity,
             input,
             workspace,
@@ -99,40 +131,54 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
 
     pub(super) fn advance_once(
         &mut self,
+        execution: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
+
         stage_identity: &str,
         input: WorthQueryWorkflowValue,
         workspace: &mut WorthQueryWorkspace,
     ) -> Result<WorthQueryWorkflowAdvanceStep, WorthQueryWorkflowAdvanceDenial> {
         let admission = self.admit_stage_runtime_authority(workspace)?;
-        self.advance_once_with_runtime_admission(stage_identity, input, workspace, admission)
+        self.advance_once_with_runtime_admission(
+            execution,
+            stage_identity,
+            input,
+            workspace,
+            admission,
+        )
     }
     pub(super) fn advance_once_with_computation(
         &mut self,
+        execution: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
+
         slot: CanonicalWorkflowStageResult,
         workspace: &mut WorthQueryWorkspace,
     ) -> Result<WorthQueryWorkflowAdvanceStep, WorthQueryWorkflowAdvanceDenial> {
         let runtime_admission = self.admit_stage_runtime_authority(workspace)?;
         let admitted = self.admit_stage(slot.stage_identity(), slot.input(), runtime_admission)?;
-        self.advance_once_with_admitted_computation(admitted, slot, workspace)
+        self.advance_once_with_admitted_computation(execution, admitted, slot, workspace)
     }
     fn advance_once_with_runtime_admission(
         &mut self,
+        execution: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
+
         stage_identity: &str,
         input: WorthQueryWorkflowValue,
         workspace: &mut WorthQueryWorkspace,
         runtime_admission: WorthQueryWorkflowStageRuntimeAdmission,
     ) -> Result<WorthQueryWorkflowAdvanceStep, WorthQueryWorkflowAdvanceDenial> {
         let admitted = self.admit_stage(stage_identity, &input, runtime_admission)?;
-        self.advance_once_with_admitted_stage(admitted, input, workspace)
+        self.advance_once_with_admitted_stage(execution, admitted, input, workspace)
     }
 
     pub(super) fn advance_with_admitted_stage(
         mut self,
+        execution: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
+
         admitted: WorthQueryAdmittedWorkflowStage,
         input: WorthQueryWorkflowValue,
         workspace: &mut WorthQueryWorkspace,
     ) -> WorthQueryWorkflowAdvanceOutcome<D, O, F, L> {
-        match self.advance_once_with_admitted_stage(admitted, input, workspace) {
+        match self.advance_once_with_admitted_stage(execution, admitted, input, workspace) {
             Ok(WorthQueryWorkflowAdvanceStep::Advanced) => TransitionOutcome::Success(self),
             Ok(WorthQueryWorkflowAdvanceStep::Deferred(conditional)) => {
                 TransitionOutcome::Deferred(
@@ -148,16 +194,22 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
 
     fn advance_once_with_admitted_stage(
         &mut self,
+        execution: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
+
         admitted: WorthQueryAdmittedWorkflowStage,
         input: WorthQueryWorkflowValue,
         workspace: &mut WorthQueryWorkspace,
     ) -> Result<WorthQueryWorkflowAdvanceStep, WorthQueryWorkflowAdvanceDenial> {
         let prepared =
             self.prepare_frontier_computation(vec![(admitted.stage.identity().into(), input)]);
-        prepared.compute().apply(self, workspace, Some(admitted))
+        prepared
+            .compute()
+            .apply(execution, self, workspace, Some(admitted))
     }
     pub(super) fn advance_once_with_admitted_computation(
         &mut self,
+        execution: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
+
         admitted: WorthQueryAdmittedWorkflowStage,
         slot: CanonicalWorkflowStageResult,
         workspace: &mut WorthQueryWorkspace,
@@ -178,6 +230,7 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
         let semantic_input = slot.input().semantic_value();
         let graph_snapshot = workspace.snapshot_identity();
         let conditional = match self.admit_stage_condition(
+            execution,
             stage.identity(),
             &resources,
             &resource_evidence,
@@ -194,6 +247,7 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
             .take()
             .expect("live workflow owns its managed run");
         let (managed, graph_receipts) = invoke_stage_graphs(
+            execution,
             &self.bound,
             managed,
             &self.identity,
@@ -202,6 +256,7 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
         )?;
         self.managed = Some(managed);
         let executed = self.execute_admitted_stage(
+            execution,
             &stage,
             &resources,
             &resource_evidence,
@@ -228,6 +283,8 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
 
     fn admit_stage_condition(
         &mut self,
+        execution: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
+
         stage_identity: &str,
         resources: &super::WorthQueryAdmittedExecutionResourcePlan,
         resource_evidence: &super::WorthQueryExecutionResourceAttemptEvidence,
@@ -235,6 +292,9 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
         workspace: &mut WorthQueryWorkspace,
     ) -> Result<WorthQueryStageConditionAdmission, WorthQueryWorkflowAdvanceDenial> {
         match super::workflow_conditional_stage_evaluation::evaluate(
+            execution
+                .execution_request_for(&workspace.advancement_owner())
+                .expect("stage uses its workspace phase"),
             &self.bound,
             workspace,
             graph_snapshot,
@@ -257,6 +317,7 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
 
     fn execute_admitted_stage(
         &mut self,
+        execution: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
         stage: &worth_query_installation::facade::WorthQueryPortableWorkflowStage,
         resources: &super::WorthQueryAdmittedExecutionResourcePlan,
         resource_evidence: &super::WorthQueryExecutionResourceAttemptEvidence,
@@ -274,6 +335,9 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
         let effect_workflow_binding =
             self.stage_effect_workflow_binding(stage, workspace.snapshot_identity());
         let context = self.stage_execution_context(
+            execution
+                .execution_request_for(&workspace.advancement_owner())
+                .expect("stage uses its workspace phase"),
             stage,
             &predecessor_receipts,
             graph_receipts,

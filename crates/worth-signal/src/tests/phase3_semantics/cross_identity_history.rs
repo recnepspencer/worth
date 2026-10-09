@@ -8,6 +8,16 @@ use crate::tests::support::{version_ab, ASPECT_A, ASPECT_B};
 
 #[test]
 fn cross_identity_lineage_and_history_preserve_correspondence_family() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -34,12 +44,12 @@ fn cross_identity_lineage_and_history_preserve_correspondence_family() {
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             source.evaluate_memoized(tx, "shape-v1")
         })
         .unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             alias.evaluate_cross_identity_with_lineage_mapping(
                 tx,
                 "source",
@@ -89,6 +99,16 @@ fn cross_identity_lineage_and_history_preserve_correspondence_family() {
 
 #[test]
 fn branch_local_cross_identity_rejection_preserves_main_correspondence_and_lineage() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -118,12 +138,12 @@ fn branch_local_cross_identity_rejection_preserves_main_correspondence_and_linea
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             source.evaluate_memoized(tx, "shape-v1")
         })
         .unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             alias.evaluate_cross_identity(tx, "source", "shape-v1", "mesh-branch-001")
         })
         .unwrap();
@@ -141,7 +161,7 @@ fn branch_local_cross_identity_rejection_preserves_main_correspondence_and_linea
     mark_dirty(runtime.graph_mut(), alias_node, ASPECT_A).unwrap();
 
     let err = runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             alias.evaluate_cross_identity_with_lineage_mapping(
                 tx,
                 "source",
@@ -234,6 +254,16 @@ fn branch_local_cross_identity_rejection_preserves_main_correspondence_and_linea
 
 #[test]
 fn branch_local_cross_identity_history_retains_committed_family_after_rejected_evolution() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -260,12 +290,12 @@ fn branch_local_cross_identity_history_retains_committed_family_after_rejected_e
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             source.evaluate_memoized(tx, "shape-v1")
         })
         .unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             alias.evaluate_cross_identity_with_contract_basis(
                 tx,
                 "source",
@@ -282,7 +312,7 @@ fn branch_local_cross_identity_history_retains_committed_family_after_rejected_e
 
     runtime.switch_branch(feature.clone()).unwrap();
     mark_dirty(runtime.graph_mut(), alias_node, ASPECT_A).unwrap();
-    let _ = runtime.transaction(&mut runtime_ctx, |tx| {
+    let _ = runtime.transaction(request_execution, &mut runtime_ctx, |tx| {
         alias.evaluate_cross_identity_with_region_identity(tx, "source", "shape-v1", "region:wing")
     });
 

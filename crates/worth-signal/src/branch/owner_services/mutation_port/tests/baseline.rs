@@ -4,6 +4,16 @@ use crate::branch::validate_signal_branch_name;
 
 #[test]
 fn four_method_port_matrix_moves_populated_owner_state_with_exact_cost() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let world = MutationWorld::<()>::new();
     let before = world.owner.cost_snapshot();
     let cancellation = SignalOwnerCancellationSource::new();
@@ -27,6 +37,7 @@ fn four_method_port_matrix_moves_populated_owner_state_with_exact_cost() {
     let advanced = world
         .port
         .advance_exact(
+            request_execution,
             &world.source_basis,
             &mut runtime_ctx,
             &cancellation.token(),
@@ -50,6 +61,7 @@ fn four_method_port_matrix_moves_populated_owner_state_with_exact_cost() {
     let intervening = world
         .port
         .advance_exact(
+            request_execution,
             captured.captured_basis(),
             &mut runtime_ctx,
             &cancellation.token(),
@@ -137,6 +149,16 @@ fn fork_exact_returns_the_installed_owner_handle_without_reconstruction() {
 
 #[test]
 fn fork_exact_preserves_structural_sharing_and_isolates_first_write() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let world = MutationWorld::<()>::new();
     let fork = world
         .port
@@ -173,6 +195,7 @@ fn fork_exact_preserves_structural_sharing_and_isolates_first_write() {
     world
         .port
         .advance_exact(
+            request_execution,
             fork.created_basis(),
             &mut runtime_ctx,
             &SignalOwnerCancellationSource::new().token(),

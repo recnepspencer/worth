@@ -21,6 +21,16 @@ fn targeted_plan<E>(
 
 #[test]
 fn ten_interleaved_branch_transactions_advance_only_their_owned_heads() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let node = graph.node().build();
     let mut runtime = SignalRuntime::builder(graph).with_kernel_defaults().build();
@@ -35,16 +45,20 @@ fn ten_interleaved_branch_transactions_advance_only_their_owned_heads() {
 
     for (ordinal, branch) in branches.iter().enumerate() {
         let plan = targeted_plan(&mut runtime, branch.clone());
-        let receipt =
-            match runtime.execute_branch_targeted_transaction(&mut (), plan, |transaction| {
+        let receipt = match runtime.execute_branch_targeted_transaction(
+            request_execution,
+            &mut (),
+            plan,
+            |transaction| {
                 transaction.mark_dirty(
                     node,
                     Aspect::new((ordinal % crate::data::aspect::MAX_ASPECTS) as u8),
                 )
-            }) {
-                TransitionOutcome::Success(receipt) => receipt,
-                other => panic!("expected targeted transaction success, got {other:?}"),
-            };
+            },
+        ) {
+            TransitionOutcome::Success(receipt) => receipt,
+            other => panic!("expected targeted transaction success, got {other:?}"),
+        };
         assert_eq!(receipt.before_head().generation(), 0);
         assert_eq!(receipt.after_head().generation(), 1);
         assert_eq!(receipt.active_branch_before(), &canonical);
@@ -69,6 +83,16 @@ fn ten_interleaved_branch_transactions_advance_only_their_owned_heads() {
 
 #[test]
 fn stale_target_head_is_denied_without_running_the_transaction_closure() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let node = graph.node().build();
     let mut runtime = SignalRuntime::builder(graph).with_kernel_defaults().build();
@@ -77,16 +101,24 @@ fn stale_target_head_is_denied_without_running_the_transaction_closure() {
     let stale_plan = targeted_plan(&mut runtime, branch.clone());
     let current_plan = targeted_plan(&mut runtime, branch.clone());
     assert!(matches!(
-        runtime.execute_branch_targeted_transaction(&mut (), current_plan, |transaction| {
-            transaction.mark_dirty(node, Aspect::new(0))
-        }),
+        runtime.execute_branch_targeted_transaction(
+            request_execution,
+            &mut (),
+            current_plan,
+            |transaction| { transaction.mark_dirty(node, Aspect::new(0)) }
+        ),
         TransitionOutcome::Success(_)
     ));
     let mut closure_ran = false;
-    let stale = runtime.execute_branch_targeted_transaction(&mut (), stale_plan, |_transaction| {
-        closure_ran = true;
-        Ok(())
-    });
+    let stale = runtime.execute_branch_targeted_transaction(
+        request_execution,
+        &mut (),
+        stale_plan,
+        |_transaction| {
+            closure_ran = true;
+            Ok(())
+        },
+    );
     assert!(matches!(
         stale,
         TransitionOutcome::Denied(BranchTargetedTransactionDenial::StaleTargetHead { .. })
@@ -97,6 +129,16 @@ fn stale_target_head_is_denied_without_running_the_transaction_closure() {
 
 #[test]
 fn branch_local_event_publication_is_rejected_and_active_branch_is_restored() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     enum TestEvent {
         Published,
@@ -110,10 +152,15 @@ fn branch_local_event_publication_is_rejected_and_active_branch_is_restored() {
     let canonical = runtime.current_branch();
     let branch = runtime.create_branch("event-effect").unwrap();
     let plan = targeted_plan(&mut runtime, branch.clone());
-    let outcome = runtime.execute_branch_targeted_transaction(&mut (), plan, |transaction| {
-        transaction.emit_event(TestEvent::Published);
-        Ok(())
-    });
+    let outcome = runtime.execute_branch_targeted_transaction(
+        request_execution,
+        &mut (),
+        plan,
+        |transaction| {
+            transaction.emit_event(TestEvent::Published);
+            Ok(())
+        },
+    );
 
     assert!(matches!(outcome, TransitionOutcome::Failed(_)));
     assert_eq!(runtime.current_branch(), canonical);
@@ -126,6 +173,16 @@ fn branch_local_event_publication_is_rejected_and_active_branch_is_restored() {
 
 #[test]
 fn branch_targeted_dependency_rewiring_is_atomic_and_branch_local() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let source_a = graph.node().build();
     let source_b = graph.node().build();
@@ -138,10 +195,16 @@ fn branch_targeted_dependency_rewiring_is_atomic_and_branch_local() {
     let branch = runtime.create_branch("dynamic-dependencies").unwrap();
 
     let failed_plan = targeted_plan(&mut runtime, branch.clone());
-    let failed = runtime.execute_branch_targeted_transaction(&mut (), failed_plan, |transaction| {
-        transaction.set_dependencies(derived, [DependencyEdge::new(source_b, Aspect::new(0))])?;
-        Err(SignalError::invalid_input("force rollback"))
-    });
+    let failed = runtime.execute_branch_targeted_transaction(
+        request_execution,
+        &mut (),
+        failed_plan,
+        |transaction| {
+            transaction
+                .set_dependencies(derived, [DependencyEdge::new(source_b, Aspect::new(0))])?;
+            Err(SignalError::invalid_input("force rollback"))
+        },
+    );
     assert!(matches!(failed, TransitionOutcome::Failed(_)));
     runtime.switch_branch(branch.clone()).unwrap();
     assert_eq!(
@@ -153,9 +216,15 @@ fn branch_targeted_dependency_rewiring_is_atomic_and_branch_local() {
 
     let committed_plan = targeted_plan(&mut runtime, branch.clone());
     assert!(matches!(
-        runtime.execute_branch_targeted_transaction(&mut (), committed_plan, |transaction| {
-            transaction.set_dependencies(derived, [DependencyEdge::new(source_b, Aspect::new(0))])
-        },),
+        runtime.execute_branch_targeted_transaction(
+            request_execution,
+            &mut (),
+            committed_plan,
+            |transaction| {
+                transaction
+                    .set_dependencies(derived, [DependencyEdge::new(source_b, Aspect::new(0))])
+            },
+        ),
         TransitionOutcome::Success(_)
     ));
     assert_eq!(runtime.current_branch(), canonical);

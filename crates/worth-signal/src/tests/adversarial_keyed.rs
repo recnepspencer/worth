@@ -45,6 +45,16 @@ fn many_keys_in_one_family_reuse_stably_across_large_lookup_sequences() {
 
 #[test]
 fn repeated_failed_transactions_do_not_promote_memoized_results() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -56,7 +66,7 @@ fn repeated_failed_transactions_do_not_promote_memoized_results() {
     let compute_calls = AtomicU32::new(0);
 
     for _ in 0..20 {
-        let err = runtime.transaction(&mut runtime_ctx, |tx| {
+        let err = runtime.transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.evaluate_keyed(node, &computation, &|view| {
                 compute_calls.fetch_add(1, Ordering::Relaxed);
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(1, 0))))
@@ -67,7 +77,7 @@ fn repeated_failed_transactions_do_not_promote_memoized_results() {
     }
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.evaluate_keyed(node, &computation, &|view| {
                 compute_calls.fetch_add(1, Ordering::Relaxed);
                 Ok(view.finish(
@@ -80,7 +90,7 @@ fn repeated_failed_transactions_do_not_promote_memoized_results() {
         .unwrap();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.mark_dirty(node, ASPECT_A)?;
             tx.evaluate_keyed(node, &computation, &|view| {
                 compute_calls.fetch_add(1, Ordering::Relaxed);
@@ -98,6 +108,16 @@ fn repeated_failed_transactions_do_not_promote_memoized_results() {
 
 #[test]
 fn keyed_telemetry_stays_coherent_under_mixed_hit_and_miss_workload() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -110,7 +130,7 @@ fn keyed_telemetry_stays_coherent_under_mixed_hit_and_miss_workload() {
         let computation = keyed.memoized("shape");
 
         runtime
-            .transaction(&mut runtime_ctx, |tx| {
+            .transaction(request_execution, &mut runtime_ctx, |tx| {
                 tx.evaluate_keyed(node, &computation, &|view| {
                     Ok(view.finish(NodeEvaluationResult::from_version(version_ab(index + 1, 0))))
                 })?;
@@ -119,7 +139,7 @@ fn keyed_telemetry_stays_coherent_under_mixed_hit_and_miss_workload() {
             .unwrap();
 
         runtime
-            .transaction(&mut runtime_ctx, |tx| {
+            .transaction(request_execution, &mut runtime_ctx, |tx| {
                 tx.mark_dirty(node, ASPECT_A)?;
                 tx.evaluate_keyed(node, &computation, &|view| {
                     Ok(view.finish(NodeEvaluationResult::from_version(version_ab(999, 0))))
@@ -138,6 +158,16 @@ fn keyed_telemetry_stays_coherent_under_mixed_hit_and_miss_workload() {
 #[test]
 #[ignore = "stress coverage for keyed-cardinality and memoization churn"]
 fn stress_thousands_of_keyed_lookups_and_memo_keys() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -154,7 +184,7 @@ fn stress_thousands_of_keyed_lookups_and_memo_keys() {
                 let node = keyed.node(&mut runtime);
                 let computation = keyed.memoized(format!("memo-{round}-{key_index}"));
                 runtime
-                    .transaction(&mut runtime_ctx, |tx| {
+                    .transaction(request_execution, &mut runtime_ctx, |tx| {
                         tx.evaluate_keyed(node, &computation, &|view| {
                             Ok(view.finish(NodeEvaluationResult::from_version(version_ab(
                                 round + key_index as u64 + 1,

@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly;
 
 use super::{
@@ -12,6 +13,8 @@ use crate::domain_computation::primary_graph::conditional_operation::{
 };
 
 pub(super) fn retain_due(
+    phase: &WorthQueryAdvancementPhase<'_>,
+
     accepted: worth_runtime_bridge::facade::BridgeManagedClockAcceptedObservation,
     bridge: &BridgeSealedRuntimeAssembly,
     truth: &WorthQueryConditionalTruthBasis,
@@ -41,6 +44,9 @@ pub(super) fn retain_due(
                     })
                 });
             evaluate_due_wake(
+                phase
+                    .request_for_owner(truth.owner_identity())
+                    .expect("private conditional progression uses its admitted runtime"),
                 bridge,
                 wake,
                 signal_basis,

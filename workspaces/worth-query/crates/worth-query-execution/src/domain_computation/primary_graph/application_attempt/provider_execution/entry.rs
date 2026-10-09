@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::super::{
@@ -38,27 +39,14 @@ where
         }
     }
 
-    pub fn compare_and_commit_application<Operation, Input, Scope>(
-        &self,
-        program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
-        idempotency: WorthQueryApplicationIdempotencyBinding,
-    ) -> WorthQueryApplicationCommitOutcome
-    where
-        Operation: 'static,
-        Input: Clone + Send + Sync + 'static,
-    {
-        if let Some(denial) = self.direct_operation_commit_denial::<Operation>() {
-            return WorthQueryApplicationCommitOutcome::Denied(denial);
-        }
-        self.compare_and_commit_application_with_output_observation(program, idempotency, false)
-    }
-
     pub(in crate::domain_computation::primary_graph) fn compare_and_commit_application_for_required_output_source<
         Operation,
         Input,
         Scope,
     >(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         presented: &WorthQueryPresentedProgram<'_>,
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
@@ -69,7 +57,12 @@ where
         if let Err(outcome) = self.require_occurrence_owns_output_source(presented, &program) {
             return outcome;
         }
-        self.compare_and_commit_application_with_output_observation(program, idempotency, true)
+        self.compare_and_commit_application_with_output_observation(
+            phase,
+            program,
+            idempotency,
+            true,
+        )
     }
 
     /// Requires that the program presented for this output source is the one
@@ -105,6 +98,8 @@ where
         Scope,
     >(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
         selected_program: Option<(
@@ -129,7 +124,12 @@ where
         {
             return outcome;
         }
-        self.compare_and_commit_application_with_output_observation(program, idempotency, true)
+        self.compare_and_commit_application_with_output_observation(
+            phase,
+            program,
+            idempotency,
+            true,
+        )
     }
 
     /// Resolves the active occurrence, then checks selection and operation authority.
@@ -164,6 +164,8 @@ where
         Scope,
     >(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         presented: &WorthQueryPresentedProgram,
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
@@ -199,7 +201,12 @@ where
                 ),
             );
         }
-        self.compare_and_commit_application_with_output_observation(program, idempotency, false)
+        self.compare_and_commit_application_with_output_observation(
+            phase,
+            program,
+            idempotency,
+            false,
+        )
     }
 
     pub(in crate::domain_computation::primary_graph) fn compare_and_commit_conditional_operation<
@@ -208,6 +215,8 @@ where
         Scope,
     >(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
     ) -> WorthQueryApplicationCommitOutcome
@@ -216,7 +225,7 @@ where
         Input: Clone + Send + Sync + 'static,
     {
         if !self.has_installed_application_program() {
-            return self.compare_and_commit_application(program, idempotency);
+            return self.compare_and_commit_application_in_advancement(phase, program, idempotency);
         }
         if !self
             .installed_conditionals
@@ -229,11 +238,18 @@ where
         if let Err(outcome) = self.require_occurrence_program_commit_binding(&program, None) {
             return outcome;
         }
-        self.compare_and_commit_application_with_output_observation(program, idempotency, false)
+        self.compare_and_commit_application_with_output_observation(
+            phase,
+            program,
+            idempotency,
+            false,
+        )
     }
 
     fn compare_and_commit_application_with_output_observation<Operation, Input, Scope>(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
         retain_output_observation: bool,
@@ -273,7 +289,7 @@ where
         } else {
             program
         };
-        self.compare_and_commit_application_inner(program, idempotency)
+        self.compare_and_commit_application_inner(phase, program, idempotency)
     }
 
     pub(in crate::domain_computation::primary_graph::application_attempt) fn compare_and_commit_application_inner<
@@ -282,17 +298,26 @@ where
         Scope,
     >(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
     ) -> WorthQueryApplicationCommitOutcome
     where
         Input: Clone + Send + Sync + 'static,
     {
-        self.compare_and_commit_application_inner_with_currentness(program, idempotency, None)
+        self.compare_and_commit_application_inner_with_currentness(
+            phase,
+            program,
+            idempotency,
+            None,
+        )
     }
 
     pub(super) fn compare_and_commit_application_inner_with_currentness<Operation, Input, Scope>(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
         elevation_currentness: Option<WorthQueryElevationCommitCurrentness>,
@@ -301,6 +326,7 @@ where
         Input: Clone + Send + Sync + 'static,
     {
         self.compare_and_commit_application_inner_with_currentness_and_aftermath(
+            phase,
             program,
             idempotency,
             elevation_currentness,
@@ -310,6 +336,8 @@ where
 
     pub(crate) fn compare_and_commit_application_with_aftermath<Operation, Input, Scope>(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
         aftermath_causality: WorthQueryPendingAftermathCausality,
@@ -318,43 +346,15 @@ where
         Input: Clone + Send + Sync + 'static,
     {
         self.compare_and_commit_application_inner_with_currentness_and_aftermath(
+            phase,
             program,
             idempotency,
             None,
             Some(aftermath_causality),
         )
     }
-
-    fn compare_and_commit_application_inner_with_currentness_and_aftermath<
-        Operation,
-        Input,
-        Scope,
-    >(
-        &self,
-        program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
-        idempotency: WorthQueryApplicationIdempotencyBinding,
-        elevation_currentness: Option<WorthQueryElevationCommitCurrentness>,
-        aftermath_causality: Option<WorthQueryPendingAftermathCausality>,
-    ) -> WorthQueryApplicationCommitOutcome
-    where
-        Input: Clone + Send + Sync + 'static,
-    {
-        let prepared = match prepare_application_commit(
-            self,
-            WorthQueryApplicationCommitPreparationRequest::new(
-                program,
-                idempotency,
-                elevation_currentness,
-                aftermath_causality,
-            ),
-        ) {
-            WorthQueryApplicationCommitPreparation::Ready(prepared) => prepared,
-            WorthQueryApplicationCommitPreparation::Terminal(outcome) => return outcome,
-        };
-        let running = match start_managed_application_commit(self, prepared) {
-            Ok(running) => running,
-            Err(outcome) => return outcome,
-        };
-        finish_application_commit(self, progress_application_commit(self, running))
-    }
 }
+
+mod commit_progression;
+
+mod application_commit;

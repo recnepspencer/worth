@@ -5,6 +5,19 @@ use super::*;
 #[test]
 fn bootstrap_and_real_component_publications_match_independent_cargo_oracle() {
     let mut court = CompositeSupplyChainCourt::compile();
+    let policy = match court.world.execution_placement() {
+        worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy)
+        | worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Leased { policy, .. } => {
+            policy
+        }
+    };
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::from_policy(&policy),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut expected = CompositeWorldOracle::bootstrap();
     let signal_port = court
         .signal
@@ -60,7 +73,7 @@ fn bootstrap_and_real_component_publications_match_independent_cargo_oracle() {
         .prepare_without_signal(root.clone(), intent, &token, None)
         .expect("World prepare cargo change");
     let RuntimeWorldPublicationOutcome::Performed(done) =
-        port.execute_without_signal(prepared, &token)
+        port.execute_without_signal(execution, prepared, &token)
     else {
         panic!("World cargo change must perform")
     };
@@ -114,7 +127,7 @@ fn bootstrap_and_real_component_publications_match_independent_cargo_oracle() {
     };
     let nodes = court.nodes;
     let mut routed = None;
-    let outcome = port.execute_with_signal(prepared, &mut context, &token, |tx| {
+    let outcome = port.execute_with_signal(execution, prepared, &mut context, &token, |tx| {
         tx.mark_changed(nodes.source, INPUT)?;
         let routed_version = tx.read(nodes.route, &|view| nodes.evaluate(view))?;
         routed = Some(routed_version.get(ROUTED));
@@ -180,6 +193,19 @@ fn bootstrap_and_real_component_publications_match_independent_cargo_oracle() {
 fn combined_publication_routes_actual_settled_relational_successor() {
     for (amount, include_steel) in [("5", true), ("9", true), ("9", false)] {
         let mut court = CompositeSupplyChainCourt::compile_with_steel(include_steel);
+        let policy = match court.world.execution_placement() {
+            worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy)
+            | worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Leased {
+                policy, ..
+            } => policy,
+        };
+        let serial_request = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::from_policy(&policy),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
         let signal_port = court
             .signal
             .owner_component_services()
@@ -217,7 +243,7 @@ fn combined_publication_routes_actual_settled_relational_successor() {
         let mut observed_route = None;
         let mut relational_input = None;
         let nodes = court.nodes;
-        let outcome = port.execute_with_signal(prepared, &mut context, &token, |tx| {
+        let outcome = port.execute_with_signal(execution, prepared, &mut context, &token, |tx| {
             let basis = court
                 .records
                 .runtime

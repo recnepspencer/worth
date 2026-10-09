@@ -2,6 +2,16 @@ use super::*;
 
 pub(in crate::tests::resource_runtime) fn resource_async_lifecycle_rollback_workload(
 ) -> ResourceAsyncLifecycleRollbackWorkloadOutcome {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let node = graph.node().build();
     let mut runtime = TestRuntime::build(graph);
@@ -35,7 +45,7 @@ pub(in crate::tests::resource_runtime) fn resource_async_lifecycle_rollback_work
         .expect("matching completion should admit");
 
     let mut ctx = ();
-    let mut tx = runtime.begin(&mut ctx);
+    let mut tx = runtime.begin(request_execution, &mut ctx);
     let staging = tx
         .stage_admitted_resource_completion(admitted_completion)
         .expect("completion should stage inside transaction");
@@ -81,7 +91,7 @@ pub(in crate::tests::resource_runtime) fn resource_async_lifecycle_rollback_work
         .admitted_completion()
         .expect("same completion should still admit after rollback");
     let mut control_ctx = ();
-    let mut control_tx = runtime.begin(&mut control_ctx);
+    let mut control_tx = runtime.begin(request_execution, &mut control_ctx);
     let committed_staging = control_tx
         .stage_admitted_resource_completion(committed_completion)
         .expect("post-rollback control completion should stage");

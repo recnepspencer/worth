@@ -75,7 +75,8 @@ pub(super) fn install_prepared(
     let limits = bank_application_limits();
     let mut invariant_projection = None;
     let initialize =
-        |graph: &mut WorthQueryPrimaryGraphBootstrap<BankSchema>,
+        |_phase: &worth_query_host::facade::application_contribution::WorthQueryBootstrapAdvancementPhase<'_>,
+         graph: &mut WorthQueryPrimaryGraphBootstrap<BankSchema>,
          installed: &WorthQueryInstalledApplicationSchema<BankSchema>| {
             bind_principals(graph, installed, seeds)?;
             bind_world_truth(graph, world.as_ref())?;

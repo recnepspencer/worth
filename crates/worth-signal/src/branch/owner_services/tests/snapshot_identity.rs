@@ -14,6 +14,16 @@ mod restore_selection;
 
 #[test]
 fn distinct_sibling_snapshots_do_not_alias_exact_retention_targets() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let weather = graph.create_node();
     let berth = graph.create_node();
@@ -53,6 +63,7 @@ fn distinct_sibling_snapshots_do_not_alias_exact_retention_targets() {
         .expect("movement output retention reserves before movement");
     let changed = storm_cell
         .advance_exact::<(), (), _>(
+            request_execution,
             &admission,
             &storm_basis,
             &mut (),

@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
 };
@@ -21,6 +22,8 @@ where
 {
     pub fn advance_selected_program_output_demand<Family>(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
@@ -40,6 +43,7 @@ where
     {
         let mut disclosure = Some(disclosure);
         self.advance_selected_program_output_demand_with_source(
+            phase,
             access,
             demand,
             principal,
@@ -54,6 +58,8 @@ where
     /// Reuse the source meaning retained when the public demand was admitted.
     pub fn advance_selected_program_output_demand_from_retained<Family>(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
@@ -73,6 +79,7 @@ where
     {
         let limits = demand.limits;
         self.advance_selected_program_output_demand_with_source(
+            phase,
             access,
             demand,
             principal,
@@ -97,6 +104,8 @@ where
 
     fn advance_selected_program_output_demand_with_source<Family>(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
@@ -124,6 +133,14 @@ where
         FamilySourceValue<Schema, Family>: 'static,
         FamilySourceQuery<Schema, Family>: 'static,
     {
+        phase
+            .execution_request_for(&self.product_runtime)
+            .map_err(|cause| {
+                denial(
+                    WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
+                    "the phase belongs to another installed runtime",
+                )
+            })?;
         let selected = self
             .on_branch(delivery_branch)
             .select()
@@ -149,6 +166,7 @@ where
         }
         self.advance_as_caller(demand, |demand, admission| {
             self.advance_output_demand_with_prepared_source(
+                phase,
                 demand,
                 principal,
                 request_scope,

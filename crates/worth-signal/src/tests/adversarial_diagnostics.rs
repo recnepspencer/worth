@@ -148,6 +148,16 @@ fn mixed_partition_heavy_invalidation_keeps_frontier_counters_and_flow_in_sync()
 
 #[test]
 fn repeated_failure_and_rollback_loops_preserve_explanation_after_churn() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -160,7 +170,7 @@ fn repeated_failure_and_rollback_loops_preserve_explanation_after_churn() {
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.evaluate_with_plan(
                 dependent,
                 &|view| {
@@ -181,7 +191,7 @@ fn repeated_failure_and_rollback_loops_preserve_explanation_after_churn() {
         .unwrap();
 
     for wave in 0..16 {
-        let err = runtime.transaction(&mut runtime_ctx, |tx| {
+        let err = runtime.transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.mark_dirty(if wave % 2 == 0 { source_a } else { source_b }, ASPECT_A)?;
             tx.evaluate_with_plan(
                 dependent,

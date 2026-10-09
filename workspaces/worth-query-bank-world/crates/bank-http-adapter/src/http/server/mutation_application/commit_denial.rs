@@ -107,7 +107,7 @@ pub(in crate::http::server) fn commit_denial(
 // unchanged request cannot repair its own limit or a host fault. Process
 // pressure, busy ownership and control stops keep Retry; request-sized limits
 // ask for correction, while configuration and faults ask for the operator.
-pub(super) fn execution_resource(
+pub(in crate::http::server) fn execution_resource(
     denial: Resource,
 ) -> (BankHttpMutationFailureKind, BankHttpDenial) {
     let (kind, next) = match denial {
@@ -134,6 +134,14 @@ pub(super) fn execution_resource(
         ),
         // Requests can shrink their memory/work demands. Worker limits are
         // host configuration; only the operator can repair that refusal.
+        Resource::NestedAdvancementOpening => (
+            BankHttpDenialKind::InternalDenied,
+            BankHttpNextAction::ContactOperator,
+        ),
+        Resource::ForeignAdvancementPhase => (
+            BankHttpDenialKind::InternalDenied,
+            BankHttpNextAction::ContactOperator,
+        ),
         Resource::WorkerLimit
         | Resource::WorkCounterOverflow
         | Resource::CapacityOverflow

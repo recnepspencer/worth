@@ -20,67 +20,72 @@ pub(in crate::domain_computation::primary_graph::tests) fn installed_world_with_
     rows: &[(&str, WorthQueryPrincipalMappingStatus)],
     include_policy_fact: bool,
 ) -> IdentityWorld {
-    let declaration = IdentityExecutionSchema::declaration().unwrap();
-    let package = portable_package(declaration.clone());
-    let admitted = WorthQueryInstallationAdmissionProfile::new("support", "configuration")
-        .admit(package)
-        .unwrap();
-    let installation = WorthQueryExecutionRuntimeInstaller::new()
-        .install(WorthQueryInstallationGeneration::initial(), [admitted])
-        .unwrap();
-    let (runtime, authority) = installation.into_parts();
-    let schema = runtime
-        .installed_packages()
-        .bind_application_schema(declaration)
-        .unwrap();
-    let binding = schema
-        .principal_binding(IdentityBinding::reference())
-        .unwrap();
-    let mut bootstrap = authority.prepare_primary_graph(&runtime, &schema, crate::domain_computation::execution_runtime::product_world::test_product_world_resources()).unwrap();
-    for (ordinal, (subject, status)) in rows.iter().enumerate() {
-        bootstrap
-            .bind_principal(
-                &binding,
-                WorthQueryApplicationPrincipalKey::new(format!("principal-{ordinal}")).unwrap(),
-                u64::try_from(ordinal + 1).unwrap(),
-                external_identity(subject),
-                *status,
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+
+        let declaration = IdentityExecutionSchema::declaration().unwrap();
+        let package = portable_package(declaration.clone());
+        let admitted = WorthQueryInstallationAdmissionProfile::new("support", "configuration")
+            .admit(package)
+            .unwrap();
+        let installation = WorthQueryExecutionRuntimeInstaller::new()
+            .install(WorthQueryInstallationGeneration::initial(), [admitted])
+            .unwrap();
+        let (runtime, authority) = installation.into_parts();
+        let schema = runtime
+            .installed_packages()
+            .bind_application_schema(declaration)
+            .unwrap();
+        let binding = schema
+            .principal_binding(IdentityBinding::reference())
+            .unwrap();
+        let mut bootstrap = authority.prepare_primary_graph(&phase.bootstrap_for_test(), &runtime, &schema, crate::domain_computation::execution_runtime::product_world::test_product_world_resources()).unwrap();
+        for (ordinal, (subject, status)) in rows.iter().enumerate() {
+            bootstrap
+                .bind_principal(
+                    &binding,
+                    WorthQueryApplicationPrincipalKey::new(format!("principal-{ordinal}")).unwrap(),
+                    u64::try_from(ordinal + 1).unwrap(),
+                    external_identity(subject),
+                    *status,
+                )
+                .unwrap();
+        }
+        if include_policy_fact {
+            bind_account(
+                &mut bootstrap,
+                AccountSeedSpec {
+                    key: "account-1",
+                    status: "open",
+                    label: "primary",
+                    note: Some("reviewed"),
+                },
+            );
+            bootstrap
+                .bind_relation(WorthQueryApplicationRelationSeed::new(
+                    AccountOwner::reference(),
+                    "owner-1",
+                    WorthQueryApplicationEntityKey::new("principal-0").unwrap(),
+                    WorthQueryApplicationEntityKey::new("account-1").unwrap(),
+                ))
+                .unwrap();
+        }
+        super::handler_installation::install_fixture_handlers(&schema, &mut bootstrap);
+
+        let application = bootstrap
+            .publish_application_runtime(
+                &phase.bootstrap_for_test(),
+                runtime,
+                authority,
+                schema,
+                worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),
             )
             .unwrap();
-    }
-    if include_policy_fact {
-        bind_account(
-            &mut bootstrap,
-            AccountSeedSpec {
-                key: "account-1",
-                status: "open",
-                label: "primary",
-                note: Some("reviewed"),
-            },
-        );
-        bootstrap
-            .bind_relation(WorthQueryApplicationRelationSeed::new(
-                AccountOwner::reference(),
-                "owner-1",
-                WorthQueryApplicationEntityKey::new("principal-0").unwrap(),
-                WorthQueryApplicationEntityKey::new("account-1").unwrap(),
-            ))
-            .unwrap();
-    }
-    super::handler_installation::install_fixture_handlers(&schema, &mut bootstrap);
-
-    let application = bootstrap
-        .publish_application_runtime(
-            runtime,
-            authority,
-            schema,
-            worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),
-        )
-        .unwrap();
-    IdentityWorld {
-        application,
-        binding,
-    }
+        IdentityWorld {
+            application,
+            binding,
+        }
+    })
 }
 
 /// Reopens an identity world from one Query application checkpoint through the
@@ -91,25 +96,28 @@ pub(in crate::domain_computation::primary_graph::tests) fn restored_world(
     IdentityWorld,
     crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial,
 > {
-    let declaration = IdentityExecutionSchema::declaration().unwrap();
-    let admitted = WorthQueryInstallationAdmissionProfile::new("support", "configuration")
-        .admit(portable_package(declaration.clone()))
-        .unwrap();
-    let (runtime, authority) = WorthQueryExecutionRuntimeInstaller::new()
-        .install(WorthQueryInstallationGeneration::initial(), [admitted])
-        .unwrap()
-        .into_parts();
-    let schema = runtime
-        .installed_packages()
-        .bind_application_schema(declaration)
-        .unwrap();
-    let binding = schema
-        .principal_binding(IdentityBinding::reference())
-        .unwrap();
-    let decoded = checkpoint
-        .decode()
-        .expect("the Query-issued checkpoint decodes");
-    let mut bootstrap = authority.prepare_primary_graph_from_native_checkpoint_with_invariants(
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+
+        let declaration = IdentityExecutionSchema::declaration().unwrap();
+        let admitted = WorthQueryInstallationAdmissionProfile::new("support", "configuration")
+            .admit(portable_package(declaration.clone()))
+            .unwrap();
+        let (runtime, authority) = WorthQueryExecutionRuntimeInstaller::new()
+            .install(WorthQueryInstallationGeneration::initial(), [admitted])
+            .unwrap()
+            .into_parts();
+        let schema = runtime
+            .installed_packages()
+            .bind_application_schema(declaration)
+            .unwrap();
+        let binding = schema
+            .principal_binding(IdentityBinding::reference())
+            .unwrap();
+        let decoded = checkpoint
+            .decode()
+            .expect("the Query-issued checkpoint decodes");
+        let mut bootstrap = authority.prepare_primary_graph_from_native_checkpoint_with_invariants(&phase.bootstrap_for_test(),
         &runtime,
         &schema,
         worth_relational::facade::runtime::RelationalRuntimeApi::builder().build(),
@@ -117,18 +125,20 @@ pub(in crate::domain_computation::primary_graph::tests) fn restored_world(
         crate::domain_computation::primary_graph::WorthQueryApplicationInvariantFactories::for_installed_schema(&schema),
         &decoded,
     )?;
-    super::handler_installation::install_fixture_handlers(&schema, &mut bootstrap);
-    let application = bootstrap
-        .publish_application_runtime(
-            runtime,
-            authority,
-            schema,
-            worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),
-        )
-        .unwrap();
-    Ok(IdentityWorld {
-        application,
-        binding,
+        super::handler_installation::install_fixture_handlers(&schema, &mut bootstrap);
+        let application = bootstrap
+            .publish_application_runtime(
+                &phase.bootstrap_for_test(),
+                runtime,
+                authority,
+                schema,
+                worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),
+            )
+            .unwrap();
+        Ok(IdentityWorld {
+            application,
+            binding,
+        })
     })
 }
 

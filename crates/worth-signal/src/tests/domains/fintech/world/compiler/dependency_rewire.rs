@@ -168,6 +168,16 @@ impl CompiledFinancialWorld {
         &mut self,
         final_definition: FinancialWorldDefinition,
     ) -> Result<(), SignalError> {
+        // This standalone caller declares the operational serial memory policy.
+        let serial_request = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(
+                crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+            ),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
         let next_snapshot = runtime_financial_snapshot(&final_definition);
         let next_projection = self.projection.advance(&next_snapshot);
         let program = FinancialEvaluationProgram::new(
@@ -205,7 +215,7 @@ impl CompiledFinancialWorld {
                         .is_ok_and(|state| !matches!(state, NodeState::Clean))
                 })
                 .collect::<Vec<_>>();
-            self.runtime.transaction(&mut (), |tx| {
+            self.runtime.transaction(request_execution, &mut (), |tx| {
                 for node in &dirty {
                     tx.read(*node, &evaluator)?;
                 }
@@ -226,6 +236,16 @@ impl CompiledFinancialWorld {
         next_definition: FinancialWorldDefinition,
         factor: MarketFactorKey,
     ) -> Result<(), SignalError> {
+        // This standalone caller declares the operational serial memory policy.
+        let serial_request = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(
+                crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+            ),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
         let next_snapshot = runtime_financial_snapshot(&next_definition);
         let next_projection = self.projection.advance(&next_snapshot);
         let program = FinancialEvaluationProgram::new(
@@ -237,7 +257,7 @@ impl CompiledFinancialWorld {
         let source = self.handles.factor(factor).0;
         let result = source_result(&program, factor);
         let ledger = self.ledger.clone();
-        self.runtime.transaction(&mut (), |tx| {
+        self.runtime.transaction(request_execution, &mut (), |tx| {
             tx.mark_changed(source, factor_signal_aspect(&next_definition, factor))?;
             ledger.record(SemanticOutputKey::Factor(factor));
             tx.target(source)

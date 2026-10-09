@@ -7,10 +7,20 @@ use crate::tests::support::ASPECT_B;
 
 #[test]
 fn poisoned_transaction_returns_poisoned_outcome() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let graph = crate::data::graph::SignalGraph::new();
     let mut runtime = build_runtime(graph);
     let mut ctx = ();
-    let mut tx = runtime.begin(&mut ctx);
+    let mut tx = runtime.begin(request_execution, &mut ctx);
 
     // Invalid handle poisons transaction.
     let invalid = crate::data::handle::NodeId::new(999_999, 0);
@@ -50,12 +60,22 @@ fn poisoned_transaction_returns_poisoned_outcome() {
 
 #[test]
 fn poisoned_rollback_rewinds_graph() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = crate::data::graph::SignalGraph::new();
     let a = graph.node().build();
     let before = graph.get_state(a).unwrap();
     let mut runtime = build_runtime(graph);
     let mut ctx = ();
-    let mut tx = runtime.begin(&mut ctx);
+    let mut tx = runtime.begin(request_execution, &mut ctx);
 
     tx.mark_dirty(a, ASPECT_B).unwrap();
     let invalid = crate::data::handle::NodeId::new(999_999, 0);
@@ -66,12 +86,22 @@ fn poisoned_rollback_rewinds_graph() {
 
 #[test]
 fn poisoned_rollback_does_not_increment_explicit_rollback_metric() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let graph = crate::data::graph::SignalGraph::new();
     let mut runtime = build_runtime(graph);
     let mut ctx = ();
     let rollback_before = runtime.telemetry().transaction.transaction_rollback_count;
     let poison_before = runtime.telemetry().transaction.transaction_poison_count;
-    let mut tx = runtime.begin(&mut ctx);
+    let mut tx = runtime.begin(request_execution, &mut ctx);
 
     let invalid = crate::data::handle::NodeId::new(999_999, 0);
     assert!(tx.mark_dirty(invalid, ASPECT_B).is_err());
@@ -90,6 +120,16 @@ fn poisoned_rollback_does_not_increment_explicit_rollback_metric() {
 
 #[test]
 fn failure_during_event_begin_rewinds_graph() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = crate::data::graph::SignalGraph::new();
     let a = graph.node().build();
     let before = graph.get_state(a).unwrap();
@@ -101,7 +141,7 @@ fn failure_during_event_begin_rewinds_graph() {
         .unwrap();
 
     let mut ctx = ();
-    let mut tx = runtime.begin(&mut ctx);
+    let mut tx = runtime.begin(request_execution, &mut ctx);
     tx.mark_dirty(a, ASPECT_B).unwrap();
     let err = tx.commit().unwrap_err();
     assert!(format!("{err}").contains("event bus begin failed"));
@@ -110,6 +150,16 @@ fn failure_during_event_begin_rewinds_graph() {
 
 #[test]
 fn commit_failure_reports_rolled_back_patch_count() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = crate::data::graph::SignalGraph::new();
     let a = graph.node().build();
     let mut runtime = build_runtime(graph);
@@ -120,7 +170,7 @@ fn commit_failure_reports_rolled_back_patch_count() {
         .unwrap();
 
     let mut ctx = ();
-    let mut tx = runtime.begin(&mut ctx);
+    let mut tx = runtime.begin(request_execution, &mut ctx);
     tx.mark_dirty(a, ASPECT_B).unwrap();
     tx.emit_event(Ev::Tick);
     tx.flush_events(CheckpointBarrier::PerOperation).unwrap();

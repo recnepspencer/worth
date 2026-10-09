@@ -7,6 +7,7 @@
 
 use worth_query_host::facade::application_contribution::{
     WorthQueryApplicationContribution, WorthQueryApplicationContributionSetup,
+    WorthQueryBootstrapAdvancementPhase,
 };
 use worth_query_host::facade::application_installation::{
     in_memory_rostered_program, WorthQueryApplicationProgramRoster,
@@ -261,6 +262,7 @@ where
 }
 
 fn seed_host(
+    _phase: &WorthQueryBootstrapAdvancementPhase<'_>,
     graph: &mut primary_graph::WorthQueryPrimaryGraphBootstrap<DocumentRetentionSchema>,
     installed: &WorthQueryInstalledApplicationSchema<DocumentRetentionSchema>,
 ) -> Result<(), primary_graph::WorthQueryPrimaryGraphInstallationDenial> {

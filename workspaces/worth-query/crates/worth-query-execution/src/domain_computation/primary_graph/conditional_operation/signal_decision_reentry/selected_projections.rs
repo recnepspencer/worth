@@ -11,6 +11,7 @@ use crate::domain_computation::primary_graph::{
 /// wave. Construction stays in the existing truth owner; scheduling cannot
 /// pair arbitrary projection strings with a different Product.
 pub(in crate::domain_computation::primary_graph) struct WorthQuerySelectedSignalProjections {
+    owner_identity: worth_runtime_world::facade::RuntimeWorldOwnerIdentity,
     branch: BridgeIdentityEvidence,
     snapshot: BridgeIdentityEvidence,
 }
@@ -53,6 +54,12 @@ impl WorthQuerySelectedSignalProjections {
         )?;
         let branch = primary_truth_branch_identity();
         Ok(Self {
+            owner_identity: selected
+                .selected()
+                .product()
+                .observation()
+                .branch_identity()
+                .owner_identity(),
             branch: branch.bridge_admission_evidence(),
             snapshot: selected
                 .selected()
@@ -60,6 +67,12 @@ impl WorthQuerySelectedSignalProjections {
                 .bridge_snapshot_identity()
                 .bridge_admission_evidence(),
         })
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn owner_identity(
+        &self,
+    ) -> worth_runtime_world::facade::RuntimeWorldOwnerIdentity {
+        self.owner_identity
     }
 
     pub(in crate::domain_computation::primary_graph) fn branch(&self) -> &str {

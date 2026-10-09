@@ -42,7 +42,7 @@ pub(super) fn install_status_application(
         declaration,
         ((),),
         resource_limits(),
-        |graph, installed| {
+        |_phase, graph, installed| {
             let binding = installed
                 .principal_binding(WorthUiPrincipalBinding::reference())
                 .map_err(|error| {

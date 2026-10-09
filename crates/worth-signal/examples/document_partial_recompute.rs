@@ -21,6 +21,16 @@ fn appendix_scope() -> PartitionSubscription {
 }
 
 fn main() -> Result<(), SignalError> {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            worth_signal::facade::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     // One paragraph in the summary section changes.
     // We want the summary index to refresh and the appendix index to stay put.
     // This is the kind of job where region-aware invalidation pays for itself.
@@ -92,7 +102,7 @@ fn main() -> Result<(), SignalError> {
         .observe_signal_branch_basis(runtime.current_branch())
         .expect("the live branch should admit a basis");
     let basis = runtime
-        .advance_signal_branch(&mut state, &basis, |tx| {
+        .advance_signal_branch(request_execution, &mut state, &basis, |tx| {
             tx.read_many(&[document, summary_index, appendix_index], &evaluate)?;
             Ok(())
         })
@@ -104,7 +114,7 @@ fn main() -> Result<(), SignalError> {
     state.changed_section = "summary".to_string();
 
     let _basis = runtime
-        .advance_signal_branch(&mut state, &basis, |tx| {
+        .advance_signal_branch(request_execution, &mut state, &basis, |tx| {
             tx.mark_changed_with_regions(document, DOCUMENT, &[ChangedRegion::new("summary")])?;
             tx.read_many(&[document, summary_index, appendix_index], &evaluate)?;
             Ok(())

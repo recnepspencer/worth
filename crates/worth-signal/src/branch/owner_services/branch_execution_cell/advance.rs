@@ -46,6 +46,8 @@ where
     #[cfg(test)]
     pub(crate) fn advance_exact<E, Ctx, F>(
         &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+
         admission: &SignalOwnerOperationAdmission<'_>,
         expected: &AdmittedSignalBranchBasis,
         runtime_ctx: &mut Ctx,
@@ -57,6 +59,7 @@ where
     {
         let mut outcome = None;
         self.advance_into(
+            execution,
             admission,
             expected,
             runtime_ctx,
@@ -70,6 +73,8 @@ where
 
     pub(in crate::branch::owner_services) fn advance_into<E, Ctx, F>(
         &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+
         admission: &SignalOwnerOperationAdmission<'_>,
         expected: &AdmittedSignalBranchBasis,
         runtime_ctx: &mut Ctx,
@@ -128,6 +133,7 @@ where
                 conditional_operation_scope.with_definition_publication(publication);
         }
         let transaction = match state.execute_canonical_transaction(
+            execution,
             &permit,
             conditional_operation_scope,
             runtime_ctx,

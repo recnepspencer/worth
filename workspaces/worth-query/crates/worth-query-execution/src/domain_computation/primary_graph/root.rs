@@ -1,3 +1,5 @@
+mod snapshot_release;
+
 use std::collections::BTreeSet;
 use std::sync::{Arc, Mutex};
 

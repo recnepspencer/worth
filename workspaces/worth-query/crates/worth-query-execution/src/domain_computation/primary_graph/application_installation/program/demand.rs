@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
 };
@@ -334,6 +335,8 @@ where
 {
     pub fn advance_program_output<Demand>(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         demand: &mut WorthQueryAdmittedProgramOutput<Schema, Program, Demand>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
@@ -351,6 +354,7 @@ where
     {
         self.runtime
             .advance_program_output_demand(
+                phase,
                 &mut demand.admitted,
                 principal,
                 request_scope,

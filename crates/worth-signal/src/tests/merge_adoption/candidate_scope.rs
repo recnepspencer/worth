@@ -4,6 +4,16 @@ use crate::tests::support::{version_ab, GraphDependencyBatchExt, ASPECT_A};
 
 #[test]
 fn proof_minimal_overlap_and_conservative_expansion_remain_distinct_and_bounded() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -11,7 +21,7 @@ fn proof_minimal_overlap_and_conservative_expansion_remain_distinct_and_bounded(
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(shared, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(13, 0))
@@ -64,6 +74,16 @@ fn proof_minimal_overlap_and_conservative_expansion_remain_distinct_and_bounded(
 
 #[test]
 fn merge_candidate_construction_is_identical_with_and_without_convenience_branch_indexes() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let prepare_runtime = || {
         let mut runtime = SignalRuntime::builder(SignalGraph::new())
             .with_kernel_defaults()
@@ -72,7 +92,7 @@ fn merge_candidate_construction_is_identical_with_and_without_convenience_branch
         let mut runtime_ctx = ();
 
         runtime
-            .transaction(&mut runtime_ctx, |tx| {
+            .transaction(request_execution, &mut runtime_ctx, |tx| {
                 tx.read(shared, &|view| {
                     Ok(view.finish(
                         NodeEvaluationResult::from_version(version_ab(14, 0))
@@ -135,6 +155,16 @@ fn merge_candidate_construction_is_identical_with_and_without_convenience_branch
 
 #[test]
 fn merge_budget_identity_counters_track_bounded_target_journal_scope() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let graph = SignalGraph::new().with_schema_registry(cross_identity_merge_schema_registry(None));
     let mut runtime = SignalRuntime::builder(graph).with_kernel_defaults().build();
     let mut runtime_ctx = ();
@@ -152,7 +182,7 @@ fn merge_budget_identity_counters_track_bounded_target_journal_scope() {
         .output_identity()
         .build();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(feature_only, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(34, 0))
@@ -179,7 +209,7 @@ fn merge_budget_identity_counters_track_bounded_target_journal_scope() {
         .output_identity()
         .build();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(matched_target, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(35, 0))

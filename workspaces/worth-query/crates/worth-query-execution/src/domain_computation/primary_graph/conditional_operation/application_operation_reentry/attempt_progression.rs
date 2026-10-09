@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_query_installation::facade::{
     ApplicationFieldUnit, ApplicationSchema, OperationReads, OperationWrites,
     WorthQueryInstalledApplicationOperation, WorthQueryTemporalIntentCandidate, WritableCapability,
@@ -55,6 +56,8 @@ pub(super) fn try_reentry<
     Authorization,
     Clock,
 >(
+    phase: &WorthQueryAdvancementPhase<'_>,
+
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     product: &crate::basis::WorthQueryProductBranchLease,
     operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
@@ -170,6 +173,7 @@ where
         return Ok(WorthQueryTemporalReentryOutcome::Obsolete);
     };
     Ok(execution.commit_projected_temporal_effect(
+        phase,
         runtime,
         candidate,
         current,

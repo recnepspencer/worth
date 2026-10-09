@@ -169,6 +169,10 @@ where
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
 {
     pub fn execute(self) -> WorthQueryOrdinaryWorkflowRunProgress {
+        let runtime = self.run.request.application_runtime();
+        let scope = self.run.request.request_scope().clone();
+        runtime.with_application_advancement(&scope, |phase| {
+
         let Self { run, keys } = self;
         let WorthQueryOrdinaryWorkflowRun {
             request,
@@ -193,10 +197,10 @@ where
                 .repeat_for_workflow_run()
                 .without_source()
                 .idempotency(key)
-                .prepare_workflow_advance(workflow, instance.clone());
+                .prepare_workflow_request_in_advancement(&phase, workflow, instance.clone(), super::super::progress::WorkflowRequestedAction::Advance);
             attempted_steps += 1;
             let outcome = match step {
-                Ok(step) => step.execute(),
+                Ok(step) => step.execute_in_advancement(&phase),
                 Err(WorthQueryWorkflowAdvancePreparationDenial::AwaitingActor(actor)) => {
                     return WorthQueryOrdinaryWorkflowRunProgress {
                         transitions,
@@ -244,5 +248,14 @@ where
                 WorthQueryOrdinaryWorkflowRunStop::CallerKeysExhausted
             },
         }
+
+        }).unwrap_or_else(|cause| WorthQueryOrdinaryWorkflowRunProgress {
+            transitions: Vec::new(), attempted_steps: 0,
+            stop: WorthQueryOrdinaryWorkflowRunStop::PreparationDenied(
+                WorthQueryWorkflowAdvancePreparationDenial::RequestAdmission(
+                    crate::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause),
+                ),
+            ),
+        })
     }
 }

@@ -52,6 +52,16 @@ fn graph_node_builder_accepts_explicit_node_contract() {
 
 #[test]
 fn transaction_batch_dirty_is_the_bulk_invalidation_surface() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let source_a = graph.node().build();
     let source_b = graph.node().build();
@@ -68,7 +78,7 @@ fn transaction_batch_dirty_is_the_bulk_invalidation_surface() {
 
     let mut runtime = SignalRuntime::builder(graph).with_kernel_defaults().build();
     runtime
-        .transaction(&mut (), |transaction| {
+        .transaction(request_execution, &mut (), |transaction| {
             transaction.mark_dirty_batch(&DirtyBatch::from_sources([
                 (source_a, ASPECT_A),
                 (source_b, ASPECT_B),
@@ -286,6 +296,16 @@ fn easy_mode_failed_batch_restores_input_values() {
 
 #[test]
 fn failed_multi_target_read_restores_every_evaluated_target() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -301,7 +321,7 @@ fn failed_multi_target_read_restores_every_evaluated_target() {
     mark_dirty(runtime.graph_mut(), first, ASPECT_A).unwrap();
     mark_dirty(runtime.graph_mut(), second, ASPECT_A).unwrap();
 
-    let error = runtime.transaction(&mut (), |tx| {
+    let error = runtime.transaction(request_execution, &mut (), |tx| {
         tx.read_many(&[first, second], &|view| {
             if view.node() == second {
                 return Err(SignalError::invalid_input("fail second batch target"));

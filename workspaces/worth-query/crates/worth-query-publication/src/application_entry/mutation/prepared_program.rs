@@ -4,6 +4,7 @@ use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationIntent, ApplicationMutationScopeResolution,
 };
 use worth_query_declaration::facade::application_program::ApplicationProgramDefinition;
+use worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase as AdvancementPhase;
 use worth_query_execution::facade::application_installation::{
     WorthQueryProgramApplicationRuntime, WorthQueryProgramOwner, WorthQuerySelectedProgramOwner,
 };
@@ -89,6 +90,24 @@ where
     /// Consumes this candidate through the authoritative program commit path.
     /// Denial, cancellation and duplicate replay never release the candidate result.
     pub fn commit(self) -> WorthQueryApplicationMutationOutcome<Binding::Denial, Binding::Result> {
+        let request = self.candidate.program.request_scope().clone();
+        let runtime = self.application.runtime();
+        runtime
+            .with_application_advancement(&request, |phase| self.commit_in_advancement(&phase))
+            .unwrap_or_else(|cause| {
+                WorthQueryApplicationMutationOutcome::Commit(
+                    cause
+                        .into_commit_outcome()
+                        .landed()
+                        .expect_err("request admission cannot commit"),
+                )
+            })
+    }
+
+    pub(super) fn commit_in_advancement(
+        self,
+        phase: &AdvancementPhase<'_>,
+    ) -> WorthQueryApplicationMutationOutcome<Binding::Denial, Binding::Result> {
         let PreparedCandidate {
             program,
             result,
@@ -97,12 +116,14 @@ where
         } = self.candidate;
         let binding = WorthQueryMutationCommitBinding::new(&identities, extension);
         let outcome = match self.selected_owner {
-            Some(owner) => owner.compare_and_commit_program_action(
+            Some(owner) => owner.commit_program_action_in_advancement(
+                phase,
                 program,
                 binding.identities(),
                 |idempotency| binding.extension().apply(idempotency),
             ),
-            None => self.application.compare_and_commit_program_action(
+            None => self.application.commit_program_action_in_advancement(
+                phase,
                 program,
                 binding.identities(),
                 |idempotency| binding.extension().apply(idempotency),
@@ -156,6 +177,32 @@ where
     where
         Program: ApplicationProgramDefinition<Schema>,
     {
+        let request = self.request_scope().clone();
+        let runtime = self.request.application;
+        runtime
+            .with_application_advancement(&request, |phase| {
+                self.prepare_in_program_in_advancement(&phase, application)
+            })
+            .map_err(WorthQueryApplicationRequestMutationDenial::ExecutionRequest)?
+    }
+
+    pub(super) fn prepare_in_program_in_advancement<'request, Program>(
+        &'request mut self,
+        phase: &AdvancementPhase<'_>,
+        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+    ) -> Result<
+        WorthQueryApplicationProgramMutationPreparation<
+            'request,
+            'application,
+            Schema,
+            Intent::Binding,
+            Program,
+        >,
+        WorthQueryApplicationRequestMutationDenial,
+    >
+    where
+        Program: ApplicationProgramDefinition<Schema>,
+    {
         if !std::ptr::eq(application.runtime(), self.request.application) {
             return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramMismatch);
         }
@@ -172,7 +219,7 @@ where
         if !selected_owns_action && !application.contains_action::<Intent::Binding>() {
             return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired);
         }
-        match self.prepare_candidate(move |request, identities, staged| {
+        match self.prepare_candidate(phase, move |request, identities, staged| {
             super::authorization::prepare_selected(request, identities, staged, &selected)
         })? {
             CandidatePreparation::Prepared(candidate) => {

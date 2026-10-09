@@ -7,6 +7,16 @@ use crate::tests::support::{version_ab, GraphDependencyBatchExt, ASPECT_A};
 
 #[test]
 fn runtime_merge_lowers_schema_default_aspect_policy_for_affected_aspect() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let graph = SignalGraph::new().with_schema_registry(aspect_policy_merge_schema_registry(Some(
         "signal.aspect.prefer-source",
     )));
@@ -15,7 +25,7 @@ fn runtime_merge_lowers_schema_default_aspect_policy_for_affected_aspect() {
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(shared, &|view| {
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(1, 0))))
             })?;
@@ -40,7 +50,7 @@ fn runtime_merge_lowers_schema_default_aspect_policy_for_affected_aspect() {
         .append_dependency(feature_only, shared, ASPECT_A)
         .unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(feature_only, &|view| {
                 let upstream = view.read_aspect_version(shared, ASPECT_A)?;
                 Ok(view.finish(NodeEvaluationResult::from_version(upstream)))
@@ -72,6 +82,16 @@ fn runtime_merge_lowers_schema_default_aspect_policy_for_affected_aspect() {
 
 #[test]
 fn runtime_merge_node_aspect_policy_override_precedes_schema_default() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let graph = SignalGraph::new().with_schema_registry(aspect_policy_merge_schema_registry(Some(
         "signal.aspect.prefer-target",
     )));
@@ -80,7 +100,7 @@ fn runtime_merge_node_aspect_policy_override_precedes_schema_default() {
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(shared, &|view| {
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(1, 0))))
             })?;
@@ -106,7 +126,7 @@ fn runtime_merge_node_aspect_policy_override_precedes_schema_default() {
         .append_dependency(feature_only, shared, ASPECT_A)
         .unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(feature_only, &|view| {
                 let upstream = view.read_aspect_version(shared, ASPECT_A)?;
                 Ok(view.finish(NodeEvaluationResult::from_version(upstream)))
@@ -137,6 +157,16 @@ fn runtime_merge_node_aspect_policy_override_precedes_schema_default() {
 
 #[test]
 fn runtime_merge_request_named_aspect_policy_precedes_schema_and_node_defaults() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let graph = SignalGraph::new().with_schema_registry(aspect_policy_merge_schema_registry(Some(
         "signal.aspect.prefer-target",
     )));
@@ -145,7 +175,7 @@ fn runtime_merge_request_named_aspect_policy_precedes_schema_and_node_defaults()
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(shared, &|view| {
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(4, 0))))
             })?;
@@ -171,7 +201,7 @@ fn runtime_merge_request_named_aspect_policy_precedes_schema_and_node_defaults()
         .append_dependency(feature_only, shared, ASPECT_A)
         .unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(feature_only, &|view| {
                 let upstream = view.read_aspect_version(shared, ASPECT_A)?;
                 Ok(view.finish(NodeEvaluationResult::from_version(upstream)))
@@ -203,6 +233,16 @@ fn runtime_merge_request_named_aspect_policy_precedes_schema_and_node_defaults()
 
 #[test]
 fn runtime_merge_lowers_aspect_decision_records_for_affected_nodes() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let graph = SignalGraph::new().with_schema_registry(aspect_policy_merge_schema_registry(Some(
         "signal.aspect.prefer-source",
     )));
@@ -211,7 +251,7 @@ fn runtime_merge_lowers_aspect_decision_records_for_affected_nodes() {
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(shared, &|view| {
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(1, 0))))
             })?;
@@ -236,7 +276,7 @@ fn runtime_merge_lowers_aspect_decision_records_for_affected_nodes() {
         .append_dependency(feature_only, shared, ASPECT_A)
         .unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(feature_only, &|view| {
                 let upstream = view.read_aspect_version(shared, ASPECT_A)?;
                 Ok(view.finish(NodeEvaluationResult::from_version(upstream)))

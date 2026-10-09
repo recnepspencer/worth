@@ -6,12 +6,22 @@ use crate::tests::support::{version_ab, ASPECT_B};
 
 #[test]
 fn begin_commit_applies_staged_state_once() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = crate::data::graph::SignalGraph::new();
     let a = graph.node().build();
     let mut runtime = build_runtime(graph);
 
     let mut ctx = ();
-    let mut tx = runtime.begin(&mut ctx);
+    let mut tx = runtime.begin(request_execution, &mut ctx);
     tx.mark_dirty(a, ASPECT_B).unwrap();
     tx.emit_event(Ev::Tick);
     tx.flush_events(CheckpointBarrier::PerOperation).unwrap();
@@ -21,12 +31,22 @@ fn begin_commit_applies_staged_state_once() {
 
 #[test]
 fn commit_result_without_evaluation_reports_empty_execution_summary() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = crate::data::graph::SignalGraph::new();
     let a = graph.node().build();
     let mut runtime = build_runtime(graph);
 
     let mut ctx = ();
-    let mut tx = runtime.begin(&mut ctx);
+    let mut tx = runtime.begin(request_execution, &mut ctx);
     tx.mark_dirty(a, ASPECT_B).unwrap();
     tx.emit_event(Ev::Tick);
     tx.flush_events(CheckpointBarrier::PerOperation).unwrap();
@@ -49,6 +69,16 @@ fn commit_result_without_evaluation_reports_empty_execution_summary() {
 
 #[test]
 fn commit_result_with_evaluation_carries_execution_summary() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = crate::data::graph::SignalGraph::new();
     let source = graph
         .node()
@@ -57,7 +87,7 @@ fn commit_result_with_evaluation_carries_execution_summary() {
     let mut runtime = build_runtime(graph);
 
     let mut ctx = ();
-    let mut tx = runtime.begin(&mut ctx);
+    let mut tx = runtime.begin(request_execution, &mut ctx);
     tx.evaluate_with_plan(
         source,
         &|view| Ok(view.finish(version_ab(1, 0))),

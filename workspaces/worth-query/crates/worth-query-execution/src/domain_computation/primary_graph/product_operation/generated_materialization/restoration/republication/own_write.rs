@@ -131,11 +131,21 @@ fn suspend_restore_and_read(exhaust_registration: bool) {
                 .unwrap()
         });
         let (candidate, completion) = prepared.into_parts();
-        let published = product
-            .publication_binding()
-            .prepare_relational_candidate(candidate, &request, true)
-            .unwrap()
-            .execute();
+        // This test host's publication call owns its request; retained facts
+        // pass between suspension, restoration and the unrelated publication.
+        let published = application
+            .with_application_advancement(&request, |phase| {
+                product
+                    .publication_binding()
+                    .prepare_relational_candidate(candidate, &request, true)
+                    .unwrap()
+                    .execute(
+                        phase
+                            .execution_request_for(&application.product_runtime)
+                            .expect("publication uses its runtime phase"),
+                    )
+            })
+            .expect("the fixture publication policy admits execution");
         let RuntimeWorldPublicationOutcome::Performed(performed) = published else {
             panic!("suspension publishes");
         };
@@ -166,11 +176,21 @@ fn suspend_restore_and_read(exhaust_registration: bool) {
                 .unwrap()
         });
         let (candidate, completion, _) = prepared.into_parts();
-        let published = product
-            .publication_binding()
-            .prepare_relational_candidate(candidate, &request, true)
-            .unwrap()
-            .execute();
+        // This test host's publication call owns its request; retained facts
+        // pass between suspension, restoration and the unrelated publication.
+        let published = application
+            .with_application_advancement(&request, |phase| {
+                product
+                    .publication_binding()
+                    .prepare_relational_candidate(candidate, &request, true)
+                    .unwrap()
+                    .execute(
+                        phase
+                            .execution_request_for(&application.product_runtime)
+                            .expect("publication uses its runtime phase"),
+                    )
+            })
+            .expect("the fixture publication policy admits execution");
         let RuntimeWorldPublicationOutcome::Performed(performed) = published else {
             panic!("restoration publishes");
         };

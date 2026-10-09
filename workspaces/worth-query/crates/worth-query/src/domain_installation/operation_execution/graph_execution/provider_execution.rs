@@ -23,6 +23,7 @@ struct BoundGraphInvocationPlan<'a> {
 }
 
 pub(super) fn invoke_bound_graphs<D, O, F, L: BasisOperationLane>(
+    execution: &'_ worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
     bound: &WorthQueryBoundDomainOperation<D, O, F, L>,
     running: WorthQueryRunningDirectRun,
     counters: &mut WorthQueryOperationExecutionCounters,
@@ -33,7 +34,8 @@ pub(super) fn invoke_bound_graphs<D, O, F, L: BasisOperationLane>(
     ),
     WorthQueryBoundExecutionDenial,
 > {
-    BoundGraphInvocation::new(bound, running, counters).execute(plan_bound_graph_invocations(bound))
+    BoundGraphInvocation::new(execution, bound, running, counters)
+        .execute(plan_bound_graph_invocations(bound))
 }
 
 fn plan_bound_graph_invocations<D, O, F, L: BasisOperationLane>(
@@ -85,6 +87,8 @@ fn plan_bound_graph_invocations<D, O, F, L: BasisOperationLane>(
 }
 
 struct BoundGraphInvocation<'a, D, O, F, L: BasisOperationLane> {
+    execution:
+        &'a worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'a>,
     bound: &'a WorthQueryBoundDomainOperation<D, O, F, L>,
     running: Option<WorthQueryRunningDirectRun>,
     scope_identity: String,
@@ -94,11 +98,13 @@ struct BoundGraphInvocation<'a, D, O, F, L: BasisOperationLane> {
 
 impl<'a, D, O, F, L: BasisOperationLane> BoundGraphInvocation<'a, D, O, F, L> {
     fn new(
+        execution: &'a worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'a>,
         bound: &'a WorthQueryBoundDomainOperation<D, O, F, L>,
         running: WorthQueryRunningDirectRun,
         counters: &'a mut WorthQueryOperationExecutionCounters,
     ) -> Self {
         Self {
+            execution,
             bound,
             running: Some(running),
             scope_identity: format!("direct-capability:{}", bound.capability_identity()),
@@ -159,6 +165,7 @@ impl<'a, D, O, F, L: BasisOperationLane> BoundGraphInvocation<'a, D, O, F, L> {
             .take()
             .expect("managed direct run remains live");
         match super::managed_graph_progression::execute_direct_graph(
+            self.execution,
             running,
             participation.record.installation_authority.as_ref(),
             kind,
@@ -191,6 +198,11 @@ impl<'a, D, O, F, L: BasisOperationLane> BoundGraphInvocation<'a, D, O, F, L> {
                 .as_ref()
                 .expect("managed direct run remains live");
             let contact = super::commit_execution::contact_direct_commit_provider(
+                self.running
+                    .as_ref()
+                    .expect("managed invocation retains its runtime owner")
+                    .request_in_advancement(self.execution)
+                    .expect("the opening owner lent this run its phase"),
                 &self.scope_identity,
                 &authority,
                 &self

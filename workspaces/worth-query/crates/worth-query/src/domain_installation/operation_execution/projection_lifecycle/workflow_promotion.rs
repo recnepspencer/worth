@@ -23,6 +23,41 @@ where
         self,
         workspace: &mut crate::runtime::WorthQueryWorkspace,
     ) -> WorthQueryWorkflowProjectionPromotionOutcome<D, O, F, L> {
+        let owner = workspace.advancement_owner();
+        let mut retained = Some(self);
+        match owner.with_advancement(|phase| {
+            let current = retained
+                .take()
+                .expect("host call retains its projection before admission");
+            current.promote_in_advancement(
+                phase
+                    .execution_request_for(&owner)
+                    .expect("the opener lent this owner its phase"),
+                workspace,
+            )
+        }) {
+            Ok(outcome) => outcome,
+            Err(denial) => {
+                let current = retained
+                    .take()
+                    .expect("refused request ran no projection work");
+                WorthQueryWorkflowProjectionPromotionOutcome::Denied(
+                    super::WorthQueryWorkflowProjectionPromotionStop::new(
+                        current,
+                        super::WorthQueryProjectionPromotionDenialKind::ExecutionRequest(denial),
+                        "advancement admission refused",
+                        Default::default(),
+                    ),
+                )
+            }
+        }
+    }
+
+    fn promote_in_advancement(
+        self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+        workspace: &mut crate::runtime::WorthQueryWorkspace,
+    ) -> WorthQueryWorkflowProjectionPromotionOutcome<D, O, F, L> {
         let admitted =
             match admit_projection_promotion_core(&self.settled, self.lifecycle_basis(), workspace)
             {
@@ -30,6 +65,7 @@ where
                 Err(stop) => return map_preflight_stop(self, stop),
             };
         let ready = match evaluate_fresh_lifecycle_conditionals(
+            execution,
             &self.settled,
             workspace,
             admitted.counters,

@@ -7,6 +7,16 @@ use crate::tests::support::{version_ab, ASPECT_A, ASPECT_B};
 
 #[test]
 fn cross_identity_contract_declared_basis_is_retained_in_runtime_truth() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -36,12 +46,12 @@ fn cross_identity_contract_declared_basis_is_retained_in_runtime_truth() {
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             source.evaluate_memoized(tx, "shape-v1")
         })
         .unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             alias.evaluate_cross_identity_with_contract_basis(
                 tx,
                 "source",
@@ -77,6 +87,16 @@ fn cross_identity_contract_declared_basis_is_retained_in_runtime_truth() {
 
 #[test]
 fn cross_identity_lineage_mapping_is_retained_in_runtime_truth() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -106,12 +126,12 @@ fn cross_identity_lineage_mapping_is_retained_in_runtime_truth() {
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             source.evaluate_memoized(tx, "shape-v1")
         })
         .unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             alias.evaluate_cross_identity_with_lineage_mapping(
                 tx,
                 "source",
@@ -143,6 +163,16 @@ fn cross_identity_lineage_mapping_is_retained_in_runtime_truth() {
 
 #[test]
 fn cross_identity_region_identity_basis_is_retained_in_runtime_truth() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -174,12 +204,12 @@ fn cross_identity_region_identity_basis_is_retained_in_runtime_truth() {
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             source.evaluate_memoized(tx, "shape-v1")
         })
         .unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             alias.evaluate_cross_identity_with_region_identity(
                 tx,
                 "source",

@@ -69,6 +69,16 @@ fn read_clean(
 
 #[test]
 fn conditional_reinstallation_compares_named_aspects_and_preserves_retained_warm_slots() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let one = AspectMask::from(Aspect::new(1));
     let two = AspectMask::from(Aspect::new(2));
     for (before, after) in [(one, one | two), (one | two, two), (one, two), (one, one)] {
@@ -121,13 +131,19 @@ fn conditional_reinstallation_compares_named_aspects_and_preserves_retained_warm
             Class::DependencyUnchanged
         );
         // This is retained storage isolation, not service/source admission.
-        let (decision, observation, rejected) = retained
-            .execute_conditional(
-                &mut graph,
-                SignalConditionalExecutionRequest::new(&original, "source", "retained", 3),
-                &mut NoPredicate,
-                &mut DefaultComparatorPolicyResolver::default(),
-                || panic!("retained warm node must not compute"),
+        let (decision, observation, rejected) =
+            crate::data::graph::storage::evaluation_partition::conditional_test_scope::run(
+                request_execution,
+                |work| {
+                    retained.execute_conditional(
+                        work,
+                        &mut graph,
+                        SignalConditionalExecutionRequest::new(&original, "source", "retained", 3),
+                        &mut NoPredicate,
+                        &mut DefaultComparatorPolicyResolver::default(),
+                        || panic!("retained warm node must not compute"),
+                    )
+                },
             )
             .unwrap()
             .into_parts();

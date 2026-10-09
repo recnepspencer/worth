@@ -83,6 +83,16 @@ fn output(value: u64) -> NodeEvaluationResult {
 
 #[test]
 fn admitted_sources_preserve_independent_b_a_b_slots_without_reload_or_recompute() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (mut runtime, claimant, [contract, _], source_owner) = runtime_with_contract();
     let basis = runtime
         .observe_signal_branch_basis(runtime.current_branch())
@@ -109,6 +119,7 @@ fn admitted_sources_preserve_independent_b_a_b_slots_without_reload_or_recompute
     for (admission, value, source_label) in [(&b, 4, "source-b"), (&a, 6, "source-a")] {
         let completion = service
             .execute(
+                request_execution,
                 admission,
                 Request::new(1),
                 &mut NoPredicate,
@@ -132,6 +143,7 @@ fn admitted_sources_preserve_independent_b_a_b_slots_without_reload_or_recompute
 
     let (decision, observation) = service
         .execute(
+            request_execution,
             &b,
             Request::new(2),
             &mut NoPredicate,
@@ -156,6 +168,16 @@ fn admitted_sources_preserve_independent_b_a_b_slots_without_reload_or_recompute
 
 #[test]
 fn provider_unwind_releases_the_admitted_slot_for_retry() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (mut runtime, claimant, [contract, _], source_owner) = runtime_with_contract();
     let basis = runtime
         .observe_signal_branch_basis(runtime.current_branch())
@@ -170,6 +192,7 @@ fn provider_unwind_releases_the_admitted_slot_for_retry() {
 
     let unwind = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         let _ = service.execute(
+            request_execution,
             &evaluation,
             Request::new(1),
             &mut NoPredicate,
@@ -177,10 +200,14 @@ fn provider_unwind_releases_the_admitted_slot_for_retry() {
             || -> Result<NodeEvaluationResult, SignalError> { panic!("provider unwind") },
         );
     }));
-    assert!(unwind.is_err());
+    assert_eq!(
+        unwind.unwrap_err().downcast_ref::<&str>(),
+        Some(&"provider unwind")
+    );
 
     let (decision, observation) = service
         .execute(
+            request_execution,
             &evaluation,
             Request::new(2),
             &mut NoPredicate,
@@ -195,6 +222,16 @@ fn provider_unwind_releases_the_admitted_slot_for_retry() {
 
 #[test]
 fn an_evaluation_admission_cannot_cross_its_issuing_service() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (mut runtime, claimant, [contract, _], first_source_owner) = runtime_with_contract();
     let second_source_owner = ConditionalSourceObservationOwner::fresh();
     let basis = runtime
@@ -217,6 +254,7 @@ fn an_evaluation_admission_cannot_cross_its_issuing_service() {
         .unwrap();
     let mut computes = 0;
     let denial = match second.execute(
+        request_execution,
         &evaluation,
         Request::new(1),
         &mut NoPredicate,
@@ -235,6 +273,16 @@ fn an_evaluation_admission_cannot_cross_its_issuing_service() {
 
 #[test]
 fn reinstalled_same_node_rejects_the_old_contract_before_provider_work() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let claimant = SignalAspectLoweringOwner::fresh();
     graph.claim_aspect_lowering_owner(&claimant).unwrap();
@@ -279,6 +327,7 @@ fn reinstalled_same_node_rejects_the_old_contract_before_provider_work() {
     let mut computes = 0;
     let (decision, _) = service
         .execute(
+            request_execution,
             &admitted,
             Request::new(1),
             &mut NoPredicate,
@@ -294,106 +343,8 @@ fn reinstalled_same_node_rejects_the_old_contract_before_provider_work() {
     assert_eq!((source_loads, computes), (2, 1));
 }
 
-#[test]
-fn equal_generation_divergent_fork_installations_cannot_cross() {
-    let mut root = SignalGraph::new();
-    let claimant = SignalAspectLoweringOwner::fresh();
-    root.claim_aspect_lowering_owner(&claimant).unwrap();
-    let node = root.node().build();
-    let worth_proof::TransitionOutcome::Success(capability) = root.admit_installed_node(node)
-    else {
-        panic!("node must admit")
-    };
-    root.install_conditional_contract(&claimant, capability, definition())
-        .unwrap();
-    let (mut left, _) = root.fork_persistent();
-    let (mut right, _) = root.fork_persistent();
-    left.claim_aspect_lowering_owner(&claimant).unwrap();
-    right.claim_aspect_lowering_owner(&claimant).unwrap();
-    let worth_proof::TransitionOutcome::Success(left_capability) = left.admit_installed_node(node)
-    else {
-        panic!("left node must admit")
-    };
-    let worth_proof::TransitionOutcome::Success(right_capability) =
-        right.admit_installed_node(node)
-    else {
-        panic!("right node must admit")
-    };
-    let left_contract = left
-        .install_conditional_contract(&claimant, left_capability, definition())
-        .unwrap();
-    let right_contract = right
-        .install_conditional_contract(&claimant, right_capability, definition())
-        .unwrap();
-    assert_eq!(left_contract.generation(), right_contract.generation());
-    assert_ne!(left_contract.occurrence(), right_contract.occurrence());
+#[path = "execution_tests/unexecuted_admissions_are_capacity_bounded_and_drop_to_a_stable_baseline.rs"]
+mod unexecuted_admissions_are_capacity_bounded_and_drop_to_a_stable_baseline;
 
-    let mut runtime = SignalRuntime::build_for::<()>(left);
-    let source_owner = ConditionalSourceObservationOwner::fresh();
-    let basis = runtime
-        .observe_signal_branch_basis(runtime.current_branch())
-        .unwrap();
-    runtime.owner_port_slots().unwrap();
-    let service = runtime
-        .issue_conditional_execution_service(&basis, &claimant, &source_owner.authority())
-        .unwrap();
-    assert!(matches!(
-        service.admit_evaluation(&right_contract, source(&source_owner, "right", &mut 0)),
-        Err(Denial::DefinitionMismatch)
-    ));
-    let left_evaluation = service
-        .admit_evaluation(&left_contract, source(&source_owner, "left", &mut 0))
-        .unwrap();
-    let (decision, _) = service
-        .execute(
-            &left_evaluation,
-            Request::new(1),
-            &mut NoPredicate,
-            &mut DefaultComparatorPolicyResolver::default(),
-            || Ok(output(11)),
-        )
-        .unwrap()
-        .into_parts();
-    assert_eq!(decision.unwrap().output_version(), 11);
-}
-
-#[test]
-fn unexecuted_admissions_are_capacity_bounded_and_drop_to_a_stable_baseline() {
-    let (mut runtime, claimant, [contract, _], source_owner) = runtime_with_contract();
-    runtime.set_runtime_policy(
-        SignalRuntimePolicy::development().with_conditional_evaluation_budget(
-            SignalConditionalEvaluationBudget {
-                maximum_retained_slots: 1,
-                maximum_retained_bytes: 512 * 1024 * 1024,
-                maximum_attempt_visits: 100_000,
-            },
-        ),
-    );
-    let basis = runtime
-        .observe_signal_branch_basis(runtime.current_branch())
-        .unwrap();
-    runtime.owner_port_slots().unwrap();
-    let service = runtime
-        .issue_conditional_execution_service(&basis, &claimant, &source_owner.authority())
-        .unwrap();
-    let baseline = service._issuance_basis_custody.retention_usage();
-
-    for ordinal in 0..32 {
-        let admission = service
-            .admit_evaluation(
-                &contract,
-                source(&source_owner, &format!("source-{ordinal}"), &mut 0),
-            )
-            .unwrap();
-        let admitted = service._issuance_basis_custody.retention_usage();
-        assert_eq!(admitted.0, 1);
-        assert!(admitted.1 > baseline.1);
-        assert!(matches!(
-            service.admit_evaluation(&contract, source(&source_owner, "capacity-denied", &mut 0),),
-            Err(Denial::AdmissionCapacityExhausted)
-        ));
-        assert_eq!(service._issuance_basis_custody.retention_usage(), admitted);
-        drop(admission);
-        assert_eq!(service._issuance_basis_custody.retention_usage(), baseline);
-    }
-}
+#[path = "execution_tests/equal_generation_divergent_fork_installations_cannot_cross.rs"]
+mod equal_generation_divergent_fork_installations_cannot_cross;

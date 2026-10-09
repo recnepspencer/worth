@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_foundational::facade::{AspectValue, InternedString};
 #[path = "commit/transition_lookup.rs"]
 mod transition_lookup;
@@ -17,12 +18,22 @@ where
         Scope,
     >(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         prepared: PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
         idempotency: super::super::super::WorthQueryApplicationIdempotencyBinding,
     ) -> WorkflowProgressOutcome
     where
         Input: Clone + Send + Sync + 'static,
     {
+        if let Err(cause) = phase.execution_request_for(&self.product_runtime) {
+            return WorkflowProgressOutcome::Application(
+                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(cause)
+                    .into_commit_outcome()
+                    .landed()
+                    .expect_err("a foreign phase cannot commit"),
+            );
+        }
         if let Err(denial) = prepared.validate_approval_descriptor() {
             return WorkflowProgressOutcome::AuthenticationDenied(denial);
         }
@@ -152,6 +163,7 @@ where
                 idempotency.bind_workflow_support(identity)
             });
         let outcome = self.compare_and_commit_application_for_program_action(
+            phase,
             &presented,
             program,
             idempotency,

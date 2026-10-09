@@ -27,6 +27,8 @@ pub use resume::{
 /// Why a branch-set adoption could not be prepared. Nothing was published.
 #[derive(Debug)]
 pub enum WorthQueryBranchSetAdoptionPreparationDenial {
+    /// The preparation call could not enter its execution request.
+    ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
     /// Memory to hold the prepared branches could not be allocated.
     RetentionAllocationRejected,
     /// A covered branch could not be selected.
@@ -47,7 +49,9 @@ impl WorthQueryBranchSetAdoptionPreparationDenial {
     pub const fn branch(&self) -> Option<WorthQueryProductBranch> {
         match self {
             Self::ProductSelection { branch, .. } | Self::Adoption { branch, .. } => Some(*branch),
-            Self::RetentionAllocationRejected | Self::WorkAccountingOverflow => None,
+            Self::ExecutionDenied(_)
+            | Self::RetentionAllocationRejected
+            | Self::WorkAccountingOverflow => None,
         }
     }
 }
@@ -132,6 +136,12 @@ impl WorthQueryPreparedBranchSetAdoption {
             return Ok(None);
         };
         let progress = match pending.adoption.publish() {
+            WorthQueryBranchAdoptionPublicationOutcome::ExecutionDenied(cause) => {
+                WorthQueryBranchSetAdoptionProgress::ExecutionDenied {
+                    branch: pending.branch,
+                    cause,
+                }
+            }
             WorthQueryBranchAdoptionPublicationOutcome::Performed(adoption) => {
                 WorthQueryBranchSetAdoptionProgress::Performed {
                     branch: pending.branch,
@@ -153,7 +163,8 @@ impl WorthQueryPreparedBranchSetAdoption {
         };
         self.resolution_required = match &progress {
             WorthQueryBranchSetAdoptionProgress::Performed { .. } => None,
-            WorthQueryBranchSetAdoptionProgress::NoEffect { branch, .. } => {
+            WorthQueryBranchSetAdoptionProgress::ExecutionDenied { branch, .. }
+            | WorthQueryBranchSetAdoptionProgress::NoEffect { branch, .. } => {
                 Some(BranchSetAdoptionResolution::NoEffect(*branch))
             }
             WorthQueryBranchSetAdoptionProgress::ProductUnpublished { branch, .. } => {
@@ -255,29 +266,34 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryPreparedBranchSetAdoption, WorthQueryBranchSetAdoptionPreparationDenial>
     {
-        let (pending, total_selection_work_units) = self.prepare_branch_set_targets(
-            &coverage.branches,
-            target,
-            maximum_selection_work_per_branch,
-            request,
-        )?;
-        let mut progress = Vec::new();
-        progress
-            .try_reserve_exact(coverage.branches.len())
-            .map_err(|_| {
-                WorthQueryBranchSetAdoptionPreparationDenial::RetentionAllocationRejected
-            })?;
-        Ok(WorthQueryPreparedBranchSetAdoption {
-            pending,
-            progress,
-            resolution_required: None,
-            target: *target,
-            total_selection_work_units,
+        self.with_application_advancement(request, |phase| {
+            let (pending, total_selection_work_units) = self.prepare_branch_set_targets(
+                &phase,
+                &coverage.branches,
+                target,
+                maximum_selection_work_per_branch,
+                request,
+            )?;
+            let mut progress = Vec::new();
+            progress
+                .try_reserve_exact(coverage.branches.len())
+                .map_err(|_| {
+                    WorthQueryBranchSetAdoptionPreparationDenial::RetentionAllocationRejected
+                })?;
+            Ok(WorthQueryPreparedBranchSetAdoption {
+                pending,
+                progress,
+                resolution_required: None,
+                target: *target,
+                total_selection_work_units,
+            })
         })
+        .map_err(WorthQueryBranchSetAdoptionPreparationDenial::ExecutionDenied)?
     }
 
     pub(super) fn prepare_branch_set_targets(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         branches: &[WorthQueryProductBranch],
         target: &ApplicationProgramRevision,
         maximum_selection_work_per_branch: usize,
@@ -304,9 +320,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     },
                 )?;
             let adoption = selected
-                .prepare_branch_adoption(
+                .prepare_branch_adoption_in_advancement(
+                    phase,
                     target,
                     &requirements,
+                    None,
+                    None,
                     maximum_selection_work_per_branch,
                     request,
                 )

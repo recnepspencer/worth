@@ -31,7 +31,6 @@ where
         self.promote_due_temporal_wakes_ready()?;
         let temporal_lowering = self.temporal_lowering_context_for_plan(plan);
         let execution_start = RuntimeInstant::now();
-        let serial = self.graph.bounded_serial_request();
         let report = match execute_plan_with_runtime_config(
             self.graph,
             self.config,
@@ -39,7 +38,7 @@ where
             &*self.runtime_ctx,
             plan,
             evaluator,
-            worth_execution::ExecutionRequest::serial(&serial),
+            self.execution,
         ) {
             Ok(report) => report,
             Err(err) => {

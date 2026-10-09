@@ -20,8 +20,10 @@ fn failure_retains_only_the_canonical_prefix() {
             .map(|stage| (stage.to_string(), 17))
             .collect::<Vec<_>>()
     );
-    let denial = computed
-        .apply(&mut run, &mut workspace, None)
+    let denial = workspace
+        .advancement_owner()
+        .with_advancement(|phase| computed.apply(&phase, &mut run, &mut workspace, None))
+        .expect("the declared fixture policy admits this application")
         .err()
         .unwrap();
     assert!(
@@ -50,10 +52,11 @@ fn missing_predecessor_authority_remains_a_typed_denial() {
         } else {
             run.receipt_index.remove("start");
         }
-        let denial = run
-            .prepare_frontier_computation(inputs())
-            .compute()
-            .apply(&mut run, &mut workspace, None)
+        let computed = run.prepare_frontier_computation(inputs()).compute();
+        let denial = workspace
+            .advancement_owner()
+            .with_advancement(|phase| computed.apply(&phase, &mut run, &mut workspace, None))
+            .expect("the declared fixture policy admits this application")
             .err()
             .unwrap();
         assert!(

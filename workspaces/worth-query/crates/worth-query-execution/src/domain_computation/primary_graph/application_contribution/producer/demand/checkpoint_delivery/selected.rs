@@ -1,6 +1,7 @@
 //! Reenter the real Published/Delivered checkpoint under the required meter.
 
 use super::*;
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use crate::domain_computation::primary_graph::{
     application_contribution::producer::WorthQueryProducerDemandResources,
     application_output_demand::{PreparedSelectedCheckpointFinish, SelectedCheckpointFinishStop},
@@ -19,6 +20,8 @@ where
     /// stage, while Query preparation and finish stay on the carried meter.
     pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) fn advance_selected_output_checkpoint(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         producer_identity: &str,
         claim: WorthQueryOutputClaimIdentity,
         checkpoint: Checkpoint,
@@ -117,6 +120,7 @@ where
                 }
                 let mut progressed = false;
                 self.deliver_output_checkpoint_with_finish(
+                    phase,
                     producer_identity,
                     receipt,
                     delivery,
@@ -139,6 +143,7 @@ where
                 ready_backing,
             } => {
                 let readiness = self.evaluate_current_output_readiness_admitted(
+                    phase,
                     producer_identity,
                     &receipt,
                     delivery.as_ref(),

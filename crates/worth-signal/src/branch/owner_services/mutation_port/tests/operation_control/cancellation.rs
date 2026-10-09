@@ -64,10 +64,23 @@ fn cancel_advance_before_movement() {
         &world.owner.operation_control(),
         SignalOwnerOperationBoundary::BeforeCanonicalMovement,
         move || {
+            let serial_request = worth_execution::SerialRequest::from_memory(
+                worth_execution::SerialMemoryBudget::new(
+                    crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+                ),
+                worth_execution::CancellationToken::new(),
+                None,
+            );
+            let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
             matches!(
-                port.advance_exact(&basis, &mut (), &worker_cancellation.token(), |_| panic!(
-                    "cancelled advance must not enter its callback"
-                ),),
+                port.advance_exact(
+                    request_execution,
+                    &basis,
+                    &mut (),
+                    &worker_cancellation.token(),
+                    |_| panic!("cancelled advance must not enter its callback"),
+                ),
                 Err(SignalBranchAdvanceDenial::CancelledNoMovement)
             )
         },
@@ -112,6 +125,16 @@ fn cancel_capture_before_movement() {
 }
 
 fn cancel_restore_before_movement() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let world = MutationWorld::<()>::new();
     let captured = world
         .port
@@ -123,6 +146,7 @@ fn cancel_restore_before_movement() {
     let current = world
         .port
         .advance_exact(
+            request_execution,
             captured.captured_basis(),
             &mut (),
             &SignalOwnerCancellationSource::new().token(),

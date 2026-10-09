@@ -8,7 +8,7 @@ use worth_query_host::facade::product::{
 use worth_query_host::facade::{primary_graph, runtime};
 
 use super::adapters::ReplacementPredicate;
-use super::world::CourtroomWorld;
+use super::world::{self, CourtroomWorld};
 
 #[test]
 fn public_transaction_reuses_its_admitted_selection_at_snapshot_capacity() {
@@ -271,8 +271,17 @@ fn retained_read_defers_component_cleanup_and_preserves_retry_authority() {
         .on_branch(survivor)
         .select()
         .expect("the survivor replacement occurrence must remain selectable");
-    let delivery = selected_successor
-        .deliver_relational_change_to_conditional(&world.clock, 0, change)
+    let delivery = world
+        .application
+        .with_application_advancement(&world::request_scope(), |phase| {
+            selected_successor.deliver_relational_change_to_conditional(
+                &phase,
+                &world.clock,
+                0,
+                change,
+            )
+        })
+        .expect("the declared host request admits delivery")
         .expect("the survivor patch must bind to its replacement cursor");
     let runtime::WorthQueryPerformedRelationalProductChangeDeliveryOutcome::Success(delivery) =
         delivery

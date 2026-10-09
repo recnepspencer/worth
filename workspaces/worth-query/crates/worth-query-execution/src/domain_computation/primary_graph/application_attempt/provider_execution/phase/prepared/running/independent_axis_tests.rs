@@ -15,8 +15,8 @@ use crate::domain_computation::primary_graph::tests::application_attempt::{
     authenticated_principal, idempotency, resolved_account,
 };
 use crate::domain_computation::primary_graph::tests::fixture::{
-    installed_authorization_world, live_scope, Account, AuthorizationWorld,
-    ExactStatusRetentionInput, ExactStatusRetentionOperation, IdentityExecutionSchema,
+    live_scope, Account, AuthorizationWorld, ExactStatusRetentionInput,
+    ExactStatusRetentionOperation, IdentityExecutionSchema,
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationEffectProgram, WorthQueryApplicationIdempotencyBinding,
@@ -102,59 +102,85 @@ impl WorthQueryApplicationAttemptAffinityView for TestAffinityView {
 
 #[test]
 fn every_plan_session_and_attempt_axis_is_rejected_independently() {
-    let world = installed_authorization_world(true);
-    let foreign_world = installed_authorization_world(true);
-    let owner = start(&world, "independent-owner", idempotency(201, 202));
-    let peer = start(&world, "independent-peer", idempotency(203, 204));
-    let foreign = start(&foreign_world, "independent-foreign", idempotency(205, 206));
+    let world =
+        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
+            true,
+        );
+    let foreign_world =
+        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
+            true,
+        );
+    // Foreign evidence is data; its provider executes only under its own opener.
+    let foreign_view = foreign_world
+        .application
+        .with_host_advancement(|phase| {
+            let foreign = start(
+                &phase,
+                &foreign_world,
+                "independent-foreign",
+                idempotency(205, 206),
+            );
+            let (_basis, mut running, mutation_run, lease) = release(foreign);
+            let staged = real_terminal_session(&phase, &foreign_world, &mut running);
+            let view = TestAffinityView::capture(&staged.provider_session_terminal_binding());
+            let _ = staged.abort();
+            finish(mutation_run, running, lease);
+            view
+        })
+        .expect("foreign fixture owner admits its own advancement");
+    world
+        .application
+        .with_host_advancement(|active_phase| {
+            let phase = &active_phase;
+            let execution = phase;
 
-    let (basis, mut owner_running, owner_run, owner_lease) = release(owner);
-    let (_peer_basis, mut peer_running, peer_run, peer_lease) = release(peer);
-    let (_foreign_basis, mut foreign_running, foreign_run, foreign_lease) = release(foreign);
-    let owner_staged = real_terminal_session(&world, &mut owner_running);
-    let peer_staged = real_terminal_session(&world, &mut peer_running);
-    let foreign_staged = real_terminal_session(&foreign_world, &mut foreign_running);
-    let owner_terminal = owner_staged.provider_session_terminal_binding();
-    let peer_view = TestAffinityView::capture(&peer_staged.provider_session_terminal_binding());
-    let foreign_view =
-        TestAffinityView::capture(&foreign_staged.provider_session_terminal_binding());
-    let base = TestAffinityView::capture(&owner_terminal);
-    assert!(basis.affinity_mismatches_view(&base).is_empty());
+            let owner = start(phase, &world, "independent-owner", idempotency(201, 202));
+            let peer = start(phase, &world, "independent-peer", idempotency(203, 204));
 
-    assert_one(&basis, &base, M::Runtime, |view| {
-        view.runtime = foreign_view.runtime
-    });
-    assert_one(&basis, &base, M::InstalledOperation, |view| {
-        view.installed_operation.push_str("-foreign")
-    });
-    assert_one(&basis, &base, M::ResourceBinding, |view| {
-        view.resource_binding.push_str("-foreign")
-    });
-    assert_one(&basis, &base, M::OperationAttempt, |view| {
-        view.operation_attempt = peer_view.operation_attempt
-    });
-    assert_one(&basis, &base, M::OperationSlot, |view| {
-        view.operation_slot = Some("foreign-slot".to_owned())
-    });
-    assert_one(&basis, &base, M::SchemaBinding, |view| {
-        view.schema_binding = foreign_view.schema_binding.clone()
-    });
-    assert_one(&basis, &base, M::Snapshot, |view| {
-        view.snapshot = peer_view.snapshot.clone()
-    });
-    assert_one(&basis, &base, M::GraphWorkSession, |view| {
-        view.graph_work_session = peer_view.graph_work_session
-    });
-    assert_one(&basis, &base, M::GraphWorkManagedRun, |view| {
-        view.graph_work_managed_run = peer_view.graph_work_managed_run
-    });
+            let (basis, mut owner_running, owner_run, owner_lease) = release(owner);
+            let (_peer_basis, mut peer_running, peer_run, peer_lease) = release(peer);
+            let owner_staged = real_terminal_session(execution, &world, &mut owner_running);
+            let peer_staged = real_terminal_session(execution, &world, &mut peer_running);
+            let owner_terminal = owner_staged.provider_session_terminal_binding();
+            let peer_view =
+                TestAffinityView::capture(&peer_staged.provider_session_terminal_binding());
+            let base = TestAffinityView::capture(&owner_terminal);
+            assert!(basis.affinity_mismatches_view(&base).is_empty());
 
-    let _ = owner_staged.abort();
-    let _ = peer_staged.abort();
-    let _ = foreign_staged.abort();
-    finish(owner_run, owner_running, owner_lease);
-    finish(peer_run, peer_running, peer_lease);
-    finish(foreign_run, foreign_running, foreign_lease);
+            assert_one(&basis, &base, M::Runtime, |view| {
+                view.runtime = foreign_view.runtime
+            });
+            assert_one(&basis, &base, M::InstalledOperation, |view| {
+                view.installed_operation.push_str("-foreign")
+            });
+            assert_one(&basis, &base, M::ResourceBinding, |view| {
+                view.resource_binding.push_str("-foreign")
+            });
+            assert_one(&basis, &base, M::OperationAttempt, |view| {
+                view.operation_attempt = peer_view.operation_attempt
+            });
+            assert_one(&basis, &base, M::OperationSlot, |view| {
+                view.operation_slot = Some("foreign-slot".to_owned())
+            });
+            assert_one(&basis, &base, M::SchemaBinding, |view| {
+                view.schema_binding = foreign_view.schema_binding.clone()
+            });
+            assert_one(&basis, &base, M::Snapshot, |view| {
+                view.snapshot = peer_view.snapshot.clone()
+            });
+            assert_one(&basis, &base, M::GraphWorkSession, |view| {
+                view.graph_work_session = peer_view.graph_work_session
+            });
+            assert_one(&basis, &base, M::GraphWorkManagedRun, |view| {
+                view.graph_work_managed_run = peer_view.graph_work_managed_run
+            });
+
+            let _ = owner_staged.abort();
+            let _ = peer_staged.abort();
+            finish(owner_run, owner_running, owner_lease);
+            finish(peer_run, peer_running, peer_lease);
+        })
+        .expect("fixture owner admits its advancement");
 }
 
 fn assert_one(
@@ -195,13 +221,15 @@ fn release(
 }
 
 fn real_terminal_session<'run>(
+    execution: &'run crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+
     world: &AuthorizationWorld,
     running: &'run mut crate::domain_computation::WorthQueryRunningDirectRun,
 ) -> crate::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run> {
     running
         .admit_provider_execution_plan(&world.application.primary_graph_authority)
         .unwrap()
-        .readmit()
+        .readmit(execution)
         .unwrap()
         .prepare()
         .unwrap()
@@ -223,6 +251,8 @@ fn finish(
 }
 
 fn start(
+    phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+
     world: &AuthorizationWorld,
     replacement: &str,
     idempotency: WorthQueryApplicationIdempotencyBinding,
@@ -244,10 +274,11 @@ fn start(
         RetentionMutationBreadth::Narrow,
     );
     let WorthQueryApplicationCommitPreparation::Ready(prepared) = prepare_application_commit(
+        phase,
         &world.application,
         WorthQueryApplicationCommitPreparationRequest::new(program, idempotency, None, None),
     ) else {
         panic!("affinity fixture must prepare")
     };
-    start_managed_application_commit(&world.application, prepared).unwrap()
+    start_managed_application_commit(phase, &world.application, prepared).unwrap()
 }

@@ -1,6 +1,7 @@
 //! Shared post-authorization producer progression for ordinary and selected Fresh.
 
 use super::*;
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationScopeBinding,
 };
@@ -11,6 +12,8 @@ type MutationScope<Schema, Binding> = <<Operation<Schema, Binding> as Applicatio
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn execute_authorized<Schema, Binding>(
+    phase: &WorthQueryAdvancementPhase<'_>,
+
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     selected: &crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<
         '_,
@@ -178,6 +181,7 @@ where
         Binding::IDENTITY,
         runtime
             .execute_mutation_handler_observing_contact::<Operation<Schema, Binding>>(
+                phase,
                 &identities,
                 principal.principal_identity(),
                 admission,
@@ -223,12 +227,18 @@ where
         .with_producer_required_invariants(Binding::REQUIRED_INVARIANTS);
     let outcome = match commit_authority {
         WorthQueryProducerCommitAuthority::Ordinary => {
-            runtime.compare_and_commit_application(program, idempotency)
+            runtime.compare_and_commit_application_in_advancement(phase, program, idempotency)
         }
         WorthQueryProducerCommitAuthority::ProgramOutput => runtime
-            .compare_and_commit_application_for_program_output_producer(program, idempotency, None),
+            .compare_and_commit_application_for_program_output_producer(
+                phase,
+                program,
+                idempotency,
+                None,
+            ),
         WorthQueryProducerCommitAuthority::SelectedProgram { identity, revision } => runtime
             .compare_and_commit_application_for_program_output_producer(
+                phase,
                 program,
                 idempotency,
                 Some((&identity, &revision)),

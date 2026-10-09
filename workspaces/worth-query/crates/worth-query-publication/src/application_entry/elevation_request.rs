@@ -36,6 +36,10 @@ use super::WorthQueryApplicationRequest;
 /// runtime is not this request's runtime.
 #[derive(Debug)]
 pub enum WorthQueryApplicationElevationRequestDenial<DecisionDenial> {
+    /// The host call refused execution custody before reading.
+    ExecutionRequest(
+        worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
+    ),
     Program(WorthQueryApplicationCommitDenial),
     ProgramMismatch,
     PrincipalBindingInstallation(WorthQueryPrincipalBindingInstallationDenial),
@@ -112,81 +116,92 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
             + Sync
             + 'static,
     {
-        use WorthQueryApplicationElevationRequestDenial as Denial;
+        let request_scope = self.scope.clone();
+        self.application
+            .with_application_advancement(&request_scope, |phase| {
+                use WorthQueryApplicationElevationRequestDenial as Denial;
 
-        if !std::ptr::eq(program.runtime(), self.application) {
-            return Err(Denial::ProgramMismatch);
-        }
-        let program_action = program
-            .admit_program_operation::<Operation>()
-            .map_err(Denial::Program)?;
-        let capability = self
-            .application
-            .installed_schema()
-            .capability(capability, operation)
-            .map_err(Denial::CapabilityInstallation)?;
-        let principal_binding = self
-            .application
-            .installed_schema()
-            .principal_binding(principal_binding)
-            .map_err(Denial::PrincipalBindingInstallation)?;
-        let selected = self
-            .application
-            .on_branch(self.branch)
-            .select()
-            .map_err(Denial::ProductSelection)?;
-        let principal = selected
-            .resolve_authenticated_principal(
-                &principal_binding,
-                self.principal,
-                self.scope,
-                WorthQueryPrincipalResolutionMode::Ordinary,
-            )
-            .map_err(Denial::PrincipalResolution)?;
-        let input = ApplicationEncodedInput::<Operation::InputBinding>::encode(input)
-            .map_err(Denial::IdentityEncoding)?;
-        let workflow = WorthQueryCapabilityWorkflowIdempotency::bind::<
-            Schema,
-            Operation,
-            Key,
-            PrincipalIdentity,
-            PrincipalIdentityBinding,
-        >(key, &input, principal.principal_identity())
-        .map_err(Denial::IdentityEncoding)?;
-        let idempotency = workflow.binding();
-        let publication = program_publication_access();
-        let mut access = selected
-            .admit_encoded_capability_access(
-                &publication,
-                &principal,
-                &capability,
-                input,
-                self.scope,
-            )
-            .map_err(Denial::Authorization)?;
-        access.record_request_identity_work(&publication, workflow.key_work());
-        let operation = self
-            .application
-            .installed_schema()
-            .installed_operation(operation)
-            .map_err(Denial::OperationInstallation)?;
-        let admission = self
-            .application
-            .authorize_elevation_request(access, &operation, preconditions)
-            .map_err(Denial::Authorization)?;
-        let projected = invariant_projection
-            .project_admitted_operation(&admission, project)
-            .map_err(Denial::Projection)?;
-        let (decision, projection, _) = projected.into_parts();
-        decision.map_err(Denial::Decision)?;
-        let program = self
-            .application
-            .begin_projected_application_read_attempt(admission, projection)
-            .map_err(Denial::Attempt)?
-            .complete_projected_dependencies()
-            .map_err(Denial::Attempt)?
-            .materialize_elevation_request_program()
-            .map_err(Denial::Attempt)?;
-        Ok(program_action.compare_and_commit_elevation_request(program, idempotency))
+                if !std::ptr::eq(program.runtime(), self.application) {
+                    return Err(Denial::ProgramMismatch);
+                }
+                let program_action = program
+                    .admit_program_operation::<Operation>()
+                    .map_err(Denial::Program)?;
+                let capability = self
+                    .application
+                    .installed_schema()
+                    .capability(capability, operation)
+                    .map_err(Denial::CapabilityInstallation)?;
+                let principal_binding = self
+                    .application
+                    .installed_schema()
+                    .principal_binding(principal_binding)
+                    .map_err(Denial::PrincipalBindingInstallation)?;
+                let selected = self
+                    .application
+                    .on_branch(self.branch)
+                    .select()
+                    .map_err(Denial::ProductSelection)?;
+                let principal = selected
+                    .resolve_authenticated_principal(
+                        &principal_binding,
+                        self.principal,
+                        self.scope,
+                        WorthQueryPrincipalResolutionMode::Ordinary,
+                    )
+                    .map_err(Denial::PrincipalResolution)?;
+                let input = ApplicationEncodedInput::<Operation::InputBinding>::encode(input)
+                    .map_err(Denial::IdentityEncoding)?;
+                let workflow = WorthQueryCapabilityWorkflowIdempotency::bind::<
+                    Schema,
+                    Operation,
+                    Key,
+                    PrincipalIdentity,
+                    PrincipalIdentityBinding,
+                >(key, &input, principal.principal_identity())
+                .map_err(Denial::IdentityEncoding)?;
+                let idempotency = workflow.binding();
+                let publication = program_publication_access();
+                let mut access = selected
+                    .admit_encoded_capability_access(
+                        &publication,
+                        &principal,
+                        &capability,
+                        input,
+                        self.scope,
+                    )
+                    .map_err(Denial::Authorization)?;
+                access.record_request_identity_work(&publication, workflow.key_work());
+                let operation = self
+                    .application
+                    .installed_schema()
+                    .installed_operation(operation)
+                    .map_err(Denial::OperationInstallation)?;
+                let admission = self
+                    .application
+                    .authorize_elevation_request(access, &operation, preconditions)
+                    .map_err(Denial::Authorization)?;
+                let projected = invariant_projection
+                    .project_admitted_operation(&admission, project)
+                    .map_err(Denial::Projection)?;
+                let (decision, projection, _) = projected.into_parts();
+                decision.map_err(Denial::Decision)?;
+                let program = self
+                    .application
+                    .begin_projected_application_read_attempt(admission, projection)
+                    .map_err(Denial::Attempt)?
+                    .complete_projected_dependencies()
+                    .map_err(Denial::Attempt)?
+                    .materialize_elevation_request_program()
+                    .map_err(Denial::Attempt)?;
+                Ok(
+                    program_action.compare_and_commit_elevation_request_in_advancement(
+                        &phase,
+                        program,
+                        idempotency,
+                    ),
+                )
+            })
+            .map_err(WorthQueryApplicationElevationRequestDenial::ExecutionRequest)?
     }
 }

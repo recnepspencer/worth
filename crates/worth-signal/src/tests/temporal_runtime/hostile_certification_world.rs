@@ -125,13 +125,23 @@ fn exercise_temporal_phase9_hostile_suffix_on_active_branch(
 }
 
 pub(super) fn temporal_phase9_mixed_workload() -> TemporalPhase9MixedWorkloadOutcome {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
     let output_aspect = Aspect::new(3);
     let source = runtime.graph_mut().node().build();
     runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.read(source, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(AspectVersion::from_updates([(
@@ -153,7 +163,7 @@ pub(super) fn temporal_phase9_mixed_workload() -> TemporalPhase9MixedWorkloadOut
     let temporal_nodes = [after, debounce, throttle, stale_after, interval];
 
     let initial = runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             for node in temporal_nodes {
                 tx.evaluate_with_plan(
                     node,
@@ -183,7 +193,7 @@ pub(super) fn temporal_phase9_mixed_workload() -> TemporalPhase9MixedWorkloadOut
         ))
         .unwrap();
     let burst = runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.evaluate_with_plan(
                 debounce,
                 &|_ctx| {

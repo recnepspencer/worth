@@ -26,21 +26,26 @@ where
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        if self.operation_requires_workflow_authority::<Operation>() {
-            return WorthQueryApplicationCommitOutcome::Denied(
-                WorthQueryApplicationCommitDenial::workflow_authority_required(),
-            );
-        }
-        if self.operation_requires_application_program::<Operation>() {
-            return WorthQueryApplicationCommitOutcome::Denied(
-                WorthQueryApplicationCommitDenial::application_program_required(),
-            );
-        }
-        self.compare_and_commit_application_with_aftermath(
-            program,
-            idempotency,
-            handoff.pending_causality(),
-        )
+        let request = program.request_scope().clone();
+        self.with_application_advancement(&request, |phase| {
+            if self.operation_requires_workflow_authority::<Operation>() {
+                return WorthQueryApplicationCommitOutcome::Denied(
+                    WorthQueryApplicationCommitDenial::workflow_authority_required(),
+                );
+            }
+            if self.operation_requires_application_program::<Operation>() {
+                return WorthQueryApplicationCommitOutcome::Denied(
+                    WorthQueryApplicationCommitDenial::application_program_required(),
+                );
+            }
+            self.compare_and_commit_application_with_aftermath(
+                &phase,
+                program,
+                idempotency,
+                handoff.pending_causality(),
+            )
+        })
+        .unwrap_or_else(|cause| cause.into_commit_outcome())
     }
 
     /// Commit an admitted redo and its Query causal fact in the same ordinary
@@ -55,20 +60,25 @@ where
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        if self.operation_requires_workflow_authority::<Operation>() {
-            return WorthQueryApplicationCommitOutcome::Denied(
-                WorthQueryApplicationCommitDenial::workflow_authority_required(),
-            );
-        }
-        if self.operation_requires_application_program::<Operation>() {
-            return WorthQueryApplicationCommitOutcome::Denied(
-                WorthQueryApplicationCommitDenial::application_program_required(),
-            );
-        }
-        self.compare_and_commit_application_with_aftermath(
-            program,
-            idempotency,
-            handoff.pending_causality(),
-        )
+        let request = program.request_scope().clone();
+        self.with_application_advancement(&request, |phase| {
+            if self.operation_requires_workflow_authority::<Operation>() {
+                return WorthQueryApplicationCommitOutcome::Denied(
+                    WorthQueryApplicationCommitDenial::workflow_authority_required(),
+                );
+            }
+            if self.operation_requires_application_program::<Operation>() {
+                return WorthQueryApplicationCommitOutcome::Denied(
+                    WorthQueryApplicationCommitDenial::application_program_required(),
+                );
+            }
+            self.compare_and_commit_application_with_aftermath(
+                &phase,
+                program,
+                idempotency,
+                handoff.pending_causality(),
+            )
+        })
+        .unwrap_or_else(|cause| cause.into_commit_outcome())
     }
 }

@@ -1,13 +1,15 @@
 use super::*;
 
 pub(super) fn staged<'run>(
+    execution: &'run crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+
     running: &'run mut WorthQueryRunningDirectRun,
     graph: &WorthQueryInstalledGraphParticipationAuthority,
 ) -> crate::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run> {
     running
         .admit_provider_execution_plan(graph)
         .unwrap()
-        .readmit()
+        .readmit(execution)
         .unwrap()
         .prepare()
         .unwrap()

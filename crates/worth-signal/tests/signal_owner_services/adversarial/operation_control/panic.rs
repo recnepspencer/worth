@@ -15,6 +15,9 @@ fn transaction_callback_panic_quarantines_source_and_keeps_sibling_healthy() {
         .expect("the rollback observation uses owner-issued reference custody");
     let fault = catch_unwind(AssertUnwindSafe(|| {
         let _ = world.mutation.advance_exact(
+            worth_execution::ExecutionRequest::serial(
+                &crate::execution_custody::operational_serial_request(),
+            ),
             &world.root_basis,
             &mut (),
             &SignalOwnerCancellationSource::new().token(),
@@ -33,6 +36,9 @@ fn transaction_callback_panic_quarantines_source_and_keeps_sibling_healthy() {
     world
         .mutation
         .advance_exact(
+            worth_execution::ExecutionRequest::serial(
+                &crate::execution_custody::operational_serial_request(),
+            ),
             &world.child_basis,
             &mut (),
             &SignalOwnerCancellationSource::new().token(),
@@ -55,6 +61,9 @@ fn pre_effect_advance_panic_unwinds_without_poisoning_the_owner() {
     let basis = world.root_basis.clone();
     let fault = catch_unwind(AssertUnwindSafe(|| {
         let _ = mutation.advance_exact(
+            worth_execution::ExecutionRequest::serial(
+                &crate::execution_custody::operational_serial_request(),
+            ),
             &basis,
             &mut (),
             &SignalOwnerCancellationSource::new().token(),
@@ -72,6 +81,9 @@ fn pre_effect_advance_panic_unwinds_without_poisoning_the_owner() {
     world
         .mutation
         .advance_exact(
+            worth_execution::ExecutionRequest::serial(
+                &crate::execution_custody::operational_serial_request(),
+            ),
             &world.child_basis,
             &mut (),
             &SignalOwnerCancellationSource::new().token(),
@@ -96,6 +108,9 @@ fn post_effect_advance_panic_preserves_performed_truth_and_sibling_progress() {
     control.inject_panic_once(SignalOwnerOperationBoundary::OutcomeConstruction);
     let fault = catch_unwind(AssertUnwindSafe(|| {
         let _ = world.mutation.advance_exact(
+            worth_execution::ExecutionRequest::serial(
+                &crate::execution_custody::operational_serial_request(),
+            ),
             &world.root_basis,
             &mut (),
             &SignalOwnerCancellationSource::new().token(),
@@ -118,6 +133,9 @@ fn post_effect_advance_panic_preserves_performed_truth_and_sibling_progress() {
     world
         .mutation
         .advance_exact(
+            worth_execution::ExecutionRequest::serial(
+                &crate::execution_custody::operational_serial_request(),
+            ),
             &world.child_basis,
             &mut (),
             &SignalOwnerCancellationSource::new().token(),
@@ -168,6 +186,9 @@ fn fork_post_capture_fault_preserves_performed_child_and_source_health() {
         world
             .mutation
             .advance_exact(
+                worth_execution::ExecutionRequest::serial(
+                    &crate::execution_custody::operational_serial_request(),
+                ),
                 &world.root_basis,
                 &mut (),
                 &SignalOwnerCancellationSource::new().token(),
@@ -215,6 +236,9 @@ fn fork_source_capture_fault_quarantines_only_source_and_releases_destination() 
     world
         .mutation
         .advance_exact(
+            worth_execution::ExecutionRequest::serial(
+                &crate::execution_custody::operational_serial_request(),
+            ),
             &world.child_basis,
             &mut (),
             &SignalOwnerCancellationSource::new().token(),
@@ -260,6 +284,9 @@ fn snapshot_and_restore_faults_do_not_poison_an_unrelated_branch() {
     snapshot_world
         .mutation
         .advance_exact(
+            worth_execution::ExecutionRequest::serial(
+                &crate::execution_custody::operational_serial_request(),
+            ),
             &snapshot_world.root_basis,
             &mut (),
             &SignalOwnerCancellationSource::new().token(),
@@ -294,6 +321,9 @@ fn snapshot_and_restore_faults_do_not_poison_an_unrelated_branch() {
     restore_world
         .mutation
         .advance_exact(
+            worth_execution::ExecutionRequest::serial(
+                &crate::execution_custody::operational_serial_request(),
+            ),
             &restore_world.root_basis,
             &mut (),
             &SignalOwnerCancellationSource::new().token(),

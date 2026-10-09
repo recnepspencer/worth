@@ -184,26 +184,29 @@ fn installed_owner_enforces_prepare_compute_complete_and_work_ceiling() {
 
 #[test]
 fn installed_owner_enforces_retention_and_real_request_interruption() {
-    let installed =
-        WorthQueryInstalledManagedComputation::<Schema, Feature, Computation, Owner>::new(Owner);
-    let denial = match installed.prepare(&65) {
-        Err(denial) => denial,
-        Ok(_) => panic!("retention above the ceiling is denied"),
-    };
-    assert_eq!(
-        denial,
-        WorthQueryManagedComputationDenial::Resource(
-            WorthQueryManagedComputationResourceDenial::RetainedBytesExhausted
-        )
-    );
+    crate::domain_computation::primary_graph::with_test_advancement(|_active_phase| {
+        let installed =
+            WorthQueryInstalledManagedComputation::<Schema, Feature, Computation, Owner>::new(
+                Owner,
+            );
+        let denial = match installed.prepare(&65) {
+            Err(denial) => denial,
+            Ok(_) => panic!("retention above the ceiling is denied"),
+        };
+        assert_eq!(
+            denial,
+            WorthQueryManagedComputationDenial::Resource(
+                WorthQueryManagedComputationResourceDenial::RetainedBytesExhausted
+            )
+        );
 
-    let cancellation = WorthQueryCancellationSource::new();
-    let cancelled = WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(60),
-        cancellation.token(),
-    );
-    cancellation.cancel();
-    let denial =
+        let cancellation = WorthQueryCancellationSource::new();
+        let cancelled = WorthQueryRequestScope::new(
+            Instant::now() + Duration::from_secs(60),
+            cancellation.token(),
+        );
+        cancellation.cancel();
+        let denial =
         match installed
             .prepare(&1)
             .unwrap()
@@ -218,19 +221,19 @@ fn installed_owner_enforces_retention_and_real_request_interruption() {
             Err(denial) => denial,
             Ok(_) => panic!("cancelled execution is denied at its checkpoint"),
         };
-    assert_eq!(
-        denial,
-        WorthQueryManagedComputationDenial::Interrupted(
-            WorthQueryManagedComputationInterruption::Cancelled
-        )
-    );
+        assert_eq!(
+            denial,
+            WorthQueryManagedComputationDenial::Interrupted(
+                WorthQueryManagedComputationInterruption::Cancelled
+            )
+        );
 
-    let deadline_source = WorthQueryCancellationSource::new();
-    let expired = WorthQueryRequestScope::new(
-        Instant::now() - Duration::from_secs(1),
-        deadline_source.token(),
-    );
-    let denial =
+        let deadline_source = WorthQueryCancellationSource::new();
+        let expired = WorthQueryRequestScope::new(
+            Instant::now() - Duration::from_secs(1),
+            deadline_source.token(),
+        );
+        let denial =
         match installed
             .prepare(&1)
             .unwrap()
@@ -245,10 +248,11 @@ fn installed_owner_enforces_retention_and_real_request_interruption() {
             Err(denial) => denial,
             Ok(_) => panic!("expired execution is denied at its checkpoint"),
         };
-    assert_eq!(
-        denial,
-        WorthQueryManagedComputationDenial::Interrupted(
-            WorthQueryManagedComputationInterruption::DeadlineExceeded
-        )
-    );
+        assert_eq!(
+            denial,
+            WorthQueryManagedComputationDenial::Interrupted(
+                WorthQueryManagedComputationInterruption::DeadlineExceeded
+            )
+        );
+    });
 }

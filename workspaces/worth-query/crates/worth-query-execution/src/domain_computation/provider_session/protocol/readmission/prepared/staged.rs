@@ -59,7 +59,7 @@ pub struct WorthQuerySessionEffectAuthority<'session> {
     _invariant: PhantomData<fn(&'session mut ()) -> &'session mut ()>,
 }
 
-impl WorthQuerySessionBoundReadsAndEffects<'_> {
+impl<'run> WorthQuerySessionBoundReadsAndEffects<'run> {
     pub fn read_authority(&self) -> WorthQuerySessionReadAuthority<'_> {
         WorthQuerySessionReadAuthority {
             binding: self.affinity.binding(),
@@ -105,6 +105,10 @@ impl WorthQuerySessionBoundReadsAndEffects<'_> {
 
     pub(crate) fn provisional_provider_arc(&self) -> Arc<WorthQueryGraphProviderAnchor> {
         self.affinity.provider_arc()
+    }
+
+    pub(crate) fn execution_request(&self) -> worth_execution::ExecutionRequest<'run, 'run> {
+        self.affinity.execution_request()
     }
 
     pub(crate) fn provider_session_view(&self) -> WorthQueryProviderSessionView<'_> {

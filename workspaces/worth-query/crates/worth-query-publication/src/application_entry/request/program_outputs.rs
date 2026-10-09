@@ -8,6 +8,7 @@ use worth_query_declaration::facade::application_query::{
 use worth_query_declaration::facade::application_schema::{
     ApplicationSchema, ApplicationStructuredValueBinding,
 };
+use worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase as AdvancementPhase;
 use worth_query_execution::facade::application_contribution::{
     WorthQueryApplicationOutputDemand, WorthQueryProducerOutputFamily,
 };
@@ -18,11 +19,16 @@ use worth_query_execution::facade::primary_graph::{
 
 use super::{WorthQueryApplicationRequest, WorthQueryApplicationRetainedRequest};
 
-/// Why `require_current_program_output` refused: the retained observation could not be
+/// Why `require_current_program_output` refused: the request could not open,
+/// the retained observation could not be
 /// selected, it is on another branch, or an output no longer retains its source lineage at
 /// that observation.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryProgramOutputCurrentnessDenial {
+    /// The call was refused before its retained-output validation read.
+    ExecutionRequest(
+        worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
+    ),
     Observation(
         worth_query_execution::facade::primary_graph::WorthQueryProductBranchAdmissionDenial,
     ),
@@ -44,16 +50,24 @@ where
         >,
         maximum_work: NonZeroUsize,
     ) -> Result<(), WorthQueryProgramOutputCurrentnessDenial> {
-        let selected = self
-            .application
-            .select_application_read_observation(&self.observation)
-            .map_err(WorthQueryProgramOutputCurrentnessDenial::Observation)?;
-        if selected.product().product_branch() != self.branch {
-            return Err(WorthQueryProgramOutputCurrentnessDenial::ForeignBranch);
-        }
-        selected
-            .require_current_output_settlements(settlement.retained_settlements(), maximum_work)
-            .map_err(WorthQueryProgramOutputCurrentnessDenial::Output)
+        self.application
+            .with_application_advancement(self.scope, |phase| {
+                let selected = self
+                    .application
+                    .select_application_read_observation(&self.observation)
+                    .map_err(WorthQueryProgramOutputCurrentnessDenial::Observation)?;
+                if selected.product().product_branch() != self.branch {
+                    return Err(WorthQueryProgramOutputCurrentnessDenial::ForeignBranch);
+                }
+                selected
+                    .require_current_output_settlements(
+                        &phase,
+                        settlement.retained_settlements(),
+                        maximum_work,
+                    )
+                    .map_err(WorthQueryProgramOutputCurrentnessDenial::Output)
+            })
+            .map_err(WorthQueryProgramOutputCurrentnessDenial::ExecutionRequest)?
     }
 }
 
@@ -110,6 +124,56 @@ where
         RootValue<Schema, Root>:
             WorthQueryApplicationProjection<Schema, RootQuery<Schema, Root>> + Clone,
     {
+        self.application
+            .with_application_advancement(self.scope, |phase| {
+                self.start_program_outputs_in_advancement::<Program, Root>(
+                    &phase,
+                    application,
+                    root_demand,
+                    controls,
+                )
+            })
+            .map_err(|cause| {
+                crate::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand(
+                    crate::application_entry::WorthQueryApplicationOutputDemandDenial::advancement(
+                        cause,
+                    ),
+                )
+            })?
+    }
+
+    pub(in crate::application_entry) fn start_program_outputs_in_advancement<Program, Root>(
+        &self,
+        phase: &AdvancementPhase<'_>,
+        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+        root_demand: RootDemand<Schema, Root>,
+        controls: crate::application_entry::WorthQueryOutputDemandControls,
+    ) -> Result<
+        crate::application_entry::WorthQueryApplicationProgramOutputHandle<
+            'application, Schema, Program, Root,
+        >,
+        crate::application_entry::WorthQueryRequiredOutputPreparationDenial,
+    >
+    where
+        Program: ApplicationProgramDefinition<Schema>,
+        Root: ApplicationOutputGraphShape<Schema>
+            + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
+        RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
+        Root::Dependents:
+            crate::application_entry::mutation::program_output_continuation::ProgramOutputContinuationFactory<
+                'application, Schema, Program, RootDemand<Schema, Root>,
+            >,
+        RootDemand<Schema, Root>: Clone,
+        <RootSource<Schema, Root> as ApplicationQueryBinding<Schema>>::Input:
+            ApplicationQueryIntent<Schema, Binding = RootSource<Schema, Root>>,
+        <RootSource<Schema, Root> as ApplicationQueryBinding<Schema>>::ScopeBinding:
+            ApplicationQueryScopeResolution<
+                Schema,
+                <RootSource<Schema, Root> as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
+            >,
+        RootValue<Schema, Root>:
+            WorthQueryApplicationProjection<Schema, RootQuery<Schema, Root>> + Clone,
+    {
         if !std::ptr::eq(application.runtime(), self.application) {
             return Err(
                 crate::application_entry::WorthQueryRequiredOutputPreparationDenial::ForeignProgram,
@@ -125,7 +189,7 @@ where
             .at(&observation)
             .demand(root_demand.clone())
             .controls(controls)
-            .start_for_program::<Program, Root>(application)
+            .start_for_program::<Program, Root>(phase, application)
             .map_err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand)?;
         Ok(
             crate::application_entry::WorthQueryApplicationProgramOutputHandle::new_initial(
@@ -177,6 +241,63 @@ where
         RootValue<Schema, Root>:
             WorthQueryApplicationProjection<Schema, RootQuery<Schema, Root>> + Clone,
     {
+        self.application
+            .with_application_advancement(self.scope, |phase| {
+                self.recover_required_outputs_in_advancement::<Program, Root>(
+                    &phase,
+                    application,
+                    source_receipt,
+                    root_demand,
+                    controls,
+                )
+            })
+            .map_err(|cause| {
+                crate::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand(
+                    crate::application_entry::WorthQueryApplicationOutputDemandDenial::advancement(
+                        cause,
+                    ),
+                )
+            })?
+    }
+
+    pub(in crate::application_entry) fn recover_required_outputs_in_advancement<Program, Root>(
+        &self,
+        phase: &AdvancementPhase<'_>,
+        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+        source_receipt: &worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
+        root_demand: RootDemand<Schema, Root>,
+        controls: crate::application_entry::WorthQueryOutputDemandControls,
+    ) -> Result<
+        crate::application_entry::WorthQueryApplicationProgramOutputHandle<
+            'application,
+            Schema,
+            Program,
+            Root,
+        >,
+        crate::application_entry::WorthQueryRequiredOutputPreparationDenial,
+    >
+    where
+        Program: ApplicationProgramDefinition<Schema>,
+        Root: ApplicationOutputGraphShape<Schema> + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
+        RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
+        Root::Dependents:
+            crate::application_entry::mutation::program_output_continuation::ProgramOutputContinuationFactory<
+                'application,
+                Schema,
+                Program,
+                RootDemand<Schema, Root>,
+            >,
+        RootDemand<Schema, Root>: Clone,
+        <RootSource<Schema, Root> as ApplicationQueryBinding<Schema>>::Input:
+            ApplicationQueryIntent<Schema, Binding = RootSource<Schema, Root>>,
+        <RootSource<Schema, Root> as ApplicationQueryBinding<Schema>>::ScopeBinding:
+            ApplicationQueryScopeResolution<
+                Schema,
+                <RootSource<Schema, Root> as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
+            >,
+        RootValue<Schema, Root>:
+            WorthQueryApplicationProjection<Schema, RootQuery<Schema, Root>> + Clone,
+    {
         if !std::ptr::eq(application.runtime(), self.application) {
             return Err(
                 crate::application_entry::WorthQueryRequiredOutputPreparationDenial::ForeignProgram,
@@ -190,7 +311,7 @@ where
         let (root, observation) = self
             .demand(root_demand.clone())
             .controls(controls)
-            .start_recovery::<Program, Root>(application, source_receipt)
+            .start_recovery::<Program, Root>(phase, application, source_receipt)
             .map_err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand)?;
         Ok(
             crate::application_entry::WorthQueryApplicationProgramOutputHandle::new(

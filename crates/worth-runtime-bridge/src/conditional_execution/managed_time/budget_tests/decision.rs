@@ -11,6 +11,10 @@ pub(super) fn decision_and_reentry(factory: &impl Fn(BridgeConditionalRetentionB
 }
 
 fn ordinary_decision(factory: &impl Fn(BridgeConditionalRetentionBudget) -> Owner) {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let decision = layout::decision("snapshot:one", "execution:one", "binding:one");
     for ceiling in [
         layout::baseline() + decision,
@@ -23,6 +27,7 @@ fn ordinary_decision(factory: &impl Fn(BridgeConditionalRetentionBudget) -> Owne
         let source = crate::truth_identity_fixtures::truth_snapshot(1, 1);
         let mut contacts = 0usize;
         let result = owner.execute(
+            request_execution,
             &basis,
             BridgeConditionalExecutionRequest {
                 lowering: &lowering,
@@ -59,6 +64,10 @@ fn ordinary_decision(factory: &impl Fn(BridgeConditionalRetentionBudget) -> Owne
 }
 
 fn managed_trigger(factory: &impl Fn(BridgeConditionalRetentionBudget) -> Owner) {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let resident = layout::clock(1) + layout::binding() + layout::baseline() + layout::due(1);
     let execution = "managed-wake:intent:one:revision=1:signal=0:scheduled=1:ready=2";
     let decision = layout::decision("snapshot:one", execution, "binding:one");
@@ -72,8 +81,9 @@ fn managed_trigger(factory: &impl Fn(BridgeConditionalRetentionBudget) -> Owner)
         let basis = owner
             .admit_conditional_signal_basis(&lowering, owner.admitted_signal_basis())
             .unwrap();
-        let worth_proof::TransitionOutcome::Success(trigger) =
-            owner.deliver_owned_authoritative_change(&basis, 0).unwrap()
+        let worth_proof::TransitionOutcome::Success(trigger) = owner
+            .deliver_owned_authoritative_change(request_execution, &basis, 0)
+            .unwrap()
         else {
             panic!("actual source delivers");
         };
@@ -104,6 +114,7 @@ fn managed_trigger(factory: &impl Fn(BridgeConditionalRetentionBudget) -> Owner)
         let source = crate::truth_identity_fixtures::truth_snapshot(1, 1);
         let mut contacts = 0usize;
         let result = owner.execute_managed_due_wake(
+            request_execution,
             BridgeManagedConditionalExecutionRequest {
                 due_wake: &due,
                 lowering: &lowering,
@@ -192,6 +203,10 @@ fn trigger_preparation_boundary(
 }
 
 fn reentry_boundary(factory: &impl Fn(BridgeConditionalRetentionBudget) -> Owner) {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let binding = "retained-query-binding".repeat(64);
     let core = layout::core("snapshot:one", "execution:one");
     let required = core + layout::reentry(&binding);
@@ -205,6 +220,7 @@ fn reentry_boundary(factory: &impl Fn(BridgeConditionalRetentionBudget) -> Owner
         let mut contacts = 0usize;
         let evidence = owner
             .execute(
+                request_execution,
                 &basis,
                 BridgeConditionalExecutionRequest {
                     lowering: &lowering,

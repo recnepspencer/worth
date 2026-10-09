@@ -3,10 +3,12 @@ use super::*;
 impl WorthQueryWorkflowBridgePendingAssociation {
     pub(in crate::domain_computation::managed_run::readmission) fn owner_restore_provider(
         self,
+        active_request: worth_execution::ExecutionRequest<'_, '_>,
+
         contract: crate::domain_computation::managed_run::step_contract_admission::WorthQueryAdmittedManagedStepContract,
         _owner: &WorthQueryWorkflowReadmissionProgressionPermit,
     ) -> WorthQueryWorkflowProviderRestoreTransition {
-        let outcome = match self.resource.restore_provider(self.execution, contract, _owner) {
+        let outcome = match self.resource.restore_provider(active_request, self.execution, contract, _owner) {
             crate::domain_computation::managed_run::workflow::WorthQueryWorkflowRunProviderRestoreOutcome::Pending {
                 affinity,
                 provider,

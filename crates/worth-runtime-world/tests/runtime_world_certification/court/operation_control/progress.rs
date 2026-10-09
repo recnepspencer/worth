@@ -12,6 +12,12 @@ fn unrelated_signal_branch_progresses_at_each_owner_park() {
         Boundary::OutcomeConstruction,
     ] {
         let court = CompositeSupplyChainCourt::compile();
+        let policy = match court.world.execution_placement() {
+            worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy)
+            | worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Leased {
+                policy, ..
+            } => policy,
+        };
         let root = court.bootstrap();
         let token = RuntimeWorldCancellationSource::new().token();
         let intent = ProductBranchCreationIntent::from_source(
@@ -46,11 +52,18 @@ fn unrelated_signal_branch_progresses_at_each_owner_park() {
             // the parked owner before scope's implicit worker joins.
             let pause = control.arm_pause_once(boundary);
             let first_worker = scope.spawn(move || {
-                port.execute_with_signal(first, &mut first_context, &first_token, |_| Ok(()))
+                port.execute_with_signal(
+                    worth_execution::ExecutionRequest::serial(&super::serial_request(policy)),
+                    first,
+                    &mut first_context,
+                    &first_token,
+                    |_| Ok(()),
+                )
             });
             assert!(pause.wait_until_reached(WAIT), "owner park {boundary:?}");
             let second_worker = scope.spawn(move || {
                 let result = second_port.execute_with_signal(
+                    worth_execution::ExecutionRequest::serial(&super::serial_request(policy)),
                     second,
                     &mut second_context,
                     &token,

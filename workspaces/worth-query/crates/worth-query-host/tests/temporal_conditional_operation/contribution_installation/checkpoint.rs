@@ -17,7 +17,7 @@ pub(crate) fn application_checkpoint_restores_fresh_editable_authority() {
             install_route: true,
         },),
         checkpoint_limits(),
-        |graph, installed| {
+        |_phase, graph, installed| {
             let principal = installed
                 .principal_binding(TemporalPrincipalBinding::reference())
                 .unwrap();
@@ -168,7 +168,7 @@ pub(crate) fn application_checkpoint_denies_corrupt_incompatible_and_forged_byte
             install_route: true,
         },),
         checkpoint_limits(),
-        |graph, installed| {
+        |_phase, graph, installed| {
             let principal = installed
                 .principal_binding(TemporalPrincipalBinding::reference())
                 .unwrap();

@@ -119,17 +119,29 @@ impl WorthQueryProviderSessionToken {
             && self.provider_generation == plan.provider_generation()
     }
 
-    pub(super) fn view(&self) -> WorthQueryProviderSessionView<'_> {
-        WorthQueryProviderSessionView { token: self }
+    pub(super) fn view<'scope>(
+        &'scope self,
+        request: worth_execution::ExecutionRequest<'scope, 'scope>,
+    ) -> WorthQueryProviderSessionView<'scope> {
+        WorthQueryProviderSessionView {
+            token: self,
+            request,
+        }
     }
 }
 
 #[derive(Clone, Copy)]
 pub struct WorthQueryProviderSessionView<'session> {
     token: &'session WorthQueryProviderSessionToken,
+    request: worth_execution::ExecutionRequest<'session, 'session>,
 }
 
-impl WorthQueryProviderSessionView<'_> {
+impl<'session> WorthQueryProviderSessionView<'session> {
+    /// The admitted request that owns this provider call.
+    pub fn execution_request(self) -> worth_execution::ExecutionRequest<'session, 'session> {
+        self.request
+    }
+
     #[allow(dead_code)]
     pub(in crate::domain_computation) fn affinity_identity(
         self,
@@ -164,12 +176,20 @@ impl WorthQueryProviderSessionView<'_> {
 
 #[derive(Clone, Copy)]
 pub struct WorthQueryProviderExecutionPlanView<'plan> {
+    request: worth_execution::ExecutionRequest<'plan, 'plan>,
     contract: &'plan WorthQueryProviderExecutionPlanContract,
 }
 
 impl<'plan> WorthQueryProviderExecutionPlanView<'plan> {
-    pub(super) fn new(contract: &'plan WorthQueryProviderExecutionPlanContract) -> Self {
-        Self { contract }
+    pub(super) fn new(
+        request: worth_execution::ExecutionRequest<'plan, 'plan>,
+        contract: &'plan WorthQueryProviderExecutionPlanContract,
+    ) -> Self {
+        Self { request, contract }
+    }
+
+    pub fn execution_request(self) -> worth_execution::ExecutionRequest<'plan, 'plan> {
+        self.request
     }
 
     pub fn contract(self) -> &'plan WorthQueryProviderExecutionPlanContract {

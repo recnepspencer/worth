@@ -30,7 +30,7 @@ impl WorthQueryProvisionalAttemptCounters {
 }
 
 pub struct WorthQueryProvisionalAttempt<'run> {
-    pub(super) overlay: WorthQueryProvisionalOverlayLease,
+    pub(super) overlay: WorthQueryProvisionalOverlayLease<'run>,
     pub(super) staged: WorthQuerySessionBoundReadsAndEffects<'run>,
     pub(super) read_set: WorthQueryFreshDecisionReadSet,
     pub(super) program: WorthQueryLoweredProvisionalEffectProgram,
@@ -108,7 +108,11 @@ pub(super) fn begin<'run>(
         ));
     }
     Ok(WorthQueryProvisionalAttempt {
-        overlay: WorthQueryProvisionalOverlayLease::new(staged.provisional_provider_arc(), overlay),
+        overlay: WorthQueryProvisionalOverlayLease::new(
+            staged.execution_request(),
+            staged.provisional_provider_arc(),
+            overlay,
+        ),
         staged,
         read_set,
         program,
@@ -181,8 +185,11 @@ fn reject_overlay(
     kind: WorthQueryProvisionalDenialKind,
     detail: &'static str,
 ) -> WorthQueryProvisionalFailure {
-    let mut overlay =
-        WorthQueryProvisionalOverlayLease::new(staged.provisional_provider_arc(), overlay);
+    let mut overlay = WorthQueryProvisionalOverlayLease::new(
+        staged.execution_request(),
+        staged.provisional_provider_arc(),
+        overlay,
+    );
     let cleanup = overlay.discard();
     let session_posture = staged.abort().recovery_posture();
     if cleanup.is_err() {

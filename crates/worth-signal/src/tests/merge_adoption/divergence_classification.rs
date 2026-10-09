@@ -6,6 +6,16 @@ use crate::tests::support::{version_ab, ASPECT_A};
 
 #[test]
 fn merge_branch_target_advanced_without_shared_conflict_surfaces_applied_divergence() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -13,7 +23,7 @@ fn merge_branch_target_advanced_without_shared_conflict_surfaces_applied_diverge
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(shared, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(51, 0))
@@ -30,7 +40,7 @@ fn merge_branch_target_advanced_without_shared_conflict_surfaces_applied_diverge
     runtime.switch_branch(feature.clone()).unwrap();
     let feature_only = runtime.graph_mut().node().output_identity().build();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.mark_dirty(shared, ASPECT_A)?;
             tx.read(shared, &|view| {
                 Ok(view.finish(
@@ -51,7 +61,7 @@ fn merge_branch_target_advanced_without_shared_conflict_surfaces_applied_diverge
     runtime.switch_branch(main.clone()).unwrap();
     let main_only = runtime.graph_mut().node().output_identity().build();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.mark_dirty(shared, ASPECT_A)?;
             tx.read(shared, &|view| {
                 Ok(view.finish(
@@ -81,6 +91,16 @@ fn merge_branch_target_advanced_without_shared_conflict_surfaces_applied_diverge
 
 #[test]
 fn merge_branch_unrelated_target_only_pending_work_does_not_degrade_fast_forward() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -88,7 +108,7 @@ fn merge_branch_unrelated_target_only_pending_work_does_not_degrade_fast_forward
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(shared, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(61, 0))
@@ -105,7 +125,7 @@ fn merge_branch_unrelated_target_only_pending_work_does_not_degrade_fast_forward
     runtime.switch_branch(feature.clone()).unwrap();
     let feature_only = runtime.graph_mut().node().output_identity().build();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(feature_only, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(62, 0))
@@ -119,7 +139,7 @@ fn merge_branch_unrelated_target_only_pending_work_does_not_degrade_fast_forward
     runtime.switch_branch(main.clone()).unwrap();
     let unrelated_main_only = runtime.graph_mut().node().output_identity().build();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(unrelated_main_only, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(63, 0))

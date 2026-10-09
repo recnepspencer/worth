@@ -1,5 +1,6 @@
 //! Bounded runtime custody for actual completed installed transport attempts.
 
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
@@ -177,6 +178,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     /// custody until the exact World protection and provider seal both succeed.
     pub(in crate::domain_computation::primary_graph) fn resume_installed_transport_completion(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         correlation: &ExternalEffectCorrelationIdentity,
         request: &WorthQueryRequestScope,
     ) -> InstalledTransportResumeOutcome {
@@ -239,7 +242,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         };
         match work {
             Work::Publish(evidence) => {
-                let outcome = self.publish_installed_transport_completion(evidence, request);
+                let outcome = self.publish_installed_transport_completion(phase, evidence, request);
                 let mut custody = self
                     .transport_completion_custody
                     .lock()
@@ -277,7 +280,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             }
             Work::Recover(evidence, recovery) => {
                 let progress =
-                    self.continue_transport_recovery(evidence.clone(), recovery, request);
+                    self.continue_transport_recovery(phase, evidence.clone(), recovery, request);
                 let mut custody = self
                     .transport_completion_custody
                     .lock()

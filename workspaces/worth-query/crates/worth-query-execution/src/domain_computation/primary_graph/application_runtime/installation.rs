@@ -42,6 +42,7 @@ where
     }
 }
 pub(super) fn publish_application_runtime_with_clock<Schema>(
+    phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
     input: ApplicationRuntimePublication<Schema>,
 ) -> Result<
     WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -66,6 +67,7 @@ where
         .seal(&installed_schema, bootstrap.graph.binding_identity())?;
     let authorization = compile_authorization(&bootstrap, &installed_schema)?;
     let graph = publish_application_graph(
+        phase,
         bootstrap,
         runtime,
         authority,
@@ -89,6 +91,7 @@ where
 pub(in crate::domain_computation::primary_graph) fn publish_application_runtime_with_conditionals<
     Schema,
 >(
+    phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
     input: ApplicationRuntimePublication<Schema>,
     bindings: Vec<
         Box<dyn super::super::conditional_operation::WorthQueryPendingConditionalOperation<Schema>>,
@@ -134,6 +137,7 @@ where
     let authorization = compile_authorization(&bootstrap, &installed_schema)
         .map_err(super::super::conditional_operation::publication_denial)?;
     let mut graph = publish_application_graph(
+        phase,
         bootstrap,
         runtime,
         authority,
@@ -245,6 +249,7 @@ where
         })
 }
 fn publish_application_graph<Schema>(
+    phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
     mut bootstrap: WorthQueryPrimaryGraphBootstrap<Schema>,
     mut runtime: WorthQueryExecutionRuntime,
     authority: WorthQueryExecutionInstallationAuthority,
@@ -267,7 +272,7 @@ where
     let recovered_relational_authority = bootstrap.take_recovered_relational_authority();
     let checkpoint_restore_work = bootstrap.recovered_checkpoint_restore_work();
     let (publication, resource_support) =
-        bootstrap.publish_with_resource_support(&mut runtime, &authority)?;
+        bootstrap.publish_with_resource_support(phase, &mut runtime, &authority)?;
     let graph = runtime
         .retain_primary_graph_integration_handle()
         .expect("publishing the primary graph installs its integration authority");

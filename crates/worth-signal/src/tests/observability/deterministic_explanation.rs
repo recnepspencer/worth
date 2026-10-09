@@ -55,6 +55,16 @@ fn explanation_is_deterministic_with_multiple_upstreams_and_mixed_states() {
 
 #[test]
 fn rollback_preserves_committed_explanation_and_increments_rollback_metric() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let source = graph.node().build();
     let dependent = graph.node().build();
@@ -74,7 +84,7 @@ fn rollback_preserves_committed_explanation_and_increments_rollback_metric() {
         .transaction
         .transaction_rollback_count;
 
-    let err = runtime.transaction(&mut (), |tx| {
+    let err = runtime.transaction(request_execution, &mut (), |tx| {
         tx.mark_dirty(source, ASPECT_A)?;
         tx.evaluate_with_plan(
             dependent,

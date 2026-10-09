@@ -129,3 +129,5 @@ pub use semantic_contract::{
 pub use signal_basis_binding::BridgeConditionalSignalBasisBinding;
 
 pub use successor_reconstitution::BridgePreparedConditionalReconstitution;
+
+mod signal_execution_denial;

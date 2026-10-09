@@ -37,6 +37,8 @@ pub(in crate::domain_computation::primary_graph) type WorthQueryInstalledOutputR
     std::collections::BTreeMap<String, WorthQueryInstalledOutputReadinessRoute>;
 
 pub(in crate::domain_computation::primary_graph) fn evaluate_output_readiness(
+    execution: worth_execution::ExecutionRequest<'_, '_>,
+
     bridge: &BridgeSealedRuntimeAssembly,
     lowering: &Arc<BridgeInstalledConditionalLowering>,
     truth: &crate::domain_computation::primary_graph::conditional_operation::WorthQueryConditionalTruthBasis,
@@ -54,6 +56,7 @@ pub(in crate::domain_computation::primary_graph) fn evaluate_output_readiness(
         output_version: attempt,
     };
     bridge.execute_for_source_record(
+        execution,
         &signal_basis,
         BridgeConditionalExecutionRequest {
             lowering,

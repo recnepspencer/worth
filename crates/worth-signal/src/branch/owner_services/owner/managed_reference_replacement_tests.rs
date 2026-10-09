@@ -58,6 +58,16 @@ fn replaced_cell_incarnation_cannot_reauthorize_an_owner_issued_reference() {
 
 #[test]
 fn replacement_helper_preserves_complete_cell_truth_with_a_new_incarnation() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let schema = SignalSchemaRegistry::from_registrations(vec![SignalSchemaRegistration::new(
         SignalSchemaDescriptor::new(
             SignalSchemaId(917),
@@ -85,7 +95,7 @@ fn replacement_helper_preserves_complete_cell_truth_with_a_new_incarnation() {
     let branch = runtime.current_branch();
     let mut context = ();
     runtime
-        .transaction(&mut context, |transaction| {
+        .transaction(request_execution, &mut context, |transaction| {
             transaction.set_dependencies(dependent, [DependencyEdge::new(source, Aspect::new(6))])
         })
         .expect("replacement fixture creates a real nonempty mutation journal");

@@ -60,6 +60,16 @@ fn retired_reference_is_terminal() {
 }
 
 fn rolled_back_caller_panic_preserves_the_live_cell() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let world = basis_port_world();
     let reference = issue_reference(&world.port, &world.basis_b);
     let owner = world
@@ -72,6 +82,7 @@ fn rolled_back_caller_panic_preserves_the_live_cell() {
         .expect("the production registry supplies branch B");
     let panic = catch_unwind(AssertUnwindSafe(|| {
         let _ = cell.advance_exact::<(), (), _>(
+            request_execution,
             &admission,
             &world.basis_b,
             &mut (),

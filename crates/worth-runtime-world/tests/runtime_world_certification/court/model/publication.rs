@@ -5,6 +5,19 @@ use std::sync::{Arc, OnceLock};
 
 impl ModelRun {
     pub fn publish(&mut self, amount: Option<u64>, signal: bool) {
+        let policy = match self.court.world.execution_placement() {
+            worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy)
+            | worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Leased {
+                policy, ..
+            } => policy,
+        };
+        let serial_request = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::from_policy(&policy),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
         self.steps.push(format!("publish {amount:?}/{signal}"));
         let head = self.heads["work"].clone();
         self.model.publish("work", amount, signal);
@@ -37,7 +50,7 @@ impl ModelRun {
             let expected = self.model.commits[&self.model.branches["work"].head]
                 .cargo
                 .route();
-            port.execute_with_signal(prepared, &mut context, &token, |tx| {
+            port.execute_with_signal(execution, prepared, &mut context, &token, |tx| {
                 // This isolated sequential branch has exactly one writer. Read
                 // the real settled Relational occurrence, never a predicted basis.
                 let basis = runtime.observe_branch(&branch).unwrap().1;
@@ -58,7 +71,7 @@ impl ModelRun {
             let prepared = port
                 .prepare_without_signal(head.clone(), intent, &token, None)
                 .unwrap();
-            port.execute_without_signal(prepared, &token)
+            port.execute_without_signal(execution, prepared, &token)
         };
         let RuntimeWorldPublicationOutcome::Performed(done) = outcome else {
             panic!("pure model predicts successful publication");
@@ -69,6 +82,19 @@ impl ModelRun {
         self.check();
     }
     pub fn cancel(&mut self) {
+        let policy = match self.court.world.execution_placement() {
+            worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy)
+            | worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Leased {
+                policy, ..
+            } => policy,
+        };
+        let serial_request = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::from_policy(&policy),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
         self.steps.push("prepare/cancel".into());
         self.model.prepare(0, "work");
         let prepared = self.court.prepare_cargo(&self.heads["work"], "3");
@@ -76,17 +102,30 @@ impl ModelRun {
         let source = RuntimeWorldCancellationSource::new();
         source.cancel();
         self.model.finish_attempt(0);
-        let outcome = self
-            .court
-            .world
-            .publication_port()
-            .execute_without_signal(prepared, &source.token());
+        let outcome = self.court.world.publication_port().execute_without_signal(
+            execution,
+            prepared,
+            &source.token(),
+        );
         assert!(
             matches!(outcome, RuntimeWorldPublicationOutcome::NoEffect(no) if no.cause() == NoEffectCause::CancelledBeforeEffect)
         );
         self.check();
     }
     pub fn stale(&mut self) {
+        let policy = match self.court.world.execution_placement() {
+            worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy)
+            | worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Leased {
+                policy, ..
+            } => policy,
+        };
+        let serial_request = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::from_policy(&policy),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
         self.steps.push("reserve stale contender".into());
         self.model.prepare(0, "work");
         let prepared = self.court.prepare_cargo(&self.heads["work"], "2");
@@ -94,11 +133,11 @@ impl ModelRun {
         self.publish(Some(7), false);
         self.steps.push("execute stale contender".into());
         self.model.finish_attempt(0);
-        let outcome = self
-            .court
-            .world
-            .publication_port()
-            .execute_without_signal(prepared, &RuntimeWorldCancellationSource::new().token());
+        let outcome = self.court.world.publication_port().execute_without_signal(
+            execution,
+            prepared,
+            &RuntimeWorldCancellationSource::new().token(),
+        );
         assert!(
             matches!(outcome, RuntimeWorldPublicationOutcome::NoEffect(no) if no.cause() == NoEffectCause::StaleExpectedProductHead)
         );

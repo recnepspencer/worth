@@ -94,10 +94,20 @@ fn settle(world: &mut World) {
 }
 
 fn commit_change(world: &mut World, source: NodeId) {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let evaluator = evaluator(world.calls.clone(), world.upstreams.clone());
     world
         .runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.mark_dirty(source, ASPECT_A)?;
             tx.evaluate_dirty(&evaluator)?;
             Ok(())
@@ -203,13 +213,23 @@ fn evaluated_dependencies_do_not_launder_an_invalidation_that_landed_after_the_e
 
 #[test]
 fn evaluated_dependencies_inside_a_transaction_survive_commit_clean() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut world = build();
     settle(&mut world);
     let (node, left, right) = (world.node, world.left, world.right);
     let evaluator = evaluator(world.calls.clone(), world.upstreams.clone());
     world
         .runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.mark_dirty(right, ASPECT_A)?;
             tx.evaluate_dirty(&evaluator)?;
             // `node` is standing demand: the transaction recomputes it, and

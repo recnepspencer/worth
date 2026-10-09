@@ -26,12 +26,22 @@ fn root_drop_inside_admitted_callback_requests_close_without_self_deadlock() {
     let (done_tx, done_rx) = mpsc::sync_channel(1);
 
     thread::spawn(move || {
+        let serial_request = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(
+                crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+            ),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
         let admission = owner.admit().expect("canonical callback admits");
         let cell = owner
             .lookup_cell(&admission, branch.id)
             .expect("the canonical target cell is installed");
         let cancellation = SignalOwnerCancellationSource::new();
         let outcome = cell.advance_exact::<(), (), _>(
+            request_execution,
             &admission,
             &basis,
             &mut (),

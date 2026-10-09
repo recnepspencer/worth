@@ -13,6 +13,16 @@ fn bounded(inputs: impl IntoIterator<Item = DeclaredSignalInput>) -> NodeContrac
 #[test]
 fn dynamic_rewire_threshold_session_with_leased_restore_preserves_subscriber_sets() {
     fn run(workers: usize) -> bool {
+        // This standalone caller declares the operational serial memory policy.
+        let serial_request = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(
+                crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+            ),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
         let mut runtime = SignalRuntime::builder(SignalGraph::new())
             .with_kernel_defaults()
             .build();
@@ -126,7 +136,7 @@ fn dynamic_rewire_threshold_session_with_leased_restore_preserves_subscriber_set
         };
 
         runtime
-            .transaction(&mut (), |tx| {
+            .transaction(request_execution, &mut (), |tx| {
                 tx.read(selector, &|view| {
                     Ok(view.finish(
                         NodeEvaluationResult::from_version(version_ab(1, 0))
@@ -156,7 +166,7 @@ fn dynamic_rewire_threshold_session_with_leased_restore_preserves_subscriber_set
 
         for step in 0..10_u64 {
             runtime
-                .transaction(&mut (), |tx| {
+                .transaction(request_execution, &mut (), |tx| {
                     tx.mark_dirty(selector, ASPECT_A)?;
                     if step % 2 == 0 {
                         tx.mark_dirty(right, ASPECT_B)?;

@@ -271,12 +271,41 @@ impl<'run> WorthQueryAdmittedProviderExecutionPlan<'run> {
 
     pub fn readmit(
         mut self,
+        phase: &'run crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     ) -> Result<WorthQueryProviderPlanReadmission<'run>, WorthQueryProviderSessionFailure> {
+        let (source_instance, owner_identity) = match &self.run {
+            WorthQueryProviderRunBorrow::Direct(run) => (
+                run.execution_source_instance_id(),
+                run.execution_owner_identity(),
+            ),
+            WorthQueryProviderRunBorrow::Workflow(run) => (
+                run.execution_source_instance_id(),
+                run.execution_owner_identity(),
+            ),
+        };
+        let request = match &self.product {
+            WorthQueryProviderProductAffinity::Standalone => match owner_identity {
+                Some(owner) => phase.request_for_owner(owner),
+                None => phase.request_for_source(source_instance),
+            },
+            WorthQueryProviderProductAffinity::Application(product) => {
+                phase.request_for_owner(product.observation().branch_identity().owner_identity())
+            }
+        }
+        .map_err(|cause| {
+            failure(
+                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(cause)
+                    .provider_denial_cause()
+                    .expect("foreign custody is a resource refusal"),
+                "provider plan belongs to another advancement runtime",
+                &self.counters,
+            )
+        })?;
         self.counters.called_provider();
         let admission = WorthQueryProviderSessionTokenAdmission::new(&self.contract);
         let invocation = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             self.provider.readmit_session(
-                &WorthQueryProviderExecutionPlanView::new(&self.contract),
+                &WorthQueryProviderExecutionPlanView::new(request, &self.contract),
                 admission,
             )
         }));
@@ -312,6 +341,7 @@ impl<'run> WorthQueryAdmittedProviderExecutionPlan<'run> {
         self.counters.minted_token();
         Ok(WorthQueryProviderPlanReadmission::from_admitted(
             WorthQueryProviderSessionAffinity::mint(
+                request,
                 self.run,
                 self.contract,
                 self.product,

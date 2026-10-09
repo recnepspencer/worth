@@ -34,6 +34,16 @@ macro_rules! assert_unknown_branch {
 
 #[test]
 fn equal_branch_number_foreign_basis_matrix_returns_exact_basis_mismatch() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let world_a = MutationWorld::<()>::new();
     let world_b = MutationWorld::<()>::new();
     let captured_a = world_a
@@ -77,6 +87,7 @@ fn equal_branch_number_foreign_basis_matrix_returns_exact_basis_mismatch() {
     );
     assert_basis_mismatch!(
         world_a.port.advance_exact(
+            request_execution,
             foreign_basis,
             &mut (),
             &SignalOwnerCancellationSource::new().token(),
@@ -173,6 +184,16 @@ fn equal_branch_number_foreign_basis_matrix_returns_exact_basis_mismatch() {
 
 #[test]
 fn foreign_basis_without_receiving_cell_preserves_unknown_branch_matrix() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let world_a = MutationWorld::<()>::new();
     let world_b = MutationWorld::<()>::new();
     let captured_a = world_a
@@ -207,6 +228,7 @@ fn foreign_basis_without_receiving_cell_preserves_unknown_branch_matrix() {
     );
     assert_unknown_branch!(
         world_a.port.advance_exact(
+            request_execution,
             unknown_basis,
             &mut (),
             &SignalOwnerCancellationSource::new().token(),

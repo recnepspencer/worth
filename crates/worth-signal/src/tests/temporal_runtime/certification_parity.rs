@@ -127,12 +127,22 @@ fn temporal_certification_bundle_parity_detects_bundle_record_drift() {
 
 #[test]
 fn temporal_eligibility_replay_parity_certification_family_records_exact_digest_match() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
     let node = runtime.graph_mut().node().after(3).unwrap().build();
     let outcome = runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.evaluate_with_plan(
                 node,
                 &|_ctx| {

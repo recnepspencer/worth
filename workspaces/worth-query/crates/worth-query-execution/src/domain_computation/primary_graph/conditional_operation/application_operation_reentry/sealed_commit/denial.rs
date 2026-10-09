@@ -72,6 +72,8 @@ pub(super) fn classify_denial(denial: &Denial) -> Outcome {
                             | Resource::PolicyMemoryLimit
                             | Resource::WorkLimit
                             | Resource::NestedLeaseMisuse
+                            | Resource::NestedAdvancementOpening
+                            | Resource::ForeignAdvancementPhase
                             | Resource::NoActiveExecutionScope
                             | Resource::EquivalenceContractUnavailable,
                         ..
@@ -137,6 +139,14 @@ fn classify_kind(kind: Kind) -> Outcome {
             | Resource::NestedLeaseMisuse
             | Resource::NoActiveExecutionScope
             | Resource::ScratchCapacityExceeded => Outcome::RetryableCommitFailure(kind),
+            // Opening another request on the same thread is a caller defect.
+            Resource::NestedAdvancementOpening => {
+                Outcome::TerminalFailure(Terminal::ApplicationCommit(kind))
+            }
+            // A phase from another installed runtime is a caller defect, never pressure.
+            Resource::ForeignAdvancementPhase => {
+                Outcome::TerminalFailure(Terminal::ApplicationCommit(kind))
+            }
             // Unreachable at HEAD: Relational's remaining-work child retains the
             // parent's workers, memory and determinism and lowers its work limit.
             Resource::WorkerLimit

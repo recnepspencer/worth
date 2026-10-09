@@ -10,6 +10,8 @@
 
 #![deny(private_interfaces)]
 
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+
 mod denial;
 
 use std::sync::Arc;
@@ -104,72 +106,80 @@ where
         authority: &WorthQueryRecoveryEffectAuthority,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     ) -> Result<WorthQueryPerformedExternalRedispatch, WorthQueryExternalRedispatchDenial> {
-        require_fresh_effect_authority(handle, authority)
-            .map_err(|denial| WorthQueryExternalRedispatchDenial::FreshAuthority(denial.kind()))?;
-        if matches!(
-            handle.binding().installed_aftermath().recovery(),
-            InstalledAftermathRecoveryContract::NotAdmitted
-        ) {
-            return Err(WorthQueryExternalRedispatchDenial::RecoveryNotAdmitted);
-        }
-        if let Some(lapse) = admission.current_authority_lapse() {
-            return Err(match lapse {
-                WorthQueryAdmissionLapse::Cancelled => {
-                    WorthQueryExternalRedispatchDenial::AdmissionCancelled
-                }
-                WorthQueryAdmissionLapse::DeadlineExceeded => {
-                    WorthQueryExternalRedispatchDenial::AdmissionDeadlineExceeded
-                }
-                WorthQueryAdmissionLapse::AuthenticationExpired => {
-                    WorthQueryExternalRedispatchDenial::AdmissionAuthenticationExpired
-                }
-            });
-        }
-        if !admission.belongs_to(
-            self.runtime.authority_identity(),
-            &self.installed_schema.binding_identity(),
-        ) {
-            return Err(WorthQueryExternalRedispatchDenial::ForeignAdmission);
-        }
-        let Some(record) = handle.binding().dispatch_outbox() else {
-            return Err(WorthQueryExternalRedispatchDenial::BindingOutboxMissing);
-        };
-        // A completed effect may already have released its committed owner
-        // row, so the terminal owner answers before that row is read.
-        self.refuse_completed_external_effect(record)
-            .map_err(|refusal| match refusal {
-                WorthQueryTerminalEffectRefusal::AlreadyCompleted => {
-                    WorthQueryExternalRedispatchDenial::AlreadyCompleted
-                }
-                WorthQueryTerminalEffectRefusal::TerminalIndexUnavailable => {
-                    WorthQueryExternalRedispatchDenial::TerminalIndexUnavailable
-                }
+        self.with_application_advancement(admission.publication_request(), |phase| {
+            let phase = &phase;
+            require_fresh_effect_authority(handle, authority).map_err(|denial| {
+                WorthQueryExternalRedispatchDenial::FreshAuthority(denial.kind())
             })?;
-        let committed = self
-            .primary_provider
-            .committed_dispatch_outbox_for_binding(handle.binding())
-            .map_err(WorthQueryExternalRedispatchDenial::OwnerReadDenied)?;
-        let Some(transport) = self.external_effect_transport.get() else {
-            return Err(WorthQueryExternalRedispatchDenial::TransportNotInstalled);
-        };
-        let dispatch = self
-            .perform_committed_external_dispatch(
-                transport.as_ref(),
-                committed,
-                admission.publication_request(),
-            )
-            .map_err(WorthQueryExternalDispatchPreparationDenial::redispatch_denial)?;
-        Ok(WorthQueryPerformedExternalRedispatch::record(
-            WorthQueryPerformedExternalRedispatchSeal::new(
-                WorthQueryExternalRedispatchMint::witness(),
-                handle.authority_identity(),
-                dispatch,
-            ),
-        ))
+            if matches!(
+                handle.binding().installed_aftermath().recovery(),
+                InstalledAftermathRecoveryContract::NotAdmitted
+            ) {
+                return Err(WorthQueryExternalRedispatchDenial::RecoveryNotAdmitted);
+            }
+            if let Some(lapse) = admission.current_authority_lapse() {
+                return Err(match lapse {
+                    WorthQueryAdmissionLapse::Cancelled => {
+                        WorthQueryExternalRedispatchDenial::AdmissionCancelled
+                    }
+                    WorthQueryAdmissionLapse::DeadlineExceeded => {
+                        WorthQueryExternalRedispatchDenial::AdmissionDeadlineExceeded
+                    }
+                    WorthQueryAdmissionLapse::AuthenticationExpired => {
+                        WorthQueryExternalRedispatchDenial::AdmissionAuthenticationExpired
+                    }
+                });
+            }
+            if !admission.belongs_to(
+                self.runtime.authority_identity(),
+                &self.installed_schema.binding_identity(),
+            ) {
+                return Err(WorthQueryExternalRedispatchDenial::ForeignAdmission);
+            }
+            let Some(record) = handle.binding().dispatch_outbox() else {
+                return Err(WorthQueryExternalRedispatchDenial::BindingOutboxMissing);
+            };
+            // A completed effect may already have released its committed owner
+            // row, so the terminal owner answers before that row is read.
+            self.refuse_completed_external_effect(record)
+                .map_err(|refusal| match refusal {
+                    WorthQueryTerminalEffectRefusal::AlreadyCompleted => {
+                        WorthQueryExternalRedispatchDenial::AlreadyCompleted
+                    }
+                    WorthQueryTerminalEffectRefusal::TerminalIndexUnavailable => {
+                        WorthQueryExternalRedispatchDenial::TerminalIndexUnavailable
+                    }
+                })?;
+            let committed = self
+                .primary_provider
+                .committed_dispatch_outbox_for_binding(handle.binding())
+                .map_err(WorthQueryExternalRedispatchDenial::OwnerReadDenied)?;
+            let Some(transport) = self.external_effect_transport.get() else {
+                return Err(WorthQueryExternalRedispatchDenial::TransportNotInstalled);
+            };
+            let dispatch = self
+                .perform_committed_external_dispatch(
+                    phase,
+                    transport.as_ref(),
+                    committed,
+                    admission.publication_request(),
+                )
+                .map_err(WorthQueryExternalDispatchPreparationDenial::redispatch_denial)?;
+            Ok(WorthQueryPerformedExternalRedispatch::record(
+                WorthQueryPerformedExternalRedispatchSeal::new(
+                    WorthQueryExternalRedispatchMint::witness(),
+                    handle.authority_identity(),
+                    dispatch,
+                ),
+            ))
+        })
+        .map_err(WorthQueryExternalRedispatchDenial::advancement)?
     }
 
     pub(super) fn dispatch_committed_external_effect(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         outcome: WorthQueryApplicationCommitOutcome,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     ) -> WorthQueryApplicationCommitOutcome {
@@ -193,7 +203,12 @@ where
                 );
             }
         };
-        match self.perform_committed_external_dispatch(transport.as_ref(), committed, request) {
+        match self.perform_committed_external_dispatch(
+            phase,
+            transport.as_ref(),
+            committed,
+            request,
+        ) {
             Ok(dispatch) => WorthQueryApplicationCommitOutcome::Committed(
                 receipt.with_external_dispatch(dispatch),
             ),
@@ -205,6 +220,8 @@ where
 
     fn perform_committed_external_dispatch(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         transport: &dyn WorthQueryExternalEffectTransport,
         committed: crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
@@ -212,10 +229,14 @@ where
         if committed.record().inbound().is_some()
             && self.has_retained_installed_transport_completion(committed.record().correlation())
         {
-            let resumed = self
-                .resume_installed_transport_completion(committed.record().correlation(), request);
+            let resumed = self.resume_installed_transport_completion(
+                phase,
+                committed.record().correlation(),
+                request,
+            );
             if matches!(resumed, InstalledTransportResumeOutcome::Performed) {
                 let _ = self.progress_retained_inbound_occurrence(
+                    phase,
                     *committed.record().correlation().bytes(),
                     request,
                 );
@@ -254,14 +275,17 @@ where
             // Keep its actual completion observation even if World needs retry.
             let _ = self.record_installed_transport_completion(evidence, in_flight);
             if matches!(
-                self.resume_installed_transport_completion(dispatch.correlation(), request),
+                self.resume_installed_transport_completion(phase, dispatch.correlation(), request),
                 InstalledTransportResumeOutcome::Performed,
             ) {
                 // A callback may have entered signed custody while the
                 // physical send was still in flight. Transport terminal truth
                 // now owns the effect; release that redundant accepted slot.
-                let _ = self
-                    .progress_retained_inbound_occurrence(*dispatch.correlation().bytes(), request);
+                let _ = self.progress_retained_inbound_occurrence(
+                    phase,
+                    *dispatch.correlation().bytes(),
+                    request,
+                );
             }
         }
         Ok(dispatch)

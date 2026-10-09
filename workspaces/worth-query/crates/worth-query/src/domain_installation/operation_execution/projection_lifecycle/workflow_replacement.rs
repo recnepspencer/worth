@@ -57,6 +57,44 @@ impl<D: 'static, O, F, L: BasisOperationLane> WorthQueryLiveBoundWorkflowProject
         witness: WorthQueryReplacementWitness,
         workspace: &mut WorthQueryWorkspace,
     ) -> WorthQueryWorkflowProjectionReplacementOutcome<D, O, F, L> {
+        let owner = workspace.advancement_owner();
+        let mut retained = Some((self, candidate, witness));
+        match owner.with_advancement(|phase| {
+            let (current, candidate, witness) = retained
+                .take()
+                .expect("host call retains its projection before admission");
+            current.replace_with_in_advancement(
+                phase
+                    .execution_request_for(&owner)
+                    .expect("the opener lent this owner its phase"),
+                candidate,
+                witness,
+                workspace,
+            )
+        }) {
+            Ok(outcome) => outcome,
+            Err(denial) => {
+                let (current, candidate, _witness) = retained
+                    .take()
+                    .expect("refused request ran no projection work");
+                stopped(
+                    current,
+                    candidate,
+                    WorthQueryProjectionTransitionDenialKind::ExecutionRequest(denial),
+                    "advancement admission refused",
+                    WorthQueryProjectionTransitionWork::new(),
+                )
+            }
+        }
+    }
+
+    fn replace_with_in_advancement(
+        self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+        candidate: WorthQueryCurrentWorkflowProjection<D, O, F, L>,
+        witness: WorthQueryReplacementWitness,
+        workspace: &mut WorthQueryWorkspace,
+    ) -> WorthQueryWorkflowProjectionReplacementOutcome<D, O, F, L> {
         let mut work = WorthQueryProjectionTransitionWork::new();
         let mut checks = 0;
         if !self
@@ -103,6 +141,7 @@ impl<D: 'static, O, F, L: BasisOperationLane> WorthQueryLiveBoundWorkflowProject
                 ),
             };
         let admitted = match open_transition_successor(
+            execution,
             candidate,
             workspace,
             "worth_query_replaced_workflow_projection_v1",

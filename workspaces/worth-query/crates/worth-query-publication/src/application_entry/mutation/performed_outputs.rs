@@ -7,6 +7,7 @@ use worth_query_declaration::facade::application_query::{
 use worth_query_declaration::facade::application_schema::{
     ApplicationSchema, ApplicationStructuredValueBinding,
 };
+use worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase as AdvancementPhase;
 use worth_query_execution::facade::application_contribution::{
     WorthQueryApplicationOutputDemand, WorthQueryProducerOutputFamily,
 };
@@ -195,8 +196,27 @@ where
         >,
         crate::application_entry::WorthQueryRequiredOutputPreparationDenial,
     > {
+        self.application.runtime().with_application_advancement(request.scope, |phase| self.settle_in_advancement(&phase, request))
+            .map_err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::advancement)?
+    }
+
+    pub(in crate::application_entry) fn settle_in_advancement(
+        &mut self,
+        phase: &AdvancementPhase<'_>,
+        request: &crate::application_entry::WorthQueryApplicationRequest<
+            'application,
+            '_,
+            '_,
+            Schema,
+        >,
+    ) -> Result<
+        WorthQueryApplicationProgramOutputProgress<
+            Query<Schema, RootDemand<Schema, Root>>,
+        >,
+        crate::application_entry::WorthQueryRequiredOutputPreparationDenial,
+    > {
         for _ in 0..self.controls.resolve(self.application.runtime().output_demand_resource_profile()).settlement_attempts() {
-            let progress = self.advance(request)?;
+            let progress = self.advance_in_advancement(phase, request)?;
             if matches!(progress, WorthQueryApplicationProgramOutputProgress::Settled(_)) {
                 return Ok(progress);
             }
@@ -218,12 +238,31 @@ where
         >,
         crate::application_entry::WorthQueryRequiredOutputPreparationDenial,
     > {
+        self.application.runtime().with_application_advancement(request.scope, |phase| self.advance_in_advancement(&phase, request))
+            .map_err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::advancement)?
+    }
+
+    pub(in crate::application_entry) fn advance_in_advancement(
+        &mut self,
+        phase: &AdvancementPhase<'_>,
+        request: &crate::application_entry::WorthQueryApplicationRequest<
+            'application,
+            '_,
+            '_,
+            Schema,
+        >,
+    ) -> Result<
+        WorthQueryApplicationProgramOutputProgress<
+            Query<Schema, RootDemand<Schema, Root>>,
+        >,
+        crate::application_entry::WorthQueryRequiredOutputPreparationDenial,
+    > {
         if self.complete {
             return Err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::Closed);
         }
         if let Some(root) = &mut self.root {
             match root
-                .advance(request)
+                .advance(phase, request)
                 .map_err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand)?
             {
                 WorthQueryApplicationProgramDemandProgress::Pending => {
@@ -247,6 +286,7 @@ where
                 .as_ref()
                 .expect("a settled root retains its output settlement");
             self.continuation = Some(Root::Dependents::start(
+                phase,
                 self.application,
                 &self.root_demand,
                 settlement,
@@ -261,7 +301,7 @@ where
             .continuation
             .as_mut()
             .expect("a settled root installs its typed output continuation");
-        match continuation.advance(request)? {
+        match continuation.advance(phase, request)? {
             ProgramOutputContinuationProgress::Pending => {
                 Ok(WorthQueryApplicationProgramOutputProgress::Pending)
             }

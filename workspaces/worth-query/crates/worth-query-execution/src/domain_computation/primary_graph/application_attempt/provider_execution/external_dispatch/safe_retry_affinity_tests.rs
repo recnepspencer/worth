@@ -238,14 +238,22 @@ fn redispatch_names_fresh_authority_and_current_admission_failures_apart() {
         "another runtime's admission is not this runtime's to redispatch"
     );
     cancellation.cancel();
+    assert_eq!(
+        redispatch(&other_authority, &admission),
+        WorthQueryExternalRedispatchDenial::AdmissionCancelled,
+        "cancellation precedes a stale fresh-authority proof"
+    );
     let lapsed = redispatch(&own_authority, &admission);
     assert_eq!(
         lapsed,
         WorthQueryExternalRedispatchDenial::AdmissionCancelled,
-        "a cancelled request is a current-admission failure"
+        "an already-canceled request stops before redispatch admission"
     );
     assert_eq!(
         WorthQueryRecoveryHandleDenial::from(lapsed).kind(),
         WorthQueryRecoveryHandleDenialKind::AdmissionCancelled
     );
 }
+
+#[cfg(feature = "test-query-execution-observer")]
+mod advancement_custody;

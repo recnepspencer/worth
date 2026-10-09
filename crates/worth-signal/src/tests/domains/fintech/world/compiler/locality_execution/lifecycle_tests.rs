@@ -223,6 +223,16 @@ fn compile_scenario(
 }
 
 fn publish_source(world: &mut CompiledFinancialLocalityWorld, producer: LocalitySemanticOutputId) {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mutation = world
         .locality_definition()
         .mutations()
@@ -248,7 +258,9 @@ fn publish_source(world: &mut CompiledFinancialLocalityWorld, producer: Locality
     let source = world.handles[&producer];
     world
         .runtime
-        .transaction(&mut (), |tx| tx.read(source, &evaluator).map(|_| ()))
+        .transaction(request_execution, &mut (), |tx| {
+            tx.read(source, &evaluator).map(|_| ())
+        })
         .unwrap();
 }
 

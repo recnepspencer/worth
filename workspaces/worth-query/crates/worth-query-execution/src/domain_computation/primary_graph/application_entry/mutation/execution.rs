@@ -7,7 +7,7 @@ use super::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult,
     WorthQueryCompletedMutationCandidate,
 };
-use crate::domain_computation::primary_graph::application_contribution::QueryRequestExecution;
+use crate::domain_computation::primary_graph::application_contribution::WorthQueryAdvancementPhase;
 use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryApplicationAttemptDenial,
     WorthQueryOperationProjectionDenial, WorthQueryPrimaryGraphApplicationRuntime,
@@ -20,6 +20,8 @@ use crate::domain_computation::primary_graph::{
 /// the `Ok` `HandlerResult`.
 #[derive(Debug)]
 pub enum MutationHandlerExecutionDenial {
+    /// Another installed runtime lent the phase; no handler or read ran.
+    ForeignAdvancementPhase,
     /// The projection that feeds the handler's decision could not be read.
     Projection(WorthQueryOperationProjectionDenial),
     /// The read attempt, resource reservation, or candidate program failed.
@@ -39,6 +41,9 @@ pub enum MutationHandlerExecutionDenial {
 impl std::fmt::Display for MutationHandlerExecutionDenial {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::ForeignAdvancementPhase => {
+                formatter.write_str("the phase belongs to another installed runtime")
+            }
             Self::Projection(denial) => denial.fmt(formatter),
             Self::Attempt(denial) => denial.fmt(formatter),
             Self::Handler(denial) => denial.fmt(formatter),
@@ -70,8 +75,10 @@ where
     /// the idempotency binding. A capability admission also fixes the identity of
     /// the input it governed, and a request whose input encodes to another
     /// identity is refused with `InputNotAdmitted` before any read.
+    /// Executes the handler as a phase of the caller's current advancement.
     pub fn execute_mutation_handler<Binding>(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
         identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
         principal_identity: &Binding::PrincipalIdentity,
         admission: WorthQueryAdmittedApplicationOperation<
@@ -88,6 +95,7 @@ where
         Binding: ApplicationMutationBinding<Schema>,
     {
         self.execute_mutation_handler_observing_contact::<Binding>(
+            phase,
             identities,
             principal_identity,
             admission,
@@ -101,6 +109,7 @@ where
         Binding,
     >(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
         identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
         principal_identity: &Binding::PrincipalIdentity,
         admission: WorthQueryAdmittedApplicationOperation<
@@ -117,6 +126,9 @@ where
     where
         Binding: ApplicationMutationBinding<Schema>,
     {
+        let execution = phase
+            .execution_for(&self.product_runtime)
+            .map_err(|_| MutationHandlerExecutionDenial::ForeignAdvancementPhase)?;
         if admission
             .governed_input_identity()
             .is_some_and(|admitted| admitted != identities.input_identity())
@@ -126,17 +138,11 @@ where
         let (handler, installed_ceiling) = self.mutation_handler_for_attempt::<Binding>()?;
 
         let input = identities.mutation_input();
-        let request = admission.publication_request();
         let operation_scope_binding = admission.operation_scope_binding().clone();
         let context_use = std::cell::Cell::new(
             crate::domain_computation::primary_graph::handler::DecisionContextUse::default(),
         );
-        // The request holds the World owner for its duration, so its execution
-        // borrows the authority with no handle to upgrade, and the lease drops
-        // when the decision returns.
-        let world = std::sync::Arc::clone(&self.product_runtime.owner);
         let projected = {
-            let execution = QueryRequestExecution::open(world.execution_placement(), request);
             self.mutation_projection
                 .project_admitted_operation(&admission, |reader, scope| {
                     let mut decision_reader = DecisionReader::<Schema, Binding>::new(
@@ -145,7 +151,7 @@ where
                         principal_identity,
                         &operation_scope_binding,
                         identities,
-                        &execution,
+                        execution,
                         &context_use,
                     );
                     on_contact();

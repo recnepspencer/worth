@@ -22,6 +22,8 @@ struct WorthQueryReadyDirectGraphStart {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryDirectGraphExecutionStartFailureKind {
+    /// The request phase belongs to another installed runtime.
+    ForeignAdvancementPhase,
     GraphCallBinding,
     MissingInstalledProvider,
     ProviderSupportMismatch,
@@ -84,13 +86,24 @@ impl std::fmt::Debug for WorthQueryDirectGraphExecutionStartFailure {
 }
 
 pub(super) fn begin(
+    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     running: WorthQueryRunningDirectRun,
     graph_authority: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
     request: WorthQueryManagedGraphCallRequest,
 ) -> Result<WorthQueryActiveDirectGraphExecution, WorthQueryDirectGraphExecutionStartFailure> {
+    if execution
+        .request_for_managed(&running.relational_basis)
+        .is_err()
+    {
+        return Err(start_failure(
+            WorthQueryDirectGraphExecutionStartFailureKind::ForeignAdvancementPhase,
+            "phase belongs to another advancement runtime",
+            running,
+        ));
+    }
     WorthQueryBoundDirectGraphStart::bind(running, graph_authority, request)?
         .validate_contract()?
-        .start_provider()
+        .start_provider(execution)
 }
 
 impl WorthQueryBoundDirectGraphStart {
@@ -163,10 +176,14 @@ impl WorthQueryBoundDirectGraphStart {
 impl WorthQueryReadyDirectGraphStart {
     fn start_provider(
         mut self,
+        execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     ) -> Result<WorthQueryActiveDirectGraphExecution, WorthQueryDirectGraphExecutionStartFailure>
     {
         self.bound.running.provider_work_mut().begin_step_call();
         let started = match super::provider_start::start_managed_provider(
+            execution
+                .request_for_managed(&self.bound.running.relational_basis)
+                .expect("start admitted this runtime phase"),
             &self.bound.anchor,
             &self.bound.call,
             self.contract.installed().retained_bytes_ceiling(),

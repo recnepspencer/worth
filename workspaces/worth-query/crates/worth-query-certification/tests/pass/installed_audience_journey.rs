@@ -42,6 +42,7 @@ fn install_and_inspect(
 }
 
 fn phase_seven_through_ten_consumer_journey(
+    execution_request: &worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
     running: &mut execution::WorthQueryRunningDirectRun,
     graph: &worth_query_host::facade::domain::WorthQueryInstalledGraphParticipationAuthority,
     requests: Vec<execution::WorthQueryDecisionFactRequest>,
@@ -52,7 +53,7 @@ fn phase_seven_through_ten_consumer_journey(
     let staged = running
         .admit_provider_execution_plan(graph)
         .unwrap()
-        .readmit()
+        .readmit(execution_request)
         .unwrap()
         .prepare()
         .unwrap()

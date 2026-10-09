@@ -51,6 +51,7 @@ pub(super) enum DiscoveredRootStartKind {
 
 pub(super) fn start_discovered_roots<'application, Schema, Program, Root>(
     application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+    phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
     request: &WorthQueryApplicationRequest<'application, '_, '_, Schema>,
     receipt: &WorthQueryApplicationCommitReceipt,
     discovery: Discovery<Schema, Root>,
@@ -91,7 +92,7 @@ where
     let discovered = request
         .at(&retained)
         .query(discovery)
-        .execute()
+        .execute_in_advancement(phase)
         .map_err(WorthQueryRequiredOutputPreparationDenial::SourceQuery)?;
     let row = discovered
         .rows()
@@ -107,7 +108,7 @@ where
         let result = request
             .at(&retained)
             .query(demand.source_intent())
-            .execute()
+            .execute_in_advancement(phase)
             .map_err(WorthQueryRequiredOutputPreparationDenial::SourceQuery)?;
         if result.rows().len() != 1 || result.observed_sources().len() != 1 {
             return Err(WorthQueryRequiredOutputPreparationDenial::MissingSource);
@@ -116,7 +117,7 @@ where
         let current_source = if matches!(start_kind, DiscoveredRootStartKind::Recovery) {
             let current = request
                 .query(demand.source_intent())
-                .execute()
+                .execute_in_advancement(phase)
                 .map_err(WorthQueryRequiredOutputPreparationDenial::SourceQuery)?;
             let current_source = current.into_output_demand_source();
             match application

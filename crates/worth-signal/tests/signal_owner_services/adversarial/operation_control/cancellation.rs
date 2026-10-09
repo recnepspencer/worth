@@ -32,6 +32,9 @@ fn pre_movement_cancellation_denies_every_cancellable_public_operation() {
     advance_cancel.cancel();
     assert!(matches!(
         world.mutation.advance_exact(
+            worth_execution::ExecutionRequest::serial(
+                &crate::execution_custody::operational_serial_request()
+            ),
             &world.root_basis,
             &mut (),
             &advance_cancel.token(),
@@ -107,6 +110,9 @@ fn pre_movement_cancellation_denies_every_cancellable_public_operation() {
     world
         .mutation
         .advance_exact(
+            worth_execution::ExecutionRequest::serial(
+                &crate::execution_custody::operational_serial_request(),
+            ),
             &world.root_basis,
             &mut (),
             &SignalOwnerCancellationSource::new().token(),
@@ -134,7 +140,15 @@ fn cancellation_at_the_pre_movement_park_is_still_effect_free() {
     thread::scope(|scope| {
         scope.spawn(move || {
             let result = mutation
-                .advance_exact(&basis, &mut (), &worker_cancellation.token(), |_| Ok(()))
+                .advance_exact(
+                    worth_execution::ExecutionRequest::serial(
+                        &crate::execution_custody::operational_serial_request(),
+                    ),
+                    &basis,
+                    &mut (),
+                    &worker_cancellation.token(),
+                    |_| Ok(()),
+                )
                 .map(|_| ())
                 .map_err(|denial| format!("{denial:?}"));
             let _ = tx.send(result);
@@ -151,6 +165,9 @@ fn cancellation_at_the_pre_movement_park_is_still_effect_free() {
     world
         .mutation
         .advance_exact(
+            worth_execution::ExecutionRequest::serial(
+                &crate::execution_custody::operational_serial_request(),
+            ),
             &world.root_basis,
             &mut (),
             &SignalOwnerCancellationSource::new().token(),
@@ -178,7 +195,15 @@ fn cancellation_after_canonical_movement_keeps_the_performed_advance() {
     thread::scope(|scope| {
         scope.spawn(move || {
             let result = mutation
-                .advance_exact(&basis, &mut (), &worker_cancellation.token(), |_| Ok(()))
+                .advance_exact(
+                    worth_execution::ExecutionRequest::serial(
+                        &crate::execution_custody::operational_serial_request(),
+                    ),
+                    &basis,
+                    &mut (),
+                    &worker_cancellation.token(),
+                    |_| Ok(()),
+                )
                 .map(|_| ())
                 .map_err(|denial| format!("{denial:?}"));
             let _ = tx.send(result);

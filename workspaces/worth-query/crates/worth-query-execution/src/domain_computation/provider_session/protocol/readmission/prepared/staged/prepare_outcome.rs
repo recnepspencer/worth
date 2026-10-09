@@ -28,10 +28,13 @@ impl<'run> WorthQuerySessionBoundReadsAndEffects<'run> {
     ) -> Result<WorthQuerySessionPrepareOutcome<'run>, WorthQueryProviderSessionFailure> {
         self.counters.called_provider();
         let invocation = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            self.affinity
-                .session()
-                .provider()
-                .prepare_staged_session(&self.affinity.session().token().view())
+            self.affinity.session().provider().prepare_staged_session(
+                &self
+                    .affinity
+                    .session()
+                    .token()
+                    .view(self.affinity.session().request()),
+            )
         }));
         let failure = match invocation {
             Ok(Ok(())) => {

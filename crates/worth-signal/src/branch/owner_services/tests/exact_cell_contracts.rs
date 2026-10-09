@@ -149,6 +149,16 @@ fn exact_snapshot_and_restore_contracts_move_one_cell_and_install_metadata_betwe
 
 #[test]
 fn snapshot_reservation_restores_capacity_after_denial_drop_and_unwind() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (mut runtime, branch, starting_basis) = runtime_with_snapshot_capacity(1);
     let (_, mutation, _) = runtime.owner_port_slots().expect("runtime seals");
     let owner = mutation.upgrade_owner().expect("owner remains live");
@@ -189,6 +199,7 @@ fn snapshot_reservation_restores_capacity_after_denial_drop_and_unwind() {
     let mut runtime_context = ();
     let advanced = cell
         .advance_exact::<(), (), _>(
+            request_execution,
             &admission,
             &starting_basis,
             &mut runtime_context,

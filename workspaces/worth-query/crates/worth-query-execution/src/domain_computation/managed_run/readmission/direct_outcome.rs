@@ -7,6 +7,8 @@ use super::recovery::WorthQueryDirectReadmissionRecoveryRequired;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryDirectReadmissionDenialKind {
+    /// The phase was lent by another installed runtime.
+    ForeignAdvancementPhase,
     ForeignQueryRuntime,
     StaleInstallationGeneration,
     RetainedCapacityMismatch,

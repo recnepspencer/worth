@@ -265,7 +265,7 @@ pub(super) fn publishes_delivers_and_executes() {
             .unwrap(),
             primary_graph::SignalConditionalEvaluationBudget::development(),
         ),
-        |graph, installed| {
+        |_phase, graph, installed| {
             let principal = installed
                 .principal_binding(TemporalPrincipalBinding::reference())
                 .unwrap();
@@ -311,8 +311,11 @@ pub(super) fn publishes_delivers_and_executes() {
         .take_performed_relational_product_change()
         .expect("the source mutation must retain World's performed patch");
     let selected = application.on_branch(branch).select().unwrap();
-    let delivery = selected
-        .deliver_relational_change_to_conditional(&installed.clock, 0, change)
+    let delivery = application
+        .with_application_advancement(&request_scope(), |phase| {
+            selected.deliver_relational_change_to_conditional(&phase, &installed.clock, 0, change)
+        })
+        .expect("the host request must be admitted")
         .expect("Bridge must admit the actual performed World patch");
     assert!(matches!(
         delivery,
@@ -364,7 +367,7 @@ pub(super) fn zero_route_installation_is_denied() {
             .unwrap(),
             primary_graph::SignalConditionalEvaluationBudget::development(),
         ),
-        |_, _| Ok(()),
+        |_, _, _| Ok(()),
     );
     match result {
         Err(application_installation::WorthQueryInMemoryApplicationDenial::ConditionalPublication(

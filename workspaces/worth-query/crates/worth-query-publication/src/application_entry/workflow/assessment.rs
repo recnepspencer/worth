@@ -269,21 +269,26 @@ where
         WorthQueryWorkflowAssessmentDemandProgress<SourceQuery<Schema, Demand>>,
         WorthQueryApplicationOutputDemandDenial,
     > {
-        for _ in 0..self
-            .controls
-            .resolve(self.workflow.runtime().output_demand_resource_profile())
-            .settlement_attempts()
-        {
-            let disclosure = fresh_request
-                .query(self.demand.source_intent())
-                .execute()
-                .map_err(WorthQueryApplicationOutputDemandDenial::Source)?
-                .into_output_demand_source();
-            let posture = (disclosure.rows().len() == 1)
-                .then(|| Family::<Schema, Demand>::assessment_posture(&disclosure.rows()[0]));
-            let progress = self
+        self.workflow
+            .runtime()
+            .with_application_advancement(fresh_request.scope, |phase| {
+                for _ in 0..self
+                    .controls
+                    .resolve(self.workflow.runtime().output_demand_resource_profile())
+                    .settlement_attempts()
+                {
+                    let disclosure = fresh_request
+                        .query(self.demand.source_intent())
+                        .execute_in_advancement(&phase)
+                        .map_err(WorthQueryApplicationOutputDemandDenial::Source)?
+                        .into_output_demand_source();
+                    let posture = (disclosure.rows().len() == 1).then(|| {
+                        Family::<Schema, Demand>::assessment_posture(&disclosure.rows()[0])
+                    });
+                    let progress = self
                 .workflow
                 .advance_workflow_assessment_output(
+                    &phase,
                     &worth_query_execution::publication_boundary::program_publication_access(),
                     &mut self.admitted,
                     fresh_request.principal,
@@ -292,22 +297,25 @@ where
                     disclosure,
                 )
                 .map_err(map_progress_denial)?;
-            if let WorthQueryOutputDemandAdvance::Settled(retained) = progress {
-                let settlement = WorthQueryApplicationOutputDemandSettlement::new(
-                    retained,
-                    self.admitted.observed_source().clone(),
-                );
-                return Ok(WorthQueryWorkflowAssessmentDemandProgress::Settled(
-                    WorthQueryWorkflowAssessmentDemandSettlement {
-                        required: self.required.clone(),
-                        posture: posture
-                            .expect("a settled output demand has one exact typed source row"),
-                        settlement,
-                    },
-                ));
-            }
-        }
-        Ok(WorthQueryWorkflowAssessmentDemandProgress::Pending)
+                    if let WorthQueryOutputDemandAdvance::Settled(retained) = progress {
+                        let settlement = WorthQueryApplicationOutputDemandSettlement::new(
+                            retained,
+                            self.admitted.observed_source().clone(),
+                        );
+                        return Ok(WorthQueryWorkflowAssessmentDemandProgress::Settled(
+                            WorthQueryWorkflowAssessmentDemandSettlement {
+                                required: self.required.clone(),
+                                posture: posture.expect(
+                                    "a settled output demand has one exact typed source row",
+                                ),
+                                settlement,
+                            },
+                        ));
+                    }
+                }
+                Ok(WorthQueryWorkflowAssessmentDemandProgress::Pending)
+            })
+            .map_err(WorthQueryApplicationOutputDemandDenial::advancement)?
     }
 
     pub fn close(&mut self) {

@@ -98,67 +98,79 @@ impl WorthQueryGraphParticipationProvider<ManagedGraph> for CumulativeOutputProv
 
 #[test]
 fn one_variable_width_row_cannot_escape_the_retained_memory_ceiling() {
-    let (running, graph) = managed_graph_run_with_provider(
-        WorthQueryOperationGraphAccess::Project,
-        VariableWidthProvider,
-    );
-    let active = running
-        .begin_graph_execution(
-            &graph,
-            WorthQueryManagedGraphCallRequest::new(
-                WorthQueryGraphProviderCallKind::Project,
-                "variable-width",
-            ),
-        )
-        .expect("variable-width provider should reach its governed step");
-    let terminal = match active.advance() {
-        WorthQueryDirectGraphStepOutcome::Failed(terminal) => terminal,
-        _ => panic!("variable-width row escaped the retained-memory ceiling"),
-    };
-    assert_eq!(terminal.provider_work().completed_work_units(), 1);
-    assert_eq!(terminal.provider_work().retained_bytes(), 0);
-    assert!(terminal.provider_work().peak_retained_bytes() > 4_096);
-    assert_eq!(terminal.provider_work().queue_state_mutation_count(), 0);
-    terminal
-        .cleanup()
-        .expect("over-budget projection must preserve cleanup authority");
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
+
+        let (running, graph) = managed_graph_run_with_provider(
+            WorthQueryOperationGraphAccess::Project,
+            VariableWidthProvider,
+        );
+        let active = running
+            .begin_graph_execution(
+                execution,
+                &graph,
+                WorthQueryManagedGraphCallRequest::new(
+                    WorthQueryGraphProviderCallKind::Project,
+                    "variable-width",
+                ),
+            )
+            .expect("variable-width provider should reach its governed step");
+        let terminal = match active.advance(execution) {
+            WorthQueryDirectGraphStepOutcome::Failed(terminal) => terminal,
+            _ => panic!("variable-width row escaped the retained-memory ceiling"),
+        };
+        assert_eq!(terminal.provider_work().completed_work_units(), 1);
+        assert_eq!(terminal.provider_work().retained_bytes(), 0);
+        assert!(terminal.provider_work().peak_retained_bytes() > 4_096);
+        assert_eq!(terminal.provider_work().queue_state_mutation_count(), 0);
+        terminal
+            .cleanup()
+            .expect("over-budget projection must preserve cleanup authority");
+    });
 }
 
 #[test]
 fn acknowledged_chunks_remain_cumulatively_bounded_until_receipt_seal() {
-    let advances = Arc::new(AtomicUsize::new(0));
-    let (running, graph) = managed_graph_run_with_provider(
-        WorthQueryOperationGraphAccess::Project,
-        CumulativeOutputProvider {
-            advances: Arc::clone(&advances),
-        },
-    );
-    let mut outcome = running
-        .begin_graph_execution(
-            &graph,
-            WorthQueryManagedGraphCallRequest::new(
-                WorthQueryGraphProviderCallKind::Project,
-                "cumulative-output",
-            ),
-        )
-        .expect("the bounded stream should start")
-        .advance();
-    let terminal = loop {
-        outcome = match outcome {
-            WorthQueryDirectGraphStepOutcome::ChunkReady(chunk) => chunk.acknowledge(),
-            WorthQueryDirectGraphStepOutcome::Continue(active) => active.advance(),
-            WorthQueryDirectGraphStepOutcome::Failed(terminal) => break terminal,
-            _ => panic!("cumulative output did not reach the retained-byte boundary"),
-        };
-    };
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
 
-    assert!(advances.load(Ordering::Relaxed) > 1);
-    assert_eq!(terminal.provider_work().output_retained_bytes(), 0);
-    assert_eq!(terminal.provider_work().retained_bytes(), 0);
-    assert!(terminal.provider_work().peak_retained_bytes() > 1_536);
-    terminal
-        .cleanup()
-        .expect("cumulative output denial must release every retained chunk");
+        let advances = Arc::new(AtomicUsize::new(0));
+        let (running, graph) = managed_graph_run_with_provider(
+            WorthQueryOperationGraphAccess::Project,
+            CumulativeOutputProvider {
+                advances: Arc::clone(&advances),
+            },
+        );
+        let mut outcome = running
+            .begin_graph_execution(
+                execution,
+                &graph,
+                WorthQueryManagedGraphCallRequest::new(
+                    WorthQueryGraphProviderCallKind::Project,
+                    "cumulative-output",
+                ),
+            )
+            .expect("the bounded stream should start")
+            .advance(execution);
+        let terminal = loop {
+            outcome = match outcome {
+                WorthQueryDirectGraphStepOutcome::ChunkReady(chunk) => chunk.acknowledge(),
+                WorthQueryDirectGraphStepOutcome::Continue(active) => active.advance(execution),
+                WorthQueryDirectGraphStepOutcome::Failed(terminal) => break terminal,
+                _ => panic!("cumulative output did not reach the retained-byte boundary"),
+            };
+        };
+
+        assert!(advances.load(Ordering::Relaxed) > 1);
+        assert_eq!(terminal.provider_work().output_retained_bytes(), 0);
+        assert_eq!(terminal.provider_work().retained_bytes(), 0);
+        assert!(terminal.provider_work().peak_retained_bytes() > 1_536);
+        terminal
+            .cleanup()
+            .expect("cumulative output denial must release every retained chunk");
+    });
 }
 
 fn variable_width_material(capacity: usize) -> WorthQueryGraphReadMaterial {

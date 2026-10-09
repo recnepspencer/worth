@@ -32,6 +32,7 @@ mod operation_scope;
 mod owned_async;
 mod port;
 mod reconstitution;
+mod request_completion;
 pub use reconstitution::SignalConditionalReconstitutionReport;
 #[cfg(test)]
 mod source_variants_tests;

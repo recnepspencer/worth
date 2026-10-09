@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use std::{collections::BTreeMap, sync::Arc};
 
 use worth_runtime_bridge::facade::{
@@ -77,6 +78,8 @@ pub(in crate::domain_computation::primary_graph) trait WorthQueryInstalledCondit
 
     fn observe_clock(
         &mut self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         bridge: &BridgeSealedRuntimeAssembly,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         truth: &WorthQueryConditionalTruthBasis,

@@ -59,6 +59,7 @@ impl SignalEvaluationPartition {
     /// access. Observation custody ends before storage deactivation.
     pub(crate) fn execute_conditional(
         &mut self,
+        request_work: &mut worth_execution::MapKernelContext<'_, '_>,
         graph: &mut SignalGraph,
         request: SignalConditionalExecutionRequest<'_>,
         condition: &mut impl InstalledSignalConditionResolver,
@@ -76,6 +77,14 @@ impl SignalEvaluationPartition {
                 .conditional_evaluation_budget()
                 .maximum_attempt_visits,
         );
+        let mut checkpoint = |units: usize| {
+            request_work.checkpoint(units as u64).map_err(|stop| {
+                crate::data::retained_storage::RetainedStoragePreparationDenial::ExecutionStopped(
+                    stop.into(),
+                )
+            })
+        };
+        let mut work = work.reborrow_with_checkpoint(&mut checkpoint);
         let draft = ConditionalEvaluationDraft::begin(self, &mut work)
             .map_err(SignalPartitionConditionalDenial::StorageAdmission)?;
         let outcome = draft
@@ -115,3 +124,6 @@ impl SignalEvaluationPartition {
         }
     }
 }
+
+#[cfg(test)]
+pub(crate) mod conditional_test_scope;

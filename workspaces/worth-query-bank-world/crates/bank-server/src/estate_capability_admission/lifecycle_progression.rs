@@ -1,3 +1,5 @@
+#[cfg(feature = "test-request-lifetime-probes")]
+mod advancement_custody;
 use std::time::Duration;
 
 use bank_domain::{

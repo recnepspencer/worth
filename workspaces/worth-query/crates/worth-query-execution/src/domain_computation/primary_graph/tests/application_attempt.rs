@@ -1,3 +1,6 @@
+#[cfg(feature = "test-query-execution-observer")]
+#[path = "application_attempt/advancement_custody.rs"]
+mod advancement_custody;
 #[path = "application_attempt/product_races.rs"]
 mod product_races;
 

@@ -23,6 +23,7 @@ impl WorthQueryRuntime {
 
     pub(crate) fn execute_conditional(
         &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
         selected: &std::sync::Arc<
             worth_query_execution::facade::primary_graph::WorthQueryProductBranchLease,
         >,
@@ -38,6 +39,6 @@ impl WorthQueryRuntime {
         ),
     > {
         self.installed_product
-            .execute_conditional(selected, request, context)
+            .execute_conditional(execution, selected, request, context)
     }
 }

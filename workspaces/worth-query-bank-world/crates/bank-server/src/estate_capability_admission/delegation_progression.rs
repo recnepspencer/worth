@@ -1,3 +1,5 @@
+#[cfg(feature = "test-request-lifetime-probes")]
+mod advancement_custody;
 use bank_domain::estate::{
     CapabilityGrantId, CapabilityGrantStatus, CapabilityValidity, DelegationLimit, EstateAction,
     EstateCapabilityDelegationRequest, EstateCapabilityOperation, EstateCapabilityPurpose,
@@ -18,6 +20,9 @@ use crate::{
     BankCommitDenialStage, BankEstateProgressionDenial, BankMutationCommitOutcome,
     BankReadControls,
 };
+
+mod delegation_request;
+use delegation_request::{delegated_action, delegated_action_for, delegated_action_from};
 
 const CHILD: CapabilityGrantId = CapabilityGrantId::new(303).unwrap();
 const DRIFTED_CHILD: CapabilityGrantId = CapabilityGrantId::new(304).unwrap();
@@ -265,47 +270,6 @@ fn delegation_denies_missing_command_authority_and_missing_parent_independently(
         MISSING_PARENT_CHILD,
     )
     .is_none());
-}
-
-fn delegated_action(delegation: DelegationLimit) -> EstateAction {
-    delegated_action_for(CHILD, delegation)
-}
-
-fn delegated_action_for(child_id: CapabilityGrantId, delegation: DelegationLimit) -> EstateAction {
-    delegated_action_from(GRANT, child_id, APPROVER, delegation)
-}
-
-fn delegated_action_from(
-    parent: CapabilityGrantId,
-    child_id: CapabilityGrantId,
-    grantee: BankPrincipalId,
-    delegation: DelegationLimit,
-) -> EstateAction {
-    EstateAction::DelegateCapability {
-        estate: ESTATE,
-        parent,
-        child: EstateCapabilityDelegationRequest {
-            id: child_id,
-            grantee,
-            scope: EstateCapabilityScope {
-                account: None,
-                estate: ESTATE,
-                institution: INSTITUTION,
-                branch: BRANCH,
-                operation: EstateCapabilityOperation::ViewRestrictedEstate,
-                purpose: EstateCapabilityPurpose::EstateAdministration,
-                field: Some(RestrictedBankField::GovernanceMetadata),
-                amount_ceiling: None,
-                validity: CapabilityValidity::new(
-                    EstateMoment::from_epoch_seconds(0),
-                    EstateMoment::from_epoch_seconds(u64::MAX),
-                )
-                .unwrap(),
-                delegation,
-                workflow_stage: EstateWorkflowStage::Administration,
-            },
-        },
-    }
 }
 
 fn delegate(

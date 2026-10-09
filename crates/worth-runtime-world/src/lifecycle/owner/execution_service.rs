@@ -51,6 +51,8 @@ where
 
     fn execute_without_signal(
         &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+
         prepared: PreparedCompositePublicationWithoutSignal,
         cancellation: &RuntimeWorldCancellationToken,
     ) -> OwnerExecutionOutcome {
@@ -62,11 +64,18 @@ where
                 Option<worth_signal::facade::branch::SignalConditionalDefinitionAdvanceBinding>,
             ) -> Result<(), SignalError>,
         > = SignalExecutionRequest::RetainExact;
-        self.execute_publication(prepared.into_attempt(), cancellation, signal_request)
+        self.execute_publication(
+            execution,
+            prepared.into_attempt(),
+            cancellation,
+            signal_request,
+        )
     }
 
     fn execute_with_signal<F>(
         &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+
         prepared: PreparedCompositePublicationWithSignal,
         runtime_ctx: &mut Ctx,
         cancellation: &RuntimeWorldCancellationToken,
@@ -76,6 +85,7 @@ where
         F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
     {
         self.execute_publication(
+            execution,
             prepared.into_attempt(),
             cancellation,
             SignalExecutionRequest::AdvanceExact {
@@ -88,6 +98,8 @@ where
 
     fn execute_conditional_definition_with_signal<F, H>(
         &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+
         prepared: PreparedCompositePublicationWithSignal,
         publication: worth_signal::facade::branch::SignalConditionalDefinitionPublicationOperation,
         runtime_ctx: &mut Ctx,
@@ -102,6 +114,7 @@ where
         ) -> Result<(), SignalError>,
     {
         self.execute_publication(
+            execution,
             prepared.into_attempt(),
             cancellation,
             SignalExecutionRequest::PublishConditionalDefinition {
@@ -130,6 +143,8 @@ where
     /// two stages can never drift into two different orderings.
     fn execute_publication<F, H>(
         &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+
         mut attempt: ReservedCompositePublicationAttempt,
         cancellation: &RuntimeWorldCancellationToken,
         signal_request: SignalExecutionRequest<'_, Ctx, F, H>,
@@ -198,7 +213,13 @@ where
             return self.retain_or_no_effect(attempt, progress, cause, no_effect);
         }
 
-        match self.execute_signal(&mut attempt, &mut progress, signal_request, cancellation) {
+        match self.execute_signal(
+            execution,
+            &mut attempt,
+            &mut progress,
+            signal_request,
+            cancellation,
+        ) {
             Ok(()) => {}
             Err(SignalExecutionFailure {
                 cause,

@@ -18,8 +18,11 @@ impl WorthQueryPausedWorkflowGraphExecution {
         self.active.run_identity()
     }
 
-    pub fn advance(self) -> WorthQueryWorkflowGraphStepOutcome {
-        self.active.advance()
+    pub fn advance(
+        self,
+        execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    ) -> WorthQueryWorkflowGraphStepOutcome {
+        self.active.advance(execution)
     }
 
     pub fn yield_run(self) -> super::super::WorthQueryWorkflowYieldOutcome {
@@ -122,6 +125,8 @@ impl WorthQueryCompletedWorkflowEvidenceOwner<'_> {
 }
 
 pub enum WorthQueryWorkflowGraphStepOutcome {
+    /// Refused before observation or provider work; retains the active execution.
+    ForeignAdvancementPhase(WorthQueryActiveWorkflowGraphExecution),
     Continue(WorthQueryPausedWorkflowGraphExecution),
     ChunkReady(WorthQueryPendingWorkflowGraphChunk),
     Completed(WorthQueryCompletedWorkflowGraphExecution),

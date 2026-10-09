@@ -44,12 +44,22 @@ fn chain_1000_source_seed_does_not_walk_the_subscriber_closure() {
 
 #[test]
 fn transaction_chain_1000_source_seed_stages_only_the_source() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (mut graph, chain) = with_perf_topology_asserts_disabled(|| build_chain_graph(1_000));
     evaluate_chain_bulk(&mut graph, &chain);
     let mut runtime = SignalRuntime::builder(graph).with_kernel_defaults().build();
 
     runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             assert!(!tx.has_config_rollback_baseline_for_test());
             tx.mark_changed(chain[0], ASPECT_B)?;
             assert!(!tx.has_config_rollback_baseline_for_test());

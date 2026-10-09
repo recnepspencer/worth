@@ -29,7 +29,7 @@ impl ExampleApplication {
             declaration,
             (TemporalContributionConfiguration { clock_source },),
             example_limits(),
-            |graph, installed| {
+            |_phase, graph, installed| {
                 let principal_binding = installed
                     .principal_binding(TemporalPrincipalBinding::reference())
                     .expect("the temporal principal binding must install");

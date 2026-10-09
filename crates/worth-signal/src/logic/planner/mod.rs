@@ -20,7 +20,7 @@ pub use crate::data::performance::{ResolvedExecutionStrategy, ResolvedMaintenanc
 pub(crate) use execution::{
     execute_evaluation_session_in_scope, execute_prepared_plan_in_scope,
     execute_prepared_plan_with_policy_and_temporal_lowering, execute_prepared_plan_with_precompute,
-    run_signal_execution_request_scope, run_signal_request_scope,
+    run_signal_execution_request_scope, run_signal_preparation_request, run_signal_request_scope,
 };
 #[allow(unused_imports)]
 pub use execution::{execute_prepared_plan, execute_prepared_plan_with_policy};

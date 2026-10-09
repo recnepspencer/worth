@@ -79,6 +79,12 @@ impl<Schema, Operation, Input, Scope>
 impl<Schema, Operation, Input, Scope>
     WorthQueryCapabilityRevocationProgram<Schema, Operation, Input, Scope>
 {
+    pub(in crate::domain_computation::primary_graph) fn request_scope(
+        &self,
+    ) -> &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope {
+        self.program.request_scope()
+    }
+
     pub(super) fn into_inner(
         self,
     ) -> WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope> {

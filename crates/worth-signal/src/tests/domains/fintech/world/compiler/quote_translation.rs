@@ -79,6 +79,16 @@ impl CompiledFinancialWorld {
         factor: MarketFactorKey,
         instrument: InstrumentId,
     ) -> Result<FinancialQuoteTranslationEvidence, SignalError> {
+        // This standalone caller declares the operational serial memory policy.
+        let serial_request = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(
+                crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+            ),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
         self.stage_factor_change(next_definition, factor)?;
         let position = self.handles.position(instrument);
         let matched = self.handles.consumer(FinancialConsumerRole::RiskMatched).0;
@@ -92,14 +102,14 @@ impl CompiledFinancialWorld {
         let program = self.program();
         let evaluator = program.evaluator();
 
-        self.runtime.transaction(&mut (), |tx| {
+        self.runtime.transaction(request_execution, &mut (), |tx| {
             tx.read(position.valuation, &evaluator)?;
             Ok(())
         })?;
         let valuation_to_risk =
             FinancialCauseHop::from_single(self.runtime.graph().pending_causes(position.risk)?)?;
 
-        self.runtime.transaction(&mut (), |tx| {
+        self.runtime.transaction(request_execution, &mut (), |tx| {
             tx.read(position.risk, &evaluator)?;
             Ok(())
         })?;
@@ -108,7 +118,7 @@ impl CompiledFinancialWorld {
         let risk_to_unmatched =
             FinancialCauseHop::from_single(self.runtime.graph().pending_causes(unmatched)?)?;
 
-        self.runtime.transaction(&mut (), |tx| {
+        self.runtime.transaction(request_execution, &mut (), |tx| {
             tx.read(matched, &evaluator)?;
             tx.read(unmatched, &evaluator)?;
             Ok(())

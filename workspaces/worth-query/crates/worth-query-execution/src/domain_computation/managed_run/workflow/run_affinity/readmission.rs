@@ -17,6 +17,8 @@ impl WorthQueryWorkflowRunReadmissionPending {
 
     pub(in crate::domain_computation::managed_run) fn restore_provider(
         self,
+        active_request: worth_execution::ExecutionRequest<'_, '_>,
+
         execution: super::super::super::retained_graph_execution::WorthQueryRetainedManagedGraphExecution,
         contract: super::super::super::step_contract_admission::WorthQueryAdmittedManagedStepContract,
         _owner: &WorthQueryWorkflowReadmissionProgressionPermit,
@@ -28,7 +30,7 @@ impl WorthQueryWorkflowRunReadmissionPending {
             attempt,
             provider_work: self.provider_work,
         };
-        match super::super::super::provider_restore::restore(execution, call, contract) {
+        match super::super::super::provider_restore::restore(active_request, execution, call, contract) {
             super::super::super::provider_restore::WorthQueryManagedGraphRestoreOutcome::Pending(provider) => {
                 WorthQueryWorkflowRunProviderRestoreOutcome::Pending { affinity, provider }
             }

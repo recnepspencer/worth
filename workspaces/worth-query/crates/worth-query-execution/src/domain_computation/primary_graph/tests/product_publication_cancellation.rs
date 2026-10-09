@@ -23,7 +23,14 @@ fn cancellation_after_world_preparation_reaches_execution_before_owner_effects()
     );
 
     cancellation.cancel();
-    let RuntimeWorldPublicationOutcome::NoEffect(no_effect) = prepared.execute() else {
+    let outcome = crate::domain_computation::primary_graph::with_test_advancement(|phase| {
+        prepared.execute(
+            phase
+                .request_for_source(0)
+                .expect("bounded standalone fixture request"),
+        )
+    });
+    let RuntimeWorldPublicationOutcome::NoEffect(no_effect) = outcome else {
         panic!("cancellation after preparation must prevent owner effects")
     };
     assert_eq!(no_effect.cause(), NoEffectCause::CancelledBeforeEffect);

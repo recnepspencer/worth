@@ -158,78 +158,84 @@ impl WorthQueryArtifactProviderResource for FreezeProbeArtifact {
 
 #[test]
 fn workflow_freezes_artifact_production_before_provider_suspension() {
-    let authority = Arc::new(Mutex::new(None));
-    let result = Arc::new(Mutex::new(None));
-    let disposals = Arc::new(AtomicUsize::new(0));
-    let provider = FreezeProbeProvider {
-        authority: Arc::clone(&authority),
-        result: Arc::clone(&result),
-        disposals: Arc::clone(&disposals),
-    };
-    let (running, graph, production) = freeze_probe_workflow(provider);
-    *authority
-        .lock()
-        .expect("freeze probe authority lock remains available") = Some(production);
-    let active = running
-        .begin_stage_graph_execution(
-            "producer",
-            &graph,
-            WorthQueryManagedGraphCallRequest::new(
-                WorthQueryGraphProviderCallKind::Observe,
-                "yield-production-freeze",
-            ),
-        )
-        .expect("freeze probe provider should begin");
-    let paused = match active.advance() {
-        WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused,
-        _ => panic!("freeze probe provider did not reach its safe point"),
-    };
-    let yielded = match paused.yield_run() {
-        crate::domain_computation::WorthQueryWorkflowYieldOutcome::Yielded(yielded) => yielded,
-        _ => panic!("rejected suspension-time production prevented an eligible yield"),
-    };
-    let denial = match result
-        .lock()
-        .expect("freeze probe result lock remains available")
-        .take()
-        .expect("provider suspension must attempt artifact production")
-    {
-        FreezeProbeResult::Denied(denial) => denial,
-        FreezeProbeResult::Registered => {
-            panic!("provider registered an artifact after workflow yield began")
-        }
-    };
-    assert_eq!(
-        denial.kind(),
-        crate::domain_computation::WorthQueryArtifactDenialKind::ProductionClosed
-    );
-    let release = match denial.rejected_resource_release() {
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
+
+        let authority = Arc::new(Mutex::new(None));
+        let result = Arc::new(Mutex::new(None));
+        let disposals = Arc::new(AtomicUsize::new(0));
+        let provider = FreezeProbeProvider {
+            authority: Arc::clone(&authority),
+            result: Arc::clone(&result),
+            disposals: Arc::clone(&disposals),
+        };
+        let (running, graph, production) = freeze_probe_workflow(provider);
+        *authority
+            .lock()
+            .expect("freeze probe authority lock remains available") = Some(production);
+        let active = running
+            .begin_stage_graph_execution(
+                execution,
+                "producer",
+                &graph,
+                WorthQueryManagedGraphCallRequest::new(
+                    WorthQueryGraphProviderCallKind::Observe,
+                    "yield-production-freeze",
+                ),
+            )
+            .expect("freeze probe provider should begin");
+        let paused = match active.advance(execution) {
+            WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused,
+            _ => panic!("freeze probe provider did not reach its safe point"),
+        };
+        let yielded = match paused.yield_run() {
+            crate::domain_computation::WorthQueryWorkflowYieldOutcome::Yielded(yielded) => yielded,
+            _ => panic!("rejected suspension-time production prevented an eligible yield"),
+        };
+        let denial = match result
+            .lock()
+            .expect("freeze probe result lock remains available")
+            .take()
+            .expect("provider suspension must attempt artifact production")
+        {
+            FreezeProbeResult::Denied(denial) => denial,
+            FreezeProbeResult::Registered => {
+                panic!("provider registered an artifact after workflow yield began")
+            }
+        };
+        assert_eq!(
+            denial.kind(),
+            crate::domain_computation::WorthQueryArtifactDenialKind::ProductionClosed
+        );
+        let release = match denial.rejected_resource_release() {
         Some(crate::domain_computation::artifact_owner::WorthQueryArtifactProviderReleasePosture::Complete(
             evidence,
         )) => evidence,
         posture => panic!("rejected suspension-time artifact reported {posture:?}"),
     };
-    assert_eq!(
+        assert_eq!(
         release.disposal(),
         crate::domain_computation::artifact_owner::WorthQueryArtifactProviderDisposalDisposition::Completed
     );
-    assert_eq!(
+        assert_eq!(
         release.destructor(),
         crate::domain_computation::artifact_owner::WorthQueryArtifactProviderDestructorDisposition::Completed
     );
-    assert_eq!(disposals.load(Ordering::Acquire), 1);
-    assert_eq!(
-        yielded
-            .inspection()
-            .artifact_evidence()
-            .produced_artifact_count(),
-        0
-    );
-    assert_eq!(yielded.inspection().artifact_evidence().retained_bytes(), 0);
-    match yielded.cleanup() {
-        crate::domain_computation::WorthQueryWorkflowYieldCleanupOutcome::Complete(_) => {}
-        _ => panic!("artifact-free freeze probe did not clean up"),
-    }
+        assert_eq!(disposals.load(Ordering::Acquire), 1);
+        assert_eq!(
+            yielded
+                .inspection()
+                .artifact_evidence()
+                .produced_artifact_count(),
+            0
+        );
+        assert_eq!(yielded.inspection().artifact_evidence().retained_bytes(), 0);
+        match yielded.cleanup() {
+            crate::domain_computation::WorthQueryWorkflowYieldCleanupOutcome::Complete(_) => {}
+            _ => panic!("artifact-free freeze probe did not clean up"),
+        }
+    });
 }
 
 fn freeze_probe_workflow(

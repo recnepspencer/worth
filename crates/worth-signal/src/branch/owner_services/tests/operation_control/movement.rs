@@ -36,13 +36,28 @@ fn exercise_advance_pause(boundary: SignalOwnerOperationBoundary, expected_movem
     let worker_owner = owner.clone();
     let worker_cell = cell.clone();
     thread::spawn(move || {
+        let serial_request = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(
+                crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+            ),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
         let admission = worker_owner.admit().expect("movement worker admits");
         let reservation = worker_owner
             .reserve_advance_output(&admission, &worker_cell)
             .expect("movement output reserves");
         let cancellation = SignalOwnerCancellationSource::new();
         let result = reservation
-            .advance::<(), (), _>(&basis, &mut (), &cancellation.token(), |_| Ok(()))
+            .advance::<(), (), _>(
+                request_execution,
+                &basis,
+                &mut (),
+                &cancellation.token(),
+                |_| Ok(()),
+            )
             .into_result()
             .map(|ready| ready.into_parts().0.observation().generation().get());
         let _ = done_tx.send(result);

@@ -127,6 +127,19 @@ where
 {
     pub fn deliver_committed_patch(
         &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+        contract: &InstalledSignalConditionalContract,
+        request: SignalCommittedPatchDeliveryRequest,
+    ) -> Result<SignalCommittedPatchDeliveryCompletion, SignalCommittedPatchDeliveryDenial> {
+        super::request_completion::run_conditional_request(execution, |work| {
+            self.deliver_committed_patch_in_request(work, contract, request)
+        })
+        .map_err(SignalCommittedPatchDeliveryDenial::SignalMutation)?
+    }
+
+    fn deliver_committed_patch_in_request(
+        &self,
+        work: &mut worth_execution::MapKernelContext<'_, '_>,
         contract: &InstalledSignalConditionalContract,
         request: SignalCommittedPatchDeliveryRequest,
     ) -> Result<SignalCommittedPatchDeliveryCompletion, SignalCommittedPatchDeliveryDenial> {
@@ -150,6 +163,7 @@ where
         )
         .map_err(map_transition_reservation)?;
         cell.deliver_committed_patch(
+            work,
             &admission,
             &self.basis,
             &self.definition,

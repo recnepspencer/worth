@@ -75,6 +75,16 @@ fn settle(world: &mut World) {
 
 #[test]
 fn refreshing_retained_views_makes_history_now_describe_the_live_graph() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut world = build();
     settle(&mut world);
     // All three nodes hold artifacts now. A commit that dirties only the
@@ -84,7 +94,7 @@ fn refreshing_retained_views_makes_history_now_describe_the_live_graph() {
     let source = world.source;
     world
         .runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.mark_dirty(source, ASPECT_A)?;
             tx.evaluate_dirty(&evaluator)?;
             Ok(())

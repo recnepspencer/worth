@@ -2,6 +2,16 @@ use super::*;
 
 #[test]
 fn standing_demand_settles_a_reached_node_without_any_observer() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (mut runtime, chain) = build_chain();
     let calls: CallLog = Arc::default();
     let evaluator = changing_evaluator(calls.clone(), chain.upstreams.clone());
@@ -10,7 +20,7 @@ fn standing_demand_settles_a_reached_node_without_any_observer() {
 
     let mut summary = None;
     runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.mark_dirty(chain.source, ASPECT_A)?;
             tx.evaluate_dirty(&evaluator)?;
             summary = Some(tx.evaluate_demand(&evaluator, &[chain.second, chain.unrelated])?);
@@ -43,6 +53,16 @@ fn standing_demand_settles_a_reached_node_without_any_observer() {
 
 #[test]
 fn standing_demand_that_the_change_does_not_reach_is_not_demanded() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (mut runtime, chain) = build_chain();
     let calls: CallLog = Arc::default();
     let evaluator = changing_evaluator(calls.clone(), chain.upstreams.clone());
@@ -50,7 +70,7 @@ fn standing_demand_that_the_change_does_not_reach_is_not_demanded() {
 
     let mut summary = None;
     runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.mark_dirty(chain.source, ASPECT_A)?;
             tx.evaluate_dirty(&evaluator)?;
             summary = Some(tx.evaluate_demand(&evaluator, &[chain.unrelated])?);

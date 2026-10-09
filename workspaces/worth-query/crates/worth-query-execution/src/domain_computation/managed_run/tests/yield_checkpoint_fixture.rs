@@ -305,6 +305,8 @@ impl crate::domain_computation::WorthQueryGraphProviderCheckpoint for YieldCheck
         WorthQueryCooperativeGraphProviderExecution<Box<dyn WorthQueryGraphProviderExecution>>,
         WorthQueryGraphProviderFailure,
     > {
+        #[cfg(feature = "test-query-execution-observer")]
+        super::readmission_custody::record_restore();
         let execution = Box::new(YieldExecution::restored(
             memory
                 .rebind(&self.retained)

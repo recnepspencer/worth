@@ -150,96 +150,106 @@ impl WorthQueryDecisionFactProvider for DecisionProvider {
 
 #[test]
 fn all_fact_families_capture_canonically_and_compare_without_false_conflicts() {
-    let kinds = all_fact_kinds();
-    let families = families(&kinds);
-    let versions = Arc::new(Mutex::new(version_map(kinds.len())));
-    let (mut running, graph) = managed_decision_graph_run_with_provider(
-        DecisionProvider {
-            versions: Arc::clone(&versions),
-        },
-        families,
-    );
-    let staged = staged(&mut running, &graph);
-    {
-        let reads = staged.read_authority();
-        let requests = requests(&kinds);
-        let first = reads
-            .capture_decision_read_set(requests.clone())
-            .expect("all installed fact families should capture");
-        let second = reads
-            .capture_decision_read_set(requests.into_iter().rev())
-            .expect("discovery order must not affect capture");
-        assert_eq!(first.identity(), second.identity());
-        assert_eq!(first.fact_count(), kinds.len());
-        let outcome = reads
-            .compare_decision_read_set(first)
-            .expect("unchanged provider facts should compare");
-        let WorthQueryDecisionReadSetFreshnessOutcome::Fresh(fresh) = outcome else {
-            panic!("unchanged facts must remain fresh");
-        };
-        assert_eq!(fresh.counters().compared_facts(), kinds.len());
-        assert_eq!(fresh.counters().false_conflicts(), 0);
-    }
-    staged.abort();
-    cleanup(running);
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
+
+        let kinds = all_fact_kinds();
+        let families = families(&kinds);
+        let versions = Arc::new(Mutex::new(version_map(kinds.len())));
+        let (mut running, graph) = managed_decision_graph_run_with_provider(
+            DecisionProvider {
+                versions: Arc::clone(&versions),
+            },
+            families,
+        );
+        let staged = staged(execution, &mut running, &graph);
+        {
+            let reads = staged.read_authority();
+            let requests = requests(&kinds);
+            let first = reads
+                .capture_decision_read_set(requests.clone())
+                .expect("all installed fact families should capture");
+            let second = reads
+                .capture_decision_read_set(requests.into_iter().rev())
+                .expect("discovery order must not affect capture");
+            assert_eq!(first.identity(), second.identity());
+            assert_eq!(first.fact_count(), kinds.len());
+            let outcome = reads
+                .compare_decision_read_set(first)
+                .expect("unchanged provider facts should compare");
+            let WorthQueryDecisionReadSetFreshnessOutcome::Fresh(fresh) = outcome else {
+                panic!("unchanged facts must remain fresh");
+            };
+            assert_eq!(fresh.counters().compared_facts(), kinds.len());
+            assert_eq!(fresh.counters().false_conflicts(), 0);
+        }
+        staged.abort();
+        cleanup(running);
+    });
 }
 
 #[test]
 fn every_relevant_family_stales_independently_while_unrelated_axes_remain_fresh() {
-    let kinds = all_fact_kinds();
-    let versions = Arc::new(Mutex::new(version_map(kinds.len())));
-    let (mut running, graph) = managed_decision_graph_run_with_provider(
-        DecisionProvider {
-            versions: Arc::clone(&versions),
-        },
-        families(&kinds),
-    );
-    let staged = staged(&mut running, &graph);
-    {
-        let reads = staged.read_authority();
-        for changed_index in 0..kinds.len() {
-            let unchanged = reads
-                .capture_decision_read_set(requests(&kinds))
-                .expect("complete decision facts should capture");
-            {
-                let mut versions = versions.lock().unwrap();
-                for unrelated in [
-                    "unrelated-entity",
-                    "unrelated-aspect",
-                    "unrelated-partition",
-                    "unrelated-artifact-family",
-                ] {
-                    versions.insert(unrelated.to_owned(), changed_index as u64 + 2);
-                }
-            }
-            let WorthQueryDecisionReadSetFreshnessOutcome::Fresh(fresh) =
-                reads.compare_decision_read_set(unchanged).unwrap()
-            else {
-                panic!("unrelated semantic drift must remain fresh");
-            };
-            assert_eq!(fresh.counters().false_conflicts(), 0);
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
 
-            let changed = reads
-                .capture_decision_read_set(requests(&kinds))
-                .expect("complete decision facts should recapture");
-            versions
-                .lock()
-                .unwrap()
-                .insert(format!("locator-{changed_index}"), 2);
-            let WorthQueryDecisionReadSetFreshnessOutcome::Stale(stale) =
-                reads.compare_decision_read_set(changed).unwrap()
-            else {
-                panic!("each relevant family must independently stale the receipt");
-            };
-            assert_eq!(stale.stale_fact_count(), 1);
-            versions
-                .lock()
-                .unwrap()
-                .insert(format!("locator-{changed_index}"), 1);
+        let kinds = all_fact_kinds();
+        let versions = Arc::new(Mutex::new(version_map(kinds.len())));
+        let (mut running, graph) = managed_decision_graph_run_with_provider(
+            DecisionProvider {
+                versions: Arc::clone(&versions),
+            },
+            families(&kinds),
+        );
+        let staged = staged(execution, &mut running, &graph);
+        {
+            let reads = staged.read_authority();
+            for changed_index in 0..kinds.len() {
+                let unchanged = reads
+                    .capture_decision_read_set(requests(&kinds))
+                    .expect("complete decision facts should capture");
+                {
+                    let mut versions = versions.lock().unwrap();
+                    for unrelated in [
+                        "unrelated-entity",
+                        "unrelated-aspect",
+                        "unrelated-partition",
+                        "unrelated-artifact-family",
+                    ] {
+                        versions.insert(unrelated.to_owned(), changed_index as u64 + 2);
+                    }
+                }
+                let WorthQueryDecisionReadSetFreshnessOutcome::Fresh(fresh) =
+                    reads.compare_decision_read_set(unchanged).unwrap()
+                else {
+                    panic!("unrelated semantic drift must remain fresh");
+                };
+                assert_eq!(fresh.counters().false_conflicts(), 0);
+
+                let changed = reads
+                    .capture_decision_read_set(requests(&kinds))
+                    .expect("complete decision facts should recapture");
+                versions
+                    .lock()
+                    .unwrap()
+                    .insert(format!("locator-{changed_index}"), 2);
+                let WorthQueryDecisionReadSetFreshnessOutcome::Stale(stale) =
+                    reads.compare_decision_read_set(changed).unwrap()
+                else {
+                    panic!("each relevant family must independently stale the receipt");
+                };
+                assert_eq!(stale.stale_fact_count(), 1);
+                versions
+                    .lock()
+                    .unwrap()
+                    .insert(format!("locator-{changed_index}"), 1);
+            }
         }
-    }
-    staged.abort();
-    cleanup(running);
+        staged.abort();
+        cleanup(running);
+    });
 }
 
 fn all_fact_kinds() -> Vec<WorthQueryDecisionFactKind> {

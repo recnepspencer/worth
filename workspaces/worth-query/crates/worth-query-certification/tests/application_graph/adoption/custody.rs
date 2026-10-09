@@ -67,6 +67,9 @@ fn removed_operation_derives_retire_disposition_and_closes_its_source_owner() {
     }
 
     let performed = match prepared.publish() {
+        WorthQueryBranchAdoptionPublicationOutcome::ExecutionDenied(cause) => {
+            panic!("the declared host policy admits adoption: {cause:?}")
+        }
         WorthQueryBranchAdoptionPublicationOutcome::Performed(performed) => performed,
         WorthQueryBranchAdoptionPublicationOutcome::NoEffect(no_effect) => {
             panic!("operation-removal adoption unexpectedly had no effect: {no_effect:?}")

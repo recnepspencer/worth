@@ -58,143 +58,173 @@ impl WorthQueryGraphParticipationProvider<ManagedGraph> for MultiChunkProvider {
 
 #[test]
 fn each_streamed_chunk_requires_consumption_before_the_next_provider_step() {
-    let advances = Arc::new(AtomicUsize::new(0));
-    let active = start_projection(MultiChunkProvider {
-        advances: Arc::clone(&advances),
-    });
-    let first = expect_chunk(active.advance());
-    assert_eq!(first.queue_depth(), 1);
-    assert_eq!(first.queue_capacity(), 8);
-    assert_eq!(advances.load(Ordering::Relaxed), 1);
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
 
-    let active = match first.acknowledge() {
-        WorthQueryDirectGraphStepOutcome::Continue(active) => active,
-        _ => panic!("consuming the first chunk did not release the next step"),
-    };
-    let second = expect_chunk(active.advance());
-    assert_eq!(advances.load(Ordering::Relaxed), 2);
-    let completion = match second.acknowledge() {
-        WorthQueryDirectGraphStepOutcome::Completed(completion) => completion,
-        _ => panic!("consuming the final chunk did not complete"),
-    };
-    let stream = completion
-        .receipt()
-        .graph_read_stream_evidence()
-        .expect("managed projection should seal stream evidence");
-    assert_eq!(stream.chunk_count(), 2);
-    assert_eq!(stream.row_count(), 2);
-    assert_eq!(stream.product().row_count(), 2);
-    assert_eq!(stream.product().rows().count(), 2);
-    assert_eq!(
-        completion.receipt().work_report().output_retained_bytes(),
-        stream.retained_bytes()
-    );
-    assert_eq!(
-        completion.receipt().work_report().retained_bytes(),
-        stream.retained_bytes()
-    );
+        let advances = Arc::new(AtomicUsize::new(0));
+        let active = start_projection(
+            execution,
+            MultiChunkProvider {
+                advances: Arc::clone(&advances),
+            },
+        );
+        let first = expect_chunk(active.advance(execution));
+        assert_eq!(first.queue_depth(), 1);
+        assert_eq!(first.queue_capacity(), 8);
+        assert_eq!(advances.load(Ordering::Relaxed), 1);
+
+        let active = match first.acknowledge() {
+            WorthQueryDirectGraphStepOutcome::Continue(active) => active,
+            _ => panic!("consuming the first chunk did not release the next step"),
+        };
+        let second = expect_chunk(active.advance(execution));
+        assert_eq!(advances.load(Ordering::Relaxed), 2);
+        let completion = match second.acknowledge() {
+            WorthQueryDirectGraphStepOutcome::Completed(completion) => completion,
+            _ => panic!("consuming the final chunk did not complete"),
+        };
+        let stream = completion
+            .receipt()
+            .graph_read_stream_evidence()
+            .expect("managed projection should seal stream evidence");
+        assert_eq!(stream.chunk_count(), 2);
+        assert_eq!(stream.row_count(), 2);
+        assert_eq!(stream.product().row_count(), 2);
+        assert_eq!(stream.product().rows().count(), 2);
+        assert_eq!(
+            completion.receipt().work_report().output_retained_bytes(),
+            stream.retained_bytes()
+        );
+        assert_eq!(
+            completion.receipt().work_report().retained_bytes(),
+            stream.retained_bytes()
+        );
+    });
 }
 
 #[test]
 fn stalled_consumer_cancellation_releases_the_chunk_before_terminal_cleanup() {
-    let advances = Arc::new(AtomicUsize::new(0));
-    let pending = expect_chunk(
-        start_projection(MultiChunkProvider {
-            advances: Arc::clone(&advances),
-        })
-        .advance(),
-    );
-    pending
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
+
+        let advances = Arc::new(AtomicUsize::new(0));
+        let pending = expect_chunk(
+            start_projection(
+                execution,
+                MultiChunkProvider {
+                    advances: Arc::clone(&advances),
+                },
+            )
+            .advance(execution),
+        );
+        pending
         .request_cancellation(
             worth_runtime_bridge::facade::BridgeManagedExecutionCancellationReason::HostRequested,
         )
         .expect("pending chunk should retain the exact Signal request");
-    let terminal = match pending.acknowledge() {
-        WorthQueryDirectGraphStepOutcome::Cancelled(terminal) => terminal,
-        _ => panic!("cancelled stalled consumer did not derive cancellation"),
-    };
-    assert_eq!(advances.load(Ordering::Relaxed), 1);
-    assert_eq!(terminal.provider_work().interrupted_call_count(), 1);
-    assert_eq!(terminal.provider_work().queue_state_mutation_count(), 2);
-    assert_eq!(terminal.provider_work().retained_bytes(), 0);
-    let cleanup = terminal
-        .cleanup()
-        .expect("cancelled stream should clean up");
-    assert!(cleanup.inspection().resources_released());
+        let terminal = match pending.acknowledge() {
+            WorthQueryDirectGraphStepOutcome::Cancelled(terminal) => terminal,
+            _ => panic!("cancelled stalled consumer did not derive cancellation"),
+        };
+        assert_eq!(advances.load(Ordering::Relaxed), 1);
+        assert_eq!(terminal.provider_work().interrupted_call_count(), 1);
+        assert_eq!(terminal.provider_work().queue_state_mutation_count(), 2);
+        assert_eq!(terminal.provider_work().retained_bytes(), 0);
+        let cleanup = terminal
+            .cleanup()
+            .expect("cancelled stream should clean up");
+        assert!(cleanup.inspection().resources_released());
+    });
 }
 
 #[test]
 fn foreign_consumer_failure_preserves_queue_occupancy_for_owner_cleanup() {
-    let pending = expect_chunk(
-        start_projection(MultiChunkProvider {
-            advances: Arc::new(AtomicUsize::new(0)),
-        })
-        .advance(),
-    );
-    let terminal = std::thread::spawn(move || match pending.acknowledge() {
-        WorthQueryDirectGraphStepOutcome::Failed(terminal) => terminal,
-        _ => panic!("foreign consumer should fail its Signal safe-point observation"),
-    })
-    .join()
-    .expect("foreign consumer should return the terminal recovery authority");
-    assert_eq!(terminal.provider_work().queue_state_mutation_count(), 1);
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
 
-    let cleanup = terminal
-        .cleanup()
-        .expect("Signal owner should release the retained queue occupancy");
-    assert_eq!(
-        cleanup
-            .inspection()
-            .provider_work()
-            .queue_state_mutation_count(),
-        2
-    );
-    assert_eq!(
-        cleanup.inspection().disposition(),
-        WorthQueryManagedRunCleanupDisposition::RecoveryRequired
-    );
-    assert_eq!(cleanup.inspection().released_reservation_count(), 2);
+        let pending = expect_chunk(
+            start_projection(
+                execution,
+                MultiChunkProvider {
+                    advances: Arc::new(AtomicUsize::new(0)),
+                },
+            )
+            .advance(execution),
+        );
+        let terminal = std::thread::spawn(move || match pending.acknowledge() {
+            WorthQueryDirectGraphStepOutcome::Failed(terminal) => terminal,
+            _ => panic!("foreign consumer should fail its Signal safe-point observation"),
+        })
+        .join()
+        .expect("foreign consumer should return the terminal recovery authority");
+        assert_eq!(terminal.provider_work().queue_state_mutation_count(), 1);
+
+        let cleanup = terminal
+            .cleanup()
+            .expect("Signal owner should release the retained queue occupancy");
+        assert_eq!(
+            cleanup
+                .inspection()
+                .provider_work()
+                .queue_state_mutation_count(),
+            2
+        );
+        assert_eq!(
+            cleanup.inspection().disposition(),
+            WorthQueryManagedRunCleanupDisposition::RecoveryRequired
+        );
+        assert_eq!(cleanup.inspection().released_reservation_count(), 2);
+    });
 }
 
 #[test]
 fn exact_capacity_chunk_drains_before_completion() {
-    let advances = Arc::new(AtomicUsize::new(0));
-    let (running, graph) = managed_graph_run_with_provider(
-        WorthQueryOperationGraphAccess::Project,
-        WideChunkProvider {
-            advances: Arc::clone(&advances),
-        },
-    );
-    let active = running
-        .begin_graph_execution(
-            &graph,
-            WorthQueryManagedGraphCallRequest::new(
-                WorthQueryGraphProviderCallKind::Project,
-                "exact-capacity",
-            ),
-        )
-        .expect("wide provider should start");
-    let pending = expect_chunk(active.advance());
-    assert_eq!(pending.queue_depth(), 8);
-    assert_eq!(pending.queue_capacity(), 8);
-    let completion = match pending.acknowledge() {
-        WorthQueryDirectGraphStepOutcome::Completed(completion) => completion,
-        _ => panic!("an admitted exact-capacity chunk could not drain"),
-    };
-    assert_eq!(advances.load(Ordering::Relaxed), 1);
-    assert_eq!(
-        completion
-            .receipt()
-            .graph_read_stream_evidence()
-            .expect("exact-capacity projection should seal stream evidence")
-            .row_count(),
-        8
-    );
-    let terminal = completion.into_running().completed().unwrap();
-    assert_eq!(terminal.provider_work().retained_bytes(), 0);
-    terminal
-        .cleanup()
-        .expect("completed stream should clean up");
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
+
+        let advances = Arc::new(AtomicUsize::new(0));
+        let (running, graph) = managed_graph_run_with_provider(
+            WorthQueryOperationGraphAccess::Project,
+            WideChunkProvider {
+                advances: Arc::clone(&advances),
+            },
+        );
+        let active = running
+            .begin_graph_execution(
+                execution,
+                &graph,
+                WorthQueryManagedGraphCallRequest::new(
+                    WorthQueryGraphProviderCallKind::Project,
+                    "exact-capacity",
+                ),
+            )
+            .expect("wide provider should start");
+        let pending = expect_chunk(active.advance(execution));
+        assert_eq!(pending.queue_depth(), 8);
+        assert_eq!(pending.queue_capacity(), 8);
+        let completion = match pending.acknowledge() {
+            WorthQueryDirectGraphStepOutcome::Completed(completion) => completion,
+            _ => panic!("an admitted exact-capacity chunk could not drain"),
+        };
+        assert_eq!(advances.load(Ordering::Relaxed), 1);
+        assert_eq!(
+            completion
+                .receipt()
+                .graph_read_stream_evidence()
+                .expect("exact-capacity projection should seal stream evidence")
+                .row_count(),
+            8
+        );
+        let terminal = completion.into_running().completed().unwrap();
+        assert_eq!(terminal.provider_work().retained_bytes(), 0);
+        terminal
+            .cleanup()
+            .expect("completed stream should clean up");
+    });
 }
 
 struct WideChunkProvider {
@@ -251,47 +281,61 @@ impl WorthQueryGraphParticipationProvider<ManagedGraph> for WideChunkProvider {
 
 #[test]
 fn pending_and_paused_abandonment_release_queue_and_output_retention() {
-    let advances = Arc::new(AtomicUsize::new(0));
-    let pending = expect_chunk(
-        start_projection(MultiChunkProvider {
-            advances: Arc::clone(&advances),
-        })
-        .advance(),
-    );
-    let terminal = match pending.abandon() {
-        WorthQueryDirectGraphStepOutcome::Failed(terminal) => terminal,
-        _ => panic!("pending-chunk abandonment did not terminalize"),
-    };
-    assert_eq!(terminal.provider_work().queue_state_mutation_count(), 2);
-    assert_eq!(terminal.provider_work().retained_bytes(), 0);
-    assert!(terminal.provider_work().peak_retained_bytes() > 0);
-    assert_eq!(terminal.provider_work().abandoned_call_count(), 1);
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
 
-    let pending = expect_chunk(
-        start_projection(MultiChunkProvider {
-            advances: Arc::new(AtomicUsize::new(0)),
-        })
-        .advance(),
-    );
-    let paused = match pending.acknowledge() {
-        WorthQueryDirectGraphStepOutcome::Continue(paused) => paused,
-        _ => panic!("first chunk acknowledgement did not reach a paused safe point"),
-    };
-    let terminal = match paused.abandon() {
-        WorthQueryDirectGraphStepOutcome::Failed(terminal) => terminal,
-        _ => panic!("paused execution abandonment did not terminalize"),
-    };
-    assert_eq!(terminal.provider_work().retained_bytes(), 0);
-    assert_eq!(terminal.provider_work().abandoned_call_count(), 1);
+        let advances = Arc::new(AtomicUsize::new(0));
+        let pending = expect_chunk(
+            start_projection(
+                execution,
+                MultiChunkProvider {
+                    advances: Arc::clone(&advances),
+                },
+            )
+            .advance(execution),
+        );
+        let terminal = match pending.abandon() {
+            WorthQueryDirectGraphStepOutcome::Failed(terminal) => terminal,
+            _ => panic!("pending-chunk abandonment did not terminalize"),
+        };
+        assert_eq!(terminal.provider_work().queue_state_mutation_count(), 2);
+        assert_eq!(terminal.provider_work().retained_bytes(), 0);
+        assert!(terminal.provider_work().peak_retained_bytes() > 0);
+        assert_eq!(terminal.provider_work().abandoned_call_count(), 1);
+
+        let pending = expect_chunk(
+            start_projection(
+                execution,
+                MultiChunkProvider {
+                    advances: Arc::new(AtomicUsize::new(0)),
+                },
+            )
+            .advance(execution),
+        );
+        let paused = match pending.acknowledge() {
+            WorthQueryDirectGraphStepOutcome::Continue(paused) => paused,
+            _ => panic!("first chunk acknowledgement did not reach a paused safe point"),
+        };
+        let terminal = match paused.abandon() {
+            WorthQueryDirectGraphStepOutcome::Failed(terminal) => terminal,
+            _ => panic!("paused execution abandonment did not terminalize"),
+        };
+        assert_eq!(terminal.provider_work().retained_bytes(), 0);
+        assert_eq!(terminal.provider_work().abandoned_call_count(), 1);
+    });
 }
 
 fn start_projection(
+    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+
     provider: MultiChunkProvider,
 ) -> crate::domain_computation::WorthQueryActiveDirectGraphExecution {
     let (running, graph) =
         managed_graph_run_with_provider(WorthQueryOperationGraphAccess::Project, provider);
     running
         .begin_graph_execution(
+            execution,
             &graph,
             WorthQueryManagedGraphCallRequest::new(
                 WorthQueryGraphProviderCallKind::Project,

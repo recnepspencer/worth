@@ -11,37 +11,44 @@ use crate::domain_computation::{
 
 #[test]
 fn workflow_terminal_cleanup_pending_retries_the_same_epoch_after_artifact_release() {
-    let (terminal, artifact_receiver) = workflow_terminal_with_live_cleanup_artifact();
-    let artifact = artifact_receiver
-        .recv()
-        .expect("production provider step must issue the move-only artifact handle");
-    let borrowed = artifact
-        .borrow("terminal cleanup pending proof")
-        .expect("installed candidate contract must admit shared observation");
-    let identity = terminal.identity().to_owned();
-    let report_id = terminal
-        .latest_report()
-        .unwrap()
-        .evidence_identity()
-        .to_owned();
-    let occurrence_id = terminal.incumbents()[0].occurrence_identity().to_owned();
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
 
-    let pending = match terminal.cleanup() {
-        WorthQueryWorkflowConvergenceCleanupOutcome::Pending(pending) => pending,
-        _ => panic!("live artifact handle and borrow must keep terminal cleanup pending"),
-    };
-    assert_pending_epoch(&pending, &identity, &report_id, &occurrence_id);
+        let (terminal, artifact_receiver) = workflow_terminal_with_live_cleanup_artifact(execution);
+        let artifact = artifact_receiver
+            .recv()
+            .expect("production provider step must issue the move-only artifact handle");
+        let borrowed = artifact
+            .borrow("terminal cleanup pending proof")
+            .expect("installed candidate contract must admit shared observation");
+        let identity = terminal.identity().to_owned();
+        let report_id = terminal
+            .latest_report()
+            .unwrap()
+            .evidence_identity()
+            .to_owned();
+        let occurrence_id = terminal.incumbents()[0].occurrence_identity().to_owned();
 
-    drop(borrowed);
-    drop(artifact);
-    let receipt = match pending.retry() {
-        WorthQueryWorkflowConvergenceCleanupOutcome::Complete(receipt) => receipt,
-        _ => panic!("released artifact ownership must permit terminal cleanup completion"),
-    };
-    assert_completed_epoch(&receipt, &identity, &report_id, &occurrence_id);
+        let pending = match terminal.cleanup() {
+            WorthQueryWorkflowConvergenceCleanupOutcome::Pending(pending) => pending,
+            _ => panic!("live artifact handle and borrow must keep terminal cleanup pending"),
+        };
+        assert_pending_epoch(&pending, &identity, &report_id, &occurrence_id);
+
+        drop(borrowed);
+        drop(artifact);
+        let receipt = match pending.retry() {
+            WorthQueryWorkflowConvergenceCleanupOutcome::Complete(receipt) => receipt,
+            _ => panic!("released artifact ownership must permit terminal cleanup completion"),
+        };
+        assert_completed_epoch(&receipt, &identity, &report_id, &occurrence_id);
+    });
 }
 
-fn workflow_terminal_with_live_cleanup_artifact() -> (
+fn workflow_terminal_with_live_cleanup_artifact(
+    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+) -> (
     WorthQueryWorkflowConvergenceTerminal<WorthQueryConverged>,
     Receiver<WorthQueryMoveOnlyArtifactHandle>,
 ) {
@@ -61,6 +68,7 @@ fn workflow_terminal_with_live_cleanup_artifact() -> (
         .unwrap_or_else(|_| panic!("artifact workflow convergence must start"));
     let started = epoch
         .begin_stage_iteration(
+            execution,
             WORKFLOW_STAGE,
             WorthQueryManagedGraphCallRequest::new(
                 WorthQueryGraphProviderCallKind::Observe,
@@ -68,11 +76,11 @@ fn workflow_terminal_with_live_cleanup_artifact() -> (
             ),
         )
         .unwrap_or_else(|_| panic!("artifact workflow iteration must start"));
-    let paused = match started.advance() {
+    let paused = match started.advance(execution) {
         WorthQueryWorkflowConvergenceStepOutcome::Continue(paused) => paused,
         _ => panic!("artifact workflow must expose its retained safe point"),
     };
-    let terminal = match paused.advance() {
+    let terminal = match paused.advance(execution) {
         WorthQueryWorkflowConvergenceStepOutcome::Completed(
             WorthQueryWorkflowConvergenceIterationOutcome::Converged(terminal),
         ) => terminal,

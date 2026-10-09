@@ -7,6 +7,7 @@ use super::{
 };
 
 pub struct WorthQueryWorkflowStageExecutionContext<'a> {
+    execution: worth_execution::ExecutionRequest<'a, 'a>,
     pub(super) operation_identity: &'a str,
     pub(super) binding_identity: &'a str,
     pub(super) run_identity: &'a str,
@@ -30,11 +31,17 @@ pub struct WorthQueryWorkflowStageExecutionContext<'a> {
 }
 
 impl<'a> WorthQueryWorkflowStageExecutionContext<'a> {
+    pub fn execution_request(&self) -> worth_execution::ExecutionRequest<'_, '_> {
+        self.execution
+    }
+
     pub(crate) fn new(
+        execution: worth_execution::ExecutionRequest<'a, 'a>,
         scope: WorthQueryWorkflowStageExecutionScope<'a>,
         authority: WorthQueryWorkflowStageExecutionAuthority<'a>,
     ) -> Self {
         Self {
+            execution,
             operation_identity: scope.operation_identity,
             binding_identity: scope.binding_identity,
             run_identity: scope.run_identity,

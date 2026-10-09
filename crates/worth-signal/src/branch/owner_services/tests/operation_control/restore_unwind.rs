@@ -18,6 +18,16 @@ fn restore_post_movement_faults_preserve_performed_truth_and_release_output_cust
 }
 
 fn exercise_restore_post_movement_fault(boundary: SignalOwnerOperationBoundary) {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let PopulatedRestoreFixture {
         _runtime,
         owner,
@@ -115,6 +125,7 @@ fn exercise_restore_post_movement_fault(boundary: SignalOwnerOperationBoundary) 
                 .reserve_advance_output(&admission, &cell)
                 .expect("performed restore releases output capacity")
                 .advance::<(), (), _>(
+                    request_execution,
                     &basis,
                     &mut (),
                     &SignalOwnerCancellationSource::new().token(),

@@ -39,6 +39,16 @@ fn compaction_reduces_segment_growth_after_repeated_snapshot_churn() {
 
 #[test]
 fn overlapping_mark_dirty_calls_stage_only_the_changed_sources() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let a = graph.create_node();
     let b = graph.create_node();
@@ -48,7 +58,7 @@ fn overlapping_mark_dirty_calls_stage_only_the_changed_sources() {
 
     let mut runtime = SignalRuntime::builder(graph).with_kernel_defaults().build();
     let mut ctx = ();
-    let mut tx = runtime.begin(&mut ctx);
+    let mut tx = runtime.begin(request_execution, &mut ctx);
     tx.mark_dirty(a, ASPECT_A).unwrap();
     tx.mark_dirty(b, ASPECT_A).unwrap();
     tx.commit().unwrap();

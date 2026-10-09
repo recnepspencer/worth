@@ -21,66 +21,90 @@ fn completed_readmission_cleanup_receipts_are_exact_inspection_newtypes() {
 
 #[test]
 fn workflow_cleanup_pending_peers_keep_exact_yielded_association_through_rightful_retry() {
-    let (first, second, bridge, runtime) =
-        shared_yielded_workflow_peers_with_provider(YieldProvider::checkpoint_restore_panic(5));
-    let first_yielded = first.inspection().clone();
-    let second_yielded = second.inspection().clone();
-    let first = pending_workflow_cleanup(workflow_recovery_cleanup(first, &runtime, &bridge));
-    let second = pending_workflow_cleanup(workflow_recovery_cleanup(second, &runtime, &bridge));
-    assert_workflow_pending_association(first.inspection(), &first_yielded);
-    assert_workflow_pending_association(second.inspection(), &second_yielded);
-    assert_ne!(
-        first.inspection().yielded_attempt_identity(),
-        second.inspection().yielded_attempt_identity()
-    );
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
 
-    let second = complete_workflow_retry(second);
-    let first = complete_workflow_retry(first);
-    assert_workflow_cleanup_association(first.inspection(), &first_yielded);
-    assert_workflow_cleanup_association(second.inspection(), &second_yielded);
+        let (first, second, bridge, runtime) = shared_yielded_workflow_peers_with_provider(
+            execution,
+            YieldProvider::checkpoint_restore_panic(5),
+        );
+        let first_yielded = first.inspection().clone();
+        let second_yielded = second.inspection().clone();
+        let first = pending_workflow_cleanup(workflow_recovery_cleanup(
+            execution, first, &runtime, &bridge,
+        ));
+        let second = pending_workflow_cleanup(workflow_recovery_cleanup(
+            execution, second, &runtime, &bridge,
+        ));
+        assert_workflow_pending_association(first.inspection(), &first_yielded);
+        assert_workflow_pending_association(second.inspection(), &second_yielded);
+        assert_ne!(
+            first.inspection().yielded_attempt_identity(),
+            second.inspection().yielded_attempt_identity()
+        );
+
+        let second = complete_workflow_retry(second);
+        let first = complete_workflow_retry(first);
+        assert_workflow_cleanup_association(first.inspection(), &first_yielded);
+        assert_workflow_cleanup_association(second.inspection(), &second_yielded);
+    });
 }
 
 #[test]
 fn retained_artifact_is_the_only_pending_axis_and_retry_observes_its_release() {
-    let (yielded, bridge, runtime, _producer, artifact) =
-        yielded_workflow_with_retained_artifact(YieldProvider::checkpoint_restore_panic(7));
-    let yielded_inspection = yielded.inspection().clone();
-    let borrowed = artifact
-        .borrow("readmission cleanup retained artifact")
-        .expect("installed artifact contract must admit a surviving borrow");
-    let pending = match workflow_recovery_cleanup(yielded, &runtime, &bridge).finish() {
-        crate::domain_computation::WorthQueryWorkflowReadmissionCleanupOutcome::Pending(
-            pending,
-        ) => pending,
-        _ => panic!("retained artifact must keep workflow cleanup pending"),
-    };
-    let inspection = pending.inspection();
-    assert!(inspection.artifact_cleanup_pending());
-    assert!(!inspection.bridge_cleanup_pending());
-    assert_eq!(inspection.artifact_evidence().retained_artifact_count(), 1);
-    assert_eq!(
-        inspection.logical_run_identity(),
-        yielded_inspection.logical_run_identity()
-    );
-    assert_eq!(
-        inspection.checkpoint().identity(),
-        yielded_inspection.checkpoint().identity()
-    );
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
 
-    drop(borrowed);
-    let receipt = complete_workflow_retry(pending);
-    let inspection = receipt.inspection();
-    assert_eq!(inspection.artifact_evidence().retained_artifact_count(), 0);
-    assert_eq!(inspection.artifact_evidence().disposed_artifact_count(), 1);
-    assert_workflow_cleanup_association(inspection, &yielded_inspection);
+        let (yielded, bridge, runtime, _producer, artifact) =
+            yielded_workflow_with_retained_artifact(
+                execution,
+                YieldProvider::checkpoint_restore_panic(7),
+            );
+        let yielded_inspection = yielded.inspection().clone();
+        let borrowed = artifact
+            .borrow("readmission cleanup retained artifact")
+            .expect("installed artifact contract must admit a surviving borrow");
+        let pending =
+            match workflow_recovery_cleanup(execution, yielded, &runtime, &bridge).finish() {
+                crate::domain_computation::WorthQueryWorkflowReadmissionCleanupOutcome::Pending(
+                    pending,
+                ) => pending,
+                _ => panic!("retained artifact must keep workflow cleanup pending"),
+            };
+        let inspection = pending.inspection();
+        assert!(inspection.artifact_cleanup_pending());
+        assert!(!inspection.bridge_cleanup_pending());
+        assert_eq!(inspection.artifact_evidence().retained_artifact_count(), 1);
+        assert_eq!(
+            inspection.logical_run_identity(),
+            yielded_inspection.logical_run_identity()
+        );
+        assert_eq!(
+            inspection.checkpoint().identity(),
+            yielded_inspection.checkpoint().identity()
+        );
+
+        drop(borrowed);
+        let receipt = complete_workflow_retry(pending);
+        let inspection = receipt.inspection();
+        assert_eq!(inspection.artifact_evidence().retained_artifact_count(), 0);
+        assert_eq!(inspection.artifact_evidence().disposed_artifact_count(), 1);
+        assert_workflow_cleanup_association(inspection, &yielded_inspection);
+    });
 }
 
 fn workflow_recovery_cleanup(
+    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+
     yielded: crate::domain_computation::WorthQueryYieldedWorkflowRun,
     runtime: &WorthQueryExecutionRuntime,
     bridge: &RuntimeBridge,
 ) -> crate::domain_computation::WorthQueryWorkflowReadmissionCleanupRequired {
-    match yielded.readmit_same_runtime(runtime, bridge) {
+    let active_request = execution;
+
+    match yielded.readmit_same_runtime(active_request, runtime, bridge) {
         crate::domain_computation::WorthQueryWorkflowReadmissionOutcome::RecoveryRequired(
             crate::domain_computation::WorthQueryWorkflowReadmissionRecoveryRequired::TerminalCleanup(
                 recovery,

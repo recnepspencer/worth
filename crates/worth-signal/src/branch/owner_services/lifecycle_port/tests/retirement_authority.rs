@@ -109,6 +109,16 @@ fn foreign_equal_local_id_retirement_plan_denies_before_receiving_owner_contact(
 
 #[test]
 fn same_owner_stale_retirement_plan_reaches_optimistic_exact_comparison() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (mut runtime, _, target, basis) = runtime_with_two_branches();
     let (_, _, port) = runtime
         .owner_port_slots()
@@ -124,6 +134,7 @@ fn same_owner_stale_retirement_plan_reaches_optimistic_exact_comparison() {
         .lookup_cell(&movement_admission, target.id)
         .expect("the same-owner target remains installed");
     cell.advance_exact::<(), (), _>(
+        request_execution,
         &movement_admission,
         &movement_basis,
         &mut (),

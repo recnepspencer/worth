@@ -61,6 +61,8 @@ pub enum WorthQueryManagedApplicationRecoveryOutcome {
 /// recovery remains retained by its provider entry for a later admitted try.
 #[derive(Debug)]
 pub enum WorthQueryManagedApplicationRecoveryDenial {
+    /// The recovery call could not enter its execution request.
+    ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
     Authorization(WorthQueryOperationAuthorizationDenial),
     ForeignAdmission,
     BindingMismatch,
@@ -104,121 +106,130 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
-        use WorthQueryManagedApplicationRecoveryDenial as Denial;
-        admission
-            .validate_current_authority()
-            .map_err(Denial::Authorization)?;
-        if !admission.belongs_to(
-            self.runtime.authority_identity(),
-            &self.installed_schema.binding_identity(),
-        ) {
-            return Err(Denial::ForeignAdmission);
-        }
-        let product = admission
-            .graph_work()
-            .mutation_product()
-            .ok_or(Denial::ForeignAdmission)?
-            .publication_binding();
-        let bound = idempotency
-            .bind_operation(admission.operation_definition_identity())
-            .bind_operation_scope(admission.operation_scope_binding())
-            .bind_preconditions(admission.mutation_preconditions().identity())
-            .bind_governed_input(admission.governed_input_identity())
-            .bind_governed_proposal(admission.governed_proposal_identity());
-        let lane = self
-            .primary_provider
-            .application_branch_commit_lane(product.observation())
-            .map_err(|_| Denial::ProviderCapacity)?;
-        let coordination = lane.enter();
-        let mut guard = self
-            .primary_provider
-            .begin_managed_unpublished_recovery(recovery.record_handle())
-            .map_err(Denial::from)?;
-        if !guard.attempt_mut().matches_fresh_binding(
-            bound,
-            admission.operation_scope_binding(),
-            product.observation(),
-        ) {
-            return Err(Denial::BindingMismatch);
-        }
-        if !guard.attempt_mut().ordinary_adoption_supported() {
-            return Err(Denial::ConditionalDefinitionRequired);
-        }
-        let needs_settlement = recovery
-            .inspect()
-            .map_err(Denial::World)?
-            .relational_requires_settlement();
-        if needs_settlement {
-            recovery
-                .continue_owner_settlement()
-                .map_err(Denial::World)?;
-        }
-        let unpublished = recovery.inspect().map_err(Denial::World)?;
-        let lease = self
-            .product_runtime
-            .admit_product_occurrence(product.observation().lifecycle_incarnation())
-            .map_err(|_| Denial::ProductUnavailable)?;
-        let binding = lease.publication_binding();
-        if unpublished.expected_product() != binding.observation() {
-            return Err(Denial::BindingMismatch);
-        }
-        let prepared = binding
-            .prepare_settled_relational_adoption(&unpublished, admission.publication_request())
-            .map_err(Denial::Adoption)?;
-        let successor = prepared.unpublished_recovery_handle();
-        guard
-            .attempt_mut()
-            .prepare_fresh_slot(&self.primary_provider, prepared.planned_successor())
-            .map_err(Denial::Demand)?;
-        guard.reserve_successor(&successor).map_err(Denial::from)?;
-        guard
-            .attempt_mut()
-            .prepare_fresh_terminal(successor.clone())
-            .map_err(Denial::ProviderAdmission)?;
-        let world_recovery = binding.recovery();
-        drop(unpublished);
-        let outcome = prepared.execute();
-        drop(binding);
-        drop(lease);
-        match outcome {
-            RuntimeWorldPublicationOutcome::NoEffect(_) => {
-                Ok(WorthQueryManagedApplicationRecoveryOutcome::NoEffect)
+        self.with_application_advancement(admission.publication_request(), |phase| {
+            use WorthQueryManagedApplicationRecoveryDenial as Denial;
+            admission
+                .validate_current_authority()
+                .map_err(Denial::Authorization)?;
+            if !admission.belongs_to(
+                self.runtime.authority_identity(),
+                &self.installed_schema.binding_identity(),
+            ) {
+                return Err(Denial::ForeignAdmission);
             }
-            RuntimeWorldPublicationOutcome::ProductUnpublished(effects) => {
-                let next = WorthQueryProductUnpublishedApplication::new(
-                    effects,
-                    world_recovery,
-                    self.primary_provider.unpublished_idempotency_disposition(),
-                )
-                .into_recovery();
-                guard.retain_successor(next.record_handle());
-                let prior_cleanup_failure = self
-                    .release_product_publication_recovery(recovery.clone(), 0)
-                    .err();
-                Ok(
-                    WorthQueryManagedApplicationRecoveryOutcome::ProductUnpublished {
-                        next,
-                        prior_cleanup_failure,
-                    },
-                )
+            let product = admission
+                .graph_work()
+                .mutation_product()
+                .ok_or(Denial::ForeignAdmission)?
+                .publication_binding();
+            let bound = idempotency
+                .bind_operation(admission.operation_definition_identity())
+                .bind_operation_scope(admission.operation_scope_binding())
+                .bind_preconditions(admission.mutation_preconditions().identity())
+                .bind_governed_input(admission.governed_input_identity())
+                .bind_governed_proposal(admission.governed_proposal_identity());
+            let lane = self
+                .primary_provider
+                .application_branch_commit_lane(product.observation())
+                .map_err(|_| Denial::ProviderCapacity)?;
+            let coordination = lane.enter();
+            let mut guard = self
+                .primary_provider
+                .begin_managed_unpublished_recovery(recovery.record_handle())
+                .map_err(Denial::from)?;
+            if !guard.attempt_mut().matches_fresh_binding(
+                bound,
+                admission.operation_scope_binding(),
+                product.observation(),
+            ) {
+                return Err(Denial::BindingMismatch);
             }
-            RuntimeWorldPublicationOutcome::Performed(publication) => {
-                let session = guard.take_attempt().complete(publication, None);
-                let publication_failure = publish_recovered(&self.primary_provider, session).err();
-                guard.finish();
-                let prior_cleanup_failure = self
-                    .release_product_publication_recovery(recovery.clone(), 0)
-                    .err();
-                drop(coordination);
-                let read = self.resolve_admitted_application_idempotency(admission, idempotency);
-                Ok(WorthQueryManagedApplicationRecoveryOutcome::Performed(
-                    WorthQueryManagedApplicationRecoveryPerformed {
-                        read,
-                        publication_failure,
-                        prior_cleanup_failure,
-                    },
-                ))
+            if !guard.attempt_mut().ordinary_adoption_supported() {
+                return Err(Denial::ConditionalDefinitionRequired);
             }
-        }
+            let needs_settlement = recovery
+                .inspect()
+                .map_err(Denial::World)?
+                .relational_requires_settlement();
+            if needs_settlement {
+                recovery
+                    .continue_owner_settlement()
+                    .map_err(Denial::World)?;
+            }
+            let unpublished = recovery.inspect().map_err(Denial::World)?;
+            let lease = self
+                .product_runtime
+                .admit_product_occurrence(product.observation().lifecycle_incarnation())
+                .map_err(|_| Denial::ProductUnavailable)?;
+            let binding = lease.publication_binding();
+            if unpublished.expected_product() != binding.observation() {
+                return Err(Denial::BindingMismatch);
+            }
+            let prepared = binding
+                .prepare_settled_relational_adoption(&unpublished, admission.publication_request())
+                .map_err(Denial::Adoption)?;
+            let successor = prepared.unpublished_recovery_handle();
+            guard
+                .attempt_mut()
+                .prepare_fresh_slot(&self.primary_provider, prepared.planned_successor())
+                .map_err(Denial::Demand)?;
+            guard.reserve_successor(&successor).map_err(Denial::from)?;
+            guard
+                .attempt_mut()
+                .prepare_fresh_terminal(successor.clone())
+                .map_err(Denial::ProviderAdmission)?;
+            let world_recovery = binding.recovery();
+            drop(unpublished);
+            let outcome = prepared.execute(
+                phase
+                    .execution_request_for(&self.product_runtime)
+                    .expect("private progression uses its admitted runtime phase"),
+            );
+            drop(binding);
+            drop(lease);
+            match outcome {
+                RuntimeWorldPublicationOutcome::NoEffect(_) => {
+                    Ok(WorthQueryManagedApplicationRecoveryOutcome::NoEffect)
+                }
+                RuntimeWorldPublicationOutcome::ProductUnpublished(effects) => {
+                    let next = WorthQueryProductUnpublishedApplication::new(
+                        effects,
+                        world_recovery,
+                        self.primary_provider.unpublished_idempotency_disposition(),
+                    )
+                    .into_recovery();
+                    guard.retain_successor(next.record_handle());
+                    let prior_cleanup_failure = self
+                        .release_product_publication_recovery(recovery.clone(), 0)
+                        .err();
+                    Ok(
+                        WorthQueryManagedApplicationRecoveryOutcome::ProductUnpublished {
+                            next,
+                            prior_cleanup_failure,
+                        },
+                    )
+                }
+                RuntimeWorldPublicationOutcome::Performed(publication) => {
+                    let session = guard.take_attempt().complete(publication, None);
+                    let publication_failure =
+                        publish_recovered(&self.primary_provider, session).err();
+                    guard.finish();
+                    let prior_cleanup_failure = self
+                        .release_product_publication_recovery(recovery.clone(), 0)
+                        .err();
+                    drop(coordination);
+                    let read =
+                        self.resolve_admitted_application_idempotency(admission, idempotency);
+                    Ok(WorthQueryManagedApplicationRecoveryOutcome::Performed(
+                        WorthQueryManagedApplicationRecoveryPerformed {
+                            read,
+                            publication_failure,
+                            prior_cleanup_failure,
+                        },
+                    ))
+                }
+            }
+        })
+        .map_err(WorthQueryManagedApplicationRecoveryDenial::ExecutionDenied)?
     }
 }

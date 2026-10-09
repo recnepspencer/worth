@@ -18,9 +18,12 @@ pub(in crate::domain_computation::primary_graph) fn publish_relational_mutation_
     batch: WorkerIntentBatch,
 ) {
     let request = live_scope();
+    application.with_application_advancement(&request, |phase| {
+        let execution = phase.execution_request_for(application.product_runtime()).expect("fixture publication uses its installed runtime phase");
+
     let (prepared, before_lease) =
         prepare_relational_mutation_with_before(application, batch, &request);
-    let outcome = prepared.execute();
+    let outcome = prepared.execute(execution);
     let RuntimeWorldPublicationOutcome::Performed(performed) = outcome else {
         panic!("fixture World publication must perform: {outcome:?}");
     };
@@ -47,6 +50,8 @@ pub(in crate::domain_computation::primary_graph) fn publish_relational_mutation_
         assert_eq!(refreshed.generations.len(), handle.primary_index_ids.len());
         assert_eq!(refreshed.work.cold_record_slots, 0);
     });
+
+    }).expect("the fixture World policy admits its publication");
 }
 
 pub(in crate::domain_computation::primary_graph) fn prepare_relational_mutation_on_application<

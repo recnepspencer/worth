@@ -14,6 +14,12 @@ impl Drop for ReleaseRelational {
 #[test]
 fn combined_loser_retains_relational_movement_without_calling_signal_after_head_change() {
     let mut court = CompositeSupplyChainCourt::compile();
+    let policy = match court.world.execution_placement() {
+        worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy)
+        | worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Leased { policy, .. } => {
+            policy
+        }
+    };
     let root = court.bootstrap();
     let token = RuntimeWorldCancellationSource::new().token();
     let (reached, received) = mpsc::sync_channel(1);
@@ -51,9 +57,13 @@ fn combined_loser_retains_relational_movement_without_calling_signal_after_head_
     std::thread::scope(|scope| {
         let release = ReleaseRelational(gate);
         let worker = scope.spawn(move || {
-            port.execute_with_signal(combined, &mut context, &token, |_| {
-                panic!("stale combined intent must not enter Signal")
-            })
+            port.execute_with_signal(
+                worth_execution::ExecutionRequest::serial(&super::serial_request(policy)),
+                combined,
+                &mut context,
+                &token,
+                |_| panic!("stale combined intent must not enter Signal"),
+            )
         });
         received
             .recv_timeout(WAIT)
@@ -64,6 +74,7 @@ fn combined_loser_retains_relational_movement_without_calling_signal_after_head_
         );
         let RuntimeWorldPublicationOutcome::Performed(winner) =
             court.world.publication_port().execute_with_signal(
+                worth_execution::ExecutionRequest::serial(&super::serial_request(policy)),
                 single,
                 &mut court.context(&root),
                 &RuntimeWorldCancellationSource::new().token(),

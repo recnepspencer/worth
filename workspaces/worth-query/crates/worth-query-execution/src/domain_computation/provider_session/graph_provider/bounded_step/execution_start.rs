@@ -10,21 +10,31 @@ use super::{
 ///
 /// A provider can retain start-time state only by moving memory returned by
 /// this port into its execution object.
-pub struct WorthQueryGraphProviderExecutionStart {
+pub struct WorthQueryGraphProviderExecutionStart<'scope> {
+    execution: worth_execution::ExecutionRequest<'scope, 'scope>,
     memory: WorthQueryGraphProviderMemoryArena,
     denial: Option<WorthQueryGraphProviderStepDenial>,
     execution_admission_identity: u64,
     admitted_execution: Option<Box<dyn WorthQueryGraphProviderExecution>>,
 }
 
-impl WorthQueryGraphProviderExecutionStart {
-    pub(crate) fn new(memory: WorthQueryGraphProviderMemoryArena) -> Self {
+impl<'scope> WorthQueryGraphProviderExecutionStart<'scope> {
+    pub(crate) fn new(
+        execution: worth_execution::ExecutionRequest<'scope, 'scope>,
+        memory: WorthQueryGraphProviderMemoryArena,
+    ) -> Self {
         Self {
+            execution,
             memory,
             denial: None,
             execution_admission_identity: next_cooperative_execution_admission_identity(),
             admitted_execution: None,
         }
+    }
+
+    /// The active request owning this call; it is never stored in retained provider state.
+    pub fn execution_request(&self) -> worth_execution::ExecutionRequest<'scope, 'scope> {
+        self.execution
     }
 
     pub fn retain_bytes(

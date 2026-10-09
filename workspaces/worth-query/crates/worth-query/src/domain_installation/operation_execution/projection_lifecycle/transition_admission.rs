@@ -67,6 +67,7 @@ pub(super) struct WorthQueryTransitionSuccessorStop<C> {
 }
 
 pub(super) fn open_transition_successor<D: 'static, O, F, L, C>(
+    execution: worth_execution::ExecutionRequest<'_, '_>,
     current: C,
     workspace: &mut WorthQueryWorkspace,
     identity_family: &'static str,
@@ -94,6 +95,7 @@ where
         }
     };
     let mut ready = match evaluate_fresh_lifecycle_conditionals(
+        execution,
         current.source(),
         workspace,
         admitted.counters,

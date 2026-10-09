@@ -125,83 +125,97 @@ impl crate::domain_computation::WorthQueryGraphProviderCheckpoint for RepeatedYi
 
 #[test]
 fn repeated_readmission_matches_uninterrupted_semantics_and_structural_evidence() {
-    let uninterrupted = execute_repeated_yield_world(false);
-    let resumed = execute_repeated_yield_world(true);
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
 
-    assert_eq!(resumed.readmission_count, 2);
-    assert_eq!(resumed.unique_managed_attempt_count, 3);
-    assert_eq!(resumed.unique_resource_attempt_count, 3);
-    assert_eq!(resumed.unique_bridge_request_count, 3);
-    assert_eq!(resumed.capacity_reservation_count, 2);
-    assert_eq!(resumed.provider_receipt, uninterrupted.provider_receipt);
-    assert_eq!(resumed.work_report, uninterrupted.work_report);
-    assert_eq!(resumed.provider_work, uninterrupted.provider_work);
-    assert_eq!(resumed.run_counters, uninterrupted.run_counters);
+        let uninterrupted = execute_repeated_yield_world(execution, false);
+        let resumed = execute_repeated_yield_world(execution, true);
+
+        assert_eq!(resumed.readmission_count, 2);
+        assert_eq!(resumed.unique_managed_attempt_count, 3);
+        assert_eq!(resumed.unique_resource_attempt_count, 3);
+        assert_eq!(resumed.unique_bridge_request_count, 3);
+        assert_eq!(resumed.capacity_reservation_count, 2);
+        assert_eq!(resumed.provider_receipt, uninterrupted.provider_receipt);
+        assert_eq!(resumed.work_report, uninterrupted.work_report);
+        assert_eq!(resumed.provider_work, uninterrupted.provider_work);
+        assert_eq!(resumed.run_counters, uninterrupted.run_counters);
+    });
 }
 
 #[test]
 fn readmission_transfers_saturated_capacity_without_a_second_reservation() {
-    let (yielded, bridge, runtime, mut probes) =
-        super::readmission_direct::yielded_direct_with_plan_observation(|resources| {
-            (0..11)
-                .map(|_| readmit_capacity_probe(resources))
-                .collect::<Vec<_>>()
-        });
-    let mut saturation_holders = Vec::new();
-    for probe in probes.drain(..8) {
-        let Some(reservation) = reserve_execution_resource_plan(probe) else {
-            break;
-        };
-        saturation_holders.push(reservation);
-    }
-    let saturation_probe = probes.remove(0);
-    let active_probe = probes.remove(0);
-    let released_probe = probes.remove(0);
-    let retained_reservations = yielded.inspection().retained_capacity_reservation_count();
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
+        let active_request = execution;
 
-    assert_eq!(
-        saturation_holders.len(),
-        7,
-        "the yielded run plus seven arrivals must fill the eight-slot pools"
-    );
-    assert!(
-        reserve_execution_resource_plan(saturation_probe).is_none(),
-        "arrival pressure must saturate every capacity pool"
-    );
-    let active = match yielded.readmit_same_runtime(&runtime, &bridge) {
-        crate::domain_computation::WorthQueryDirectReadmissionOutcome::Readmitted(readmitted) => {
-            readmitted.into_active()
+        let (yielded, bridge, runtime, mut probes) =
+            super::readmission_direct::yielded_direct_with_plan_observation(
+                execution,
+                |resources| {
+                    (0..11)
+                        .map(|_| readmit_capacity_probe(resources))
+                        .collect::<Vec<_>>()
+                },
+            );
+        let mut saturation_holders = Vec::new();
+        for probe in probes.drain(..8) {
+            let Some(reservation) = reserve_execution_resource_plan(probe) else {
+                break;
+            };
+            saturation_holders.push(reservation);
         }
-        _ => panic!("same-runtime readmission must transfer retained capacity"),
-    };
-    assert_eq!(
-        active.retained_capacity_reservation_count(),
-        retained_reservations
-    );
-    assert!(
-        reserve_execution_resource_plan(active_probe).is_none(),
-        "readmission must not release or duplicate the retained reservation"
-    );
+        let saturation_probe = probes.remove(0);
+        let active_probe = probes.remove(0);
+        let released_probe = probes.remove(0);
+        let retained_reservations = yielded.inspection().retained_capacity_reservation_count();
 
-    let completion = match active.advance() {
-        WorthQueryDirectGraphStepOutcome::Completed(completion) => completion,
-        _ => panic!("restored provider should complete"),
-    };
-    let cleanup = completion
-        .into_running()
-        .completed()
-        .expect("completed execution should terminalize")
-        .cleanup()
-        .expect("completed readmitted run should clean up");
-    assert_eq!(
-        cleanup.inspection().released_reservation_count(),
-        retained_reservations
-    );
+        assert_eq!(
+            saturation_holders.len(),
+            7,
+            "the yielded run plus seven arrivals must fill the eight-slot pools"
+        );
+        assert!(
+            reserve_execution_resource_plan(saturation_probe).is_none(),
+            "arrival pressure must saturate every capacity pool"
+        );
+        let active = match yielded.readmit_same_runtime(active_request, &runtime, &bridge) {
+            crate::domain_computation::WorthQueryDirectReadmissionOutcome::Readmitted(
+                readmitted,
+            ) => readmitted.into_active(),
+            _ => panic!("same-runtime readmission must transfer retained capacity"),
+        };
+        assert_eq!(
+            active.retained_capacity_reservation_count(),
+            retained_reservations
+        );
+        assert!(
+            reserve_execution_resource_plan(active_probe).is_none(),
+            "readmission must not release or duplicate the retained reservation"
+        );
 
-    let released_capacity = reserve_execution_resource_plan(released_probe)
-        .expect("terminal cleanup must return one slot in every retained capacity pool");
-    drop(released_capacity);
-    drop(saturation_holders);
+        let completion = match active.advance(execution) {
+            WorthQueryDirectGraphStepOutcome::Completed(completion) => completion,
+            _ => panic!("restored provider should complete"),
+        };
+        let cleanup = completion
+            .into_running()
+            .completed()
+            .expect("completed execution should terminalize")
+            .cleanup()
+            .expect("completed readmitted run should clean up");
+        assert_eq!(
+            cleanup.inspection().released_reservation_count(),
+            retained_reservations
+        );
+
+        let released_capacity = reserve_execution_resource_plan(released_probe)
+            .expect("terminal cleanup must return one slot in every retained capacity pool");
+        drop(released_capacity);
+        drop(saturation_holders);
+    });
 }
 
 fn readmit_capacity_probe(
@@ -256,13 +270,19 @@ struct ProviderWorkEvidence {
     queue_state_mutation_count: usize,
 }
 
-fn execute_repeated_yield_world(resume_every_safe_point: bool) -> ParityEvidence {
+fn execute_repeated_yield_world(
+    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    resume_every_safe_point: bool,
+) -> ParityEvidence {
+    let active_request = execution;
+
     let (running, graph, bridge, runtime) = managed_graph_run_with_provider_and_runtime(
         WorthQueryOperationGraphAccess::Observe,
         RepeatedYieldProvider { step_count: 3 },
     );
     let active = running
         .begin_graph_execution(
+            execution,
             &graph,
             WorthQueryManagedGraphCallRequest::new(
                 WorthQueryGraphProviderCallKind::Observe,
@@ -275,7 +295,7 @@ fn execute_repeated_yield_world(resume_every_safe_point: bool) -> ParityEvidence
     let mut bridge_requests = BTreeSet::from([active.bridge_request_identity().to_owned()]);
     let capacity_reservation_count = active.retained_capacity_reservation_count();
     let mut readmission_count = 0;
-    let mut outcome = active.advance();
+    let mut outcome = active.advance(execution);
 
     loop {
         outcome = match outcome {
@@ -286,7 +306,7 @@ fn execute_repeated_yield_world(resume_every_safe_point: bool) -> ParityEvidence
                     }
                     _ => panic!("parity safe point should yield"),
                 };
-                let active = match yielded.readmit_same_runtime(&runtime, &bridge) {
+                let active = match yielded.readmit_same_runtime(active_request, &runtime, &bridge) {
                     crate::domain_computation::WorthQueryDirectReadmissionOutcome::Readmitted(
                         readmitted,
                     ) => readmitted.into_active(),
@@ -300,9 +320,9 @@ fn execute_repeated_yield_world(resume_every_safe_point: bool) -> ParityEvidence
                     active.retained_capacity_reservation_count(),
                     capacity_reservation_count
                 );
-                active.advance()
+                active.advance(execution)
             }
-            WorthQueryDirectGraphStepOutcome::Continue(paused) => paused.advance(),
+            WorthQueryDirectGraphStepOutcome::Continue(paused) => paused.advance(execution),
             WorthQueryDirectGraphStepOutcome::Completed(completion) => {
                 return parity_evidence(
                     completion,

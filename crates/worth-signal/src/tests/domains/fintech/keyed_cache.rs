@@ -10,6 +10,16 @@ use super::scenarios::setup_seeded_world;
 
 #[test]
 fn fintech_keyed_audit_cache_reuses_stable_memo_entries_without_cross_shape_corruption() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut world = setup_seeded_world();
     world.assert_shape(FintechScale::smoke());
 
@@ -37,29 +47,31 @@ fn fintech_keyed_audit_cache_reuses_stable_memo_entries_without_cross_shape_corr
                      memo: &KeyedComputation,
                      compute_calls: &AtomicU32|
      -> Result<(), SignalError> {
-        world.runtime.transaction(&mut (), |tx| {
-            tx.evaluate_keyed(cache, memo, &|view| {
-                if view.node() == cache {
-                    compute_calls.fetch_add(1, Ordering::Relaxed);
-                    let desk = view.read_aspect_version(top_desk, RISK)?.get(RISK);
-                    let scenario = view.read_aspect_version(top_scenario, RISK)?.get(RISK);
-                    let market = view.read_aspect_version(primary_market, PRICE)?.get(PRICE);
-                    let total = desk + scenario + market;
-                    return Ok(view.finish(
-                        NodeEvaluationResult::from_version(AspectVersion::from_updates([
-                            (RISK, total),
-                            (ALERT, u64::from(total > 40_000)),
-                        ]))
-                        .with_output_identity(format!(
-                            "audit-cache-{}",
-                            memo.memo_key.as_ref().unwrap().as_str()
-                        )),
-                    ));
-                }
-                evaluator(view)
+        world
+            .runtime
+            .transaction(request_execution, &mut (), |tx| {
+                tx.evaluate_keyed(cache, memo, &|view| {
+                    if view.node() == cache {
+                        compute_calls.fetch_add(1, Ordering::Relaxed);
+                        let desk = view.read_aspect_version(top_desk, RISK)?.get(RISK);
+                        let scenario = view.read_aspect_version(top_scenario, RISK)?.get(RISK);
+                        let market = view.read_aspect_version(primary_market, PRICE)?.get(PRICE);
+                        let total = desk + scenario + market;
+                        return Ok(view.finish(
+                            NodeEvaluationResult::from_version(AspectVersion::from_updates([
+                                (RISK, total),
+                                (ALERT, u64::from(total > 40_000)),
+                            ]))
+                            .with_output_identity(format!(
+                                "audit-cache-{}",
+                                memo.memo_key.as_ref().unwrap().as_str()
+                            )),
+                        ));
+                    }
+                    evaluator(view)
+                })?;
+                Ok(())
             })?;
-            Ok(())
-        })?;
         Ok(())
     };
 
@@ -83,7 +95,7 @@ fn fintech_keyed_audit_cache_reuses_stable_memo_entries_without_cross_shape_corr
 
     world
         .runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.mark_dirty(cache, RISK)?;
             Ok(())
         })

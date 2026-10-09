@@ -6,8 +6,15 @@ use super::*;
 #[test]
 fn relational_only_executes_the_canonical_relational_owner_path() {
     let (fixture, owner, expected) = setup();
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::from_policy(&owner.state.execution.request_policy()),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let prepared = prepare_relational(&fixture, &owner, &expected, "relational-only");
-    let settlement = settled(execute_without_signal(&owner, prepared));
+    let settlement = settled(execute_without_signal(execution, &owner, prepared));
     assert_eq!(
         settlement.progress().relational_posture(),
         RelationalAttemptProgressPosture::Settled
@@ -56,6 +63,13 @@ fn signal_only_uses_the_real_mutation_owner_without_relational_contact() {
 #[test]
 fn both_changed_settles_relational_before_signal_and_preserves_both_bases() {
     let (fixture, owner, expected) = setup();
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::from_policy(&owner.state.execution.request_policy()),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let cancellation = RuntimeWorldCancellationSource::new();
     let prepared = RuntimeWorldPreparationService::prepare_publication(
         owner.as_ref(),
@@ -76,6 +90,7 @@ fn both_changed_settles_relational_before_signal_and_preserves_both_bases() {
     let mut context = ();
     let settlement = settled(RuntimeWorldOwnerExecutionService::execute_with_signal(
         owner.as_ref(),
+        execution,
         prepared,
         &mut context,
         &cancellation.token(),
@@ -128,8 +143,15 @@ fn both_changed_settles_relational_before_signal_and_preserves_both_bases() {
 #[test]
 fn a_relational_publication_never_contacts_the_signal_owner() {
     let (fixture, owner, expected) = setup();
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::from_policy(&owner.state.execution.request_policy()),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let prepared = prepare_relational(&fixture, &owner, &expected, "reuse-signal");
-    let settlement = settled(execute_without_signal(&owner, prepared));
+    let settlement = settled(execute_without_signal(execution, &owner, prepared));
     assert_eq!(
         settlement.progress().signal_posture(),
         SignalAttemptProgressPosture::Untouched

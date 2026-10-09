@@ -21,22 +21,35 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
         stages: impl IntoIterator<Item = (String, WorthQueryWorkflowValue)>,
         workspace: &mut WorthQueryWorkspace,
     ) -> super::workflow_progression::WorthQueryWorkflowAdvanceOutcome<D, O, F, L> {
-        match self.advance_frontier_once(stages, workspace) {
-            Ok(WorthQueryWorkflowAdvanceStep::Advanced) => TransitionOutcome::Success(self),
-            Ok(WorthQueryWorkflowAdvanceStep::Deferred(conditional)) => {
-                TransitionOutcome::Deferred(
-                    crate::domain_installation::WorthQueryDeferredWorkflowStage {
-                        run: self,
-                        conditional,
-                    },
-                )
-            }
-            Err(denial) => self.outcome_from_denial(denial),
-        }
+        let owner = workspace.advancement_owner();
+        owner
+            .with_advancement(|phase| {
+                let execution = &phase;
+
+                match self.advance_frontier_once(execution, stages, workspace) {
+                    Ok(WorthQueryWorkflowAdvanceStep::Advanced) => TransitionOutcome::Success(self),
+                    Ok(WorthQueryWorkflowAdvanceStep::Deferred(conditional)) => {
+                        TransitionOutcome::Deferred(
+                            crate::domain_installation::WorthQueryDeferredWorkflowStage {
+                                run: self,
+                                conditional,
+                            },
+                        )
+                    }
+                    Err(denial) => self.outcome_from_denial(denial),
+                }
+            })
+            .unwrap_or_else(|cause| {
+                TransitionOutcome::Denied(WorthQueryWorkflowAdvanceDenial::new(
+                    WorthQueryWorkflowAdvanceDenialKind::ExecutionRequest(cause),
+                    Default::default(),
+                ))
+            })
     }
 
     fn advance_frontier_once(
         &mut self,
+        execution: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
         stages: impl IntoIterator<Item = (String, WorthQueryWorkflowValue)>,
         workspace: &mut WorthQueryWorkspace,
     ) -> Result<WorthQueryWorkflowAdvanceStep, WorthQueryWorkflowAdvanceDenial> {
@@ -44,7 +57,7 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
         self.validate_parallel_runtime_authority(workspace)?;
         let frontier = self.prepare_parallel_frontier(&stages)?;
         self.admit_parallel_frontier(frontier)?;
-        self.execute_parallel_stages(stages, workspace)
+        self.execute_parallel_stages(execution, stages, workspace)
     }
 
     fn canonical_parallel_stages(
@@ -195,11 +208,12 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
 
     fn execute_parallel_stages(
         &mut self,
+        execution: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
         stages: Vec<(String, WorthQueryWorkflowValue)>,
         workspace: &mut WorthQueryWorkspace,
     ) -> Result<WorthQueryWorkflowAdvanceStep, WorthQueryWorkflowAdvanceDenial> {
         let prepared = self.prepare_frontier_computation(stages);
-        let step = prepared.compute().apply(self, workspace, None)?;
+        let step = prepared.compute().apply(execution, self, workspace, None)?;
         self.active_parallel_admission = None;
         Ok(step)
     }

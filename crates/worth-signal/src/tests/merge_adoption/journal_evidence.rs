@@ -7,6 +7,16 @@ use crate::tests::support::{version_ab, GraphDependencyBatchExt, ASPECT_A};
 
 #[test]
 fn branch_mutation_journal_captures_structural_dependency_snapshot_and_artifact_deltas() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -19,7 +29,7 @@ fn branch_mutation_journal_captures_structural_dependency_snapshot_and_artifact_
 
     let mut runtime_ctx = ();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(downstream, &|view| {
                 let result = if view.node() == upstream {
                     view.finish(
@@ -66,6 +76,16 @@ fn branch_mutation_journal_captures_structural_dependency_snapshot_and_artifact_
 
 #[test]
 fn branch_mutation_journal_slice_preserves_structural_records_for_overlap_filtering() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -74,7 +94,7 @@ fn branch_mutation_journal_slice_preserves_structural_records_for_overlap_filter
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(source, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(80, 0))
@@ -114,6 +134,16 @@ fn branch_mutation_journal_slice_preserves_structural_records_for_overlap_filter
 
 #[test]
 fn merge_branch_uses_branch_local_mutation_scope_instead_of_whole_live_scan() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -122,7 +152,7 @@ fn merge_branch_uses_branch_local_mutation_scope_instead_of_whole_live_scan() {
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(shared_a, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(11, 0))
@@ -150,7 +180,7 @@ fn merge_branch_uses_branch_local_mutation_scope_instead_of_whole_live_scan() {
         .unwrap();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(source_only, &|view| {
                 let upstream = view.read_aspect_version(shared_a, ASPECT_A)?;
                 Ok(view.finish(

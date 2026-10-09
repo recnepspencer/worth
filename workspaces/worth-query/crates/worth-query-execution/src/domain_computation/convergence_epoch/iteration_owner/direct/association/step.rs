@@ -7,6 +7,7 @@ use crate::domain_computation::{
 };
 
 pub(in super::super) enum DirectAssociatedStepOutcome {
+    ForeignAdvancementPhase(DirectIterationAssociation<WorthQueryActiveDirectGraphExecution>),
     Continue(DirectIterationAssociation<WorthQueryPausedDirectGraphExecution>),
     ChunkReady(DirectIterationAssociation<WorthQueryPendingDirectGraphChunk>),
     Completed(super::super::WorthQueryDirectConvergenceIterationOutcome),
@@ -14,14 +15,17 @@ pub(in super::super) enum DirectAssociatedStepOutcome {
 }
 
 impl DirectIterationAssociation<WorthQueryActiveDirectGraphExecution> {
-    pub(in super::super) fn advance(self) -> DirectAssociatedStepOutcome {
+    pub(in super::super) fn advance(
+        self,
+        execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    ) -> DirectAssociatedStepOutcome {
         let Self {
             core,
             graph,
             provider,
             managed,
         } = self;
-        admit_step_outcome(core, graph, provider, managed.advance())
+        admit_step_outcome(core, graph, provider, managed.advance(execution))
     }
 
     pub(in super::super) fn abandon(
@@ -38,14 +42,17 @@ impl DirectIterationAssociation<WorthQueryActiveDirectGraphExecution> {
 }
 
 impl DirectIterationAssociation<WorthQueryPausedDirectGraphExecution> {
-    pub(in super::super) fn advance(self) -> DirectAssociatedStepOutcome {
+    pub(in super::super) fn advance(
+        self,
+        execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    ) -> DirectAssociatedStepOutcome {
         let Self {
             core,
             graph,
             provider,
             managed,
         } = self;
-        admit_step_outcome(core, graph, provider, managed.advance())
+        admit_step_outcome(core, graph, provider, managed.advance(execution))
     }
 
     pub(in super::super) fn abandon(
@@ -106,6 +113,14 @@ fn admit_step_outcome(
     outcome: WorthQueryDirectGraphStepOutcome,
 ) -> DirectAssociatedStepOutcome {
     match outcome {
+        WorthQueryDirectGraphStepOutcome::ForeignAdvancementPhase(managed) => {
+            DirectAssociatedStepOutcome::ForeignAdvancementPhase(DirectIterationAssociation {
+                core,
+                graph,
+                provider,
+                managed,
+            })
+        }
         WorthQueryDirectGraphStepOutcome::Continue(managed) => {
             DirectAssociatedStepOutcome::Continue(DirectIterationAssociation {
                 core,

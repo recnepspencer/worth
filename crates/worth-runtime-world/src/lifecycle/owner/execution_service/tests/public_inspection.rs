@@ -6,6 +6,15 @@ use crate::facade::{
 #[test]
 fn public_performed_recovery_is_exclusive_and_history_has_real_pin_counts() {
     let (fixture, owner, expected) = super::public_ports::public_world();
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::from_policy(
+            &owner.root.state.execution.request_policy(),
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let inspection = owner.inspection_port();
     let key = RuntimeWorldRetentionKey::relational(expected.basis());
     let entry = inspection.inspect_retention(&key).unwrap().unwrap();
@@ -37,10 +46,11 @@ fn public_performed_recovery_is_exclusive_and_history_has_real_pin_counts() {
             None,
         )
         .unwrap();
-    let performed = match owner
-        .publication_port()
-        .execute_without_signal(prepared, &cancellation.token())
-    {
+    let performed = match owner.publication_port().execute_without_signal(
+        execution,
+        prepared,
+        &cancellation.token(),
+    ) {
         RuntimeWorldPublicationOutcome::Performed(value) => value,
         other => panic!("{other:?}"),
     };
@@ -210,6 +220,13 @@ fn retained_age_is_carried_and_cleanup_uses_the_explicit_minimum() {
     let clock = MutableClock::new(10);
     let inputs = fixture.owner_inputs(budgets(4), RuntimeWorldClock::from_source(clock.clone()));
     let owner = TestOwner::new(inputs).unwrap();
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::from_policy(&owner.state.execution.request_policy()),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let expected = match owner.bootstrap_root(fixture.bootstrap_intent()) {
         RuntimeWorldBootstrapOutcome::Performed(value) => value.product_branch().clone(),
         other => panic!("{other:?}"),
@@ -227,13 +244,14 @@ fn retained_age_is_carried_and_cleanup_uses_the_explicit_minimum() {
         )
         .unwrap();
     clock.set(13);
-    let effects = match owner.execute_with_signal(prepared, &mut (), &cancel.token(), |_| {
-        cancel.cancel();
-        Ok(())
-    }) {
-        OwnerExecutionOutcome::ProductUnpublished(value) => value,
-        other => panic!("{other:?}"),
-    };
+    let effects =
+        match owner.execute_with_signal(execution, prepared, &mut (), &cancel.token(), |_| {
+            cancel.cancel();
+            Ok(())
+        }) {
+            OwnerExecutionOutcome::ProductUnpublished(value) => value,
+            other => panic!("{other:?}"),
+        };
     let handle = effects.recovery_handle();
     drop(effects);
     let page = owner

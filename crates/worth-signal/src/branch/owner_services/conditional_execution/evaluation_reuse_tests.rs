@@ -98,8 +98,19 @@ fn execute(
     attempt: u64,
     value: u64,
 ) -> SignalConditionalDecisionClass {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     service
         .execute(
+            request_execution,
             admission,
             ExecutionRequest::new(attempt),
             &mut NoPredicate,
@@ -115,6 +126,16 @@ fn execute(
 
 #[test]
 fn transition_clones_share_one_retained_charge_until_the_last_clone_drops() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (_runtime, service, contract, _source_owner) = fixture(None);
     let ledger = service
         .owner
@@ -125,6 +146,7 @@ fn transition_clones_share_one_retained_charge_until_the_last_clone_drops() {
     let before = ledger.usage();
     let completion = service
         .deliver_committed_patch(
+            request_execution,
             &contract,
             SignalCommittedPatchDeliveryRequest::new([target(&contract)]),
         )
@@ -153,11 +175,22 @@ fn transition_clones_share_one_retained_charge_until_the_last_clone_drops() {
 
 #[test]
 fn unexecuted_predecessor_requires_fresh_admission_without_consuming_retention() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (_runtime, service, contract, source_owner) = fixture(None);
     let source = || ConditionalEvaluationSource::from(source_owner.admit("unexecuted-source"));
     let predecessor = service.admit_evaluation(&contract, source()).unwrap();
     let completion = service
         .deliver_committed_patch(
+            request_execution,
             &contract,
             SignalCommittedPatchDeliveryRequest::new([target(&contract)]),
         )
@@ -192,6 +225,16 @@ fn unexecuted_predecessor_requires_fresh_admission_without_consuming_retention()
 
 #[test]
 fn readmission_slot_shortage_denies_before_disturbing_the_predecessor() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let budget = SignalConditionalEvaluationBudget {
         maximum_retained_slots: 1,
         maximum_retained_bytes: 512 * 1024 * 1024,
@@ -210,6 +253,7 @@ fn readmission_slot_shortage_denies_before_disturbing_the_predecessor() {
     );
     let completion = service
         .deliver_committed_patch(
+            request_execution,
             &contract,
             SignalCommittedPatchDeliveryRequest::new([target(&contract)]),
         )
@@ -233,6 +277,16 @@ fn readmission_slot_shortage_denies_before_disturbing_the_predecessor() {
 
 #[test]
 fn panic_after_transition_activation_restores_custody_and_resumes_the_original_unwind() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (_runtime, service, contract, source_owner) = fixture(None);
     let predecessor = service
         .admit_evaluation(
@@ -243,6 +297,7 @@ fn panic_after_transition_activation_restores_custody_and_resumes_the_original_u
     execute(&service, &predecessor, 1, 7);
     let completion = service
         .deliver_committed_patch(
+            request_execution,
             &contract,
             SignalCommittedPatchDeliveryRequest::new([target(&contract)]),
         )
@@ -289,68 +344,5 @@ fn panic_after_transition_activation_restores_custody_and_resumes_the_original_u
     );
 }
 
-#[test]
-fn concurrent_port_deliveries_publish_one_exact_serial_transition_chain() {
-    let (_runtime, service, contract, source_owner) = fixture(None);
-    let predecessor = service
-        .admit_evaluation(
-            &contract,
-            ConditionalEvaluationSource::AdmittedRelationalSource(source_owner.admit("source")),
-        )
-        .unwrap();
-    execute(&service, &predecessor, 1, 7);
-    let service = std::sync::Arc::new(service);
-    let barrier = std::sync::Arc::new(std::sync::Barrier::new(3));
-    let mut completions = std::thread::scope(|scope| {
-        let handles: Vec<_> = (0..2)
-            .map(|_| {
-                let service = std::sync::Arc::clone(&service);
-                let barrier = std::sync::Arc::clone(&barrier);
-                let contract = contract.clone();
-                scope.spawn(move || {
-                    barrier.wait();
-                    service
-                        .deliver_committed_patch(
-                            &contract,
-                            SignalCommittedPatchDeliveryRequest::new([target(&contract)]),
-                        )
-                        .unwrap()
-                })
-            })
-            .collect();
-        barrier.wait();
-        handles
-            .into_iter()
-            .map(|handle| handle.join().unwrap())
-            .collect::<Vec<_>>()
-    });
-    let first_order = service.readmit_evaluation(ReadmissionRequest {
-        predecessor: &predecessor,
-        transitions: &[
-            completions[0].successor_transition(),
-            completions[1].successor_transition(),
-        ],
-    });
-    let successor = match first_order {
-        Ok(successor) => successor,
-        Err(ReadmissionDenial::TransitionChainMismatch) => {
-            completions.swap(0, 1);
-            service
-                .readmit_evaluation(ReadmissionRequest {
-                    predecessor: &predecessor,
-                    transitions: &[
-                        completions[0].successor_transition(),
-                        completions[1].successor_transition(),
-                    ],
-                })
-                .unwrap()
-        }
-        Err(denial) => panic!("unexpected concurrent delivery denial: {denial:?}"),
-    };
-    let (successor, counters) = successor.into_parts();
-    assert_eq!(counters.transitions_checked(), 2);
-    assert_eq!(
-        execute(&service, &successor, 2, 8),
-        SignalConditionalDecisionClass::ComputedChanged
-    );
-}
+#[path = "evaluation_reuse_tests/concurrent_port_deliveries_publish_one_exact_serial_transition_chain.rs"]
+mod concurrent_port_deliveries_publish_one_exact_serial_transition_chain;

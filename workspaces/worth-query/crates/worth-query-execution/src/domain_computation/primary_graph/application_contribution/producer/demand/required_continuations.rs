@@ -6,6 +6,7 @@
 //! stop that returned its row to the Ready it reopened ends it instead: the
 //! next wave claims that refresh again, after the entry frees its custody.
 
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use std::any::{Any, TypeId};
 
 use worth_query_installation::facade::ApplicationSchema;
@@ -59,6 +60,8 @@ trait ErasedRequiredSuccessor<Schema: ApplicationSchema>: Send + Sync {
     ) -> Result<(), WorthQueryOutputDemandDenial>;
     fn advance_checkpoint(
         &mut self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         request: &WorthQueryRequestScope,
         admission: &mut InvalidationEditAdmission,
@@ -66,6 +69,8 @@ trait ErasedRequiredSuccessor<Schema: ApplicationSchema>: Send + Sync {
     /// Run the successor's own row again under the authority that issued it.
     fn resume(
         &mut self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
@@ -159,6 +164,8 @@ where
 
     fn advance_checkpoint(
         &mut self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         request: &WorthQueryRequestScope,
         admission: &mut InvalidationEditAdmission,
@@ -181,6 +188,7 @@ where
             return Ok(false);
         };
         runtime.advance_selected_output_checkpoint(
+            phase,
             &demand.selected.identity,
             claim,
             checkpoint,
@@ -194,13 +202,15 @@ where
 
     fn resume(
         &mut self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
         branch: crate::basis::WorthQueryProductBranch,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial> {
-        self.run_again(runtime, principal, request, branch, admission)
+        self.run_again(phase, runtime, principal, request, branch, admission)
     }
 
     fn into_any(self: Box<Self>) -> Box<dyn Any> {

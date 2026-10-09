@@ -11,197 +11,221 @@ use crate::domain_computation::{
 
 #[test]
 fn foreign_runtime_cannot_admit_an_exact_operation_contract_and_run() {
-    let fixture = direct_admission_fixture(FixtureDisposition::Converged);
-    let foreign = WorthQueryExecutionRuntimeInstaller::new()
-        .install(
-            worth_query_installation::facade::WorthQueryInstallationGeneration::initial(),
-            std::iter::empty(),
-        )
-        .unwrap()
-        .into_parts()
-        .0;
-    let DirectAdmissionFixture {
-        runtime,
-        operation,
-        alternate_basis_operation: _,
-        contract,
-        managed,
-        graph,
-        bridge: _,
-    } = fixture;
-    let rejection =
-        match foreign.admit_direct_convergence_epoch(&operation, contract, managed, graph) {
-            Ok(_) => panic!("foreign runtime admitted convergence authorities"),
-            Err(rejection) => rejection,
-        };
-    assert_eq!(
-        rejection.denial().kind(),
-        WorthQueryConvergenceEpochDenialKind::ForeignQueryRuntime
-    );
-    let (contract, managed, graph) = rejection.into_parts();
-    finish(runtime, operation, contract, managed, graph);
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
+
+        let fixture = direct_admission_fixture(FixtureDisposition::Converged);
+        let foreign = WorthQueryExecutionRuntimeInstaller::new()
+            .install(
+                worth_query_installation::facade::WorthQueryInstallationGeneration::initial(),
+                std::iter::empty(),
+            )
+            .unwrap()
+            .into_parts()
+            .0;
+        let DirectAdmissionFixture {
+            runtime,
+            operation,
+            alternate_basis_operation: _,
+            contract,
+            managed,
+            graph,
+            bridge: _,
+        } = fixture;
+        let rejection =
+            match foreign.admit_direct_convergence_epoch(&operation, contract, managed, graph) {
+                Ok(_) => panic!("foreign runtime admitted convergence authorities"),
+                Err(rejection) => rejection,
+            };
+        assert_eq!(
+            rejection.denial().kind(),
+            WorthQueryConvergenceEpochDenialKind::ForeignQueryRuntime
+        );
+        let (contract, managed, graph) = rejection.into_parts();
+        finish(execution, runtime, operation, contract, managed, graph);
+    });
 }
 
 #[test]
 fn copied_contract_meaning_cannot_substitute_for_installed_contract_authority() {
-    let first = direct_admission_fixture(FixtureDisposition::Converged);
-    let second = direct_admission_fixture(FixtureDisposition::Converged);
-    let DirectAdmissionFixture {
-        runtime: first_runtime,
-        operation: first_operation,
-        alternate_basis_operation: _,
-        contract: first_contract,
-        managed: first_managed,
-        graph: first_graph,
-        bridge: _,
-    } = first;
-    let DirectAdmissionFixture {
-        runtime: second_runtime,
-        operation: second_operation,
-        alternate_basis_operation: _,
-        contract: second_contract,
-        managed: second_managed,
-        graph: second_graph,
-        bridge: _,
-    } = second;
-    let rejection = match first_runtime.admit_direct_convergence_epoch(
-        &first_operation,
-        second_contract,
-        first_managed,
-        first_graph,
-    ) {
-        Ok(_) => panic!("foreign installed convergence contract substituted by meaning"),
-        Err(rejection) => rejection,
-    };
-    assert_eq!(
-        rejection.denial().kind(),
-        WorthQueryConvergenceEpochDenialKind::ContractOperationMismatch
-    );
-    let (second_contract, first_managed, first_graph) = rejection.into_parts();
-    finish(
-        first_runtime,
-        first_operation,
-        first_contract,
-        first_managed,
-        first_graph,
-    );
-    finish(
-        second_runtime,
-        second_operation,
-        second_contract,
-        second_managed,
-        second_graph,
-    );
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
+
+        let first = direct_admission_fixture(FixtureDisposition::Converged);
+        let second = direct_admission_fixture(FixtureDisposition::Converged);
+        let DirectAdmissionFixture {
+            runtime: first_runtime,
+            operation: first_operation,
+            alternate_basis_operation: _,
+            contract: first_contract,
+            managed: first_managed,
+            graph: first_graph,
+            bridge: _,
+        } = first;
+        let DirectAdmissionFixture {
+            runtime: second_runtime,
+            operation: second_operation,
+            alternate_basis_operation: _,
+            contract: second_contract,
+            managed: second_managed,
+            graph: second_graph,
+            bridge: _,
+        } = second;
+        let rejection = match first_runtime.admit_direct_convergence_epoch(
+            &first_operation,
+            second_contract,
+            first_managed,
+            first_graph,
+        ) {
+            Ok(_) => panic!("foreign installed convergence contract substituted by meaning"),
+            Err(rejection) => rejection,
+        };
+        assert_eq!(
+            rejection.denial().kind(),
+            WorthQueryConvergenceEpochDenialKind::ContractOperationMismatch
+        );
+        let (second_contract, first_managed, first_graph) = rejection.into_parts();
+        finish(
+            execution,
+            first_runtime,
+            first_operation,
+            first_contract,
+            first_managed,
+            first_graph,
+        );
+        finish(
+            execution,
+            second_runtime,
+            second_operation,
+            second_contract,
+            second_managed,
+            second_graph,
+        );
+    });
 }
 
 #[test]
 fn managed_run_and_graph_authorities_cannot_cross_installed_worlds() {
-    let first = direct_admission_fixture(FixtureDisposition::Converged);
-    let second = direct_admission_fixture(FixtureDisposition::Converged);
-    let DirectAdmissionFixture {
-        runtime: first_runtime,
-        operation: first_operation,
-        alternate_basis_operation: _,
-        contract: first_contract,
-        managed: first_managed,
-        graph: first_graph,
-        bridge: _,
-    } = first;
-    let DirectAdmissionFixture {
-        runtime: second_runtime,
-        operation: second_operation,
-        alternate_basis_operation: _,
-        contract: second_contract,
-        managed: second_managed,
-        graph: second_graph,
-        bridge: _,
-    } = second;
-    let rejection = match first_runtime.admit_direct_convergence_epoch(
-        &first_operation,
-        first_contract,
-        second_managed,
-        first_graph,
-    ) {
-        Ok(_) => panic!("foreign managed run entered convergence"),
-        Err(rejection) => rejection,
-    };
-    assert_eq!(
-        rejection.denial().kind(),
-        WorthQueryConvergenceEpochDenialKind::ManagedRunOperationMismatch
-    );
-    let (first_contract, second_managed, first_graph) = rejection.into_parts();
-    let graph_rejection = match first_runtime.admit_direct_convergence_epoch(
-        &first_operation,
-        first_contract,
-        first_managed,
-        second_graph,
-    ) {
-        Ok(_) => panic!("foreign graph authority entered convergence admission"),
-        Err(rejection) => rejection,
-    };
-    assert_eq!(
-        graph_rejection.denial().kind(),
-        WorthQueryConvergenceEpochDenialKind::GraphOperationMismatch
-    );
-    let (first_contract, first_managed, second_graph) = graph_rejection.into_parts();
-    finish(
-        first_runtime,
-        first_operation,
-        first_contract,
-        first_managed,
-        first_graph,
-    );
-    finish(
-        second_runtime,
-        second_operation,
-        second_contract,
-        second_managed,
-        second_graph,
-    );
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
+
+        let first = direct_admission_fixture(FixtureDisposition::Converged);
+        let second = direct_admission_fixture(FixtureDisposition::Converged);
+        let DirectAdmissionFixture {
+            runtime: first_runtime,
+            operation: first_operation,
+            alternate_basis_operation: _,
+            contract: first_contract,
+            managed: first_managed,
+            graph: first_graph,
+            bridge: _,
+        } = first;
+        let DirectAdmissionFixture {
+            runtime: second_runtime,
+            operation: second_operation,
+            alternate_basis_operation: _,
+            contract: second_contract,
+            managed: second_managed,
+            graph: second_graph,
+            bridge: _,
+        } = second;
+        let rejection = match first_runtime.admit_direct_convergence_epoch(
+            &first_operation,
+            first_contract,
+            second_managed,
+            first_graph,
+        ) {
+            Ok(_) => panic!("foreign managed run entered convergence"),
+            Err(rejection) => rejection,
+        };
+        assert_eq!(
+            rejection.denial().kind(),
+            WorthQueryConvergenceEpochDenialKind::ManagedRunOperationMismatch
+        );
+        let (first_contract, second_managed, first_graph) = rejection.into_parts();
+        let graph_rejection = match first_runtime.admit_direct_convergence_epoch(
+            &first_operation,
+            first_contract,
+            first_managed,
+            second_graph,
+        ) {
+            Ok(_) => panic!("foreign graph authority entered convergence admission"),
+            Err(rejection) => rejection,
+        };
+        assert_eq!(
+            graph_rejection.denial().kind(),
+            WorthQueryConvergenceEpochDenialKind::GraphOperationMismatch
+        );
+        let (first_contract, first_managed, second_graph) = graph_rejection.into_parts();
+        finish(
+            execution,
+            first_runtime,
+            first_operation,
+            first_contract,
+            first_managed,
+            first_graph,
+        );
+        finish(
+            execution,
+            second_runtime,
+            second_operation,
+            second_contract,
+            second_managed,
+            second_graph,
+        );
+    });
 }
 
 #[test]
 fn same_installed_operation_cannot_substitute_a_different_semantic_basis() {
-    let DirectAdmissionFixture {
-        runtime,
-        operation,
-        alternate_basis_operation,
-        contract,
-        managed,
-        graph,
-        bridge: _,
-    } = direct_admission_fixture(FixtureDisposition::Converged);
-    assert_ne!(
-        operation.binding_identity(),
-        alternate_basis_operation.binding_identity()
-    );
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
 
-    let rejection = match runtime.admit_direct_convergence_epoch(
-        &alternate_basis_operation,
-        contract,
-        managed,
-        graph,
-    ) {
-        Ok(_) => panic!("managed run crossed its admitted semantic basis"),
-        Err(rejection) => rejection,
-    };
-    assert_eq!(
-        rejection.denial().kind(),
-        WorthQueryConvergenceEpochDenialKind::ManagedRunOperationMismatch
-    );
-    assert_eq!(
-        rejection
-            .denial()
-            .counters()
-            .managed_run_authority_check_count(),
-        1
-    );
-    assert_eq!(
-        rejection.denial().counters().graph_authority_check_count(),
-        0
-    );
-    let (contract, managed, graph) = rejection.into_parts();
-    finish(runtime, operation, contract, managed, graph);
+        let DirectAdmissionFixture {
+            runtime,
+            operation,
+            alternate_basis_operation,
+            contract,
+            managed,
+            graph,
+            bridge: _,
+        } = direct_admission_fixture(FixtureDisposition::Converged);
+        assert_ne!(
+            operation.binding_identity(),
+            alternate_basis_operation.binding_identity()
+        );
+
+        let rejection = match runtime.admit_direct_convergence_epoch(
+            &alternate_basis_operation,
+            contract,
+            managed,
+            graph,
+        ) {
+            Ok(_) => panic!("managed run crossed its admitted semantic basis"),
+            Err(rejection) => rejection,
+        };
+        assert_eq!(
+            rejection.denial().kind(),
+            WorthQueryConvergenceEpochDenialKind::ManagedRunOperationMismatch
+        );
+        assert_eq!(
+            rejection
+                .denial()
+                .counters()
+                .managed_run_authority_check_count(),
+            1
+        );
+        assert_eq!(
+            rejection.denial().counters().graph_authority_check_count(),
+            0
+        );
+        let (contract, managed, graph) = rejection.into_parts();
+        finish(execution, runtime, operation, contract, managed, graph);
+    });
 }
 
 #[test]
@@ -278,6 +302,8 @@ fn every_installed_provider_family_mismatch_denies_before_epoch_construction() {
 }
 
 fn finish(
+    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+
     runtime: crate::domain_computation::WorthQueryExecutionRuntime,
     operation: crate::domain_computation::WorthQueryExecutionBoundOperationAuthority,
     contract: worth_query_admission::facade::convergence_epoch::WorthQueryAdmittedConvergenceContract,
@@ -285,7 +311,7 @@ fn finish(
     graph: worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
 ) {
     let epoch = admit(&runtime, &operation, contract, managed, graph);
-    finish_epoch(epoch);
+    finish_epoch(execution, epoch);
 }
 
 fn admit(
@@ -301,12 +327,15 @@ fn admit(
     }
 }
 
-fn finish_epoch(epoch: crate::domain_computation::WorthQueryIteratingDirectConvergenceEpoch) {
-    let started = match epoch.begin_iteration(call("substitution-recovery")) {
+fn finish_epoch(
+    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    epoch: crate::domain_computation::WorthQueryIteratingDirectConvergenceEpoch,
+) {
+    let started = match epoch.begin_iteration(execution, call("substitution-recovery")) {
         Ok(started) => started,
         Err(_) => panic!("recovered exact graph authority must start"),
     };
-    let outcome = match started.advance() {
+    let outcome = match started.advance(execution) {
         WorthQueryDirectConvergenceStepOutcome::Completed(outcome) => outcome,
         _ => panic!("fixture provider must complete and rejoin"),
     };

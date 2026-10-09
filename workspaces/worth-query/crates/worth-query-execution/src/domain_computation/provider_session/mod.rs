@@ -54,3 +54,6 @@ pub(crate) use tests::{
     execution_resource_support_with_yield,
     execution_resource_support_with_yield_and_partial_effects,
 };
+
+/// Borrowed request view supplied by Query to an admitted provider invocation.
+pub use worth_execution::ExecutionRequest;

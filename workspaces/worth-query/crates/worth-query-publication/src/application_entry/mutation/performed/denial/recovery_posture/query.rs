@@ -16,6 +16,13 @@ pub(super) fn query_posture(
 ) -> WorthQueryRequiredOutputRecoveryPosture {
     use WorthQueryApplicationRequestQueryDenial as Denial;
     match denial {
+        Denial::ExecutionRequest(cause) => {
+            if cause.is_transient() {
+                WorthQueryRequiredOutputRecoveryPosture::Retryable
+            } else {
+                WorthQueryRequiredOutputRecoveryPosture::Terminal
+            }
+        }
         Denial::BindingInstallation(_) | Denial::Limit(_) => {
             WorthQueryRequiredOutputRecoveryPosture::Terminal
         }

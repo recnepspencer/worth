@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_foundational::facade::{AspectValue, InternedString};
 use worth_query_declaration::facade::application_program::{
     ApplicationProgramRevision, ApplicationWorkflowDefinitionContentIdentity,
@@ -135,12 +136,22 @@ where
         Scope,
     >(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         prepared: PreparedWorkflowInstanceStart<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
     ) -> WorkflowInstanceStartOutcome
     where
         Input: Clone + Send + Sync + 'static,
     {
+        if let Err(cause) = phase.execution_request_for(&self.product_runtime) {
+            return WorkflowInstanceStartOutcome::Application(
+                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(cause)
+                    .into_commit_outcome()
+                    .landed()
+                    .expect_err("a foreign phase cannot commit"),
+            );
+        }
         let PreparedWorkflowInstanceStart {
             program,
             program_revision,
@@ -167,6 +178,7 @@ where
             }
         };
         let outcome = self.compare_and_commit_application_for_program_action(
+            phase,
             &presented,
             program,
             idempotency.bind_workflow_instance(&instance_intent_identity),
@@ -234,4 +246,15 @@ fn project(
         receipt,
         replayed,
     })
+}
+
+impl<Schema, Operation, Input, Scope>
+    PreparedWorkflowInstanceStart<Schema, Operation, Input, Scope>
+{
+    /// Controls retained as facts; each host call obtains fresh execution admission.
+    pub fn request_scope(
+        &self,
+    ) -> &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope {
+        self.program.request_scope()
+    }
 }

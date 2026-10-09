@@ -2,6 +2,16 @@ use super::*;
 
 #[test]
 fn resource_cancellation_visibility_can_hide_previous_output() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let node = graph.node().build();
     let mut runtime = TestRuntime::build(graph);
@@ -25,7 +35,7 @@ fn resource_cancellation_visibility_can_hide_previous_output() {
         .expect("initial completion should admit");
     let mut ctx = ();
     runtime
-        .transaction(&mut ctx, |tx| {
+        .transaction(request_execution, &mut ctx, |tx| {
             let staging = tx.stage_admitted_resource_completion(first_completion)?;
             tx.commit_staged_resource_completion(staging.staged_effect())?;
             Ok(())
@@ -57,6 +67,16 @@ fn resource_cancellation_visibility_can_hide_previous_output() {
 
 #[test]
 fn resource_rejection_visibility_can_hide_previous_output() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let node = graph.node().build();
     let mut runtime = TestRuntime::build(graph);
@@ -80,7 +100,7 @@ fn resource_rejection_visibility_can_hide_previous_output() {
         .expect("initial completion should admit");
     let mut ctx = ();
     runtime
-        .transaction(&mut ctx, |tx| {
+        .transaction(request_execution, &mut ctx, |tx| {
             let staging = tx.stage_admitted_resource_completion(first_completion)?;
             tx.commit_staged_resource_completion(staging.staged_effect())?;
             Ok(())
@@ -170,6 +190,16 @@ fn resource_rejection_without_prior_output_does_not_charge_terminal_visibility_c
 
 #[test]
 fn resource_supersession_visibility_policy_can_hide_previous_output() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let node = graph.node().build();
     let mut runtime = TestRuntime::build(graph);
@@ -193,7 +223,7 @@ fn resource_supersession_visibility_policy_can_hide_previous_output() {
         .expect("initial completion should admit");
     let mut ctx = ();
     runtime
-        .transaction(&mut ctx, |tx| {
+        .transaction(request_execution, &mut ctx, |tx| {
             let staging = tx.stage_admitted_resource_completion(first_completion)?;
             tx.commit_staged_resource_completion(staging.staged_effect())?;
             Ok(())

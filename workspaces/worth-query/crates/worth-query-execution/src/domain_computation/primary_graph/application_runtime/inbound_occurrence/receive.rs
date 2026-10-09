@@ -98,14 +98,22 @@ where
         envelope: &[u8],
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryInboundReceipt, WorthQueryInboundAdmissionDenial> {
-        self.authenticate_inbound_occurrence(handle, envelope)?
-            .correlate()?
-            .accept()?
-            .execute(request)
+        // Custody must retain an authenticated external completion even when
+        // the caller has canceled publication. The host owns this advancement;
+        // the caller's control still governs the publication attempt below.
+        self.with_host_advancement(|phase| {
+            let phase = &phase;
+            self.authenticate_inbound_in_advancement(phase, handle, envelope)?
+                .correlate_in_advancement(phase)?
+                .accept_in_advancement(phase)?
+                .execute_in_advancement(phase, request)
+        })
+        .map_err(WorthQueryInboundAdmissionDenial::advancement)?
     }
 
     fn execute_inbound_admission(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         admitted: WorthQueryInboundAdmission,
         envelope: &[u8],
         request: &WorthQueryRequestScope,
@@ -145,8 +153,11 @@ where
                             WorthQueryInboundAdmissionDenial::SourceRevoked,
                         );
                     }
-                    let result = self
-                        .progress_unpublished_inbound_occurrence(Arc::clone(&accepted), request);
+                    let result = self.progress_unpublished_inbound_occurrence(
+                        phase,
+                        Arc::clone(&accepted),
+                        request,
+                    );
                     return self.accepted_progress_result(&accepted, envelope, result);
                 }
                 WorthQueryInboundPublicationClaim::Terminal => {
@@ -173,7 +184,8 @@ where
             }
             WorthQueryInboundAdmission::New(accepted, true) => accepted,
         };
-        let result = self.progress_accepted_inbound_occurrence(Arc::clone(&accepted), request);
+        let result =
+            self.progress_accepted_inbound_occurrence(phase, Arc::clone(&accepted), request);
         self.accepted_progress_result(&accepted, envelope, result)
     }
 
@@ -230,5 +242,17 @@ where
             WorthQueryInboundReceiptPosture::AcceptedPending,
             reason,
         ))
+    }
+}
+
+impl WorthQueryInboundAdmissionDenial {
+    pub(in crate::domain_computation::primary_graph) fn advancement(
+        cause: crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
+    ) -> Self {
+        let stage = crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage::ResourceAdmission;
+        match cause.provider_denial_cause() {
+            Ok(kind) => Self::PublicationExecutionDenied { stage, kind },
+            Err(kind) => Self::PublicationExecutionControlStopped { stage, kind },
+        }
     }
 }

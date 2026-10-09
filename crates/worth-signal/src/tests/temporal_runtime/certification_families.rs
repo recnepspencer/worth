@@ -134,13 +134,23 @@ fn stale_after_expires_without_upstream_writes_under_runtime_owned_time() {
 
 #[test]
 fn previous_value_time_gated_equivalence_certification_family_captures_committed_lineage() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
     let source = runtime.graph_mut().node().build();
     let value_aspect = Aspect::new(5);
     runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.read(source, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(AspectVersion::from_updates([(
@@ -190,12 +200,22 @@ fn previous_value_time_gated_equivalence_certification_family_captures_committed
 
 #[test]
 fn temporal_certification_bundle_accepts_complete_required_family_set() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
     let node = runtime.graph_mut().node().after(2).unwrap().build();
     let outcome = runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.evaluate_with_plan(
                 node,
                 &|_ctx| {

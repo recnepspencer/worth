@@ -192,9 +192,7 @@ impl WorthQueryApplicationBasisRegistry {
         let retention = match retention {
             Ok(retention) => retention,
             Err(denial) => {
-                graph.with_runtime_mut(|runtime| {
-                    crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
-                });
+                graph.release_query_snapshot(&snapshot);
                 return Err(WorthQueryApplicationBasisRegistrationDenial::Basis(denial));
             }
         };

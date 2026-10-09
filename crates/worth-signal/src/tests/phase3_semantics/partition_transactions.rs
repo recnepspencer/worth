@@ -8,6 +8,16 @@ use crate::tests::support::{
 
 #[test]
 fn transaction_partition_seed_resolves_to_exact_matching_cause_after_commit() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -15,7 +25,7 @@ fn transaction_partition_seed_resolves_to_exact_matching_cause_after_commit() {
     let matching = runtime.graph_mut().node().build();
     let non_matching = runtime.graph_mut().node().build();
     runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.read(source, &|view| {
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(1, 0))))
             })?;
@@ -32,7 +42,7 @@ fn transaction_partition_seed_resolves_to_exact_matching_cause_after_commit() {
     dependencies.commit().unwrap();
 
     runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.read(matching, &|view| {
                 let _ = view.read_partitioned_aspect_version(
                     source,
@@ -54,7 +64,7 @@ fn transaction_partition_seed_resolves_to_exact_matching_cause_after_commit() {
         .unwrap();
 
     runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.mark_dirty_with_regions(source, ASPECT_A, &[ChangedRegion::new("wing")])?;
             Ok(())
         })
@@ -76,7 +86,7 @@ fn transaction_partition_seed_resolves_to_exact_matching_cause_after_commit() {
     );
 
     runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.read(source, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(2, 0))
@@ -107,6 +117,16 @@ fn transaction_partition_seed_resolves_to_exact_matching_cause_after_commit() {
 
 #[test]
 fn partition_scoped_runtime_reads_do_not_widen_captured_dependencies() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -114,7 +134,7 @@ fn partition_scoped_runtime_reads_do_not_widen_captured_dependencies() {
     let matching = runtime.graph_mut().node().build();
     let non_matching = runtime.graph_mut().node().build();
     runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.read(source, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(1, 0))
@@ -134,7 +154,7 @@ fn partition_scoped_runtime_reads_do_not_widen_captured_dependencies() {
     dependencies.commit().unwrap();
 
     runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.read(matching, &|view| {
                 let _ = view.read_partitioned_aspect_version(
                     source,
@@ -156,7 +176,7 @@ fn partition_scoped_runtime_reads_do_not_widen_captured_dependencies() {
         .unwrap();
 
     runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.mark_dirty_with_regions(
                 source,
                 ASPECT_A,
@@ -184,6 +204,16 @@ fn partition_scoped_runtime_reads_do_not_widen_captured_dependencies() {
 
 #[test]
 fn transaction_rollback_after_partition_local_evaluation_restores_clean_states() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -191,7 +221,7 @@ fn transaction_rollback_after_partition_local_evaluation_restores_clean_states()
     let matching = runtime.graph_mut().node().build();
     let non_matching = runtime.graph_mut().node().build();
     runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.read(source, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(1, 0))
@@ -212,7 +242,7 @@ fn transaction_rollback_after_partition_local_evaluation_restores_clean_states()
         .unwrap();
 
     runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.read(matching, &|view| {
                 let _ = view.read_partitioned_aspect_version(
                     source,
@@ -233,7 +263,7 @@ fn transaction_rollback_after_partition_local_evaluation_restores_clean_states()
         })
         .unwrap();
 
-    let err = runtime.transaction(&mut (), |tx| {
+    let err = runtime.transaction(request_execution, &mut (), |tx| {
         tx.mark_dirty_with_regions(
             source,
             ASPECT_A,
@@ -270,6 +300,16 @@ fn transaction_rollback_after_partition_local_evaluation_restores_clean_states()
 
 #[test]
 fn committed_partition_local_evaluation_preserves_changed_region_explanation_and_metrics() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -277,7 +317,7 @@ fn committed_partition_local_evaluation_preserves_changed_region_explanation_and
     let matching = runtime.graph_mut().node().build();
     let non_matching = runtime.graph_mut().node().build();
     runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.read(source, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(1, 0))
@@ -298,7 +338,7 @@ fn committed_partition_local_evaluation_preserves_changed_region_explanation_and
         .unwrap();
 
     runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.read(matching, &|view| {
                 let _ = view.read_partitioned_aspect_version(
                     source,
@@ -320,7 +360,7 @@ fn committed_partition_local_evaluation_preserves_changed_region_explanation_and
         .unwrap();
 
     runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.mark_dirty_with_regions(
                 source,
                 ASPECT_A,

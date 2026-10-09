@@ -18,6 +18,16 @@ fn build_phase11_runtime() -> (
     SignalBranchHandle,
     NodeId,
 ) {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let graph = SignalGraph::new();
     let mut runtime = SignalRuntime::builder(graph).with_kernel_defaults().build();
     let node = runtime
@@ -28,7 +38,7 @@ fn build_phase11_runtime() -> (
         .build();
 
     runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.read(node, &|view| {
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(1, 0))))
             })?;
@@ -40,7 +50,7 @@ fn build_phase11_runtime() -> (
     let feature = runtime.create_branch("feature-phase11-inspection").unwrap();
     runtime.switch_branch(feature.clone()).unwrap();
     runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.mark_dirty(node, ASPECT_A)?;
             tx.read(node, &|view| {
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(11, 0))))

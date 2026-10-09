@@ -1,4 +1,5 @@
 use super::*;
+use worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase as AdvancementPhase;
 
 struct BranchContinuation<'application, Schema>
 where
@@ -29,6 +30,7 @@ where
         + ProgramOutputContinuationFactory<'application, Schema, Program, ParentDemand>,
 {
     fn start(
+        phase: &AdvancementPhase<'_>,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
         parent_demand: &ParentDemand,
         parent_settlement: &WorthQueryApplicationOutputDemandSettlement<
@@ -44,6 +46,7 @@ where
     > {
         Ok(Box::new(BranchContinuation {
             left: Some(Left::start(
+                phase,
                 application,
                 parent_demand,
                 parent_settlement,
@@ -53,6 +56,7 @@ where
                 controls,
             )?),
             right: Some(Right::start(
+                phase,
                 application,
                 parent_demand,
                 parent_settlement,
@@ -74,6 +78,7 @@ where
 {
     fn advance(
         &mut self,
+        phase: &AdvancementPhase<'_>,
         request: &WorthQueryApplicationRequest<'application, '_, '_, Schema>,
     ) -> Result<ProgramOutputContinuationProgress, WorthQueryRequiredOutputPreparationDenial> {
         for branch in [&mut self.left, &mut self.right] {
@@ -81,7 +86,7 @@ where
                 continue;
             };
             if let ProgramOutputContinuationProgress::Settled { outputs, work } =
-                active.advance(request)?
+                active.advance(phase, request)?
             {
                 self.outputs.extend(outputs);
                 self.work.include(work);

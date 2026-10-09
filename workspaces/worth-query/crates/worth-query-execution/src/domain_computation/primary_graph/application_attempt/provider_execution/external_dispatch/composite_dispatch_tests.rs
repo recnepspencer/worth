@@ -23,39 +23,44 @@ impl WorthQueryExternalEffectTransport for CountingTransport {
 #[test]
 fn sibling_publication_substitution_denies_before_transport() {
     let (world, first, second) = two_recoverable_application_commits(185, 186);
-    let transport = CountingTransport(AtomicUsize::new(0));
-    let substituted = world
-        .application
-        .observe_committed_dispatch_outbox(&first)
-        .unwrap()
-        .unwrap()
-        .with_product_publication_for_test(second.committed_product_publication().clone());
-    assert_eq!(
-        substituted.relational_runtime_instance_id(),
-        first.provider_runtime_instance_id()
-    );
-    assert_eq!(
-        substituted.committed_product_publication().product_branch(),
-        first.committed_product_publication().product_branch()
-    );
-    assert_ne!(
-        substituted.commit_reference(),
-        substituted
-            .committed_product_publication()
-            .relational_commit()
-    );
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
 
-    assert_eq!(
-        world.application.perform_committed_external_dispatch(
-            &transport,
-            substituted,
-            &crate::domain_computation::primary_graph::tests::fixture::live_scope()
-        ),
-        Err(
-            WorthQueryExternalDispatchPreparationDenial::AttemptAdmissionDenied(
-                super::WorthQueryExternalDispatchAttemptDenial::PublicationCommitMismatch
+        let transport = CountingTransport(AtomicUsize::new(0));
+        let substituted = world
+            .application
+            .observe_committed_dispatch_outbox(&first)
+            .unwrap()
+            .unwrap()
+            .with_product_publication_for_test(second.committed_product_publication().clone());
+        assert_eq!(
+            substituted.relational_runtime_instance_id(),
+            first.provider_runtime_instance_id()
+        );
+        assert_eq!(
+            substituted.committed_product_publication().product_branch(),
+            first.committed_product_publication().product_branch()
+        );
+        assert_ne!(
+            substituted.commit_reference(),
+            substituted
+                .committed_product_publication()
+                .relational_commit()
+        );
+
+        assert_eq!(
+            world.application.perform_committed_external_dispatch(
+                phase,
+                &transport,
+                substituted,
+                &crate::domain_computation::primary_graph::tests::fixture::live_scope()
+            ),
+            Err(
+                WorthQueryExternalDispatchPreparationDenial::AttemptAdmissionDenied(
+                    super::WorthQueryExternalDispatchAttemptDenial::PublicationCommitMismatch
+                )
             )
-        )
-    );
-    assert_eq!(transport.0.load(Ordering::Acquire), 0);
+        );
+        assert_eq!(transport.0.load(Ordering::Acquire), 0);
+    });
 }

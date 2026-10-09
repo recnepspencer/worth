@@ -103,6 +103,16 @@ fn output(value: u64) -> NodeEvaluationResult {
 
 #[test]
 fn committed_patch_preserves_exact_basis_and_reaches_conditional_execution() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (mut runtime, claimant, [contract, _], source_owner) = installed_runtime();
     let graph_instance_id = contract.graph_instance_id();
     let basis = runtime
@@ -127,6 +137,7 @@ fn committed_patch_preserves_exact_basis_and_reaches_conditional_execution() {
     for attempt in 1..=2 {
         let (decision, _) = service
             .execute(
+                request_execution,
                 &evaluation,
                 Request::new(attempt),
                 &mut NoPredicate,
@@ -148,6 +159,7 @@ fn committed_patch_preserves_exact_basis_and_reaches_conditional_execution() {
 
     let completion = service
         .deliver_committed_patch(
+            request_execution,
             &contract,
             DeliveryRequest::new([target(graph_instance_id, &contract)]),
         )
@@ -158,6 +170,7 @@ fn committed_patch_preserves_exact_basis_and_reaches_conditional_execution() {
 
     let (retained_decision, _) = service
         .execute(
+            request_execution,
             &evaluation,
             Request::new(3),
             &mut NoPredicate,
@@ -195,6 +208,7 @@ fn committed_patch_preserves_exact_basis_and_reaches_conditional_execution() {
     );
     let (refreshed_decision, _) = service
         .execute(
+            request_execution,
             &refreshed,
             Request::new(1),
             &mut NoPredicate,
@@ -218,6 +232,16 @@ fn committed_patch_preserves_exact_basis_and_reaches_conditional_execution() {
 
 #[test]
 fn invalid_patch_descriptions_deny_without_disturbing_the_exact_service() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (mut runtime, claimant, [contract, foreign], source_owner) = installed_runtime();
     let graph_instance_id = contract.graph_instance_id();
     let basis = runtime
@@ -230,6 +254,7 @@ fn invalid_patch_descriptions_deny_without_disturbing_the_exact_service() {
 
     assert!(matches!(
         service.deliver_committed_patch(
+            request_execution,
             &contract,
             DeliveryRequest::new([target(graph_instance_id + 1, &contract)]),
         ),
@@ -237,6 +262,7 @@ fn invalid_patch_descriptions_deny_without_disturbing_the_exact_service() {
     ));
     assert!(matches!(
         service.deliver_committed_patch(
+            request_execution,
             &contract,
             DeliveryRequest::new([target(graph_instance_id, &foreign)]),
         ),
@@ -245,6 +271,7 @@ fn invalid_patch_descriptions_deny_without_disturbing_the_exact_service() {
     let duplicate = target(graph_instance_id, &contract);
     assert!(matches!(
         service.deliver_committed_patch(
+            request_execution,
             &contract,
             DeliveryRequest::new([duplicate.clone(), duplicate]),
         ),
@@ -255,6 +282,7 @@ fn invalid_patch_descriptions_deny_without_disturbing_the_exact_service() {
     assert_eq!(
         service
             .deliver_committed_patch(
+                request_execution,
                 &contract,
                 DeliveryRequest::new([target(graph_instance_id, &contract)]),
             )
@@ -263,66 +291,6 @@ fn invalid_patch_descriptions_deny_without_disturbing_the_exact_service() {
         1
     );
     basis_port.compare_current_exact(&basis).unwrap();
-}
-
-#[test]
-fn successor_retention_denial_publishes_neither_patch_nor_basis() {
-    let (mut measured_graph, _, _, _) = installed_graph();
-    let prepared = SignalExecutionBasis::prepare_capture(
-        &mut measured_graph,
-        &mut RetainedStoragePreparation::new(100_000),
-    )
-    .unwrap();
-    let charges = prepared.charges();
-    let reservation_handles =
-        2 * std::mem::size_of::<SignalConditionalRetentionReservation>() as u64;
-    let exact_initial_bytes =
-        charges.retained.bytes() + charges.source_growth.bytes() + reservation_handles;
-
-    let (graph, claimant, [contract, _], source_owner) = installed_graph();
-    let mut runtime = SignalRuntime::build_for::<()>(graph);
-    runtime.set_runtime_policy(
-        SignalRuntimePolicy::development().with_conditional_evaluation_budget(
-            SignalConditionalEvaluationBudget {
-                maximum_retained_slots: 1,
-                maximum_retained_bytes: exact_initial_bytes,
-                maximum_attempt_visits: 100_000,
-            },
-        ),
-    );
-    let basis = runtime
-        .observe_signal_branch_basis(runtime.current_branch())
-        .unwrap();
-    let _ports = runtime.owner_port_slots().unwrap();
-    let service = runtime
-        .issue_conditional_execution_service(&basis, &claimant, &source_owner.authority())
-        .unwrap();
-    let graph_instance_id = contract.graph_instance_id();
-    let before = current_basis_and_graph_observation(&service, &contract);
-    let owner = service.owner.upgrade().unwrap();
-    let retention_before = owner.conditional_retention.usage();
-    drop(owner);
-
-    assert!(matches!(
-        service.deliver_committed_patch(
-            &contract,
-            DeliveryRequest::new([target(graph_instance_id, &contract)]),
-        ),
-        Err(DeliveryDenial::SuccessorCaptureCapacityExhausted)
-    ));
-    assert_eq!(
-        current_basis_and_graph_observation(&service, &contract),
-        before
-    );
-    assert_eq!(
-        service
-            .owner
-            .upgrade()
-            .unwrap()
-            .conditional_retention
-            .usage(),
-        retention_before
-    );
 }
 
 fn current_basis_and_graph_observation(
@@ -367,3 +335,6 @@ fn retained_node_observation(
         .retained_basis
         .retained_node_observation(node, aspect)
 }
+
+#[path = "committed_patch_tests/successor_retention_denial_publishes_neither_patch_nor_basis.rs"]
+mod successor_retention_denial_publishes_neither_patch_nor_basis;

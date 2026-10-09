@@ -215,6 +215,10 @@ impl Drop for CountedReader {
 
 #[test]
 fn retained_decisions_keep_exact_reader_and_pool_custody_without_reacquisition() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     for pooled in [false, true] {
         // Explicit one-reader adapter limit exercises observable backpressure.
         // This is Bridge reader/pool custody, not a source-owner lease proof.
@@ -262,7 +266,9 @@ fn retained_decisions_keep_exact_reader_and_pool_custody_without_reacquisition()
             execution_identity: "execution",
             attempt: 1,
         };
-        let evidence = owner.execute(&signal_basis, request(), &mut ()).unwrap();
+        let evidence = owner
+            .execute(request_execution, &signal_basis, request(), &mut ())
+            .unwrap();
         let seed = evidence.retain_for_reentry();
         drop(evidence);
         assert_eq!(counts.live.load(Ordering::SeqCst), 1);
@@ -284,7 +290,7 @@ fn retained_decisions_keep_exact_reader_and_pool_custody_without_reacquisition()
         );
         assert!(reentered.retains_bridge_snapshot_identity(&source));
         let exhausted = owner
-            .execute(&signal_basis, request(), &mut ())
+            .execute(request_execution, &signal_basis, request(), &mut ())
             .err()
             .expect("retained reader still occupies capacity");
         assert_eq!(
@@ -303,7 +309,9 @@ fn retained_decisions_keep_exact_reader_and_pool_custody_without_reacquisition()
         assert_eq!(counts.live.load(Ordering::SeqCst), 0);
         assert_eq!(counts.dropped.load(Ordering::SeqCst), 1);
         assert_eq!(counts.returned.load(Ordering::SeqCst), usize::from(pooled));
-        let final_evidence = owner.execute(&signal_basis, request(), &mut ()).unwrap();
+        let final_evidence = owner
+            .execute(request_execution, &signal_basis, request(), &mut ())
+            .unwrap();
         assert_eq!(counts.opened.load(Ordering::SeqCst), 2);
         drop(owner);
         assert_eq!(

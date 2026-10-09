@@ -65,6 +65,15 @@ impl WorthQueryConditionalTruthBasis {
         self.product.signal_basis()
     }
 
+    pub(in crate::domain_computation::primary_graph) fn owner_identity(
+        &self,
+    ) -> worth_runtime_world::facade::RuntimeWorldOwnerIdentity {
+        self.product
+            .observation()
+            .branch_identity()
+            .owner_identity()
+    }
+
     pub(super) fn product(&self) -> &crate::basis::WorthQueryProductBranchLease {
         &self.product
     }
@@ -209,6 +218,8 @@ pub(super) fn retained_decision_counts(
 }
 
 pub(super) fn evaluate_due_wake(
+    execution: worth_execution::ExecutionRequest<'_, '_>,
+
     bridge: &BridgeSealedRuntimeAssembly,
     due: BridgeManagedDueWake,
     signal_basis: &worth_runtime_bridge::facade::BridgeConditionalSignalBasisBinding,
@@ -225,6 +236,7 @@ pub(super) fn evaluate_due_wake(
     };
     let lowering = signal_basis.installed_lowering_ref();
     let result = bridge.execute_managed_due_wake(
+        execution,
         BridgeManagedConditionalExecutionRequest {
             due_wake: &due,
             lowering,
@@ -264,6 +276,8 @@ pub(super) fn evaluate_due_wake(
 }
 
 pub(super) fn reconsider_retained_wake(
+    execution: worth_execution::ExecutionRequest<'_, '_>,
+
     bridge: &BridgeSealedRuntimeAssembly,
     wake: &mut WorthQueryRetainedConditionalWake,
     signal_basis: &worth_runtime_bridge::facade::BridgeConditionalSignalBasisBinding,
@@ -287,6 +301,7 @@ pub(super) fn reconsider_retained_wake(
     };
     let lowering = signal_basis.installed_lowering_ref();
     let result = bridge.execute_managed_due_wake(
+        execution,
         BridgeManagedConditionalExecutionRequest {
             due_wake: &wake.due,
             lowering,

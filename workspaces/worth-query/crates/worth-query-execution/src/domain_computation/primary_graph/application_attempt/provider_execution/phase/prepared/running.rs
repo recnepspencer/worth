@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_query_admission::facade::basis::basis_lifecycle;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_bridge::facade::{
@@ -65,6 +66,8 @@ pub(in crate::domain_computation::primary_graph::application_attempt::provider_e
     Input,
     Scope,
 >(
+    _phase: &WorthQueryAdvancementPhase<'_>,
+
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     prepared: WorthQueryPreparedApplicationCommit<Schema, Operation, Input, Scope>,
 ) -> Result<

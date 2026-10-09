@@ -144,7 +144,13 @@ where
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
 {
     pub fn execute(self) -> Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstancePreparationDenial> {
-        let prepared = self.request.prepare_workflow_instance_start(self.workflow, self.definition)?;
-        Ok(prepared.execute())
+        let runtime = self.request.application_runtime();
+        let scope = self.request.request_scope().clone();
+        runtime.with_application_advancement(&scope, |phase| {
+
+        let prepared = self.request.prepare_workflow_instance_start_in_advancement(&phase,self.workflow, self.definition)?;
+        Ok(prepared.execute_in_advancement(&phase))
+
+        }).map_err(|cause| WorthQueryWorkflowInstancePreparationDenial::RequestAdmission(crate::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause)))?
     }
 }

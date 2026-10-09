@@ -5,6 +5,16 @@ pub(super) struct ResourceMilestoneCObservationEvidence {
 }
 
 pub(super) fn resource_milestone_c_observation_evidence() -> ResourceMilestoneCObservationEvidence {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut observation_graph = SignalGraph::new();
     let observation_node = observation_graph.node().build();
     let mut observation_runtime = TestRuntime::build(observation_graph);
@@ -37,7 +47,7 @@ pub(super) fn resource_milestone_c_observation_evidence() -> ResourceMilestoneCO
     );
     let mut ctx = ();
     observation_runtime
-        .transaction(&mut ctx, |tx| {
+        .transaction(request_execution, &mut ctx, |tx| {
             let staged = tx.stage_admitted_resource_completion(observation_completion)?;
             tx.commit_staged_resource_completion(staged.staged_effect())?;
             Ok(())

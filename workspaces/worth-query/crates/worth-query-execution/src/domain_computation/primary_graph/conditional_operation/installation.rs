@@ -56,7 +56,9 @@ impl<Schema> WorthQueryConditionalApplicationRuntimeInstallation<Schema>
 where
     Schema: ApplicationSchema + 'static,
 {
+    /// Admission witness for validation; the staged installation retains facts only.
     pub(in crate::domain_computation::primary_graph) fn new(
+        _phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
         publication: ApplicationRuntimePublication<Schema>,
     ) -> Result<Self, WorthQueryConditionalRuntimeInstallationDenial> {
         publication
@@ -338,11 +340,13 @@ where
     }
     pub fn publish(
         self,
+        phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
     ) -> Result<
         WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         WorthQueryConditionalRuntimeInstallationDenial,
     > {
         super::super::application_runtime::installation::publish_application_runtime_with_conditionals(
+            phase,
             self.publication,
             self.bindings,
             self.output_readiness,

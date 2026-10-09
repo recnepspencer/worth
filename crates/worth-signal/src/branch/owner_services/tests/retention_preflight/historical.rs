@@ -8,6 +8,16 @@ use super::super::runtime_root::runtime_with_two_branches_from_graph;
 
 #[test]
 fn retention_preflight_accepts_an_exact_available_historical_target_without_currentness() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let first = graph.create_node();
     let second = graph.create_node();
@@ -30,6 +40,7 @@ fn retention_preflight_accepts_an_exact_available_historical_target_without_curr
         .reserve_advance_output(&admission, &cell)
         .expect("first semantic output reserves")
         .advance::<(), (), _>(
+            request_execution,
             &basis,
             &mut (),
             &SignalOwnerCancellationSource::new().token(),
@@ -53,6 +64,7 @@ fn retention_preflight_accepts_an_exact_available_historical_target_without_curr
         .reserve_advance_output(&admission, &cell)
         .expect("second semantic output reserves")
         .advance::<(), (), _>(
+            request_execution,
             &historical_basis,
             &mut (),
             &SignalOwnerCancellationSource::new().token(),

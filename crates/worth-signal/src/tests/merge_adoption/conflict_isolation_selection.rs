@@ -7,6 +7,16 @@ use crate::tests::support::{version_ab, ASPECT_A, ASPECT_B};
 
 #[test]
 fn runtime_merge_lowers_conflict_isolation_records_for_conflicted_nodes() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let graph =
         SignalGraph::new().with_schema_registry(conflict_isolation_merge_schema_registry(None));
     let mut runtime = SignalRuntime::builder(graph).with_kernel_defaults().build();
@@ -20,7 +30,7 @@ fn runtime_merge_lowers_conflict_isolation_records_for_conflicted_nodes() {
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(shared, &|view| {
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(1, 0))))
             })?;
@@ -34,7 +44,7 @@ fn runtime_merge_lowers_conflict_isolation_records_for_conflicted_nodes() {
         .unwrap();
     runtime.switch_branch(feature.clone()).unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(shared, &|view| {
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(2, 0))))
             })?;
@@ -44,7 +54,7 @@ fn runtime_merge_lowers_conflict_isolation_records_for_conflicted_nodes() {
 
     runtime.switch_branch(main.clone()).unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(shared, &|view| {
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(3, 0))))
             })?;
@@ -75,6 +85,16 @@ fn runtime_merge_lowers_conflict_isolation_records_for_conflicted_nodes() {
 
 #[test]
 fn runtime_merge_request_named_conflict_isolation_precedes_schema_and_node_defaults() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let graph = SignalGraph::new().with_schema_registry(conflict_isolation_merge_schema_registry(
         Some("signal.conflict-isolation.per-node"),
     ));
@@ -90,7 +110,7 @@ fn runtime_merge_request_named_conflict_isolation_precedes_schema_and_node_defau
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(shared, &|view| {
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(401, 0))))
             })?;
@@ -105,7 +125,7 @@ fn runtime_merge_request_named_conflict_isolation_precedes_schema_and_node_defau
 
     runtime.switch_branch(feature.clone()).unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.mark_dirty(shared, ASPECT_A)?;
             tx.read(shared, &|view| {
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(402, 0))))
@@ -116,7 +136,7 @@ fn runtime_merge_request_named_conflict_isolation_precedes_schema_and_node_defau
 
     runtime.switch_branch(main.clone()).unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.mark_dirty(shared, ASPECT_A)?;
             tx.read(shared, &|view| {
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(403, 0))))
@@ -154,6 +174,16 @@ fn runtime_merge_request_named_conflict_isolation_precedes_schema_and_node_defau
 
 #[test]
 fn runtime_merge_node_conflict_isolation_override_precedes_schema_default() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let graph = SignalGraph::new().with_schema_registry(conflict_isolation_merge_schema_registry(
         Some("signal.conflict-isolation.per-node"),
     ));
@@ -169,7 +199,7 @@ fn runtime_merge_node_conflict_isolation_override_precedes_schema_default() {
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(shared, &|view| {
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(411, 0))))
             })?;
@@ -184,7 +214,7 @@ fn runtime_merge_node_conflict_isolation_override_precedes_schema_default() {
 
     runtime.switch_branch(feature.clone()).unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.mark_dirty(shared, ASPECT_A)?;
             tx.read(shared, &|view| {
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(412, 0))))
@@ -195,7 +225,7 @@ fn runtime_merge_node_conflict_isolation_override_precedes_schema_default() {
 
     runtime.switch_branch(main.clone()).unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.mark_dirty(shared, ASPECT_A)?;
             tx.read(shared, &|view| {
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(413, 0))))
@@ -227,6 +257,16 @@ fn runtime_merge_node_conflict_isolation_override_precedes_schema_default() {
 
 #[test]
 fn runtime_merge_schema_default_conflict_isolation_applies_to_structural_conflicts() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let graph = SignalGraph::new().with_schema_registry(conflict_isolation_merge_schema_registry(
         Some("signal.conflict-isolation.per-aspect"),
     ));
@@ -241,7 +281,7 @@ fn runtime_merge_schema_default_conflict_isolation_applies_to_structural_conflic
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(shared, &|view| {
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(421, 0))))
             })?;
@@ -256,7 +296,7 @@ fn runtime_merge_schema_default_conflict_isolation_applies_to_structural_conflic
 
     runtime.switch_branch(feature.clone()).unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.mark_dirty(shared, ASPECT_A)?;
             tx.read(shared, &|view| {
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(422, 0))))
@@ -267,7 +307,7 @@ fn runtime_merge_schema_default_conflict_isolation_applies_to_structural_conflic
 
     runtime.switch_branch(main.clone()).unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.mark_dirty(shared, ASPECT_A)?;
             tx.read(shared, &|view| {
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(423, 0))))

@@ -25,12 +25,25 @@ impl CompositeSupplyChainCourt {
         head: &ProductBranchObservation,
         amount: &str,
     ) -> ConsumedCompositePublication {
+        let policy = match self.world.execution_placement() {
+            worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy)
+            | worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Leased {
+                policy, ..
+            } => policy,
+        };
+        let serial_request = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::from_policy(&policy),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
         let prepared = self.prepare_cargo(head, amount);
-        match self
-            .world
-            .publication_port()
-            .execute_without_signal(prepared, &RuntimeWorldCancellationSource::new().token())
-        {
+        match self.world.publication_port().execute_without_signal(
+            execution,
+            prepared,
+            &RuntimeWorldCancellationSource::new().token(),
+        ) {
             RuntimeWorldPublicationOutcome::Performed(done) => done.consume(),
             other => panic!("World: healthy cargo publication {other:?}"),
         }
@@ -46,6 +59,19 @@ impl CompositeSupplyChainCourt {
         &self,
         head: &ProductBranchObservation,
     ) -> ProductUnpublishedOwnerEffects {
+        let policy = match self.world.execution_placement() {
+            worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy)
+            | worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Leased {
+                policy, ..
+            } => policy,
+        };
+        let serial_request = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::from_policy(&policy),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
         let candidate = self
             .records
             .candidate(head.basis().relational_basis(), "grain", "5");
@@ -57,7 +83,7 @@ impl CompositeSupplyChainCourt {
         let prepared = port
             .prepare_with_signal(head.clone(), intent, &token, None)
             .unwrap();
-        match port.execute_with_signal(prepared, &mut self.context(head), &token, |_| {
+        match port.execute_with_signal(execution, prepared, &mut self.context(head), &token, |_| {
             Err(SignalError::InvalidInput {
                 message: "court routing denial".into(),
                 context: None,

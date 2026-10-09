@@ -246,6 +246,16 @@ impl CompiledFinancialWorld {
     }
 
     fn settle_current_definition(&mut self) -> Result<(), SignalError> {
+        // This standalone caller declares the operational serial memory policy.
+        let serial_request = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(
+                crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+            ),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
         let program = FinancialEvaluationProgram::new(
             self.definition.clone(),
             self.projection.clone(),
@@ -281,7 +291,7 @@ impl CompiledFinancialWorld {
                         .is_ok_and(|state| !matches!(state, NodeState::Clean))
                 })
                 .collect::<Vec<_>>();
-            self.runtime.transaction(&mut (), |tx| {
+            self.runtime.transaction(request_execution, &mut (), |tx| {
                 for node in &dirty {
                     tx.read(*node, &evaluator)?;
                 }
@@ -292,6 +302,16 @@ impl CompiledFinancialWorld {
     }
 
     fn settle_valuation_wave(&mut self) -> Result<(), SignalError> {
+        // This standalone caller declares the operational serial memory policy.
+        let serial_request = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(
+                crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+            ),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
         let program = FinancialEvaluationProgram::new(
             self.definition.clone(),
             self.projection.clone(),
@@ -311,7 +331,7 @@ impl CompiledFinancialWorld {
                     .is_ok_and(|state| !matches!(state, NodeState::Clean))
             })
             .collect::<Vec<_>>();
-        self.runtime.transaction(&mut (), |tx| {
+        self.runtime.transaction(request_execution, &mut (), |tx| {
             for valuation in &valuations {
                 tx.read(*valuation, &evaluator)?;
             }

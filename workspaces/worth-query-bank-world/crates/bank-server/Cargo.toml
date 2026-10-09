@@ -7,6 +7,7 @@ description = "Authoritative bank runtime composition."
 publish = false
 
 [features]
+test-request-lifetime-probes = ["worth-query-host/test-query-execution-observer"]
 # Certification-only fault and occupancy controls; see
 # `identity_runtime/certification_controls.rs`.
 test-controls = [

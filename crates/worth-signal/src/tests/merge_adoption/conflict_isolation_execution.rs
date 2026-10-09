@@ -7,6 +7,16 @@ use crate::tests::support::{version_ab, ASPECT_A, ASPECT_B};
 
 #[test]
 fn runtime_merge_conflict_isolation_selection_flows_into_execution_counters() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let graph = SignalGraph::new().with_schema_registry(conflict_isolation_merge_schema_registry(
         Some("signal.conflict-isolation.per-node"),
     ));
@@ -21,7 +31,7 @@ fn runtime_merge_conflict_isolation_selection_flows_into_execution_counters() {
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(shared, &|view| {
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(431, 0))))
             })?;
@@ -36,7 +46,7 @@ fn runtime_merge_conflict_isolation_selection_flows_into_execution_counters() {
 
     runtime.switch_branch(feature.clone()).unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.mark_dirty(shared, ASPECT_A)?;
             tx.read(shared, &|view| {
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(432, 0))))
@@ -47,7 +57,7 @@ fn runtime_merge_conflict_isolation_selection_flows_into_execution_counters() {
 
     runtime.switch_branch(main.clone()).unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.mark_dirty(shared, ASPECT_A)?;
             tx.read(shared, &|view| {
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(433, 0))))

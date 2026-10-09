@@ -256,30 +256,32 @@ mod tests {
 
     #[test]
     fn custom_operational_failure_preserves_identity_phase_and_kind() {
-        let identity = CustomInvariantFailureIdentity::new(semantic_identity());
-        let failure = map_custom_invariant_failure(
-            InvariantViolationFields::CustomInvariantFailure {
-                identity: identity.clone(),
-                phase: CustomInvariantFailurePhase::Execution,
-                failure: ResultCustomInvariantFailureKind::Panic,
-                detail: "hostile panic".to_owned(),
-            },
-            "custom invariant execution failed".to_owned(),
-        )
-        .unwrap();
+        crate::domain_computation::primary_graph::with_test_advancement(|_active_phase| {
+            let identity = CustomInvariantFailureIdentity::new(semantic_identity());
+            let failure = map_custom_invariant_failure(
+                InvariantViolationFields::CustomInvariantFailure {
+                    identity: identity.clone(),
+                    phase: CustomInvariantFailurePhase::Execution,
+                    failure: ResultCustomInvariantFailureKind::Panic,
+                    detail: "hostile panic".to_owned(),
+                },
+                "custom invariant execution failed".to_owned(),
+            )
+            .unwrap();
 
-        assert_eq!(
+            assert_eq!(
             failure.kind(),
             crate::domain_computation::WorthQueryInvariantExecutionDenialKind::CustomInvariantDenied
         );
-        assert_eq!(
-            failure.custom_invariant_denial(),
-            Some(&WorthQueryCustomInvariantDenial::Failure {
-                identity,
-                phase: CustomInvariantFailurePhase::Execution,
-                failure: ResultCustomInvariantFailureKind::Panic,
-            })
-        );
+            assert_eq!(
+                failure.custom_invariant_denial(),
+                Some(&WorthQueryCustomInvariantDenial::Failure {
+                    identity,
+                    phase: CustomInvariantFailurePhase::Execution,
+                    failure: ResultCustomInvariantFailureKind::Panic,
+                })
+            );
+        });
     }
 
     #[test]

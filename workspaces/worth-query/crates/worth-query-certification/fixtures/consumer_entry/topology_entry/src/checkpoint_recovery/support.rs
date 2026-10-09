@@ -1,4 +1,6 @@
 mod execution_policy;
+#[cfg(feature = "test-query-execution-observer")]
+pub(super) use execution_policy::CHECKPOINT_EXECUTION_POLICY;
 use std::sync::{atomic::AtomicUsize, Arc};
 
 use worth_query_consumer_values::PositiveLength;
@@ -168,7 +170,7 @@ where
             declaration,
             configuration,
             limits.with_output_demand_resources(profile),
-            |graph, installed| {
+            |_phase, graph, installed| {
                 let principal = installed
                     .principal_binding(ConsumerPrincipalBinding::reference::<CheckpointSchema>())
                     .expect("the principal mapping is installed");
@@ -278,6 +280,24 @@ pub(super) fn limits_with_room(
     invalidation: worth_query_host::facade::runtime::WorthQueryInvalidationResources,
     candidates: WorthQueryApplicationCandidateResourceProfile,
 ) -> WorthQueryInMemoryApplicationLimits {
+    limits_with_policy(
+        retained_composite_commits,
+        active_observations,
+        unique_exact_component_pins,
+        invalidation,
+        candidates,
+        execution_policy::CHECKPOINT_EXECUTION_POLICY,
+    )
+}
+
+pub(super) fn limits_with_policy(
+    retained_composite_commits: u64,
+    active_observations: u64,
+    unique_exact_component_pins: u64,
+    invalidation: worth_query_host::facade::runtime::WorthQueryInvalidationResources,
+    candidates: WorthQueryApplicationCandidateResourceProfile,
+    policy: worth_foundational::ExecutionRequestPolicy,
+) -> WorthQueryInMemoryApplicationLimits {
     WorthQueryInMemoryApplicationLimits::new(
         WorthQueryProductWorldResources::install(
             RuntimeWorldBudgetInstallation {
@@ -308,7 +328,7 @@ pub(super) fn limits_with_room(
             },
             WorthQueryProductWorldClock::start(),
             invalidation,
-            execution_policy::CHECKPOINT_EXECUTION_POLICY,
+            policy,
         )
         .unwrap(),
         candidates,

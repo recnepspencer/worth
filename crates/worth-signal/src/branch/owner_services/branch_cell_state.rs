@@ -256,6 +256,8 @@ where
 
     pub(crate) fn execute_canonical_transaction<E, Ctx, F>(
         &mut self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+
         _permit: &SignalOwnerMovementPermit<'_>,
         conditional_operation_scope: super::conditional_execution::SignalConditionalOperationScopeBinding,
         runtime_ctx: &mut Ctx,
@@ -265,6 +267,7 @@ where
         F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
     {
         self.state.execute_canonical_transaction(
+            execution,
             &mut self.head_generation,
             &mut self.restore_snapshot_id,
             Some(conditional_operation_scope),

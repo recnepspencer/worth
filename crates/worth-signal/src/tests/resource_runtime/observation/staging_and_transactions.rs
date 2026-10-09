@@ -172,6 +172,16 @@ fn resource_completion_rollback_of_staged_admitted_preserves_pending_request() {
 
 #[test]
 fn resource_completion_transaction_commit_delivers_lifecycle_observation_once() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let node = graph.node().build();
     let mut runtime = TestRuntime::build(graph);
@@ -204,7 +214,7 @@ fn resource_completion_transaction_commit_delivers_lifecycle_observation_once() 
 
     let mut ctx = ();
     let result = runtime
-        .transaction(&mut ctx, |tx| {
+        .transaction(request_execution, &mut ctx, |tx| {
             let staging = tx.stage_admitted_resource_completion(admitted_completion)?;
             tx.commit_staged_resource_completion(staging.staged_effect())?;
             Ok(())
@@ -255,6 +265,16 @@ fn resource_completion_transaction_commit_delivers_lifecycle_observation_once() 
 
 #[test]
 fn resource_completion_transaction_rollback_suppresses_observation_and_restores_state() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let node = graph.node().build();
     let mut runtime = TestRuntime::build(graph);
@@ -286,7 +306,7 @@ fn resource_completion_transaction_rollback_suppresses_observation_and_restores_
     );
 
     let mut ctx = ();
-    let mut tx = runtime.begin(&mut ctx);
+    let mut tx = runtime.begin(request_execution, &mut ctx);
     let staging = tx
         .stage_admitted_resource_completion(admitted_completion)
         .expect("completion should stage inside transaction");

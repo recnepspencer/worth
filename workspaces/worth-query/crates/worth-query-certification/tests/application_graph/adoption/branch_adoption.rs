@@ -57,6 +57,9 @@ fn one_branch_adopts_p1_while_its_sibling_keeps_running_p0() {
         "adoption validates both seeded documents, including the related workflow subject"
     );
     let performed = match prepared.publish() {
+        WorthQueryBranchAdoptionPublicationOutcome::ExecutionDenied(cause) => {
+            panic!("the declared host policy admits adoption: {cause:?}")
+        }
         WorthQueryBranchAdoptionPublicationOutcome::Performed(performed) => performed,
         WorthQueryBranchAdoptionPublicationOutcome::NoEffect(no_effect) => {
             panic!("adoption unexpectedly had no effect: {no_effect:?}")
@@ -180,6 +183,9 @@ fn prepared_adoption_refuses_a_branch_head_that_moved() {
         RetentionVerdict::Performed(SEED_RETENTION + 1)
     );
     match prepared.publish() {
+        WorthQueryBranchAdoptionPublicationOutcome::ExecutionDenied(cause) => {
+            panic!("the declared host policy admits adoption: {cause:?}")
+        }
         WorthQueryBranchAdoptionPublicationOutcome::NoEffect(no_effect) => assert_eq!(
             no_effect.cause(),
             worth_query_host::facade::runtime::NoEffectCause::StaleExpectedProductHead

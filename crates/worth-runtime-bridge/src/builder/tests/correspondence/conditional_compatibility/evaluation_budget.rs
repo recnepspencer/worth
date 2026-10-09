@@ -95,6 +95,10 @@ impl BridgeConditionalComputeProvider for CountingCompute {
 
 #[test]
 fn cold_source_recomputes_and_a_live_slot_forces_typed_capacity_denial() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let budget = worth_signal::facade::runtime::SignalConditionalEvaluationBudget {
         maximum_retained_slots: 1,
         maximum_retained_bytes: 512 * 1024 * 1024,
@@ -122,7 +126,12 @@ fn cold_source_recomputes_and_a_live_slot_forces_typed_capacity_denial() {
         .unwrap();
     let mut computes = AtomicUsize::new(0);
     let evidence = owner
-        .execute_admitted_conditional(&session, request(&lowering, &source, 1), &mut computes)
+        .execute_admitted_conditional(
+            request_execution,
+            &session,
+            request(&lowering, &source, 1),
+            &mut computes,
+        )
         .unwrap();
     assert_eq!(computes.load(Ordering::SeqCst), 1);
     assert_eq!(evidence.signal().counters().compute_contacts, 1);
@@ -155,6 +164,10 @@ fn cold_source_recomputes_and_a_live_slot_forces_typed_capacity_denial() {
 
 #[test]
 fn rejected_affinity_does_not_manufacture_a_later_slot_reuse() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (mut builder, installation) = installation_fixture_with_budget(
         always_eligible_contract("query:one"),
         &["bridge-main"],
@@ -179,6 +192,7 @@ fn rejected_affinity_does_not_manufacture_a_later_slot_reuse() {
     let mut computes = AtomicUsize::new(0);
 
     let denial = match owner.execute_admitted_conditional(
+        request_execution,
         &session,
         request(&lowering, &wrong_source, 1),
         &mut computes,
@@ -199,7 +213,12 @@ fn rejected_affinity_does_not_manufacture_a_later_slot_reuse() {
     );
 
     let evidence = owner
-        .execute_admitted_conditional(&session, request(&lowering, &source, 2), &mut computes)
+        .execute_admitted_conditional(
+            request_execution,
+            &session,
+            request(&lowering, &source, 2),
+            &mut computes,
+        )
         .unwrap();
     assert_eq!(computes.load(Ordering::SeqCst), 1);
     assert_eq!(
@@ -216,6 +235,10 @@ fn rejected_affinity_does_not_manufacture_a_later_slot_reuse() {
 
 #[test]
 fn concurrent_busy_denial_does_not_claim_slot_reuse() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (mut builder, installation) = installation_fixture_with_budget(
         always_eligible_contract("query:one"),
         &["bridge-main"],
@@ -255,6 +278,7 @@ fn concurrent_busy_denial_does_not_claim_slot_reuse() {
                 release: release_receiver,
             };
             executing_owner.execute_admitted_conditional(
+                request_execution,
                 &executing_session,
                 request(&executing_lowering, &executing_source, 1),
                 &mut context,
@@ -264,8 +288,12 @@ fn concurrent_busy_denial_does_not_claim_slot_reuse() {
         entered_receiver
             .recv_timeout(std::time::Duration::from_secs(5))
             .expect("the first execution must reach its compute provider");
-        let contender =
-            owner.execute_admitted_conditional(&session, request(&lowering, &source, 2), &mut ());
+        let contender = owner.execute_admitted_conditional(
+            request_execution,
+            &session,
+            request(&lowering, &source, 2),
+            &mut (),
+        );
         release_sender
             .send(())
             .expect("the blocked execution must still be waiting");

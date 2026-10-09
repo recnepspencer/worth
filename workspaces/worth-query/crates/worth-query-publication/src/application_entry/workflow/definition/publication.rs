@@ -6,6 +6,7 @@ use worth_query_declaration::facade::{
     },
     application_program::ApplicationWorkflowSpec,
 };
+use worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase as AdvancementPhase;
 use worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use worth_query_execution::publication_boundary::workflow_definition_publication::{
     PreparedWorkflowDefinitionPublication, WorkflowDefinitionExpectedPredecessor,
@@ -89,7 +90,7 @@ where
         >,
 {
     pub fn prepare_workflow_publication<Spec>(
-        mut self,
+        self,
         contract: WorthQueryInstalledWorkflowDefinitionContract<Schema, Spec>,
         expected_predecessor: WorkflowDefinitionExpectedPredecessor,
     ) -> Result<
@@ -105,6 +106,33 @@ where
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
+        let request_scope = self.request_scope().clone();
+        let runtime = self.application_runtime();
+        runtime.with_application_advancement(&request_scope, |phase| {
+                self.prepare_workflow_publication_in_advancement(&phase ,contract, expected_predecessor)
+            }).map_err(|cause| WorthQueryWorkflowDefinitionPublicationPreparationDenial::RequestAdmission(
+            WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause),
+        ))?
+    }
+
+    pub(in crate::application_entry) fn prepare_workflow_publication_in_advancement<Spec>(
+        mut self, _phase: &AdvancementPhase<'_>,
+        contract: WorthQueryInstalledWorkflowDefinitionContract<Schema, Spec>,
+        expected_predecessor: WorkflowDefinitionExpectedPredecessor,
+    ) -> Result<
+        WorthQueryWorkflowDefinitionPublicationRequest<
+            'application,
+            Schema,
+            MutationOperation<Schema, Intent>,
+            MutationInput<Schema, Intent>,
+            MutationScope<Schema, IntentBinding<Schema, Intent>>,
+        >,
+        WorthQueryWorkflowDefinitionPublicationPreparationDenial,
+    >
+    where
+        Spec: ApplicationWorkflowSpec<Schema = Schema>,
+    {
+
         let application = self.application_runtime();
         let selected = application
             .on_branch(self.product_branch())
@@ -141,6 +169,8 @@ where
             prepared,
             idempotency: mutation.idempotency,
         })
+
+
     }
 }
 
@@ -168,7 +198,26 @@ where
     Input: Clone + Send + Sync + 'static,
 {
     pub fn execute(self) -> WorkflowDefinitionPublicationOutcome {
+        self.application
+            .with_application_advancement(&self.prepared.request_scope().clone(), |phase| {
+                self.execute_in_advancement(&phase)
+            })
+            .unwrap_or_else(|cause| {
+                WorkflowDefinitionPublicationOutcome::Application(
+                    cause
+                        .into_commit_outcome()
+                        .landed()
+                        .expect_err("request admission cannot commit"),
+                )
+            })
+    }
+
+    pub(in crate::application_entry) fn execute_in_advancement(
+        self,
+        phase: &AdvancementPhase<'_>,
+    ) -> WorkflowDefinitionPublicationOutcome {
         WorthQueryWorkflowDefinitionPublicationAdapter::compare_and_commit(
+            phase,
             self.application,
             self.prepared,
             self.idempotency,

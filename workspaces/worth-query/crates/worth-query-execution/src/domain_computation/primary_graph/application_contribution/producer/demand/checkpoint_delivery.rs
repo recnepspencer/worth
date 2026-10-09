@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::progression::denial;
@@ -25,6 +26,8 @@ where
 {
     pub(super) fn advance_output_checkpoint(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         interest: &WorthQueryOutputDemandInterest,
         producer_identity: &str,
         claim: WorthQueryOutputClaimIdentity,
@@ -40,6 +43,7 @@ where
                 // Published: nothing moved, so the caller does not spin on it.
                 let mut delivered = false;
                 self.deliver_output_checkpoint_with_finish(
+                    phase,
                     producer_identity,
                     receipt,
                     delivery,
@@ -59,6 +63,7 @@ where
                 ready_backing,
             } => {
                 let readiness = match self.evaluate_current_output_readiness(
+                    phase,
                     producer_identity,
                     &receipt,
                     delivery.as_ref(),
@@ -105,6 +110,8 @@ where
 
     fn deliver_output_checkpoint_with_finish(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         producer_identity: &str,
         receipt: crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
         delivery: Delivery,
@@ -152,7 +159,7 @@ where
         let root = self
             .granular_invalidation_installation()
             .retain_product_shared_root();
-        let outcome = root.deliver_performed_relational_change(lowering, ordinal, change);
+        let outcome = root.deliver_performed_relational_change(phase, lowering, ordinal, change);
         let delivered = match outcome {
             Ok(crate::domain_computation::execution_runtime::product_world::WorthQueryPerformedRelationalProductChangeDeliveryOutcome::Success(delivered)) => delivered,
             Ok(outcome) => {
@@ -171,6 +178,7 @@ where
             }
             Err(cause) => {
                 let kind = match cause.kind() {
+                    DeliveryDenialKind::ExecutionRequest(cause) => WorthQueryOutputDemandDenialKind::ExecutionRequest(cause),
                     DeliveryDenialKind::ForeignProductRoot
                     | DeliveryDenialKind::ForeignProductOccurrence
                     | DeliveryDenialKind::ForeignConditionalOperation

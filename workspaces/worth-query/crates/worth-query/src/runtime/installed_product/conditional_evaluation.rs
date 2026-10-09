@@ -44,6 +44,7 @@ pub(super) struct WorthQueryConditionalEvaluationRegistry {
 impl WorthQueryInstalledProduct {
     pub(in crate::runtime) fn execute_conditional(
         &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
         selected: &Arc<WorthQueryProductBranchLease>,
         request: BridgeConditionalExecutionRequest<'_>,
         context: &mut dyn std::any::Any,
@@ -51,7 +52,7 @@ impl WorthQueryInstalledProduct {
         self.validate_selected_source(selected, request.bridge_snapshot_identity)
             .map_err(|(kind, detail)| (kind, detail.to_string(), Default::default(), 0))?;
         self.conditional_evaluations
-            .execute(self, selected, request, context)
+            .execute(execution, self, selected, request, context)
     }
 }
 
@@ -78,6 +79,7 @@ impl WorthQueryConditionalEvaluationRegistry {
 
     fn execute(
         &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
         installed: &WorthQueryInstalledProduct,
         product: &Arc<WorthQueryProductBranchLease>,
         request: BridgeConditionalExecutionRequest<'_>,
@@ -101,7 +103,7 @@ impl WorthQueryConditionalEvaluationRegistry {
             }
         };
         entry
-            .execute(&session, installed, request, context)
+            .execute(execution, &session, installed, request, context)
             .map_err(denial_parts)
     }
 }

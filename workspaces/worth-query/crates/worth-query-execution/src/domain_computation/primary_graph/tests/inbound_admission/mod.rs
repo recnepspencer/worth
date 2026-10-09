@@ -17,3 +17,6 @@ mod tests;
 mod transport_recovery_tests;
 mod transport_tests;
 mod verifier;
+
+#[cfg(feature = "test-query-execution-observer")]
+mod advancement_custody;

@@ -45,6 +45,16 @@ fn runtime_builder_supports_typed_runtime_configuration() {
 
 #[test]
 fn transaction_helper_commits_on_success() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let source = graph.node().build();
     let dependent = graph.node().build();
@@ -54,7 +64,7 @@ fn transaction_helper_commits_on_success() {
 
     let mut runtime = SignalRuntime::builder(graph).with_kernel_defaults().build();
     let outcome = runtime
-        .transaction(&mut (), |transaction| {
+        .transaction(request_execution, &mut (), |transaction| {
             transaction.mark_dirty(source, ASPECT_A)?;
             Ok(())
         })
@@ -117,6 +127,16 @@ fn transaction_helper_commits_on_success() {
 
 #[test]
 fn transaction_helper_rolls_back_on_error() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let source = graph.node().build();
     let dependent = graph.node().build();
@@ -127,7 +147,7 @@ fn transaction_helper_rolls_back_on_error() {
 
     let mut runtime = SignalRuntime::builder(graph).with_kernel_defaults().build();
     let err = runtime
-        .transaction(&mut (), |transaction| {
+        .transaction(request_execution, &mut (), |transaction| {
             transaction.mark_dirty(source, ASPECT_A)?;
             Err(SignalError::internal("fail the transaction"))
         })

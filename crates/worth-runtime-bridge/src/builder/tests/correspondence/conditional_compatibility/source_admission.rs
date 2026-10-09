@@ -45,6 +45,10 @@ impl BridgeConditionalComputeProvider for CountingCompute {
 
 #[test]
 fn installed_source_dependency_denies_missing_or_mismatched_reader_before_compute() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     // Native Bridge installation over the explicit TestSource adapter. Its
     // reader admits only snapshot (1, 1); this is not a Relational owner proof.
     let (mut owner, installation) = installation_fixture(
@@ -72,6 +76,7 @@ fn installed_source_dependency_denies_missing_or_mismatched_reader_before_comput
         (Some(&exact), None),
     ] {
         let result = owner.execute(
+            request_execution,
             &signal_basis,
             BridgeConditionalExecutionRequest {
                 lowering: &lowering,
@@ -129,6 +134,7 @@ fn installed_source_dependency_denies_missing_or_mismatched_reader_before_comput
         .expect("source-present product admission uses the exact source and Signal basis");
     let evidence = owner
         .execute_admitted_conditional(
+            request_execution,
             &session,
             BridgeConditionalExecutionRequest {
                 lowering: &lowering,

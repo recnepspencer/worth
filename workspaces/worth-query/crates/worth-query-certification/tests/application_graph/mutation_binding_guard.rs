@@ -81,11 +81,18 @@ macro_rules! candidate {
     ($runtime:expr, $branch:expr, $binding:ty, $key:expr, $input:expr) => {{
         let (principal, admission, identities) = admit!($runtime, $branch, $binding, $key, $input);
         let HandlerResult::Completed(completed) = $runtime
-            .execute_mutation_handler::<$binding>(
-                &identities,
-                principal.principal_identity(),
-                admission,
+            .with_application_advancement(
+                &super::document_retention_model::operator_identity::request_scope(),
+                |phase| {
+                    $runtime.execute_mutation_handler::<$binding>(
+                        &phase,
+                        &identities,
+                        principal.principal_identity(),
+                        admission,
+                    )
+                },
             )
+            .expect("the fixture policy admits its handler advancement")
             .expect("the handler runs")
         else {
             panic!("the handler must produce a candidate");

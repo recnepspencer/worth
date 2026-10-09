@@ -30,6 +30,7 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
 
     pub(super) fn stage_execution_context<'a>(
         &'a self,
+        execution: worth_execution::ExecutionRequest<'a, 'a>,
         stage: &'a worth_query_installation::facade::WorthQueryPortableWorkflowStage,
         predecessor_receipts: &'a [&'a WorthQueryWorkflowStageReceipt],
         graph_receipts: &'a [WorthQueryBoundGraphExecutionReceipt],
@@ -58,6 +59,7 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
                 )
             })?;
         Ok(WorthQueryWorkflowStageExecutionContext::new(
+            execution,
             WorthQueryWorkflowStageExecutionScope {
                 operation_identity: self.bound.definition().canonical_identity(),
                 binding_identity: self.bound.binding_identity(),

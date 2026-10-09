@@ -7,6 +7,7 @@ pub(in crate::http::server) fn request_mutation_denial(
 ) -> BankHttpDenial {
     use WorthQueryApplicationRequestMutationDenialKind as Denial;
     match kind {
+        Denial::ExecutionRequest(cause) => super::super::advancement_denial::advancement(cause),
         Denial::IdempotencyExecutionDenied(kind) => pending_execution_denial(kind),
         Denial::ProductSelection => {
             BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh)

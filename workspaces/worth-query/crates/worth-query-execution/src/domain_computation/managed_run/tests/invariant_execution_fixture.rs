@@ -119,13 +119,15 @@ pub(super) struct InvariantExecutionObservation {
 }
 
 pub(super) fn execute_invariant(
+    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+
     state: Arc<Mutex<ProvisionalProviderState>>,
     requirements: Vec<WorthQueryInstalledInvariantExecutionRequirement>,
     slot: &str,
     locators: impl IntoIterator<Item = WorthQueryInvariantStateLocator>,
 ) -> InvariantExecutionObservation {
     let (mut running, graph) = invariant_run(state, requirements);
-    let (staged, fresh) = staged_with_fresh_read_set(&mut running, &graph);
+    let (staged, fresh) = staged_with_fresh_read_set(execution, &mut running, &graph);
     let program = staged
         .effect_authority()
         .lower_provisional_program(
@@ -157,6 +159,8 @@ pub(super) fn execute_invariant(
 }
 
 pub(super) fn admit_progression(
+    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+
     state: Arc<Mutex<ProvisionalProviderState>>,
     requirements: Vec<WorthQueryInstalledInvariantExecutionRequirement>,
     slots: impl IntoIterator<Item = &'static str>,
@@ -165,7 +169,7 @@ pub(super) fn admit_progression(
     WorthQueryInvariantExecutionFailure,
 > {
     let (mut running, graph) = invariant_run(state, requirements);
-    let (staged, fresh) = staged_with_fresh_read_set(&mut running, &graph);
+    let (staged, fresh) = staged_with_fresh_read_set(execution, &mut running, &graph);
     let program = staged
         .effect_authority()
         .lower_provisional_program(

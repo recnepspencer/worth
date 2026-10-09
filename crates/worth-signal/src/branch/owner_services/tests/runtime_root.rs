@@ -92,6 +92,15 @@ fn real_runtime_cells_make_independent_progress_while_one_target_is_parked() {
     let b_owner = owner.clone();
     let branch_b_id = branch_b.id;
     thread::spawn(move || {
+        let serial_request = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(
+                crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+            ),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
         let admission = b_owner.admit().expect("branch B operation is admitted");
         let looked_up = b_owner
             .lookup_cell(&admission, branch_b_id)
@@ -100,6 +109,7 @@ fn real_runtime_cells_make_independent_progress_while_one_target_is_parked() {
         let mut runtime_ctx = ();
         let result = looked_up
             .advance_exact::<(), (), _>(
+                request_execution,
                 &admission,
                 &branch_b_basis,
                 &mut runtime_ctx,

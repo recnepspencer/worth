@@ -43,6 +43,10 @@ pub struct BankEstateEmergencyAccessActivityLiveUpdate {
 
 #[derive(Debug)]
 pub enum BankEstateEmergencyAccessActivityLiveOutcome {
+    /// Admission refused before any principal or live projection read.
+    ExecutionRequest(
+        worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial,
+    ),
     Delivered(BankEstateEmergencyAccessActivityLiveUpdate),
     Pending,
     Overflow(BankApplicationLiveOverflow),
@@ -144,7 +148,41 @@ impl BankEstateEmergencyAccessActivityLiveLease<'_> {
             Ok(WorthQueryApplicationLiveOutcome::Unavailable) => {
                 BankEstateEmergencyAccessActivityLiveOutcome::Unavailable
             }
-            Err(_) => BankEstateEmergencyAccessActivityLiveOutcome::Unavailable,
+            Err(denial) => {
+                use worth_query_host::facade::{
+                    application_contribution::{
+                        WorthQueryAdvancementDenial as Opening,
+                        WorthQueryManagedComputationInterruption as Interruption,
+                    },
+                    application_entry::WorthQueryApplicationLiveNextDenial as Next,
+                };
+                match denial {
+                    Next::ExecutionRequest(cause) => match cause {
+                        Opening::Interrupted(Interruption::Cancelled) => {
+                            BankEstateEmergencyAccessActivityLiveOutcome::Cancelled
+                        }
+                        Opening::Interrupted(Interruption::DeadlineExceeded) => {
+                            BankEstateEmergencyAccessActivityLiveOutcome::DeadlineExceeded
+                        }
+                        Opening::ForeignPhase => {
+                            BankEstateEmergencyAccessActivityLiveOutcome::ExecutionRequest(cause)
+                        }
+                        Opening::Resource(_)
+                        | Opening::NestedOpening
+                        | Opening::NestedStopped
+                        | Opening::Panicked => {
+                            BankEstateEmergencyAccessActivityLiveOutcome::ExecutionRequest(cause)
+                        }
+                    },
+                    Next::ForeignApplication
+                    | Next::ForeignBranch
+                    | Next::BindingInstallation(_)
+                    | Next::ProductSelection(_)
+                    | Next::PrincipalResolution(_) => {
+                        BankEstateEmergencyAccessActivityLiveOutcome::Unavailable
+                    }
+                }
+            }
         }
     }
 

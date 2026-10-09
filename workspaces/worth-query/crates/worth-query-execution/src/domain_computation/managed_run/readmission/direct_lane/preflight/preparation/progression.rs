@@ -94,19 +94,36 @@ pub(super) fn bridge_cleanup_recovery_required(
 }
 
 pub(in crate::domain_computation::managed_run) fn readmit_direct(
+    active_request: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+
     yielded: WorthQueryYieldedDirectRun,
     query_runtime: &WorthQueryExecutionRuntime,
     bridge_runtime: &RuntimeBridge,
 ) -> WorthQueryDirectReadmissionOutcome {
+    let active_request = match yielded.request_for_phase(active_request) {
+        Ok(request) => request,
+        Err(_) => {
+            return WorthQueryDirectReadmissionOutcome::Denied(
+                WorthQueryDirectReadmissionDenied::new(
+                    WorthQueryDirectReadmissionDenialKind::ForeignAdvancementPhase,
+                    "the phase belongs to another installed runtime",
+                    yielded,
+                    WorthQueryReadmissionProgress::default().evidence(),
+                ),
+            )
+        }
+    };
     let (pending, counters) =
         match super::prepare_direct_provider_restore(yielded, query_runtime, bridge_runtime) {
             Ok(prepared) => prepared,
             Err(outcome) => return outcome,
         };
-    restore_direct(pending, bridge_runtime, counters)
+    restore_direct(active_request, pending, bridge_runtime, counters)
 }
 
 pub(super) fn restore_direct(
+    active_request: worth_execution::ExecutionRequest<'_, '_>,
+
     pending: WorthQueryDirectBridgeReadmissionPending,
     bridge_runtime: &RuntimeBridge,
     mut progress: WorthQueryReadmissionProgress,
@@ -120,6 +137,7 @@ pub(super) fn restore_direct(
     } = pending;
     progress.attempted_provider_restore();
     let provider = match resource_pending.restore_provider(
+        active_request,
         execution,
         contract,
         &crate::domain_computation::managed_run::WorthQueryDirectReadmissionTransitionPermit::mint(

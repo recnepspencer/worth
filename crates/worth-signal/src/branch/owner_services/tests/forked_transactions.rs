@@ -9,6 +9,16 @@ use super::{runtime_root::runtime_with_two_branches_from_graph, with_movement_pe
 
 #[test]
 fn forked_owner_cell_transactions_restore_abort_and_isolate_commit() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let source_a = graph.create_node();
     let source_b = graph.create_node();
@@ -66,7 +76,7 @@ fn forked_owner_cell_transactions_restore_abort_and_isolate_commit() {
                     destination.incarnation(),
                     destination_state.state().installed_definition().cloned(),
                 );
-                destination_state.execute_canonical_transaction::<(), (), _>(
+                destination_state.execute_canonical_transaction::<(), (), _>(request_execution,
                     permit,
                     operation_scope,
                     &mut (),
@@ -114,7 +124,7 @@ fn forked_owner_cell_transactions_restore_abort_and_isolate_commit() {
                     destination.incarnation(),
                     destination_state.state().installed_definition().cloned(),
                 );
-                destination_state.execute_canonical_transaction::<(), (), _>(
+                destination_state.execute_canonical_transaction::<(), (), _>(request_execution,
                     permit,
                     operation_scope,
                     &mut (),

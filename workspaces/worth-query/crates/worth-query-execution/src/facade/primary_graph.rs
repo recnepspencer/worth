@@ -10,6 +10,7 @@ pub use crate::domain_computation::primary_graph::query_read_kernel_entries_on_t
 pub use crate::domain_computation::primary_graph::required_ready_custody_bytes_for_test;
 #[cfg(feature = "test-query-execution-observer")]
 pub use crate::domain_computation::primary_graph::{
+    bound_advancement_requests_on_this_thread_for_test,
     place_managed_computations_on_this_thread_for_test, test_execution_workers,
     WorthQueryExecutionPlacementForTest,
 };
@@ -261,3 +262,20 @@ pub use crate::domain_computation::primary_graph::relational_execution_kind;
 pub use crate::domain_computation::{
     WorthQueryProviderSessionControlStopKind, WorthQueryProviderSessionDenialKind,
 };
+
+#[cfg(feature = "test-query-execution-observer")]
+pub use crate::domain_computation::primary_graph::{
+    advancement_requests_on_this_thread_for_test, caller_pass_reports_on_this_thread_for_test,
+};
+
+#[cfg(feature = "test-query-execution-observer")]
+pub use worth_signal::facade::{
+    signal_request_charges_on_this_thread_for_test, signal_request_refusals_on_this_thread_for_test,
+};
+
+/// The Signal owner's typed safe-point refusal, exposed for request-custody probes.
+#[cfg(feature = "test-query-execution-observer")]
+pub use worth_signal::facade::SignalCheckpointDenial;
+
+#[cfg(feature = "test-query-execution-observer")]
+pub use crate::domain_computation::execution_runtime::product_world::installed_source_reads_on_this_thread_for_test;

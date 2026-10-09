@@ -3,6 +3,12 @@ use std::num::NonZeroUsize;
 #[test]
 fn mixed_same_head_race_has_one_winner_and_preserves_signal_loser() {
     let mut court = CompositeSupplyChainCourt::compile();
+    let policy = match court.world.execution_placement() {
+        worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy)
+        | worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Leased { policy, .. } => {
+            policy
+        }
+    };
     let root = court.bootstrap();
     let token = RuntimeWorldCancellationSource::new().token();
     let signal_attempt = signal_prepared(&court, &root, &token);
@@ -22,7 +28,13 @@ fn mixed_same_head_race_has_one_winner_and_preserves_signal_loser() {
     std::thread::scope(|scope| {
         let pause = control.pause_before_product_compare(NonZeroUsize::new(1).unwrap());
         let worker = scope.spawn(move || {
-            port.execute_with_signal(signal_attempt, &mut context, &token, |_| Ok(()))
+            port.execute_with_signal(
+                worth_execution::ExecutionRequest::serial(&super::serial_request(policy)),
+                signal_attempt,
+                &mut context,
+                &token,
+                |_| Ok(()),
+            )
         });
         assert!(pause.wait_until_reached(WAIT));
         let inspection = court.world.inspection_port();
@@ -66,6 +78,7 @@ fn mixed_same_head_race_has_one_winner_and_preserves_signal_loser() {
         assert_eq!(old.selected_commit(), root.selected_commit());
         read.send(()).unwrap();
         let winner = court.world.publication_port().execute_without_signal(
+            worth_execution::ExecutionRequest::serial(&super::serial_request(policy)),
             relational_attempt,
             &RuntimeWorldCancellationSource::new().token(),
         );

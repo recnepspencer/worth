@@ -37,13 +37,23 @@ fn build_runtime(graph: SignalGraph) -> SignalRuntime<Domain, Impact, Ev, (), Ti
 
 #[test]
 fn rollback_heavy_workload_leaves_runtime_consistent() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let root = graph.node().build();
     let mut runtime = build_runtime(graph);
 
     let mut ctx = ();
     for _ in 0..100 {
-        let mut tx = runtime.begin(&mut ctx);
+        let mut tx = runtime.begin(request_execution, &mut ctx);
         tx.mark_dirty(root, ASPECT_B).unwrap();
         tx.emit_event(Ev::Tick);
         tx.flush_events(CheckpointBarrier::PerOperation).unwrap();
@@ -62,6 +72,16 @@ fn rollback_heavy_workload_leaves_runtime_consistent() {
 #[test]
 #[ignore = "long-running stress test for CI/nightly profiles"]
 fn stress_100k_nodes_transaction_commit() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let mut nodes = Vec::with_capacity(100_000);
     for _ in 0..100_000 {
@@ -70,7 +90,7 @@ fn stress_100k_nodes_transaction_commit() {
 
     let mut runtime = build_runtime(graph);
     let mut ctx = ();
-    let mut tx = runtime.begin(&mut ctx);
+    let mut tx = runtime.begin(request_execution, &mut ctx);
 
     for node in nodes.iter().step_by(97) {
         tx.mark_dirty(*node, ASPECT_B).unwrap();

@@ -104,6 +104,16 @@ fn advance_both_without_runtime_borrow(
     left_basis: AdmittedSignalBranchBasis,
     right_basis: AdmittedSignalBranchBasis,
 ) -> (AdmittedSignalBranchBasis, AdmittedSignalBranchBasis) {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            worth_signal::facade::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (left_tx, left_rx) = mpsc::sync_channel(1);
     let (right_tx, right_rx) = mpsc::sync_channel(1);
     thread::scope(|scope| {
@@ -111,6 +121,7 @@ fn advance_both_without_runtime_borrow(
         scope.spawn(move || {
             let result = left_mutation
                 .advance_exact(
+                    request_execution,
                     &left_basis,
                     &mut (),
                     &SignalOwnerCancellationSource::new().token(),
@@ -124,6 +135,7 @@ fn advance_both_without_runtime_borrow(
         scope.spawn(move || {
             let result = mutation
                 .advance_exact(
+                    request_execution,
                     &right_basis,
                     &mut (),
                     &SignalOwnerCancellationSource::new().token(),

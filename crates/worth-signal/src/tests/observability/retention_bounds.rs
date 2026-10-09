@@ -8,6 +8,16 @@ use crate::tests::support::{version_ab, ASPECT_A};
 
 #[test]
 fn branch_and_snapshot_churn_respect_retention_budget_under_all_tiers() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     for policy in [
         SignalRuntimePolicy::operational()
             .with_history_limit(2)
@@ -32,7 +42,7 @@ fn branch_and_snapshot_churn_respect_retention_budget_under_all_tiers() {
         let mut runtime_ctx = ();
 
         runtime
-            .transaction(&mut runtime_ctx, |tx| {
+            .transaction(request_execution, &mut runtime_ctx, |tx| {
                 tx.read(source, &|view| {
                     Ok(view.finish(
                         NodeEvaluationResult::from_version(version_ab(1, 0))
@@ -53,7 +63,7 @@ fn branch_and_snapshot_churn_respect_retention_budget_under_all_tiers() {
 
         runtime.switch_branch(feature.clone()).unwrap();
         runtime
-            .transaction(&mut runtime_ctx, |tx| {
+            .transaction(request_execution, &mut runtime_ctx, |tx| {
                 tx.mark_dirty(source, ASPECT_A)?;
                 tx.read(source, &|view| {
                     Ok(view.finish(
@@ -85,7 +95,7 @@ fn branch_and_snapshot_churn_respect_retention_budget_under_all_tiers() {
                 .restore_branch_snapshot(branch.clone(), snapshot)
                 .unwrap();
             runtime
-                .transaction(&mut runtime_ctx, |tx| {
+                .transaction(request_execution, &mut runtime_ctx, |tx| {
                     tx.mark_dirty(source, ASPECT_A)?;
                     tx.read(source, &|view| {
                         Ok(view.finish(
@@ -121,6 +131,16 @@ fn branch_and_snapshot_churn_respect_retention_budget_under_all_tiers() {
 
 #[test]
 fn ordinary_summary_and_history_rendering_respect_retained_detail_limits() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let policy = SignalRuntimePolicy::development()
         .with_history_limit(3)
         .with_detail_limit(1)
@@ -134,7 +154,7 @@ fn ordinary_summary_and_history_rendering_respect_retained_detail_limits() {
 
     for (index, node) in [source_a, source_b, source_c].into_iter().enumerate() {
         runtime
-            .transaction(&mut runtime_ctx, |tx| {
+            .transaction(request_execution, &mut runtime_ctx, |tx| {
                 tx.read(node, &|view| {
                     Ok(view.finish(
                         NodeEvaluationResult::from_version(version_ab(index as u64 + 1, 0))
@@ -147,7 +167,7 @@ fn ordinary_summary_and_history_rendering_respect_retained_detail_limits() {
     }
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.mark_dirty(source_a, ASPECT_A)?;
             tx.mark_dirty(source_b, ASPECT_A)?;
             Ok(())
@@ -188,6 +208,16 @@ fn ordinary_summary_and_history_rendering_respect_retained_detail_limits() {
 
 #[test]
 fn long_session_branch_churn_with_mixed_reads_keeps_bounds_and_cold_work_honest() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let policy = SignalRuntimePolicy::operational()
         .with_history_limit(2)
         .with_detail_limit(1)
@@ -202,7 +232,7 @@ fn long_session_branch_churn_with_mixed_reads_keeps_bounds_and_cold_work_honest(
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(source, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(1, 0))
@@ -221,7 +251,7 @@ fn long_session_branch_churn_with_mixed_reads_keeps_bounds_and_cold_work_honest(
 
     runtime.switch_branch(feature.clone()).unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.mark_dirty(source, ASPECT_A)?;
             tx.read(source, &|view| {
                 Ok(view.finish(

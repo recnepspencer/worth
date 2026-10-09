@@ -59,6 +59,7 @@ enum PublishedSnapshotCustody {
 }
 
 pub(super) fn commit(
+    execution: worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,
     prepared: WorthQueryPreparedApplicationCommit,
     mint: super::WorthQueryCommitProgressionMint,
@@ -138,6 +139,7 @@ pub(super) fn commit(
     #[cfg(feature = "test-world-operation-control")]
     provider.after_application_candidate_preparation_for_test();
     let performed = product_publication::publish(
+        execution,
         provider,
         &mut attempt,
         candidate,

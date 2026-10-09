@@ -47,6 +47,8 @@ where
     /// owner-wide callback lock.
     pub(crate) fn execute_canonical_transaction<E, Ctx, F>(
         &mut self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+
         branch_head_generation: &mut u64,
         branch_restore_snapshot_id: &mut Option<crate::state::SignalSnapshotId>,
         conditional_operation_scope: Option<
@@ -72,6 +74,7 @@ where
         event_bus.set_telemetry_capture(captures_telemetry);
         let observations = RuntimeObservationRegistry::default();
         let mut transaction = SignalTransaction {
+            execution,
             runtime_ctx,
             observations: &observations,
             config: &mut self.authority.config,

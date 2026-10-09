@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_query_declaration::facade::{
     application_program::ApplicationWorkflowSpec,
     application_schema::{ApplicationOperationMarkerIdentity, ApplicationStructuredValueBinding},
@@ -173,6 +174,8 @@ impl WorthQueryWorkflowProposalAdapter {
     }
 
     pub fn compare_and_commit<Schema, Operation, Input, Scope>(
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         prepared: PreparedWorkflowProposal<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
@@ -182,6 +185,6 @@ impl WorthQueryWorkflowProposalAdapter {
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        runtime.compare_and_commit_workflow_proposal(prepared, idempotency)
+        runtime.compare_and_commit_workflow_proposal(phase, prepared, idempotency)
     }
 }

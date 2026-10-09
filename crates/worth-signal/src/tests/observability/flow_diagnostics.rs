@@ -8,6 +8,16 @@ use crate::tests::support::{version_ab, GraphDependencyBatchExt, ASPECT_A};
 
 #[test]
 fn flow_diagnostics_attach_event_epochs_after_successful_commit() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let source = graph.node().build();
     let dependent = graph.node().build();
@@ -17,7 +27,7 @@ fn flow_diagnostics_attach_event_epochs_after_successful_commit() {
     let mut runtime = build_runtime(graph);
 
     runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.evaluate_with_plan(
                 source,
                 &|view| Ok(view.finish(version_ab(1, 0))),
@@ -129,6 +139,16 @@ fn fillet_style_explanation_stays_local_to_the_changed_partition_scope() {
 
 #[test]
 fn flow_cause_samples_surface_locality_triage_without_false_rewiring() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let source = graph.node().partitioned_output().build();
     let fillet = graph.node().build();
@@ -139,7 +159,7 @@ fn flow_cause_samples_surface_locality_triage_without_false_rewiring() {
     runtime.set_runtime_policy(SignalRuntimePolicy::development());
 
     runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.evaluate_with_plan(
                 source,
                 &|view| Ok(view.finish(version_ab(1, 0))),
@@ -172,6 +192,16 @@ fn flow_cause_samples_surface_locality_triage_without_false_rewiring() {
 
 #[test]
 fn operational_flow_diagnostics_do_not_sample_explanations_by_default() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let source = graph.node().partitioned_output().build();
     let fillet = graph.node().build();
@@ -185,7 +215,7 @@ fn operational_flow_diagnostics_do_not_sample_explanations_by_default() {
         .unwrap();
 
     runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.evaluate_with_plan(
                 source,
                 &|view| Ok(view.finish(version_ab(1, 0))),

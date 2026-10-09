@@ -7,6 +7,16 @@ use crate::tests::support::version_ab;
 
 #[test]
 fn merge_branch_without_established_journal_boundary_fails_explicitly() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -19,7 +29,7 @@ fn merge_branch_without_established_journal_boundary_fails_explicitly() {
 
     runtime.switch_branch(feature.clone()).unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(shared, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(140, 0))
@@ -55,6 +65,16 @@ fn merge_branch_without_established_journal_boundary_fails_explicitly() {
 
 #[test]
 fn repeated_merge_after_target_restore_stays_bounded_and_history_honest() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -67,7 +87,7 @@ fn repeated_merge_after_target_restore_stays_bounded_and_history_honest() {
     runtime.switch_branch(feature.clone()).unwrap();
     let first = runtime.graph_mut().node().output_identity().build();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(first, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(96, 0))
@@ -94,7 +114,7 @@ fn repeated_merge_after_target_restore_stays_bounded_and_history_honest() {
     runtime.switch_branch(feature.clone()).unwrap();
     let second = runtime.graph_mut().node().output_identity().build();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(second, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(97, 0))
@@ -108,7 +128,7 @@ fn repeated_merge_after_target_restore_stays_bounded_and_history_honest() {
     runtime.switch_branch(main.clone()).unwrap();
     let unrelated = runtime.graph_mut().node().output_identity().build();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(unrelated, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(98, 0))

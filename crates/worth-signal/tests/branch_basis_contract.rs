@@ -164,6 +164,16 @@ fn unavailable_snapshot_is_distinct_from_reference_drift() {
 
 #[test]
 fn advance_moves_generation_and_stales_the_previous_descriptor() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            worth_signal::facade::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = runtime();
     let branch = runtime.current_branch();
     let before = runtime
@@ -171,7 +181,7 @@ fn advance_moves_generation_and_stales_the_previous_descriptor() {
         .expect("owner observation should succeed");
     let descriptor = before.descriptor().clone();
     let advance = runtime
-        .advance_signal_branch(&mut (), &before, |_| Ok(()))
+        .advance_signal_branch(request_execution, &mut (), &before, |_| Ok(()))
         .expect("owner advance should return a new admitted basis");
     assert_eq!(advance.transaction().outcome, TransactionOutcome::Committed);
     let after = advance.into_basis();
@@ -248,13 +258,23 @@ fn snapshot_and_restore_each_move_the_exact_reference() {
 
 #[test]
 fn stale_fork_and_failed_advance_are_typed_no_movement_outcomes() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            worth_signal::facade::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = runtime();
     let branch = runtime.current_branch();
     let stale = runtime
         .observe_signal_branch_basis(branch.clone())
         .expect("initial owner observation should succeed");
     let current = runtime
-        .advance_signal_branch(&mut (), &stale, |_| Ok(()))
+        .advance_signal_branch(request_execution, &mut (), &stale, |_| Ok(()))
         .expect("first advance should move the branch")
         .into_basis();
 
@@ -269,7 +289,7 @@ fn stale_fork_and_failed_advance_are_typed_no_movement_outcomes() {
     assert_eq!(after_fork_denial.observation(), current.observation());
 
     assert!(matches!(
-        runtime.advance_signal_branch(&mut (), &current, |_| {
+        runtime.advance_signal_branch(request_execution, &mut (), &current, |_| {
             Err(SignalError::invalid_input("injected mutation failure"))
         }),
         Err(SignalBranchAdvanceDenial::MutationFailedNoMovement { .. })
@@ -359,42 +379,5 @@ fn retention_lease_blocks_retirement_until_exact_release() {
     ));
 }
 
-#[test]
-fn admitted_basis_clone_blocks_retirement_until_one_holder_remains() {
-    let mut runtime = runtime();
-    let main_basis = runtime
-        .observe_signal_branch_basis(runtime.current_branch())
-        .expect("owner observation should succeed");
-    let (branch, basis) = runtime
-        .fork_signal_branch("shared-admission", &main_basis)
-        .expect("owner fork should succeed")
-        .into_parts();
-    let shared = basis.clone();
-
-    let denied = runtime.plan_signal_branch_retirement(
-        branch.clone(),
-        basis,
-        SignalBranchRetirementReason::Superseded,
-    );
-    assert!(matches!(
-        denied,
-        TransitionOutcome::Denied(SignalBranchRetirementDenial::SharedAdmittedBasis {
-            shared_holders: 2,
-            ..
-        })
-    ));
-
-    let plan = runtime.plan_signal_branch_retirement(
-        branch,
-        shared,
-        SignalBranchRetirementReason::Superseded,
-    );
-    let plan = match plan {
-        TransitionOutcome::Success(plan) => plan,
-        other => panic!("one remaining admitted holder should become linear: {other:?}"),
-    };
-    assert!(matches!(
-        runtime.retire_signal_branch(plan),
-        TransitionOutcome::Success(_)
-    ));
-}
+#[path = "branch_basis_contract/admitted_basis_clone_blocks_retirement_until_one_holder_remains.rs"]
+mod admitted_basis_clone_blocks_retirement_until_one_holder_remains;

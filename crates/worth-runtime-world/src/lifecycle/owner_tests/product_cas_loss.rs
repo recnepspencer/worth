@@ -99,6 +99,13 @@ fn publish_competing_head(
     current: &ProductBranchObservation,
     cell: &ProductBranchReferenceCell,
 ) -> ProductBranchReferenceSnapshot {
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::from_policy(&owner.state.execution.request_policy()),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     use crate::lifecycle::{RuntimeWorldOwnerExecutionService, RuntimeWorldPreparationService};
     let cancellation = RuntimeWorldCancellationSource::new();
     let prepared = owner
@@ -110,7 +117,9 @@ fn publish_competing_head(
         )
         .expect("the exact product head admits the independent Signal attempt");
     let settlement =
-        match owner.execute_with_signal(prepared, &mut (), &cancellation.token(), |_| Ok(())) {
+        match owner.execute_with_signal(execution, prepared, &mut (), &cancellation.token(), |_| {
+            Ok(())
+        }) {
             OwnerExecutionOutcome::Settled(settlement) => settlement,
             other => panic!("the Signal competitor must settle its real effect: {other:?}"),
         };
@@ -309,6 +318,12 @@ fn a_losing_cas_attempt_does_not_consume_its_reserved_history_slot() {
 fn settled_owner_recovery_adopts_without_replaying_relational_work() {
     use crate::lifecycle::ports::{RuntimeWorldOwnerExecutionService, RuntimeWorldRecoveryService};
     let (fixture, owner, expected) = setup_with_retention_capacity(16, 16);
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::from_policy(&owner.state.execution.request_policy()),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
     fixture.fail_next_relational_durable_append();
     let cancellation = RuntimeWorldCancellationSource::new();
     let prepared = prepare_relational(
@@ -319,6 +334,7 @@ fn settled_owner_recovery_adopts_without_replaying_relational_work() {
     );
     let retained = match RuntimeWorldOwnerExecutionService::execute_without_signal(
         owner.as_ref(),
+        execution,
         prepared,
         &cancellation.token(),
     ) {
@@ -340,6 +356,7 @@ fn settled_owner_recovery_adopts_without_replaying_relational_work() {
     drop(settled);
     let outcome = RuntimeWorldOwnerExecutionService::execute_without_signal(
         owner.as_ref(),
+        execution,
         prepared,
         &cancellation.token(),
     );

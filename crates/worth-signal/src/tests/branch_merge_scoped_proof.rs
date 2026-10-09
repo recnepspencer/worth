@@ -54,6 +54,16 @@ fn build_scoped_proof_runtime() -> (
     NodeId,
     NodeId,
 ) {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let graph = SignalGraph::new();
     let mut runtime = SignalRuntime::builder(graph).with_kernel_defaults().build();
     let support = runtime
@@ -81,7 +91,7 @@ fn build_scoped_proof_runtime() -> (
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(support, &|view| {
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(1, 0))))
             })?;
@@ -100,7 +110,7 @@ fn build_scoped_proof_runtime() -> (
     let feature = runtime.create_branch("feature-scoped-proof").unwrap();
     runtime.switch_branch(feature.clone()).unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.mark_dirty(primary, ASPECT_A)?;
             tx.read(primary, &|view| {
                 let upstream = view.read_aspect_version(support, ASPECT_A)?;
@@ -145,6 +155,16 @@ fn latest_retained_branch_merge_scoped_proof(
 
 #[test]
 fn scoped_merge_preview_execution_and_replay_preserve_the_same_proof_packet() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (mut runtime, feature, main, _support, primary, companion) = build_scoped_proof_runtime();
     let request = [
         SignalSelectedAspectRequestEntry::new(primary, ASPECT_A),
@@ -200,7 +220,7 @@ fn scoped_merge_preview_execution_and_replay_preserve_the_same_proof_packet() {
 
     let merged_snapshot = runtime.capture_branch_snapshot(main.clone()).unwrap();
     runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.mark_dirty(companion, ASPECT_A)?;
             tx.read(companion, &|view| {
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(303, 0))))
@@ -294,6 +314,16 @@ fn full_branch_scoped_merge_proof_carries_the_normalized_request_truth_forward()
 
 #[test]
 fn restore_after_merge_preserves_branch_local_scoped_merge_truth_without_widening() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (mut runtime, feature, main, _support, primary, companion) = build_scoped_proof_runtime();
     let merged = runtime
         .merge_raw()
@@ -306,7 +336,7 @@ fn restore_after_merge_preserves_branch_local_scoped_merge_truth_without_widenin
     let merged_snapshot = runtime.capture_branch_snapshot(main.clone()).unwrap();
 
     runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.mark_dirty(companion, ASPECT_A)?;
             tx.read(companion, &|view| {
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(303, 0))))

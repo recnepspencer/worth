@@ -178,6 +178,13 @@ pub(super) fn advance_product_head(
     owner: &TestOwner,
     expected: &ProductBranchObservation,
 ) -> ProductBranchObservation {
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::from_policy(&owner.state.execution.request_policy()),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let cancellation = RuntimeWorldCancellationSource::new();
     let prepared = RuntimeWorldPreparationService::prepare_publication(
         owner,
@@ -190,6 +197,7 @@ pub(super) fn advance_product_head(
     let mut context = ();
     let settlement = match RuntimeWorldOwnerExecutionService::execute_with_signal(
         owner,
+        execution,
         prepared,
         &mut context,
         &cancellation.token(),

@@ -70,6 +70,16 @@ pub(super) fn geometry_session(
     policy: SignalRuntimePolicy,
     workers: Option<usize>,
 ) -> (SignalAdversarialHarness, ReplaySlice, Vec<LineageRecord>) {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let policy = policy
         .with_observation_activation(worth_foundational::ObservationActivationProfile::Continuous);
     if workers.is_some() {
@@ -187,23 +197,24 @@ pub(super) fn geometry_session(
                 let delta = rng.small_delta();
                 let current = model.branch(model.active).clone();
                 let next_a = current.a + delta;
-                let result =
-                    fixture
-                        .runtime
-                        .transaction(&mut ctx, |tx: &mut GeometryTransaction<'_>| {
-                            tx.mark_dirty_with_regions(
-                                fixture.source_a,
-                                ASPECT_A,
-                                &[ChangedRegion::new("wing").with_detail(format!("panel-{step}"))],
-                            )?;
-                            tx.read(fixture.source_a, &move |view| {
-                                Ok(view.finish(
-                                    NodeEvaluationResult::from_version(version_ab(next_a, 0))
-                                        .with_output_identity(format!("geom-source-a-{next_a}")),
-                                ))
-                            })?;
-                            Ok(())
-                        });
+                let result = fixture.runtime.transaction(
+                    request_execution,
+                    &mut ctx,
+                    |tx: &mut GeometryTransaction<'_>| {
+                        tx.mark_dirty_with_regions(
+                            fixture.source_a,
+                            ASPECT_A,
+                            &[ChangedRegion::new("wing").with_detail(format!("panel-{step}"))],
+                        )?;
+                        tx.read(fixture.source_a, &move |view| {
+                            Ok(view.finish(
+                                NodeEvaluationResult::from_version(version_ab(next_a, 0))
+                                    .with_output_identity(format!("geom-source-a-{next_a}")),
+                            ))
+                        })?;
+                        Ok(())
+                    },
+                );
                 result.unwrap();
                 model.branch_mut(model.active).a = next_a;
                 evaluate_geometry_dirty(&mut fixture, workers);
@@ -221,23 +232,24 @@ pub(super) fn geometry_session(
                 let delta = rng.small_delta();
                 let current = model.branch(model.active).clone();
                 let next_b = current.b + delta;
-                let result =
-                    fixture
-                        .runtime
-                        .transaction(&mut ctx, |tx: &mut GeometryTransaction<'_>| {
-                            tx.mark_dirty_with_regions(
-                                fixture.source_b,
-                                ASPECT_B,
-                                &[ChangedRegion::new("lod")],
-                            )?;
-                            tx.read(fixture.source_b, &move |view| {
-                                Ok(view.finish(
-                                    NodeEvaluationResult::from_version(version_ab(0, next_b))
-                                        .with_output_identity(format!("geom-source-b-{next_b}")),
-                                ))
-                            })?;
-                            Ok(())
-                        });
+                let result = fixture.runtime.transaction(
+                    request_execution,
+                    &mut ctx,
+                    |tx: &mut GeometryTransaction<'_>| {
+                        tx.mark_dirty_with_regions(
+                            fixture.source_b,
+                            ASPECT_B,
+                            &[ChangedRegion::new("lod")],
+                        )?;
+                        tx.read(fixture.source_b, &move |view| {
+                            Ok(view.finish(
+                                NodeEvaluationResult::from_version(version_ab(0, next_b))
+                                    .with_output_identity(format!("geom-source-b-{next_b}")),
+                            ))
+                        })?;
+                        Ok(())
+                    },
+                );
                 result.unwrap();
                 model.branch_mut(model.active).b = next_b;
                 evaluate_geometry_dirty(&mut fixture, workers);
@@ -255,19 +267,20 @@ pub(super) fn geometry_session(
                 let delta = rng.small_delta();
                 let current = model.branch(model.active).clone();
                 let bad_a = current.a + delta;
-                let err =
-                    fixture
-                        .runtime
-                        .transaction(&mut ctx, |tx: &mut GeometryTransaction<'_>| {
-                            tx.mark_dirty(fixture.source_a, ASPECT_A)?;
-                            tx.read(fixture.source_a, &move |view| {
-                                Ok(view.finish(
-                                    NodeEvaluationResult::from_version(version_ab(bad_a, 0))
-                                        .with_output_identity(format!("geom-source-a-bad-{bad_a}")),
-                                ))
-                            })?;
-                            Err(SignalError::invalid_input("synthetic geometry rollback"))
-                        });
+                let err = fixture.runtime.transaction(
+                    request_execution,
+                    &mut ctx,
+                    |tx: &mut GeometryTransaction<'_>| {
+                        tx.mark_dirty(fixture.source_a, ASPECT_A)?;
+                        tx.read(fixture.source_a, &move |view| {
+                            Ok(view.finish(
+                                NodeEvaluationResult::from_version(version_ab(bad_a, 0))
+                                    .with_output_identity(format!("geom-source-a-bad-{bad_a}")),
+                            ))
+                        })?;
+                        Err(SignalError::invalid_input("synthetic geometry rollback"))
+                    },
+                );
                 assert!(err.is_err());
                 harness.record(
                     &fixture.runtime,

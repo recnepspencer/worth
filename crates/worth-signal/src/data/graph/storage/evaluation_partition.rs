@@ -98,3 +98,6 @@ impl SignalEvaluationPartition {
         self.evaluation.try_fork_persistent(work)
     }
 }
+
+#[cfg(test)]
+pub(crate) use conditional_execution::conditional_test_scope;

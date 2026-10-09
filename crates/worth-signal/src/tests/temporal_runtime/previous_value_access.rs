@@ -6,6 +6,16 @@ use crate::facade::{
 
 #[test]
 fn ready_temporal_wake_grants_previous_value_access_and_captures_committed_state() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -13,7 +23,7 @@ fn ready_temporal_wake_grants_previous_value_access_and_captures_committed_state
     let value_aspect = Aspect::new(0);
 
     runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.read(source, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(AspectVersion::from_updates([(
@@ -75,6 +85,16 @@ fn ready_temporal_wake_grants_previous_value_access_and_captures_committed_state
 
 #[test]
 fn on_demand_previous_value_access_does_not_capture_optional_telemetry() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -82,7 +102,7 @@ fn on_demand_previous_value_access_does_not_capture_optional_telemetry() {
     let source = runtime.graph_mut().node().build();
 
     runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.read(source, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(AspectVersion::from_updates([(
@@ -163,13 +183,23 @@ fn previous_value_access_is_rejected_after_wake_retirement() {
 
 #[test]
 fn previous_value_access_is_branch_scoped() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
     let source = runtime.graph_mut().node().build();
 
     runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.read(source, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(AspectVersion::from_updates([(
@@ -211,13 +241,23 @@ fn previous_value_access_is_branch_scoped() {
 
 #[test]
 fn previous_value_access_is_rejected_after_restore_epoch_changes() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
     let source = runtime.graph_mut().node().build();
 
     runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.read(source, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(AspectVersion::from_updates([(
@@ -261,6 +301,16 @@ fn previous_value_access_is_rejected_after_restore_epoch_changes() {
 
 #[test]
 fn previous_value_reads_committed_branch_truth_after_failed_transaction() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -268,7 +318,7 @@ fn previous_value_reads_committed_branch_truth_after_failed_transaction() {
     let value_aspect = Aspect::new(1);
 
     runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.read(source, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(AspectVersion::from_updates([(
@@ -282,7 +332,7 @@ fn previous_value_reads_committed_branch_truth_after_failed_transaction() {
         })
         .unwrap();
 
-    let _ = runtime.transaction(&mut (), |tx| {
+    let _ = runtime.transaction(request_execution, &mut (), |tx| {
         tx.read(source, &|view| {
             Ok(view.finish(
                 NodeEvaluationResult::from_version(AspectVersion::from_updates([(

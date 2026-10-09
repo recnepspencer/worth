@@ -12,51 +12,61 @@ use crate::domain_computation::{
 
 #[test]
 fn direct_report_origin_matches_the_installed_provider_observation() {
-    let (fixture, probe) =
-        direct_admission_fixture_with_report_history_probe(FixtureDisposition::Converged);
-    let started = fixture
-        .admit()
-        .begin_iteration(request("direct-report-origin"))
-        .unwrap_or_else(|_| panic!("direct report origin iteration must start"));
-    let terminal = match started.advance() {
-        WorthQueryDirectConvergenceStepOutcome::Completed(
-            WorthQueryDirectConvergenceIterationOutcome::Converged(terminal),
-        ) => terminal,
-        _ => panic!("direct report origin fixture must converge"),
-    };
-    assert_report_origin(
-        terminal
-            .latest_report()
-            .expect("converged direct epoch must retain its report"),
-        single_observation(&probe.observations()),
-    );
-    assert!(terminal.cleanup().is_ok());
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
+
+        let (fixture, probe) =
+            direct_admission_fixture_with_report_history_probe(FixtureDisposition::Converged);
+        let started = fixture
+            .admit()
+            .begin_iteration(execution, request("direct-report-origin"))
+            .unwrap_or_else(|_| panic!("direct report origin iteration must start"));
+        let terminal = match started.advance(execution) {
+            WorthQueryDirectConvergenceStepOutcome::Completed(
+                WorthQueryDirectConvergenceIterationOutcome::Converged(terminal),
+            ) => terminal,
+            _ => panic!("direct report origin fixture must converge"),
+        };
+        assert_report_origin(
+            terminal
+                .latest_report()
+                .expect("converged direct epoch must retain its report"),
+            single_observation(&probe.observations()),
+        );
+        assert!(terminal.cleanup().is_ok());
+    });
 }
 
 #[test]
 fn workflow_report_origin_matches_the_installed_provider_observation() {
-    let (fixture, probe) =
-        workflow_admission_fixture_with_report_history_probe(FixtureDisposition::Converged);
-    let started = fixture
-        .admit()
-        .begin_stage_iteration(WORKFLOW_STAGE, request("workflow-report-origin"))
-        .unwrap_or_else(|_| panic!("workflow report origin iteration must start"));
-    let terminal = match started.advance() {
-        WorthQueryWorkflowConvergenceStepOutcome::Completed(
-            WorthQueryWorkflowConvergenceIterationOutcome::Converged(terminal),
-        ) => terminal,
-        _ => panic!("workflow report origin fixture must converge"),
-    };
-    assert_report_origin(
-        terminal
-            .latest_report()
-            .expect("converged workflow epoch must retain its report"),
-        single_observation(&probe.observations()),
-    );
-    assert!(matches!(
-        terminal.cleanup(),
-        WorthQueryWorkflowConvergenceCleanupOutcome::Complete(_)
-    ));
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
+
+        let (fixture, probe) =
+            workflow_admission_fixture_with_report_history_probe(FixtureDisposition::Converged);
+        let started = fixture
+            .admit()
+            .begin_stage_iteration(execution, WORKFLOW_STAGE, request("workflow-report-origin"))
+            .unwrap_or_else(|_| panic!("workflow report origin iteration must start"));
+        let terminal = match started.advance(execution) {
+            WorthQueryWorkflowConvergenceStepOutcome::Completed(
+                WorthQueryWorkflowConvergenceIterationOutcome::Converged(terminal),
+            ) => terminal,
+            _ => panic!("workflow report origin fixture must converge"),
+        };
+        assert_report_origin(
+            terminal
+                .latest_report()
+                .expect("converged workflow epoch must retain its report"),
+            single_observation(&probe.observations()),
+        );
+        assert!(matches!(
+            terminal.cleanup(),
+            WorthQueryWorkflowConvergenceCleanupOutcome::Complete(_)
+        ));
+    });
 }
 
 fn request(identity: &str) -> WorthQueryManagedGraphCallRequest {

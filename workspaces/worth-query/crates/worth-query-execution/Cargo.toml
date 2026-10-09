@@ -10,7 +10,10 @@ publish = false
 allocation-probes = []
 test-durability-faults = ["worth-relational/test-durability-faults"]
 test-primary-graph-faults = []
-test-query-execution-observer = []
+test-query-execution-observer = [
+    "worth-signal/test-execution-observer",
+    "worth-runtime-world/test-execution-observer",
+]
 certification-invalidation-equivalence = []
 test-world-operation-control = ["worth-runtime-world/test-operation-control"]
 

@@ -1,4 +1,5 @@
 use std::num::NonZeroUsize;
+use worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase as AdvancementPhase;
 
 use crate::domain_computation::{publish_application_result, WorthQueryPublishedApplicationResult};
 use worth_query_admission::facade::authenticated_principal::{
@@ -24,6 +25,7 @@ mod governed;
 mod governed_continuation;
 mod governed_retained;
 mod live_approved;
+mod live_open;
 
 /// A query request. `execute` runs it once; `subscribe` opens it live; `limits` bounds its
 /// results and work.
@@ -39,108 +41,6 @@ pub struct WorthQueryApplicationQueryRequest<'application, 'principal, 'scope, S
     >,
     intent: Intent,
     limits: Option<(NonZeroUsize, NonZeroUsize)>,
-}
-
-impl<'application, 'principal, 'scope, Schema, Intent>
-    WorthQueryApplicationQueryRequest<'application, 'principal, 'scope, Schema, Intent>
-where
-    Schema: ApplicationSchema,
-    Intent: ApplicationLiveQueryIntent<Schema>,
-{
-    pub fn subscribe(
-        self,
-        live_limits: super::WorthQueryApplicationLiveLimits,
-    ) -> Result<
-        super::WorthQueryApplicationLiveSubscription<'application, Schema, Intent>,
-        super::WorthQueryApplicationLiveOpenRequestDenial,
-    >
-    where
-        <Intent::Binding as ApplicationQueryBinding<Schema>>::ScopeBinding:
-            ApplicationQueryScopeResolution<
-                Schema,
-                <Intent::Binding as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
-            >,
-        <<Intent::Binding as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value:
-            WorthQueryApplicationProjection<
-                Schema,
-                <Intent::Binding as ApplicationQueryBinding<Schema>>::Query,
-            >,
-    {
-        if self.retained.is_some() {
-            return Err(super::WorthQueryApplicationLiveOpenRequestDenial::RetainedBasis);
-        }
-        let parameters = self.intent.parameters();
-        let scope_binding = self.intent.into_scope();
-        let binding = self
-            .application
-            .installed_schema()
-            .installed_query_binding::<Intent::Binding>()
-            .map_err(super::WorthQueryApplicationLiveOpenRequestDenial::BindingInstallation)?;
-        let controls = worth_query_execution::facade::primary_graph::WorthQueryApplicationLiveControls::bounded(
-            self.scope.clone(),
-            live_limits.buffer_capacity,
-            live_limits.maximum_results,
-            live_limits.maximum_work,
-        )
-        .map_err(super::WorthQueryApplicationLiveOpenRequestDenial::Controls)?;
-        let maximum_results = NonZeroUsize::new(live_limits.maximum_results)
-            .expect("validated live controls reject zero result limits");
-        let maximum_work = NonZeroUsize::new(live_limits.maximum_work)
-            .expect("validated live controls reject zero work limits");
-        let binding_limits = match self.limits {
-            Some((results, work)) => self
-                .application
-                .resolve_application_query_limits(binding.limits())
-                .narrow(results, work)
-                .map_err(super::WorthQueryApplicationLiveOpenRequestDenial::Limit)?,
-            None => self
-                .application
-                .resolve_application_query_limits(binding.limits()),
-        };
-        binding_limits
-            .narrow(maximum_results, maximum_work)
-            .map_err(super::WorthQueryApplicationLiveOpenRequestDenial::Limit)?;
-        let selected = self
-            .application
-            .on_branch(self.branch)
-            .select()
-            .map_err(super::WorthQueryApplicationLiveOpenRequestDenial::ProductSelection)?;
-        let principal = selected
-            .resolve_authenticated_principal(
-                binding.principal_binding(),
-                self.principal,
-                self.scope,
-                WorthQueryPrincipalResolutionMode::Ordinary,
-            )
-            .map_err(super::WorthQueryApplicationLiveOpenRequestDenial::PrincipalResolution)?;
-        let (scope_field, scope_value) =
-            scope_binding.into_field_parts(principal.principal_identity());
-        let scope = selected
-            .resolve_entity(
-                scope_field,
-                scope_value,
-                self.scope,
-                WorthQueryPrincipalResolutionMode::Ordinary,
-            )
-            .map_err(super::WorthQueryApplicationLiveOpenRequestDenial::ScopeResolution)?;
-        let lease = selected
-            .open_application_query_live::<
-                <Intent::Binding as ApplicationQueryBinding<Schema>>::Query,
-                <<Intent::Binding as ApplicationQueryBinding<Schema>>::ParameterBinding as ApplicationStructuredValueBinding>::Value,
-                <<Intent::Binding as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value,
-                <Intent::Binding as ApplicationQueryBinding<Schema>>::Principal,
-                <Intent::Binding as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
-                <<Intent::Binding as ApplicationQueryBinding<Schema>>::ScopeBinding as worth_query_declaration::facade::application_query::ApplicationQueryScopeBinding<Schema>>::Scope,
-                Intent::Target,
-                Intent::LiveCause,
-            >(binding.into_query(), &principal, scope, parameters, controls)
-            .map_err(super::WorthQueryApplicationLiveOpenRequestDenial::Open)?;
-        Ok(super::WorthQueryApplicationLiveSubscription::new(
-            self.application,
-            self.branch,
-            lease,
-        ))
-    }
 }
 
 impl<'application, 'principal, 'scope, Schema, Intent>
@@ -197,6 +97,35 @@ where
 
     pub fn execute(
         self,
+    ) -> Result<
+        WorthQueryPublishedApplicationResult<
+            <Intent::Binding as ApplicationQueryBinding<Schema>>::Query,
+            <<Intent::Binding as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value,
+        >,
+        WorthQueryApplicationRequestQueryDenial,
+    >
+    where
+        <Intent::Binding as ApplicationQueryBinding<Schema>>::ScopeBinding:
+            ApplicationQueryScopeResolution<
+                Schema,
+                <Intent::Binding as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
+            >,
+        <<Intent::Binding as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value:
+            WorthQueryApplicationProjection<
+                Schema,
+                <Intent::Binding as ApplicationQueryBinding<Schema>>::Query,
+            >,
+    {
+        let application = self.application;
+        let scope = self.scope;
+        application
+            .with_application_advancement(scope, |phase| self.execute_in_advancement(&phase))
+            .map_err(WorthQueryApplicationRequestQueryDenial::ExecutionRequest)?
+    }
+
+    pub(in crate::application_entry) fn execute_in_advancement(
+        self,
+        _phase: &AdvancementPhase<'_>,
     ) -> Result<
         WorthQueryPublishedApplicationResult<
             <Intent::Binding as ApplicationQueryBinding<Schema>>::Query,

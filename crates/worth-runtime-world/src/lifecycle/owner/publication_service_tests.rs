@@ -91,6 +91,13 @@ fn ready_relational(
     expected: &ProductBranchObservation,
     operation_name: &str,
 ) -> crate::publication::CompositePublicationReady {
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::from_policy(&owner.state.execution.request_policy()),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let cancellation = RuntimeWorldCancellationSource::new();
     let prepared = RuntimeWorldPreparationService::prepare_publication(
         owner,
@@ -106,6 +113,7 @@ fn ready_relational(
     let execution_cancellation = RuntimeWorldCancellationSource::new();
     let outcome = RuntimeWorldOwnerExecutionService::execute_without_signal(
         owner,
+        execution,
         prepared,
         &execution_cancellation.token(),
     );

@@ -69,7 +69,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt::provider_e
     assert_eq!(first.view().physical_overlay_identity(), first_identity);
     staged
         .provisional_provider()
-        .discard_provisional_overlay(first.view())
+        .discard_provisional_overlay(staged.execution_request(), first.view())
         .expect("the first exact overlay must remain independently discardable");
     let _ = staged.abort();
     assert_eq!(world.application.provider_session_resource_count(), 0);

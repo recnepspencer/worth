@@ -43,6 +43,16 @@ fn reconverging_invalidation_path_is_not_reported_as_a_cycle() {
 
 #[test]
 fn gc_epoch_compacts_edge_and_snapshot_storage_after_churn() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::with_gc_threshold(1))
         .with_kernel_defaults()
         .build();
@@ -63,7 +73,7 @@ fn gc_epoch_compacts_edge_and_snapshot_storage_after_churn() {
             )
             .unwrap();
         runtime
-            .transaction(&mut runtime_ctx, |tx| {
+            .transaction(request_execution, &mut runtime_ctx, |tx| {
                 tx.mark_dirty(if round % 2 == 0 { source_a } else { source_b }, ASPECT_A)?;
                 tx.evaluate_with_plan(
                     dependent,
@@ -132,6 +142,16 @@ fn semantically_identical_dependency_snapshots_deduplicate_even_if_recorded_in_d
 
 #[test]
 fn dependency_snapshot_growth_returns_near_live_state_after_gc() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::with_gc_threshold(1))
         .with_kernel_defaults()
         .build();
@@ -145,7 +165,7 @@ fn dependency_snapshot_growth_returns_near_live_state_after_gc() {
 
     for round in 0..64 {
         runtime
-            .transaction(&mut runtime_ctx, |tx| {
+            .transaction(request_execution, &mut runtime_ctx, |tx| {
                 tx.mark_dirty(source, ASPECT_A)?;
                 tx.evaluate_with_plan(
                     dependent,

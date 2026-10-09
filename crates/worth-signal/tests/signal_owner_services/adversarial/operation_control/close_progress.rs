@@ -16,6 +16,9 @@ fn assert_late_admission_denied(
     root_basis: &AdmittedSignalBranchBasis,
 ) {
     let late = mutation.advance_exact(
+        worth_execution::ExecutionRequest::serial(
+            &crate::execution_custody::operational_serial_request(),
+        ),
         root_basis,
         &mut (),
         &SignalOwnerCancellationSource::new().token(),

@@ -43,9 +43,7 @@ impl WorthQueryPrecommitSnapshot {
 impl Drop for WorthQueryPrecommitSnapshot {
     fn drop(&mut self) {
         if let Some(snapshot) = self.snapshot.take() {
-            self.graph.with_runtime_mut(|runtime| {
-                crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
-            });
+            self.graph.release_query_snapshot(&snapshot);
         }
     }
 }

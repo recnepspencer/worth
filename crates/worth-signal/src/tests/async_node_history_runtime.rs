@@ -17,6 +17,16 @@ impl ObservationListener<(), (), (), (), ()> for NoopAsyncNodeObservationListene
 
 #[test]
 fn async_node_historical_parity_report_matches_legacy_resource_truth() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let node = graph.node().build();
     let mut runtime = TestRuntime::build(graph);
@@ -49,7 +59,7 @@ fn async_node_historical_parity_report_matches_legacy_resource_truth() {
         .expect("completion should be admitted");
     let mut ctx = ();
     runtime
-        .transaction(&mut ctx, |tx| {
+        .transaction(request_execution, &mut ctx, |tx| {
             let staged = tx.stage_admitted_resource_completion(admitted_completion)?;
             tx.commit_staged_resource_completion(staged.staged_effect())?;
             Ok(())

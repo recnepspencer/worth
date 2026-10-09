@@ -31,6 +31,8 @@ pub enum WorthQueryApplicationConditionalDefinitionAdmissionDenial {
 /// Nothing was published.
 #[derive(Debug)]
 pub enum WorthQueryConditionalDefinitionPublicationDenial {
+    /// The host call was refused admission to its execution request.
+    ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
     /// The clock handle's conditional operation is not live in this
     /// application.
     ForeignConditionalOperation,
@@ -120,7 +122,8 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
                 WorthQueryConditionalDefinitionPublicationDenial::BridgePreparation(denial) => {
                     WorthQueryApplicationConditionalDefinitionAdmissionDenial::BridgePreparation(denial)
                 }
-                WorthQueryConditionalDefinitionPublicationDenial::ProductActivation { .. }
+                WorthQueryConditionalDefinitionPublicationDenial::ExecutionRequest(_)
+                | WorthQueryConditionalDefinitionPublicationDenial::ProductActivation { .. }
                 | WorthQueryConditionalDefinitionPublicationDenial::WorldPreparation(_) => {
                     unreachable!("admission does not enter World publication")
                 }
@@ -146,10 +149,13 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         Node: 'static,
         Provider: WorthQueryHostConditionalPredicateProvider<Node>,
     {
+        self.application().with_host_advancement(|active_phase| {
+            let phase = &active_phase;
+
         let (anchor, request) = self.conditional_definition_request(handle, provider)?;
         let outcome = self
             .application()
-            .publish_product_conditional_definition(self.product(), &anchor, request, cancellation)
+            .publish_product_conditional_definition(phase, self.product(), &anchor, request, cancellation)
             .map_err(WorthQueryConditionalDefinitionPublicationDenial::from)?;
         Ok(match outcome {
             worth_runtime_world::facade::RuntimeWorldConditionalDefinitionPublicationOutcome::Performed {
@@ -168,6 +174,8 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
                 WorthQueryConditionalDefinitionPublicationOutcome::ProductUnpublished(unpublished)
             }
         })
+
+        }).map_err(WorthQueryConditionalDefinitionPublicationDenial::ExecutionRequest)?
     }
 
     fn conditional_definition_request<Node, Clock, Provider>(

@@ -83,6 +83,10 @@ where
         WorthQueryWorkflowAdoptionInventory,
         WorthQueryApplicationProgramAdoptionPreparationDenial,
     > {
+        let request_scope = self.programs.scope.clone();
+        let runtime = self.programs.application;
+        runtime.with_application_advancement(&request_scope, |_phase| {
+
         self.programs
             .application
             .on_branch(self.programs.branch)
@@ -94,6 +98,8 @@ where
                 maximum_work_units,
             )
             .map_err(WorthQueryApplicationProgramAdoptionPreparationDenial::Adoption)
+
+        }).map_err(|cause| WorthQueryApplicationProgramAdoptionPreparationDenial::Adoption(worth_query_execution::facade::primary_graph::WorthQueryBranchAdoptionPreparationDenial::ExecutionDenied(cause)))?
     }
 
     /// Decisions for the inventory they were built from. Preparation refuses
@@ -110,12 +116,17 @@ where
         WorthQueryPreparedBranchAdoption,
         WorthQueryApplicationProgramAdoptionPreparationDenial,
     > {
+        let request_scope = self.programs.scope.clone();
+        let runtime = self.programs.application;
+        runtime.with_application_advancement(&request_scope, |phase| {
+
         self.programs
             .application
             .on_branch(self.programs.branch)
             .select()
             .map_err(WorthQueryApplicationProgramAdoptionPreparationDenial::ProductSelection)?
-            .prepare_branch_adoption_with_choices(
+            .prepare_branch_adoption_in_advancement(
+                &phase,
                 self.requirements.target(),
                 self.requirements,
                 self.migration,
@@ -124,5 +135,7 @@ where
                 self.programs.scope,
             )
             .map_err(WorthQueryApplicationProgramAdoptionPreparationDenial::Adoption)
+
+        }).map_err(|cause| WorthQueryApplicationProgramAdoptionPreparationDenial::Adoption(worth_query_execution::facade::primary_graph::WorthQueryBranchAdoptionPreparationDenial::ExecutionDenied(cause)))?
     }
 }

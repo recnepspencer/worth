@@ -5,6 +5,19 @@ use std::time::Duration;
 /// Concurrent totals are kept separate from the returned per-attempt costs.
 pub(super) fn run(width: usize) -> (u128, CompositePublicationCostCounters) {
     let mut court = CompositeSupplyChainCourt::compile();
+    let policy = match court.world.execution_placement() {
+        worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy)
+        | worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Leased { policy, .. } => {
+            policy
+        }
+    };
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::from_policy(&policy),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let root = court.bootstrap();
     let mut heads = vec![];
     let mut jobs = vec![];
@@ -49,7 +62,7 @@ pub(super) fn run(width: usize) -> (u128, CompositePublicationCostCounters) {
                 gate.recv_timeout(Duration::from_secs(5))
                     .expect("bounded writer start");
                 let RuntimeWorldPublicationOutcome::Performed(done) =
-                    port.execute_with_signal(prepared, &mut context, &token, |_| Ok(()))
+                    port.execute_with_signal(execution, prepared, &mut context, &token, |_| Ok(()))
                 else {
                     panic!("independent writer must publish");
                 };

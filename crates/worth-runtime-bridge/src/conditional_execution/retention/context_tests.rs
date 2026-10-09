@@ -25,6 +25,10 @@ pub(crate) fn assert_context_retention(
         Arc<BridgeInstalledConditionalLowering>,
     ),
 ) {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let baseline = arc_layout::<observation_retention::BridgeObservationBaselines>();
     let decision = arc_layout::<retained_decision::BridgeRetainedConditionalDecisionCore>()
         + size_of::<BridgeConditionalDecisionEvidence>() as u64
@@ -67,6 +71,7 @@ pub(crate) fn assert_context_retention(
             .unwrap();
         assert_eq!(ledger.usage(), (0, 0, baseline));
         let result = owner.execute_admitted_conditional(
+            request_execution,
             &session,
             BridgeConditionalExecutionRequest {
                 lowering: &lowering,

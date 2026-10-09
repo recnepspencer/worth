@@ -7,14 +7,16 @@ use super::{WorthQueryGraphProviderAnchor, WorthQueryProviderSessionToken};
 /// Every live protocol state owns this guard. A successful terminal transition
 /// disarms it; every other return, panic boundary, or caller abandonment makes
 /// one best-effort provider abort before the physical session can be orphaned.
-pub(crate) struct WorthQueryProviderSessionLease {
+pub(crate) struct WorthQueryProviderSessionLease<'scope> {
     provider: Arc<WorthQueryGraphProviderAnchor>,
     token: WorthQueryProviderSessionToken,
     active: bool,
+    request: worth_execution::ExecutionRequest<'scope, 'scope>,
 }
 
-impl WorthQueryProviderSessionLease {
+impl<'scope> WorthQueryProviderSessionLease<'scope> {
     pub(super) fn new(
+        request: worth_execution::ExecutionRequest<'scope, 'scope>,
         provider: Arc<WorthQueryGraphProviderAnchor>,
         token: WorthQueryProviderSessionToken,
     ) -> Self {
@@ -22,6 +24,7 @@ impl WorthQueryProviderSessionLease {
             provider,
             token,
             active: true,
+            request,
         }
     }
 
@@ -31,6 +34,10 @@ impl WorthQueryProviderSessionLease {
 
     pub(super) fn provider_arc(&self) -> Arc<WorthQueryGraphProviderAnchor> {
         Arc::clone(&self.provider)
+    }
+
+    pub(super) fn request(&self) -> worth_execution::ExecutionRequest<'scope, 'scope> {
+        self.request
     }
 
     pub(super) fn token(&self) -> &WorthQueryProviderSessionToken {
@@ -45,7 +52,7 @@ impl WorthQueryProviderSessionLease {
         &mut self,
     ) -> Result<super::WorthQueryProviderTerminalDescription, super::WorthQueryProviderSessionFailure>
     {
-        let result = self.provider.abort_session(&self.token.view());
+        let result = self.provider.abort_session(&self.token.view(self.request));
         if result.is_ok() {
             self.close();
         }
@@ -58,7 +65,7 @@ impl WorthQueryProviderSessionLease {
         super::WorthQueryProviderTerminalDescription,
         super::WorthQueryProviderSessionCommitStop,
     > {
-        let result = self.provider.commit_session(&self.token.view());
+        let result = self.provider.commit_session(&self.token.view(self.request));
         if result.is_ok()
             || matches!(
                 &result,
@@ -87,13 +94,13 @@ impl WorthQueryProviderSessionLease {
     }
 }
 
-impl Drop for WorthQueryProviderSessionLease {
+impl Drop for WorthQueryProviderSessionLease<'_> {
     fn drop(&mut self) {
         if !self.active {
             return;
         }
         let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            let _ = self.provider.abort_session(&self.token.view());
+            let _ = self.provider.abort_session(&self.token.view(self.request));
         }));
         self.active = false;
     }

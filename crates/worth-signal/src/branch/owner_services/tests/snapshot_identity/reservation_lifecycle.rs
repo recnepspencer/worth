@@ -10,6 +10,16 @@ use super::super::super::SignalOwnerCancellationSource;
 
 #[test]
 fn cancellation_stale_denial_and_unwind_return_capacity_without_reusing_identity() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::<(), (), (), (), ()>::builder(SignalGraph::new())
         .with_kernel_defaults()
         .maximum_stored_branch_snapshots(1)
@@ -55,6 +65,7 @@ fn cancellation_stale_denial_and_unwind_return_capacity_without_reusing_identity
     let active_cancellation = SignalOwnerCancellationSource::new();
     let advanced = cell
         .advance_exact::<(), (), _>(
+            request_execution,
             &admission,
             &starting_basis,
             &mut (),
@@ -118,6 +129,16 @@ fn cancellation_stale_denial_and_unwind_return_capacity_without_reusing_identity
 
 #[test]
 fn identity_exhaustion_is_precise_repeatable_and_pre_effect() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     graph
         .diagnostics_state_mut()
@@ -155,6 +176,7 @@ fn identity_exhaustion_is_precise_repeatable_and_pre_effect() {
     );
     let advanced = cell
         .advance_exact::<(), (), _>(
+            request_execution,
             &admission,
             &basis,
             &mut (),

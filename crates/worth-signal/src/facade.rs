@@ -352,3 +352,10 @@ pub use crate::state::{
 };
 #[cfg(test)]
 pub use crate::tests::support::GraphDependencyBatchExt;
+
+#[cfg(feature = "test-execution-observer")]
+pub use crate::data::retained_storage::{
+    observed_signal_request_work_on_this_thread_for_test,
+    signal_request_charges_on_this_thread_for_test,
+    signal_request_refusals_on_this_thread_for_test,
+};

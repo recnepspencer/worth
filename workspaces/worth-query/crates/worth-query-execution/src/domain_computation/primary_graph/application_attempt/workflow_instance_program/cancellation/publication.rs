@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_foundational::facade::{AspectFieldLocator, AspectValue, InternedString};
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
 use worth_query_installation::facade::ApplicationSchema;
@@ -72,12 +73,22 @@ where
         Scope,
     >(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         prepared: PreparedWorkflowInstanceCancellation<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
     ) -> WorkflowInstanceCancellationOutcome
     where
         Input: Clone + Send + Sync + 'static,
     {
+        if let Err(cause) = phase.execution_request_for(&self.product_runtime) {
+            return WorkflowInstanceCancellationOutcome::Application(
+                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(cause)
+                    .into_commit_outcome()
+                    .landed()
+                    .expect_err("a foreign phase cannot commit"),
+            );
+        }
         let PreparedWorkflowInstanceCancellation {
             program,
             program_revision,
@@ -101,6 +112,7 @@ where
         };
         let (receipt, replayed) = match self
             .compare_and_commit_application_for_program_action(
+                phase,
                 &presented,
                 program,
                 idempotency.bind_workflow_instance(&intent_identity),
@@ -127,5 +139,16 @@ where
             replayed,
             performed,
         })
+    }
+}
+
+impl<Schema, Operation, Input, Scope>
+    PreparedWorkflowInstanceCancellation<Schema, Operation, Input, Scope>
+{
+    /// Controls retained as facts; each host call obtains fresh execution admission.
+    pub fn request_scope(
+        &self,
+    ) -> &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope {
+        self.program.request_scope()
     }
 }

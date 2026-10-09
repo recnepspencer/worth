@@ -43,11 +43,13 @@ pub(in crate::domain_computation::managed_run) struct WorthQueryManagedGraphRest
 }
 
 pub(in crate::domain_computation::managed_run) fn restore(
+    active_request: worth_execution::ExecutionRequest<'_, '_>,
     retained: WorthQueryRetainedManagedGraphExecution,
     fresh_call: WorthQueryGraphProviderCall,
     contract: super::super::step_contract_admission::WorthQueryAdmittedManagedStepContract,
 ) -> WorthQueryManagedGraphRestoreOutcome {
-    let mut memory = WorthQueryGraphProviderRestoreMemory::new(retained.memory.clone());
+    let mut memory =
+        WorthQueryGraphProviderRestoreMemory::new(active_request, retained.memory.clone());
     let invocation = retained.checkpoint.invoke_restore(&fresh_call, &mut memory);
     let unreturned_execution_release = memory.release_unreturned_execution();
     match invocation {

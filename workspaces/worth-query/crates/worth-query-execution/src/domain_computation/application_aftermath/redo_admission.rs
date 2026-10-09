@@ -299,8 +299,9 @@ pub(crate) fn map_recovery_denial(
         K::FreshAuthorityDenied => WorthQueryRedoDenialKind::NewlyUnauthorized,
         K::ForeignRuntime | K::ForeignPrincipal => WorthQueryRedoDenialKind::ForeignPrincipal,
         K::CompatibilityGenerationMismatch => WorthQueryRedoDenialKind::ChangedOperationMeaning,
-        // This mapper is called by recovery-handle authority checks. Completion
-        // execution refusals arise only from external redispatch, never here.
+        // Redo admission does not execute external redispatch. Request lapses
+        // and completion-publication refusals keep their named recovery causes
+        // at that separate door; they do not establish redo authority here.
         K::RecoveryNotAdmitted
         | K::RecoveryAlreadyMinted
         | K::SchemaMismatch

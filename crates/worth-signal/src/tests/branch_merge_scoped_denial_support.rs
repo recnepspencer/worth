@@ -11,6 +11,16 @@ pub(crate) fn build_scoped_denial_runtime() -> (
     SignalBranchHandle,
     NodeId,
 ) {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let graph = SignalGraph::new();
     let mut runtime = SignalRuntime::builder(graph).with_kernel_defaults().build();
     let primary = runtime
@@ -21,7 +31,7 @@ pub(crate) fn build_scoped_denial_runtime() -> (
         .build();
     let mut runtime_ctx = ();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(primary, &|view| {
                 let _ = view;
                 Ok(NodeEvaluationResult::from_version(version_ab(1, 0))
@@ -34,7 +44,7 @@ pub(crate) fn build_scoped_denial_runtime() -> (
     let feature = runtime.create_branch("feature-scoped-denial").unwrap();
     runtime.switch_branch(feature.clone()).unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.mark_dirty(primary, ASPECT_A)?;
             tx.read(primary, &|view| {
                 let _ = view;
@@ -54,6 +64,16 @@ pub(crate) fn build_ambiguous_scoped_denial_runtime() -> (
     SignalBranchHandle,
     NodeId,
 ) {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let graph = SignalGraph::new().with_schema_registry(cross_identity_merge_schema_registry());
     let mut runtime = SignalRuntime::builder(graph).with_kernel_defaults().build();
     let mut runtime_ctx = ();
@@ -68,7 +88,7 @@ pub(crate) fn build_ambiguous_scoped_denial_runtime() -> (
         .output_identity()
         .build();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.mark_dirty(source, ASPECT_A)?;
             tx.read(source, &|view| {
                 let _ = view;
@@ -94,7 +114,7 @@ pub(crate) fn build_ambiguous_scoped_denial_runtime() -> (
         .output_identity()
         .build();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(target_left, &|view| {
                 let _ = view;
                 Ok(NodeEvaluationResult::from_version(version_ab(1, 0))

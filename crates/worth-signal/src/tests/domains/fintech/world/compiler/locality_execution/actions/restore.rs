@@ -23,6 +23,16 @@ pub(in crate::tests::domains::fintech) struct FinancialRestoreLifecycleEvidence 
 pub(super) fn certify_restore_lifecycle(
     world: &mut CompiledFinancialLocalityWorld,
 ) -> Result<FinancialRestoreLifecycleEvidence, SignalError> {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mutation = world.locality_definition().mutation();
     let main = world.runtime.current_branch();
     world.runtime.capture_snapshot()?;
@@ -38,9 +48,11 @@ pub(super) fn certify_restore_lifecycle(
         .ok_or_else(|| SignalError::internal("restore world lacks a dependency target"))?;
     let pre_restore_ready = current_ready(&mut world.runtime.graph_mut(), target)?;
     let source = world.handles[&mutation.producer];
-    world.runtime.transaction(&mut (), |tx| {
-        tx.mark_changed(source, signal_aspect(mutation.aspect))
-    })?;
+    world
+        .runtime
+        .transaction(request_execution, &mut (), |tx| {
+            tx.mark_changed(source, signal_aspect(mutation.aspect))
+        })?;
     let source_basis = world
         .runtime
         .graph()
@@ -218,6 +230,16 @@ fn unsettled_nodes(
 }
 
 fn publish_source(world: &mut CompiledFinancialLocalityWorld) -> Result<(), SignalError> {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mutations = world.locality_definition().action_traces()[0].committed_mutations();
     world.apply_mutations(&mutations)?;
     let fresh = FreshFinancialLocalityRecompute::run_for_trace(
@@ -240,7 +262,9 @@ fn publish_source(world: &mut CompiledFinancialLocalityWorld) -> Result<(), Sign
         let source = world.handles[&producer];
         world
             .runtime
-            .transaction(&mut (), |tx| tx.read(source, &evaluator).map(|_| ()))?;
+            .transaction(request_execution, &mut (), |tx| {
+                tx.read(source, &evaluator).map(|_| ())
+            })?;
     }
     Ok(())
 }

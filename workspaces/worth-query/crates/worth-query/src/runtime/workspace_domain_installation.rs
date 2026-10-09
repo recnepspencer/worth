@@ -1,6 +1,12 @@
 use super::WorthQueryWorkspace;
 
 impl WorthQueryWorkspace {
+    pub(crate) fn advancement_owner(
+        &self,
+    ) -> worth_query_execution::facade::integration::WorthQueryProductRuntime {
+        self.runtime.installed_product.world.clone()
+    }
+
     pub(crate) fn query_execution_runtime(
         &self,
     ) -> &worth_query_execution::facade::runtime::WorthQueryExecutionRuntime {

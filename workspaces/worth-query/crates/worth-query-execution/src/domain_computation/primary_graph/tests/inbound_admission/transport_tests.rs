@@ -159,12 +159,21 @@ fn transport_candidate_rejects_another_owner_and_terminal_matches_later_attempt(
         .record_installed_transport_completion(evidence, in_flight)
         .unwrap();
     let request = super::super::fixture::live_scope();
-    assert!(matches!(
-        world
-            .application
-            .resume_installed_transport_completion(first_owner.record().correlation(), &request),
-        InstalledTransportResumeOutcome::Performed,
-    ));
+    world
+        .application
+        .with_host_advancement(|active_phase| {
+            let phase = &active_phase;
+            assert!(matches!(
+                world.application.resume_installed_transport_completion(
+                    phase,
+                    first_owner.record().correlation(),
+                    &request
+                ),
+                InstalledTransportResumeOutcome::Performed,
+            ));
+        })
+        .expect("fixture owner admits its advancement");
+
     let terminal = world
         .application
         .primary_provider
@@ -225,12 +234,21 @@ fn two_real_completed_attempts_share_the_first_world_terminal() {
         .record_installed_transport_completion(first_evidence, first_lease)
         .unwrap();
     let request = super::super::fixture::live_scope();
-    assert!(matches!(
-        world
-            .application
-            .resume_installed_transport_completion(owner.record().correlation(), &request),
-        InstalledTransportResumeOutcome::Performed,
-    ));
+    world
+        .application
+        .with_host_advancement(|active_phase| {
+            let phase = &active_phase;
+            assert!(matches!(
+                world.application.resume_installed_transport_completion(
+                    phase,
+                    owner.record().correlation(),
+                    &request
+                ),
+                InstalledTransportResumeOutcome::Performed,
+            ));
+        })
+        .expect("fixture owner admits its advancement");
+
     let winner = world
         .application
         .primary_provider
@@ -253,12 +271,21 @@ fn two_real_completed_attempts_share_the_first_world_terminal() {
         .application
         .record_installed_transport_completion(late_evidence, second_lease)
         .unwrap();
-    assert!(matches!(
-        world
-            .application
-            .resume_installed_transport_completion(owner.record().correlation(), &request),
-        InstalledTransportResumeOutcome::Performed,
-    ));
+    world
+        .application
+        .with_host_advancement(|active_phase| {
+            let phase = &active_phase;
+            assert!(matches!(
+                world.application.resume_installed_transport_completion(
+                    phase,
+                    owner.record().correlation(),
+                    &request
+                ),
+                InstalledTransportResumeOutcome::Performed,
+            ));
+        })
+        .expect("fixture owner admits its advancement");
+
     assert!(!world
         .application
         .has_retained_installed_transport_completion(owner.record().correlation()));

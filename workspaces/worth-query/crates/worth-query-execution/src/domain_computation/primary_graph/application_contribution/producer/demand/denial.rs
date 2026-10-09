@@ -5,6 +5,8 @@
 /// again can succeed.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryOutputDemandDenialKind {
+    /// The advancement could not enter its host-owned execution request.
+    ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
     /// The original source query binding is no longer installed as admitted.
     SourceQueryInstallation(
         worth_query_installation::facade::WorthQueryApplicationQueryInstallationDenialKind,
@@ -215,3 +217,15 @@ impl std::fmt::Display for WorthQueryOutputDemandDenial {
 }
 
 impl std::error::Error for WorthQueryOutputDemandDenial {}
+
+impl WorthQueryOutputDemandDenial {
+    /// A typed refusal before the caller pass enters its request.
+    pub fn request_admission(
+        cause: crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
+    ) -> Self {
+        Self::new(
+            WorthQueryOutputDemandDenialKind::ExecutionRequest(cause),
+            "request admission",
+        )
+    }
+}

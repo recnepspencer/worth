@@ -43,6 +43,10 @@ fn installation_cost_is_independent_of_unrelated_admitted_dependencies() {
 
 #[test]
 fn conditional_execution_cost_ignores_unrelated_signal_nodes_and_dependencies() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let execute = |baseline: &[&str]| {
         let (mut owner, request) = installation_fixture_with_baseline(
             always_eligible_contract("query:one"),
@@ -57,6 +61,7 @@ fn conditional_execution_cost_ignores_unrelated_signal_nodes_and_dependencies() 
             .unwrap();
         let decision = owner
             .execute(
+                request_execution,
                 &signal_basis,
                 crate::facade::BridgeConditionalExecutionRequest {
                     lowering: &lowering,

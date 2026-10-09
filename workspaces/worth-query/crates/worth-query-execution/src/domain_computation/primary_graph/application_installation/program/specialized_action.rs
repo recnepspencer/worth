@@ -1,3 +1,5 @@
+mod capability_advancement;
+mod elevation_advancement;
 use std::marker::PhantomData;
 
 use worth_query_declaration::facade::application_program::ApplicationProgramDefinition;
@@ -76,9 +78,26 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
+        let request = program.request_scope().clone();
+        let mut candidate = Some(program);
         self.runtime
             .runtime
-            .compare_and_commit_elevation_request_for_program(program, idempotency)
+            .with_application_advancement(&request, |active_phase| {
+                self.runtime
+                    .runtime
+                    .compare_and_commit_elevation_request_for_program(
+                        &active_phase,
+                        candidate.take().expect("candidate admitted once"),
+                        idempotency,
+                    )
+            })
+            .unwrap_or_else(|denial| match candidate.take() {
+                Some(candidate) => self
+                    .runtime
+                    .runtime
+                    .refuse_elevation_request(candidate, denial),
+                None => WorthQueryElevationRequestOutcome::Indeterminate,
+            })
     }
 
     pub fn compare_and_commit_elevation_approval<Input, Scope>(
@@ -89,9 +108,27 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
+        let request = program.request_scope().clone();
+        let mut candidate = Some(program);
         self.runtime
             .runtime
-            .compare_and_commit_elevation_approval_for_program(program, idempotency, None)
+            .with_application_advancement(&request, |active_phase| {
+                self.runtime
+                    .runtime
+                    .compare_and_commit_elevation_approval_for_program(
+                        &active_phase,
+                        candidate.take().expect("candidate admitted once"),
+                        idempotency,
+                        None,
+                    )
+            })
+            .unwrap_or_else(|denial| match candidate.take() {
+                Some(candidate) => self
+                    .runtime
+                    .runtime
+                    .refuse_elevation_approval(candidate, denial),
+                None => WorthQueryElevationApprovalOutcome::Indeterminate,
+            })
     }
 
     pub fn compare_and_commit_elevation_close<Input, Scope>(
@@ -102,9 +139,27 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
+        let request = program.request_scope().clone();
+        let mut candidate = Some(program);
         self.runtime
             .runtime
-            .compare_and_commit_elevation_close_for_program(program, idempotency, None)
+            .with_application_advancement(&request, |active_phase| {
+                self.runtime
+                    .runtime
+                    .compare_and_commit_elevation_close_for_program(
+                        &active_phase,
+                        candidate.take().expect("candidate admitted once"),
+                        idempotency,
+                        None,
+                    )
+            })
+            .unwrap_or_else(|denial| match candidate.take() {
+                Some(candidate) => self
+                    .runtime
+                    .runtime
+                    .refuse_elevation_close(candidate, denial),
+                None => WorthQueryElevationCloseOutcome::Indeterminate,
+            })
     }
 
     pub fn compare_and_commit_mandatory_review<Input, Scope>(
@@ -115,9 +170,27 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
+        let request = program.request_scope().clone();
+        let mut candidate = Some(program);
         self.runtime
             .runtime
-            .compare_and_commit_mandatory_review_for_program(program, idempotency, None)
+            .with_application_advancement(&request, |active_phase| {
+                self.runtime
+                    .runtime
+                    .compare_and_commit_mandatory_review_for_program(
+                        &active_phase,
+                        candidate.take().expect("candidate admitted once"),
+                        idempotency,
+                        None,
+                    )
+            })
+            .unwrap_or_else(|denial| match candidate.take() {
+                Some(candidate) => self
+                    .runtime
+                    .runtime
+                    .refuse_mandatory_review(candidate, denial),
+                None => WorthQueryMandatoryReviewOutcome::Indeterminate,
+            })
     }
 
     pub fn compare_and_commit_capability_delegation<Input, Scope>(
@@ -128,9 +201,20 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
+        let request = program.request_scope().clone();
+        let mut candidate = Some(program);
         self.runtime
             .runtime
-            .compare_and_commit_capability_delegation_for_program(program, idempotency)
+            .with_application_advancement(&request, |active_phase| {
+                self.runtime
+                    .runtime
+                    .compare_and_commit_capability_delegation_for_program(
+                        &active_phase,
+                        candidate.take().expect("candidate admitted once"),
+                        idempotency,
+                    )
+            })
+            .unwrap_or_else(|denial| denial.into_commit_outcome())
     }
 
     pub fn compare_and_commit_capability_revocation<Input, Scope>(
@@ -141,8 +225,19 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
+        let request = program.request_scope().clone();
+        let mut candidate = Some(program);
         self.runtime
             .runtime
-            .compare_and_commit_capability_revocation_for_program(program, idempotency)
+            .with_application_advancement(&request, |active_phase| {
+                self.runtime
+                    .runtime
+                    .compare_and_commit_capability_revocation_for_program(
+                        &active_phase,
+                        candidate.take().expect("candidate admitted once"),
+                        idempotency,
+                    )
+            })
+            .unwrap_or_else(|denial| denial.into_commit_outcome())
     }
 }

@@ -22,6 +22,7 @@ struct StageGraphInvocationPlan<'a> {
 }
 
 pub(super) fn invoke_stage_graphs<D, O, F, L: BasisOperationLane>(
+    execution: &'_ worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
     bound: &WorthQueryBoundDomainOperation<D, O, F, L>,
     running: WorthQueryRunningWorkflowRun,
     run_identity: &str,
@@ -34,7 +35,7 @@ pub(super) fn invoke_stage_graphs<D, O, F, L: BasisOperationLane>(
     ),
     WorthQueryWorkflowAdvanceDenial,
 > {
-    StageGraphInvocation::new(bound, running, run_identity, stage, counters)
+    StageGraphInvocation::new(execution, bound, running, run_identity, stage, counters)
         .execute(plan_stage_graph_invocations(bound, stage))
 }
 
@@ -94,6 +95,8 @@ fn plan_stage_graph_invocations<'a, D, O, F, L: BasisOperationLane>(
 }
 
 struct StageGraphInvocation<'a, D, O, F, L: BasisOperationLane> {
+    execution:
+        &'a worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'a>,
     bound: &'a WorthQueryBoundDomainOperation<D, O, F, L>,
     running: Option<WorthQueryRunningWorkflowRun>,
     stage_identity: &'a str,
@@ -104,6 +107,7 @@ struct StageGraphInvocation<'a, D, O, F, L: BasisOperationLane> {
 
 impl<'a, D, O, F, L: BasisOperationLane> StageGraphInvocation<'a, D, O, F, L> {
     fn new(
+        execution: &'a worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'a>,
         bound: &'a WorthQueryBoundDomainOperation<D, O, F, L>,
         running: WorthQueryRunningWorkflowRun,
         run_identity: &str,
@@ -111,6 +115,7 @@ impl<'a, D, O, F, L: BasisOperationLane> StageGraphInvocation<'a, D, O, F, L> {
         counters: &'a mut WorthQueryWorkflowRunCounters,
     ) -> Self {
         Self {
+            execution,
             bound,
             running: Some(running),
             stage_identity: stage.identity(),
@@ -138,6 +143,11 @@ impl<'a, D, O, F, L: BasisOperationLane> StageGraphInvocation<'a, D, O, F, L> {
             roles.sort();
             self.counters.commit_admission_contacts += 1;
             let contact = super::commit_execution::contact_workflow_commit_provider(
+                self.running
+                    .as_ref()
+                    .expect("managed invocation retains its runtime owner")
+                    .request_in_advancement(self.execution)
+                    .expect("the opening owner lent this run its phase"),
                 &self.scope_identity,
                 self.stage_identity,
                 &authority,
@@ -188,6 +198,7 @@ impl<'a, D, O, F, L: BasisOperationLane> StageGraphInvocation<'a, D, O, F, L> {
             .take()
             .expect("managed workflow run remains live");
         match super::managed_graph_progression::execute_workflow_graph(
+            self.execution,
             running,
             self.stage_identity,
             participation.record.installation_authority.as_ref(),

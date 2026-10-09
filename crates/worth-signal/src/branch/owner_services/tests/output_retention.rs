@@ -51,6 +51,16 @@ fn admitted_output_capacity_reserves_pre_effect_and_cancellation_restores_exactl
 
 #[test]
 fn carried_advance_output_handoff_survives_close_fencing_new_work() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (mut runtime, _, branch, basis) = runtime_with_two_branches();
     let (_, mutation, _) = runtime.owner_port_slots().expect("runtime seals");
     let owner = mutation.upgrade_owner().expect("owner remains live");
@@ -63,7 +73,13 @@ fn carried_advance_output_handoff_survives_close_fencing_new_work() {
         .expect("advance output capacity reserves before movement");
     let cancellation = SignalOwnerCancellationSource::new();
     let performed = reservation
-        .advance::<(), (), _>(&basis, &mut (), &cancellation.token(), |_| Ok(()))
+        .advance::<(), (), _>(
+            request_execution,
+            &basis,
+            &mut (),
+            &cancellation.token(),
+            |_| Ok(()),
+        )
         .into_result()
         .expect("the pre-close admitted movement performs");
     let (closed_tx, closed_rx) = mpsc::sync_channel(1);
@@ -157,6 +173,16 @@ fn every_named_output_seam_denies_at_its_exact_pre_effect_capacity() {
 
 #[test]
 fn named_outputs_convert_populated_advance_capture_restore_and_fork_movements() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let weather = graph.create_node();
     let berth = graph.create_node();
@@ -178,6 +204,7 @@ fn named_outputs_convert_populated_advance_capture_restore_and_fork_movements() 
         .expect("advance output reserves before movement");
     let advanced = advance_output
         .advance::<(), (), _>(
+            request_execution,
             &starting_basis,
             &mut (),
             &cancellation.token(),
@@ -211,6 +238,7 @@ fn named_outputs_convert_populated_advance_capture_restore_and_fork_movements() 
         .expect("a second advance output reserves");
     let reverted = second_advance_output
         .advance::<(), (), _>(
+            request_execution,
             &captured_basis,
             &mut (),
             &cancellation.token(),

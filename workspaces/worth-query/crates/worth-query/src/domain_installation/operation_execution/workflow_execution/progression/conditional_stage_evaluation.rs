@@ -6,6 +6,7 @@ pub(super) enum ConditionalStageStop {
 }
 
 pub(super) fn evaluate<D: 'static, O: 'static, F: 'static, L: BasisOperationLane>(
+    execution: worth_execution::ExecutionRequest<'_, '_>,
     bound: &crate::domain_installation::WorthQueryBoundDomainOperation<D, O, F, L>,
     workspace: &mut crate::runtime::WorthQueryWorkspace,
     snapshot: &crate::memory_workspace::WorthQuerySnapshotIdentity,
@@ -27,6 +28,7 @@ pub(super) fn evaluate<D: 'static, O: 'static, F: 'static, L: BasisOperationLane
     let outcome = crate::domain_installation::evaluate_bound_conditionals(
         bound,
         crate::domain_installation::WorthQueryConditionalEvaluationPass {
+            execution,
             workspace,
             snapshot,
             execution_identity: &execution_identity,

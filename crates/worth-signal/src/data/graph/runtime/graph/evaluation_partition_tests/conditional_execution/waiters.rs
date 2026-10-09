@@ -98,6 +98,16 @@ fn completed_retry_visits() -> usize {
 
 #[test]
 fn conditional_output_preparation_cannot_reset_the_attempt_and_a_fresh_attempt_retries() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     // Size the denied coordinate from a completed native retry, so new
     // accounted work does not turn the successful twin into a policy denial.
     let retry_visits = completed_retry_visits();
@@ -118,15 +128,26 @@ fn conditional_output_preparation_cannot_reset_the_attempt_and_a_fresh_attempt_r
     );
     let mut partition = SignalEvaluationPartition::retain_basis_storage(&mut graph);
     let mut computes = 0;
-    let (decision, observation, rejected) = partition
-        .execute_conditional(
-            &mut graph,
-            SignalConditionalExecutionRequest::new(&contract, "source", &large_execution, 1),
-            &mut NoPredicate,
-            &mut DefaultComparatorPolicyResolver::default(),
-            || {
-                computes += 1;
-                Ok(output(9))
+    let (decision, observation, rejected) =
+        crate::data::graph::storage::evaluation_partition::conditional_test_scope::run(
+            request_execution,
+            |work| {
+                partition.execute_conditional(
+                    work,
+                    &mut graph,
+                    SignalConditionalExecutionRequest::new(
+                        &contract,
+                        "source",
+                        &large_execution,
+                        1,
+                    ),
+                    &mut NoPredicate,
+                    &mut DefaultComparatorPolicyResolver::default(),
+                    || {
+                        computes += 1;
+                        Ok(output(9))
+                    },
+                )
             },
         )
         .unwrap()
@@ -174,13 +195,19 @@ fn conditional_output_preparation_cannot_reset_the_attempt_and_a_fresh_attempt_r
         .unwrap();
     // A new request uses shorter evidence coordinates, leaving its independently
     // installed allowance available for preparation and final decision storage.
-    let (decision, observation, retry_rejected) = partition
-        .execute_conditional(
-            &mut graph,
-            SignalConditionalExecutionRequest::new(&contract, "source", "retry", 2),
-            &mut NoPredicate,
-            &mut DefaultComparatorPolicyResolver::default(),
-            || Ok(output(9)),
+    let (decision, observation, retry_rejected) =
+        crate::data::graph::storage::evaluation_partition::conditional_test_scope::run(
+            request_execution,
+            |work| {
+                partition.execute_conditional(
+                    work,
+                    &mut graph,
+                    SignalConditionalExecutionRequest::new(&contract, "source", "retry", 2),
+                    &mut NoPredicate,
+                    &mut DefaultComparatorPolicyResolver::default(),
+                    || Ok(output(9)),
+                )
+            },
         )
         .unwrap()
         .into_parts();
@@ -222,19 +249,40 @@ fn conditional_output_preparation_cannot_reset_the_attempt_and_a_fresh_attempt_r
 
 #[test]
 fn conditional_waiter_local_limit_still_denies_under_a_generous_attempt_allowance() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     for maximum in [1, 100_000] {
         let (mut graph, contract, _) = waiting_consumer();
         graph.set_runtime_policy(
             SignalRuntimePolicy::forensic().with_maximum_waiter_resolution_visits(maximum),
         );
         let mut partition = SignalEvaluationPartition::retain_basis_storage(&mut graph);
-        let (decision, observation, rejected) = partition
-            .execute_conditional(
-                &mut graph,
-                SignalConditionalExecutionRequest::new(&contract, "source", "local-waiters", 1),
-                &mut NoPredicate,
-                &mut DefaultComparatorPolicyResolver::default(),
-                || Ok(output(9)),
+        let (decision, observation, rejected) =
+            crate::data::graph::storage::evaluation_partition::conditional_test_scope::run(
+                request_execution,
+                |work| {
+                    partition.execute_conditional(
+                        work,
+                        &mut graph,
+                        SignalConditionalExecutionRequest::new(
+                            &contract,
+                            "source",
+                            "local-waiters",
+                            1,
+                        ),
+                        &mut NoPredicate,
+                        &mut DefaultComparatorPolicyResolver::default(),
+                        || Ok(output(9)),
+                    )
+                },
             )
             .unwrap()
             .into_parts();

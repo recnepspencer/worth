@@ -106,6 +106,19 @@ fn publication_workflow() {
         .with_clock(RuntimeWorldClock::from_source(Clock))
         .build()
         .unwrap();
+    let policy = match world.execution_placement() {
+        worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy)
+        | worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Leased { policy, .. } => {
+            policy
+        }
+    };
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::from_policy(&policy),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let RuntimeWorldBootstrapOutcome::Performed(bootstrap) = world
         .lifecycle_port()
         .bootstrap_root(RuntimeWorldBootstrapIntent::new(
@@ -135,7 +148,7 @@ fn publication_workflow() {
         .prepare_without_signal(root.clone(), intent(&root, "5"), &token, None)
         .unwrap();
     let RuntimeWorldPublicationOutcome::Performed(done) =
-        publication.execute_without_signal(ordinary, &token)
+        publication.execute_without_signal(execution, ordinary, &token)
     else {
         panic!("ordinary publication must perform");
     };
@@ -143,7 +156,7 @@ fn publication_workflow() {
     println!("Performed: {:?}", done.commit().identity());
     drop(done.consume()); // Consume exactly once; borrowed results are not new authority.
     let RuntimeWorldPublicationOutcome::NoEffect(denied) =
-        publication.execute_without_signal(stale, &token)
+        publication.execute_without_signal(execution, stale, &token)
     else {
         panic!("old observation must be stale");
     };
@@ -162,7 +175,7 @@ fn publication_workflow() {
         .prepare_with_signal(head.clone(), combined, &token, None)
         .unwrap();
     let RuntimeWorldPublicationOutcome::ProductUnpublished(effects) = publication
-        .execute_with_signal(prepared, &mut (), &token, |_| {
+        .execute_with_signal(execution, prepared, &mut (), &token, |_| {
             Err(SignalError::InvalidInput {
                 message: "example application declines the Signal step".into(),
                 context: None,

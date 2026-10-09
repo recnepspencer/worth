@@ -44,3 +44,7 @@ mod workflow_participant_races;
 mod workflow_pinned_basis;
 #[path = "adoption/workflow_vocabulary.rs"]
 mod workflow_vocabulary;
+
+#[cfg(feature = "request-lifetime-probes")]
+#[path = "adoption/request_lifetime.rs"]
+mod request_lifetime;

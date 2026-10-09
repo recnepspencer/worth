@@ -5,6 +5,16 @@ use crate::tests::support::*;
 
 #[test]
 fn transaction_usage_matches_actual_authority_reports() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let graph = SignalGraph::new();
     let mut runtime = SignalRuntime::builder(graph).with_kernel_defaults().build();
     let telemetry_session = runtime
@@ -25,7 +35,7 @@ fn transaction_usage_matches_actual_authority_reports() {
     let mut ctx = ();
 
     let lease = authority().request_lease(request(4, 10_000_000)).unwrap();
-    let mut tx = runtime.begin(&mut ctx);
+    let mut tx = runtime.begin(request_execution, &mut ctx);
     for &node in &nodes {
         tx.mark_dirty(node, ASPECT_A).unwrap();
     }

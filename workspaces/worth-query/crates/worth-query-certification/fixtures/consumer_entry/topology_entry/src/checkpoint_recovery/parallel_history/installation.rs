@@ -32,7 +32,7 @@ pub(super) fn install(world: &World) -> Application {
         declaration,
         ((),),
         limits,
-        |graph, installed| {
+        |_phase, graph, installed| {
             let principal = installed
                 .principal_binding(ConsumerPrincipalBinding::reference::<Schema>())
                 .unwrap();

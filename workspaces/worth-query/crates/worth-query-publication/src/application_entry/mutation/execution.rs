@@ -2,6 +2,7 @@ use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationIdentities, ApplicationMutationIntent,
     ApplicationMutationScopeBinding, ApplicationMutationScopeResolution,
 };
+use worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase as AdvancementPhase;
 use worth_query_execution::facade::primary_graph::{
     HandlerResult, MutationHandlerExecutionDenial, WorthQueryAdmittedApplicationOperation,
     WorthQueryApplicationCommitOutcome, WorthQueryApplicationEffectProgram,
@@ -66,6 +67,11 @@ where
         >,
         WorthQueryApplicationProgramMigrationPreparationDenial,
     > {
+        let request_scope = self.request_scope().clone();
+        let runtime = self.request.application;
+        runtime.with_application_advancement(&request_scope, |active_phase| {
+            let phase = &active_phase;
+
         if <Intent::Binding as ApplicationMutationBinding<Schema>>::REQUIRES_WORKFLOW_AUTHORITY {
             return Err(
                 WorthQueryApplicationProgramMigrationPreparationDenial::Request(
@@ -91,7 +97,7 @@ where
         let completed = match self
             .request
             .application
-            .execute_mutation_handler::<Intent::Binding>(
+            .execute_mutation_handler::<Intent::Binding>(phase,
                 &identities,
                 &prepared.principal_identity,
                 prepared.admission,
@@ -130,6 +136,8 @@ where
             .seal_program_migration(admitted, completed)
             .map(WorthQueryApplicationProgramMigrationPreparationOutcome::Prepared)
             .map_err(WorthQueryApplicationProgramMigrationPreparationDenial::Migration)
+
+        }).map_err(|cause| WorthQueryApplicationProgramMigrationPreparationDenial::Request(WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause)))?
     }
 
     pub fn execute(
@@ -141,24 +149,41 @@ where
         >,
         WorthQueryApplicationRequestMutationDenial,
     > {
-        self.require_workflow_transition()?;
-        if self
-            .request
-            .application
-            .requires_application_program::<Intent::Binding>()
-        {
-            return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired);
-        }
-        self.execute_with_preparation_and_commit(
-            super::authorization::prepare,
-            |application, program, binding| {
-                application.compare_and_commit_application(program, binding.idempotency())
-            },
-        )
+        let request_scope = self.request_scope().clone();
+        let runtime = self.request.application;
+        runtime
+            .with_application_advancement(&request_scope, |active_phase| {
+                let phase = &active_phase;
+
+                self.require_workflow_transition()?;
+                if self
+                    .request
+                    .application
+                    .requires_application_program::<Intent::Binding>()
+                {
+                    return Err(
+                        WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired,
+                    );
+                }
+                self.execute_with_preparation_and_commit(
+                    phase,
+                    super::authorization::prepare,
+                    |application, program, binding| {
+                        application.compare_and_commit_application_in_advancement(
+                            phase,
+                            program,
+                            binding.idempotency(),
+                        )
+                    },
+                )
+            })
+            .map_err(WorthQueryApplicationRequestMutationDenial::ExecutionRequest)?
     }
 
     pub(super) fn execute_with_preparation_and_commit(
         mut self,
+        phase: &AdvancementPhase<'_>,
+
         prepare: impl FnOnce(
             &Self,
             &ApplicationMutationIdentities<'_, Schema, Intent::Binding>,
@@ -185,7 +210,7 @@ where
         WorthQueryApplicationRequestMutationDenial,
     > {
         let application = self.request.application;
-        let candidate = match self.prepare_candidate(prepare)? {
+        let candidate = match self.prepare_candidate(phase, prepare)? {
             super::preparation::CandidatePreparation::Prepared(candidate) => candidate,
             super::preparation::CandidatePreparation::Settled(outcome) => return Ok(outcome),
         };

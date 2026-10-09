@@ -81,12 +81,21 @@ fn transport_winner_retains_compact_signed_meaning_until_cutoff() {
     assert_eq!(accepted.pending_reason(), Some(crate::domain_computation::primary_graph::WorthQueryInboundPendingReason::OwnerRetryRequired));
 
     let request = super::super::fixture::live_scope();
-    assert_eq!(
-        world
-            .application
-            .resume_installed_transport_completion(&correlation, &request),
-        InstalledTransportResumeOutcome::Performed
-    );
+    world
+        .application
+        .with_host_advancement(|active_phase| {
+            let phase = &active_phase;
+            assert_eq!(
+                world.application.resume_installed_transport_completion(
+                    phase,
+                    &correlation,
+                    &request
+                ),
+                InstalledTransportResumeOutcome::Performed
+            );
+        })
+        .expect("fixture owner admits its advancement");
+
     assert_eq!(
         world
             .application

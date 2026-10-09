@@ -52,6 +52,8 @@ pub(in super::super) enum WorkflowAssociatedYieldReassemblyOutcome {
 impl WorkflowIterationAssociation<WorthQueryYieldedWorkflowRun> {
     pub(in super::super) fn readmit_same_runtime(
         self,
+        active_request: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+
         query_runtime: &crate::domain_computation::WorthQueryExecutionRuntime,
         bridge_runtime: &worth_runtime_bridge::facade::RuntimeBridge,
     ) -> WorkflowAssociatedReadmissionOutcome {
@@ -62,7 +64,7 @@ impl WorkflowIterationAssociation<WorthQueryYieldedWorkflowRun> {
             stage_identity,
             managed,
         } = self;
-        match managed.readmit_same_runtime(query_runtime, bridge_runtime) {
+        match managed.readmit_same_runtime(active_request, query_runtime, bridge_runtime) {
             WorthQueryWorkflowReadmissionOutcome::Readmitted(readmitted) => {
                 let evidence = readmitted.readmission_evidence();
                 core.record_lifecycle_event(WorkflowReadmittedLifecycleEvent::new());

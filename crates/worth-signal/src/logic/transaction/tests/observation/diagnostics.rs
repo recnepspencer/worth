@@ -8,6 +8,16 @@ use std::sync::{Arc, Mutex};
 
 #[test]
 fn observation_phase4_diagnostics_surface_exposes_latest_boundary_summary() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = crate::data::graph::SignalGraph::new();
     let source = graph
         .node()
@@ -25,7 +35,7 @@ fn observation_phase4_diagnostics_surface_exposes_latest_boundary_summary() {
     );
 
     let mut ctx = ();
-    let mut tx = runtime.begin(&mut ctx);
+    let mut tx = runtime.begin(request_execution, &mut ctx);
     tx.evaluate_with_plan(
         source,
         &|view| Ok(view.finish(NodeEvaluationResult::from_version(version_ab(1, 0)))),
@@ -69,6 +79,16 @@ fn observation_phase4_diagnostics_surface_exposes_latest_boundary_summary() {
 
 #[test]
 fn observation_unobserve_does_not_resurrect_dead_listener_after_branch_restore_churn() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = crate::data::graph::SignalGraph::new();
     let source = graph
         .node()
@@ -95,7 +115,7 @@ fn observation_unobserve_does_not_resurrect_dead_listener_after_branch_restore_c
 
     let mut ctx = ();
     runtime
-        .transaction(&mut ctx, |tx| {
+        .transaction(request_execution, &mut ctx, |tx| {
             tx.mark_dirty(source, ASPECT_A)?;
             Ok(())
         })
@@ -156,7 +176,7 @@ fn observation_unobserve_does_not_resurrect_dead_listener_after_branch_restore_c
     runtime.switch_branch(feature).unwrap();
 
     let result = runtime
-        .transaction(&mut ctx, |tx| {
+        .transaction(request_execution, &mut ctx, |tx| {
             tx.mark_dirty(source, ASPECT_A)?;
             Ok(())
         })

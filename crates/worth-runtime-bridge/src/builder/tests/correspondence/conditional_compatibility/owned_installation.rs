@@ -87,6 +87,10 @@ fn bridge_allocates_conditional_signal_topology_from_semantic_dependencies() {
 
 #[test]
 fn bridge_allocates_and_executes_source_free_initial_conditional() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut owner = super::owned_runtime_builder(runtime(exact_mapping(), Vec::new()))
         .expect("Bridge owns the fresh Signal graph");
     let lowering = owner
@@ -123,6 +127,7 @@ fn bridge_allocates_and_executes_source_free_initial_conditional() {
         .expect("source-free admission needs no relational reader");
     let evidence = owner
         .execute_admitted_conditional(
+            request_execution,
             &session,
             BridgeConditionalExecutionRequest {
                 lowering: &lowering,

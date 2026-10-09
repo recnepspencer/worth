@@ -153,6 +153,16 @@ impl EventSubscriber for BarrierFailGate {
 
 #[test]
 fn transaction_flushes_deliver_events_in_epoch_order() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .with_domains::<Domain>()
@@ -170,7 +180,7 @@ fn transaction_flushes_deliver_events_in_epoch_order() {
 
     let mut ctx = ();
     runtime
-        .transaction(&mut ctx, |tx| {
+        .transaction(request_execution, &mut ctx, |tx| {
             tx.emit_event(Ev::Tick(1));
             tx.flush_events(CheckpointBarrier::PerOperation)?;
             tx.emit_event(Ev::Tick(2));
@@ -187,6 +197,16 @@ fn transaction_flushes_deliver_events_in_epoch_order() {
 
 #[test]
 fn failed_later_epoch_keeps_earlier_epoch_committed_and_does_not_replay_stale_events() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .with_domains::<Domain>()
@@ -210,7 +230,7 @@ fn failed_later_epoch_keeps_earlier_epoch_committed_and_does_not_replay_stale_ev
 
     let mut ctx = ();
     runtime
-        .transaction(&mut ctx, |tx| {
+        .transaction(request_execution, &mut ctx, |tx| {
             tx.emit_event(Ev::Tick(1));
             tx.flush_events(CheckpointBarrier::PerOperation)?;
             Ok(())
@@ -226,7 +246,7 @@ fn failed_later_epoch_keeps_earlier_epoch_committed_and_does_not_replay_stale_ev
 
     *fail_on.lock().unwrap() = Some(CheckpointBarrier::PerCommit);
     let err = runtime
-        .transaction(&mut ctx, |tx| {
+        .transaction(request_execution, &mut ctx, |tx| {
             tx.emit_event(Ev::Tick(7));
             tx.flush_events(CheckpointBarrier::PerOperation)?;
             tx.emit_event(Ev::Tick(11));
@@ -284,7 +304,7 @@ fn failed_later_epoch_keeps_earlier_epoch_committed_and_does_not_replay_stale_ev
 
     *fail_on.lock().unwrap() = None;
     runtime
-        .transaction(&mut ctx, |tx| {
+        .transaction(request_execution, &mut ctx, |tx| {
             tx.emit_event(Ev::Tick(13));
             tx.flush_events(CheckpointBarrier::PerCommit)?;
             Ok(())

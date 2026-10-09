@@ -13,6 +13,7 @@ use super::*;
 use crate::domain_computation::primary_graph::application_contribution::producer::{
     registry::InstalledProducerEdition, WorthQueryProducerCommitAuthority,
 };
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 
 /// The caller's own chain runs first; its errors end the call as before.
 /// Dirty required records popped from the shared queue then run as frames
@@ -21,6 +22,8 @@ use crate::domain_computation::primary_graph::application_contribution::producer
 /// wave and is otherwise held for a later advance.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn drive_required_wave<'runtime, Schema, Family>(
+    phase: &WorthQueryAdvancementPhase<'_>,
+
     runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
@@ -125,6 +128,7 @@ where
             .map_err(admission_denial)?;
         let resolved = resolved_on_wave.view(slot.entries());
         let result = certify_required_ready(
+            phase,
             runtime,
             principal,
             request_scope,
@@ -288,11 +292,15 @@ where
                     let successor = custody
                         .last_mut()
                         .expect("the prepared slot installed one successor");
-                    let progressed =
-                        match successor.advance_checkpoint(runtime, request_scope, admission) {
-                            Ok(progressed) => progressed,
-                            Err(stop) => stopped!('required, successor.interest().key(), stop),
-                        };
+                    let progressed = match successor.advance_checkpoint(
+                        phase,
+                        runtime,
+                        request_scope,
+                        admission,
+                    ) {
+                        Ok(progressed) => progressed,
+                        Err(stop) => stopped!('required, successor.interest().key(), stop),
+                    };
                     if !progressed {
                         if queue.active() {
                             hold_queue_frame!('required, None)
@@ -309,6 +317,7 @@ where
                     &mut demand.required_continuations
                 };
                 match resume_held_upstream(
+                    phase,
                     runtime,
                     principal,
                     request_scope,

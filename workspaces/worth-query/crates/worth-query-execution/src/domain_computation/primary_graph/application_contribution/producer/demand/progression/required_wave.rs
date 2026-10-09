@@ -1,5 +1,6 @@
 //! One selected Product and native image for an exact required-output wave.
 
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use std::sync::Arc;
 
 use worth_query_admission::facade::authenticated_principal::{
@@ -189,6 +190,8 @@ pub(super) fn installed_for_selected_cue<'runtime, Schema>(
 /// The registry's exact consumed-ID join converts PendingExact to owned
 /// scheduling custody before the candidate's borrowed proof leaves scope.
 pub(super) fn certify_required_ready<Schema>(
+    phase: &WorthQueryAdvancementPhase<'_>,
+
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request_scope: &WorthQueryRequestScope,
@@ -234,6 +237,7 @@ where
     let result = installed
         .executor
         .advance_ready_on_selected(
+            phase,
             runtime,
             principal,
             request_scope,

@@ -45,14 +45,19 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         maximum_selection_work: usize,
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryPreparedBranchAdoption, WorthQueryBranchAdoptionPreparationDenial> {
-        self.prepare_branch_adoption_inner(
-            target,
-            expected_requirements,
-            None,
-            None,
-            maximum_selection_work,
-            request,
-        )
+        self.application()
+            .with_application_advancement(request, |phase| {
+                self.prepare_branch_adoption_in_advancement(
+                    &phase,
+                    target,
+                    expected_requirements,
+                    None,
+                    None,
+                    maximum_selection_work,
+                    request,
+                )
+            })
+            .map_err(WorthQueryBranchAdoptionPreparationDenial::ExecutionDenied)?
     }
 
     pub fn prepare_branch_adoption_with_migration(
@@ -63,14 +68,19 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         maximum_selection_work: usize,
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryPreparedBranchAdoption, WorthQueryBranchAdoptionPreparationDenial> {
-        self.prepare_branch_adoption_inner(
-            target,
-            expected_requirements,
-            Some(migration),
-            None,
-            maximum_selection_work,
-            request,
-        )
+        self.application()
+            .with_application_advancement(request, |phase| {
+                self.prepare_branch_adoption_in_advancement(
+                    &phase,
+                    target,
+                    expected_requirements,
+                    Some(migration),
+                    None,
+                    maximum_selection_work,
+                    request,
+                )
+            })
+            .map_err(WorthQueryBranchAdoptionPreparationDenial::ExecutionDenied)?
     }
 
     /// Prepares one branch-local move with explicit workflow dispositions,
@@ -85,18 +95,25 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         maximum_selection_work: usize,
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryPreparedBranchAdoption, WorthQueryBranchAdoptionPreparationDenial> {
-        self.prepare_branch_adoption_inner(
-            target,
-            expected_requirements,
-            migration,
-            workflow,
-            maximum_selection_work,
-            request,
-        )
+        self.application()
+            .with_application_advancement(request, |phase| {
+                self.prepare_branch_adoption_in_advancement(
+                    &phase,
+                    target,
+                    expected_requirements,
+                    migration,
+                    workflow,
+                    maximum_selection_work,
+                    request,
+                )
+            })
+            .map_err(WorthQueryBranchAdoptionPreparationDenial::ExecutionDenied)?
     }
 
-    fn prepare_branch_adoption_inner(
+    #[doc(hidden)]
+    pub fn prepare_branch_adoption_in_advancement(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         target: &ApplicationProgramRevision,
         expected_requirements: &WorthQueryProgramAdoptionRequirements,
         migration: Option<WorthQueryPreparedProgramMigration>,
@@ -105,6 +122,11 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryPreparedBranchAdoption, WorthQueryBranchAdoptionPreparationDenial> {
         let application = self.application();
+        phase
+            .execution_request_for(&application.product_runtime)
+            .map_err(|cause| {
+                WorthQueryBranchAdoptionPreparationDenial::ExecutionDenied(cause.into())
+            })?;
         let gate = application
             .product_runtime
             .activations
@@ -114,6 +136,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             })?;
         gate.publish(|| {
             preparation::prepare(
+                phase,
                 self,
                 target,
                 expected_requirements,

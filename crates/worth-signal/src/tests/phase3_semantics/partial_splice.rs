@@ -9,6 +9,16 @@ use std::sync::atomic::{AtomicU32, Ordering};
 
 #[test]
 fn defined_computation_evaluate_partial_splice_uses_public_api() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -38,7 +48,7 @@ fn defined_computation_evaluate_partial_splice_uses_public_api() {
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             wing.evaluate_memoized(tx, "shape-v1")
         })
         .unwrap();
@@ -46,7 +56,7 @@ fn defined_computation_evaluate_partial_splice_uses_public_api() {
     mark_dirty(runtime.graph_mut(), node, ASPECT_A).unwrap();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             wing.evaluate_partial_splice(
                 tx,
                 "shape-v1",
@@ -124,6 +134,16 @@ fn defined_computation_evaluate_partial_splice_uses_public_api() {
 
 #[test]
 fn branch_local_partial_splice_rejection_preserves_main_mixed_provenance() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -154,13 +174,13 @@ fn branch_local_partial_splice_rejection_preserves_main_mixed_provenance() {
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             wing.evaluate_memoized(tx, "shape-v1")
         })
         .unwrap();
     mark_dirty(runtime.graph_mut(), node, ASPECT_A).unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             wing.evaluate_partial_splice(
                 tx,
                 "shape-v1",
@@ -178,7 +198,7 @@ fn branch_local_partial_splice_rejection_preserves_main_mixed_provenance() {
     mark_dirty(runtime.graph_mut(), node, ASPECT_A).unwrap();
 
     let err = runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             wing.evaluate_partial_splice(
                 tx,
                 "shape-v1",
@@ -255,6 +275,16 @@ fn branch_local_partial_splice_rejection_preserves_main_mixed_provenance() {
 
 #[test]
 fn branch_local_partial_splice_history_retains_committed_region_accounting_after_rejection() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -282,13 +312,13 @@ fn branch_local_partial_splice_history_retains_committed_region_accounting_after
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             wing.evaluate_memoized(tx, "shape-v1")
         })
         .unwrap();
     mark_dirty(runtime.graph_mut(), node, ASPECT_A).unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             wing.evaluate_partial_splice(
                 tx,
                 "shape-v1",
@@ -304,7 +334,7 @@ fn branch_local_partial_splice_history_retains_committed_region_accounting_after
 
     runtime.switch_branch(feature.clone()).unwrap();
     mark_dirty(runtime.graph_mut(), node, ASPECT_A).unwrap();
-    let _ = runtime.transaction(&mut runtime_ctx, |tx| {
+    let _ = runtime.transaction(request_execution, &mut runtime_ctx, |tx| {
         wing.evaluate_partial_splice(
             tx,
             "shape-v1",

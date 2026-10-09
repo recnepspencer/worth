@@ -55,6 +55,16 @@ impl EventSubscriber for FailingFlushSubscriber {
 
 #[test]
 fn event_flush_failure_workflow_does_not_advance_branch_truth() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     assert!(matches!(
         FailureInjectionPoint::DuringEventFlush,
         FailureInjectionPoint::DuringEventFlush
@@ -80,7 +90,7 @@ fn event_flush_failure_workflow_does_not_advance_branch_truth() {
     let replay_before = runtime.observe().replay_for_branch(feature.id);
 
     let mut ctx = ();
-    let mut tx = runtime.begin(&mut ctx);
+    let mut tx = runtime.begin(request_execution, &mut ctx);
     tx.mark_dirty(source, ASPECT_A).unwrap();
     tx.emit_event(WorkflowEvent::Tick);
     tx.flush_events(CheckpointBarrier::PerOperation).unwrap();

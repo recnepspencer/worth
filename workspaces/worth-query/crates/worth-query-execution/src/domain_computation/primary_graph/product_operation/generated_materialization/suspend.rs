@@ -45,6 +45,9 @@ where
     where
         Producer: WorthQueryApplicationProducerBinding<Schema>,
     {
+        self.application().with_application_advancement(request, |phase| {
+        let phase = &phase;
+
         let source_identity = source.idempotency_identity();
         let checkpoint_source_identity = source.checkpoint_identity();
         let source_root = source.source_root();
@@ -54,6 +57,7 @@ where
             ));
         };
         self.suspend_qualified_generated_output::<Producer>(
+            phase,
             request,
             ExpectedSourceQualification {
                 runtime_authority: source.runtime_authority,
@@ -64,12 +68,15 @@ where
                 selection,
             },
         )
+
+        }).map_err(WorthQueryGeneratedOutputSuspensionFailure::ExecutionDenied)?
     }
 
     pub(in crate::domain_computation::primary_graph::product_operation) fn suspend_qualified_generated_output<
         Producer,
     >(
         self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
         source: ExpectedSourceQualification,
     ) -> Result<WorthQuerySuspendedGeneratedOutput, WorthQueryGeneratedOutputSuspensionFailure>
@@ -195,7 +202,11 @@ where
             observed_source_facts: exact.observed_source_facts,
             resources: exact.resources,
         };
-        match prepared.execute() {
+        match prepared.execute(
+            phase
+                .execution_request_for(&application.product_runtime)
+                .expect("private progression uses its admitted runtime phase"),
+        ) {
             RuntimeWorldPublicationOutcome::Performed(performed) => {
                 let commit = performed
                     .component_results()

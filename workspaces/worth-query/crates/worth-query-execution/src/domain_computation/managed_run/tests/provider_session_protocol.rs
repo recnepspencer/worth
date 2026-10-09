@@ -192,67 +192,84 @@ impl WorthQueryProviderSessionLifecycle for SessionProtocolProvider {
 
 #[test]
 fn sealed_plan_prepares_session_binds_work_and_aborts() {
-    let calls = Arc::new(SessionCallCounts::default());
-    let (mut running, graph) = session_run(SessionFailurePoint::None, Arc::clone(&calls), true);
-    let expected_run = running.identity().to_owned();
-    let expected_basis = running
-        .provider_plan_bridge_basis()
-        .identity()
-        .as_str()
-        .to_owned();
-    let expected_snapshot = running.execution_snapshot_reference();
-    {
-        let plan = running
-            .admit_provider_execution_plan(&graph)
-            .expect("exact managed authorities should admit a provider plan");
-        assert_eq!(plan.contract().provider_role(), "managed-graph");
-        assert_eq!(plan.contract().managed_run_identity(), expected_run);
-        assert_eq!(plan.contract().execution_basis_identity(), expected_basis);
-        assert_eq!(plan.contract().snapshot_identity(), expected_snapshot);
-        assert_eq!(
-            plan.contract().graph_authority_identity(),
-            graph.authority_identity()
-        );
-        assert_eq!(plan.contract().effect_closure(), ["mutation"]);
-        assert_eq!(plan.counters().authority_checks(), 1);
-        let readmitted = plan.readmit().expect("provider should readmit the plan");
-        let prepared = readmitted
-            .prepare()
-            .expect("provider should prepare the session");
-        let staged = prepared.bind_reads_and_effects();
-        assert_eq!(
-            staged.read_authority().token_identity(),
-            staged.effect_authority().token_identity()
-        );
-        assert_eq!(staged.counters().provider_calls(), 2);
-        let outcome = staged.abort();
-        assert_eq!(
-            outcome.recovery_posture(),
-            WorthQueryProviderSessionRecoveryPosture::Closed
-        );
-        assert!(matches!(
-            outcome,
-            WorthQuerySessionCommitOrAbortOutcome::Aborted(_)
-        ));
-    }
-    assert_eq!(calls.readmissions.load(Ordering::Acquire), 1);
-    assert_eq!(calls.preparations.load(Ordering::Acquire), 1);
-    assert_eq!(calls.aborts.load(Ordering::Acquire), 1);
-    cleanup(running);
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
+
+        let calls = Arc::new(SessionCallCounts::default());
+        let (mut running, graph) = session_run(SessionFailurePoint::None, Arc::clone(&calls), true);
+        let expected_run = running.identity().to_owned();
+        let expected_basis = running
+            .provider_plan_bridge_basis()
+            .identity()
+            .as_str()
+            .to_owned();
+        let expected_snapshot = running.execution_snapshot_reference();
+        {
+            let plan = running
+                .admit_provider_execution_plan(&graph)
+                .expect("exact managed authorities should admit a provider plan");
+            assert_eq!(plan.contract().provider_role(), "managed-graph");
+            assert_eq!(plan.contract().managed_run_identity(), expected_run);
+            assert_eq!(plan.contract().execution_basis_identity(), expected_basis);
+            assert_eq!(plan.contract().snapshot_identity(), expected_snapshot);
+            assert_eq!(
+                plan.contract().graph_authority_identity(),
+                graph.authority_identity()
+            );
+            assert_eq!(plan.contract().effect_closure(), ["mutation"]);
+            assert_eq!(plan.counters().authority_checks(), 1);
+            let readmitted = plan
+                .readmit(execution)
+                .expect("provider should readmit the plan");
+            let prepared = readmitted
+                .prepare()
+                .expect("provider should prepare the session");
+            let staged = prepared.bind_reads_and_effects();
+            assert_eq!(
+                staged.read_authority().token_identity(),
+                staged.effect_authority().token_identity()
+            );
+            assert_eq!(staged.counters().provider_calls(), 2);
+            let outcome = staged.abort();
+            assert_eq!(
+                outcome.recovery_posture(),
+                WorthQueryProviderSessionRecoveryPosture::Closed
+            );
+            assert!(matches!(
+                outcome,
+                WorthQuerySessionCommitOrAbortOutcome::Aborted(_)
+            ));
+        }
+        assert_eq!(calls.readmissions.load(Ordering::Acquire), 1);
+        assert_eq!(calls.preparations.load(Ordering::Acquire), 1);
+        assert_eq!(calls.aborts.load(Ordering::Acquire), 1);
+        cleanup(running);
+    });
 }
 
 #[test]
 fn independently_admitted_sessions_carry_distinct_opaque_affinities() {
-    assert_ne!(closed_session_affinity(), closed_session_affinity());
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
+
+        assert_ne!(
+            closed_session_affinity(execution,),
+            closed_session_affinity(execution,)
+        );
+    });
 }
 
-fn closed_session_affinity() -> WorthQueryProviderSessionAffinityIdentity {
+fn closed_session_affinity(
+    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+) -> WorthQueryProviderSessionAffinityIdentity {
     let (mut running, graph) = session_run(
         SessionFailurePoint::None,
         Arc::new(SessionCallCounts::default()),
         true,
     );
-    let staged = staged_session(&mut running, &graph);
+    let staged = staged_session(execution, &mut running, &graph);
     let affinity = staged.provider_session_affinity();
     assert_eq!(affinity.plan(), staged.plan());
     let identity = affinity.identity();
@@ -317,13 +334,15 @@ pub(super) fn session_run(
 }
 
 pub(super) fn staged_session<'run>(
+    execution: &'run crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+
     running: &'run mut WorthQueryRunningDirectRun,
     graph: &WorthQueryInstalledGraphParticipationAuthority,
 ) -> crate::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run> {
     running
         .admit_provider_execution_plan(graph)
         .expect("plan admission should succeed")
-        .readmit()
+        .readmit(execution)
         .expect("plan readmission should succeed")
         .prepare()
         .expect("session preparation should succeed")

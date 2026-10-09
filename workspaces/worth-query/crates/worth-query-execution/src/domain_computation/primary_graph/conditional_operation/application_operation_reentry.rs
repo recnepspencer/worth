@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 mod admitted_projection;
 mod attempt_progression;
 mod denial;
@@ -138,6 +139,8 @@ pub(super) fn reenter_temporal_operation<
     Authorization,
     Clock,
 >(
+    phase: &WorthQueryAdvancementPhase<'_>,
+
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     product: &crate::basis::WorthQueryProductBranchLease,
     operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
@@ -248,6 +251,7 @@ where
         };
     let admission_canonical_work = idempotency.canonical_work();
     let result = attempt_progression::try_reentry(
+        phase,
         runtime,
         product,
         operation,

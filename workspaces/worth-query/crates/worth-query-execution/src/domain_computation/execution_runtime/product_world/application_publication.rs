@@ -35,6 +35,7 @@ impl WorthQueryPreparedCombinedProductPublication {
 
     pub(crate) fn execute(
         self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
         bridge_prepared: BridgePreparedConditionalInstallationExtension,
         bridge: &BridgeSealedRuntimeAssembly,
     ) -> RuntimeWorldConditionalDefinitionPublicationOutcome {
@@ -44,6 +45,7 @@ impl WorthQueryPreparedCombinedProductPublication {
             control,
         } = self;
         publication.publish_bridge_conditional_definition(
+            execution,
             prepared,
             bridge_prepared,
             bridge,

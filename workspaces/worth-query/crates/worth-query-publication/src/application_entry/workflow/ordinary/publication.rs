@@ -238,9 +238,15 @@ where
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
 {
     pub fn execute(self) -> Result<WorkflowDefinitionPublicationOutcome, WorthQueryOrdinaryWorkflowPublicationDenial> {
+        let runtime = self.request.application_runtime();
+        let scope = self.request.request_scope().clone();
+        runtime.with_application_advancement(&scope, |phase| {
+
         let prepared = self.request
-            .prepare_workflow_publication(self.contract, self.expected_predecessor)
+            .prepare_workflow_publication_in_advancement(&phase,self.contract, self.expected_predecessor)
             .map_err(WorthQueryOrdinaryWorkflowPublicationDenial::Preparation)?;
-        Ok(prepared.execute())
+        Ok(prepared.execute_in_advancement(&phase))
+
+        }).map_err(|cause| WorthQueryOrdinaryWorkflowPublicationDenial::Preparation(WorthQueryWorkflowDefinitionPublicationPreparationDenial::RequestAdmission(crate::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause))))?
     }
 }

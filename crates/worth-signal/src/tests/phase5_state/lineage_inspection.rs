@@ -55,6 +55,16 @@ fn lineage_chain_preserves_invalidation_and_restore_events_for_the_same_artifact
 
 #[test]
 fn snapshot_metadata_and_replay_ranges_are_inspectable_without_restore() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -62,7 +72,7 @@ fn snapshot_metadata_and_replay_ranges_are_inspectable_without_restore() {
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(node, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(1, 0))
@@ -91,7 +101,7 @@ fn snapshot_metadata_and_replay_ranges_are_inspectable_without_restore() {
     );
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.mark_dirty(node, ASPECT_A)?;
             tx.read(node, &|view| {
                 Ok(view.finish(

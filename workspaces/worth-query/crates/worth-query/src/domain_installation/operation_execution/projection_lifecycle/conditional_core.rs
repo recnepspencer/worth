@@ -39,6 +39,7 @@ pub(super) fn evaluate_fresh_lifecycle_conditionals<
     L: BasisOperationLane,
     S: WorthQueryProjectionLifecycleSource<D, O, F, L>,
 >(
+    execution: worth_execution::ExecutionRequest<'_, '_>,
     source: &S,
     workspace: &mut crate::runtime::WorthQueryWorkspace,
     mut counters: WorthQueryProjectionPromotionCounters,
@@ -53,6 +54,7 @@ pub(super) fn evaluate_fresh_lifecycle_conditionals<
     let mut provenance = Vec::new();
     let publication_stage = source.publication_stage_identity().map(str::to_owned);
     let mut evaluation = WorthQueryLifecycleScopeEvaluation {
+        execution,
         source,
         workspace,
         snapshot: &snapshot,
@@ -76,6 +78,7 @@ pub(super) fn evaluate_fresh_lifecycle_conditionals<
 }
 
 struct WorthQueryLifecycleScopeEvaluation<'a, S> {
+    execution: worth_execution::ExecutionRequest<'a, 'a>,
     source: &'a S,
     workspace: &'a mut crate::runtime::WorthQueryWorkspace,
     snapshot: &'a crate::memory_workspace::WorthQuerySnapshotIdentity,
@@ -115,6 +118,7 @@ where
         crate::domain_installation::conditional_execution::evaluate_settled_projection_conditionals(
             evaluation.source.bound_operation(),
             crate::domain_installation::WorthQueryConditionalEvaluationPass {
+                execution: evaluation.execution,
                 workspace: evaluation.workspace,
                 snapshot: evaluation.snapshot,
                 execution_identity: &execution_identity,

@@ -7,6 +7,16 @@ use std::sync::atomic::{AtomicU32, Ordering};
 
 #[test]
 fn undo_redo_style_session_with_failures_and_memo_reuse_preserves_branch_local_truth() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let policy = SignalRuntimePolicy::development()
         .with_history_limit(4)
         .with_snapshot_restore_lineage_mode(SnapshotRestoreLineageMode::PerNode);
@@ -23,7 +33,7 @@ fn undo_redo_style_session_with_failures_and_memo_reuse_preserves_branch_local_t
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(source, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(1, 0))
@@ -49,7 +59,7 @@ fn undo_redo_style_session_with_failures_and_memo_reuse_preserves_branch_local_t
     let feature = runtime.create_branch("feature-undo").unwrap();
     runtime.switch_branch(feature.clone()).unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.mark_dirty(source, ASPECT_A)?;
             tx.read(source, &|view| {
                 Ok(view.finish(
@@ -81,7 +91,7 @@ fn undo_redo_style_session_with_failures_and_memo_reuse_preserves_branch_local_t
             .restore_branch_snapshot(feature.clone(), &feature_snapshot)
             .unwrap();
 
-        let err = runtime.transaction(&mut runtime_ctx, |tx| {
+        let err = runtime.transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.mark_dirty(source, ASPECT_A)?;
             tx.read(source, &|view| {
                 Ok(view.finish(
@@ -95,7 +105,7 @@ fn undo_redo_style_session_with_failures_and_memo_reuse_preserves_branch_local_t
 
         mark_dirty(runtime.graph_mut(), keyed, ASPECT_A).unwrap();
         runtime
-            .transaction(&mut runtime_ctx, |tx| {
+            .transaction(request_execution, &mut runtime_ctx, |tx| {
                 tx.evaluate_keyed(keyed, &computation, &|view| {
                     compute_calls.fetch_add(1, Ordering::Relaxed);
                     Ok(view.finish(NodeEvaluationResult::from_version(version_ab(999, 0))))

@@ -8,6 +8,16 @@ use crate::tests::support::{
 
 #[test]
 fn posthoc_forensics_after_long_session_answers_branch_and_artifact_questions() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -25,7 +35,7 @@ fn posthoc_forensics_after_long_session_answers_branch_and_artifact_questions() 
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(source, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(1, 0))
@@ -57,7 +67,7 @@ fn posthoc_forensics_after_long_session_answers_branch_and_artifact_questions() 
     let feature = runtime.create_branch("feature-posthoc").unwrap();
     runtime.switch_branch(feature.clone()).unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.mark_dirty(source, ASPECT_A)?;
             tx.read(source, &|view| {
                 Ok(view.finish(
@@ -88,7 +98,7 @@ fn posthoc_forensics_after_long_session_answers_branch_and_artifact_questions() 
     runtime
         .restore_branch_snapshot(analysis.clone(), &analysis_snapshot)
         .unwrap();
-    let err = runtime.transaction(&mut runtime_ctx, |tx| {
+    let err = runtime.transaction(request_execution, &mut runtime_ctx, |tx| {
         tx.mark_dirty(source, ASPECT_A)?;
         tx.read(source, &|view| {
             Ok(view.finish(

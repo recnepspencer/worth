@@ -20,6 +20,8 @@ use worth_query_host::facade::{
 
 use super::*;
 #[cfg(feature = "test-query-execution-observer")]
+mod advancement_currentness;
+#[cfg(feature = "test-query-execution-observer")]
 mod clean_reuse;
 pub(crate) mod computation_partition;
 mod current_output;
@@ -360,3 +362,15 @@ fn settle_for<'application, 'principal, 'scope>(
         })
         .expect("the program output settles within the bounded advances")
 }
+
+#[cfg(feature = "test-query-execution-observer")]
+mod advancement_lifetime;
+
+#[cfg(feature = "test-query-execution-observer")]
+mod advancement_custody;
+
+#[cfg(feature = "test-query-execution-observer")]
+mod advancement_bootstrap;
+
+#[cfg(feature = "test-query-execution-observer")]
+mod advancement_discovered;

@@ -1,5 +1,6 @@
 //! Pre-publication application denial categories and owner evidence.
 
+mod advancement;
 mod capacity;
 mod denial_cause;
 mod execution;

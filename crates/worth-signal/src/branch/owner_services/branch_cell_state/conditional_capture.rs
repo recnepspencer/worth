@@ -54,17 +54,9 @@ where
         &self,
         graph: &mut crate::data::graph::SignalGraph,
         ledger: &Arc<SignalConditionalRetentionLedger>,
+        preparation: &mut RetainedStoragePreparation<'_>,
     ) -> Result<Arc<SignalRetainedExecutionBasis>, SignalConditionalBasisCaptureDenial> {
-        let maximum_visits = graph
-            .installed_runtime_policy()
-            .conditional_evaluation_budget()
-            .maximum_attempt_visits;
-        SignalRetainedExecutionBasis::capture(
-            graph,
-            ledger,
-            &mut RetainedStoragePreparation::new(maximum_visits),
-        )
-        .map(Arc::new)
+        SignalRetainedExecutionBasis::capture(graph, ledger, preparation).map(Arc::new)
     }
 
     pub(in crate::branch::owner_services) fn publish_conditional_basis(

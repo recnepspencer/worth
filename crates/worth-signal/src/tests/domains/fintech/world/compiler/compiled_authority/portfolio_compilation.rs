@@ -90,6 +90,16 @@ impl CompiledFinancialWorld {
     }
 
     fn establish_initial_truth(&mut self) -> Result<(), SignalError> {
+        // This standalone caller declares the operational serial memory policy.
+        let serial_request = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(
+                crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+            ),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
         let program = self.program();
         let evaluator = program.evaluator();
         let factor_nodes = self
@@ -110,7 +120,7 @@ impl CompiledFinancialWorld {
             .iter()
             .map(|consumer| self.handles.consumer(consumer.role).0)
             .collect::<Vec<_>>();
-        self.runtime.transaction(&mut (), |tx| {
+        self.runtime.transaction(request_execution, &mut (), |tx| {
             for (factor, node) in &factor_nodes {
                 let result = source_result(&program, *factor);
                 tx.target(*node)
@@ -134,6 +144,16 @@ impl CompiledFinancialWorld {
         next_definition: FinancialWorldDefinition,
         factor: MarketFactorKey,
     ) -> Result<(), SignalError> {
+        // This standalone caller declares the operational serial memory policy.
+        let serial_request = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(
+                crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+            ),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
         let next_snapshot = runtime_financial_snapshot(&next_definition);
         let next_projection = self.projection.advance(&next_snapshot);
         let program = FinancialEvaluationProgram::new(
@@ -165,7 +185,7 @@ impl CompiledFinancialWorld {
         let source_result = source_result(&program, factor);
         let ledger = self.ledger.clone();
         self.ledger.clear();
-        self.runtime.transaction(&mut (), |tx| {
+        self.runtime.transaction(request_execution, &mut (), |tx| {
             tx.mark_changed(source, factor_signal_aspect(&next_definition, factor))?;
             ledger.record(SemanticOutputKey::Factor(factor));
             tx.target(source)
@@ -183,7 +203,7 @@ impl CompiledFinancialWorld {
                         .is_ok_and(|state| !matches!(state, NodeState::Clean))
                 })
                 .collect::<Vec<_>>();
-            self.runtime.transaction(&mut (), |tx| {
+            self.runtime.transaction(request_execution, &mut (), |tx| {
                 for node in &dirty {
                     tx.read(*node, &evaluator)?;
                 }

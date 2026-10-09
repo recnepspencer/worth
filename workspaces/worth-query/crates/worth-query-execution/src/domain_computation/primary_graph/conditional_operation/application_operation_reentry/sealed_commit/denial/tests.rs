@@ -125,3 +125,39 @@ pub(in crate::domain_computation::primary_graph) fn assert_preparation_retry(den
         _ => panic!("HEAD-reachable preparation refusal changed retry posture: {denial:?}"),
     }
 }
+
+#[test]
+fn custody_faults_never_retry_through_either_projection() {
+    use crate::domain_computation::primary_graph::WorthQueryAdvancementDenial as Opening;
+    for (opening, resource) in [
+        (Opening::NestedOpening, Resource::NestedAdvancementOpening),
+        (Opening::ForeignPhase, Resource::ForeignAdvancementPhase),
+    ] {
+        assert!(!opening.is_transient());
+        assert!(!Opening::Resource(resource).is_transient());
+        let outcome = opening.into_commit_outcome();
+        let crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::Denied(
+            direct,
+        ) = outcome
+        else {
+            panic!("opening custody fault must be denied");
+        };
+        assert!(matches!(
+            classify_denial(&direct),
+            Outcome::TerminalFailure(_)
+        ));
+        let provider = provider_session_kind_denied(
+            Session::ExecutionResource {
+                denial: resource,
+                partition_identity: None,
+                policy_ancestor: None,
+            },
+            Stage::ProviderCommit,
+            "custody fault through the provider",
+        );
+        assert!(matches!(
+            classify_denial(&provider),
+            Outcome::TerminalFailure(_)
+        ));
+    }
+}

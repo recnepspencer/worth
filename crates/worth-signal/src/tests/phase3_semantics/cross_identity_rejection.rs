@@ -7,6 +7,16 @@ use std::sync::atomic::{AtomicU32, Ordering};
 
 #[test]
 fn cross_identity_changed_contract_basis_is_rejected_and_preserves_previous_correspondence() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -38,12 +48,12 @@ fn cross_identity_changed_contract_basis_is_rejected_and_preserves_previous_corr
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             source.evaluate_memoized(tx, "shape-v1")
         })
         .unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             alias.evaluate_cross_identity_with_contract_basis(
                 tx,
                 "source",
@@ -56,7 +66,7 @@ fn cross_identity_changed_contract_basis_is_rejected_and_preserves_previous_corr
     mark_dirty(runtime.graph_mut(), alias_node, ASPECT_A).unwrap();
 
     let err = runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             alias.evaluate_cross_identity_with_contract_basis(
                 tx,
                 "source",
@@ -103,6 +113,16 @@ fn cross_identity_changed_contract_basis_is_rejected_and_preserves_previous_corr
 
 #[test]
 fn cross_identity_evidence_family_change_is_rejected_and_not_treated_as_equivalent() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -134,12 +154,12 @@ fn cross_identity_evidence_family_change_is_rejected_and_not_treated_as_equivale
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             source.evaluate_memoized(tx, "shape-v1")
         })
         .unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             alias.evaluate_cross_identity(tx, "source", "shape-v1", "mesh-001")
         })
         .unwrap();
@@ -147,7 +167,7 @@ fn cross_identity_evidence_family_change_is_rejected_and_not_treated_as_equivale
     mark_dirty(runtime.graph_mut(), alias_node, ASPECT_A).unwrap();
 
     let err = runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             alias.evaluate_cross_identity_with_lineage_mapping(tx, "source", "shape-v1", "mesh-001")
         })
         .expect_err("changing correspondence evidence family should be rejected");
@@ -189,6 +209,16 @@ fn cross_identity_evidence_family_change_is_rejected_and_not_treated_as_equivale
 
 #[test]
 fn ambiguous_lineage_mapping_is_rejected_before_cross_identity_reuse_commits() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -218,13 +248,13 @@ fn ambiguous_lineage_mapping_is_rejected_before_cross_identity_reuse_commits() {
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             source.evaluate_memoized(tx, "shape-v1")
         })
         .unwrap();
 
     let err = runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             alias.evaluate_cross_identity_with_lineage_mapping(
                 tx,
                 "source",

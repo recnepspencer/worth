@@ -17,6 +17,16 @@ fn runtime() -> Runtime {
 
 #[test]
 fn legacy_root_calls_cross_issuance_without_a_second_branch_state_lane() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            worth_signal::facade::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = runtime();
     let main = runtime.current_branch();
     let initial = runtime
@@ -63,7 +73,7 @@ fn legacy_root_calls_cross_issuance_without_a_second_branch_state_lane() {
     ));
 
     let advanced = runtime
-        .advance_signal_branch(&mut (), &initial, |_| Ok(()))
+        .advance_signal_branch(request_execution, &mut (), &initial, |_| Ok(()))
         .expect("the legacy mutation delegates to the canonical target cell");
     assert!(matches!(
         runtime.readmit_signal_branch_basis(initial.descriptor().clone()),

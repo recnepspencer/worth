@@ -6,6 +6,16 @@ use crate::tests::support::{define_keyed_computation, evaluate, version_ab, ASPE
 
 #[test]
 fn lineage_distinguishes_replacement_refresh_and_memoized_reuse() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let source = graph.node().output_identity().build();
 
@@ -58,7 +68,7 @@ fn lineage_distinguishes_replacement_refresh_and_memoized_reuse() {
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.evaluate_keyed(keyed, &computation, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(1, 0))
@@ -73,7 +83,7 @@ fn lineage_distinguishes_replacement_refresh_and_memoized_reuse() {
     mark_dirty(runtime.graph_mut(), keyed, ASPECT_A).unwrap();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.evaluate_keyed(keyed, &computation, &|view| {
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(99, 0))))
             })?;

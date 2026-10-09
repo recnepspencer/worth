@@ -32,6 +32,7 @@ use super::region_output::{
 use super::*;
 
 mod absence;
+mod advancement_custody;
 mod counts;
 mod cutoff;
 mod handler_absence;
@@ -73,6 +74,12 @@ impl<const WORK: usize> ApplicationManagedComputation<CheckpointSchema, PlanarFi
         ApplicationComputationExecution::DeterministicPartitioned;
     const RESOURCES: ApplicationComputationResourceCeiling =
         ApplicationComputationResourceCeiling::new(WORK, TOTALS_RETAINED_BYTES);
+}
+
+thread_local! { static KERNEL_CHARGES: std::cell::RefCell<Vec<u64>> = const { std::cell::RefCell::new(Vec::new()) }; }
+
+fn kernel_charges() -> Vec<u64> {
+    KERNEL_CHARGES.with(|charges| std::mem::take(&mut *charges.borrow_mut()))
 }
 
 static PLANS: AtomicUsize = AtomicUsize::new(0);
@@ -166,7 +173,17 @@ impl<const WORK: usize, const MODE: u8>
         checkpoint: &mut WorthQueryManagedComputationCheckpoint<'_>,
     ) -> Result<f64, WorthQueryManagedComputationDenial<u32>> {
         KERNELS.fetch_add(1, Ordering::Relaxed);
-        owner::total_region(partition.key().0, partition.gathered(), checkpoint)
+        let outcome = owner::total_region(partition.key().0, partition.gathered(), checkpoint);
+        if outcome.is_ok() {
+            // A completed region passed every declared entry checkpoint.
+            let work = partition
+                .gathered()
+                .iter()
+                .map(|entry| entry.work as u64)
+                .sum();
+            KERNEL_CHARGES.with(|charges| charges.borrow_mut().push(work));
+        }
+        outcome
     }
 
     fn reducer(&self) -> WorthQueryDeterministicReducer<f64> {

@@ -4,6 +4,9 @@ use super::{WorthQueryCurrentDomainProjection, WorthQueryProjectionPromotionCoun
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryProjectionPromotionDenialKind {
+    ExecutionRequest(
+        worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
+    ),
     ForeignRuntime,
     DomainNotInstalled,
     BoundAuthorityMismatch,

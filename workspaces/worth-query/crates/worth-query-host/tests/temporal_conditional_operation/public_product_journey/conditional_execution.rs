@@ -12,7 +12,7 @@ use super::super::product_query_support::{
 use super::super::schema::*;
 use super::super::world::{self, CourtroomWorld};
 pub(crate) fn publishes_delivers_executes_and_cleans_up() {
-    let mut world = CourtroomWorld::publish("blocked");
+    let world = CourtroomWorld::publish("blocked");
     let transport = Arc::new(CompletingExternalTransport::default());
     world
         .application
@@ -167,8 +167,17 @@ pub(crate) fn publishes_delivers_executes_and_cleans_up() {
         .take_performed_relational_product_change()
         .expect("the combined publication retains its unique Relational delivery");
     let selected_source = world.application.on_branch(source_branch).select().unwrap();
-    let failed = selected_source
-        .deliver_relational_change_to_conditional(&world.clock, usize::MAX, performed)
+    let failed = world
+        .application
+        .with_application_advancement(&world::request_scope(), |phase| {
+            selected_source.deliver_relational_change_to_conditional(
+                &phase,
+                &world.clock,
+                usize::MAX,
+                performed,
+            )
+        })
+        .expect("the declared host request admits delivery")
         .expect_err("an undeclared dependency ordinal must fail before retention");
     assert_eq!(
         failed.kind(),
@@ -181,8 +190,17 @@ pub(crate) fn publishes_delivers_executes_and_cleans_up() {
             .retained_direct_delivery_count(),
         0
     );
-    let delivery = selected_source
-        .deliver_relational_change_to_conditional(&world.clock, 0, failed.into_change())
+    let delivery = world
+        .application
+        .with_application_advancement(&world::request_scope(), |phase| {
+            selected_source.deliver_relational_change_to_conditional(
+                &phase,
+                &world.clock,
+                0,
+                failed.into_change(),
+            )
+        })
+        .expect("the declared host request admits delivery")
         .expect("the performed patch belongs to the selected product");
     let runtime::WorthQueryPerformedRelationalProductChangeDeliveryOutcome::Success(delivery) =
         delivery
@@ -330,40 +348,12 @@ pub(crate) fn publishes_delivers_executes_and_cleans_up() {
         );
     }
 
-    let assert_product_input = |branch, expected| {
-        let selected = world.application.on_branch(branch).select().unwrap();
-        let scope = selected
-            .resolve_entity(
-                IntentIdentityField::reference(),
-                "intent-1".to_string(),
-                &request,
-                primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
-            )
-            .unwrap();
-        let access =
-            primary_graph::WorthQueryApplicationQueryAccessContext::new(&principal, &scope);
-        let plan = selected
-            .admit_application_query(
-                &query,
-                &access,
-                ApplicationQueryParameterSet::new(),
-                controls(&request),
-            )
-            .unwrap();
-        let result = world
-            .application
-            .execute_application_query_one_shot(plan)
-            .unwrap();
-        assert_eq!(result.rows()[0].input, expected);
-        assert_eq!(product_identity(result.receipt()).product_branch(), branch);
-        assert_security_work(result.receipt());
-    };
     for (branch, expected) in [
         (sibling, "payload"),
         (source_branch, "changed-on-a"),
         (sibling, "payload"),
     ] {
-        assert_product_input(branch, expected);
+        product_readback::assert_product_input(&world, &request, &principal, branch, expected);
     }
     let retained = world
         .application
@@ -384,12 +374,11 @@ pub(crate) fn publishes_delivers_executes_and_cleans_up() {
             .active(),
         0
     );
-    world.application.close_conditional_runtime().unwrap();
-    assert_conditional_resources_empty(world.application.inspect_conditional_runtime());
-    drop(world);
-    let live = probe.live_inventory();
-    assert!(
-        live.is_empty(),
-        "live conditional inventory after cleanup: {live:?}"
-    );
+    cleanup::assert_closed(world, &probe);
 }
+
+#[path = "conditional_execution/cleanup.rs"]
+mod cleanup;
+
+#[path = "conditional_execution/product_readback.rs"]
+mod product_readback;

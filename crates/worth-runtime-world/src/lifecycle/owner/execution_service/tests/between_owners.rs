@@ -13,6 +13,13 @@ use super::*;
 fn cancellation_between_the_relational_effect_and_the_signal_advance_retains_only_the_relational_effect(
 ) {
     let (fixture, owner, expected) = setup();
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::from_policy(&owner.state.execution.request_policy()),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let prepared = prepare_both_owners(&fixture, &owner, &expected, "cancel-between-owners");
     let (rehearsal, reached) = arm_rehearsal(
         owner.as_ref(),
@@ -32,6 +39,7 @@ fn cancellation_between_the_relational_effect_and_the_signal_advance_retains_onl
         });
         let outcome = RuntimeWorldOwnerExecutionService::execute_with_signal(
             owner.as_ref(),
+            execution,
             prepared,
             &mut context,
             &token,
@@ -65,6 +73,13 @@ fn deadline_between_the_relational_effect_and_the_signal_advance_retains_only_th
     let clock = MutableClock::new(0);
     let (fixture, owner, expected) =
         setup_with_clock(RuntimeWorldClock::from_source(clock.clone()));
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::from_policy(&owner.state.execution.request_policy()),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let cancellation = RuntimeWorldCancellationSource::new();
     let prepared = RuntimeWorldPreparationService::prepare_publication(
         owner.as_ref(),
@@ -93,6 +108,7 @@ fn deadline_between_the_relational_effect_and_the_signal_advance_retains_only_th
         });
         let outcome = RuntimeWorldOwnerExecutionService::execute_with_signal(
             owner.as_ref(),
+            execution,
             prepared,
             &mut context,
             &cancellation.token(),

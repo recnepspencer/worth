@@ -6,6 +6,16 @@ use crate::tests::support::{version_ab, ASPECT_A};
 
 #[test]
 fn repeated_merge_advances_source_branch_ledger_boundary() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -16,7 +26,7 @@ fn repeated_merge_advances_source_branch_ledger_boundary() {
     runtime.switch_branch(feature.clone()).unwrap();
     let first = runtime.graph_mut().node().output_identity().build();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(first, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(21, 0))
@@ -40,7 +50,7 @@ fn repeated_merge_advances_source_branch_ledger_boundary() {
     runtime.switch_branch(feature.clone()).unwrap();
     let second = runtime.graph_mut().node().output_identity().build();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(second, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(22, 0))
@@ -79,6 +89,16 @@ fn repeated_merge_advances_source_branch_ledger_boundary() {
 
 #[test]
 fn retained_only_branch_churn_does_not_force_merge_replanning() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -89,7 +109,7 @@ fn retained_only_branch_churn_does_not_force_merge_replanning() {
     runtime.switch_branch(feature.clone()).unwrap();
     let source_only = runtime.graph_mut().node().output_identity().build();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(source_only, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(31, 0))
@@ -142,6 +162,16 @@ fn retained_only_branch_churn_does_not_force_merge_replanning() {
 
 #[test]
 fn merge_branch_equivalent_runtime_state_ignores_retained_artifact_richness() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -149,7 +179,7 @@ fn merge_branch_equivalent_runtime_state_ignores_retained_artifact_richness() {
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(shared, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(35, 0))
@@ -178,7 +208,7 @@ fn merge_branch_equivalent_runtime_state_ignores_retained_artifact_richness() {
     runtime.switch_branch(feature.clone()).unwrap();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.mark_dirty(shared, ASPECT_A)?;
             tx.read(shared, &|view| {
                 Ok(view.finish(
@@ -230,6 +260,16 @@ fn merge_branch_equivalent_runtime_state_ignores_retained_artifact_richness() {
 /// nothing. Both capture paths (active branch, stored branch) are covered.
 #[test]
 fn snapshot_capture_keeps_pending_source_mutations_merge_visible() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -242,7 +282,7 @@ fn snapshot_capture_keeps_pending_source_mutations_merge_visible() {
     runtime.switch_branch(feature.clone()).unwrap();
     let edited = runtime.graph_mut().node().output_identity().build();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(edited, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(31, 0))

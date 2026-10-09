@@ -5,6 +5,9 @@ use super::{
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryWorkflowAdvanceDenialKind {
+    ExecutionRequest(
+        worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
+    ),
     RuntimeAuthority(crate::domain_installation::WorthQueryDomainHandleDenialKind),
     UnknownStage,
     StageAlreadyCompleted,

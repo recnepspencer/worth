@@ -114,62 +114,68 @@ fn surviving_borrow_delays_and_then_contains_both_artifact_release_panics() {
 
 #[test]
 fn yielded_cleanup_maps_double_artifact_release_panic_into_recovery_evidence() {
-    let world = double_panicking_yield_world("yielded-artifact-double-panic");
-    let active = world
-        .running
-        .begin_stage_graph_execution(
-            "producer",
-            &world.graph,
-            WorthQueryManagedGraphCallRequest::new(
-                WorthQueryGraphProviderCallKind::Observe,
-                "yielded-artifact-double-panic",
-            ),
-        )
-        .expect("double-panic yield provider should begin");
-    let paused = match active.advance() {
-        WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused,
-        _ => panic!("double-panic yield provider did not expose its safe point"),
-    };
-    let yielded = match paused.yield_run() {
-        crate::domain_computation::WorthQueryWorkflowYieldOutcome::Yielded(yielded) => yielded,
-        _ => panic!("retained artifact prevented an otherwise eligible workflow yield"),
-    };
-    let cleanup = match yielded.cleanup() {
-        crate::domain_computation::WorthQueryWorkflowYieldCleanupOutcome::RecoveryRequired(
-            cleanup,
-        ) => cleanup,
-        crate::domain_computation::WorthQueryWorkflowYieldCleanupOutcome::Complete(_) => {
-            panic!("double artifact release panic was reported as complete")
-        }
-        crate::domain_computation::WorthQueryWorkflowYieldCleanupOutcome::Pending(_) => {
-            panic!("artifact without a surviving borrow remained pending")
-        }
-    };
-    assert_eq!(
-        cleanup
-            .inspection()
-            .artifact_evidence()
-            .provider_release_recovery_required_count(),
-        1
-    );
-    assert_eq!(world.disposal_attempts.load(Ordering::Acquire), 1);
-    assert_eq!(world.destructor_attempts.load(Ordering::Acquire), 1);
-    assert!(cleanup.inspection().resources_released());
-    assert_eq!(cleanup.inspection().released_reservation_count(), 3);
-    let release = match world.handle.owner_snapshot().provider_release() {
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
+
+        let world = double_panicking_yield_world("yielded-artifact-double-panic");
+        let active = world
+            .running
+            .begin_stage_graph_execution(
+                execution,
+                "producer",
+                &world.graph,
+                WorthQueryManagedGraphCallRequest::new(
+                    WorthQueryGraphProviderCallKind::Observe,
+                    "yielded-artifact-double-panic",
+                ),
+            )
+            .expect("double-panic yield provider should begin");
+        let paused = match active.advance(execution) {
+            WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused,
+            _ => panic!("double-panic yield provider did not expose its safe point"),
+        };
+        let yielded = match paused.yield_run() {
+            crate::domain_computation::WorthQueryWorkflowYieldOutcome::Yielded(yielded) => yielded,
+            _ => panic!("retained artifact prevented an otherwise eligible workflow yield"),
+        };
+        let cleanup = match yielded.cleanup() {
+            crate::domain_computation::WorthQueryWorkflowYieldCleanupOutcome::RecoveryRequired(
+                cleanup,
+            ) => cleanup,
+            crate::domain_computation::WorthQueryWorkflowYieldCleanupOutcome::Complete(_) => {
+                panic!("double artifact release panic was reported as complete")
+            }
+            crate::domain_computation::WorthQueryWorkflowYieldCleanupOutcome::Pending(_) => {
+                panic!("artifact without a surviving borrow remained pending")
+            }
+        };
+        assert_eq!(
+            cleanup
+                .inspection()
+                .artifact_evidence()
+                .provider_release_recovery_required_count(),
+            1
+        );
+        assert_eq!(world.disposal_attempts.load(Ordering::Acquire), 1);
+        assert_eq!(world.destructor_attempts.load(Ordering::Acquire), 1);
+        assert!(cleanup.inspection().resources_released());
+        assert_eq!(cleanup.inspection().released_reservation_count(), 3);
+        let release = match world.handle.owner_snapshot().provider_release() {
         crate::domain_computation::artifact_owner::WorthQueryArtifactProviderReleasePosture::RecoveryRequired(
             evidence,
         ) => evidence,
         posture => panic!("yielded double-panic artifact reported {posture:?}"),
     };
-    assert_eq!(
+        assert_eq!(
         release.disposal(),
         crate::domain_computation::artifact_owner::WorthQueryArtifactProviderDisposalDisposition::Panicked
     );
-    assert_eq!(
+        assert_eq!(
         release.destructor(),
         crate::domain_computation::artifact_owner::WorthQueryArtifactProviderDestructorDisposition::Panicked
     );
+    });
 }
 
 struct DoublePanickingArtifactWorld {

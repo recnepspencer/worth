@@ -21,6 +21,9 @@ use support::request_scope;
 use worth_query_host::facade::admission::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
 };
+use worth_query_host::facade::application_contribution::{
+    WorthQueryAdvancementDenial, WorthQueryManagedComputationInterruption,
+};
 use worth_query_host::facade::application_entry::{
     WorkflowDefinitionExpectedPredecessor, WorkflowDefinitionPublicationOutcome,
     WorkflowInstanceStartOutcome, WorthQueryApplicationMutationOutcome,
@@ -28,7 +31,6 @@ use worth_query_host::facade::application_entry::{
     WorthQueryBranchAdoptionPublicationOutcome,
     WorthQueryWorkflowDefinitionPublicationPreparationDenial,
 };
-use worth_query_host::facade::primary_graph::WorthQueryPrincipalResolutionDenialKind;
 
 #[test]
 fn initiation_recovers_one_continuation_and_a_fresh_approver_starts_its_workflow() {
@@ -279,8 +281,13 @@ fn cancelled_initiation_cannot_mint_a_continuation() {
 
     assert!(matches!(
         outcome.execution(),
-        Err(WorthQueryApplicationRequestMutationDenial::PrincipalResolution(denial))
-            if denial.kind() == WorthQueryPrincipalResolutionDenialKind::Cancelled
+        Err(
+            WorthQueryApplicationRequestMutationDenial::ExecutionRequest(
+                WorthQueryAdvancementDenial::Interrupted(
+                    WorthQueryManagedComputationInterruption::Cancelled
+                )
+            )
+        )
     ));
     assert_eq!(outcome.continuation(), None);
 }

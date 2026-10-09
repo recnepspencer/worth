@@ -35,6 +35,10 @@ use worth_query_execution::publication_boundary::{
 /// runtime is not this request's runtime.
 #[derive(Debug)]
 pub enum WorthQueryApplicationElevationApprovalDenial<DecisionDenial> {
+    /// The host call refused execution custody before reading.
+    ExecutionRequest(
+        worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
+    ),
     Program(WorthQueryApplicationCommitDenial),
     ProgramMismatch,
     PrincipalBindingInstallation(WorthQueryPrincipalBindingInstallationDenial),
@@ -145,182 +149,210 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
         Key: serde::Serialize,
         Input: ApplicationCapabilityRequest<Schema, Capability> + Clone + Send + Sync + 'static,
     {
-        use WorthQueryApplicationElevationApprovalDenial as Denial;
-        use WorthQueryApplicationElevationApprovalFailure as Failure;
+        let request_scope = self.scope.clone();
+        let mut retained = Some(requested);
+        self.application
+            .with_application_advancement(&request_scope, |phase| {
+                let requested = retained
+                    .take()
+                    .expect("execution admits retained facts once");
 
-        if !std::ptr::eq(program.runtime(), self.application) {
-            return Err(Failure::retained(Denial::ProgramMismatch, requested));
-        }
-        let program_action = match program.admit_program_operation::<Operation>() {
-            Ok(admitted) => admitted,
-            Err(denial) => return Err(Failure::retained(Denial::Program(denial), requested)),
-        };
-        let capability = match self
-            .application
-            .installed_schema()
-            .capability(capability, operation)
-        {
-            Ok(installed) => installed,
-            Err(denial) => {
-                return Err(Failure::retained(
-                    Denial::CapabilityInstallation(denial),
-                    requested,
-                ))
-            }
-        };
-        let principal_binding = match self
-            .application
-            .installed_schema()
-            .principal_binding(principal_binding)
-        {
-            Ok(installed) => installed,
-            Err(denial) => {
-                return Err(Failure::retained(
-                    Denial::PrincipalBindingInstallation(denial),
-                    requested,
-                ))
-            }
-        };
-        let selected = match self.application.on_branch(self.branch).select() {
-            Ok(selected) => selected,
-            Err(denial) => {
-                return Err(Failure::retained(
-                    Denial::ProductSelection(denial),
-                    requested,
-                ))
-            }
-        };
-        let principal = match selected.resolve_authenticated_principal(
-            &principal_binding,
-            self.principal,
-            self.scope,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        ) {
-            Ok(principal) => principal,
-            Err(denial) => {
-                return Err(Failure::retained(
-                    Denial::PrincipalResolution(denial),
-                    requested,
-                ))
-            }
-        };
-        let encoded =
-            ApplicationEncodedInput::<Operation::InputBinding>::encode(input).and_then(|input| {
-                WorthQueryCapabilityWorkflowIdempotency::bind::<
-                    Schema,
-                    Operation,
-                    Key,
-                    PrincipalIdentity,
-                    PrincipalIdentityBinding,
-                >(key, &input, principal.principal_identity())
-                .map(|workflow| (input, workflow))
-            });
-        let (input, workflow) = match encoded {
-            Ok(encoded) => encoded,
-            Err(denial) => {
-                return Err(Failure::retained(
-                    Denial::IdentityEncoding(denial),
-                    requested,
-                ))
-            }
-        };
-        let idempotency = workflow.binding();
-        let publication = program_publication_access();
-        let mut access = match selected.admit_encoded_capability_access(
-            &publication,
-            &principal,
-            &capability,
-            input.clone(),
-            self.scope,
-        ) {
-            Ok(access) => access,
-            Err(denial) => return Err(Failure::retained(Denial::Authorization(denial), requested)),
-        };
-        access.record_request_identity_work(&publication, workflow.key_work());
-        let operation = match self
-            .application
-            .installed_schema()
-            .installed_operation(operation)
-        {
-            Ok(installed) => installed,
-            Err(denial) => {
-                return Err(Failure::retained(
-                    Denial::OperationInstallation(denial),
-                    requested,
-                ))
-            }
-        };
-        let mut admission = match self.application.authorize_elevation_approval(
-            requested,
-            access,
-            &operation,
-            preconditions.clone(),
-        ) {
-            Ok(admission) => admission,
-            Err(denial) => {
-                let original = denial.denial().clone();
-                let requested = denial.into_requested();
-                if let Ok(mut replay_access) = selected.admit_encoded_capability_access(
+                use WorthQueryApplicationElevationApprovalDenial as Denial;
+                use WorthQueryApplicationElevationApprovalFailure as Failure;
+
+                if !std::ptr::eq(program.runtime(), self.application) {
+                    return Err(Failure::retained(Denial::ProgramMismatch, requested));
+                }
+                let program_action = match program.admit_program_operation::<Operation>() {
+                    Ok(admitted) => admitted,
+                    Err(denial) => {
+                        return Err(Failure::retained(Denial::Program(denial), requested))
+                    }
+                };
+                let capability = match self
+                    .application
+                    .installed_schema()
+                    .capability(capability, operation)
+                {
+                    Ok(installed) => installed,
+                    Err(denial) => {
+                        return Err(Failure::retained(
+                            Denial::CapabilityInstallation(denial),
+                            requested,
+                        ))
+                    }
+                };
+                let principal_binding = match self
+                    .application
+                    .installed_schema()
+                    .principal_binding(principal_binding)
+                {
+                    Ok(installed) => installed,
+                    Err(denial) => {
+                        return Err(Failure::retained(
+                            Denial::PrincipalBindingInstallation(denial),
+                            requested,
+                        ))
+                    }
+                };
+                let selected = match self.application.on_branch(self.branch).select() {
+                    Ok(selected) => selected,
+                    Err(denial) => {
+                        return Err(Failure::retained(
+                            Denial::ProductSelection(denial),
+                            requested,
+                        ))
+                    }
+                };
+                let principal = match selected.resolve_authenticated_principal(
+                    &principal_binding,
+                    self.principal,
+                    self.scope,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                ) {
+                    Ok(principal) => principal,
+                    Err(denial) => {
+                        return Err(Failure::retained(
+                            Denial::PrincipalResolution(denial),
+                            requested,
+                        ))
+                    }
+                };
+                let encoded = ApplicationEncodedInput::<Operation::InputBinding>::encode(input)
+                    .and_then(|input| {
+                        WorthQueryCapabilityWorkflowIdempotency::bind::<
+                            Schema,
+                            Operation,
+                            Key,
+                            PrincipalIdentity,
+                            PrincipalIdentityBinding,
+                        >(key, &input, principal.principal_identity())
+                        .map(|workflow| (input, workflow))
+                    });
+                let (input, workflow) = match encoded {
+                    Ok(encoded) => encoded,
+                    Err(denial) => {
+                        return Err(Failure::retained(
+                            Denial::IdentityEncoding(denial),
+                            requested,
+                        ))
+                    }
+                };
+                let idempotency = workflow.binding();
+                let publication = program_publication_access();
+                let mut access = match selected.admit_encoded_capability_access(
                     &publication,
                     &principal,
                     &capability,
-                    input,
+                    input.clone(),
                     self.scope,
                 ) {
-                    replay_access.record_request_identity_work(&publication, workflow.key_work());
-
-                    match self
-                        .application
-                        .replay_elevation_approval_after_fresh_denial(
-                            requested,
-                            replay_access,
-                            &operation,
-                            preconditions,
-                            idempotency,
-                        ) {
-                        Ok(outcome) => return Ok(outcome),
-                        Err((Some(denial), requested)) => {
-                            return Err(Failure::retained(
-                                Denial::IdempotencyResolution(denial),
-                                requested,
-                            ));
-                        }
-                        Err((None, requested)) => {
-                            return Err(Failure::retained(
-                                Denial::ApprovalAuthorization(original),
-                                requested,
-                            ));
-                        }
+                    Ok(access) => access,
+                    Err(denial) => {
+                        return Err(Failure::retained(Denial::Authorization(denial), requested))
                     }
-                }
-                return Err(Failure::retained(
-                    Denial::ApprovalAuthorization(original),
+                };
+                access.record_request_identity_work(&publication, workflow.key_work());
+                let operation = match self
+                    .application
+                    .installed_schema()
+                    .installed_operation(operation)
+                {
+                    Ok(installed) => installed,
+                    Err(denial) => {
+                        return Err(Failure::retained(
+                            Denial::OperationInstallation(denial),
+                            requested,
+                        ))
+                    }
+                };
+                let mut admission = match self.application.authorize_elevation_approval(
                     requested,
-                ));
-            }
-        };
-        if let Some(outcome) = self
-            .application
-            .resolve_admitted_elevation_approval_replay(&mut admission, idempotency)
-            .map_err(|(denial, requested)| {
-                Failure::retained(Denial::IdempotencyResolution(denial), requested)
-            })?
-        {
-            return Ok(outcome);
-        }
-        let projected = invariant_projection
-            .project_admitted_operation(&admission, project)
-            .map_err(|denial| Failure::consumed(Denial::Projection(denial)))?;
-        let (decision, projection, _) = projected.into_parts();
-        decision.map_err(|denial| Failure::consumed(Denial::Decision(denial)))?;
-        let program = self
-            .application
-            .begin_projected_application_read_attempt(admission, projection)
-            .map_err(|denial| Failure::consumed(Denial::Attempt(denial)))?
-            .complete_projected_dependencies()
-            .map_err(|denial| Failure::consumed(Denial::Attempt(denial)))?
-            .materialize_elevation_approval_program()
-            .map_err(|denial| Failure::consumed(Denial::Attempt(denial)))?;
-        Ok(program_action.compare_and_commit_elevation_approval(program, idempotency))
+                    access,
+                    &operation,
+                    preconditions.clone(),
+                ) {
+                    Ok(admission) => admission,
+                    Err(denial) => {
+                        let original = denial.denial().clone();
+                        let requested = denial.into_requested();
+                        if let Ok(mut replay_access) = selected.admit_encoded_capability_access(
+                            &publication,
+                            &principal,
+                            &capability,
+                            input,
+                            self.scope,
+                        ) {
+                            replay_access
+                                .record_request_identity_work(&publication, workflow.key_work());
+
+                            match self
+                                .application
+                                .replay_elevation_approval_after_fresh_denial(
+                                    requested,
+                                    replay_access,
+                                    &operation,
+                                    preconditions,
+                                    idempotency,
+                                ) {
+                                Ok(outcome) => return Ok(outcome),
+                                Err((Some(denial), requested)) => {
+                                    return Err(Failure::retained(
+                                        Denial::IdempotencyResolution(denial),
+                                        requested,
+                                    ));
+                                }
+                                Err((None, requested)) => {
+                                    return Err(Failure::retained(
+                                        Denial::ApprovalAuthorization(original),
+                                        requested,
+                                    ));
+                                }
+                            }
+                        }
+                        return Err(Failure::retained(
+                            Denial::ApprovalAuthorization(original),
+                            requested,
+                        ));
+                    }
+                };
+                if let Some(outcome) = self
+                    .application
+                    .resolve_admitted_elevation_approval_replay(&mut admission, idempotency)
+                    .map_err(|(denial, requested)| {
+                        Failure::retained(Denial::IdempotencyResolution(denial), requested)
+                    })?
+                {
+                    return Ok(outcome);
+                }
+                let projected = invariant_projection
+                    .project_admitted_operation(&admission, project)
+                    .map_err(|denial| Failure::consumed(Denial::Projection(denial)))?;
+                let (decision, projection, _) = projected.into_parts();
+                decision.map_err(|denial| Failure::consumed(Denial::Decision(denial)))?;
+                let program = self
+                    .application
+                    .begin_projected_application_read_attempt(admission, projection)
+                    .map_err(|denial| Failure::consumed(Denial::Attempt(denial)))?
+                    .complete_projected_dependencies()
+                    .map_err(|denial| Failure::consumed(Denial::Attempt(denial)))?
+                    .materialize_elevation_approval_program()
+                    .map_err(|denial| Failure::consumed(Denial::Attempt(denial)))?;
+                Ok(
+                    program_action.compare_and_commit_elevation_approval_in_advancement(
+                        &phase,
+                        program,
+                        idempotency,
+                    ),
+                )
+            })
+            .unwrap_or_else(|cause| {
+                Err(WorthQueryApplicationElevationApprovalFailure::retained(
+                    WorthQueryApplicationElevationApprovalDenial::ExecutionRequest(cause),
+                    retained
+                        .take()
+                        .expect("refused execution retained its facts"),
+                ))
+            })
     }
 }

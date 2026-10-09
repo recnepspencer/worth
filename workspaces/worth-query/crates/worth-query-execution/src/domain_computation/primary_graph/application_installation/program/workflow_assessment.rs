@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_query_declaration::facade::application_program::ApplicationWorkflowSpec;
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -33,6 +34,8 @@ where
 
     pub fn advance_workflow_assessment_output<Family>(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
         principal: &worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal<Schema>,
@@ -49,6 +52,7 @@ where
         SourceQuery<Schema, Family>: 'static,
     {
         self.runtime().advance_program_output_demand(
+            phase,
             demand,
             principal,
             request_scope,

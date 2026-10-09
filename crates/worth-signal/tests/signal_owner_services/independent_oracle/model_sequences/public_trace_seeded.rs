@@ -14,6 +14,16 @@ use super::super::trace_support::{
 
 #[test]
 fn seeded_public_trace_matches_an_independent_oracle_and_covers_terminal_outcomes() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            worth_signal::facade::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = runtime();
     let root_handle = runtime.current_branch();
     let root_basis = runtime
@@ -118,6 +128,7 @@ fn seeded_public_trace_matches_an_independent_oracle_and_covers_terminal_outcome
     );
     let advanced = mutation
         .advance_exact(
+            request_execution,
             &root_basis,
             &mut (),
             &SignalOwnerCancellationSource::new().token(),
@@ -136,6 +147,7 @@ fn seeded_public_trace_matches_an_independent_oracle_and_covers_terminal_outcome
         "stale advance",
     );
     let stale = mutation.advance_exact(
+        request_execution,
         &root_basis,
         &mut (),
         &SignalOwnerCancellationSource::new().token(),
@@ -218,6 +230,7 @@ fn seeded_public_trace_matches_an_independent_oracle_and_covers_terminal_outcome
     let intervening_expected = neutral_basis(&captured_basis);
     let intervening = mutation
         .advance_exact(
+            request_execution,
             &captured_basis,
             &mut (),
             &SignalOwnerCancellationSource::new().token(),
@@ -264,7 +277,13 @@ fn seeded_public_trace_matches_an_independent_oracle_and_covers_terminal_outcome
         }),
         "cancelled advance",
     );
-    let cancelled = mutation.advance_exact(&current, &mut (), &cancellation.token(), |_| Ok(()));
+    let cancelled = mutation.advance_exact(
+        request_execution,
+        &current,
+        &mut (),
+        &cancellation.token(),
+        |_| Ok(()),
+    );
     assert_denial(
         expected,
         cancelled

@@ -113,50 +113,55 @@ impl WorthQueryProviderSessionLifecycle for TokenSubstitutionProvider {
 
 #[test]
 fn token_minted_for_an_earlier_plan_cannot_open_a_later_plan() {
-    let world = token_substitution_world();
-    let first_plan = world.admitted_plan();
-    let first_operation = direct_authority_with_graph(
-        &world.runtime,
-        &first_plan,
-        &world.graph,
-        WorthQueryOperationGraphAccess::Observe,
-    );
-    let mut first = start_run(&world.runtime, &first_operation, first_plan);
-    let first_identity = first.identity().to_owned();
-    let first_failure = first
-        .admit_provider_execution_plan(&world.graph)
-        .expect("first plan should admit")
-        .readmit()
-        .expect_err("provider intentionally retains the first token");
-    assert_eq!(
-        first_failure.kind(),
-        WorthQueryProviderSessionDenialKind::ProviderRejected
-    );
-    cleanup(first);
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
 
-    let second_plan = world.admitted_plan();
-    let second_operation = direct_authority_with_graph(
-        &world.runtime,
-        &second_plan,
-        &world.graph,
-        WorthQueryOperationGraphAccess::Observe,
-    );
-    let mut second = start_run(&world.runtime, &second_operation, second_plan);
-    assert_ne!(second.identity(), first_identity);
-    let substitution = second
-        .admit_provider_execution_plan(&world.graph)
-        .expect("second plan should admit")
-        .readmit()
-        .expect_err("token minted for the first plan must not substitute");
-    assert_eq!(
-        substitution.kind(),
-        WorthQueryProviderSessionDenialKind::TokenNotMintedForPlan
-    );
-    assert_eq!(
-        substitution.recovery_posture(),
-        WorthQueryProviderSessionRecoveryPosture::RecoveryRequired
-    );
-    cleanup(second);
+        let world = token_substitution_world();
+        let first_plan = world.admitted_plan();
+        let first_operation = direct_authority_with_graph(
+            &world.runtime,
+            &first_plan,
+            &world.graph,
+            WorthQueryOperationGraphAccess::Observe,
+        );
+        let mut first = start_run(&world.runtime, &first_operation, first_plan);
+        let first_identity = first.identity().to_owned();
+        let first_failure = first
+            .admit_provider_execution_plan(&world.graph)
+            .expect("first plan should admit")
+            .readmit(execution)
+            .expect_err("provider intentionally retains the first token");
+        assert_eq!(
+            first_failure.kind(),
+            WorthQueryProviderSessionDenialKind::ProviderRejected
+        );
+        cleanup(first);
+
+        let second_plan = world.admitted_plan();
+        let second_operation = direct_authority_with_graph(
+            &world.runtime,
+            &second_plan,
+            &world.graph,
+            WorthQueryOperationGraphAccess::Observe,
+        );
+        let mut second = start_run(&world.runtime, &second_operation, second_plan);
+        assert_ne!(second.identity(), first_identity);
+        let substitution = second
+            .admit_provider_execution_plan(&world.graph)
+            .expect("second plan should admit")
+            .readmit(execution)
+            .expect_err("token minted for the first plan must not substitute");
+        assert_eq!(
+            substitution.kind(),
+            WorthQueryProviderSessionDenialKind::TokenNotMintedForPlan
+        );
+        assert_eq!(
+            substitution.recovery_posture(),
+            WorthQueryProviderSessionRecoveryPosture::RecoveryRequired
+        );
+        cleanup(second);
+    });
 }
 
 fn token_substitution_world() -> TokenSubstitutionWorld {

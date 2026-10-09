@@ -70,7 +70,7 @@ where
         declaration,
         configuration,
         limits,
-        |_graph, _installed| Ok(()),
+        |_phase, _graph, _installed| Ok(()),
         None,
         Some(checkpoint),
     )

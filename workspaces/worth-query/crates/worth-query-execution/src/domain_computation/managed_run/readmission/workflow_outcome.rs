@@ -7,6 +7,8 @@ use super::recovery::WorthQueryWorkflowReadmissionRecoveryRequired;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryWorkflowReadmissionDenialKind {
+    /// The phase was lent by another installed runtime.
+    ForeignAdvancementPhase,
     ForeignQueryRuntime,
     StaleInstallationGeneration,
     RetainedCapacityMismatch,

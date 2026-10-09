@@ -55,8 +55,18 @@ pub(in crate::tests::domains::fintech) fn seed_partition_baseline(
     runtime: &mut FintechRuntime,
     market_regions: NodeId,
 ) {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.read(market_regions, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(AspectVersion::from_updates([
@@ -148,11 +158,21 @@ impl super::FintechWorld {
     pub(in crate::tests::domains::fintech) fn inject_primary_market_rollback(
         &mut self,
     ) -> Result<(), SignalError> {
+        // This standalone caller declares the operational serial memory policy.
+        let serial_request = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(
+                crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+            ),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
         let top_desk = self.top_desk();
         let evaluation = self.evaluation_shape();
         let evaluator = evaluation.evaluator();
         let source = self.primary_market_source();
-        let err = self.runtime.transaction(&mut (), |tx| {
+        let err = self.runtime.transaction(request_execution, &mut (), |tx| {
             tx.mark_dirty(source, super::super::aspects::PRICE)?;
             tx.mark_dirty(source, super::super::aspects::VOL)?;
             tx.read(source, &|view| {
@@ -186,6 +206,16 @@ impl super::FintechWorld {
         curve_delta: i64,
         liquidity_delta: i64,
     ) -> Result<AspectVersion, SignalError> {
+        // This standalone caller declares the operational serial memory policy.
+        let serial_request = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(
+                crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+            ),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
         let source = self.primary_market_source();
         let current = self.runtime.graph().node_aspect_version(source)?;
         let bumped = AspectVersion::from_updates([
@@ -221,7 +251,7 @@ impl super::FintechWorld {
             ),
         ]);
 
-        self.runtime.transaction(&mut (), |tx| {
+        self.runtime.transaction(request_execution, &mut (), |tx| {
             tx.mark_dirty(source, super::super::aspects::PRICE)?;
             tx.mark_dirty(source, super::super::aspects::VOL)?;
             tx.mark_dirty(source, super::super::aspects::CURVE)?;
@@ -245,6 +275,16 @@ impl super::FintechWorld {
         detail: Option<PartitionDetail>,
         price_delta: i64,
     ) -> Result<AspectVersion, SignalError> {
+        // This standalone caller declares the operational serial memory policy.
+        let serial_request = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(
+                crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+            ),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
         let source = self.partitioned_market_source();
         let current = self.runtime.graph().node_aspect_version(source)?;
         let bumped = AspectVersion::from_updates([
@@ -262,7 +302,7 @@ impl super::FintechWorld {
             None => ChangedRegion::new(partition.token()),
         };
 
-        self.runtime.transaction(&mut (), |tx| {
+        self.runtime.transaction(request_execution, &mut (), |tx| {
             tx.mark_dirty_with_regions(
                 source,
                 super::super::aspects::PRICE,

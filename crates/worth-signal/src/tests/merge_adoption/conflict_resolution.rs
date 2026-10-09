@@ -9,6 +9,16 @@ use crate::tests::support::{version_ab, GraphDependencyBatchExt, ASPECT_A, ASPEC
 
 #[test]
 fn merge_branch_runtime_artifact_conflict_can_resolve_by_adopting_source() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -16,7 +26,7 @@ fn merge_branch_runtime_artifact_conflict_can_resolve_by_adopting_source() {
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(shared, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(141, 0))
@@ -34,7 +44,7 @@ fn merge_branch_runtime_artifact_conflict_can_resolve_by_adopting_source() {
 
     runtime.switch_branch(feature.clone()).unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.mark_dirty(shared, ASPECT_A)?;
             tx.read(shared, &|view| {
                 Ok(view.finish(
@@ -48,7 +58,7 @@ fn merge_branch_runtime_artifact_conflict_can_resolve_by_adopting_source() {
 
     runtime.switch_branch(main.clone()).unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.mark_dirty(shared, ASPECT_A)?;
             tx.read(shared, &|view| {
                 Ok(view.finish(
@@ -116,6 +126,16 @@ fn merge_branch_runtime_artifact_conflict_can_resolve_by_adopting_source() {
 
 #[test]
 fn merge_branch_dependency_snapshot_conflict_can_resolve_by_adopting_source_snapshot() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -128,7 +148,7 @@ fn merge_branch_dependency_snapshot_conflict_can_resolve_by_adopting_source_snap
 
     let mut runtime_ctx = ();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(shared, &|view| {
                 let result = if view.node() == source {
                     view.finish(
@@ -206,13 +226,23 @@ fn merge_branch_dependency_snapshot_conflict_can_resolve_by_adopting_source_snap
 
 #[test]
 fn merge_branch_conflict_resolved_emits_resolution_traceability() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
     let shared = runtime.graph_mut().node().output_identity().build();
     let mut runtime_ctx = ();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.mark_dirty(shared, ASPECT_A)?;
             tx.read(shared, &|view| {
                 Ok(view.finish(
@@ -227,7 +257,7 @@ fn merge_branch_conflict_resolved_emits_resolution_traceability() {
     let feature = runtime.create_branch("feature-trace").unwrap();
     runtime.switch_branch(feature.clone()).unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.mark_dirty(shared, ASPECT_A)?;
             tx.read(shared, &|view| {
                 Ok(view.finish(
@@ -240,7 +270,7 @@ fn merge_branch_conflict_resolved_emits_resolution_traceability() {
         .unwrap();
     runtime.switch_branch(main.clone()).unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.mark_dirty(shared, ASPECT_A)?;
             tx.read(shared, &|view| {
                 Ok(view.finish(

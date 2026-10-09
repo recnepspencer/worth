@@ -13,9 +13,7 @@ use worth_execution::{
     SerialMemoryBudget, SerialRequest, WorkCeilingDenial,
 };
 use worth_foundational::{ExecutionReport, ExecutionRequestPolicy};
-use worth_query_admission::facade::authenticated_principal::{
-    WorthQueryRequestInterruption, WorthQueryRequestScope,
-};
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_runtime_world::facade::RuntimeWorldExecutionPlacement;
 
 use super::execution_denial::{interruption_stop, lease_denial, memory_denial};
@@ -25,6 +23,7 @@ use super::{WorthQueryManagedComputationInterruption, WorthQueryManagedComputati
 mod test_placement;
 #[cfg(feature = "test-query-execution-observer")]
 pub use test_placement::{
+    bound_advancement_requests_on_this_thread_for_test,
     place_managed_computations_on_this_thread_for_test, test_execution_workers,
     WorthQueryExecutionPlacementForTest,
 };
@@ -39,10 +38,19 @@ pub(in crate::domain_computation::primary_graph) use test_placement::{
 
 type Resource = WorthQueryManagedComputationResourceDenial;
 
+mod advancement;
+pub(in crate::domain_computation::primary_graph) use advancement::{
+    with_serial_host_advancement, with_world_advancement,
+};
+
+pub use advancement::{WorthQueryAdvancementDenial, WorthQueryAdvancementPhase, WorthQueryForeignAdvancementPhase};
+
 /// One request's execution, borrowed from the World owner the request entry
 /// holds for the request's duration.
 pub(in crate::domain_computation::primary_graph) struct QueryRequestExecution<'a> {
-    request: &'a WorthQueryRequestScope,
+    cancellation: worth_execution::CancellationToken,
+    deadline: Option<std::time::Instant>,
+    declared_work: u64,
     form: Form<'a>,
 }
 
@@ -64,15 +72,29 @@ impl<'a> QueryRequestExecution<'a> {
         placement: RuntimeWorldExecutionPlacement<'a>,
         request: &'a WorthQueryRequestScope,
     ) -> Self {
-        #[cfg(any(test, feature = "test-query-execution-observer"))]
-        let placement = test_placement::placed(placement);
         let cancellation = request.cancellation().execution_token();
         let deadline = Some(request.deadline());
+        Self::open_control(placement, cancellation, deadline)
+    }
+
+    fn open_control(
+        placement: RuntimeWorldExecutionPlacement<'a>,
+        cancellation: worth_execution::CancellationToken,
+        deadline: Option<std::time::Instant>,
+    ) -> Self {
+        #[cfg(any(test, feature = "test-query-execution-observer"))]
+        let placement = test_placement::placed(placement);
+        let declared_work = match placement {
+            RuntimeWorldExecutionPlacement::Serial(policy)
+            | RuntimeWorldExecutionPlacement::Leased { policy, .. } => {
+                policy.budget().work_ceiling()
+            }
+        };
         let form = match placement {
             RuntimeWorldExecutionPlacement::Serial(policy) => {
                 Form::Serial(SerialRequest::from_memory(
                     SerialMemoryBudget::from_policy(&policy),
-                    cancellation,
+                    cancellation.clone(),
                     deadline,
                 ))
             }
@@ -80,32 +102,33 @@ impl<'a> QueryRequestExecution<'a> {
                 lease: authority.request_lease(LeaseRequest {
                     policy,
                     deadline,
-                    cancellation,
+                    cancellation: cancellation.clone(),
                 }),
                 policy,
             },
         };
-        Self { request, form }
-    }
-
-    pub(in crate::domain_computation::primary_graph) const fn request(
-        &self,
-    ) -> &'a WorthQueryRequestScope {
-        self.request
+        Self {
+            cancellation,
+            deadline,
+            declared_work,
+            form,
+        }
     }
 
     /// The request's cancellation or elapsed deadline, if either happened.
-    pub(super) fn interruption(&self) -> Option<WorthQueryManagedComputationInterruption> {
-        self.request
-            .interruption()
-            .map(|interruption| match interruption {
-                WorthQueryRequestInterruption::Cancelled => {
-                    WorthQueryManagedComputationInterruption::Cancelled
-                }
-                WorthQueryRequestInterruption::DeadlineExceeded => {
-                    WorthQueryManagedComputationInterruption::DeadlineExceeded
-                }
-            })
+    pub(in crate::domain_computation::primary_graph) fn interruption(
+        &self,
+    ) -> Option<WorthQueryManagedComputationInterruption> {
+        if self.cancellation.is_cancelled() {
+            Some(WorthQueryManagedComputationInterruption::Cancelled)
+        } else if self
+            .deadline
+            .is_some_and(|deadline| std::time::Instant::now() >= deadline)
+        {
+            Some(WorthQueryManagedComputationInterruption::DeadlineExceeded)
+        } else {
+            None
+        }
     }
 
     /// A safe point outside any pattern: the stop a kernel would make here.
@@ -308,3 +331,20 @@ impl QueryDispatch<'_> {
         reduced
     }
 }
+
+#[cfg(feature = "test-query-execution-observer")]
+pub use advancement::{
+    advancement_requests_on_this_thread_for_test,
+    caller_pass_reports_on_this_thread_for_test,
+};
+
+#[cfg(test)]
+pub(crate) use advancement::with_test_advancement;
+
+pub use advancement::with_bootstrap_advancement;
+
+
+pub use advancement::WorthQueryBootstrapAdvancementPhase;
+
+#[cfg(feature = "test-query-execution-observer")]
+pub(in crate::domain_computation::primary_graph) use advancement::record_caller_pass;

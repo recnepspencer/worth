@@ -8,6 +8,16 @@ use crate::tests::support::{version_ab, ASPECT_A, ASPECT_B};
 
 #[test]
 fn snapshot_restore_preserves_advanced_reuse_history_truth() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -40,12 +50,12 @@ fn snapshot_restore_preserves_advanced_reuse_history_truth() {
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             source.evaluate_memoized(tx, "shape-v1")
         })
         .unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             alias.evaluate_cross_identity_with_lineage_mapping(
                 tx,
                 "source",
@@ -55,13 +65,13 @@ fn snapshot_restore_preserves_advanced_reuse_history_truth() {
         })
         .unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             wing.evaluate_memoized(tx, "shape-v1")
         })
         .unwrap();
     mark_dirty(runtime.graph_mut(), wing_node, ASPECT_A).unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             wing.evaluate_partial_splice(
                 tx,
                 "shape-v1",
@@ -76,13 +86,13 @@ fn snapshot_restore_preserves_advanced_reuse_history_truth() {
 
     mark_dirty(runtime.graph_mut(), alias_node, ASPECT_A).unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             alias.evaluate_memoized(tx, "shape-v2")
         })
         .unwrap();
     mark_dirty(runtime.graph_mut(), wing_node, ASPECT_A).unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             wing.evaluate_memoized(tx, "shape-v2")
         })
         .unwrap();

@@ -49,3 +49,13 @@ impl std::fmt::Display for WorthQueryRequiredOutputPreparationDenial {
 }
 
 impl std::error::Error for WorthQueryRequiredOutputPreparationDenial {}
+
+impl WorthQueryRequiredOutputPreparationDenial {
+    pub(in crate::application_entry) fn advancement(
+        cause: worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
+    ) -> Self {
+        Self::Demand(
+            crate::application_entry::WorthQueryApplicationOutputDemandDenial::advancement(cause),
+        )
+    }
+}

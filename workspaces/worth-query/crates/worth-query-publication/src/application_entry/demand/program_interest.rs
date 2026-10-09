@@ -5,6 +5,7 @@ use worth_query_declaration::facade::application_query::{
 use worth_query_declaration::facade::application_schema::{
     ApplicationSchema, ApplicationStructuredValueBinding,
 };
+use worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase as AdvancementPhase;
 use worth_query_execution::facade::application_contribution::{
     WorthQueryApplicationOutputDemand, WorthQueryProducerOutputFamily,
 };
@@ -118,6 +119,7 @@ where
 
     pub(in crate::application_entry) fn advance(
         &mut self,
+        phase: &AdvancementPhase<'_>,
         request: &crate::application_entry::WorthQueryApplicationRequest<'_, '_, '_, Schema>,
     ) -> Result<
         WorthQueryApplicationProgramDemandProgress<Schema, Program, Demand>,
@@ -131,15 +133,18 @@ where
                     ),
                 )
                 .query(self.demand.source_intent())
-                .execute()
+                .execute_in_advancement(phase)
         } else {
-            request.query(self.demand.source_intent()).execute()
+            request
+                .query(self.demand.source_intent())
+                .execute_in_advancement(phase)
         }
         .map_err(WorthQueryApplicationOutputDemandDenial::Source)?
         .into_output_demand_source();
         match self
             .application
             .advance_program_output(
+                phase,
                 &worth_query_execution::publication_boundary::program_publication_access(),
                 &mut self.admitted,
                 request.principal,

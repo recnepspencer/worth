@@ -16,10 +16,21 @@ fn outcome_panics_preserve_every_performed_move_and_release_fork_custody() {
 }
 
 fn panic_after_performed_fork() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let world = MutationWorld::<()>::new();
     let current = world
         .port
         .advance_exact(
+            request_execution,
             &world.source_basis,
             &mut (),
             &SignalOwnerCancellationSource::new().token(),
@@ -92,6 +103,16 @@ fn panic_after_performed_fork() {
 }
 
 fn panic_after_performed_advance() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let world = MutationWorld::<()>::new();
     let before = world.owner.cost_snapshot();
     world
@@ -100,6 +121,7 @@ fn panic_after_performed_advance() {
         .inject_panic_once(SignalOwnerOperationBoundary::OutcomeConstruction);
     let panic = catch_unwind(AssertUnwindSafe(|| {
         let _ = world.port.advance_exact(
+            request_execution,
             &world.source_basis,
             &mut (),
             &SignalOwnerCancellationSource::new().token(),
@@ -149,6 +171,16 @@ fn panic_after_performed_capture() {
 }
 
 fn panic_after_performed_restore() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let world = MutationWorld::<()>::new();
     let captured = world
         .port
@@ -160,6 +192,7 @@ fn panic_after_performed_restore() {
     let current = world
         .port
         .advance_exact(
+            request_execution,
             captured.captured_basis(),
             &mut (),
             &SignalOwnerCancellationSource::new().token(),
@@ -193,10 +226,21 @@ fn panic_after_performed_restore() {
 
 #[test]
 fn fork_installation_panic_preserves_performed_destination_and_releases_source_custody() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let world = MutationWorld::<()>::new();
     let current = world
         .port
         .advance_exact(
+            request_execution,
             &world.source_basis,
             &mut (),
             &SignalOwnerCancellationSource::new().token(),

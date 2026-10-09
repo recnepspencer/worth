@@ -45,6 +45,7 @@ fn map_relational_preparation_denial(
 }
 
 pub(super) fn prepare<Schema: ApplicationSchema>(
+    _phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     selected: &WorthQuerySelectedProductOperation<'_, Schema>,
     target: &ApplicationProgramRevision,
     expected_requirements: &WorthQueryProgramAdoptionRequirements,
@@ -196,6 +197,24 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
         .prepare_relational_candidate(candidate, request, successor_observation_requested)
         .map_err(WorthQueryBranchAdoptionPreparationDenial::WorldPreparation)?;
     Ok(WorthQueryPreparedBranchAdoption {
+        owner: std::sync::Arc::downgrade(&selected.application().product_runtime.owner),
+        owner_identity: selected
+            .application()
+            .product_runtime
+            .owner
+            .owner_identity(),
+        host_request: request.clone(),
+        host_policy: match selected
+            .application()
+            .product_runtime
+            .owner
+            .execution_placement()
+        {
+            worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy)
+            | worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Leased {
+                policy, ..
+            } => policy,
+        },
         source,
         target: *target,
         requirements,

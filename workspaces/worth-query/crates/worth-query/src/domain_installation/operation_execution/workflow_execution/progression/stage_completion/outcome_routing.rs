@@ -21,22 +21,67 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
                 artifact.kind()
                     == crate::domain_installation::WorthQueryArtifactDenialKind::StaleInstallationGeneration
             }
-            _ => false,
+            WorthQueryWorkflowAdvanceDenialKind::ExecutionRequest(_)
+            | WorthQueryWorkflowAdvanceDenialKind::RuntimeAuthority(_)
+            | WorthQueryWorkflowAdvanceDenialKind::UnknownStage
+            | WorthQueryWorkflowAdvanceDenialKind::StageAlreadyCompleted
+            | WorthQueryWorkflowAdvanceDenialKind::PredecessorIncomplete(_)
+            | WorthQueryWorkflowAdvanceDenialKind::PredecessorAuthorityMissing(_)
+            | WorthQueryWorkflowAdvanceDenialKind::RequiredCapability(_)
+            | WorthQueryWorkflowAdvanceDenialKind::RequiredDomain(_)
+            | WorthQueryWorkflowAdvanceDenialKind::InputContract
+            | WorthQueryWorkflowAdvanceDenialKind::ResourceAdmissionMissing
+            | WorthQueryWorkflowAdvanceDenialKind::GraphProvider(_)
+            | WorthQueryWorkflowAdvanceDenialKind::StageExecutor { .. }
+            | WorthQueryWorkflowAdvanceDenialKind::UndeclaredFailureClass(_)
+            | WorthQueryWorkflowAdvanceDenialKind::PrimaryReadEvidence
+            | WorthQueryWorkflowAdvanceDenialKind::EffectEvidence
+            | WorthQueryWorkflowAdvanceDenialKind::InvariantEvidence
+            | WorthQueryWorkflowAdvanceDenialKind::LineageEvidence
+            | WorthQueryWorkflowAdvanceDenialKind::CostContract
+            | WorthQueryWorkflowAdvanceDenialKind::OutputContract
+            | WorthQueryWorkflowAdvanceDenialKind::TerminalContract
+            | WorthQueryWorkflowAdvanceDenialKind::DomainEvidence(_)
+            | WorthQueryWorkflowAdvanceDenialKind::ParallelFrontierShape
+            | WorthQueryWorkflowAdvanceDenialKind::NonDeterministicLowering
+            | WorthQueryWorkflowAdvanceDenialKind::ParallelProvider(_)
+            | WorthQueryWorkflowAdvanceDenialKind::ParallelNotAdmitted(_)
+            | WorthQueryWorkflowAdvanceDenialKind::ConditionalExecution(_)
+            | WorthQueryWorkflowAdvanceDenialKind::ConditionalReentry(_) => false,
         };
-        let rebind = matches!(
-            denial.kind(),
-            WorthQueryWorkflowAdvanceDenialKind::RuntimeAuthority(
-                crate::domain_installation::WorthQueryDomainHandleDenialKind::PackageIdentityChanged
-            )
-        );
-        let failed = matches!(
-            denial.kind(),
+        let (rebind, failed) = match denial.kind() {
+            WorthQueryWorkflowAdvanceDenialKind::RuntimeAuthority(kind) => (
+                *kind == crate::domain_installation::WorthQueryDomainHandleDenialKind::PackageIdentityChanged,
+                false,
+            ),
             WorthQueryWorkflowAdvanceDenialKind::StageExecutor { .. }
-                | WorthQueryWorkflowAdvanceDenialKind::UndeclaredFailureClass(_)
-                | WorthQueryWorkflowAdvanceDenialKind::PredecessorAuthorityMissing(_)
-                | WorthQueryWorkflowAdvanceDenialKind::ResourceAdmissionMissing
-                | WorthQueryWorkflowAdvanceDenialKind::ConditionalExecution(_)
-        );
+            | WorthQueryWorkflowAdvanceDenialKind::UndeclaredFailureClass(_)
+            | WorthQueryWorkflowAdvanceDenialKind::PredecessorAuthorityMissing(_)
+            | WorthQueryWorkflowAdvanceDenialKind::ResourceAdmissionMissing
+            | WorthQueryWorkflowAdvanceDenialKind::ConditionalExecution(_) => (false, true),
+                WorthQueryWorkflowAdvanceDenialKind::ExecutionRequest(_)
+                | WorthQueryWorkflowAdvanceDenialKind::UnknownStage
+                | WorthQueryWorkflowAdvanceDenialKind::StageAlreadyCompleted
+                | WorthQueryWorkflowAdvanceDenialKind::PredecessorIncomplete(_)
+                | WorthQueryWorkflowAdvanceDenialKind::RequiredCapability(_)
+                | WorthQueryWorkflowAdvanceDenialKind::RequiredDomain(_)
+                | WorthQueryWorkflowAdvanceDenialKind::InputContract
+                | WorthQueryWorkflowAdvanceDenialKind::GraphProvider(_)
+                | WorthQueryWorkflowAdvanceDenialKind::PrimaryReadEvidence
+                | WorthQueryWorkflowAdvanceDenialKind::EffectEvidence
+                | WorthQueryWorkflowAdvanceDenialKind::InvariantEvidence
+                | WorthQueryWorkflowAdvanceDenialKind::LineageEvidence
+                | WorthQueryWorkflowAdvanceDenialKind::CostContract
+                | WorthQueryWorkflowAdvanceDenialKind::OutputContract
+                | WorthQueryWorkflowAdvanceDenialKind::TerminalContract
+                | WorthQueryWorkflowAdvanceDenialKind::DomainEvidence(_)
+                | WorthQueryWorkflowAdvanceDenialKind::ParallelFrontierShape
+                | WorthQueryWorkflowAdvanceDenialKind::NonDeterministicLowering
+                | WorthQueryWorkflowAdvanceDenialKind::ParallelProvider(_)
+                | WorthQueryWorkflowAdvanceDenialKind::ParallelNotAdmitted(_)
+                | WorthQueryWorkflowAdvanceDenialKind::ConditionalReentry(_)
+            | WorthQueryWorkflowAdvanceDenialKind::ArtifactCarriage(_) => (false, false),
+        };
         for receipt in self.receipts.iter_mut().rev() {
             receipt.cancel_artifact_output();
         }

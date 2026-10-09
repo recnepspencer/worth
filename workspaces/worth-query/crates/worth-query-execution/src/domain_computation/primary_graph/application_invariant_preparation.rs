@@ -14,6 +14,7 @@ impl WorthQueryExecutionInstallationAuthority {
     /// Prepares the application's in-memory graph with its exact invariant factories.
     pub fn prepare_primary_graph_with_invariants<Schema: ApplicationSchema>(
         &self,
+        phase: &super::WorthQueryBootstrapAdvancementPhase<'_>,
         runtime: &WorthQueryExecutionRuntime,
         installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
         product_world_resources: WorthQueryProductWorldResources,
@@ -23,6 +24,7 @@ impl WorthQueryExecutionInstallationAuthority {
         use worth_relational::facade::runtime::RelationalRuntimeApi;
 
         self.prepare_primary_graph_with_relational_runtime_and_invariants(
+            phase,
             runtime,
             installed_schema,
             RelationalRuntimeApi::builder().build(),

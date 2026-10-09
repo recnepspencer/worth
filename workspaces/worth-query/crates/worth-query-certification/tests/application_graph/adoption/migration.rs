@@ -95,6 +95,9 @@ fn typed_migration_repairs_state_inside_the_adoption_publication() {
         .expect("migration and target validation must prepare atomically");
     assert!(prepared.migration().is_some());
     let performed = match prepared.publish() {
+        WorthQueryBranchAdoptionPublicationOutcome::ExecutionDenied(cause) => {
+            panic!("the declared host policy admits adoption: {cause:?}")
+        }
         WorthQueryBranchAdoptionPublicationOutcome::Performed(performed) => performed,
         WorthQueryBranchAdoptionPublicationOutcome::NoEffect(no_effect) => {
             panic!("migration adoption unexpectedly had no effect: {no_effect:?}")
@@ -229,6 +232,9 @@ fn unpublished_migration_recovery_never_reruns_candidate_authoring() {
 
     host.runtime().fail_next_durable_append_for_test();
     let unpublished = match prepared.publish() {
+        WorthQueryBranchAdoptionPublicationOutcome::ExecutionDenied(cause) => {
+            panic!("the declared host policy admits adoption: {cause:?}")
+        }
         WorthQueryBranchAdoptionPublicationOutcome::ProductUnpublished(unpublished) => unpublished,
         _ => panic!("the injected durable append failure must retain custody"),
     };

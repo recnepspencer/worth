@@ -3,9 +3,51 @@ use std::sync::Arc;
 use super::super::WorthQueryProductSharedRoot;
 
 impl WorthQueryProductSharedRoot {
+    /// Delivers a performed change only inside this root's installed advancement.
+    ///
+    /// ```compile_fail,E0308
+    /// # use std::sync::Arc;
+    /// # use worth_query_execution::facade::{
+    /// #     application_contribution::WorthQueryAdvancementPhase,
+    /// #     integration::WorthQueryProductSharedRoot,
+    /// #     product::WorthQueryPerformedRelationalProductChange,
+    /// #     provider_session::ExecutionRequest,
+    /// # };
+    /// # use worth_runtime_bridge::facade::BridgeInstalledConditionalLowering;
+    /// # fn contract(
+    /// #     root: &WorthQueryProductSharedRoot,
+    /// #     phase: &WorthQueryAdvancementPhase<'_>,
+    /// #     request: ExecutionRequest<'_, '_>,
+    /// #     lowering: &Arc<BridgeInstalledConditionalLowering>,
+    /// #     change: WorthQueryPerformedRelationalProductChange,
+    /// # ) {
+    /// let _ = root.deliver_performed_relational_change(request, lowering, 0, change);
+    /// # }
+    /// ```
+    /// ```
+    /// # use std::sync::Arc;
+    /// # use worth_query_execution::facade::{
+    /// #     application_contribution::WorthQueryAdvancementPhase,
+    /// #     integration::WorthQueryProductSharedRoot,
+    /// #     product::WorthQueryPerformedRelationalProductChange,
+    /// #     provider_session::ExecutionRequest,
+    /// # };
+    /// # use worth_runtime_bridge::facade::BridgeInstalledConditionalLowering;
+    /// # fn contract(
+    /// #     root: &WorthQueryProductSharedRoot,
+    /// #     phase: &WorthQueryAdvancementPhase<'_>,
+    /// #     request: ExecutionRequest<'_, '_>,
+    /// #     lowering: &Arc<BridgeInstalledConditionalLowering>,
+    /// #     change: WorthQueryPerformedRelationalProductChange,
+    /// # ) {
+    /// let _ = root.deliver_performed_relational_change(phase, lowering, 0, change);
+    /// # }
+    /// ```
     #[doc(hidden)]
     pub fn deliver_performed_relational_change(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+
         lowering: &Arc<worth_runtime_bridge::facade::BridgeInstalledConditionalLowering>,
         dependency_ordinal: usize,
         change: super::WorthQueryPerformedRelationalProductChange,
@@ -16,6 +58,16 @@ impl WorthQueryProductSharedRoot {
         use super::{
             WorthQueryPerformedRelationalProductChangeDeliveryDenial as Denial,
             WorthQueryPerformedRelationalProductChangeDeliveryDenialKind as Kind,
+        };
+        let execution = match phase.request_for_owner(self.owner_identity) {
+            Ok(execution) => execution,
+            Err(cause) => {
+                return Err(Denial::new(
+                    Kind::ExecutionRequest(cause.into()),
+                    "delivery phase belongs to another installed runtime",
+                    change,
+                ))
+            }
         };
         if !self.accepts_performed_change(&change) {
             return Err(Denial::new(
@@ -43,13 +95,17 @@ impl WorthQueryProductSharedRoot {
                 Err(denial) => return Err(Denial::new(Kind::Bridge, denial.detail(), change)),
             };
         let patch = change.patch();
-        let outcome =
-            match bridge.deliver_authoritative_change(&signal_basis, dependency_ordinal, patch) {
-                Ok(outcome) => outcome,
-                Err(denial) => {
-                    return Err(Denial::new(Kind::Bridge, denial.detail(), change));
-                }
-            };
+        let outcome = match bridge.deliver_authoritative_change(
+            execution,
+            &signal_basis,
+            dependency_ordinal,
+            patch,
+        ) {
+            Ok(outcome) => outcome,
+            Err(denial) => {
+                return Err(Denial::new(Kind::Bridge, denial.detail(), change));
+            }
+        };
         Ok(preserve_delivery_authority(outcome, change))
     }
 }

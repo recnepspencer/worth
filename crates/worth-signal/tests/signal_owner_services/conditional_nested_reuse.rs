@@ -74,6 +74,16 @@ fn output(value: u64) -> NodeEvaluationResult {
 
 #[test]
 fn standalone_and_nested_routes_share_owner_slot_reuse_state() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            worth_signal::facade::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (mut runtime, claimant, contract, source_owner) = runtime_with_contract();
     let basis = runtime
         .observe_signal_branch_basis(runtime.current_branch())
@@ -103,6 +113,7 @@ fn standalone_and_nested_routes_share_owner_slot_reuse_state() {
     let mut standalone_computes = 0;
     let standalone = service
         .execute(
+            request_execution,
             &warm_evaluation,
             Request::new(1),
             &mut NoPredicate,
@@ -124,54 +135,63 @@ fn standalone_and_nested_routes_share_owner_slot_reuse_state() {
     let mut fresh_first_computes = 0;
     let mut fresh_second_computes = 0;
     mutation
-        .advance_exact(&basis, &mut (), &cancellation.token(), |transaction| {
-            warm_nested = Some(
-                service
-                    .execute_within_transaction(
-                        transaction,
-                        &warm_evaluation,
-                        Request::new(2),
-                        &mut NoPredicate,
-                        &mut DefaultComparatorResolver::default(),
-                        || {
-                            warm_nested_computes += 1;
-                            Ok(output(10))
-                        },
-                    )
-                    .unwrap(),
-            );
-            fresh_first = Some(
-                service
-                    .execute_within_transaction(
-                        transaction,
-                        &fresh_evaluation,
-                        Request::new(1),
-                        &mut NoPredicate,
-                        &mut DefaultComparatorResolver::default(),
-                        || {
-                            fresh_first_computes += 1;
-                            Ok(output(11))
-                        },
-                    )
-                    .unwrap(),
-            );
-            fresh_second = Some(
-                service
-                    .execute_within_transaction(
-                        transaction,
-                        &fresh_evaluation,
-                        Request::new(2),
-                        &mut NoPredicate,
-                        &mut DefaultComparatorResolver::default(),
-                        || {
-                            fresh_second_computes += 1;
-                            Ok(output(12))
-                        },
-                    )
-                    .unwrap(),
-            );
-            Ok(())
-        })
+        .advance_exact(
+            request_execution,
+            &basis,
+            &mut (),
+            &cancellation.token(),
+            |transaction| {
+                warm_nested = Some(
+                    service
+                        .execute_within_transaction(
+                            request_execution,
+                            transaction,
+                            &warm_evaluation,
+                            Request::new(2),
+                            &mut NoPredicate,
+                            &mut DefaultComparatorResolver::default(),
+                            || {
+                                warm_nested_computes += 1;
+                                Ok(output(10))
+                            },
+                        )
+                        .unwrap(),
+                );
+                fresh_first = Some(
+                    service
+                        .execute_within_transaction(
+                            request_execution,
+                            transaction,
+                            &fresh_evaluation,
+                            Request::new(1),
+                            &mut NoPredicate,
+                            &mut DefaultComparatorResolver::default(),
+                            || {
+                                fresh_first_computes += 1;
+                                Ok(output(11))
+                            },
+                        )
+                        .unwrap(),
+                );
+                fresh_second = Some(
+                    service
+                        .execute_within_transaction(
+                            request_execution,
+                            transaction,
+                            &fresh_evaluation,
+                            Request::new(2),
+                            &mut NoPredicate,
+                            &mut DefaultComparatorResolver::default(),
+                            || {
+                                fresh_second_computes += 1;
+                                Ok(output(12))
+                            },
+                        )
+                        .unwrap(),
+                );
+                Ok(())
+            },
+        )
         .unwrap();
 
     let warm_nested = warm_nested.unwrap();

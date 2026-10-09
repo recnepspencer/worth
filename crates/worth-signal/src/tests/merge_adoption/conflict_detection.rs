@@ -27,6 +27,16 @@ fn merge_branch_self_merge_surfaces_typed_failure() {
 
 #[test]
 fn merge_branch_divergent_shared_node_requires_typed_conflict_surface() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -34,7 +44,7 @@ fn merge_branch_divergent_shared_node_requires_typed_conflict_surface() {
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(shared, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(41, 0))
@@ -50,7 +60,7 @@ fn merge_branch_divergent_shared_node_requires_typed_conflict_surface() {
 
     runtime.switch_branch(feature.clone()).unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.mark_dirty(shared, ASPECT_A)?;
             tx.read(shared, &|view| {
                 Ok(view.finish(
@@ -78,7 +88,7 @@ fn merge_branch_divergent_shared_node_requires_typed_conflict_surface() {
     runtime.switch_branch(main.clone()).unwrap();
     let main_only = runtime.graph_mut().node().output_identity().build();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(main_only, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(43, 0))
@@ -209,6 +219,16 @@ fn merge_branch_divergent_shared_node_requires_typed_conflict_surface() {
 
 #[test]
 fn merge_branch_dependency_topology_conflict_surfaces_structural_requirement() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -222,7 +242,7 @@ fn merge_branch_dependency_topology_conflict_surfaces_structural_requirement() {
 
     let mut runtime_ctx = ();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(shared, &|view| {
                 let result = match view.node() {
                     node if node == source_a => view.finish(

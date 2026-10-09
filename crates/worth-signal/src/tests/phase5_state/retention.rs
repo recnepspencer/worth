@@ -135,6 +135,16 @@ fn snapshot_artifact_retention_policy_changes_richness_not_restore_truth() {
 
 #[test]
 fn branch_snapshot_records_explicit_artifact_retention_for_non_active_branches() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -143,7 +153,7 @@ fn branch_snapshot_records_explicit_artifact_retention_for_non_active_branches()
 
     runtime.set_runtime_policy(SignalRuntimePolicy::development());
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(node, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(1, 0))
@@ -164,7 +174,7 @@ fn branch_snapshot_records_explicit_artifact_retention_for_non_active_branches()
             .with_provenance_retention(ArtifactRetentionPolicy::Omit),
     );
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.mark_dirty(node, ASPECT_A)?;
             tx.read(node, &|view| {
                 Ok(view.finish(

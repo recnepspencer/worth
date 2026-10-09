@@ -150,6 +150,8 @@ impl WorthQueryManagedGraphExecution {
 
     pub(super) fn advance_provider(
         &mut self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+
         admission: super::provider_step_admission::WorthQueryAdmittedProviderStep,
     ) -> WorthQueryManagedProviderStep {
         let managed_retained_bytes = if self.call.kind() == WorthQueryGraphProviderCallKind::Project
@@ -169,6 +171,7 @@ impl WorthQueryManagedGraphExecution {
             0
         };
         let mut step = WorthQueryGraphProviderStep::new(
+            execution,
             self.call.kind(),
             self.contract.installed(),
             self.artifact_context.clone(),

@@ -109,7 +109,14 @@ impl WorthQueryActiveDirectGraphExecution {
         self.abandoned_terminal(WorthQueryManagedRunTerminalKind::Failed)
     }
 
-    pub fn advance(mut self) -> WorthQueryDirectGraphStepOutcome {
+    pub fn advance(
+        mut self,
+        execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    ) -> WorthQueryDirectGraphStepOutcome {
+        let request = match execution.request_for_managed(&self.running.relational_basis) {
+            Ok(request) => request,
+            Err(_) => return WorthQueryDirectGraphStepOutcome::ForeignAdvancementPhase(self),
+        };
         let before = match self.observe_safe_point() {
             Ok(observation) => observation,
             Err(_) => return self.abandoned_terminal(WorthQueryManagedRunTerminalKind::Failed),
@@ -130,7 +137,7 @@ impl WorthQueryActiveDirectGraphExecution {
         self.running
             .provider_work_mut()
             .record_provider_step_attempt();
-        match self.execution.advance_provider(admitted) {
+        match self.execution.advance_provider(request, admitted) {
             WorthQueryManagedProviderStep::Failed(evidence) => {
                 self.admit_provider_step(evidence.into_report())
             }
@@ -333,8 +340,11 @@ impl WorthQueryPausedDirectGraphExecution {
         self.active.run_identity()
     }
 
-    pub fn advance(self) -> WorthQueryDirectGraphStepOutcome {
-        self.active.advance()
+    pub fn advance(
+        self,
+        execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    ) -> WorthQueryDirectGraphStepOutcome {
+        self.active.advance(execution)
     }
 
     pub fn yield_run(self) -> super::WorthQueryDirectYieldOutcome {
@@ -347,6 +357,8 @@ impl WorthQueryPausedDirectGraphExecution {
 }
 
 pub enum WorthQueryDirectGraphStepOutcome {
+    /// Refused before observation or provider work; retains the active execution.
+    ForeignAdvancementPhase(WorthQueryActiveDirectGraphExecution),
     Continue(WorthQueryPausedDirectGraphExecution),
     ChunkReady(WorthQueryPendingDirectGraphChunk),
     Completed(WorthQueryCompletedDirectGraphExecution),

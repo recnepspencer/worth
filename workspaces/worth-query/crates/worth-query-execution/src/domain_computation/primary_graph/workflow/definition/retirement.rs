@@ -1,5 +1,6 @@
 //! Definition retirement preparation for one selected branch occurrence.
 
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityMarkerIdentity,
     application_program::ApplicationWorkflowSpec,
@@ -105,6 +106,8 @@ impl WorthQueryWorkflowDefinitionRetirementAdapter {
 
     #[doc(hidden)]
     pub fn compare_and_commit<Schema, Operation, Input, Scope>(
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         prepared: PreparedWorkflowDefinitionRetirement<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
@@ -114,6 +117,6 @@ impl WorthQueryWorkflowDefinitionRetirementAdapter {
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        runtime.compare_and_commit_workflow_definition_retirement(prepared, idempotency)
+        runtime.compare_and_commit_workflow_definition_retirement(phase, prepared, idempotency)
     }
 }

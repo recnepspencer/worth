@@ -6,6 +6,7 @@
 //! selection. The occurrence gate still decides: a successor the occurrence
 //! no longer runs is refused before any effect.
 
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use std::any::TypeId;
 
 use worth_query_declaration::facade::application_operation::{
@@ -45,6 +46,8 @@ where
     /// Commits a required-output source under the branch-selected program.
     pub fn compare_and_commit_selected_required_output_source<Root, Source>(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         _: &WorthQueryProgramPublicationAccess,
         owner: &WorthQuerySelectedProgramOwner<'_, Schema>,
         program: SourceProgram<Schema, Source>,
@@ -63,6 +66,7 @@ where
             Err(denial) => return Ok((WorthQueryApplicationCommitOutcome::Denied(denial), None)),
         };
         self.compare_and_commit_output_source::<Source>(
+            phase,
             Some(presented),
             program,
             idempotency,
@@ -74,6 +78,8 @@ where
     /// Commits a discovered-output source under the branch-selected program.
     pub fn compare_and_commit_selected_discovered_output_source<Root, Source>(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         _: &WorthQueryProgramPublicationAccess,
         owner: &WorthQuerySelectedProgramOwner<'_, Schema>,
         program: SourceProgram<Schema, Source>,
@@ -93,6 +99,7 @@ where
             Err(denial) => return Ok((WorthQueryApplicationCommitOutcome::Denied(denial), None)),
         };
         self.compare_and_commit_output_source::<Source>(
+            phase,
             Some(presented),
             program,
             idempotency,

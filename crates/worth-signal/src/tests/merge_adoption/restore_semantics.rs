@@ -6,6 +6,16 @@ use crate::tests::support::{version_ab, GraphDependencyBatchExt, ASPECT_A};
 
 #[test]
 fn restore_branch_snapshot_after_merge_preserves_introduced_nodes_and_remapped_dependencies() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -13,7 +23,7 @@ fn restore_branch_snapshot_after_merge_preserves_introduced_nodes_and_remapped_d
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(shared, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(90, 0))
@@ -40,7 +50,7 @@ fn restore_branch_snapshot_after_merge_preserves_introduced_nodes_and_remapped_d
         .unwrap();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(downstream, &|view| {
                 let result = if view.node() == upstream {
                     let version = view.read_aspect_version(shared, ASPECT_A)?;
@@ -80,7 +90,7 @@ fn restore_branch_snapshot_after_merge_preserves_introduced_nodes_and_remapped_d
 
     let unrelated = runtime.graph_mut().node().output_identity().build();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(unrelated, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(91, 0))
@@ -119,6 +129,16 @@ fn restore_branch_snapshot_after_merge_preserves_introduced_nodes_and_remapped_d
 
 #[test]
 fn restore_after_merge_does_not_emit_false_branch_merge_history() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -126,7 +146,7 @@ fn restore_after_merge_does_not_emit_false_branch_merge_history() {
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(source, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(92, 0))
@@ -142,7 +162,7 @@ fn restore_after_merge_does_not_emit_false_branch_merge_history() {
     runtime.switch_branch(feature.clone()).unwrap();
     let feature_only = runtime.graph_mut().node().output_identity().build();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(feature_only, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(93, 0))
@@ -208,6 +228,16 @@ fn restore_after_merge_does_not_emit_false_branch_merge_history() {
 
 #[test]
 fn active_restore_reinstates_branch_merge_ledger_boundary_for_later_fast_forward_merge() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -215,7 +245,7 @@ fn active_restore_reinstates_branch_merge_ledger_boundary_for_later_fast_forward
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(shared, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(94, 0))
@@ -236,7 +266,7 @@ fn active_restore_reinstates_branch_merge_ledger_boundary_for_later_fast_forward
 
     runtime.switch_branch(feature.clone()).unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.mark_dirty(shared, ASPECT_A)?;
             tx.read(shared, &|view| {
                 Ok(view.finish(
@@ -250,7 +280,7 @@ fn active_restore_reinstates_branch_merge_ledger_boundary_for_later_fast_forward
 
     runtime.switch_branch(main.clone()).unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.mark_dirty(shared, ASPECT_A)?;
             tx.read(shared, &|view| {
                 Ok(view.finish(

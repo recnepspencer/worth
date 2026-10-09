@@ -124,6 +124,16 @@ fn foreign_affinity_wins_even_after_the_issuing_owner_closes() {
 
 #[test]
 fn canonical_movement_stales_exact_basis_without_staling_managed_reference() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (mut runtime, _, _, basis) = runtime_with_two_branches();
     let old_observation = basis.observation().clone();
     let (port, _, _) = runtime.owner_port_slots().expect("runtime seals");
@@ -137,6 +147,7 @@ fn canonical_movement_stales_exact_basis_without_staling_managed_reference() {
     let mut runtime_context = ();
     let moved = cell
         .advance_exact::<(), (), _>(
+            request_execution,
             &admission,
             &basis,
             &mut runtime_context,
@@ -157,6 +168,7 @@ fn canonical_movement_stales_exact_basis_without_staling_managed_reference() {
     let movements_before_retry = cell.cost_snapshot().movements();
     let mut callback_ran = false;
     let retry = cell.advance_exact::<(), (), _>(
+        request_execution,
         &retry_admission,
         &basis,
         &mut runtime_context,
@@ -227,6 +239,16 @@ fn managed_reference_treats_matching_owner_close_as_terminal() {
 
 #[test]
 fn transaction_panic_rollback_preserves_managed_readmission() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (mut runtime, _, branch, basis) = runtime_with_two_branches();
     let (port, _, _) = runtime.owner_port_slots().expect("runtime seals");
     let owner = port.upgrade_owner().expect("sealed owner remains live");
@@ -242,6 +264,7 @@ fn transaction_panic_rollback_preserves_managed_readmission() {
         .expect("the referenced cell is installed");
     let panic = catch_unwind(AssertUnwindSafe(|| {
         let _ = cell.advance_exact::<(), (), _>(
+            request_execution,
             &admission,
             &basis,
             &mut (),
@@ -258,6 +281,7 @@ fn transaction_panic_rollback_preserves_managed_readmission() {
     let retry_admission = owner.admit().expect("the owner still admits");
     let mut callback_ran = false;
     cell.advance_exact::<(), (), _>(
+        request_execution,
         &retry_admission,
         &basis,
         &mut (),

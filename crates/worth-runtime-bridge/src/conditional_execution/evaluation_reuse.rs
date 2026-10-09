@@ -125,8 +125,8 @@ fn map_signal_readmission_denial(
         Denial::OwnerUnavailable(_)
         | Denial::OwnerAdmission(_)
         | Denial::EvaluationIdentityExhausted
-        | Denial::AdmissionUnavailable
-        | Denial::SlotAdmission(_) => BridgeConditionalDenialKind::SignalExecution,
+        | Denial::AdmissionUnavailable => BridgeConditionalDenialKind::SignalExecution,
+        Denial::SlotAdmission(ref cause) => super::signal_execution_denial::kind(cause),
     };
     BridgeConditionalDenial::new(
         kind,

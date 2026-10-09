@@ -33,8 +33,36 @@ where
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        let outcome =
-            self.compare_and_commit_application(program.with_client_observation(), idempotency);
+        let request = program.request_scope().clone();
+        self.with_application_advancement(&request, |phase| {
+            self.compare_and_commit_application_retained_in_advancement(
+                &phase,
+                program,
+                idempotency,
+            )
+        })
+        .unwrap_or_else(|denial| {
+            WorthQueryApplicationRetainedCommitOutcome::Other(denial.into_commit_outcome())
+        })
+    }
+
+    /// Retains the committed observation inside the caller's advancement.
+    #[doc(hidden)]
+    pub fn compare_and_commit_application_retained_in_advancement<Operation, Input, Scope>(
+        &self,
+        phase: &super::super::WorthQueryAdvancementPhase<'_>,
+        program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
+        idempotency: WorthQueryApplicationIdempotencyBinding,
+    ) -> WorthQueryApplicationRetainedCommitOutcome
+    where
+        Operation: 'static,
+        Input: Clone + Send + Sync + 'static,
+    {
+        let outcome = self.compare_and_commit_application_in_advancement(
+            phase,
+            program.with_client_observation(),
+            idempotency,
+        );
         self.retained_commit_outcome(outcome)
     }
 

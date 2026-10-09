@@ -89,27 +89,36 @@ fn member(
 }
 
 fn prepared_bootstrap() -> WorthQueryPrimaryGraphBootstrap<UniqueSeedSchema> {
-    let declaration = UniqueSeedSchema::declaration().unwrap();
-    let package = WorthQueryPortableDomainPackage::new(WorthQueryPortableDomainIdentity::new(
-        UniqueSeedSchema::OWNER,
-        1,
-        0,
-    ))
-    .application_schema(declaration.clone())
-    .validate()
-    .unwrap();
-    let admitted = WorthQueryInstallationAdmissionProfile::new("support", "configuration")
-        .admit(package)
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+
+        let declaration = UniqueSeedSchema::declaration().unwrap();
+        let package = WorthQueryPortableDomainPackage::new(WorthQueryPortableDomainIdentity::new(
+            UniqueSeedSchema::OWNER,
+            1,
+            0,
+        ))
+        .application_schema(declaration.clone())
+        .validate()
         .unwrap();
-    let installation = WorthQueryExecutionRuntimeInstaller::new()
-        .install(WorthQueryInstallationGeneration::initial(), [admitted])
-        .unwrap();
-    let (runtime, authority) = installation.into_parts();
-    let schema = runtime
-        .installed_packages()
-        .bind_application_schema(declaration)
-        .unwrap();
-    authority
-        .prepare_primary_graph(&runtime, &schema, test_product_world_resources())
-        .unwrap()
+        let admitted = WorthQueryInstallationAdmissionProfile::new("support", "configuration")
+            .admit(package)
+            .unwrap();
+        let installation = WorthQueryExecutionRuntimeInstaller::new()
+            .install(WorthQueryInstallationGeneration::initial(), [admitted])
+            .unwrap();
+        let (runtime, authority) = installation.into_parts();
+        let schema = runtime
+            .installed_packages()
+            .bind_application_schema(declaration)
+            .unwrap();
+        authority
+            .prepare_primary_graph(
+                &phase.bootstrap_for_test(),
+                &runtime,
+                &schema,
+                test_product_world_resources(),
+            )
+            .unwrap()
+    })
 }

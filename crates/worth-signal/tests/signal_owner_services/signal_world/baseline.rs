@@ -33,6 +33,16 @@ fn cargo_routing_baseline_is_real_and_publicly_observable() {
 
 #[test]
 fn cargo_routing_mutation_changes_effects_and_stales_the_consumed_basis() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            worth_signal::facade::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (world, _) = populated_world();
     let expected = world.main_basis.clone();
     let mut context = CargoContext::storm_front();
@@ -57,7 +67,7 @@ fn cargo_routing_mutation_changes_effects_and_stales_the_consumed_basis() {
         .compare_current_exact(&next)
         .is_ok());
     assert!(matches!(
-        world.services.mutation_port().advance_exact(
+        world.services.mutation_port().advance_exact(request_execution,
             &expected,
             &mut CargoContext::storm_front(),
             &worth_signal::facade::branch::SignalOwnerCancellationSource::new().token(),

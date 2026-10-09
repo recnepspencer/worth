@@ -9,6 +9,7 @@ use super::WorthQueryProductRuntime;
 /// extend either owner's lifecycle.
 #[derive(Clone)]
 pub struct WorthQueryProductSharedRoot {
+    pub(super) owner_identity: worth_runtime_world::facade::RuntimeWorldOwnerIdentity,
     product_identity: Arc<super::runtime::WorthQueryProductRootIdentity>,
     pub(super) bridge: std::sync::Weak<std::sync::RwLock<BridgeSealedRuntimeAssembly>>,
 }
@@ -19,6 +20,7 @@ impl WorthQueryProductSharedRoot {
         bridge: Arc<std::sync::RwLock<BridgeSealedRuntimeAssembly>>,
     ) -> Self {
         Self {
+            owner_identity: product.owner.owner_identity(),
             product_identity: product.root_identity(),
             bridge: Arc::downgrade(&bridge),
         }

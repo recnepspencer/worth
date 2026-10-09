@@ -264,6 +264,7 @@ impl WorthQueryProvisionalGraphProvider for ProvisionalProvider {
 
     fn discard_provisional_overlay(
         &self,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
         evidence: WorthQueryProvisionalOverlayEvidenceView<'_>,
     ) -> Result<(), WorthQueryProvisionalFailure> {
         let mut state = self.state.lock().unwrap();
@@ -304,6 +305,8 @@ pub(super) fn provisional_run(
 }
 
 pub(super) fn staged_with_fresh_read_set<'run>(
+    execution: &'run crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+
     running: &'run mut WorthQueryRunningDirectRun,
     graph: &WorthQueryInstalledGraphParticipationAuthority,
 ) -> (
@@ -313,7 +316,7 @@ pub(super) fn staged_with_fresh_read_set<'run>(
     let staged = running
         .admit_provider_execution_plan(graph)
         .unwrap()
-        .readmit()
+        .readmit(execution)
         .unwrap()
         .prepare()
         .unwrap()

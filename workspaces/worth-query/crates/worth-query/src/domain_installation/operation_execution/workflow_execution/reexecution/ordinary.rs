@@ -64,7 +64,34 @@ where
         intent: WorthQueryNormalizedWorkflowIntent,
         workspace: &mut WorthQueryWorkspace,
     ) -> WorthQueryWorkflowReexecutionOutcome<D, O, F, L> {
-        let mut run = match self.start_workflow(workspace) {
+        let owner = workspace.advancement_owner();
+        owner
+            .with_advancement(|phase| self.reexecute_in_advancement(&phase, intent, workspace))
+            .unwrap_or_else(|cause| {
+                TransitionOutcome::Denied(WorthQueryWorkflowReexecutionStop::Start(
+                    WorthQueryWorkflowStartDenial::new(
+                        super::WorthQueryWorkflowStartDenialKind::ExecutionRequest(cause),
+                        Default::default(),
+                    ),
+                ))
+            })
+    }
+
+    fn reexecute_in_advancement(
+        self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
+        intent: WorthQueryNormalizedWorkflowIntent,
+        workspace: &mut WorthQueryWorkspace,
+    ) -> WorthQueryWorkflowReexecutionOutcome<D, O, F, L> {
+        let mut run = match self.start_workflow_attempt(
+            phase
+                .execution_request_for(&workspace.advancement_owner())
+                .expect("the opener lent its owner this phase"),
+            workspace,
+            1,
+        ) {
             TransitionOutcome::Success(run) => run,
             TransitionOutcome::Denied(stop) => {
                 return TransitionOutcome::Denied(WorthQueryWorkflowReexecutionStop::Start(stop))
@@ -97,18 +124,25 @@ where
         for stage in intent.stages() {
             let advanced = match stage.input() {
                 super::WorthQueryWorkflowIntentValue::PredecessorArtifact { predecessor_stage } => {
-                    run.advance_with_artifact(stage.stage_identity(), predecessor_stage, workspace)
+                    run.advance_with_artifact_in_advancement(
+                        phase,
+                        stage.stage_identity(),
+                        predecessor_stage,
+                        workspace,
+                    )
                 }
                 super::WorthQueryWorkflowIntentValue::PredecessorArtifactLease {
                     predecessor_stage,
                     lease_role,
-                } => run.advance_with_artifact_lease(
+                } => run.advance_with_artifact_lease_in_advancement(
+                    phase,
                     stage.stage_identity(),
                     predecessor_stage,
                     lease_role.clone(),
                     workspace,
                 ),
-                input => run.advance(
+                input => run.advance_in_advancement(
+                    phase,
                     stage.stage_identity(),
                     input
                         .runtime_value()

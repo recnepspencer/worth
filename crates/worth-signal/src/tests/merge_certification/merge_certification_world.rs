@@ -60,6 +60,16 @@ pub(super) fn build_shared_state_conflict_runtime() -> (
     SignalBranchHandle,
     SignalBranchHandle,
 ) {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let graph = SignalGraph::new().with_schema_registry(certification_schema_registry());
     let mut runtime = SignalRuntime::builder(graph).with_kernel_defaults().build();
     let shared = runtime
@@ -72,7 +82,7 @@ pub(super) fn build_shared_state_conflict_runtime() -> (
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(shared, &|view| {
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(501, 0))))
             })?;
@@ -87,7 +97,7 @@ pub(super) fn build_shared_state_conflict_runtime() -> (
 
     runtime.switch_branch(feature.clone()).unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.mark_dirty(shared, ASPECT_A)?;
             tx.read(shared, &|view| {
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(502, 0))))
@@ -98,7 +108,7 @@ pub(super) fn build_shared_state_conflict_runtime() -> (
 
     runtime.switch_branch(main.clone()).unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.mark_dirty(shared, ASPECT_A)?;
             tx.read(shared, &|view| {
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(503, 0))))
@@ -115,13 +125,23 @@ pub(super) fn build_aspect_policy_runtime() -> (
     SignalBranchHandle,
     SignalBranchHandle,
 ) {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let graph = SignalGraph::new().with_schema_registry(certification_aspect_schema_registry());
     let mut runtime = SignalRuntime::builder(graph).with_kernel_defaults().build();
     let shared = runtime.graph_mut().node().build();
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(shared, &|view| {
                 Ok(view.finish(NodeEvaluationResult::from_version(version_ab(511, 0))))
             })?;
@@ -147,7 +167,7 @@ pub(super) fn build_aspect_policy_runtime() -> (
         .append_dependency(feature_only, shared, ASPECT_A)
         .unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(feature_only, &|view| {
                 let upstream = view.read_aspect_version(shared, ASPECT_A)?;
                 Ok(view.finish(NodeEvaluationResult::from_version(upstream)))

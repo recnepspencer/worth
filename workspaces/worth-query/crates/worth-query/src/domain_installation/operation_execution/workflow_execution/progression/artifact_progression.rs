@@ -9,11 +9,40 @@ use super::{
 
 impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkflowRun<D, O, F, L> {
     pub fn advance_with_artifact(
-        mut self,
+        self,
         stage_identity: &str,
         predecessor_stage: &str,
         workspace: &mut WorthQueryWorkspace,
     ) -> WorthQueryWorkflowAdvanceOutcome<D, O, F, L> {
+        let owner = workspace.advancement_owner();
+        owner
+            .with_advancement(|phase| {
+                self.advance_with_artifact_in_advancement(
+                    &phase,
+                    stage_identity,
+                    predecessor_stage,
+                    workspace,
+                )
+            })
+            .unwrap_or_else(|cause| {
+                worth_proof::TransitionOutcome::Denied(WorthQueryWorkflowAdvanceDenial::new(
+                    WorthQueryWorkflowAdvanceDenialKind::ExecutionRequest(cause),
+                    Default::default(),
+                ))
+            })
+    }
+
+    pub(super) fn advance_with_artifact_in_advancement(
+        mut self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
+        stage_identity: &str,
+        predecessor_stage: &str,
+        workspace: &mut WorthQueryWorkspace,
+    ) -> WorthQueryWorkflowAdvanceOutcome<D, O, F, L> {
+        let execution = phase;
+
         let runtime_admission = match self.admit_stage_runtime_authority(workspace) {
             Ok(admission) => admission,
             Err(denial) => return self.outcome_from_denial(denial),
@@ -45,7 +74,7 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
                     let denial = self.artifact_carriage_denial(denial);
                     return self.outcome_from_denial(denial);
                 }
-                self.advance_with_admitted_stage(admitted, input, workspace)
+                self.advance_with_admitted_stage(execution, admitted, input, workspace)
             }
             Err(denial) => {
                 let stop = self.artifact_carriage_denial(denial);
@@ -55,12 +84,43 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
     }
 
     pub fn advance_with_artifact_lease(
-        mut self,
+        self,
         stage_identity: &str,
         predecessor_stage: &str,
         lease_role: impl Into<String>,
         workspace: &mut WorthQueryWorkspace,
     ) -> WorthQueryWorkflowAdvanceOutcome<D, O, F, L> {
+        let owner = workspace.advancement_owner();
+        owner
+            .with_advancement(|phase| {
+                self.advance_with_artifact_lease_in_advancement(
+                    &phase,
+                    stage_identity,
+                    predecessor_stage,
+                    lease_role,
+                    workspace,
+                )
+            })
+            .unwrap_or_else(|cause| {
+                worth_proof::TransitionOutcome::Denied(WorthQueryWorkflowAdvanceDenial::new(
+                    WorthQueryWorkflowAdvanceDenialKind::ExecutionRequest(cause),
+                    Default::default(),
+                ))
+            })
+    }
+
+    pub(super) fn advance_with_artifact_lease_in_advancement(
+        mut self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
+        stage_identity: &str,
+        predecessor_stage: &str,
+        lease_role: impl Into<String>,
+        workspace: &mut WorthQueryWorkspace,
+    ) -> WorthQueryWorkflowAdvanceOutcome<D, O, F, L> {
+        let execution = phase;
+
         let runtime_admission = match self.admit_stage_runtime_authority(workspace) {
             Ok(admission) => admission,
             Err(denial) => return self.outcome_from_denial(denial),
@@ -97,7 +157,7 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
                     let denial = self.artifact_carriage_denial(denial);
                     return self.outcome_from_denial(denial);
                 }
-                self.advance_with_admitted_stage(admitted, input, workspace)
+                self.advance_with_admitted_stage(execution, admitted, input, workspace)
             }
             Err(denial) => {
                 let stop = self.artifact_carriage_denial(denial);

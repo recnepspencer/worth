@@ -26,6 +26,7 @@ impl WorthQueryCommitProgressionMint {
 }
 
 pub(super) fn commit_owner_validated(
+    execution: worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,
     prepared: WorthQueryPreparedApplicationCommit,
 ) -> Result<
@@ -33,6 +34,7 @@ pub(super) fn commit_owner_validated(
     crate::domain_computation::WorthQueryProviderSessionCommitStop,
 > {
     let mut committed = commit_execution::commit(
+        execution,
         provider,
         prepared,
         WorthQueryCommitProgressionMint::witness(),

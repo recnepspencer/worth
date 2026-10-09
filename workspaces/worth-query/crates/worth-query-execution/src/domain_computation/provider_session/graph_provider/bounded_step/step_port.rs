@@ -17,7 +17,8 @@ use crate::domain_computation::{
     WorthQueryMoveOnlyArtifactHandle,
 };
 
-pub struct WorthQueryGraphProviderStep {
+pub struct WorthQueryGraphProviderStep<'scope> {
+    execution: worth_execution::ExecutionRequest<'scope, 'scope>,
     call_kind: WorthQueryGraphProviderCallKind,
     budget: WorthQueryGraphProviderStepBudget,
     attempted_effect_count: u64,
@@ -30,8 +31,9 @@ pub struct WorthQueryGraphProviderStep {
     memory: WorthQueryGraphProviderMemoryArena,
 }
 
-impl WorthQueryGraphProviderStep {
+impl<'scope> WorthQueryGraphProviderStep<'scope> {
     pub(crate) fn new(
+        execution: worth_execution::ExecutionRequest<'scope, 'scope>,
         call_kind: WorthQueryGraphProviderCallKind,
         contract: &WorthQueryInstalledBoundedStepContract,
         artifact_context: Option<super::WorthQueryGraphProviderStepArtifactContext>,
@@ -39,6 +41,7 @@ impl WorthQueryGraphProviderStep {
         managed_retained_bytes: u64,
     ) -> Self {
         Self {
+            execution,
             call_kind,
             budget: WorthQueryGraphProviderStepBudget::new(contract, managed_retained_bytes),
             attempted_effect_count: 0,
@@ -50,6 +53,11 @@ impl WorthQueryGraphProviderStep {
             checkpoint_available: false,
             memory,
         }
+    }
+
+    /// The active request owning this call; it is never stored in retained provider state.
+    pub fn execution_request(&self) -> worth_execution::ExecutionRequest<'scope, 'scope> {
+        self.execution
     }
 
     pub const fn call_kind(&self) -> WorthQueryGraphProviderCallKind {

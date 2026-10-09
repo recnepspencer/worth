@@ -17,7 +17,7 @@ fn guarded_binding_cannot_install_without_a_program_owner() {
             DocumentRetentionSchema::declaration().expect("the fixture schema is valid"),
             ((),),
             host_limits(),
-            |_, _| Ok(()),
+            |_, _, _| Ok(()),
         );
     assert!(matches!(
         result,
@@ -74,8 +74,8 @@ fn a_workflow_control_binding_refuses_a_handler() {
         DocumentRetentionSchema::declaration().expect("the document-retention schema is valid"),
         ((),),
         host_limits(),
-        |graph, installed| {
-            seed_host(graph, installed)?;
+        |phase, graph, installed| {
+            seed_host(phase, graph, installed)?;
             let binding = installed
                 .installed_mutation_binding::<WorkflowAdvanceBinding>()
                 .expect("the advance binding is installed");

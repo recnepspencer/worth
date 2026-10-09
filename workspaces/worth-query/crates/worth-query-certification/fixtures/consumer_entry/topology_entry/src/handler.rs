@@ -71,6 +71,8 @@ where
         input: &PlanarMutation,
         reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>,
     ) -> HandlerResult<(), PlanarMutationDenial> {
+        #[cfg(feature = "test-query-execution-observer")]
+        HANDLER_CONTACTS.with(|contacts| contacts.set(contacts.get() + 1));
         if let Err(error) = reader.resolve_entity(BodyKey::reference(), input.scope_key.clone()) {
             return HandlerResult::ExecutionDenied(error);
         }
@@ -356,4 +358,11 @@ where
         }
         PlanarOperation::VerifyCurrentOutputs(_) => Ok(0),
     }
+}
+
+#[cfg(feature = "test-query-execution-observer")]
+thread_local! { static HANDLER_CONTACTS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) }; }
+#[cfg(all(test, feature = "test-query-execution-observer"))]
+pub(crate) fn handler_contacts() -> usize {
+    HANDLER_CONTACTS.with(std::cell::Cell::get)
 }

@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 mod cleanup_failure;
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -13,6 +14,8 @@ use crate::domain_computation::WorthQueryManagedRunTerminalKind;
 pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) fn finish_application_commit<
     Schema,
 >(
+    phase: &WorthQueryAdvancementPhase<'_>,
+
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     progressed: WorthQueryProgressedApplicationCommit,
 ) -> WorthQueryApplicationCommitOutcome
@@ -48,7 +51,7 @@ where
             publication.maintain(application, receipt);
         }
     }
-    application.dispatch_committed_external_effect(committed, &request)
+    application.dispatch_committed_external_effect(phase, committed, &request)
 }
 
 const fn terminal_for(

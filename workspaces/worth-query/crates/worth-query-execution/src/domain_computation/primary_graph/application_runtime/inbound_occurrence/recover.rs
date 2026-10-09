@@ -1,5 +1,6 @@
 //! Owner-only continuation of accepted completion and exact World recovery.
 
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use std::sync::{Arc, Mutex};
 
 use worth_foundational::facade::CanonicalDigestId;
@@ -67,6 +68,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     /// installed verifier with the exact signed envelope.
     pub(in crate::domain_computation) fn progress_retained_inbound_occurrence(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         correlation_token: [u8; 32],
         request: &WorthQueryRequestScope,
     ) -> Result<Posture, Denial> {
@@ -86,7 +89,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .claim_retryable_publication(&accepted);
         match claim {
             WorthQueryInboundPublicationClaim::Claimed => {
-                self.progress_accepted_inbound_occurrence(accepted, request)
+                self.progress_accepted_inbound_occurrence(phase, accepted, request)
             }
             WorthQueryInboundPublicationClaim::AtCapacity => Err(Denial::CapacityExhausted),
             WorthQueryInboundPublicationClaim::Publishing => Err(Denial::PublicationInProgress),
@@ -96,13 +99,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 Ok(Posture::Performed)
             }
             WorthQueryInboundPublicationClaim::Unpublished => {
-                self.progress_unpublished_inbound_occurrence(accepted, request)
+                self.progress_unpublished_inbound_occurrence(phase, accepted, request)
             }
         }
     }
 
     pub(in crate::domain_computation) fn progress_unpublished_inbound_occurrence(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         accepted: Arc<WorthQueryAcceptedInboundOccurrence>,
         request: &WorthQueryRequestScope,
     ) -> Result<Posture, Denial> {
@@ -134,7 +139,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .as_ref()
             .expect("claimed recovery is retained")
             .clone();
-        match self.continue_inbound_recovery_state(&accepted, state, request) {
+        match self.continue_inbound_recovery_state(phase, &accepted, state, request) {
             RecoveryStep::Retain(state, result) => {
                 guard.retain(state);
                 result
@@ -159,13 +164,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 
     fn continue_inbound_recovery_state(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         accepted: &Arc<WorthQueryAcceptedInboundOccurrence>,
         state: State,
         request: &WorthQueryRequestScope,
     ) -> RecoveryStep {
         match state {
             State::Active(recovery) => {
-                self.continue_active_inbound_recovery(accepted, recovery, request)
+                self.continue_active_inbound_recovery(phase, accepted, recovery, request)
             }
             State::HandoffWorld { old, next } => self.finish_inbound_handoff(old, next),
             State::HandoffCleanup { cleanup, next } => match cleanup.retry() {
@@ -202,6 +209,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 
     fn continue_active_inbound_recovery(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         accepted: &Arc<WorthQueryAcceptedInboundOccurrence>,
         recovery: crate::domain_computation::WorthQueryProductUnpublishedRecovery,
         request: &WorthQueryRequestScope,
@@ -271,7 +280,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             false,
             false,
         );
-        let outcome = prepared.execute();
+        let outcome = prepared.execute(
+            phase
+                .execution_request_for(&self.product_runtime)
+                .expect("private progression uses its admitted runtime phase"),
+        );
         let world_recovery = binding.recovery();
         drop(lease);
         drop(binding);

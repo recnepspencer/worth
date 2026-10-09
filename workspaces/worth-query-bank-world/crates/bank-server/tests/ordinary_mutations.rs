@@ -29,12 +29,13 @@ use bank_server::{mutations, queries, BankMutationControls, BankReadControls};
 use worth_query_host::facade::admission::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
 };
+use worth_query_host::facade::application_contribution::{
+    WorthQueryAdvancementDenial, WorthQueryManagedComputationInterruption,
+};
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequestMutationDenial,
 };
-use worth_query_host::facade::primary_graph::{
-    WorthQueryApplicationCommitTerminalKind, WorthQueryPrincipalResolutionDenialKind,
-};
+use worth_query_host::facade::primary_graph::WorthQueryApplicationCommitTerminalKind;
 
 use assertions::assert_program_committed;
 use fixture::{ordinary_read_world, principal_id, APPROVER, OWNER, RECIPIENT, STRANGER, TELLER};
@@ -91,8 +92,13 @@ fn public_mutation_controls_preserve_interruptions_permissions_and_intent_drift(
     assert!(
         matches!(
             cancelled,
-            Err(WorthQueryApplicationRequestMutationDenial::PrincipalResolution(ref denial))
-                if denial.kind() == WorthQueryPrincipalResolutionDenialKind::Cancelled
+            Err(
+                WorthQueryApplicationRequestMutationDenial::ExecutionRequest(
+                    WorthQueryAdvancementDenial::Interrupted(
+                        WorthQueryManagedComputationInterruption::Cancelled
+                    )
+                )
+            )
         ),
         "unexpected cancelled outcome: {cancelled:?}"
     );
@@ -111,8 +117,13 @@ fn public_mutation_controls_preserve_interruptions_permissions_and_intent_drift(
     assert!(
         matches!(
             expired,
-            Err(WorthQueryApplicationRequestMutationDenial::PrincipalResolution(ref denial))
-                if denial.kind() == WorthQueryPrincipalResolutionDenialKind::DeadlineExceeded
+            Err(
+                WorthQueryApplicationRequestMutationDenial::ExecutionRequest(
+                    WorthQueryAdvancementDenial::Interrupted(
+                        WorthQueryManagedComputationInterruption::DeadlineExceeded
+                    )
+                )
+            )
         ),
         "unexpected deadline outcome: {expired:?}"
     );

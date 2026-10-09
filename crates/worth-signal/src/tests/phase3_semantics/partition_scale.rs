@@ -6,6 +6,16 @@ use crate::tests::support::{evaluate, version_ab, GraphDependencyBatchExt, ASPEC
 
 #[test]
 fn transaction_partition_invalidations_union_dirty_scopes_until_runtime_evaluation() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -21,7 +31,7 @@ fn transaction_partition_invalidations_union_dirty_scopes_until_runtime_evaluati
         .unwrap();
 
     runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.read(source, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(1, 0))
@@ -48,7 +58,7 @@ fn transaction_partition_invalidations_union_dirty_scopes_until_runtime_evaluati
     let dependent_before = runtime.graph().get_state(dependent).unwrap();
 
     runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.mark_dirty_with_regions(
                 source,
                 ASPECT_A,

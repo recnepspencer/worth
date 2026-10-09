@@ -10,6 +10,16 @@ use std::sync::atomic::{AtomicU32, Ordering};
 
 #[test]
 fn fintech_tick_correction_session_preserves_auditability_under_branching_replay_and_memo_reuse() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -49,7 +59,7 @@ fn fintech_tick_correction_session_preserves_auditability_under_branching_replay
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(ticks, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(100, 5))
@@ -97,7 +107,7 @@ fn fintech_tick_correction_session_preserves_auditability_under_branching_replay
     for tick in [101_u64, 102, 103, 104] {
         let volatility = if tick % 2 == 0 { 9 } else { 5 };
         runtime
-            .transaction(&mut runtime_ctx, |tx| {
+            .transaction(request_execution, &mut runtime_ctx, |tx| {
                 tx.mark_dirty(ticks, ASPECT_A)?;
                 if tick % 2 == 0 {
                     tx.mark_dirty(ticks, ASPECT_B)?;
@@ -135,7 +145,7 @@ fn fintech_tick_correction_session_preserves_auditability_under_branching_replay
 
         mark_dirty(runtime.graph_mut(), risk, ASPECT_A).unwrap();
         runtime
-            .transaction(&mut runtime_ctx, |tx| {
+            .transaction(request_execution, &mut runtime_ctx, |tx| {
                 tx.evaluate_keyed(risk, &risk_computation, &|view| {
                     compute_calls.fetch_add(1, Ordering::Relaxed);
                     Ok(view.finish(NodeEvaluationResult::from_version(version_ab(9999, 0))))
@@ -150,7 +160,7 @@ fn fintech_tick_correction_session_preserves_auditability_under_branching_replay
     runtime.switch_branch(correction.clone()).unwrap();
     let correction_snapshot = runtime.capture_branch_snapshot(correction.clone()).unwrap();
 
-    let err = runtime.transaction(&mut runtime_ctx, |tx| {
+    let err = runtime.transaction(request_execution, &mut runtime_ctx, |tx| {
         tx.mark_dirty(ticks, ASPECT_A)?;
         tx.read(ticks, &|view| {
             Ok(view.finish(

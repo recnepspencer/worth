@@ -4,6 +4,8 @@ use crate::domain_installation::{
 };
 
 pub(super) fn contact_direct_commit_provider(
+    execution: worth_execution::ExecutionRequest<'_, '_>,
+
     scope_identity: &str,
     authority: &super::super::graph_participation::WorthQueryInstalledGraphCommitAuthority,
     graph_authorities: &[&worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority],
@@ -15,10 +17,12 @@ pub(super) fn contact_direct_commit_provider(
             WorthQueryGraphCommitCallRequest::direct(scope_identity, authority.identity()),
         )
         .map_err(|denial| WorthQueryGraphProviderFailure::new(denial.detail()))?;
-    execute_commit_provider(authority, &call)
+    execute_commit_provider(execution, authority, &call)
 }
 
 pub(super) fn contact_workflow_commit_provider(
+    execution: worth_execution::ExecutionRequest<'_, '_>,
+
     scope_identity: &str,
     stage_identity: &str,
     authority: &super::super::graph_participation::WorthQueryInstalledGraphCommitAuthority,
@@ -36,14 +40,16 @@ pub(super) fn contact_workflow_commit_provider(
             ),
         )
         .map_err(|denial| WorthQueryGraphProviderFailure::new(denial.detail()))?;
-    execute_commit_provider(authority, &call)
+    execute_commit_provider(execution, authority, &call)
 }
 
 fn execute_commit_provider(
+    execution: worth_execution::ExecutionRequest<'_, '_>,
+
     authority: &super::super::graph_participation::WorthQueryInstalledGraphCommitAuthority,
     call: &crate::domain_installation::WorthQueryGraphCommitCall,
 ) -> Result<WorthQueryBoundGraphExecutionReceipt, WorthQueryGraphProviderFailure> {
-    let receipt = authority.provider.admit_commit(call)?;
+    let receipt = authority.provider.admit_commit(execution, call)?;
     call.admit_receipt(receipt)
         .map_err(|denial| WorthQueryGraphProviderFailure::new(denial.detail()))
 }

@@ -213,11 +213,21 @@ impl super::FintechWorld {
     pub(in crate::tests::domains::fintech) fn refresh_primary_audit_surface(
         &mut self,
     ) -> Result<PrimaryAuditSurface, SignalError> {
+        // This standalone caller declares the operational serial memory policy.
+        let serial_request = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(
+                crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+            ),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
         let top_desk = self.top_desk();
         let top_scenario = self.top_scenario();
         let evaluation = self.evaluation_shape();
         let evaluator = evaluation.evaluator();
-        self.runtime.transaction(&mut (), |tx| {
+        self.runtime.transaction(request_execution, &mut (), |tx| {
             tx.read(top_desk, &evaluator)?;
             tx.read(top_scenario, &evaluator)?;
             Ok(())
@@ -229,12 +239,22 @@ impl super::FintechWorld {
         &mut self,
         workers: usize,
     ) -> Result<PrimaryAuditSurface, SignalError> {
+        // This standalone caller declares the operational serial memory policy.
+        let serial_request = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(
+                crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+            ),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
         let top_desk = self.top_desk();
         let top_scenario = self.top_scenario();
         let evaluation = self.evaluation_shape();
         let checked = evaluation.checked_evaluator();
         let lease = portfolio_lease(workers)?;
-        self.runtime.transaction(&mut (), |tx| {
+        self.runtime.transaction(request_execution, &mut (), |tx| {
             tx.evaluate_checked(
                 &[top_desk],
                 crate::facade::EvaluationRequestMode::Default,

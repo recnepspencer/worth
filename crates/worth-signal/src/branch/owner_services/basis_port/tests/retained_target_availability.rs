@@ -4,6 +4,16 @@ use super::world::{advance_exact, basis_port_world, issue_reference};
 
 #[test]
 fn retained_exact_readmission_survives_a_caller_panic_after_rollback() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let world = basis_port_world();
     let descriptor = world.basis_b.descriptor().clone();
     let reference = issue_reference(&world.port, &world.basis_b);
@@ -21,6 +31,7 @@ fn retained_exact_readmission_survives_a_caller_panic_after_rollback() {
         .expect("the retained target is installed before the mutation");
     let panic = catch_unwind(AssertUnwindSafe(|| {
         let _ = cell.advance_exact::<(), (), _>(
+            request_execution,
             &mutation_admission,
             &world.basis_b,
             &mut (),

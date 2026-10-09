@@ -112,6 +112,8 @@ where
 
     pub fn advance_exact<F>(
         &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+
         expected: &AdmittedSignalBranchBasis,
         runtime_ctx: &mut Ctx,
         cancellation: &SignalOwnerCancellationToken,
@@ -120,13 +122,15 @@ where
     where
         F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
     {
-        self.advance_exact_with_completion(expected, runtime_ctx, cancellation, apply)
+        self.advance_exact_with_completion(execution, expected, runtime_ctx, cancellation, apply)
             .into_result()
     }
 
     /// Preserve exact owner completion when a post-movement boundary unwinds.
     pub fn advance_exact_with_completion<F>(
         &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+
         expected: &AdmittedSignalBranchBasis,
         runtime_ctx: &mut Ctx,
         cancellation: &SignalOwnerCancellationToken,
@@ -146,7 +150,7 @@ where
                 .lookup_cell(&admission, branch_id)
                 .map_err(|denial| map_advance_registry_denial(denial, branch_id))?;
             let output = owner.reserve_advance_output(&admission, &cell)?;
-            Ok(output.advance(expected, runtime_ctx, cancellation, apply))
+            Ok(output.advance(execution, expected, runtime_ctx, cancellation, apply))
         }));
         match execution {
             Ok(Ok(completion)) => completion,
@@ -183,6 +187,8 @@ where
         F,
     >(
         &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+
         publication: super::conditional_execution::SignalConditionalDefinitionPublicationOperation,
         expected: &AdmittedSignalBranchBasis,
         runtime_ctx: &mut Ctx,
@@ -208,6 +214,7 @@ where
             }
             let output = owner.reserve_advance_output(&admission, &cell)?;
             Ok(output.advance_conditional_definition(
+                execution,
                 expected,
                 runtime_ctx,
                 cancellation,

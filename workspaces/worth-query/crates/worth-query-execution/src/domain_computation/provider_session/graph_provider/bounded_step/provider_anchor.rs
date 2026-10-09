@@ -239,9 +239,14 @@ impl WorthQueryGraphProviderAnchor {
 
     pub(crate) fn discard_provisional_overlay(
         &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
         evidence: WorthQueryProvisionalOverlayEvidenceView<'_>,
     ) -> Result<(), WorthQueryProvisionalFailure> {
-        semantic_provider_ports::discard_provisional_overlay(&self.provisional_provider, evidence)
+        semantic_provider_ports::discard_provisional_overlay(
+            &self.provisional_provider,
+            execution,
+            evidence,
+        )
     }
 
     pub(crate) fn load_invariant_state(

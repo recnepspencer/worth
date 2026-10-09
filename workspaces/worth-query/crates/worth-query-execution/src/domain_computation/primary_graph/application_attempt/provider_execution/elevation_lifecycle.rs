@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::super::{
@@ -26,10 +27,22 @@ where
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        if let Some(denial) = self.direct_operation_commit_denial::<Operation>() {
-            return WorthQueryElevationRequestOutcome::Denied(denial);
-        }
-        self.compare_and_commit_elevation_request_for_program(program, idempotency)
+        let request = program.request_scope().clone();
+        let mut candidate = Some(program);
+        self.with_application_advancement(&request, |active_phase| {
+            if let Some(denial) = self.direct_operation_commit_denial::<Operation>() {
+                return WorthQueryElevationRequestOutcome::Denied(denial);
+            }
+            self.compare_and_commit_elevation_request_for_program(
+                &active_phase,
+                candidate.take().expect("candidate admitted once"),
+                idempotency,
+            )
+        })
+        .unwrap_or_else(|denial| match candidate.take() {
+            Some(candidate) => self.refuse_elevation_request(candidate, denial),
+            None => WorthQueryElevationRequestOutcome::Indeterminate,
+        })
     }
 
     pub(in crate::domain_computation::primary_graph) fn compare_and_commit_elevation_request_for_program<
@@ -38,6 +51,8 @@ where
         Scope,
     >(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         program: WorthQueryElevationRequestProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
     ) -> WorthQueryElevationRequestOutcome
@@ -62,6 +77,7 @@ where
         };
         requested_outcome(
             self.compare_and_commit_application_inner_with_currentness(
+                phase,
                 program,
                 idempotency,
                 currentness,
@@ -79,11 +95,20 @@ where
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        self.compare_and_commit_elevation_approval_for_program(
-            program,
-            idempotency,
-            self.direct_operation_commit_denial::<Operation>(),
-        )
+        let request = program.request_scope().clone();
+        let mut candidate = Some(program);
+        self.with_application_advancement(&request, |active_phase| {
+            self.compare_and_commit_elevation_approval_for_program(
+                &active_phase,
+                candidate.take().expect("candidate admitted once"),
+                idempotency,
+                self.direct_operation_commit_denial::<Operation>(),
+            )
+        })
+        .unwrap_or_else(|denial| match candidate.take() {
+            Some(candidate) => self.refuse_elevation_approval(candidate, denial),
+            None => WorthQueryElevationApprovalOutcome::Indeterminate,
+        })
     }
 
     pub(in crate::domain_computation::primary_graph) fn compare_and_commit_elevation_approval_for_program<
@@ -92,6 +117,8 @@ where
         Scope,
     >(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         program: WorthQueryElevationApprovalProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
         direct_denial: Option<WorthQueryApplicationCommitDenial>,
@@ -127,6 +154,7 @@ where
         };
         approved_outcome(
             self.compare_and_commit_application_inner_with_currentness(
+                phase,
                 program,
                 idempotency,
                 currentness,
@@ -144,11 +172,20 @@ where
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        self.compare_and_commit_elevation_close_for_program(
-            program,
-            idempotency,
-            self.direct_operation_commit_denial::<Operation>(),
-        )
+        let request = program.request_scope().clone();
+        let mut candidate = Some(program);
+        self.with_application_advancement(&request, |active_phase| {
+            self.compare_and_commit_elevation_close_for_program(
+                &active_phase,
+                candidate.take().expect("candidate admitted once"),
+                idempotency,
+                self.direct_operation_commit_denial::<Operation>(),
+            )
+        })
+        .unwrap_or_else(|denial| match candidate.take() {
+            Some(candidate) => self.refuse_elevation_close(candidate, denial),
+            None => WorthQueryElevationCloseOutcome::Indeterminate,
+        })
     }
 
     pub(in crate::domain_computation::primary_graph) fn compare_and_commit_elevation_close_for_program<
@@ -157,6 +194,8 @@ where
         Scope,
     >(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         program: WorthQueryElevationCloseProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
         direct_denial: Option<WorthQueryApplicationCommitDenial>,
@@ -190,6 +229,7 @@ where
         };
         closed_outcome(
             self.compare_and_commit_application_inner_with_currentness(
+                phase,
                 program,
                 idempotency,
                 currentness,
@@ -207,11 +247,20 @@ where
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        self.compare_and_commit_mandatory_review_for_program(
-            program,
-            idempotency,
-            self.direct_operation_commit_denial::<Operation>(),
-        )
+        let request = program.request_scope().clone();
+        let mut candidate = Some(program);
+        self.with_application_advancement(&request, |active_phase| {
+            self.compare_and_commit_mandatory_review_for_program(
+                &active_phase,
+                candidate.take().expect("candidate admitted once"),
+                idempotency,
+                self.direct_operation_commit_denial::<Operation>(),
+            )
+        })
+        .unwrap_or_else(|denial| match candidate.take() {
+            Some(candidate) => self.refuse_mandatory_review(candidate, denial),
+            None => WorthQueryMandatoryReviewOutcome::Indeterminate,
+        })
     }
 
     pub(in crate::domain_computation::primary_graph) fn compare_and_commit_mandatory_review_for_program<
@@ -220,6 +269,8 @@ where
         Scope,
     >(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         program: WorthQueryMandatoryReviewProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
         direct_denial: Option<WorthQueryApplicationCommitDenial>,
@@ -247,7 +298,7 @@ where
             return WorthQueryMandatoryReviewOutcome::Indeterminate;
         };
         reviewed_outcome(
-            self.compare_and_commit_application_inner(program, idempotency),
+            self.compare_and_commit_application_inner(phase, program, idempotency),
             binding,
         )
     }

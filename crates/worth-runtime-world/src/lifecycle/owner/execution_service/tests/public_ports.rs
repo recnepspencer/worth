@@ -32,6 +32,15 @@ pub(super) fn public_world() -> (
 #[test]
 fn public_ports_complete_publication_and_consumption_permanently_closes_delivery() {
     let (fixture, owner, expected) = public_world();
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::from_policy(
+            &owner.root.state.execution.request_policy(),
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let port = owner.publication_port();
     let cancellation = RuntimeWorldCancellationSource::new();
     let prepared = port
@@ -45,7 +54,7 @@ fn public_ports_complete_publication_and_consumption_permanently_closes_delivery
             None,
         )
         .unwrap();
-    let performed = match port.execute_without_signal(prepared, &cancellation.token()) {
+    let performed = match port.execute_without_signal(execution, prepared, &cancellation.token()) {
         RuntimeWorldPublicationOutcome::Performed(performed) => performed,
         other => panic!("public execution must finish its CAS: {other:?}"),
     };
@@ -82,7 +91,9 @@ fn public_ports_complete_publication_and_consumption_permanently_closes_delivery
         )
         .unwrap();
     assert!(matches!(
-        port.execute_with_signal(prepared, &mut (), &cancellation.token(), |_| Ok(())),
+        port.execute_with_signal(execution, prepared, &mut (), &cancellation.token(), |_| Ok(
+            ()
+        )),
         RuntimeWorldPublicationOutcome::Performed(_)
     ));
 }
@@ -90,6 +101,15 @@ fn public_ports_complete_publication_and_consumption_permanently_closes_delivery
 #[test]
 fn public_owner_loss_denies_ports_even_when_an_in_flight_upgrade_keeps_engine_alive() {
     let (fixture, owner, expected) = public_world();
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::from_policy(
+            &owner.root.state.execution.request_policy(),
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let engine = Arc::clone(&owner.root);
     let observation = owner.observation_port();
     let publication = owner.publication_port();
@@ -106,9 +126,13 @@ fn public_owner_loss_denies_ports_even_when_an_in_flight_upgrade_keeps_engine_al
     assert!(observation
         .observe_product_branch(expected.branch_identity())
         .is_err());
-    let outcome = publication.execute_with_signal(prepared, &mut (), &cancellation.token(), |_| {
-        panic!("lost owner cannot call Signal")
-    });
+    let outcome = publication.execute_with_signal(
+        execution,
+        prepared,
+        &mut (),
+        &cancellation.token(),
+        |_| panic!("lost owner cannot call Signal"),
+    );
     assert!(
         matches!(outcome,RuntimeWorldPublicationOutcome::NoEffect(no) if no.cause()==NoEffectCause::OwnerUnavailable)
     );
@@ -122,6 +146,15 @@ fn public_owner_loss_denies_ports_even_when_an_in_flight_upgrade_keeps_engine_al
 #[test]
 fn public_foreign_prepared_token_never_contacts_a_component() {
     let (_fixture, owner, expected) = public_world();
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::from_policy(
+            &owner.root.state.execution.request_policy(),
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (_foreign_fixture, foreign, _) = public_world();
     let cancellation = RuntimeWorldCancellationSource::new();
     let prepared = owner
@@ -134,6 +167,7 @@ fn public_foreign_prepared_token_never_contacts_a_component() {
         )
         .unwrap();
     let outcome = foreign.publication_port().execute_with_signal(
+        execution,
         prepared,
         &mut (),
         &cancellation.token(),
@@ -164,6 +198,15 @@ fn public_close_denies_saved_ports_without_closing_components() {
 #[test]
 fn public_partial_recovery_preserves_foreign_and_live_capability_denials() {
     let (fixture, owner, expected) = public_world();
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::from_policy(
+            &owner.root.state.execution.request_policy(),
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (_foreign_fixture, foreign, _) = public_world();
     let cancellation = RuntimeWorldCancellationSource::new();
     let prepared = owner
@@ -179,6 +222,7 @@ fn public_partial_recovery_preserves_foreign_and_live_capability_denials() {
         )
         .unwrap();
     let record = match owner.publication_port().execute_with_signal(
+        execution,
         prepared,
         &mut (),
         &cancellation.token(),

@@ -3,41 +3,45 @@ use super::*;
 
 #[test]
 fn checkpoint_memory_mismatch_preserves_exact_release_evidence() {
-    for (provider, expected_release, label) in [
-        (
-            YieldProvider::checkpoint_memory_mismatch(3_000, 4_097, false),
-            crate::domain_computation::WorthQueryProviderCheckpointReleaseDisposition::Released,
-            "workflow-checkpoint-memory-mismatch",
-        ),
-        (
-            YieldProvider::checkpoint_memory_mismatch(3_000, 4_097, true),
-            crate::domain_computation::WorthQueryProviderCheckpointReleaseDisposition::Panicked,
-            "workflow-checkpoint-memory-mismatch-drop-panic",
-        ),
-    ] {
-        let paused = paused_workflow_checkpoint_target(provider, label);
-        let recovery = match paused.yield_run() {
-            crate::domain_computation::WorthQueryWorkflowYieldOutcome::RecoveryRequired(
-                recovery,
-            ) => recovery,
-            _ => panic!("checkpoint memory mismatch minted yielded authority"),
-        };
-        assert_eq!(
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
+
+        for (provider, expected_release, label) in [
+            (
+                YieldProvider::checkpoint_memory_mismatch(3_000, 4_097, false),
+                crate::domain_computation::WorthQueryProviderCheckpointReleaseDisposition::Released,
+                "workflow-checkpoint-memory-mismatch",
+            ),
+            (
+                YieldProvider::checkpoint_memory_mismatch(3_000, 4_097, true),
+                crate::domain_computation::WorthQueryProviderCheckpointReleaseDisposition::Panicked,
+                "workflow-checkpoint-memory-mismatch-drop-panic",
+            ),
+        ] {
+            let paused = paused_workflow_checkpoint_target(execution, provider, label);
+            let recovery = match paused.yield_run() {
+                crate::domain_computation::WorthQueryWorkflowYieldOutcome::RecoveryRequired(
+                    recovery,
+                ) => recovery,
+                _ => panic!("checkpoint memory mismatch minted yielded authority"),
+            };
+            assert_eq!(
             recovery.kind(),
             crate::domain_computation::WorthQueryYieldRecoveryKind::ProviderCheckpointSuspension(
                 crate::domain_computation::WorthQueryProviderCheckpointSuspensionFailureKind::
                     CheckpointMemoryMismatch,
             )
         );
-        let checkpoint_release = recovery
-            .resource_evidence()
-            .provider_checkpoint_failure()
-            .expect("memory mismatch carries suspension failure evidence")
-            .checkpoint_release()
-            .expect("memory mismatch carries the rejected checkpoint");
-        assert_eq!(checkpoint_release.checkpoint().retained_bytes(), 4_097);
-        assert_eq!(checkpoint_release.disposition(), expected_release);
-        let release = match recovery.release_terminalized() {
+            let checkpoint_release = recovery
+                .resource_evidence()
+                .provider_checkpoint_failure()
+                .expect("memory mismatch carries suspension failure evidence")
+                .checkpoint_release()
+                .expect("memory mismatch carries the rejected checkpoint");
+            assert_eq!(checkpoint_release.checkpoint().retained_bytes(), 4_097);
+            assert_eq!(checkpoint_release.disposition(), expected_release);
+            let release = match recovery.release_terminalized() {
             Ok(
                 crate::domain_computation::WorthQueryWorkflowYieldRecoveryReleaseOutcome::Complete(
                     release,
@@ -54,20 +58,23 @@ fn checkpoint_memory_mismatch_preserves_exact_release_evidence() {
             ) => panic!("artifact-free checkpoint mismatch gained artifact recovery"),
             Err(_) => panic!("checkpoint mismatch recovery lost terminalized release authority"),
         };
-        assert_eq!(
-            release
-                .inspection()
-                .checkpoint()
-                .expect("release preserves checkpoint mismatch evidence")
-                .release_disposition(),
-            expected_release
-        );
-        assert!(release.inspection().resources_released());
-        assert_eq!(release.inspection().released_reservation_count(), 3);
-    }
+            assert_eq!(
+                release
+                    .inspection()
+                    .checkpoint()
+                    .expect("release preserves checkpoint mismatch evidence")
+                    .release_disposition(),
+                expected_release
+            );
+            assert!(release.inspection().resources_released());
+            assert_eq!(release.inspection().released_reservation_count(), 3);
+        }
+    });
 }
 
 fn paused_workflow_checkpoint_target(
+    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+
     provider: YieldProvider,
     label: &str,
 ) -> crate::domain_computation::WorthQueryPausedWorkflowGraphExecution {
@@ -105,12 +112,13 @@ fn paused_workflow_checkpoint_target(
         super::workflow_provider_steps::admitted_workflow(&runtime, &operation, resources);
     let active = running
         .begin_stage_graph_execution(
+            execution,
             "stage",
             &graph,
             WorthQueryManagedGraphCallRequest::new(WorthQueryGraphProviderCallKind::Observe, label),
         )
         .expect("checkpoint ceiling provider should begin");
-    match active.advance() {
+    match active.advance(execution) {
         WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused,
         _ => panic!("checkpoint ceiling provider did not reach its safe point"),
     }

@@ -3,6 +3,19 @@ use super::*;
 #[test]
 fn cancellation_prepared_drop_and_stale_head_do_not_move_components() {
     let mut court = CompositeSupplyChainCourt::compile();
+    let policy = match court.world.execution_placement() {
+        worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy)
+        | worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Leased { policy, .. } => {
+            policy
+        }
+    };
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::from_policy(&policy),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let root = court.bootstrap();
     let signal = court
         .signal
@@ -35,7 +48,7 @@ fn cancellation_prepared_drop_and_stale_head_do_not_move_components() {
     let RuntimeWorldPublicationOutcome::NoEffect(denied) = court
         .world
         .publication_port()
-        .execute_without_signal(prepared, &cancel.token())
+        .execute_without_signal(execution, prepared, &cancel.token())
     else {
         panic!("pre-effect cancellation")
     };
@@ -67,6 +80,7 @@ fn cancellation_prepared_drop_and_stale_head_do_not_move_components() {
         .0;
     let RuntimeWorldPublicationOutcome::NoEffect(denied) =
         court.world.publication_port().execute_without_signal(
+            execution,
             stale_prepared,
             &RuntimeWorldCancellationSource::new().token(),
         )
@@ -97,6 +111,19 @@ fn cancellation_prepared_drop_and_stale_head_do_not_move_components() {
 #[test]
 fn foreign_candidate_denial_has_a_healthy_candidate_twin() {
     let court = CompositeSupplyChainCourt::compile();
+    let policy = match court.world.execution_placement() {
+        worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy)
+        | worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Leased { policy, .. } => {
+            policy
+        }
+    };
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::from_policy(&policy),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let other = CompositeSupplyChainCourt::compile();
     let root = court.bootstrap();
     let foreign = other.bootstrap();
@@ -120,10 +147,12 @@ fn foreign_candidate_denial_has_a_healthy_candidate_twin() {
             None,
         )
         .unwrap();
-    let RuntimeWorldPublicationOutcome::NoEffect(denied) = court
-        .world
-        .publication_port()
-        .execute_without_signal(prepared, &RuntimeWorldCancellationSource::new().token())
+    let RuntimeWorldPublicationOutcome::NoEffect(denied) =
+        court.world.publication_port().execute_without_signal(
+            execution,
+            prepared,
+            &RuntimeWorldCancellationSource::new().token(),
+        )
     else {
         panic!("foreign candidate must not move either owner")
     };
@@ -146,6 +175,19 @@ fn foreign_candidate_denial_has_a_healthy_candidate_twin() {
 #[test]
 fn signal_denial_before_movement_has_no_partial_and_healthy_twin() {
     let mut court = CompositeSupplyChainCourt::compile();
+    let policy = match court.world.execution_placement() {
+        worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy)
+        | worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Leased { policy, .. } => {
+            policy
+        }
+    };
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::from_policy(&policy),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let root = court.bootstrap();
     let port = court.world.publication_port();
     let token = RuntimeWorldCancellationSource::new().token();
@@ -166,14 +208,18 @@ fn signal_denial_before_movement_has_no_partial_and_healthy_twin() {
             None,
         )
         .unwrap();
-    let RuntimeWorldPublicationOutcome::NoEffect(denied) =
-        port.execute_with_signal(prepared, &mut court.context(&root), &token, |_| {
+    let RuntimeWorldPublicationOutcome::NoEffect(denied) = port.execute_with_signal(
+        execution,
+        prepared,
+        &mut court.context(&root),
+        &token,
+        |_| {
             Err(SignalError::InvalidInput {
                 message: "routing input rejected".into(),
                 context: None,
             })
-        })
-    else {
+        },
+    ) else {
         panic!("Signal pre-movement denial")
     };
     assert_eq!(denied.cause(), NoEffectCause::PreEffectFailure);
@@ -201,9 +247,13 @@ fn signal_denial_before_movement_has_no_partial_and_healthy_twin() {
             None,
         )
         .unwrap();
-    let RuntimeWorldPublicationOutcome::Performed(done) =
-        port.execute_with_signal(prepared, &mut court.context(&root), &token, |_| Ok(()))
-    else {
+    let RuntimeWorldPublicationOutcome::Performed(done) = port.execute_with_signal(
+        execution,
+        prepared,
+        &mut court.context(&root),
+        &token,
+        |_| Ok(()),
+    ) else {
         panic!("healthy Signal twin")
     };
     assert_eq!(
@@ -220,6 +270,19 @@ fn signal_denial_before_movement_has_no_partial_and_healthy_twin() {
 #[test]
 fn public_owner_loss_denies_reserved_execution_without_component_movement() {
     let mut court = CompositeSupplyChainCourt::compile();
+    let policy = match court.world.execution_placement() {
+        worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy)
+        | worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Leased { policy, .. } => {
+            policy
+        }
+    };
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::from_policy(&policy),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let root = court.bootstrap();
     let prepared = court.prepare_cargo(&root, "5");
     let port = court.world.publication_port();
@@ -248,9 +311,11 @@ fn public_owner_loss_denies_reserved_execution_without_component_movement() {
         ..
     } = court;
     drop(world);
-    let RuntimeWorldPublicationOutcome::NoEffect(denied) =
-        port.execute_without_signal(prepared, &RuntimeWorldCancellationSource::new().token())
-    else {
+    let RuntimeWorldPublicationOutcome::NoEffect(denied) = port.execute_without_signal(
+        execution,
+        prepared,
+        &RuntimeWorldCancellationSource::new().token(),
+    ) else {
         panic!("World owner loss must deny reserved execution")
     };
     assert_eq!(denied.cause(), NoEffectCause::OwnerUnavailable);

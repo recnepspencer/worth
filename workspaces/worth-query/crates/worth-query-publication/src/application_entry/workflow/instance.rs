@@ -7,6 +7,7 @@ use worth_query_declaration::facade::{
     },
     application_program::ApplicationWorkflowSpec,
 };
+use worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase as AdvancementPhase;
 use worth_query_execution::facade::application_installation::WorthQueryWorkflowVocabulary;
 use worth_query_execution::publication_boundary::workflow_instance::{
     PreparedWorkflowInstanceStart, PublishedWorkflowDefinitionRef, PublishedWorkflowInstanceRef,
@@ -35,66 +36,6 @@ type MutationInput<Schema, Intent> =
     <IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::Input;
 
 /// The kind of a `WorthQueryWorkflowInstancePreparationDenial`.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryWorkflowInstancePreparationDenialKind {
-    RuntimeMismatch,
-    RequestAdmission,
-    InstancePreparation,
-}
-
-/// Why an instance lifecycle request (a start, migration, fork continuation
-/// or cancellation) did not prepare.
-#[derive(Debug)]
-pub enum WorthQueryWorkflowInstancePreparationDenial {
-    RuntimeMismatch,
-    RequestAdmission(WorthQueryApplicationRequestMutationDenial),
-    InstancePreparation(WorkflowInstancePreparationDenial),
-}
-
-impl WorthQueryWorkflowInstancePreparationDenial {
-    pub const fn kind(&self) -> WorthQueryWorkflowInstancePreparationDenialKind {
-        match self {
-            Self::RuntimeMismatch => {
-                WorthQueryWorkflowInstancePreparationDenialKind::RuntimeMismatch
-            }
-            Self::RequestAdmission(_) => {
-                WorthQueryWorkflowInstancePreparationDenialKind::RequestAdmission
-            }
-            Self::InstancePreparation(_) => {
-                WorthQueryWorkflowInstancePreparationDenialKind::InstancePreparation
-            }
-        }
-    }
-}
-
-impl std::fmt::Display for WorthQueryWorkflowInstancePreparationDenial {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::RuntimeMismatch => {
-                formatter.write_str("workflow runtime belongs to another application")
-            }
-            Self::RequestAdmission(denial) => write!(
-                formatter,
-                "workflow instance request was not admitted: {denial}"
-            ),
-            Self::InstancePreparation(denial) => write!(
-                formatter,
-                "workflow instance request did not prepare: {denial}"
-            ),
-        }
-    }
-}
-
-impl std::error::Error for WorthQueryWorkflowInstancePreparationDenial {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            Self::RuntimeMismatch => None,
-            Self::RequestAdmission(denial) => Some(denial),
-            Self::InstancePreparation(denial) => Some(denial),
-        }
-    }
-}
-
 impl<'application, 'principal, 'scope, 'key, Schema, Intent, SourcePreparation>
     WorthQueryApplicationMutationRequestWithIdempotency<
         'application,
@@ -138,6 +79,33 @@ where
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
+        let request_scope = self.request_scope().clone();
+        let runtime = self.application_runtime();
+        runtime.with_application_advancement(&request_scope, |phase| {
+                self.prepare_workflow_instance_start_in_advancement(&phase ,workflow, definition)
+            }).map_err(|cause| WorthQueryWorkflowInstancePreparationDenial::RequestAdmission(
+            WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause),
+        ))?
+    }
+
+    pub(in crate::application_entry) fn prepare_workflow_instance_start_in_advancement<'workflow, Spec>(
+        self, _phase: &AdvancementPhase<'_>,
+        workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec>>,
+        definition: PublishedWorkflowDefinitionRef,
+    ) -> Result<
+        WorthQueryWorkflowInstanceStartRequest<
+            'application,
+            Schema,
+            MutationOperation<Schema, Intent>,
+            MutationInput<Schema, Intent>,
+            MutationScope<Schema, IntentBinding<Schema, Intent>>,
+        >,
+        WorthQueryWorkflowInstancePreparationDenial,
+    >
+    where
+        Spec: ApplicationWorkflowSpec<Schema = Schema>,
+    {
+
         self.prepare_start(workflow, |selected, installed, key, admission| {
             WorthQueryWorkflowInstanceAdapter::prepare::<
                 Schema,
@@ -148,6 +116,8 @@ where
                 Spec,
             >(selected, installed, definition, key, admission)
         })
+
+
     }
 
     /// Ends `instance` and continues its work as a new instance on the
@@ -178,6 +148,10 @@ where
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
+        let request_scope = self.request_scope().clone();
+        let runtime = self.application_runtime();
+        runtime.with_application_advancement(&request_scope, |_phase| {
+
         self.prepare_start(workflow, |selected, installed, key, admission| {
             WorthQueryWorkflowInstanceAdapter::prepare_migration::<
                 Schema,
@@ -188,6 +162,10 @@ where
                 Spec,
             >(selected, installed, instance, target, resume_at, key, admission)
         })
+
+        }).map_err(|cause| WorthQueryWorkflowInstancePreparationDenial::RequestAdmission(
+            WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause),
+        ))?
     }
 
     /// Continues a fork's copy of `instance`, started on another branch, as a
@@ -219,6 +197,10 @@ where
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
+        let request_scope = self.request_scope().clone();
+        let runtime = self.application_runtime();
+        runtime.with_application_advancement(&request_scope, |_phase| {
+
         self.prepare_start(workflow, |selected, installed, key, admission| {
             WorthQueryWorkflowInstanceAdapter::prepare_fork_continuation::<
                 Schema,
@@ -229,6 +211,8 @@ where
                 Spec,
             >(selected, installed, instance, target, resume_at, key, admission)
         })
+
+        }).map_err(|cause| WorthQueryWorkflowInstancePreparationDenial::RequestAdmission(WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause)))?
     }
 
     #[allow(clippy::type_complexity)]
@@ -360,10 +344,34 @@ where
     Input: Clone + Send + Sync + 'static,
 {
     pub fn execute(self) -> WorkflowInstanceStartOutcome {
+        self.application
+            .with_application_advancement(&self.prepared.request_scope().clone(), |phase| {
+                self.execute_in_advancement(&phase)
+            })
+            .unwrap_or_else(|cause| {
+                WorkflowInstanceStartOutcome::Application(
+                    cause
+                        .into_commit_outcome()
+                        .landed()
+                        .expect_err("request admission cannot commit"),
+                )
+            })
+    }
+
+    pub(in crate::application_entry) fn execute_in_advancement(
+        self,
+        phase: &AdvancementPhase<'_>,
+    ) -> WorkflowInstanceStartOutcome {
         WorthQueryWorkflowInstanceAdapter::compare_and_commit(
+            phase,
             self.application,
             self.prepared,
             self.idempotency,
         )
     }
 }
+
+mod preparation_denial;
+pub use preparation_denial::{
+    WorthQueryWorkflowInstancePreparationDenial, WorthQueryWorkflowInstancePreparationDenialKind,
+};

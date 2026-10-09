@@ -32,12 +32,14 @@ pub(super) struct WorthQueryManagedProviderStartFailure {
 }
 
 pub(super) fn start_managed_provider(
+    execution: worth_execution::ExecutionRequest<'_, '_>,
+
     anchor: &WorthQueryGraphProviderAnchor,
     call: &WorthQueryGraphProviderCall,
     retained_bytes_ceiling: u64,
 ) -> Result<WorthQueryManagedProviderStarted, WorthQueryManagedProviderStartFailure> {
     let memory = WorthQueryGraphProviderMemoryArena::new(retained_bytes_ceiling);
-    let mut start = WorthQueryGraphProviderExecutionStart::new(memory.clone());
+    let mut start = WorthQueryGraphProviderExecutionStart::new(execution, memory.clone());
     let invocation = anchor.begin(call, &mut start);
     let unreturned_execution_release = start.release_unreturned_execution();
     let contract = start.finish();

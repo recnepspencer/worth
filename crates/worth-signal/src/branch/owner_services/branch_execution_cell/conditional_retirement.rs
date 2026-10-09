@@ -72,8 +72,14 @@ where
         staged_graph
             .unregister_node(contract.node())
             .map_err(Denial::SignalMutation)?;
+        let maximum_visits = staged_graph
+            .installed_runtime_policy()
+            .conditional_evaluation_budget()
+            .maximum_attempt_visits;
+        let mut preparation =
+            crate::data::retained_storage::RetainedStoragePreparation::new(maximum_visits);
         let successor = state
-            .capture_conditional_basis_from_graph(&mut staged_graph, ledger)
+            .capture_conditional_basis_from_graph(&mut staged_graph, ledger, &mut preparation)
             .map_err(map_capture_denial)?;
         state
             .committed_patch_graph_mut()

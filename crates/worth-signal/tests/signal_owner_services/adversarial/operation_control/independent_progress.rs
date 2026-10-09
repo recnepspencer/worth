@@ -26,6 +26,9 @@ fn advance_result(
 ) -> Result<worth_signal::facade::branch::AdmittedSignalBranchBasis, String> {
     mutation
         .advance_exact(
+            worth_execution::ExecutionRequest::serial(
+                &crate::execution_custody::operational_serial_request(),
+            ),
             basis,
             &mut (),
             &SignalOwnerCancellationSource::new().token(),

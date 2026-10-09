@@ -85,6 +85,16 @@ fn prepare_with_budget(
 
 #[test]
 fn installation_extension_applies_only_inside_exact_owner_transaction_and_rolls_back() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (mut runtime, claimant, contract, source_owner, _) = runtime_with_contract();
     let node = contract.node();
     let basis = runtime
@@ -101,6 +111,7 @@ fn installation_extension_applies_only_inside_exact_owner_transaction_and_rolls_
     let (_publication, request) = prepared.into_parts();
     let mut scope_denial = None;
     let failed = services.mutation_port().advance_exact(
+        request_execution,
         &basis,
         &mut (),
         &cancellation.token(),
@@ -131,6 +142,7 @@ fn installation_extension_applies_only_inside_exact_owner_transaction_and_rolls_
     let mut advanced = services
         .mutation_port()
         .advance_conditional_definition_exact_with_completion(
+            request_execution,
             publication,
             &basis,
             &mut (),
@@ -232,6 +244,16 @@ fn installation_extension_one_work_short_moves_no_basis_or_definition() {
 
 #[test]
 fn completion_rejects_a_genuine_same_owner_sibling_advance_binding() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (mut runtime, claimant, contract, source_owner, _) = runtime_with_contract();
     let root = runtime
         .observe_signal_branch_basis(runtime.current_branch())
@@ -277,6 +299,7 @@ fn completion_rejects_a_genuine_same_owner_sibling_advance_binding() {
     let mut root_advance = services
         .mutation_port()
         .advance_conditional_definition_exact_with_completion(
+            request_execution,
             root_publication,
             &root,
             &mut (),
@@ -296,6 +319,7 @@ fn completion_rejects_a_genuine_same_owner_sibling_advance_binding() {
     let mut sibling_advance = services
         .mutation_port()
         .advance_conditional_definition_exact_with_completion(
+            request_execution,
             sibling_publication,
             sibling.created_basis(),
             &mut (),

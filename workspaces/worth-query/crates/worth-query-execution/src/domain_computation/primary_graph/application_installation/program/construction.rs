@@ -31,6 +31,7 @@ pub fn in_memory_program<Schema, Program>(
     configuration: <Program::Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
     limits: WorthQueryInMemoryApplicationLimits,
     initial_state: impl FnOnce(
+        &crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase<'_>,
         &mut WorthQueryPrimaryGraphBootstrap<Schema>,
         &WorthQueryInstalledApplicationSchema<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
@@ -62,6 +63,7 @@ pub fn in_memory_program_with_authorization_time_source<Schema, Program>(
     configuration: <Program::Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
     limits: WorthQueryInMemoryApplicationLimits,
     initial_state: impl FnOnce(
+        &crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase<'_>,
         &mut WorthQueryPrimaryGraphBootstrap<Schema>,
         &WorthQueryInstalledApplicationSchema<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
@@ -101,6 +103,7 @@ pub fn in_memory_rostered_program<Schema, Program>(
     configuration: <Program::Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
     limits: WorthQueryInMemoryApplicationLimits,
     initial_state: impl FnOnce(
+        &crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase<'_>,
         &mut WorthQueryPrimaryGraphBootstrap<Schema>,
         &WorthQueryInstalledApplicationSchema<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
@@ -133,6 +136,7 @@ pub fn in_memory_rostered_program_with_authorization_time_source<Schema, Program
     configuration: <Program::Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
     limits: WorthQueryInMemoryApplicationLimits,
     initial_state: impl FnOnce(
+        &crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase<'_>,
         &mut WorthQueryPrimaryGraphBootstrap<Schema>,
         &WorthQueryInstalledApplicationSchema<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
@@ -164,6 +168,7 @@ pub(super) fn in_memory_program_with_optional_authorization_time_source<Schema, 
     configuration: <Program::Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
     limits: WorthQueryInMemoryApplicationLimits,
     initial_state: impl FnOnce(
+        &crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase<'_>,
         &mut WorthQueryPrimaryGraphBootstrap<Schema>,
         &WorthQueryInstalledApplicationSchema<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,

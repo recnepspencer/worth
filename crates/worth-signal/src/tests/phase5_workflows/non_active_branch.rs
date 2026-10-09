@@ -6,6 +6,16 @@ use crate::tests::support::{mask_b, version_ab, GraphDependencyBatchExt, ASPECT_
 
 #[test]
 fn non_active_branch_inspection_after_heavy_foreground_churn_uses_stored_branch_state() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -24,7 +34,7 @@ fn non_active_branch_inspection_after_heavy_foreground_churn_uses_stored_branch_
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(source, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(1, 10))
@@ -46,7 +56,7 @@ fn non_active_branch_inspection_after_heavy_foreground_churn_uses_stored_branch_
     let feature = runtime.create_branch("feature-inspect").unwrap();
     runtime.switch_branch(feature.clone()).unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.mark_dirty(source, ASPECT_B)?;
             tx.read(source, &|view| {
                 Ok(view.finish(
@@ -71,7 +81,7 @@ fn non_active_branch_inspection_after_heavy_foreground_churn_uses_stored_branch_
     runtime.switch_branch(analysis.clone()).unwrap();
     for step in 0..25_u64 {
         if step % 4 == 0 {
-            let err = runtime.transaction(&mut runtime_ctx, |tx| {
+            let err = runtime.transaction(request_execution, &mut runtime_ctx, |tx| {
                 tx.mark_dirty(source, ASPECT_B)?;
                 tx.read(source, &|view| {
                     Ok(view.finish(
@@ -84,7 +94,7 @@ fn non_active_branch_inspection_after_heavy_foreground_churn_uses_stored_branch_
             assert!(err.is_err());
         } else {
             runtime
-                .transaction(&mut runtime_ctx, |tx| {
+                .transaction(request_execution, &mut runtime_ctx, |tx| {
                     tx.mark_dirty(source, ASPECT_A)?;
                     tx.read(source, &|view| {
                         Ok(view.finish(

@@ -13,6 +13,16 @@ fn contract(inputs: impl IntoIterator<Item = DeclaredSignalInput>) -> NodeContra
 #[test]
 fn long_session_replay_and_lineage_stay_equivalent_for_worker_limits() {
     fn run(workers: usize) -> (ReplaySlice, Vec<LineageRecord>, NodeExplanation) {
+        // This standalone caller declares the operational serial memory policy.
+        let serial_request = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(
+                crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+            ),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
         let mut runtime = SignalRuntime::builder(SignalGraph::new())
             .with_kernel_defaults()
             .build();
@@ -114,7 +124,7 @@ fn long_session_replay_and_lineage_stay_equivalent_for_worker_limits() {
         runtime.switch_branch(feature.clone()).unwrap();
         for step in 0..20_u64 {
             runtime
-                .transaction(&mut (), |tx| {
+                .transaction(request_execution, &mut (), |tx| {
                     tx.mark_dirty(source, ASPECT_A)?;
                     if step % 4 == 0 {
                         tx.mark_dirty(source, ASPECT_B)?;

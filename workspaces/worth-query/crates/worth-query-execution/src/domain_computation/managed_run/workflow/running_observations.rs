@@ -197,6 +197,8 @@ impl WorthQueryRunningWorkflowRun {
 
     pub fn begin_stage_graph_execution(
         self,
+        execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+
         stage_identity: &str,
         graph_authority: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
         request: WorthQueryManagedGraphCallRequest,
@@ -205,6 +207,7 @@ impl WorthQueryRunningWorkflowRun {
         crate::domain_computation::managed_run::WorthQueryWorkflowGraphExecutionStartFailure,
     > {
         crate::domain_computation::managed_run::workflow_graph_execution_start::begin(
+            execution,
             self,
             stage_identity,
             graph_authority,

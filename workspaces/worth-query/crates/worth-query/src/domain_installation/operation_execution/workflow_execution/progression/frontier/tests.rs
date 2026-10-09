@@ -110,7 +110,11 @@ fn reversed_and_shuffled_computes_apply_the_reference_effect_sequence() {
             probe.iter().map(|(_, work)| *work).collect::<Vec<_>>(),
             [17; 3]
         );
-        computed.apply(&mut run, &mut workspace, None).unwrap();
+        workspace
+            .advancement_owner()
+            .with_advancement(|phase| computed.apply(&phase, &mut run, &mut workspace, None))
+            .expect("the declared fixture policy admits this application")
+            .unwrap();
         assert_eq!(effects(&run), expected);
         assert_eq!(
             run.receipts()
@@ -172,12 +176,16 @@ fn member_by_member_frontier(
     PhaseFamily,
     foundation::MutationPreparationLaneWitness,
 > {
+    let owner = workspace.advancement_owner();
+    owner.with_advancement(|phase| {
+        let execution = &phase;
+
     let members = run.canonical_parallel_stages(members).unwrap();
     run.validate_parallel_runtime_authority(workspace).unwrap();
     let frontier = run.prepare_parallel_frontier(&members).unwrap();
     run.admit_parallel_frontier(frontier).unwrap();
     for (stage, input) in members {
-        match run.advance_once(&stage, input, workspace) {
+        match run.advance_once(execution, &stage, input, workspace) {
             Ok(super::super::super::workflow_progression_state::WorthQueryWorkflowAdvanceStep::Advanced) => (),
             Ok(_) => panic!("reference fixture never defers"),
             Err(denial) => return run.outcome_from_denial(denial),
@@ -185,6 +193,8 @@ fn member_by_member_frontier(
     }
     run.active_parallel_admission = None;
     worth_proof::TransitionOutcome::Success(run)
+
+    }).expect("the declared frontier fixture policy admits its request")
 }
 
 #[test]
@@ -253,8 +263,10 @@ fn computed_results_cannot_cross_stage_or_frontier_identities() {
                     .collect()
             })
         };
-        let denial = computed
-            .apply(&mut run, &mut workspace, None)
+        let denial = workspace
+            .advancement_owner()
+            .with_advancement(|phase| computed.apply(&phase, &mut run, &mut workspace, None))
+            .expect("the declared fixture policy admits this application")
             .err()
             .unwrap();
         assert!(matches!(

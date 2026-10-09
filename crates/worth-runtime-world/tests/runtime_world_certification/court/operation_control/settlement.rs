@@ -2,6 +2,12 @@ use super::*;
 #[test]
 fn pending_relational_settlement_never_calls_signal_or_republishes_product() {
     let mut court = CompositeSupplyChainCourt::compile();
+    let policy = match court.world.execution_placement() {
+        worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy)
+        | worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Leased { policy, .. } => {
+            policy
+        }
+    };
     let root = court.bootstrap();
     let candidate = court
         .records
@@ -27,11 +33,13 @@ fn pending_relational_settlement_never_calls_signal_or_republishes_product() {
         .owner_service_cost_snapshot()
         .unwrap()
         .canonical_movements();
-    let RuntimeWorldPublicationOutcome::ProductUnpublished(effects) =
-        port.execute_with_signal(prepared, &mut court.context(&root), &token, |_| {
-            panic!("unsettled Relational cannot invoke Signal")
-        })
-    else {
+    let RuntimeWorldPublicationOutcome::ProductUnpublished(effects) = port.execute_with_signal(
+        worth_execution::ExecutionRequest::serial(&super::serial_request(policy)),
+        prepared,
+        &mut court.context(&root),
+        &token,
+        |_| panic!("unsettled Relational cannot invoke Signal"),
+    ) else {
         panic!("pending settlement remains partial")
     };
     assert_eq!(effects.cause(), ProductUnpublishedCause::SettlementPending);

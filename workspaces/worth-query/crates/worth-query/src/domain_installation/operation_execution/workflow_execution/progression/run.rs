@@ -99,11 +99,27 @@ where
         self,
         workspace: &mut crate::runtime::WorthQueryWorkspace,
     ) -> WorthQueryWorkflowStartOutcome<D, O, F, L> {
-        self.start_workflow_attempt(workspace, 1)
+        let owner = workspace.advancement_owner();
+        owner
+            .with_advancement(|phase| {
+                let execution = phase
+                    .execution_request_for(&owner)
+                    .expect("the opener lent this owner its phase");
+
+                self.start_workflow_attempt(execution, workspace, 1)
+            })
+            .unwrap_or_else(|cause| {
+                TransitionOutcome::Denied(WorthQueryWorkflowStartDenial::new(
+                    WorthQueryWorkflowStartDenialKind::ExecutionRequest(cause),
+                    Default::default(),
+                ))
+            })
     }
 
     pub(super) fn start_workflow_attempt(
         self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+
         workspace: &mut crate::runtime::WorthQueryWorkspace,
         attempt: u64,
     ) -> WorthQueryWorkflowStartOutcome<D, O, F, L> {
@@ -124,6 +140,7 @@ where
             match super::workflow_conditional_start_evaluation::evaluate(
                 &self.bound,
                 super::workflow_conditional_start_evaluation::ConditionalWorkflowStartEvaluationPass {
+                    execution,
                     workspace,
                     snapshot: &snapshot,
                     run_identity: &identity,
@@ -287,7 +304,21 @@ where
         self,
         workspace: &mut crate::runtime::WorthQueryWorkspace,
     ) -> WorthQueryWorkflowStartOutcome<D, O, F, L> {
-        self.admitted
-            .start_workflow_attempt(workspace, self.attempt + 1)
+        let owner = workspace.advancement_owner();
+        owner
+            .with_advancement(|phase| {
+                let execution = phase
+                    .execution_request_for(&owner)
+                    .expect("the opener lent this owner its phase");
+
+                self.admitted
+                    .start_workflow_attempt(execution, workspace, self.attempt + 1)
+            })
+            .unwrap_or_else(|cause| {
+                TransitionOutcome::Denied(WorthQueryWorkflowStartDenial::new(
+                    WorthQueryWorkflowStartDenialKind::ExecutionRequest(cause),
+                    Default::default(),
+                ))
+            })
     }
 }

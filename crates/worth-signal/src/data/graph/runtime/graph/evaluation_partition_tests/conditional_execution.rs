@@ -72,6 +72,16 @@ fn output(value: u64) -> NodeEvaluationResult {
 
 #[test]
 fn named_execution_preserves_warm_conditional_state_and_closes_observation() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (mut graph, contract) = installed();
     let mut b = SignalEvaluationPartition::retain_basis_storage(&mut graph);
     let mut a = SignalEvaluationPartition::retain_basis_storage(&mut graph);
@@ -82,15 +92,26 @@ fn named_execution_preserves_warm_conditional_state_and_closes_observation() {
         (&mut b, 4, SignalConditionalDecisionClass::ComputedChanged),
         (&mut a, 6, SignalConditionalDecisionClass::ComputedChanged),
     ] {
-        let completion = partition
-            .execute_conditional(
-                &mut graph,
-                SignalConditionalExecutionRequest::new(&contract, "storage", "execution", 1),
-                &mut NoPredicate,
-                &mut DefaultComparatorPolicyResolver::default(),
-                || {
-                    computes += 1;
-                    Ok(output(value))
+        let completion =
+            crate::data::graph::storage::evaluation_partition::conditional_test_scope::run(
+                request_execution,
+                |work| {
+                    partition.execute_conditional(
+                        work,
+                        &mut graph,
+                        SignalConditionalExecutionRequest::new(
+                            &contract,
+                            "storage",
+                            "execution",
+                            1,
+                        ),
+                        &mut NoPredicate,
+                        &mut DefaultComparatorPolicyResolver::default(),
+                        || {
+                            computes += 1;
+                            Ok(output(value))
+                        },
+                    )
                 },
             )
             .unwrap();
@@ -98,15 +119,21 @@ fn named_execution_preserves_warm_conditional_state_and_closes_observation() {
         assert_eq!(decision.unwrap().class(), expected);
         assert!(observation.unwrap().is_some());
     }
-    let (decision, observation, _rejected) = b
-        .execute_conditional(
-            &mut graph,
-            SignalConditionalExecutionRequest::new(&contract, "storage", "execution", 2),
-            &mut NoPredicate,
-            &mut DefaultComparatorPolicyResolver::default(),
-            || {
-                computes += 1;
-                Ok(output(99))
+    let (decision, observation, _rejected) =
+        crate::data::graph::storage::evaluation_partition::conditional_test_scope::run(
+            request_execution,
+            |work| {
+                b.execute_conditional(
+                    work,
+                    &mut graph,
+                    SignalConditionalExecutionRequest::new(&contract, "storage", "execution", 2),
+                    &mut NoPredicate,
+                    &mut DefaultComparatorPolicyResolver::default(),
+                    || {
+                        computes += 1;
+                        Ok(output(99))
+                    },
+                )
             },
         )
         .unwrap()
@@ -139,15 +166,31 @@ fn named_execution_preserves_warm_conditional_state_and_closes_observation() {
 
 #[test]
 fn compute_failure_closes_observation_and_allows_a_fresh_operation() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (mut graph, contract) = installed();
     let mut partition = SignalEvaluationPartition::retain_basis_storage(&mut graph);
-    let (decision, observation, _rejected) = partition
-        .execute_conditional(
-            &mut graph,
-            SignalConditionalExecutionRequest::new(&contract, "storage", "failed", 1),
-            &mut NoPredicate,
-            &mut DefaultComparatorPolicyResolver::default(),
-            || Err(SignalError::invalid_input("provider failure")),
+    let (decision, observation, _rejected) =
+        crate::data::graph::storage::evaluation_partition::conditional_test_scope::run(
+            request_execution,
+            |work| {
+                partition.execute_conditional(
+                    work,
+                    &mut graph,
+                    SignalConditionalExecutionRequest::new(&contract, "storage", "failed", 1),
+                    &mut NoPredicate,
+                    &mut DefaultComparatorPolicyResolver::default(),
+                    || Err(SignalError::invalid_input("provider failure")),
+                )
+            },
         )
         .unwrap()
         .into_parts();
@@ -157,13 +200,19 @@ fn compute_failure_closes_observation_and_allows_a_fresh_operation() {
     };
     assert_eq!(failure.counters().compute_contacts, 1);
     assert!(observation.unwrap().is_none());
-    let (decision, observation, _rejected) = partition
-        .execute_conditional(
-            &mut graph,
-            SignalConditionalExecutionRequest::new(&contract, "storage", "retry", 2),
-            &mut NoPredicate,
-            &mut DefaultComparatorPolicyResolver::default(),
-            || Ok(output(8)),
+    let (decision, observation, _rejected) =
+        crate::data::graph::storage::evaluation_partition::conditional_test_scope::run(
+            request_execution,
+            |work| {
+                partition.execute_conditional(
+                    work,
+                    &mut graph,
+                    SignalConditionalExecutionRequest::new(&contract, "storage", "retry", 2),
+                    &mut NoPredicate,
+                    &mut DefaultComparatorPolicyResolver::default(),
+                    || Ok(output(8)),
+                )
+            },
         )
         .unwrap()
         .into_parts();
@@ -176,6 +225,16 @@ fn compute_failure_closes_observation_and_allows_a_fresh_operation() {
 
 #[test]
 fn retained_conditional_executes_old_definition_after_current_membership_grows() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (mut graph, contract) = installed();
     let original = graph.node_eval_config(contract.node()).unwrap().clone();
     let mut retained = SignalEvaluationPartition::retain_basis_storage(&mut graph);
@@ -198,13 +257,24 @@ fn retained_conditional_executes_old_definition_after_current_membership_grows()
     let current_ledger = graph.pending_branch_mutation_records();
     let current_pages = graph.arena.definitions.page_identities();
 
-    let (decision, observation, _rejected) = retained
-        .execute_conditional(
-            &mut graph,
-            SignalConditionalExecutionRequest::new(&contract, "retained", "old-definition", 1),
-            &mut NoPredicate,
-            &mut DefaultComparatorPolicyResolver::default(),
-            || Ok(output(4)),
+    let (decision, observation, _rejected) =
+        crate::data::graph::storage::evaluation_partition::conditional_test_scope::run(
+            request_execution,
+            |work| {
+                retained.execute_conditional(
+                    work,
+                    &mut graph,
+                    SignalConditionalExecutionRequest::new(
+                        &contract,
+                        "retained",
+                        "old-definition",
+                        1,
+                    ),
+                    &mut NoPredicate,
+                    &mut DefaultComparatorPolicyResolver::default(),
+                    || Ok(output(4)),
+                )
+            },
         )
         .unwrap()
         .into_parts();

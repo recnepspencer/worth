@@ -392,3 +392,6 @@ fn graph_material_rows(row_count: usize) -> WorthQueryGraphReadMaterial {
         .expect("managed graph row should construct")
     }))
 }
+
+#[cfg(feature = "test-query-execution-observer")]
+mod readmission_custody;

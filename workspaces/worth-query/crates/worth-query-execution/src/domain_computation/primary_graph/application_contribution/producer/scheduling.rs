@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
@@ -129,6 +130,8 @@ pub(super) fn install_output_producer_routes<'a>(
 }
 
 pub(in crate::domain_computation::primary_graph) fn schedule_output_producer(
+    phase: &WorthQueryAdvancementPhase<'_>,
+
     bridge: &BridgeSealedRuntimeAssembly,
     lowering: &Arc<BridgeInstalledConditionalLowering>,
     truth: &super::super::super::conditional_operation::WorthQueryConditionalTruthBasis,
@@ -142,6 +145,9 @@ pub(in crate::domain_computation::primary_graph) fn schedule_output_producer(
     worth_runtime_bridge::facade::BridgeConditionalDenial,
 > {
     schedule_output_producer_core(
+        phase
+            .request_for_owner(truth.owner_identity())
+            .expect("private conditional progression uses its admitted runtime"),
         bridge,
         lowering,
         truth.snapshot_projection(),
@@ -155,6 +161,8 @@ pub(in crate::domain_computation::primary_graph) fn schedule_output_producer(
 }
 
 pub(in crate::domain_computation::primary_graph) fn schedule_output_producer_on_selected(
+    phase: &WorthQueryAdvancementPhase<'_>,
+
     bridge: &BridgeSealedRuntimeAssembly,
     lowering: &Arc<BridgeInstalledConditionalLowering>,
     truth: &super::super::super::conditional_operation::WorthQuerySelectedSignalProjections,
@@ -168,6 +176,9 @@ pub(in crate::domain_computation::primary_graph) fn schedule_output_producer_on_
     worth_runtime_bridge::facade::BridgeConditionalDenial,
 > {
     schedule_output_producer_core(
+        phase
+            .request_for_owner(truth.owner_identity())
+            .expect("private conditional progression uses its admitted runtime"),
         bridge,
         lowering,
         truth.snapshot(),
@@ -183,6 +194,8 @@ pub(in crate::domain_computation::primary_graph) fn schedule_output_producer_on_
 // Only the two truth-owner wrappers can reach this bridge call. Its text is
 // the owner-issued reporting projection of their sealed typed identities.
 fn schedule_output_producer_core(
+    execution: worth_execution::ExecutionRequest<'_, '_>,
+
     bridge: &BridgeSealedRuntimeAssembly,
     lowering: &Arc<BridgeInstalledConditionalLowering>,
     snapshot_projection: &str,
@@ -199,6 +212,7 @@ fn schedule_output_producer_core(
     let signal_basis = bridge.admit_exact_conditional_signal_basis(lowering, signal_basis)?;
     let mut compute = ProducerSignalComputeContext { attempt };
     let evidence = bridge.execute(
+        execution,
         &signal_basis,
         BridgeConditionalExecutionRequest {
             lowering,

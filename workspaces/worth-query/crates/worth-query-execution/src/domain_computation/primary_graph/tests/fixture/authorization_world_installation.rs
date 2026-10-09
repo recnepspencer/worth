@@ -3,6 +3,9 @@
 #[path = "authorization_world_installation/publication.rs"]
 mod publication;
 use publication::publish_authorization_world;
+#[path = "authorization_world_installation/preparation.rs"]
+mod preparation;
+use preparation::prepare_authorization_world;
 
 use super::account_seed::{bind_account, AccountSeedSpec};
 use super::*;
@@ -77,28 +80,43 @@ pub(super) fn install_authorization_world_with_product_resources(
     spec: AuthorizationWorldSpec<'_>,
     product_resources: crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldResources,
 ) -> AuthorizationWorld {
-    let mut prepared = prepare_authorization_world(
+    crate::domain_computation::primary_graph::with_test_advancement(|phase| {
+        install_authorization_world_in_advancement(&phase, spec, product_resources)
+    })
+}
+
+/// Fixture installation borrows the test's active request when setup is a phase.
+pub(super) fn install_authorization_world_in_advancement(
+    phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    spec: AuthorizationWorldSpec<'_>,
+    product_resources: crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldResources,
+) -> AuthorizationWorld {
+    let mut prepared = prepare_authorization_world(phase,
         spec.resources,
         None,
         product_resources,
         crate::domain_computation::execution_runtime::WorthQueryCompletedEvidenceResourceProfile::default(),
     );
     populate_authorization_world(&mut prepared, &spec);
-    publish_authorization_world(prepared)
+    publish_authorization_world(phase, prepared)
 }
 
 pub(super) fn install_authorization_world_with_completed_evidence_resources(
     spec: AuthorizationWorldSpec<'_>,
     completed_evidence: crate::domain_computation::execution_runtime::WorthQueryCompletedEvidenceResourceProfile,
 ) -> AuthorizationWorld {
-    let mut prepared = prepare_authorization_world(
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+
+        let mut prepared = prepare_authorization_world(phase,
         spec.resources,
         None,
         crate::domain_computation::execution_runtime::product_world::test_product_world_resources(),
         completed_evidence,
     );
-    populate_authorization_world(&mut prepared, &spec);
-    publish_authorization_world(prepared)
+        populate_authorization_world(&mut prepared, &spec);
+        publish_authorization_world(phase, prepared)
+    })
 }
 
 fn populate_authorization_world(
@@ -117,51 +135,6 @@ fn populate_authorization_world(
     );
     bind_authorization_relations(&mut prepared.bootstrap, spec.owner_bindings, spec.blocked);
     bind_capability_population(&mut prepared.bootstrap, spec.capability_grants);
-}
-
-fn prepare_authorization_world(
-    resources: WorthQueryApplicationQueryResourceProfile,
-    relational: Option<worth_relational::facade::runtime::RelationalRuntime>,
-    product_resources: crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldResources,
-    completed_evidence: crate::domain_computation::execution_runtime::WorthQueryCompletedEvidenceResourceProfile,
-) -> PreparedAuthorizationWorld {
-    let declaration = IdentityExecutionSchema::declaration().unwrap();
-    let admitted = WorthQueryInstallationAdmissionProfile::new("support", "configuration")
-        .admit(portable_package(declaration.clone()))
-        .unwrap();
-    let installation = WorthQueryExecutionRuntimeInstaller::new()
-        .application_query_resources(resources)
-        .completed_evidence_resources(completed_evidence)
-        .install(WorthQueryInstallationGeneration::initial(), [admitted])
-        .unwrap();
-    let (runtime, authority) = installation.into_parts();
-    let schema = runtime
-        .installed_packages()
-        .bind_application_schema(declaration)
-        .unwrap();
-    let binding = schema
-        .principal_binding(IdentityBinding::reference())
-        .unwrap();
-    let bootstrap = match relational {
-        Some(relational) => authority
-            .prepare_primary_graph_with_relational_runtime(
-                &runtime,
-                &schema,
-                relational,
-                product_resources,
-            )
-            .unwrap(),
-        None => authority
-            .prepare_primary_graph(&runtime, &schema, product_resources)
-            .unwrap(),
-    };
-    PreparedAuthorizationWorld {
-        runtime,
-        authority,
-        schema,
-        binding,
-        bootstrap,
-    }
 }
 
 fn bind_principals(

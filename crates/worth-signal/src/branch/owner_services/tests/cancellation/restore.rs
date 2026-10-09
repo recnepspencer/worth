@@ -152,6 +152,16 @@ fn restore_cancellation_at_cutoff_denies_but_after_movement_is_performed_wins() 
 }
 
 pub(in crate::branch::owner_services::tests) fn restore_fixture() -> PopulatedRestoreFixture {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let root_source = graph.create_node();
     let snapshot_source = graph.create_node();
@@ -173,6 +183,7 @@ pub(in crate::branch::owner_services::tests) fn restore_fixture() -> PopulatedRe
         .reserve_advance_output(&admission, &cell)
         .expect("snapshot semantic output reserves")
         .advance::<(), (), _>(
+            request_execution,
             &starting_basis,
             &mut (),
             &SignalOwnerCancellationSource::new().token(),
@@ -200,6 +211,7 @@ pub(in crate::branch::owner_services::tests) fn restore_fixture() -> PopulatedRe
         .reserve_advance_output(&admission, &cell)
         .expect("intervening semantic output reserves")
         .advance::<(), (), _>(
+            request_execution,
             &captured_basis,
             &mut (),
             &SignalOwnerCancellationSource::new().token(),

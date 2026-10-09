@@ -104,26 +104,31 @@ impl WorthQueryProviderSessionLifecycle for WorkflowSessionProvider {
 
 #[test]
 fn workflow_stage_uses_stage_resources_and_scope_in_the_same_protocol() {
-    let (mut running, graph) = workflow_session_run("workflow-session");
-    {
-        let plan = running
-            .admit_stage_provider_execution_plan("stage", &graph)
-            .expect("installed workflow stage should admit its provider plan");
-        assert_eq!(plan.contract().scope().stage_identity(), Some("stage"));
-        assert_eq!(plan.contract().read_closure(), ["managed-graph:project"]);
-        let outcome = plan
-            .readmit()
-            .expect("workflow plan should readmit")
-            .prepare()
-            .expect("workflow session should prepare")
-            .bind_reads_and_effects()
-            .abort();
-        assert!(matches!(
-            outcome,
-            WorthQuerySessionCommitOrAbortOutcome::Aborted(_)
-        ));
-    }
-    cleanup_workflow(running);
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
+
+        let (mut running, graph) = workflow_session_run("workflow-session");
+        {
+            let plan = running
+                .admit_stage_provider_execution_plan("stage", &graph)
+                .expect("installed workflow stage should admit its provider plan");
+            assert_eq!(plan.contract().scope().stage_identity(), Some("stage"));
+            assert_eq!(plan.contract().read_closure(), ["managed-graph:project"]);
+            let outcome = plan
+                .readmit(execution)
+                .expect("workflow plan should readmit")
+                .prepare()
+                .expect("workflow session should prepare")
+                .bind_reads_and_effects()
+                .abort();
+            assert!(matches!(
+                outcome,
+                WorthQuerySessionCommitOrAbortOutcome::Aborted(_)
+            ));
+        }
+        cleanup_workflow(running);
+    });
 }
 
 #[test]

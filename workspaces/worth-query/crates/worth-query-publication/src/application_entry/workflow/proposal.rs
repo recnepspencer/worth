@@ -107,6 +107,10 @@ where
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
+        let request_scope = self.request_scope().clone();
+        let runtime = self.application_runtime();
+        runtime.with_application_advancement(&request_scope, |_phase| {
+
         let workflow = workflow.into();
         let application = self.application_runtime();
         let request_branch = self.product_branch();
@@ -151,6 +155,10 @@ where
                 idempotency: mutation.idempotency,
             },
         })
+
+        }).map_err(|cause| WorthQueryWorkflowProposalPreparationDenial::RequestAdmission(
+            WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause),
+        ))?
     }
 }
 
@@ -187,11 +195,23 @@ where
                 application,
                 prepared,
                 idempotency,
-            } => WorthQueryWorkflowProposalAdapter::compare_and_commit(
-                application,
-                *prepared,
-                idempotency,
-            ),
+            } => application
+                .with_application_advancement(&prepared.request_scope().clone(), |phase| {
+                    WorthQueryWorkflowProposalAdapter::compare_and_commit(
+                        &phase,
+                        application,
+                        *prepared,
+                        idempotency,
+                    )
+                })
+                .unwrap_or_else(|cause| {
+                    WorkflowProposalOutcome::Application(
+                        cause
+                            .into_commit_outcome()
+                            .landed()
+                            .expect_err("request admission cannot commit"),
+                    )
+                }),
             WorkflowProposalRequestExecution::Resolved(outcome) => outcome,
         }
     }

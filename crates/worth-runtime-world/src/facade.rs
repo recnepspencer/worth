@@ -119,3 +119,6 @@ pub use crate::lifecycle::{
     RuntimeWorldOperationControl, RuntimeWorldProductComparePause,
     RuntimeWorldProductCurrentnessPause,
 };
+
+#[cfg(feature = "test-execution-observer")]
+pub use crate::lifecycle::world_branch_reads_on_this_thread_for_test;

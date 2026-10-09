@@ -191,7 +191,39 @@ impl BankAccountActivityLiveLease<'_> {
             .request(principal.external(), request);
         match self.query.next(&fresh) {
             Ok(outcome) => output::publish_live_outcome(outcome),
-            Err(_) => BankAccountActivityLiveOutcome::Unavailable,
+            Err(denial) => {
+                use worth_query_host::facade::{
+                    application_contribution::{
+                        WorthQueryAdvancementDenial as Opening,
+                        WorthQueryManagedComputationInterruption as Interruption,
+                    },
+                    application_entry::WorthQueryApplicationLiveNextDenial as Next,
+                };
+                match denial {
+                    Next::ExecutionRequest(cause) => match cause {
+                        Opening::Interrupted(Interruption::Cancelled) => {
+                            BankAccountActivityLiveOutcome::Cancelled
+                        }
+                        Opening::Interrupted(Interruption::DeadlineExceeded) => {
+                            BankAccountActivityLiveOutcome::DeadlineExceeded
+                        }
+                        Opening::ForeignPhase => {
+                            BankAccountActivityLiveOutcome::ExecutionRequest(cause)
+                        }
+                        Opening::Resource(_)
+                        | Opening::NestedOpening
+                        | Opening::NestedStopped
+                        | Opening::Panicked => {
+                            BankAccountActivityLiveOutcome::ExecutionRequest(cause)
+                        }
+                    },
+                    Next::ForeignApplication
+                    | Next::ForeignBranch
+                    | Next::BindingInstallation(_)
+                    | Next::ProductSelection(_)
+                    | Next::PrincipalResolution(_) => BankAccountActivityLiveOutcome::Unavailable,
+                }
+            }
         }
     }
 

@@ -7,6 +7,9 @@ license.workspace = true
 description = "Bounded hostile and replay certification for WORTH Query."
 publish = false
 
+[features]
+request-lifetime-probes = ["worth-query-host/test-query-execution-observer"]
+
 [dependencies]
 worth-query-host.workspace = true
 worth-query-replay.workspace = true

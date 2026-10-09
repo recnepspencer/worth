@@ -60,12 +60,20 @@ fn settlement_drop_retains_both_real_owner_results_without_binding_pins() {
 #[test]
 fn actual_signal_apply_unwind_keeps_the_already_settled_relational_effect() {
     let (fixture, owner, expected) = setup();
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::from_policy(&owner.state.execution.request_policy()),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let baseline = owner.state.retention.active_component_obligation_count();
     let prepared = prepare_both_owners(&fixture, &owner, &expected, "signal-apply-unwind");
     let cancellation = RuntimeWorldCancellationSource::new();
     let unwind = catch_unwind(AssertUnwindSafe(|| {
         RuntimeWorldOwnerExecutionService::execute_with_signal(
             owner.as_ref(),
+            execution,
             prepared,
             &mut (),
             &cancellation.token(),
@@ -103,7 +111,15 @@ fn actual_signal_apply_unwind_keeps_the_already_settled_relational_effect() {
 #[test]
 fn invalid_ready_basis_unwind_preserves_the_original_exact_successor() {
     let (fixture, owner, expected) = setup();
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::from_policy(&owner.state.execution.request_policy()),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let settlement = settled(execute_without_signal(
+        execution,
         &owner,
         prepare_relational(&fixture, &owner, &expected, "invalid-ready-basis"),
     ));

@@ -79,6 +79,13 @@ fn assert_retains_both_owner_effects(record: &crate::recovery::ProductUnpublishe
 #[test]
 fn runtime_world_cancel_reaches_an_in_flight_signal_advance() {
     let (fixture, owner, expected) = setup();
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::from_policy(&owner.state.execution.request_policy()),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let prepared = prepare_both_owners(&fixture, &owner, &expected, "cancel-in-flight-advance");
     let (rehearsal, reached) =
         arm_rehearsal(owner.as_ref(), ExecutionRehearsalBoundary::SignalAdvance);
@@ -101,6 +108,7 @@ fn runtime_world_cancel_reaches_an_in_flight_signal_advance() {
         });
         let outcome = RuntimeWorldOwnerExecutionService::execute_with_signal(
             owner.as_ref(),
+            execution,
             prepared,
             &mut context,
             &token,
@@ -137,6 +145,13 @@ fn runtime_world_cancel_reaches_an_in_flight_signal_advance() {
 #[test]
 fn signal_advance_receives_the_embedded_token_not_a_caller_token() {
     let (_fixture, owner, expected) = setup();
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::from_policy(&owner.state.execution.request_policy()),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let prepared = prepare_signal(&owner, &expected, None);
     let (rehearsal, reached) =
         arm_rehearsal(owner.as_ref(), ExecutionRehearsalBoundary::SignalAdvance);
@@ -165,6 +180,7 @@ fn signal_advance_receives_the_embedded_token_not_a_caller_token() {
         });
         let outcome = RuntimeWorldOwnerExecutionService::execute_with_signal(
             owner.as_ref(),
+            execution,
             prepared,
             &mut context,
             &token,

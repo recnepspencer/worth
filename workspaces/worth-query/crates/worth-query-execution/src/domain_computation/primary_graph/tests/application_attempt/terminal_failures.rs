@@ -131,11 +131,18 @@ fn causal_fact_survives_post_commit_snapshot_failure_via_relational_owner_read()
     world.faults.fail_next_post_commit_snapshot();
     let WorthQueryApplicationCommitOutcome::Committed(receipt) = world
         .application
-        .compare_and_commit_application_with_aftermath(
-            program,
-            idempotency(29, 29),
-            pending.clone(),
-        )
+        .with_host_advancement(|active_phase| {
+            let phase = &active_phase;
+            world
+                .application
+                .compare_and_commit_application_with_aftermath(
+                    phase,
+                    program,
+                    idempotency(29, 29),
+                    pending.clone(),
+                )
+        })
+        .expect("fixture owner admits its advancement")
     else {
         panic!("owner reconstruction must recover the causal commit");
     };
@@ -183,11 +190,18 @@ fn idempotency_without_the_claimed_causal_fact_is_not_equivalent() {
 
     let WorthQueryApplicationCommitOutcome::Denied(denial) = world
         .application
-        .compare_and_commit_application_with_aftermath(
-            retry,
-            idempotency(30, 30),
-            WorthQueryPendingAftermathCausality::undo_of(parent),
-        )
+        .with_host_advancement(|active_phase| {
+            let phase = &active_phase;
+            world
+                .application
+                .compare_and_commit_application_with_aftermath(
+                    phase,
+                    retry,
+                    idempotency(30, 30),
+                    WorthQueryPendingAftermathCausality::undo_of(parent),
+                )
+        })
+        .expect("fixture owner admits its advancement")
     else {
         panic!("a plain idempotency row cannot impersonate a causal commit");
     };

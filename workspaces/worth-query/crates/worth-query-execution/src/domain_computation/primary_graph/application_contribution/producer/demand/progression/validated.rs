@@ -1,8 +1,10 @@
 use super::super::super::registry::InstalledProducerProvider;
 use super::super::disclosure::ValidatedOutputDisclosure;
 use super::*;
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 mod entry;
 mod ready;
+use ready::ReadyCertification;
 mod schedule_progression;
 mod source_guard;
 use schedule_progression::{OwnStages, ScheduleProgression};
@@ -14,6 +16,8 @@ where
 {
     fn advance_validated_output_demand_with_schedule<Family>(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
@@ -109,6 +113,7 @@ where
                 Admission::Schedule(performed_source) => {
                     let mut result = match &schedule_progression {
                         ScheduleProgression::Ordinary => self.schedule_selected_output_producer(
+                            phase,
                             &demand.selected,
                             delivery_branch,
                             &demand.observed_source,
@@ -116,6 +121,7 @@ where
                         ),
                         ScheduleProgression::Selected { shared, .. } => self
                             .schedule_selected_output_producer_on_selected(
+                                phase,
                                 &demand.selected,
                                 delivery_branch,
                                 &demand.observed_source,
@@ -155,6 +161,7 @@ where
                 Admission::AdvanceCheckpoint { claim, checkpoint } => {
                     return Ok(
                         if self.advance_output_checkpoint(
+                            phase,
                             interest,
                             &demand.selected.identity,
                             claim,
@@ -168,11 +175,15 @@ where
                 }
                 Admission::Ready(completion) => {
                     return self.advance_validated_ready::<Family>(
+                        phase,
                         demand,
                         disclosure,
                         completion,
-                        delivery_branch,
-                        schedule_progression.is_selected(),
+                        if schedule_progression.is_selected() {
+                            ReadyCertification::SelectedWave
+                        } else {
+                            ReadyCertification::OnBranch(delivery_branch)
+                        },
                         request_admission,
                     );
                 }
@@ -224,6 +235,7 @@ where
         let required_execution = required_output.prepare_execution(published_mode);
         let result = disclosure.with_erased(|input| match &mut schedule_progression {
             ScheduleProgression::Ordinary => entry.executor.execute(
+                phase,
                 self,
                 principal,
                 request_scope,
@@ -241,6 +253,7 @@ where
                 shared,
                 matched_predecessors,
             } => entry.executor.execute_on_selected(
+                phase,
                 self,
                 principal,
                 request_scope,

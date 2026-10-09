@@ -43,6 +43,7 @@ impl ComputedWorkflowFrontier {
         L: BasisOperationLane,
     >(
         self,
+        execution: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
         run: &mut WorthQueryWorkflowRun<D, O, F, L>,
         workspace: &mut WorthQueryWorkspace,
         mut admitted: Option<WorthQueryAdmittedWorkflowStage>,
@@ -83,9 +84,9 @@ impl ComputedWorkflowFrontier {
                 result,
             };
             let step = if let Some(admitted) = admitted.take() {
-                run.advance_once_with_admitted_computation(admitted, slot, workspace)?
+                run.advance_once_with_admitted_computation(execution, admitted, slot, workspace)?
             } else {
-                run.advance_once_with_computation(slot, workspace)?
+                run.advance_once_with_computation(execution, slot, workspace)?
             };
             if matches!(step, WorthQueryWorkflowAdvanceStep::Deferred(_)) {
                 return Ok(step);

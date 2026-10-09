@@ -6,6 +6,13 @@ impl WorthQueryOutputDemandDenialKind {
     pub(super) const fn default_recovery_posture(self) -> WorthQueryOutputDemandRecoveryPosture {
         use WorthQueryOutputDemandRecoveryPosture::{Retryable, Terminal};
         match self {
+            Self::ExecutionRequest(cause) => {
+                if cause.is_transient() {
+                    Retryable
+                } else {
+                    Terminal
+                }
+            }
             Self::ProductSelection(denial) => {
                 if denial.is_transient() {
                     Retryable

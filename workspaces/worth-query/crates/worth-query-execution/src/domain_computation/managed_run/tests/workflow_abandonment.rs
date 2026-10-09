@@ -55,46 +55,59 @@ impl WorthQueryGraphParticipationProvider<ManagedGraph> for WorkflowAbandonProvi
 
 #[test]
 fn workflow_active_abandonment_releases_provider_execution() {
-    let (running, graph) = workflow_abandon_world();
-    let active = begin_workflow_projection(running, &graph, "workflow-active-abandon");
-    let terminal = failed_terminal(active.abandon());
-    assert_eq!(terminal.provider_work().abandoned_call_count(), 1);
-    assert_eq!(terminal.provider_work().retained_bytes(), 0);
-    assert_eq!(
-        terminal
-            .provider_work()
-            .provider_execution_release()
-            .release_count(),
-        1
-    );
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
+
+        let (running, graph) = workflow_abandon_world();
+        let active =
+            begin_workflow_projection(execution, running, &graph, "workflow-active-abandon");
+        let terminal = failed_terminal(active.abandon());
+        assert_eq!(terminal.provider_work().abandoned_call_count(), 1);
+        assert_eq!(terminal.provider_work().retained_bytes(), 0);
+        assert_eq!(
+            terminal
+                .provider_work()
+                .provider_execution_release()
+                .release_count(),
+            1
+        );
+    });
 }
 
 #[test]
 fn workflow_pending_and_paused_abandonment_release_output_and_queue() {
-    let (running, graph) = workflow_abandon_world();
-    let active = begin_workflow_projection(running, &graph, "workflow-pending-abandon");
-    let pending = match active.advance() {
-        WorthQueryWorkflowGraphStepOutcome::ChunkReady(pending) => pending,
-        _ => panic!("workflow provider did not expose its first bounded chunk"),
-    };
-    let terminal = failed_terminal(pending.abandon());
-    assert_eq!(terminal.provider_work().queue_state_mutation_count(), 2);
-    assert_eq!(terminal.provider_work().retained_bytes(), 0);
-    assert!(terminal.provider_work().peak_retained_bytes() > 0);
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
 
-    let (running, graph) = workflow_abandon_world();
-    let active = begin_workflow_projection(running, &graph, "workflow-paused-abandon");
-    let pending = match active.advance() {
-        WorthQueryWorkflowGraphStepOutcome::ChunkReady(pending) => pending,
-        _ => panic!("workflow provider did not expose its first bounded chunk"),
-    };
-    let paused = match pending.acknowledge() {
-        WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused,
-        _ => panic!("workflow chunk acknowledgement did not reach a paused safe point"),
-    };
-    let terminal = failed_terminal(paused.abandon());
-    assert_eq!(terminal.provider_work().abandoned_call_count(), 1);
-    assert_eq!(terminal.provider_work().retained_bytes(), 0);
+        let (running, graph) = workflow_abandon_world();
+        let active =
+            begin_workflow_projection(execution, running, &graph, "workflow-pending-abandon");
+        let pending = match active.advance(execution) {
+            WorthQueryWorkflowGraphStepOutcome::ChunkReady(pending) => pending,
+            _ => panic!("workflow provider did not expose its first bounded chunk"),
+        };
+        let terminal = failed_terminal(pending.abandon());
+        assert_eq!(terminal.provider_work().queue_state_mutation_count(), 2);
+        assert_eq!(terminal.provider_work().retained_bytes(), 0);
+        assert!(terminal.provider_work().peak_retained_bytes() > 0);
+
+        let (running, graph) = workflow_abandon_world();
+        let active =
+            begin_workflow_projection(execution, running, &graph, "workflow-paused-abandon");
+        let pending = match active.advance(execution) {
+            WorthQueryWorkflowGraphStepOutcome::ChunkReady(pending) => pending,
+            _ => panic!("workflow provider did not expose its first bounded chunk"),
+        };
+        let paused = match pending.acknowledge() {
+            WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused,
+            _ => panic!("workflow chunk acknowledgement did not reach a paused safe point"),
+        };
+        let terminal = failed_terminal(paused.abandon());
+        assert_eq!(terminal.provider_work().abandoned_call_count(), 1);
+        assert_eq!(terminal.provider_work().retained_bytes(), 0);
+    });
 }
 
 fn workflow_abandon_world() -> (
@@ -139,12 +152,15 @@ fn workflow_abandon_world() -> (
 }
 
 fn begin_workflow_projection(
+    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+
     running: crate::domain_computation::WorthQueryRunningWorkflowRun,
     graph: &WorthQueryInstalledGraphParticipationAuthority,
     identity: &str,
 ) -> crate::domain_computation::WorthQueryActiveWorkflowGraphExecution {
     running
         .begin_stage_graph_execution(
+            execution,
             "stage",
             graph,
             WorthQueryManagedGraphCallRequest::new(

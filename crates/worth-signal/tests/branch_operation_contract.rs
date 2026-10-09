@@ -15,6 +15,16 @@ fn runtime() -> SignalRuntime<(), (), (), (), ()> {
 
 #[test]
 fn documented_advance_then_read_flow_compiles_through_the_public_facade() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            worth_signal::facade::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     const PRICE: Aspect = Aspect::new(0);
     let mut graph = SignalGraph::new();
     let source = graph.node().build();
@@ -28,7 +38,7 @@ fn documented_advance_then_read_flow_compiles_through_the_public_facade() {
         .unwrap();
 
     let _next_basis = runtime
-        .advance_signal_branch(&mut (), &basis, |tx| {
+        .advance_signal_branch(request_execution, &mut (), &basis, |tx| {
             tx.mark_changed(source, PRICE)?;
             tx.target(derived).run(&|view| {
                 let result = if view.node() == source {
@@ -112,6 +122,16 @@ fn cross_branch_snapshot_restore_is_typed_and_moves_neither_branch() {
 
 #[test]
 fn stale_restore_is_typed_and_preserves_the_current_generation() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            worth_signal::facade::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = runtime();
     let branch = runtime.current_branch();
     let initial = runtime
@@ -122,7 +142,7 @@ fn stale_restore_is_typed_and_preserves_the_current_generation() {
         .expect("snapshot should succeed through the owner basis")
         .into_parts();
     let current = runtime
-        .advance_signal_branch(&mut (), &captured, |_| Ok(()))
+        .advance_signal_branch(request_execution, &mut (), &captured, |_| Ok(()))
         .expect("advance should move the branch")
         .into_basis();
 
@@ -139,13 +159,23 @@ fn stale_restore_is_typed_and_preserves_the_current_generation() {
 
 #[test]
 fn stale_snapshot_capture_is_typed_and_preserves_the_current_generation() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            worth_signal::facade::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = runtime();
     let branch = runtime.current_branch();
     let stale = runtime
         .observe_signal_branch_basis(branch.clone())
         .expect("owner observation should succeed");
     let current = runtime
-        .advance_signal_branch(&mut (), &stale, |_| Ok(()))
+        .advance_signal_branch(request_execution, &mut (), &stale, |_| Ok(()))
         .expect("advance should move the branch")
         .into_basis();
 

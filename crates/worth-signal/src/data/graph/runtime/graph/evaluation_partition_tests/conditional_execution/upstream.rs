@@ -16,6 +16,16 @@ impl InstalledSignalConditionResolver for EligiblePredicate {
 
 #[test]
 fn conditional_upstream_budget_denies_before_predicate_or_compute_with_exact_twin() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     for maximum in [1, 2] {
         let (mut graph, contract) = installed_with(
             SignalConditionalCondition::RuntimePredicate,
@@ -37,15 +47,21 @@ fn conditional_upstream_budget_denies_before_predicate_or_compute_with_exact_twi
         let mut partition = SignalEvaluationPartition::retain_basis_storage(&mut graph);
         let mut predicate = EligiblePredicate(0);
         let mut computes = 0;
-        let (decision, observation, _rejected) = partition
-            .execute_conditional(
-                &mut graph,
-                SignalConditionalExecutionRequest::new(&contract, "storage", "upstream", 1),
-                &mut predicate,
-                &mut DefaultComparatorPolicyResolver::default(),
-                || {
-                    computes += 1;
-                    Ok(output(9))
+        let (decision, observation, _rejected) =
+            crate::data::graph::storage::evaluation_partition::conditional_test_scope::run(
+                request_execution,
+                |work| {
+                    partition.execute_conditional(
+                        work,
+                        &mut graph,
+                        SignalConditionalExecutionRequest::new(&contract, "storage", "upstream", 1),
+                        &mut predicate,
+                        &mut DefaultComparatorPolicyResolver::default(),
+                        || {
+                            computes += 1;
+                            Ok(output(9))
+                        },
+                    )
                 },
             )
             .unwrap()

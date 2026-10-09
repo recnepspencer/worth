@@ -193,12 +193,16 @@ pub(crate) trait RuntimeWorldOwnerExecutionService {
 
     fn execute_without_signal(
         &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+
         prepared: PreparedCompositePublicationWithoutSignal,
         cancellation: &RuntimeWorldCancellationToken,
     ) -> OwnerExecutionOutcome;
 
     fn execute_with_signal<F>(
         &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+
         prepared: PreparedCompositePublicationWithSignal,
         runtime_ctx: &mut Self::SignalContext,
         cancellation: &RuntimeWorldCancellationToken,
@@ -218,6 +222,8 @@ pub(crate) trait RuntimeWorldOwnerExecutionService {
 
     fn execute_conditional_definition_with_signal<F, H>(
         &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+
         prepared: PreparedCompositePublicationWithSignal,
         publication: worth_signal::facade::branch::SignalConditionalDefinitionPublicationOperation,
         runtime_ctx: &mut Self::SignalContext,

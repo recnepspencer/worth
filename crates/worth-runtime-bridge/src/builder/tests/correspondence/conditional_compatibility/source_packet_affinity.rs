@@ -118,6 +118,10 @@ impl BridgeConditionalComputeProvider for Providers {
 
 #[test]
 fn conditional_packet_source_must_match_admitted_reader_before_predicate_or_compute() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     for wrong_packet in [true, false] {
         let contacts = Arc::new(Contacts::default());
         let providers = Providers(Arc::clone(&contacts));
@@ -156,6 +160,7 @@ fn conditional_packet_source_must_match_admitted_reader_before_predicate_or_comp
             .admit_conditional_signal_basis(&lowering, owner.admitted_signal_basis())
             .unwrap();
         let result = owner.execute(
+            request_execution,
             &signal_basis,
             BridgeConditionalExecutionRequest {
                 lowering: &lowering,

@@ -175,7 +175,7 @@ impl ProjectionHarness {
             BankSchema::declaration().unwrap(),
             ((), (), ()),
             crate::identity_runtime::bank_application_limits(),
-            |graph, installed_schema| {
+            |_phase, graph, installed_schema| {
                 let binding = installed_schema
                     .principal_binding(BankPrincipalBinding::reference())
                     .unwrap();

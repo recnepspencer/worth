@@ -12,7 +12,7 @@ fn explicit_publication_limit_survives_checkpoint_installation_and_enforces_comm
         TemporalHostSchema::declaration().unwrap(),
         (configuration(),),
         limits(),
-        |graph, installed| {
+        |_phase, graph, installed| {
             let principal = installed
                 .principal_binding(TemporalPrincipalBinding::reference())
                 .unwrap();

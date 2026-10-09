@@ -64,6 +64,16 @@ pub struct WorthQueryYieldedDirectRun {
 }
 
 impl WorthQueryYieldedDirectRun {
+    pub(super) fn request_for_phase<'a>(
+        &self,
+        phase: &'a crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    ) -> Result<
+        worth_execution::ExecutionRequest<'a, 'a>,
+        crate::domain_computation::primary_graph::WorthQueryForeignAdvancementPhase,
+    > {
+        phase.request_for_managed(&self.relational_basis)
+    }
+
     pub(in crate::domain_computation::managed_run) fn preflight_retained_provider_call(
         &self,
     ) -> Result<
@@ -201,9 +211,11 @@ impl WorthQueryYieldedDirectRun {
 
     pub fn readmit_same_runtime(
         self,
+        active_request: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+
         query_runtime: &crate::domain_computation::WorthQueryExecutionRuntime,
         bridge_runtime: &worth_runtime_bridge::facade::RuntimeBridge,
     ) -> super::WorthQueryDirectReadmissionOutcome {
-        super::readmission::readmit_direct(self, query_runtime, bridge_runtime)
+        super::readmission::readmit_direct(active_request, self, query_runtime, bridge_runtime)
     }
 }

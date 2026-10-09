@@ -86,6 +86,16 @@ fn output(value: u64) -> NodeEvaluationResult {
 
 #[test]
 fn nested_execution_requires_the_exact_owner_transaction_and_adds_no_cell_contact() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (mut runtime, claimant, contract, source_owner, _) = runtime_with_contract();
     let root_basis = runtime
         .observe_signal_branch_basis(runtime.current_branch())
@@ -115,11 +125,13 @@ fn nested_execution_requires_the_exact_owner_transaction_and_adds_no_cell_contac
     let mut sibling_computes = 0;
     let sibling_advanced = mutation
         .advance_exact(
+            request_execution,
             sibling.created_basis(),
             &mut (),
             &cancellation.token(),
             |transaction| {
                 let result = service.execute_within_transaction(
+                    request_execution,
                     transaction,
                     &evaluation,
                     Request::new(1),
@@ -140,21 +152,28 @@ fn nested_execution_requires_the_exact_owner_transaction_and_adds_no_cell_contac
     let before = owner.cost_snapshot();
     let mut completion = None;
     let root_advanced = mutation
-        .advance_exact(&root_basis, &mut (), &cancellation.token(), |transaction| {
-            completion = Some(
-                service
-                    .execute_within_transaction(
-                        transaction,
-                        &evaluation,
-                        Request::new(1),
-                        &mut NoPredicate,
-                        &mut DefaultComparatorPolicyResolver::default(),
-                        || Ok(output(9)),
-                    )
-                    .unwrap(),
-            );
-            Ok(())
-        })
+        .advance_exact(
+            request_execution,
+            &root_basis,
+            &mut (),
+            &cancellation.token(),
+            |transaction| {
+                completion = Some(
+                    service
+                        .execute_within_transaction(
+                            request_execution,
+                            transaction,
+                            &evaluation,
+                            Request::new(1),
+                            &mut NoPredicate,
+                            &mut DefaultComparatorPolicyResolver::default(),
+                            || Ok(output(9)),
+                        )
+                        .unwrap(),
+                );
+                Ok(())
+            },
+        )
         .unwrap();
     let after = owner.cost_snapshot();
     assert_eq!(
@@ -207,6 +226,16 @@ fn nested_execution_requires_the_exact_owner_transaction_and_adds_no_cell_contac
 
 #[test]
 fn plain_runtime_transaction_is_denied_before_provider_work() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (mut runtime, claimant, contract, source_owner, _) = runtime_with_contract();
     let basis = runtime
         .observe_signal_branch_basis(runtime.current_branch())
@@ -223,10 +252,11 @@ fn plain_runtime_transaction_is_denied_before_provider_work() {
         .unwrap();
     let mut plain = SignalRuntime::<(), (), (), (), ()>::build_for::<()>(SignalGraph::new());
     let mut context = ();
-    let mut transaction = plain.begin(&mut context);
+    let mut transaction = plain.begin(request_execution, &mut context);
     let mut computes = 0;
 
     let result = service.execute_within_transaction(
+        request_execution,
         &mut transaction,
         &evaluation,
         Request::new(1),
@@ -243,6 +273,16 @@ fn plain_runtime_transaction_is_denied_before_provider_work() {
 
 #[test]
 fn nested_provider_unwind_rolls_back_and_preserves_the_cell_and_evaluation_slot() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (
         mut runtime,
         claimant,
@@ -268,25 +308,35 @@ fn nested_provider_unwind_rolls_back_and_preserves_the_cell_and_evaluation_slot(
     let before = owner.cost_snapshot();
 
     let unwind = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        let _ = mutation.advance_exact(&basis, &mut (), &cancellation.token(), |transaction| {
-            transaction.set_dependencies(
-                rollback_target,
-                [DependencyEdge::new(replacement_dependency, Aspect::new(1))],
-            )?;
-            let _ = service.execute_within_transaction(
-                transaction,
-                &evaluation,
-                Request::new(1),
-                &mut NoPredicate,
-                &mut DefaultComparatorPolicyResolver::default(),
-                || -> Result<NodeEvaluationResult, SignalError> {
-                    panic!("nested provider unwind")
-                },
-            );
-            Ok(())
-        });
+        let _ = mutation.advance_exact(
+            request_execution,
+            &basis,
+            &mut (),
+            &cancellation.token(),
+            |transaction| {
+                transaction.set_dependencies(
+                    rollback_target,
+                    [DependencyEdge::new(replacement_dependency, Aspect::new(1))],
+                )?;
+                let _ = service.execute_within_transaction(
+                    request_execution,
+                    transaction,
+                    &evaluation,
+                    Request::new(1),
+                    &mut NoPredicate,
+                    &mut DefaultComparatorPolicyResolver::default(),
+                    || -> Result<NodeEvaluationResult, SignalError> {
+                        panic!("nested provider unwind")
+                    },
+                );
+                Ok(())
+            },
+        );
     }));
-    assert!(unwind.is_err());
+    assert_eq!(
+        unwind.unwrap_err().downcast_ref::<&str>(),
+        Some(&"nested provider unwind")
+    );
     assert_eq!(
         owner.cost_snapshot().canonical_movements(),
         before.canonical_movements()
@@ -308,21 +358,28 @@ fn nested_provider_unwind_rolls_back_and_preserves_the_cell_and_evaluation_slot(
 
     let mut completion = None;
     let advanced = mutation
-        .advance_exact(&basis, &mut (), &cancellation.token(), |transaction| {
-            completion = Some(
-                service
-                    .execute_within_transaction(
-                        transaction,
-                        &evaluation,
-                        Request::new(2),
-                        &mut NoPredicate,
-                        &mut DefaultComparatorPolicyResolver::default(),
-                        || Ok(output(12)),
-                    )
-                    .unwrap(),
-            );
-            Ok(())
-        })
+        .advance_exact(
+            request_execution,
+            &basis,
+            &mut (),
+            &cancellation.token(),
+            |transaction| {
+                completion = Some(
+                    service
+                        .execute_within_transaction(
+                            request_execution,
+                            transaction,
+                            &evaluation,
+                            Request::new(2),
+                            &mut NoPredicate,
+                            &mut DefaultComparatorPolicyResolver::default(),
+                            || Ok(output(12)),
+                        )
+                        .unwrap(),
+                );
+                Ok(())
+            },
+        )
         .unwrap();
     let (decision, observation) = completion.unwrap().into_parts();
     assert_eq!(decision.unwrap().output_version(), 12);

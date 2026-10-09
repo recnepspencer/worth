@@ -22,6 +22,7 @@ pub(crate) enum WorthQueryConditionalEvaluationScope<'a> {
 }
 
 pub(crate) struct WorthQueryConditionalEvaluationPass<'a> {
+    pub(crate) execution: worth_execution::ExecutionRequest<'a, 'a>,
     pub(crate) workspace: &'a crate::runtime::WorthQueryWorkspace,
     pub(crate) snapshot: &'a crate::memory_workspace::WorthQuerySnapshotIdentity,
     pub(crate) execution_identity: &'a str,
@@ -127,6 +128,7 @@ fn evaluate_conditional_node<D, O, F, L: BasisOperationLane>(
     let bridge = evaluation
         .workspace
         .execute_installed_conditional(
+            evaluation.execution,
             product,
             worth_runtime_bridge::facade::BridgeConditionalExecutionRequest {
                 lowering: &node.lowering,

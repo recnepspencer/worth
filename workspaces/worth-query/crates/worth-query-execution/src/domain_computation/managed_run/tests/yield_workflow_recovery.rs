@@ -3,27 +3,31 @@ use super::*;
 
 #[test]
 fn failed_workflow_yield_reports_pending_artifacts_and_preserves_retry_authority() {
-    let disposals = Arc::new(AtomicUsize::new(0));
-    let world = terminalized_recovery_world(
-        "workflow-yield-recovery-artifact-graph",
-        RecoveryArtifactResource(Arc::clone(&disposals)),
-    );
-    let TerminalizedRecoveryWorld {
-        running,
-        graph,
-        handle,
-    } = world;
-    let borrowed = handle
-        .borrow("failed-yield cleanup ownership probe")
-        .expect("installed artifact contract should admit a shared borrow");
-    let recovery = terminalize_recovery_world(running, &graph);
-    let initial_artifacts = recovery
-        .artifact_evidence()
-        .expect("terminalized workflow recovery reports artifact ownership");
-    assert_eq!(initial_artifacts.produced_artifact_count(), 1);
-    assert_eq!(initial_artifacts.retained_artifact_count(), 1);
-    assert_eq!(initial_artifacts.retained_bytes(), 64);
-    assert_eq!(
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
+
+        let disposals = Arc::new(AtomicUsize::new(0));
+        let world = terminalized_recovery_world(
+            "workflow-yield-recovery-artifact-graph",
+            RecoveryArtifactResource(Arc::clone(&disposals)),
+        );
+        let TerminalizedRecoveryWorld {
+            running,
+            graph,
+            handle,
+        } = world;
+        let borrowed = handle
+            .borrow("failed-yield cleanup ownership probe")
+            .expect("installed artifact contract should admit a shared borrow");
+        let recovery = terminalize_recovery_world(execution, running, &graph);
+        let initial_artifacts = recovery
+            .artifact_evidence()
+            .expect("terminalized workflow recovery reports artifact ownership");
+        assert_eq!(initial_artifacts.produced_artifact_count(), 1);
+        assert_eq!(initial_artifacts.retained_artifact_count(), 1);
+        assert_eq!(initial_artifacts.retained_bytes(), 64);
+        assert_eq!(
         recovery.kind(),
         crate::domain_computation::WorthQueryYieldRecoveryKind::ProviderCheckpointSuspension(
             crate::domain_computation::WorthQueryProviderCheckpointSuspensionFailureKind::
@@ -31,7 +35,7 @@ fn failed_workflow_yield_reports_pending_artifacts_and_preserves_retry_authority
         )
     );
 
-    let pending = match recovery.release_terminalized() {
+        let pending = match recovery.release_terminalized() {
         Ok(crate::domain_computation::WorthQueryWorkflowYieldRecoveryReleaseOutcome::Pending(
             pending,
         )) => pending,
@@ -46,12 +50,12 @@ fn failed_workflow_yield_reports_pending_artifacts_and_preserves_retry_authority
         ) => panic!("outstanding artifact borrow skipped the pending cleanup phase"),
         Err(_) => panic!("terminalized failed yield was misclassified as running"),
     };
-    assert_eq!(disposals.load(Ordering::Acquire), 0);
+        assert_eq!(disposals.load(Ordering::Acquire), 0);
 
-    drop(borrowed);
-    assert_eq!(disposals.load(Ordering::Acquire), 1);
-    drop(handle);
-    let release = match pending.retry() {
+        drop(borrowed);
+        assert_eq!(disposals.load(Ordering::Acquire), 1);
+        drop(handle);
+        let release = match pending.retry() {
         Ok(crate::domain_computation::WorthQueryWorkflowYieldRecoveryReleaseOutcome::Complete(
             release,
         )) => release,
@@ -66,43 +70,48 @@ fn failed_workflow_yield_reports_pending_artifacts_and_preserves_retry_authority
         ) => panic!("successful artifact release required recovery"),
         Err(_) => panic!("pending failed-yield cleanup lost terminalized retry authority"),
     };
-    let inspection = release.inspection();
-    assert_eq!(inspection.artifact_evidence().disposed_artifact_count(), 1);
-    assert_eq!(
-        inspection
-            .artifact_evidence()
-            .provider_release_complete_count(),
-        1
-    );
-    assert!(inspection.resources_released());
-    assert_eq!(inspection.released_reservation_count(), 3);
+        let inspection = release.inspection();
+        assert_eq!(inspection.artifact_evidence().disposed_artifact_count(), 1);
+        assert_eq!(
+            inspection
+                .artifact_evidence()
+                .provider_release_complete_count(),
+            1
+        );
+        assert!(inspection.resources_released());
+        assert_eq!(inspection.released_reservation_count(), 3);
+    });
 }
 
 #[test]
 fn terminalized_workflow_yield_types_double_artifact_release_panic_as_recovery() {
-    let disposal_attempts = Arc::new(AtomicUsize::new(0));
-    let destructor_attempts = Arc::new(AtomicUsize::new(0));
-    let world = terminalized_recovery_world(
-        "workflow-yield-recovery-double-panic",
-        DoublePanickingRecoveryArtifactResource {
-            disposal_attempts: Arc::clone(&disposal_attempts),
-            destructor_attempts: Arc::clone(&destructor_attempts),
-        },
-    );
-    let TerminalizedRecoveryWorld {
-        running,
-        graph,
-        handle,
-    } = world;
-    let recovery = terminalize_recovery_world(running, &graph);
-    assert_eq!(
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
+
+        let disposal_attempts = Arc::new(AtomicUsize::new(0));
+        let destructor_attempts = Arc::new(AtomicUsize::new(0));
+        let world = terminalized_recovery_world(
+            "workflow-yield-recovery-double-panic",
+            DoublePanickingRecoveryArtifactResource {
+                disposal_attempts: Arc::clone(&disposal_attempts),
+                destructor_attempts: Arc::clone(&destructor_attempts),
+            },
+        );
+        let TerminalizedRecoveryWorld {
+            running,
+            graph,
+            handle,
+        } = world;
+        let recovery = terminalize_recovery_world(execution, running, &graph);
+        assert_eq!(
         recovery.kind(),
         crate::domain_computation::WorthQueryYieldRecoveryKind::ProviderCheckpointSuspension(
             crate::domain_computation::WorthQueryProviderCheckpointSuspensionFailureKind::
                 ProviderRejected,
         )
     );
-    let release = match recovery.release_terminalized() {
+        let release = match recovery.release_terminalized() {
         Ok(
             crate::domain_computation::WorthQueryWorkflowYieldRecoveryReleaseOutcome::
                 RecoveryRequired(release),
@@ -115,31 +124,32 @@ fn terminalized_workflow_yield_types_double_artifact_release_panic_as_recovery()
         )) => panic!("artifact without a surviving borrow remained pending"),
         Err(_) => panic!("terminalized failed yield lost release authority"),
     };
-    let inspection = release.inspection();
-    assert_eq!(
-        inspection
-            .artifact_evidence()
-            .provider_release_recovery_required_count(),
-        1
-    );
-    assert_eq!(disposal_attempts.load(Ordering::Acquire), 1);
-    assert_eq!(destructor_attempts.load(Ordering::Acquire), 1);
-    assert!(inspection.resources_released());
-    assert_eq!(inspection.released_reservation_count(), 3);
-    let artifact_release = match handle.owner_snapshot().provider_release() {
+        let inspection = release.inspection();
+        assert_eq!(
+            inspection
+                .artifact_evidence()
+                .provider_release_recovery_required_count(),
+            1
+        );
+        assert_eq!(disposal_attempts.load(Ordering::Acquire), 1);
+        assert_eq!(destructor_attempts.load(Ordering::Acquire), 1);
+        assert!(inspection.resources_released());
+        assert_eq!(inspection.released_reservation_count(), 3);
+        let artifact_release = match handle.owner_snapshot().provider_release() {
         crate::domain_computation::artifact_owner::WorthQueryArtifactProviderReleasePosture::RecoveryRequired(
             evidence,
         ) => evidence,
         posture => panic!("terminalized artifact release reported {posture:?}"),
     };
-    assert_eq!(
+        assert_eq!(
         artifact_release.disposal(),
         crate::domain_computation::artifact_owner::WorthQueryArtifactProviderDisposalDisposition::Panicked
     );
-    assert_eq!(
+        assert_eq!(
         artifact_release.destructor(),
         crate::domain_computation::artifact_owner::WorthQueryArtifactProviderDestructorDisposition::Panicked
     );
+    });
 }
 
 struct TerminalizedRecoveryWorld {
@@ -218,11 +228,14 @@ where
 }
 
 fn terminalize_recovery_world(
+    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+
     running: crate::domain_computation::WorthQueryRunningWorkflowRun,
     graph: &WorthQueryInstalledGraphParticipationAuthority,
 ) -> crate::domain_computation::WorthQueryWorkflowYieldRecoveryRequired {
     let active = running
         .begin_stage_graph_execution(
+            execution,
             "producer",
             graph,
             WorthQueryManagedGraphCallRequest::new(
@@ -231,7 +244,7 @@ fn terminalize_recovery_world(
             ),
         )
         .expect("recovery provider should begin");
-    let paused = match active.advance() {
+    let paused = match active.advance(execution) {
         WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused,
         _ => panic!("recovery provider did not reach its safe point"),
     };

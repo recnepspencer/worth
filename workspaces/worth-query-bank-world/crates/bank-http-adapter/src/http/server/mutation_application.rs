@@ -19,7 +19,7 @@ use super::super::protocol::{
 use super::authentication::BankHttpApplicationAuthenticator;
 
 mod commit_denial;
-pub(super) use commit_denial::commit_denial;
+pub(super) use commit_denial::{commit_denial, execution_resource};
 mod denial;
 pub(super) use denial::{pending_execution_denial, request_mutation_denial};
 

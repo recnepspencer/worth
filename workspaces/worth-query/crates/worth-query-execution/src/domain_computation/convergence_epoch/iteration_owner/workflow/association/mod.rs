@@ -190,6 +190,7 @@ impl WorkflowAssociatedIterationStartRejection {
 
 impl WorkflowIterationAssociation<WorthQueryActiveWorkflowGraphExecution> {
     pub(super) fn begin(
+        execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         epoch: WorkflowIteratingEpochAssociation,
         stage_identity: &str,
         request: WorthQueryManagedGraphCallRequest,
@@ -216,8 +217,12 @@ impl WorkflowIterationAssociation<WorthQueryActiveWorkflowGraphExecution> {
             graph,
             provider,
         } = epoch;
-        let managed = match managed_run.begin_stage_graph_execution(stage_identity, &graph, request)
-        {
+        let managed = match managed_run.begin_stage_graph_execution(
+            execution,
+            stage_identity,
+            &graph,
+            request,
+        ) {
             Ok(managed) => managed,
             Err(failure) => {
                 let detail = Arc::from(failure.detail());

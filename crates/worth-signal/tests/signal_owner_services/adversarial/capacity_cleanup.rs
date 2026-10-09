@@ -52,6 +52,16 @@ impl Drop for ReleaseOnDrop {
 #[test]
 #[ignore = "Scale: exhaust the fixed 64-operation owner bound"]
 fn operation_capacity_denies_the_65th_and_restores_after_release() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            worth_signal::facade::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let world = AdversarialWorld::new();
     let mut bases = vec![world.child_basis.clone()];
     for ordinal in 0..63 {
@@ -80,8 +90,18 @@ fn operation_capacity_denies_the_65th_and_restores_after_release() {
         let release = Arc::clone(&release);
         let ready_tx = ready_tx.clone();
         workers.push(thread::spawn(move || {
+            let serial_request = worth_execution::SerialRequest::from_memory(
+                worth_execution::SerialMemoryBudget::new(
+                    worth_signal::facade::SignalRuntimePolicy::operational().serial_memory_bytes,
+                ),
+                worth_execution::CancellationToken::new(),
+                None,
+            );
+            let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
             let result = mutation
                 .advance_exact(
+                    request_execution,
                     &basis,
                     &mut (),
                     &SignalOwnerCancellationSource::new().token(),
@@ -105,6 +125,7 @@ fn operation_capacity_denies_the_65th_and_restores_after_release() {
     }
 
     let denied = mutation.advance_exact(
+        request_execution,
         &world.root_basis,
         &mut (),
         &SignalOwnerCancellationSource::new().token(),
@@ -124,6 +145,7 @@ fn operation_capacity_denies_the_65th_and_restores_after_release() {
     world
         .mutation
         .advance_exact(
+            request_execution,
             &world.root_basis,
             &mut (),
             &SignalOwnerCancellationSource::new().token(),

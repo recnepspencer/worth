@@ -73,6 +73,27 @@ pub struct WorthQueryRunningDirectRun {
 }
 
 impl WorthQueryRunningDirectRun {
+    /// Borrows the request for this run only after checking its installed owner.
+    /// This view carries custody into the host executor; it starts no work itself.
+    pub fn request_in_advancement<'a>(
+        &self,
+        phase: &'a crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    ) -> Result<
+        worth_execution::ExecutionRequest<'a, 'a>,
+        crate::domain_computation::primary_graph::WorthQueryForeignAdvancementPhase,
+    > {
+        phase.request_for_managed(&self.relational_basis)
+    }
+
+    pub(in crate::domain_computation) fn execution_owner_identity(
+        &self,
+    ) -> Option<worth_runtime_world::facade::RuntimeWorldOwnerIdentity> {
+        self.relational_basis.owner_identity()
+    }
+    pub(in crate::domain_computation) fn execution_source_instance_id(&self) -> u64 {
+        self.relational_basis.identity().runtime_instance_id()
+    }
+
     pub fn resources(
         &self,
     ) -> &worth_query_admission::facade::resource_admission::WorthQueryAdmittedExecutionResourcePlan
@@ -143,13 +164,15 @@ impl WorthQueryRunningDirectRun {
 
     pub fn begin_graph_execution(
         self,
+        execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+
         graph_authority: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
         request: WorthQueryManagedGraphCallRequest,
     ) -> Result<
         super::WorthQueryActiveDirectGraphExecution,
         super::WorthQueryDirectGraphExecutionStartFailure,
     > {
-        super::direct_graph_execution_start::begin(self, graph_authority, request)
+        super::direct_graph_execution_start::begin(execution, self, graph_authority, request)
     }
 
     pub(super) fn mint_graph_provider_call(

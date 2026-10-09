@@ -185,11 +185,17 @@ fn program_example_denies_plain_commit_and_conditional_client_admission() {
         .expect("key and input must encode");
     let HandlerResult::Completed(completed) = application
         .runtime
-        .execute_mutation_handler::<AmendTemporalBinding>(
-            &identities,
-            resolved_principal.principal_identity(),
-            admission,
-        )
+        .with_application_advancement(&scope, |phase| {
+            application
+                .runtime
+                .execute_mutation_handler::<AmendTemporalBinding>(
+                    &phase,
+                    &identities,
+                    resolved_principal.principal_identity(),
+                    admission,
+                )
+        })
+        .expect("the fixture policy admits its handler advancement")
         .expect("the admitted mutation handler must complete")
     else {
         panic!("the admitted mutation handler must produce a candidate");
@@ -237,7 +243,7 @@ fn installed_conditional_requires_its_declared_program_action() {
         TemporalHostSchema::declaration().expect("the temporal schema is valid"),
         (TemporalContributionConfiguration { clock_source },),
         example_limits(),
-        |graph, installed| {
+        |_phase, graph, installed| {
             let principal = installed
                 .principal_binding(TemporalPrincipalBinding::reference())
                 .expect("the temporal principal binding is installed");
@@ -267,7 +273,7 @@ fn installed_conditional_rejects_a_client_action_for_its_operation() {
         TemporalHostSchema::declaration().expect("the temporal schema is valid"),
         (TemporalContributionConfiguration { clock_source },),
         example_limits(),
-        |graph, installed| {
+        |_phase, graph, installed| {
             let principal = installed
                 .principal_binding(TemporalPrincipalBinding::reference())
                 .expect("the temporal principal binding is installed");

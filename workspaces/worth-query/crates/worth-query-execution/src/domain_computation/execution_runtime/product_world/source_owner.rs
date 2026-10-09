@@ -84,11 +84,26 @@ impl WorthQueryRelationalSourceOwner {
         })
     }
 
+    /// Returns exact snapshot custody to its issuing owner. This is release,
+    /// not a source read: even a refused advancement must settle retained facts.
+    pub(crate) fn release_query_snapshot(
+        &self,
+        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    ) {
+        let mut runtime = self
+            .runtime
+            .lock()
+            .expect("Relational source owner is available");
+        crate::relational_snapshot_release::release_query_snapshot(&mut runtime, snapshot);
+    }
+
     pub fn with_runtime<T>(&self, read: impl FnOnce(&RelationalRuntime) -> T) -> T {
         let runtime = self
             .runtime
             .lock()
             .expect("Relational source owner is available");
+        #[cfg(feature = "test-query-execution-observer")]
+        super::read_observation::record_read();
         read(&runtime)
     }
 
@@ -97,6 +112,8 @@ impl WorthQueryRelationalSourceOwner {
             .runtime
             .lock()
             .expect("Relational source owner is available");
+        #[cfg(feature = "test-query-execution-observer")]
+        super::read_observation::record_read();
         mutate(&mut runtime)
     }
 
@@ -108,6 +125,8 @@ impl WorthQueryRelationalSourceOwner {
             .runtime
             .lock()
             .expect("Relational source owner is available");
+        #[cfg(feature = "test-query-execution-observer")]
+        super::read_observation::record_read();
         let outcome =
             std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| mutate(&mut runtime)));
         drop(runtime);

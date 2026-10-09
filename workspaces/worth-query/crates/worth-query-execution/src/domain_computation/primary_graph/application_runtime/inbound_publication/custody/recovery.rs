@@ -1,5 +1,6 @@
 //! Exact continuation of World unpublished transport completion effects.
 
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use std::sync::Arc;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_installation::facade::ApplicationSchema;
@@ -42,6 +43,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 
     pub(super) fn continue_transport_recovery(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         evidence: Arc<InstalledTransportCompletion>,
         prior: WorthQueryProductUnpublishedRecovery,
         request: &WorthQueryRequestScope,
@@ -118,7 +121,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         );
         let world_recovery = publication.recovery();
         drop(unpublished);
-        let outcome = prepared.execute();
+        let outcome = prepared.execute(
+            phase
+                .execution_request_for(&self.product_runtime)
+                .expect("private progression uses its admitted runtime phase"),
+        );
         drop(publication);
         drop(lease);
         match outcome {

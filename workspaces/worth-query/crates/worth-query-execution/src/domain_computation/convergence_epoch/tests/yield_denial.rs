@@ -30,29 +30,41 @@ struct CompletedPeer {
 
 #[test]
 fn same_scope_direct_denials_resume_their_exact_epochs() {
-    let first = direct_denied_peer();
-    let second = direct_denied_peer();
-    assert_ne!(first.epoch_identity, second.epoch_identity);
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
 
-    let second = complete_direct_peer(second);
-    let first = complete_direct_peer(first);
-    assert_eq!(first.state_identity, second.state_identity);
-    assert_ne!(first.occurrence_identity, second.occurrence_identity);
+        let first = direct_denied_peer(execution);
+        let second = direct_denied_peer(execution);
+        assert_ne!(first.epoch_identity, second.epoch_identity);
+
+        let second = complete_direct_peer(execution, second);
+        let first = complete_direct_peer(execution, first);
+        assert_eq!(first.state_identity, second.state_identity);
+        assert_ne!(first.occurrence_identity, second.occurrence_identity);
+    });
 }
 
 #[test]
 fn same_stage_workflow_denials_resume_their_exact_epochs() {
-    let first = workflow_denied_peer();
-    let second = workflow_denied_peer();
-    assert_ne!(first.epoch_identity, second.epoch_identity);
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
 
-    let second = complete_workflow_peer(second);
-    let first = complete_workflow_peer(first);
-    assert_eq!(first.state_identity, second.state_identity);
-    assert_ne!(first.occurrence_identity, second.occurrence_identity);
+        let first = workflow_denied_peer(execution);
+        let second = workflow_denied_peer(execution);
+        assert_ne!(first.epoch_identity, second.epoch_identity);
+
+        let second = complete_workflow_peer(execution, second);
+        let first = complete_workflow_peer(execution, first);
+        assert_eq!(first.state_identity, second.state_identity);
+        assert_ne!(first.occurrence_identity, second.occurrence_identity);
+    });
 }
 
-fn direct_denied_peer() -> DirectDeniedPeer {
+fn direct_denied_peer(
+    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+) -> DirectDeniedPeer {
     let (fixture, probe) = direct_yield_denial_admission_fixture();
     let DirectAdmissionFixture {
         runtime,
@@ -68,10 +80,10 @@ fn direct_denied_peer() -> DirectDeniedPeer {
         .unwrap_or_else(|_| panic!("direct yield-denial peer must admit"))
         .start();
     let started = epoch
-        .begin_iteration(call("same-scope-yield-denial"))
+        .begin_iteration(execution, call("same-scope-yield-denial"))
         .unwrap_or_else(|_| panic!("direct yield-denial peer must start"));
     let epoch_identity = started.epoch_identity().to_owned();
-    let paused = match started.advance() {
+    let paused = match started.advance(execution) {
         WorthQueryDirectConvergenceStepOutcome::Continue(paused) => paused,
         _ => panic!("direct denial peer must reach its safe point"),
     };
@@ -87,7 +99,9 @@ fn direct_denied_peer() -> DirectDeniedPeer {
     }
 }
 
-fn workflow_denied_peer() -> WorkflowDeniedPeer {
+fn workflow_denied_peer(
+    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+) -> WorkflowDeniedPeer {
     let (fixture, probe) = workflow_yield_denial_admission_fixture();
     let WorkflowAdmissionFixture {
         runtime,
@@ -104,10 +118,10 @@ fn workflow_denied_peer() -> WorkflowDeniedPeer {
         .start()
         .unwrap_or_else(|_| panic!("workflow yield-denial peer must start"));
     let started = epoch
-        .begin_stage_iteration(WORKFLOW_STAGE, call("same-stage-yield-denial"))
+        .begin_stage_iteration(execution, WORKFLOW_STAGE, call("same-stage-yield-denial"))
         .unwrap_or_else(|_| panic!("workflow yield-denial stage must start"));
     let epoch_identity = started.epoch_identity().to_owned();
-    let paused = match started.advance() {
+    let paused = match started.advance(execution) {
         WorthQueryWorkflowConvergenceStepOutcome::Continue(paused) => paused,
         _ => panic!("workflow denial peer must reach its safe point"),
     };
@@ -123,8 +137,11 @@ fn workflow_denied_peer() -> WorkflowDeniedPeer {
     }
 }
 
-fn complete_direct_peer(peer: DirectDeniedPeer) -> CompletedPeer {
-    let terminal = match peer.denied.retry().advance() {
+fn complete_direct_peer(
+    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    peer: DirectDeniedPeer,
+) -> CompletedPeer {
+    let terminal = match peer.denied.retry().advance(execution) {
         WorthQueryDirectConvergenceStepOutcome::Completed(
             WorthQueryDirectConvergenceIterationOutcome::Converged(terminal),
         ) => terminal,
@@ -142,8 +159,11 @@ fn complete_direct_peer(peer: DirectDeniedPeer) -> CompletedPeer {
     completed
 }
 
-fn complete_workflow_peer(peer: WorkflowDeniedPeer) -> CompletedPeer {
-    let terminal = match peer.denied.retry().advance() {
+fn complete_workflow_peer(
+    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    peer: WorkflowDeniedPeer,
+) -> CompletedPeer {
+    let terminal = match peer.denied.retry().advance(execution) {
         WorthQueryWorkflowConvergenceStepOutcome::Completed(
             WorthQueryWorkflowConvergenceIterationOutcome::Converged(terminal),
         ) => terminal,

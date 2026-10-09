@@ -23,6 +23,16 @@ impl Drop for NonCloneRequestContext {
 
 #[test]
 fn non_clone_context_and_local_callback_borrows_return_on_every_advance_posture() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let world = MutationWorld::<NonCloneRequestContext>::new();
     let dropped = Arc::new(AtomicBool::new(false));
     let mut context = NonCloneRequestContext {
@@ -33,6 +43,7 @@ fn non_clone_context_and_local_callback_borrows_return_on_every_advance_posture(
     let current = world
         .port
         .advance_exact(
+            request_execution,
             &world.source_basis,
             &mut context,
             &SignalOwnerCancellationSource::new().token(),
@@ -50,6 +61,7 @@ fn non_clone_context_and_local_callback_borrows_return_on_every_advance_posture(
     let stale_probe = Arc::clone(&stale_callback_ran);
     assert!(matches!(
         world.port.advance_exact(
+            request_execution,
             &world.source_basis,
             &mut context,
             &SignalOwnerCancellationSource::new().token(),
@@ -69,6 +81,7 @@ fn non_clone_context_and_local_callback_borrows_return_on_every_advance_posture(
     let cancelled_probe = Arc::clone(&cancelled_callback_ran);
     assert!(matches!(
         world.port.advance_exact(
+            request_execution,
             current.advanced_basis(),
             &mut context,
             &cancelled.token(),
@@ -85,6 +98,7 @@ fn non_clone_context_and_local_callback_borrows_return_on_every_advance_posture(
     let ledger_before_panic = world.owner.retention_ledger_observation();
     let panic = catch_unwind(AssertUnwindSafe(|| {
         let _ = world.port.advance_exact(
+            request_execution,
             current.advanced_basis(),
             &mut context,
             &SignalOwnerCancellationSource::new().token(),
@@ -106,6 +120,7 @@ fn non_clone_context_and_local_callback_borrows_return_on_every_advance_posture(
     world
         .port
         .advance_exact(
+            request_execution,
             current.advanced_basis(),
             &mut context,
             &SignalOwnerCancellationSource::new().token(),
@@ -121,6 +136,7 @@ fn non_clone_context_and_local_callback_borrows_return_on_every_advance_posture(
     world
         .port
         .advance_exact(
+            request_execution,
             &world.sibling_basis,
             &mut sibling_context,
             &SignalOwnerCancellationSource::new().token(),
@@ -137,6 +153,16 @@ fn non_clone_context_and_local_callback_borrows_return_on_every_advance_posture(
 
 #[test]
 fn same_thread_owner_reentry_denies_all_methods_before_nested_cell_work() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let world = MutationWorld::<()>::new();
     let captured = world
         .port
@@ -163,6 +189,7 @@ fn same_thread_owner_reentry_denies_all_methods_before_nested_cell_work() {
         ));
         assert!(matches!(
             world.port.advance_exact(
+                request_execution,
                 current,
                 &mut (),
                 &SignalOwnerCancellationSource::new().token(),
@@ -196,6 +223,7 @@ fn same_thread_owner_reentry_denies_all_methods_before_nested_cell_work() {
     world
         .port
         .advance_exact(
+            request_execution,
             current,
             &mut (),
             &SignalOwnerCancellationSource::new().token(),

@@ -111,6 +111,16 @@ pub(super) fn advance_exact(
     port: &SignalBranchBasisPort<(), (), ()>,
     basis: &AdmittedSignalBranchBasis,
 ) -> SignalBranchObservation {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let owner = port.upgrade_owner().expect("the sealed owner remains live");
     let admission = owner.admit().expect("adversarial movement admits once");
     let cell = owner
@@ -118,6 +128,7 @@ pub(super) fn advance_exact(
         .expect("the exact basis names one installed cell");
     let outcome = cell
         .advance_exact::<(), (), _>(
+            request_execution,
             &admission,
             basis,
             &mut (),

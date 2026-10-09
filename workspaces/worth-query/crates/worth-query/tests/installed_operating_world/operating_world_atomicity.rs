@@ -53,6 +53,7 @@ impl domain::WorthQueryGraphCommitProvider<SeparateCommit> for UncontactedProvid
 
     fn admit_commit(
         &self,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
         call: &domain::WorthQueryGraphCommitCall,
     ) -> Result<domain::WorthQueryGraphProviderReceipt, domain::WorthQueryGraphProviderFailure>
     {

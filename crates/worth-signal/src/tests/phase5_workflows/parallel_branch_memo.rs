@@ -18,6 +18,16 @@ fn bounded(inputs: impl IntoIterator<Item = DeclaredSignalInput>) -> NodeContrac
 #[test]
 fn leased_branch_memo_rollback_preserves_branch_local_replay_and_cache_truth() {
     fn run(workers: usize) {
+        // This standalone caller declares the operational serial memory policy.
+        let serial_request = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(
+                crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+            ),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
         let mut runtime = SignalRuntime::builder(SignalGraph::new())
             .with_kernel_defaults()
             .build();
@@ -119,7 +129,7 @@ fn leased_branch_memo_rollback_preserves_branch_local_replay_and_cache_truth() {
         };
 
         runtime
-            .transaction(&mut (), |tx| {
+            .transaction(request_execution, &mut (), |tx| {
                 tx.read(source, &|view| {
                     Ok(view.finish(
                         NodeEvaluationResult::from_version(version_ab(10, 100))
@@ -131,7 +141,7 @@ fn leased_branch_memo_rollback_preserves_branch_local_replay_and_cache_truth() {
             .unwrap();
         evaluate(&mut runtime, None).unwrap();
         runtime
-            .transaction(&mut (), |tx| {
+            .transaction(request_execution, &mut (), |tx| {
                 tx.evaluate_keyed(keyed, &memo, &|view| {
                     compute_calls.fetch_add(1, Ordering::Relaxed);
                     let version = view.read_aspect_version(fused, ASPECT_A)?;
@@ -151,7 +161,7 @@ fn leased_branch_memo_rollback_preserves_branch_local_replay_and_cache_truth() {
 
         for step in 0..12_u64 {
             runtime
-                .transaction(&mut (), |tx| {
+                .transaction(request_execution, &mut (), |tx| {
                     tx.mark_dirty(source, ASPECT_A)?;
                     if step % 3 == 0 {
                         tx.mark_dirty(source, ASPECT_B)?;
@@ -171,7 +181,7 @@ fn leased_branch_memo_rollback_preserves_branch_local_replay_and_cache_truth() {
             evaluate(&mut runtime, Some(step)).unwrap();
             mark_dirty(runtime.graph_mut(), keyed, ASPECT_A).unwrap();
             runtime
-                .transaction(&mut (), |tx| {
+                .transaction(request_execution, &mut (), |tx| {
                     tx.evaluate_keyed(keyed, &memo, &|view| {
                         compute_calls.fetch_add(1, Ordering::Relaxed);
                         let version = view.read_aspect_version(fused, ASPECT_A)?;
@@ -183,7 +193,7 @@ fn leased_branch_memo_rollback_preserves_branch_local_replay_and_cache_truth() {
             if step % 2 == 1 {
                 let analysis = runtime.create_branch(format!("analysis-{step}")).unwrap();
                 runtime.switch_branch(analysis).unwrap();
-                let err = runtime.transaction(&mut (), |tx| {
+                let err = runtime.transaction(request_execution, &mut (), |tx| {
                     tx.mark_dirty(source, ASPECT_A)?;
                     tx.read(source, &|view| {
                         Ok(view.finish(

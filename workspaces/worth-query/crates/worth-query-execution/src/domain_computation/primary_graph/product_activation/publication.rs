@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use std::sync::Arc;
 
 use worth_runtime_bridge::facade::{
@@ -34,6 +35,8 @@ where
 {
     pub(in crate::domain_computation::primary_graph) fn publish_product_conditional_definition(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         product: &WorthQueryProductBranchLease,
         predecessor: &Arc<BridgeInstalledConditionalLowering>,
         request: BridgeOwnedConditionalInstallationRequest,
@@ -84,6 +87,9 @@ where
                 .owner
                 .publication_port()
                 .publish_bridge_conditional_definition(
+                    phase
+                        .execution_request_for(&self.product_runtime)
+                        .expect("private progression uses its admitted runtime phase"),
                     prepared_world,
                     prepared_bridge,
                     &bridge,

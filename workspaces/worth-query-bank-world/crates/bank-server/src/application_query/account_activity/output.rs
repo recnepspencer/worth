@@ -106,6 +106,10 @@ pub struct BankAccountActivityLiveUpdate {
 
 #[derive(Debug)]
 pub enum BankAccountActivityLiveOutcome {
+    /// Admission refused before any principal or live projection read.
+    ExecutionRequest(
+        worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial,
+    ),
     Delivered(BankAccountActivityLiveUpdate),
     Pending,
     Overflow(BankApplicationLiveOverflow),

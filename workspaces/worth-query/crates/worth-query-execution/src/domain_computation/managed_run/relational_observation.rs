@@ -25,6 +25,7 @@ impl WorthQueryManagedRelationalObservationIdentity {
 pub(in crate::domain_computation) struct WorthQueryManagedRelationalObservation {
     identity: WorthQueryManagedRelationalObservationIdentity,
     current_at_admission: bool,
+    owner_identity: Option<worth_runtime_world::facade::RuntimeWorldOwnerIdentity>,
     bridge_observation: Option<RelationalBridgeObservationLease>,
 }
 
@@ -42,8 +43,23 @@ impl WorthQueryManagedRelationalObservation {
                 snapshot: bridge_observation.snapshot_identity().clone(),
             },
             current_at_admission,
+            owner_identity: None,
             bridge_observation: Some(bridge_observation),
         })
+    }
+
+    pub(super) fn with_product_owner(
+        mut self,
+        product: Option<&worth_runtime_world::facade::ProductBranchObservation>,
+    ) -> Self {
+        self.owner_identity = product.map(|product| product.branch_identity().owner_identity());
+        self
+    }
+
+    pub(in crate::domain_computation) fn owner_identity(
+        &self,
+    ) -> Option<worth_runtime_world::facade::RuntimeWorldOwnerIdentity> {
+        self.owner_identity
     }
 
     pub fn identity(&self) -> &WorthQueryManagedRelationalObservationIdentity {

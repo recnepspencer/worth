@@ -9,13 +9,23 @@ use crate::facade::{
 
 #[test]
 fn temporal_certification_builder_requires_distinct_family_evidence_lanes() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
 
     let eligibility_node = runtime.graph_mut().node().after(2).unwrap().build();
     let eligibility_outcome = runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.evaluate_with_plan(
                 eligibility_node,
                 &|_ctx| {
@@ -93,7 +103,7 @@ fn temporal_certification_builder_requires_distinct_family_evidence_lanes() {
     let source = runtime.graph_mut().node().build();
     let value_aspect = Aspect::new(7);
     runtime
-        .transaction(&mut (), |tx| {
+        .transaction(request_execution, &mut (), |tx| {
             tx.read(source, &|view| {
                 Ok(view.finish(NodeEvaluationResult::from_version(
                     AspectVersion::from_updates([(value_aspect, 9)]),

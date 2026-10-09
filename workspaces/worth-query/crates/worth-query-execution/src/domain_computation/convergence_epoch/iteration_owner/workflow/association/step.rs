@@ -7,6 +7,7 @@ use crate::domain_computation::{
 };
 
 pub(in super::super) enum WorkflowAssociatedStepOutcome {
+    ForeignAdvancementPhase(WorkflowIterationAssociation<WorthQueryActiveWorkflowGraphExecution>),
     Continue(WorkflowIterationAssociation<WorthQueryPausedWorkflowGraphExecution>),
     ChunkReady(WorkflowIterationAssociation<WorthQueryPendingWorkflowGraphChunk>),
     Completed(super::super::WorthQueryWorkflowConvergenceIterationOutcome),
@@ -14,7 +15,10 @@ pub(in super::super) enum WorkflowAssociatedStepOutcome {
 }
 
 impl WorkflowIterationAssociation<WorthQueryActiveWorkflowGraphExecution> {
-    pub(in super::super) fn advance(self) -> WorkflowAssociatedStepOutcome {
+    pub(in super::super) fn advance(
+        self,
+        execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    ) -> WorkflowAssociatedStepOutcome {
         let Self {
             core,
             graph,
@@ -22,7 +26,13 @@ impl WorkflowIterationAssociation<WorthQueryActiveWorkflowGraphExecution> {
             stage_identity,
             managed,
         } = self;
-        admit_step(core, graph, provider, stage_identity, managed.advance())
+        admit_step(
+            core,
+            graph,
+            provider,
+            stage_identity,
+            managed.advance(execution),
+        )
     }
 
     pub(in super::super) fn abandon(
@@ -40,7 +50,10 @@ impl WorkflowIterationAssociation<WorthQueryActiveWorkflowGraphExecution> {
 }
 
 impl WorkflowIterationAssociation<WorthQueryPausedWorkflowGraphExecution> {
-    pub(in super::super) fn advance(self) -> WorkflowAssociatedStepOutcome {
+    pub(in super::super) fn advance(
+        self,
+        execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    ) -> WorkflowAssociatedStepOutcome {
         let Self {
             core,
             graph,
@@ -48,7 +61,13 @@ impl WorkflowIterationAssociation<WorthQueryPausedWorkflowGraphExecution> {
             stage_identity,
             managed,
         } = self;
-        admit_step(core, graph, provider, stage_identity, managed.advance())
+        admit_step(
+            core,
+            graph,
+            provider,
+            stage_identity,
+            managed.advance(execution),
+        )
     }
 
     pub(in super::super) fn abandon(
@@ -113,6 +132,15 @@ fn admit_step(
     outcome: WorthQueryWorkflowGraphStepOutcome,
 ) -> WorkflowAssociatedStepOutcome {
     match outcome {
+        WorthQueryWorkflowGraphStepOutcome::ForeignAdvancementPhase(managed) => {
+            WorkflowAssociatedStepOutcome::ForeignAdvancementPhase(WorkflowIterationAssociation {
+                core,
+                graph,
+                provider,
+                stage_identity,
+                managed,
+            })
+        }
         WorthQueryWorkflowGraphStepOutcome::Continue(managed) => {
             WorkflowAssociatedStepOutcome::Continue(WorkflowIterationAssociation {
                 core,

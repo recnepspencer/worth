@@ -16,6 +16,9 @@ pub enum SignalLeaseDenial {
     EquivalenceContractUnavailable,
 }
 
+/// The Signal owner refused a cooperative safe point under the carried request.
+/// Cancellation, deadline, counter overflow, work exhaustion and a nested stop
+/// preserve their distinct execution meaning at this boundary.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SignalCheckpointDenial {
     Cancelled,

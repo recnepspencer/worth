@@ -5,6 +5,16 @@ use crate::tests::support::{evaluate, version_ab, GraphDependencyBatchExt, ASPEC
 
 #[test]
 fn rollback_removes_dynamic_dependency_capture_ghost_subscribers() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = crate::data::graph::SignalGraph::new();
     let source_a = graph.node().build();
     let source_b = graph.node().build();
@@ -29,7 +39,7 @@ fn rollback_removes_dynamic_dependency_capture_ghost_subscribers() {
 
     assert!(runtime.graph().subscribers_of(source_b).unwrap().is_empty());
 
-    let mut tx = runtime.begin(&mut ctx);
+    let mut tx = runtime.begin(request_execution, &mut ctx);
     tx.evaluate_with_plan(
         target,
         &|view| {
@@ -61,6 +71,16 @@ fn rollback_removes_dynamic_dependency_capture_ghost_subscribers() {
 
 #[test]
 fn rollback_restores_original_source_subscriber_membership_after_rewire() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = crate::data::graph::SignalGraph::new();
     let source_a = graph.node().build();
     let source_b = graph.node().build();
@@ -88,7 +108,7 @@ fn rollback_restores_original_source_subscriber_membership_after_rewire() {
     let baseline_branch_view = runtime.graph().branch_mutation_records();
     let baseline_pending_journal = runtime.graph().pending_branch_mutation_records();
 
-    let mut tx = runtime.begin(&mut ctx);
+    let mut tx = runtime.begin(request_execution, &mut ctx);
     tx.evaluate_with_plan(
         target,
         &|view| {
@@ -146,6 +166,16 @@ fn rollback_restores_original_source_subscriber_membership_after_rewire() {
 
 #[test]
 fn rollback_rewinds_cause_storage_and_output_commit_ordinal() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = crate::data::graph::SignalGraph::new();
     let producer = graph.node().build();
     let consumer = graph.node().build();
@@ -165,7 +195,7 @@ fn rollback_rewinds_cause_storage_and_output_commit_ordinal() {
     let baseline_ordinal = runtime.graph().cause_sets.reserve_output_commit_ordinal();
     let baseline_slots = runtime.graph().cause_sets.allocated_slot_count();
 
-    let mut tx = runtime.begin(&mut ctx);
+    let mut tx = runtime.begin(request_execution, &mut ctx);
     tx.mark_dirty(producer, ASPECT_A).unwrap();
     tx.evaluate_with_plan(
         producer,

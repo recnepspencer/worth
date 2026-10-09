@@ -137,12 +137,19 @@ fn a_binding_the_schema_never_installed_is_refused_instead_of_panicking() {
     let mut contacts = 0;
     let outcome = world
         .application
-        .execute_mutation_handler_observing_contact::<ProgramRequiredSiblingBinding>(
-            &identities,
-            principal.principal_identity(),
-            admission,
-            || contacts += 1,
-        );
+        .with_host_advancement(|active_phase| {
+            let phase = &active_phase;
+            world
+                .application
+                .execute_mutation_handler_observing_contact::<ProgramRequiredSiblingBinding>(
+                    phase,
+                    &identities,
+                    principal.principal_identity(),
+                    admission,
+                    || contacts += 1,
+                )
+        })
+        .expect("fixture owner admits its advancement");
     assert!(
         matches!(
             outcome,
@@ -181,12 +188,19 @@ fn handler_contact_is_preserved_after_a_later_execution_denial() {
         let mut contacts = 0;
         let outcome = world
             .application
-            .execute_mutation_handler_observing_contact::<ProgramRequiredMutationBinding>(
-                &identities,
-                principal.principal_identity(),
-                admission,
-                || contacts += 1,
-            );
+            .with_host_advancement(|active_phase| {
+                let phase = &active_phase;
+                world
+                    .application
+                    .execute_mutation_handler_observing_contact::<ProgramRequiredMutationBinding>(
+                        phase,
+                        &identities,
+                        principal.principal_identity(),
+                        admission,
+                        || contacts += 1,
+                    )
+            })
+            .expect("fixture owner admits its advancement");
         assert_eq!(contacts, 1, "the real decide boundary ran for {status}");
         assert!(
             outcome.is_err(),

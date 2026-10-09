@@ -4,194 +4,222 @@ use worth_runtime_bridge::facade::BridgeExecutionBasisSignalTerminal;
 
 #[test]
 fn direct_yield_retains_exact_authorities_and_releases_them_explicitly() {
-    let (running, graph, _bridge) = managed_graph_run_with_provider_and_bridge(
-        WorthQueryOperationGraphAccess::Observe,
-        YieldProvider::installed(5),
-    );
-    let logical_run_identity = running.logical_run_identity().to_owned();
-    let attempt_identity = running.identity().to_owned();
-    let active = running
-        .begin_graph_execution(
-            &graph,
-            WorthQueryManagedGraphCallRequest::new(
-                WorthQueryGraphProviderCallKind::Observe,
-                "direct-yield",
-            ),
-        )
-        .expect("yield provider should begin");
-    let paused = match active.advance() {
-        WorthQueryDirectGraphStepOutcome::Continue(paused) => paused,
-        _ => panic!("yield provider did not reach its declared safe point"),
-    };
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
 
-    let yielded = match paused.yield_run() {
-        crate::domain_computation::WorthQueryDirectYieldOutcome::Yielded(yielded) => yielded,
-        _ => panic!("eligible direct run did not yield"),
-    };
-    assert_eq!(
-        yielded.inspection().logical_run_identity(),
-        logical_run_identity
-    );
-    assert_eq!(
-        yielded.inspection().yielded_attempt_identity(),
-        attempt_identity
-    );
-    assert_ne!(
-        yielded.inspection().logical_run_identity(),
-        yielded.inspection().yielded_attempt_identity()
-    );
-    assert_eq!(yielded.inspection().checkpoint().retained_bytes(), 5);
-    assert!(yielded.inspection().checkpoint().provider_generation() > 0);
-    assert_eq!(
-        yielded.inspection().retained_capacity_reservation_count(),
-        2
-    );
-    assert_eq!(
-        yielded
-            .inspection()
-            .provider_work()
-            .interrupted_call_count(),
-        1
-    );
-    assert_eq!(
-        yielded.inspection().provider_work().completed_work_units(),
-        2
-    );
+        let (running, graph, _bridge) = managed_graph_run_with_provider_and_bridge(
+            WorthQueryOperationGraphAccess::Observe,
+            YieldProvider::installed(5),
+        );
+        let logical_run_identity = running.logical_run_identity().to_owned();
+        let attempt_identity = running.identity().to_owned();
+        let active = running
+            .begin_graph_execution(
+                execution,
+                &graph,
+                WorthQueryManagedGraphCallRequest::new(
+                    WorthQueryGraphProviderCallKind::Observe,
+                    "direct-yield",
+                ),
+            )
+            .expect("yield provider should begin");
+        let paused = match active.advance(execution) {
+            WorthQueryDirectGraphStepOutcome::Continue(paused) => paused,
+            _ => panic!("yield provider did not reach its declared safe point"),
+        };
 
-    let cleanup = complete_direct_yield_cleanup(yielded);
-    assert_eq!(cleanup.logical_run_identity(), logical_run_identity);
-    assert_eq!(cleanup.yielded_attempt_identity(), attempt_identity);
-    assert!(cleanup.resources_released());
-    assert_eq!(cleanup.released_reservation_count(), 2);
-    assert_eq!(cleanup.checkpoint().unwrap().retained_bytes(), 5);
+        let yielded = match paused.yield_run() {
+            crate::domain_computation::WorthQueryDirectYieldOutcome::Yielded(yielded) => yielded,
+            _ => panic!("eligible direct run did not yield"),
+        };
+        assert_eq!(
+            yielded.inspection().logical_run_identity(),
+            logical_run_identity
+        );
+        assert_eq!(
+            yielded.inspection().yielded_attempt_identity(),
+            attempt_identity
+        );
+        assert_ne!(
+            yielded.inspection().logical_run_identity(),
+            yielded.inspection().yielded_attempt_identity()
+        );
+        assert_eq!(yielded.inspection().checkpoint().retained_bytes(), 5);
+        assert!(yielded.inspection().checkpoint().provider_generation() > 0);
+        assert_eq!(
+            yielded.inspection().retained_capacity_reservation_count(),
+            2
+        );
+        assert_eq!(
+            yielded
+                .inspection()
+                .provider_work()
+                .interrupted_call_count(),
+            1
+        );
+        assert_eq!(
+            yielded.inspection().provider_work().completed_work_units(),
+            2
+        );
+
+        let cleanup = complete_direct_yield_cleanup(yielded);
+        assert_eq!(cleanup.logical_run_identity(), logical_run_identity);
+        assert_eq!(cleanup.yielded_attempt_identity(), attempt_identity);
+        assert!(cleanup.resources_released());
+        assert_eq!(cleanup.released_reservation_count(), 2);
+        assert_eq!(cleanup.checkpoint().unwrap().retained_bytes(), 5);
+    });
 }
 
 #[test]
 fn direct_yield_denials_preserve_the_paused_execution_authority() {
-    let (running, graph) = managed_graph_run_with_provider(
-        WorthQueryOperationGraphAccess::Observe,
-        YieldProvider::without_installed_yield(),
-    );
-    let active = running
-        .begin_graph_execution(
-            &graph,
-            WorthQueryManagedGraphCallRequest::new(
-                WorthQueryGraphProviderCallKind::Observe,
-                "direct-yield-denied",
-            ),
-        )
-        .unwrap();
-    let paused = match active.advance() {
-        WorthQueryDirectGraphStepOutcome::Continue(paused) => paused,
-        _ => panic!("provider did not pause"),
-    };
-    let denied = match paused.yield_run() {
-        crate::domain_computation::WorthQueryDirectYieldOutcome::Denied(denied) => denied,
-        _ => panic!("non-yieldable contract minted yielded authority"),
-    };
-    assert_eq!(
-        denied.kind(),
-        crate::domain_computation::WorthQueryDirectYieldDenialKind::YieldNotInstalled
-    );
-    let completion = match denied.into_paused().advance() {
-        WorthQueryDirectGraphStepOutcome::Completed(completion) => completion,
-        _ => panic!("yield denial consumed the paused execution"),
-    };
-    let terminal = completion.into_running().completed().unwrap();
-    assert!(terminal.cleanup().is_ok());
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
+
+        let (running, graph) = managed_graph_run_with_provider(
+            WorthQueryOperationGraphAccess::Observe,
+            YieldProvider::without_installed_yield(),
+        );
+        let active = running
+            .begin_graph_execution(
+                execution,
+                &graph,
+                WorthQueryManagedGraphCallRequest::new(
+                    WorthQueryGraphProviderCallKind::Observe,
+                    "direct-yield-denied",
+                ),
+            )
+            .unwrap();
+        let paused = match active.advance(execution) {
+            WorthQueryDirectGraphStepOutcome::Continue(paused) => paused,
+            _ => panic!("provider did not pause"),
+        };
+        let denied = match paused.yield_run() {
+            crate::domain_computation::WorthQueryDirectYieldOutcome::Denied(denied) => denied,
+            _ => panic!("non-yieldable contract minted yielded authority"),
+        };
+        assert_eq!(
+            denied.kind(),
+            crate::domain_computation::WorthQueryDirectYieldDenialKind::YieldNotInstalled
+        );
+        let completion = match denied.into_paused().advance(execution) {
+            WorthQueryDirectGraphStepOutcome::Completed(completion) => completion,
+            _ => panic!("yield denial consumed the paused execution"),
+        };
+        let terminal = completion.into_running().completed().unwrap();
+        assert!(terminal.cleanup().is_ok());
+    });
 }
 
 #[test]
 fn checkpoint_claim_is_required_even_when_yield_is_installed() {
-    let (running, graph) = managed_graph_run_with_provider(
-        WorthQueryOperationGraphAccess::Observe,
-        YieldProvider::without_checkpoint_evidence(),
-    );
-    let active = running
-        .begin_graph_execution(
-            &graph,
-            WorthQueryManagedGraphCallRequest::new(
-                WorthQueryGraphProviderCallKind::Observe,
-                "direct-no-checkpoint",
-            ),
-        )
-        .unwrap();
-    let paused = match active.advance() {
-        WorthQueryDirectGraphStepOutcome::Continue(paused) => paused,
-        _ => panic!("provider did not pause"),
-    };
-    let denied = match paused.yield_run() {
-        crate::domain_computation::WorthQueryDirectYieldOutcome::Denied(denied) => denied,
-        _ => panic!("missing checkpoint evidence permitted yield"),
-    };
-    assert_eq!(
-        denied.kind(),
-        crate::domain_computation::WorthQueryDirectYieldDenialKind::CheckpointUnavailable
-    );
-    let completion = match denied.into_paused().advance() {
-        WorthQueryDirectGraphStepOutcome::Completed(completion) => completion,
-        _ => panic!("checkpoint denial consumed the execution"),
-    };
-    assert!(completion
-        .into_running()
-        .completed()
-        .unwrap()
-        .cleanup()
-        .is_ok());
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
+
+        let (running, graph) = managed_graph_run_with_provider(
+            WorthQueryOperationGraphAccess::Observe,
+            YieldProvider::without_checkpoint_evidence(),
+        );
+        let active = running
+            .begin_graph_execution(
+                execution,
+                &graph,
+                WorthQueryManagedGraphCallRequest::new(
+                    WorthQueryGraphProviderCallKind::Observe,
+                    "direct-no-checkpoint",
+                ),
+            )
+            .unwrap();
+        let paused = match active.advance(execution) {
+            WorthQueryDirectGraphStepOutcome::Continue(paused) => paused,
+            _ => panic!("provider did not pause"),
+        };
+        let denied = match paused.yield_run() {
+            crate::domain_computation::WorthQueryDirectYieldOutcome::Denied(denied) => denied,
+            _ => panic!("missing checkpoint evidence permitted yield"),
+        };
+        assert_eq!(
+            denied.kind(),
+            crate::domain_computation::WorthQueryDirectYieldDenialKind::CheckpointUnavailable
+        );
+        let completion = match denied.into_paused().advance(execution) {
+            WorthQueryDirectGraphStepOutcome::Completed(completion) => completion,
+            _ => panic!("checkpoint denial consumed the execution"),
+        };
+        assert!(completion
+            .into_running()
+            .completed()
+            .unwrap()
+            .cleanup()
+            .is_ok());
+    });
 }
 
 #[test]
 fn suspension_failure_terminalizes_signal_but_preserves_cleanup_authority() {
-    let (running, graph) = managed_graph_run_with_provider(
-        WorthQueryOperationGraphAccess::Observe,
-        YieldProvider::suspension_failure(),
-    );
-    let active = running
-        .begin_graph_execution(
-            &graph,
-            WorthQueryManagedGraphCallRequest::new(
-                WorthQueryGraphProviderCallKind::Observe,
-                "direct-suspend-failure",
-            ),
-        )
-        .unwrap();
-    let paused = match active.advance() {
-        WorthQueryDirectGraphStepOutcome::Continue(paused) => paused,
-        _ => panic!("provider did not pause"),
-    };
-    let recovery = match paused.yield_run() {
-        crate::domain_computation::WorthQueryDirectYieldOutcome::RecoveryRequired(recovery) => {
-            recovery
-        }
-        _ => panic!("suspension failure did not return recovery authority"),
-    };
-    assert!(!recovery.running_attempt_recoverable());
-    assert_eq!(
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
+
+        let (running, graph) = managed_graph_run_with_provider(
+            WorthQueryOperationGraphAccess::Observe,
+            YieldProvider::suspension_failure(),
+        );
+        let active = running
+            .begin_graph_execution(
+                execution,
+                &graph,
+                WorthQueryManagedGraphCallRequest::new(
+                    WorthQueryGraphProviderCallKind::Observe,
+                    "direct-suspend-failure",
+                ),
+            )
+            .unwrap();
+        let paused = match active.advance(execution) {
+            WorthQueryDirectGraphStepOutcome::Continue(paused) => paused,
+            _ => panic!("provider did not pause"),
+        };
+        let recovery = match paused.yield_run() {
+            crate::domain_computation::WorthQueryDirectYieldOutcome::RecoveryRequired(recovery) => {
+                recovery
+            }
+            _ => panic!("suspension failure did not return recovery authority"),
+        };
+        assert!(!recovery.running_attempt_recoverable());
+        assert_eq!(
         recovery.kind(),
         crate::domain_computation::WorthQueryYieldRecoveryKind::ProviderCheckpointSuspension(
             crate::domain_computation::WorthQueryProviderCheckpointSuspensionFailureKind::
                 ProviderRejected,
         )
     );
-    let cleanup = match recovery.cleanup_terminalized() {
-        Ok(cleanup) => cleanup,
-        Err(_) => panic!("terminalized direct recovery did not release"),
-    };
-    assert_eq!(
-        cleanup.inspection().bridge_signal_terminal(),
-        BridgeExecutionBasisSignalTerminal::Cancelled
-    );
-    assert!(cleanup.inspection().resources_released());
-    assert_eq!(cleanup.inspection().released_reservation_count(), 2);
-    assert_eq!(
-        cleanup.inspection().provider_work().abandoned_call_count(),
-        1
-    );
+        let cleanup = match recovery.cleanup_terminalized() {
+            Ok(cleanup) => cleanup,
+            Err(_) => panic!("terminalized direct recovery did not release"),
+        };
+        assert_eq!(
+            cleanup.inspection().bridge_signal_terminal(),
+            BridgeExecutionBasisSignalTerminal::Cancelled
+        );
+        assert!(cleanup.inspection().resources_released());
+        assert_eq!(cleanup.inspection().released_reservation_count(), 2);
+        assert_eq!(
+            cleanup.inspection().provider_work().abandoned_call_count(),
+            1
+        );
+    });
 }
 
 #[test]
 fn suspension_panic_and_oversized_checkpoint_follow_the_same_recovery_lane() {
-    for (provider, expected_kind) in [
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
+
+        for (provider, expected_kind) in [
         (
             YieldProvider::suspension_panic(),
             crate::domain_computation::WorthQueryYieldRecoveryKind::ProviderCheckpointSuspension(
@@ -232,7 +260,7 @@ fn suspension_panic_and_oversized_checkpoint_follow_the_same_recovery_lane() {
         let (running, graph) =
             managed_graph_run_with_provider(WorthQueryOperationGraphAccess::Observe, provider);
         let active = running
-            .begin_graph_execution(
+            .begin_graph_execution(execution,
                 &graph,
                 WorthQueryManagedGraphCallRequest::new(
                     WorthQueryGraphProviderCallKind::Observe,
@@ -240,7 +268,7 @@ fn suspension_panic_and_oversized_checkpoint_follow_the_same_recovery_lane() {
                 ),
             )
             .unwrap();
-        let paused = match active.advance() {
+        let paused = match active.advance(execution) {
             WorthQueryDirectGraphStepOutcome::Continue(paused) => paused,
             _ => panic!("provider did not pause"),
         };
@@ -257,39 +285,46 @@ fn suspension_panic_and_oversized_checkpoint_follow_the_same_recovery_lane() {
             Err(_) => panic!("terminalized adversarial recovery did not release"),
         }
     }
+    });
 }
 
 #[test]
 fn direct_yield_preserves_exact_applied_effect_evidence() {
-    let (running, graph) =
-        managed_graph_effect_run_with_provider(YieldProvider::installed_with_partial_effect(5));
-    let active = running
-        .begin_graph_execution(
-            &graph,
-            WorthQueryManagedGraphCallRequest::new(
-                WorthQueryGraphProviderCallKind::TouchEffect,
-                "direct-yield-partial-effect",
-            ),
-        )
-        .expect("installed effect provider should begin");
-    let paused = match active.advance() {
-        WorthQueryDirectGraphStepOutcome::Continue(paused) => paused,
-        _ => panic!("effect provider did not reach its yield safe point"),
-    };
-    let yielded = match paused.yield_run() {
-        crate::domain_computation::WorthQueryDirectYieldOutcome::Yielded(yielded) => yielded,
-        _ => panic!("installed partial-effect posture did not admit yield"),
-    };
-    assert_eq!(
-        yielded.inspection().provider_work().applied_effect_count(),
-        1
-    );
-    assert_eq!(
-        yielded.inspection().provider_work().completed_work_units(),
-        3
-    );
-    let cleanup = complete_direct_yield_cleanup(yielded);
-    assert_eq!(cleanup.provider_work().applied_effect_count(), 1);
-    assert_eq!(cleanup.provider_work().abandoned_call_count(), 0);
-    assert_eq!(cleanup.provider_work().interrupted_call_count(), 1);
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
+
+        let (running, graph) =
+            managed_graph_effect_run_with_provider(YieldProvider::installed_with_partial_effect(5));
+        let active = running
+            .begin_graph_execution(
+                execution,
+                &graph,
+                WorthQueryManagedGraphCallRequest::new(
+                    WorthQueryGraphProviderCallKind::TouchEffect,
+                    "direct-yield-partial-effect",
+                ),
+            )
+            .expect("installed effect provider should begin");
+        let paused = match active.advance(execution) {
+            WorthQueryDirectGraphStepOutcome::Continue(paused) => paused,
+            _ => panic!("effect provider did not reach its yield safe point"),
+        };
+        let yielded = match paused.yield_run() {
+            crate::domain_computation::WorthQueryDirectYieldOutcome::Yielded(yielded) => yielded,
+            _ => panic!("installed partial-effect posture did not admit yield"),
+        };
+        assert_eq!(
+            yielded.inspection().provider_work().applied_effect_count(),
+            1
+        );
+        assert_eq!(
+            yielded.inspection().provider_work().completed_work_units(),
+            3
+        );
+        let cleanup = complete_direct_yield_cleanup(yielded);
+        assert_eq!(cleanup.provider_work().applied_effect_count(), 1);
+        assert_eq!(cleanup.provider_work().abandoned_call_count(), 0);
+        assert_eq!(cleanup.provider_work().interrupted_call_count(), 1);
+    });
 }

@@ -31,19 +31,25 @@ where
             Schema = Schema,
         >,
     {
-        if !std::ptr::eq(self.application, workflow.runtime()) {
-            return Err(WorthQueryApplicationOutputDemandDenial::FreshRequestMismatch);
-        }
-        let source = self.query_source()?.into_output_demand_source();
-        let limits = self.resolved_limits();
-        let controls = WorthQueryOutputDemandControls::from_limits(limits);
-        let admitted = workflow
-            .admit_workflow_assessment_output(
-                &worth_query_execution::publication_boundary::program_publication_access(),
-                source,
-                limits,
-            )
-            .map_err(WorthQueryApplicationOutputDemandDenial::Demand)?;
-        Ok((admitted, self.demand, controls))
+        let application = self.application;
+        let scope = self.scope;
+        application
+            .with_application_advancement(scope, |phase| {
+                if !std::ptr::eq(self.application, workflow.runtime()) {
+                    return Err(WorthQueryApplicationOutputDemandDenial::FreshRequestMismatch);
+                }
+                let source = self.query_source(&phase)?.into_output_demand_source();
+                let limits = self.resolved_limits();
+                let controls = WorthQueryOutputDemandControls::from_limits(limits);
+                let admitted = workflow
+                    .admit_workflow_assessment_output(
+                        &worth_query_execution::publication_boundary::program_publication_access(),
+                        source,
+                        limits,
+                    )
+                    .map_err(WorthQueryApplicationOutputDemandDenial::Demand)?;
+                Ok((admitted, self.demand, controls))
+            })
+            .map_err(WorthQueryApplicationOutputDemandDenial::advancement)?
     }
 }

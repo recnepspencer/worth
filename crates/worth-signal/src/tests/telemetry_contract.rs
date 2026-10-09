@@ -76,6 +76,16 @@ fn source_seed_planning_estimate_does_not_walk_diamond_reachability() {
 
 #[test]
 fn runtime_metrics_surface_typed_reuse_family_counters() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -105,17 +115,17 @@ fn runtime_metrics_surface_typed_reuse_family_counters() {
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             source.evaluate_memoized(tx, "shape-v1")
         })
         .unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             alias.evaluate_cross_identity(tx, "source", "shape-v1", "mesh-telemetry")
         })
         .unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             splice.evaluate_partial_splice(
                 tx,
                 "shape-v1",
@@ -132,6 +142,16 @@ fn runtime_metrics_surface_typed_reuse_family_counters() {
 
 #[test]
 fn typed_rejection_counters_match_runtime_reuse_failures() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -176,24 +196,24 @@ fn typed_rejection_counters_match_runtime_reuse_failures() {
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             source.evaluate_memoized(tx, "shape-v1")
         })
         .unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             wing.evaluate_memoized(tx, "shape-v1")
         })
         .unwrap();
     mark_dirty(runtime.graph_mut(), wing_node, ASPECT_A).unwrap();
 
     let cross_identity_err = runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             alias.evaluate_cross_identity(tx, "source", "shape-v1", "mesh-reject")
         })
         .expect_err("cross-identity should be rejected by the reuse contract");
     let partial_splice_err = runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             wing.evaluate_partial_splice(
                 tx,
                 "shape-v1",

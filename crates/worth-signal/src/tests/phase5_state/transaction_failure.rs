@@ -6,6 +6,16 @@ use crate::tests::support::{version_ab, ASPECT_A};
 
 #[test]
 fn branch_local_transaction_failure_does_not_advance_heads_or_leak_committed_artifacts() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -13,7 +23,7 @@ fn branch_local_transaction_failure_does_not_advance_heads_or_leak_committed_art
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(source, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(1, 0))
@@ -28,7 +38,7 @@ fn branch_local_transaction_failure_does_not_advance_heads_or_leak_committed_art
     let feature = runtime.create_branch("feature-failure").unwrap();
     runtime.switch_branch(feature.clone()).unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.mark_dirty(source, ASPECT_A)?;
             tx.read(source, &|view| {
                 Ok(view.finish(
@@ -50,7 +60,7 @@ fn branch_local_transaction_failure_does_not_advance_heads_or_leak_committed_art
     let feature_replay_before = runtime.observe().replay_for_branch(feature.id);
     let policy_before_failure = runtime.runtime_policy();
 
-    let err = runtime.transaction(&mut runtime_ctx, |tx| {
+    let err = runtime.transaction(request_execution, &mut runtime_ctx, |tx| {
         tx.try_set_runtime_policy(SignalRuntimePolicy::forensic())
             .map_err(|_| {
                 SignalError::invalid_input("forensic rollback policy should be admissible")

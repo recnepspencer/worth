@@ -3,6 +3,16 @@ use crate::tests::support::{version_ab, ASPECT_A};
 
 #[test]
 fn alternating_dynamic_rewire_across_branches_preserves_subscriber_integrity() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -13,7 +23,7 @@ fn alternating_dynamic_rewire_across_branches_preserves_subscriber_integrity() {
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(selector, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(1, 0))
@@ -56,7 +66,7 @@ fn alternating_dynamic_rewire_across_branches_preserves_subscriber_integrity() {
     let feature = runtime.create_branch("feature-rewire").unwrap();
     runtime.switch_branch(feature.clone()).unwrap();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.mark_dirty(selector, ASPECT_A)?;
             tx.read(selector, &|view| {
                 Ok(view.finish(

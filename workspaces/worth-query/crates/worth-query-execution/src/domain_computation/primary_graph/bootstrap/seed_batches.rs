@@ -10,7 +10,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphBootstrap<Schema> {
     /// Commits one bounded installation-only seed batch under the selected
     /// runtime profile. Relations must connect endpoints seeded in the same
     /// batch. The graph remains unavailable to application callers.
-    pub fn commit_seed_batch(&mut self) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+    /// The phase witnesses installation custody around inline Relational commits.
+    pub fn commit_seed_batch(
+        &mut self,
+        _phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
+    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         if self.seed_batch_failed {
             return Err(primary_graph_denial(
                 WorthQueryPrimaryGraphInstallationDenialKind::RelationalCommitRejected,

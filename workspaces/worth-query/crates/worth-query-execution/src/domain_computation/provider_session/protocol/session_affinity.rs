@@ -16,7 +16,7 @@ pub(crate) struct WorthQueryProviderSessionAffinity<'run> {
     _run: WorthQueryProviderRunBorrow<'run>,
     contract: WorthQueryProviderExecutionPlanContract,
     product: WorthQueryProviderProductAffinity,
-    session: WorthQueryProviderSessionLease,
+    session: WorthQueryProviderSessionLease<'run>,
     binding: WorthQuerySessionBinding,
 }
 
@@ -39,6 +39,7 @@ pub(in crate::domain_computation) struct WorthQueryProviderSessionAffinityView<'
 
 impl<'run> WorthQueryProviderSessionAffinity<'run> {
     pub(super) fn mint(
+        request: worth_execution::ExecutionRequest<'run, 'run>,
         run: WorthQueryProviderRunBorrow<'run>,
         contract: WorthQueryProviderExecutionPlanContract,
         product: WorthQueryProviderProductAffinity,
@@ -50,7 +51,7 @@ impl<'run> WorthQueryProviderSessionAffinity<'run> {
             _run: run,
             contract,
             product,
-            session: WorthQueryProviderSessionLease::new(provider, token),
+            session: WorthQueryProviderSessionLease::new(request, provider, token),
             binding,
         }
     }
@@ -59,11 +60,11 @@ impl<'run> WorthQueryProviderSessionAffinity<'run> {
         &self.contract
     }
 
-    pub(super) fn session(&self) -> &WorthQueryProviderSessionLease {
+    pub(super) fn session(&self) -> &WorthQueryProviderSessionLease<'run> {
         &self.session
     }
 
-    pub(super) fn session_mut(&mut self) -> &mut WorthQueryProviderSessionLease {
+    pub(super) fn session_mut(&mut self) -> &mut WorthQueryProviderSessionLease<'run> {
         &mut self.session
     }
 
@@ -83,8 +84,12 @@ impl<'run> WorthQueryProviderSessionAffinity<'run> {
         self.session.provider_arc()
     }
 
+    pub(super) fn execution_request(&self) -> worth_execution::ExecutionRequest<'run, 'run> {
+        self.session.request()
+    }
+
     pub(super) fn provider_session_view(&self) -> WorthQueryProviderSessionView<'_> {
-        self.session.token().view()
+        self.session.token().view(self.session.request())
     }
 
     pub(in crate::domain_computation) fn view(&self) -> WorthQueryProviderSessionAffinityView<'_> {

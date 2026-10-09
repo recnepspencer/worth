@@ -1,6 +1,7 @@
 use super::*;
 
 pub(super) fn publish_authorization_world(
+    phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     prepared: PreparedAuthorizationWorld,
 ) -> AuthorizationWorld {
     let PreparedAuthorizationWorld {
@@ -19,6 +20,7 @@ pub(super) fn publish_authorization_world(
     );
     let application = bootstrap
         .publish_application_runtime_with_ports(
+            &phase.bootstrap_for_test(),
             runtime,
             authority,
             schema,

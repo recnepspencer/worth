@@ -71,7 +71,7 @@ pub(in crate::domain_computation::primary_graph::provider) fn commit_prepared_ap
     prepared
         .validate_decision_work()
         .map_err(crate::domain_computation::WorthQueryProviderSessionCommitStop::from)?;
-    relational_commit::commit_owner_validated(provider, prepared)
+    relational_commit::commit_owner_validated(session.execution_request(), provider, prepared)
 }
 
 fn take_prepared_session(

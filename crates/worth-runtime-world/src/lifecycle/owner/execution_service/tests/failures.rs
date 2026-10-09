@@ -20,6 +20,13 @@ fn relational_fork_destination_reservation_conflicts_and_releases_on_drop() {
 #[test]
 fn cancellation_before_effect_and_after_signal_effect_have_distinct_outcomes() {
     let (_fixture, owner, expected) = setup();
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::from_policy(&owner.state.execution.request_policy()),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let reservation_cancellation = RuntimeWorldCancellationSource::new();
     let prepared = RuntimeWorldPreparationService::prepare_publication(
         owner.as_ref(),
@@ -33,6 +40,7 @@ fn cancellation_before_effect_and_after_signal_effect_have_distinct_outcomes() {
     let mut context = ();
     let before = RuntimeWorldOwnerExecutionService::execute_with_signal(
         owner.as_ref(),
+        execution,
         prepared,
         &mut context,
         &reservation_cancellation.token(),
@@ -50,6 +58,7 @@ fn cancellation_before_effect_and_after_signal_effect_have_distinct_outcomes() {
     let mut context = ();
     let after = RuntimeWorldOwnerExecutionService::execute_with_signal(
         owner.as_ref(),
+        execution,
         prepared,
         &mut context,
         &runtime_token,
@@ -115,11 +124,19 @@ fn stale_product_head_is_denied_before_the_first_owner_effect() {
 #[test]
 fn missing_signal_sibling_after_relational_movement_retains_exact_progress() {
     let (fixture, owner, expected) = setup();
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::from_policy(&owner.state.execution.request_policy()),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let prepared = prepare_both_owners(&fixture, &owner, &expected, "missing-signal-sibling");
     let cancellation = RuntimeWorldCancellationSource::new();
     let mut context = ();
     let record = retained(RuntimeWorldOwnerExecutionService::execute_with_signal(
         owner.as_ref(),
+        execution,
         prepared,
         &mut context,
         &cancellation.token(),

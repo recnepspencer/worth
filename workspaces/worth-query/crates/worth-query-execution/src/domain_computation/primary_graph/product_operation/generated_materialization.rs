@@ -178,6 +178,8 @@ pub enum WorthQueryGeneratedOutputSuspensionDenial {
 
 /// Why suspending a generated output did not complete.
 pub enum WorthQueryGeneratedOutputSuspensionFailure {
+    /// The host request was refused before observing generated output.
+    ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
     /// The output did not qualify for suspension. Nothing changed.
     Qualification(WorthQueryGeneratedOutputSuspensionDenial),
     /// The product's program activation could not admit a publication. Nothing
@@ -196,6 +198,10 @@ pub enum WorthQueryGeneratedOutputSuspensionFailure {
 impl std::fmt::Debug for WorthQueryGeneratedOutputSuspensionFailure {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::ExecutionDenied(cause) => formatter
+                .debug_tuple("ExecutionDenied")
+                .field(cause)
+                .finish(),
             Self::Qualification(denial) => formatter
                 .debug_tuple("Qualification")
                 .field(denial)

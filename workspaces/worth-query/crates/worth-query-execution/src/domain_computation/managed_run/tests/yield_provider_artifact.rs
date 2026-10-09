@@ -133,116 +133,127 @@ impl WorthQueryArtifactProviderResource for CheckpointArtifactResource {
 
 #[test]
 fn yielded_cleanup_releases_artifacts_owned_by_the_provider_checkpoint() {
-    let installer = WorthQueryExecutionRuntimeInstaller::new();
-    let disposed = Arc::new(AtomicUsize::new(0));
-    let provider_anchor = Arc::new(
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
+
+        let installer = WorthQueryExecutionRuntimeInstaller::new();
+        let disposed = Arc::new(AtomicUsize::new(0));
+        let provider_anchor = Arc::new(
         crate::domain_computation::provider_session::graph_provider::bounded_step::provider_anchor::WorthQueryGraphProviderAnchor::install::<ManagedGraph, _>(
             CheckpointArtifactProvider {
                 disposed: Arc::clone(&disposed),
             },
         ),
     );
-    let provider_support = provider_anchor.resource_support().clone();
-    let graph = super::workflow_provider_steps::installed_graph(
-        &installer,
-        "checkpoint-artifact-graph",
-        provider_anchor,
-    );
-    let runtime =
-        super::workflow_provider_steps::installed_runtime(installer, "checkpoint artifact");
-    let operation_resources =
-        crate::domain_computation::provider_session::admitted_yield_plan("checkpoint-artifact", 8);
-    let stage_resources = admitted_plan_with_graph_support(
-        "checkpoint-artifact:producer",
-        8,
-        graph.role(),
-        provider_support,
-    );
-    let resources = WorthQueryAdmittedWorkflowResourcePlan::assemble(
-        operation_resources,
-        BTreeMap::from([("producer".to_owned(), stage_resources)]),
-    );
-    let output =
-        crate::domain_computation::artifact_owner::installed_artifact_contract_for_managed_run();
-    let operation = workflow_authority_with_stage_graph_and_output_artifact(
-        &runtime,
-        &resources,
-        "producer",
-        &graph,
-        WorthQueryOperationGraphAccess::Observe,
-        output,
-    );
-    let running =
-        super::workflow_provider_steps::admitted_workflow(&runtime, &operation, resources);
-    let active = running
-        .begin_stage_graph_execution(
+        let provider_support = provider_anchor.resource_support().clone();
+        let graph = super::workflow_provider_steps::installed_graph(
+            &installer,
+            "checkpoint-artifact-graph",
+            provider_anchor,
+        );
+        let runtime =
+            super::workflow_provider_steps::installed_runtime(installer, "checkpoint artifact");
+        let operation_resources = crate::domain_computation::provider_session::admitted_yield_plan(
+            "checkpoint-artifact",
+            8,
+        );
+        let stage_resources = admitted_plan_with_graph_support(
+            "checkpoint-artifact:producer",
+            8,
+            graph.role(),
+            provider_support,
+        );
+        let resources = WorthQueryAdmittedWorkflowResourcePlan::assemble(
+            operation_resources,
+            BTreeMap::from([("producer".to_owned(), stage_resources)]),
+        );
+        let output =
+            crate::domain_computation::artifact_owner::installed_artifact_contract_for_managed_run(
+            );
+        let operation = workflow_authority_with_stage_graph_and_output_artifact(
+            &runtime,
+            &resources,
             "producer",
             &graph,
-            WorthQueryManagedGraphCallRequest::new(
-                WorthQueryGraphProviderCallKind::Observe,
-                "checkpoint-artifact-yield",
-            ),
-        )
-        .unwrap();
-    let paused = match active.advance() {
-        WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused,
-        _ => panic!("checkpoint-artifact provider did not pause"),
-    };
-    let yielded = match paused.yield_run() {
-        crate::domain_computation::WorthQueryWorkflowYieldOutcome::Yielded(yielded) => yielded,
-        _ => panic!("checkpoint-artifact workflow did not yield"),
-    };
-    assert_eq!(
-        yielded
-            .inspection()
-            .provider_work()
-            .produced_artifact_count(),
-        1
-    );
-    assert_eq!(
-        yielded
-            .inspection()
-            .provider_work()
-            .retained_artifact_count(),
-        1
-    );
-    assert_eq!(yielded.inspection().provider_work().retained_bytes(), 37);
-    assert_eq!(
-        yielded
-            .inspection()
-            .artifact_evidence()
-            .retained_artifact_count(),
-        1
-    );
-    assert_eq!(
-        yielded.inspection().provider_session_identity(),
-        yielded
-            .inspection()
-            .provider_work()
-            .provider_session_identity()
-    );
-    super::cost_bound::assert_exact_admission_work(yielded.inspection().run_counters());
-    assert_eq!(disposed.load(Ordering::Acquire), 0);
+            WorthQueryOperationGraphAccess::Observe,
+            output,
+        );
+        let running =
+            super::workflow_provider_steps::admitted_workflow(&runtime, &operation, resources);
+        let active = running
+            .begin_stage_graph_execution(
+                execution,
+                "producer",
+                &graph,
+                WorthQueryManagedGraphCallRequest::new(
+                    WorthQueryGraphProviderCallKind::Observe,
+                    "checkpoint-artifact-yield",
+                ),
+            )
+            .unwrap();
+        let paused = match active.advance(execution) {
+            WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused,
+            _ => panic!("checkpoint-artifact provider did not pause"),
+        };
+        let yielded = match paused.yield_run() {
+            crate::domain_computation::WorthQueryWorkflowYieldOutcome::Yielded(yielded) => yielded,
+            _ => panic!("checkpoint-artifact workflow did not yield"),
+        };
+        assert_eq!(
+            yielded
+                .inspection()
+                .provider_work()
+                .produced_artifact_count(),
+            1
+        );
+        assert_eq!(
+            yielded
+                .inspection()
+                .provider_work()
+                .retained_artifact_count(),
+            1
+        );
+        assert_eq!(yielded.inspection().provider_work().retained_bytes(), 37);
+        assert_eq!(
+            yielded
+                .inspection()
+                .artifact_evidence()
+                .retained_artifact_count(),
+            1
+        );
+        assert_eq!(
+            yielded.inspection().provider_session_identity(),
+            yielded
+                .inspection()
+                .provider_work()
+                .provider_session_identity()
+        );
+        super::cost_bound::assert_exact_admission_work(yielded.inspection().run_counters());
+        assert_eq!(disposed.load(Ordering::Acquire), 0);
 
-    let cleanup = match yielded.cleanup() {
-        crate::domain_computation::WorthQueryWorkflowYieldCleanupOutcome::Complete(cleanup) => {
-            cleanup
-        }
-        crate::domain_computation::WorthQueryWorkflowYieldCleanupOutcome::Pending(_) => {
-            panic!("checkpoint-owned artifact formed a yielded cleanup ownership cycle")
-        }
-        crate::domain_computation::WorthQueryWorkflowYieldCleanupOutcome::RecoveryRequired(_) => {
-            panic!("checkpoint-owned artifact release unexpectedly required recovery")
-        }
-    };
-    assert_eq!(disposed.load(Ordering::Acquire), 1);
-    let inspection = cleanup.inspection();
-    assert_eq!(inspection.artifact_evidence().disposed_artifact_count(), 1);
-    assert_eq!(inspection.provider_work().produced_artifact_count(), 1);
-    assert_eq!(inspection.provider_work().retained_artifact_count(), 1);
-    super::cost_bound::assert_exact_admission_work(inspection.run_counters());
-    assert!(inspection.resources_released());
-    assert_eq!(inspection.released_reservation_count(), 3);
+        let cleanup = match yielded.cleanup() {
+            crate::domain_computation::WorthQueryWorkflowYieldCleanupOutcome::Complete(cleanup) => {
+                cleanup
+            }
+            crate::domain_computation::WorthQueryWorkflowYieldCleanupOutcome::Pending(_) => {
+                panic!("checkpoint-owned artifact formed a yielded cleanup ownership cycle")
+            }
+            crate::domain_computation::WorthQueryWorkflowYieldCleanupOutcome::RecoveryRequired(
+                _,
+            ) => {
+                panic!("checkpoint-owned artifact release unexpectedly required recovery")
+            }
+        };
+        assert_eq!(disposed.load(Ordering::Acquire), 1);
+        let inspection = cleanup.inspection();
+        assert_eq!(inspection.artifact_evidence().disposed_artifact_count(), 1);
+        assert_eq!(inspection.provider_work().produced_artifact_count(), 1);
+        assert_eq!(inspection.provider_work().retained_artifact_count(), 1);
+        super::cost_bound::assert_exact_admission_work(inspection.run_counters());
+        assert!(inspection.resources_released());
+        assert_eq!(inspection.released_reservation_count(), 3);
+    });
 }
 
 fn step_failure(

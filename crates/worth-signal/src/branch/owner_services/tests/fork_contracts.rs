@@ -202,6 +202,16 @@ fn exact_fork_shares_graph_roots_and_isolates_touched_node_state() {
 
 #[test]
 fn late_fork_cancellation_drops_preconstructed_destination_without_source_movement() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (mut runtime, sibling_branch, source_branch, source_basis) = runtime_with_two_branches();
     let sibling_basis = runtime
         .observe_signal_branch_basis(sibling_branch.clone())
@@ -319,6 +329,7 @@ fn late_fork_cancellation_drops_preconstructed_destination_without_source_moveme
         .expect("the unrelated cell remains live");
     let sibling_observation = sibling_cell
         .advance_exact::<(), (), _>(
+            request_execution,
             &sibling_admission,
             &sibling_basis,
             &mut (),

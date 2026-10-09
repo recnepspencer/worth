@@ -1,6 +1,7 @@
 //! Typed entry points into the shared validated progression owner.
 
 use super::*;
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 
 pub(super) fn validate_progression_resources<Schema>(
     retained: &mut Option<crate::domain_computation::primary_graph::application_contribution::producer::WorthQueryProducerDemandResources>,
@@ -90,6 +91,8 @@ where
         Family,
     >(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
@@ -111,6 +114,7 @@ where
         const WAITING: CallerPass = CallerPass::Answer(WorthQueryOutputDemandAdvance::Pending);
         let wave_authority = commit_authority.clone();
         match self.advance_validated_output_demand_with_schedule(
+            phase,
             demand,
             principal,
             request_scope,
@@ -135,6 +139,7 @@ where
             match self.output_demands.begin_published(interest) {
                 Admission::AdvanceCheckpoint { claim, checkpoint } => {
                     if !self.advance_output_checkpoint(
+                        phase,
                         interest,
                         &demand.selected.identity,
                         claim,
@@ -151,6 +156,7 @@ where
         // The Ready this call reached is certified as any Ready is: by the
         // required wave when it has one, and otherwise on its own proof.
         if let Some(advance) = super::super::required_wave::advance_required_before_caller(
+            phase,
             self,
             demand,
             principal,
@@ -162,7 +168,7 @@ where
         )? {
             return Ok(CallerPass::Answer(advance));
         }
-        self.settle_own_ready(demand, &completion, delivery_branch)
+        self.settle_own_ready(phase, demand, &completion, delivery_branch)
             .map(CallerPass::Answer)
     }
 
@@ -170,6 +176,8 @@ where
         Family,
     >(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
@@ -193,6 +201,7 @@ where
         // checkpoint itself.
         Ok(
             match self.advance_validated_output_demand_with_schedule(
+                phase,
                 demand,
                 principal,
                 request_scope,

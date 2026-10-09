@@ -66,29 +66,6 @@ impl RuntimeWorldClockSource for FixedClock {
     }
 }
 
-#[derive(Clone)]
-struct MutableClock {
-    ticks: Arc<AtomicU64>,
-}
-
-impl MutableClock {
-    fn new(ticks: u64) -> Self {
-        Self {
-            ticks: Arc::new(AtomicU64::new(ticks)),
-        }
-    }
-
-    fn set(&self, ticks: u64) {
-        self.ticks.store(ticks, Ordering::Release);
-    }
-}
-
-impl RuntimeWorldClockSource for MutableClock {
-    fn now(&self) -> crate::lifecycle::RuntimeWorldInstant {
-        crate::lifecycle::RuntimeWorldInstant::from_ticks(self.ticks.load(Ordering::Acquire))
-    }
-}
-
 fn budgets(publication_attempts: u64) -> RuntimeWorldBudgets {
     RuntimeWorldBudgets::install(RuntimeWorldBudgetInstallation {
         branches: RuntimeWorldBranchBudgetInstallation {
@@ -136,7 +113,15 @@ fn setup_with_relational_source() -> (
     ProductBranchObservation,
 ) {
     let (fixture, owner, expected) = setup();
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::from_policy(&owner.state.execution.request_policy()),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let warmup = settled(execute_without_signal(
+        execution,
         &owner,
         prepare_relational(&fixture, &owner, &expected, "relational-source-seed"),
     ));
@@ -243,7 +228,15 @@ fn ready_relational_competitor(
     expected: &ProductBranchObservation,
     operation_name: &str,
 ) -> crate::publication::CompositePublicationReady {
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::from_policy(&owner.state.execution.request_policy()),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let settlement = settled(execute_without_signal(
+        execution,
         owner,
         prepare_relational(fixture, owner, expected, operation_name),
     ));
@@ -279,12 +272,15 @@ fn publish_ready_competing_head(
 }
 
 fn execute_without_signal(
+    execution: worth_execution::ExecutionRequest<'_, '_>,
+
     owner: &TestOwner,
     prepared: PreparedCompositePublicationWithoutSignal,
 ) -> OwnerExecutionOutcome {
     let cancellation = RuntimeWorldCancellationSource::new();
     RuntimeWorldOwnerExecutionService::execute_without_signal(
         owner,
+        execution,
         prepared,
         &cancellation.token(),
     )
@@ -294,10 +290,18 @@ fn execute_with_empty_signal(
     owner: &TestOwner,
     prepared: PreparedCompositePublicationWithSignal,
 ) -> OwnerExecutionOutcome {
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::from_policy(&owner.state.execution.request_policy()),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let cancellation = RuntimeWorldCancellationSource::new();
     let mut context = ();
     RuntimeWorldOwnerExecutionService::execute_with_signal(
         owner,
+        execution,
         prepared,
         &mut context,
         &cancellation.token(),
@@ -372,24 +376,6 @@ fn retained(outcome: OwnerExecutionOutcome) -> crate::recovery::ProductUnpublish
     }
 }
 
-/// The exact record shape every proof in this module expects when a settled
-/// Relational effect is retained and the Signal owner never moved.
-fn assert_retains_only_the_relational_effect(
-    record: &crate::recovery::ProductUnpublishedOwnerEffects,
-    cause: ProductUnpublishedCause,
-) {
-    assert_eq!(record.cause(), cause);
-    assert_eq!(record.owner_effect_count(), 1);
-    assert_eq!(
-        record.progress().relational_posture(),
-        RelationalAttemptProgressPosture::Settled
-    );
-    assert_eq!(
-        record.progress().signal_posture(),
-        SignalAttemptProgressPosture::Untouched
-    );
-}
-
 #[path = "tests/public_cutoff.rs"]
 mod public_cutoff;
 #[path = "tests/public_ports.rs"]
@@ -397,3 +383,11 @@ mod public_ports;
 
 #[path = "tests/public_inspection.rs"]
 mod public_inspection;
+
+#[path = "tests/owner_effect_assertion.rs"]
+mod owner_effect_assertion;
+use owner_effect_assertion::assert_retains_only_the_relational_effect;
+
+#[path = "tests/clock.rs"]
+mod clock;
+use clock::MutableClock;

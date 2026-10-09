@@ -7,6 +7,16 @@ use crate::tests::support::{version_ab, GraphDependencyBatchExt, ASPECT_A};
 
 #[test]
 fn merge_branch_introduces_source_only_node_with_new_target_id_and_merge_traces() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -14,7 +24,7 @@ fn merge_branch_introduces_source_only_node_with_new_target_id_and_merge_traces(
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(shared, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(1, 0))
@@ -36,7 +46,7 @@ fn merge_branch_introduces_source_only_node_with_new_target_id_and_merge_traces(
         .unwrap();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(source_only, &|view| {
                 let upstream = view.read_aspect_version(shared, ASPECT_A)?;
                 Ok(view.finish(
@@ -134,6 +144,16 @@ fn merge_branch_introduces_source_only_node_with_new_target_id_and_merge_traces(
 
 #[test]
 fn merge_branch_introduces_multiple_source_only_nodes_with_internal_dependencies() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -150,7 +170,7 @@ fn merge_branch_introduces_multiple_source_only_nodes_with_internal_dependencies
 
     let mut runtime_ctx = ();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(downstream, &|view| {
                 let result = if view.node() == upstream {
                     view.finish(
@@ -201,6 +221,16 @@ fn merge_branch_introduces_multiple_source_only_nodes_with_internal_dependencies
 
 #[test]
 fn merge_branch_skips_non_adoptable_source_only_nodes() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -211,7 +241,7 @@ fn merge_branch_skips_non_adoptable_source_only_nodes() {
     let source_only = runtime.graph_mut().node().output_identity().build();
     let mut runtime_ctx = ();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(source_only, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(5, 0))
@@ -262,6 +292,16 @@ fn merge_branch_skips_non_adoptable_source_only_nodes() {
 
 #[test]
 fn merge_branch_counters_and_summary_surface_match_introduced_work() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -272,7 +312,7 @@ fn merge_branch_counters_and_summary_surface_match_introduced_work() {
     let source_only = runtime.graph_mut().node().output_identity().build();
     let mut runtime_ctx = ();
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(source_only, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(7, 0))

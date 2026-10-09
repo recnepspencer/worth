@@ -204,6 +204,7 @@ impl WorthQueryExecutionInstallationAuthority {
         Schema,
     >(
         &self,
+        phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
         runtime: &WorthQueryExecutionRuntime,
         installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
         relational_runtime: RelationalRuntime,
@@ -215,6 +216,7 @@ impl WorthQueryExecutionInstallationAuthority {
         Schema: ApplicationSchema,
     {
         self.prepare_primary_graph_with_optional_checkpoint(
+            phase,
             runtime,
             installed_schema,
             relational_runtime,

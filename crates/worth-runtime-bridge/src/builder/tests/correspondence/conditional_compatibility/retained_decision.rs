@@ -135,12 +135,17 @@ fn copied_projections_cannot_change_query_continuation_authority() {
 
 #[test]
 fn stale_lowering_denial_reports_zero_downstream_bridge_and_signal_work() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (owner, lowering) = install(always_eligible_contract("query:one"), "bridge-main");
     let signal_basis = owner
         .admit_conditional_signal_basis(&lowering, owner.admitted_signal_basis())
         .unwrap();
     let (foreign, _) = install(always_eligible_contract("query:one"), "bridge-main");
     let denial = match foreign.execute(
+        request_execution,
         &signal_basis,
         crate::facade::BridgeConditionalExecutionRequest {
             lowering: &lowering,
@@ -172,11 +177,16 @@ fn execute(
     lowering: &std::sync::Arc<crate::facade::BridgeInstalledConditionalLowering>,
     snapshot: &str,
 ) -> crate::facade::BridgeConditionalDecisionEvidence {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let signal_basis = owner
         .admit_conditional_signal_basis(lowering, owner.admitted_signal_basis())
         .unwrap();
     owner
         .execute(
+            request_execution,
             &signal_basis,
             crate::facade::BridgeConditionalExecutionRequest {
                 lowering,
@@ -230,6 +240,10 @@ fn continuation<'a>(
 
 #[test]
 fn retirement_and_revocation_fence_execution_and_reentry_without_erasing_evidence() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     enum End {
         Retire,
         Revoke,
@@ -265,6 +279,7 @@ fn retirement_and_revocation_fence_execution_and_reentry_without_erasing_evidenc
         assert_eq!(denial.reentry_counters().query_continuation_rebindings, 0);
         let denial = owner
             .execute(
+                request_execution,
                 &signal_basis,
                 crate::facade::BridgeConditionalExecutionRequest {
                     lowering: &lowering,

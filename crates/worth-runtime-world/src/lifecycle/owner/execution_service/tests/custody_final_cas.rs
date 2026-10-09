@@ -5,8 +5,16 @@ use crate::recovery::ProductUnpublishedRetentionPosture;
 #[test]
 fn final_cell_comparison_rejects_a_real_winner_without_promoting_or_retagging() {
     let (fixture, owner, expected) = setup();
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::from_policy(&owner.state.execution.request_policy()),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let winner = ready_relational_competitor(&fixture, &owner, &expected, "final-cell-winner");
     let settlement = settled(execute_without_signal(
+        execution,
         &owner,
         prepare_relational(&fixture, &owner, &expected, "final-cell-loser"),
     ));

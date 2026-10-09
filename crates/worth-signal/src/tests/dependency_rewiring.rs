@@ -4,6 +4,16 @@ use crate::tests::support::*;
 
 #[test]
 fn rollback_after_dependency_rewiring_restores_original_topology() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let source_a = graph.node().build();
     let source_b = graph.node().build();
@@ -17,7 +27,7 @@ fn rollback_after_dependency_rewiring_restores_original_topology() {
     let mut ctx = ();
 
     let err = runtime
-        .transaction(&mut ctx, |_tx| {
+        .transaction(request_execution, &mut ctx, |_tx| {
             Err(SignalError::invalid_input("force rollback"))
         })
         .unwrap_err();

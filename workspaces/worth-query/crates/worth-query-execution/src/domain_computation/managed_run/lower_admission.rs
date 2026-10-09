@@ -87,7 +87,8 @@ pub(in crate::domain_computation) fn admit_managed_lower_execution_basis(
         relational_basis,
         current_at_admission,
     )
-    .map_err(relational_basis_failure)?;
+    .map_err(relational_basis_failure)?
+    .with_product_owner(product_observation.as_ref());
     let snapshot = relational_basis.identity().snapshot_identity().clone();
     let declaration = HistoricalEvaluationDeclaration::new(
         BridgeTruthViewSelector::branch_snapshot(branch.clone(), snapshot.clone()),

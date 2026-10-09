@@ -32,13 +32,16 @@ impl WorthQueryPreparedProductPublication {
         self.prepared.unpublished_recovery_handle()
     }
 
-    pub(crate) fn execute(self) -> RuntimeWorldPublicationOutcome {
+    pub(crate) fn execute(
+        self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+    ) -> RuntimeWorldPublicationOutcome {
         let Self {
             publication,
             prepared,
             control,
         } = self;
-        publication.execute_without_signal(prepared, control.cancellation())
+        publication.execute_without_signal(execution, prepared, control.cancellation())
     }
 }
 

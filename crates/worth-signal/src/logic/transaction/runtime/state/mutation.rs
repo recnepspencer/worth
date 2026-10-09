@@ -29,6 +29,7 @@ where
 
     pub(crate) fn begin<'a>(
         &'a mut self,
+        execution: worth_execution::ExecutionRequest<'a, 'a>,
         runtime_ctx: &'a mut Ctx,
     ) -> SignalTransaction<'a, D, I, E, Ctx, T> {
         let captures_telemetry = self.graph.captures_observation_surface(
@@ -47,6 +48,7 @@ where
             .branches
             .transaction_branch_state_mut(current_branch.id, current_branch.head_snapshot_id);
         SignalTransaction {
+            execution,
             runtime_ctx,
             observations: &self.observations,
             config: &mut self.config,
@@ -72,13 +74,14 @@ where
 
     pub(crate) fn transaction<F>(
         &mut self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
         runtime_ctx: &mut Ctx,
         apply: F,
     ) -> Result<TransactionResult, SignalError>
     where
         F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
     {
-        let mut transaction = self.begin(runtime_ctx);
+        let mut transaction = self.begin(execution, runtime_ctx);
         match apply(&mut transaction) {
             Ok(()) => transaction.commit(),
             Err(err) => {

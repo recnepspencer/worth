@@ -9,6 +9,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
 use crate::domain_computation::primary_graph::provider::{
     WorthQueryApplicationBranchCommitCoordination, WorthQueryPrimaryGraphProvider,
 };
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 
 mod authorized;
 mod commit_resolution;
@@ -166,6 +167,8 @@ pub(in crate::domain_computation::primary_graph::application_attempt::provider_e
     Input,
     Scope,
 >(
+    phase: &WorthQueryAdvancementPhase<'_>,
+
     application: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
         Schema,
     >,
@@ -189,6 +192,7 @@ where
         aftermath_causality,
     } = running_commit;
     progress_provider_application(
+        phase,
         WorthQueryProviderProgression {
             application,
             running: &mut running,
@@ -213,6 +217,7 @@ where
 }
 
 fn progress_provider_application<Schema, Operation, Input, Scope>(
+    phase: &WorthQueryAdvancementPhase<'_>,
     progression: WorthQueryProviderProgression<'_, Schema, Operation, Input, Scope>,
     mutation_run: crate::domain_computation::provider_session::WorthQueryMutationRunBinding,
 ) -> WorthQueryProviderProgressionCompletion
@@ -234,11 +239,16 @@ where
         aftermath_causality,
     } = progression;
     let product = attempt_basis.retained_product();
-    let admitted_session =
-        match admit_provider_session(running, graph, product.retained_clone(), mutation_run) {
-            Ok(admitted) => admitted,
-            Err(failure) => return failure.into_completion(),
-        };
+    let admitted_session = match admit_provider_session(
+        phase,
+        running,
+        graph,
+        product.retained_clone(),
+        mutation_run,
+    ) {
+        Ok(admitted) => admitted,
+        Err(failure) => return failure.into_completion(),
+    };
     let registered_session = match admitted_session.register(
         &mut authorization,
         prepared,

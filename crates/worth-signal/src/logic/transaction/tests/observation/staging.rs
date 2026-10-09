@@ -7,6 +7,16 @@ use crate::tests::support::{version_ab, GraphDependencyBatchExt, ASPECT_A};
 
 #[test]
 fn observation_phase2_stages_candidates_without_dispatch() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = crate::data::graph::SignalGraph::new();
     let source = graph.node().build();
     let mut runtime = build_runtime(graph);
@@ -18,7 +28,7 @@ fn observation_phase2_stages_candidates_without_dispatch() {
     );
 
     let mut ctx = ();
-    let mut tx = runtime.begin(&mut ctx);
+    let mut tx = runtime.begin(request_execution, &mut ctx);
     tx.mark_dirty(source, ASPECT_A).unwrap();
 
     let summary = tx.observation_scratch_summary();
@@ -29,6 +39,16 @@ fn observation_phase2_stages_candidates_without_dispatch() {
 
 #[test]
 fn observation_phase2_lowers_recomputed_and_meaningful_change_from_report() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = crate::data::graph::SignalGraph::new();
     let source = graph
         .node()
@@ -43,7 +63,7 @@ fn observation_phase2_lowers_recomputed_and_meaningful_change_from_report() {
     );
 
     let mut ctx = ();
-    let mut tx = runtime.begin(&mut ctx);
+    let mut tx = runtime.begin(request_execution, &mut ctx);
     tx.evaluate_with_plan(
         source,
         &|view| Ok(view.finish(NodeEvaluationResult::from_version(version_ab(1, 0)))),
@@ -76,6 +96,16 @@ fn observation_phase2_lowers_recomputed_and_meaningful_change_from_report() {
 
 #[test]
 fn observation_phase2_distinguishes_output_suppressed_from_meaningful_change() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = crate::data::graph::SignalGraph::new();
     let source = graph
         .node()
@@ -85,7 +115,7 @@ fn observation_phase2_distinguishes_output_suppressed_from_meaningful_change() {
     let mut runtime = build_runtime(graph);
 
     let mut ctx = ();
-    let mut baseline = runtime.begin(&mut ctx);
+    let mut baseline = runtime.begin(request_execution, &mut ctx);
     baseline
         .evaluate_with_plan(
             source,
@@ -106,7 +136,7 @@ fn observation_phase2_distinguishes_output_suppressed_from_meaningful_change() {
         Box::new(NoopObservationListener),
     );
 
-    let mut tx = runtime.begin(&mut ctx);
+    let mut tx = runtime.begin(request_execution, &mut ctx);
     tx.mark_dirty(source, ASPECT_A).unwrap();
     tx.evaluate_with_plan(
         source,
@@ -142,6 +172,16 @@ fn observation_phase2_distinguishes_output_suppressed_from_meaningful_change() {
 
 #[test]
 fn observation_phase2_coalesces_multiple_matching_nodes_into_one_classified_event() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = crate::data::graph::SignalGraph::new();
     let source = graph
         .node()
@@ -158,7 +198,7 @@ fn observation_phase2_coalesces_multiple_matching_nodes_into_one_classified_even
     );
 
     let mut ctx = ();
-    let mut tx = runtime.begin(&mut ctx);
+    let mut tx = runtime.begin(request_execution, &mut ctx);
     tx.mark_dirty(source, ASPECT_A).unwrap();
     tx.evaluate_dirty(&|view| {
         if view.node() == source {
@@ -189,6 +229,16 @@ fn observation_phase2_coalesces_multiple_matching_nodes_into_one_classified_even
 
 #[test]
 fn observation_phase2_prepared_plan_execution_stages_and_classifies_observers() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = crate::data::graph::SignalGraph::new();
     let source = graph
         .node()
@@ -207,7 +257,7 @@ fn observation_phase2_prepared_plan_execution_stages_and_classifies_observers() 
         .unwrap();
 
     let mut ctx = ();
-    let mut tx = runtime.begin(&mut ctx);
+    let mut tx = runtime.begin(request_execution, &mut ctx);
     tx.execute_prepared_plan(&plan, &|view| {
         Ok(view.finish(NodeEvaluationResult::from_version(version_ab(1, 0))))
     })
@@ -229,6 +279,16 @@ fn observation_phase2_prepared_plan_execution_stages_and_classifies_observers() 
 
 #[test]
 fn observation_phase2_telemetry_counters_accumulate_across_transactions() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = crate::data::graph::SignalGraph::new();
     let source = graph
         .node()
@@ -244,7 +304,7 @@ fn observation_phase2_telemetry_counters_accumulate_across_transactions() {
 
     for version in [1_u64, 2_u64] {
         let mut ctx = ();
-        let mut tx = runtime.begin(&mut ctx);
+        let mut tx = runtime.begin(request_execution, &mut ctx);
         tx.mark_dirty(source, ASPECT_A).unwrap();
         tx.evaluate_with_plan(
             source,

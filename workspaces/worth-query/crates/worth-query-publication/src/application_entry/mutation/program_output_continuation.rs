@@ -8,6 +8,7 @@ use worth_query_declaration::facade::application_query::{
 use worth_query_declaration::facade::application_schema::{
     ApplicationSchema, ApplicationStructuredValueBinding,
 };
+use worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase as AdvancementPhase;
 use worth_query_execution::facade::application_contribution::{
     WorthQueryApplicationOutputDemand, WorthQueryProducerOutputFamily,
 };
@@ -69,6 +70,7 @@ where
 {
     fn advance(
         &mut self,
+        phase: &AdvancementPhase<'_>,
         request: &WorthQueryApplicationRequest<'application, '_, '_, Schema>,
     ) -> Result<ProgramOutputContinuationProgress, WorthQueryRequiredOutputPreparationDenial>;
 }
@@ -82,6 +84,7 @@ where
     ParentDemand: WorthQueryApplicationOutputDemand<Schema>,
 {
     fn start(
+        phase: &AdvancementPhase<'_>,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
         parent_demand: &ParentDemand,
         _parent_settlement: &WorthQueryApplicationOutputDemandSettlement<
@@ -187,6 +190,7 @@ where
         >,
 {
     fn start(
+        phase: &AdvancementPhase<'_>,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
         parent_demand: &ParentDemand,
         parent_settlement: &WorthQueryApplicationOutputDemandSettlement<
@@ -212,7 +216,7 @@ where
         let retained = request.at(basis);
         let result = retained
             .query(discovery)
-            .execute()
+            .execute_in_advancement(phase)
             .map_err(WorthQueryRequiredOutputPreparationDenial::SourceQuery)?;
         if result.rows().len() != 1 {
             return Err(WorthQueryRequiredOutputPreparationDenial::MissingSource);
@@ -228,6 +232,7 @@ where
                     .demand(demand.clone())
                     .controls(controls)
                     .start_dependent::<Program, ParentDemand, Connection>(
+                        phase,
                         application,
                         parent_authority,
                         basis,
@@ -287,12 +292,13 @@ where
 {
     fn advance(
         &mut self,
+        phase: &AdvancementPhase<'_>,
         request: &WorthQueryApplicationRequest<'application, '_, '_, Schema>,
     ) -> Result<ProgramOutputContinuationProgress, WorthQueryRequiredOutputPreparationDenial> {
         for node in &mut self.nodes {
             if let Some(handle) = &mut node.handle {
                 match handle
-                    .advance(request)
+                    .advance(phase, request)
                     .map_err(WorthQueryRequiredOutputPreparationDenial::Demand)?
                 {
                     WorthQueryApplicationProgramDemandProgress::Pending => continue,
@@ -309,6 +315,7 @@ where
             // that is refused keeps the settlement for the next call.
             if let Some((settlement, authority)) = node.settled.as_ref() {
                 node.continuation = Some(Children::start(
+                    phase,
                     self.application,
                     &node.demand,
                     settlement,
@@ -325,7 +332,7 @@ where
                 ));
             }
             if let Some(continuation) = &mut node.continuation {
-                match continuation.advance(request)? {
+                match continuation.advance(phase, request)? {
                     ProgramOutputContinuationProgress::Pending => {}
                     ProgramOutputContinuationProgress::Settled { outputs, work } => {
                         self.outputs.extend(outputs);

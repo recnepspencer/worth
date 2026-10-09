@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_runtime_bridge::facade::{
     BridgeConditionalSignalBasisBinding, BridgeSealedRuntimeAssembly,
 };
@@ -51,6 +52,8 @@ pub(super) enum AuthoritativeClockStop {
 }
 
 pub(super) fn reconsider_authoritative_clock_work<Schema>(
+    phase: &WorthQueryAdvancementPhase<'_>,
+
     work: AuthoritativeClockWork<'_, Schema>,
 ) -> Result<AuthoritativeClockProgress, AuthoritativeClockStop> {
     let commits = super::super::authoritative_reconsideration::relevant_authoritative_commits(
@@ -68,6 +71,7 @@ pub(super) fn reconsider_authoritative_clock_work<Schema>(
     })?;
     let commit_count = commits.commit_count();
     let delivered = super::super::authoritative_reconsideration::deliver_authoritative_commits(
+        phase,
         work.bridge,
         work.signal_basis,
         work.cursor,

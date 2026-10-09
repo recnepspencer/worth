@@ -17,6 +17,7 @@ mod preparation_test_support;
 #[cfg(test)]
 #[path = "operation/preparation_tests.rs"]
 mod preparation_tests;
+mod product_head;
 mod publication_capacity;
 mod reservation_steps;
 
@@ -161,27 +162,6 @@ where
     ) -> Option<NoEffectCompositePublication> {
         self.pre_effect_denial(cancellation, deadline)
             .map(|cause| NoEffectCompositePublication::new(cause, Some(expected.clone())))
-    }
-
-    pub(super) fn current_product_head_is(
-        &self,
-        expected: &crate::branch::ProductBranchObservation,
-    ) -> bool {
-        self.state
-            .branches
-            .branch_cell(expected.branch_identity())
-            .map(|cell| cell.atomic_snapshot())
-            .is_some_and(|current| expected.mismatch_against_snapshot(&current).is_none())
-    }
-
-    pub(super) fn current_product_head_snapshot(
-        &self,
-        expected: &crate::branch::ProductBranchObservation,
-    ) -> Option<crate::branch::ProductBranchReferenceSnapshot> {
-        self.state
-            .branches
-            .branch_cell(expected.branch_identity())
-            .map(|cell| cell.atomic_snapshot())
     }
 
     fn pre_effect_denial(

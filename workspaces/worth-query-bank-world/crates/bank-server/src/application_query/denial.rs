@@ -49,6 +49,9 @@ pub struct BankApplicationQueryLaneDenial<Kind> {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankApplicationOutputSettlementDenialKind {
+    ExecutionRequest(
+        worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial,
+    ),
     SourceQueryInstallation(BankApplicationQueryInstallationDenialKind),
     SourcePrincipal(WorthQueryPrincipalResolutionDenialKind),
     SourceScope(BankEntityResolutionDenialKind),
@@ -105,6 +108,9 @@ where
 
 #[derive(Debug)]
 pub enum BankApplicationQueryDenial {
+    ExecutionRequest(
+        worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial,
+    ),
     RequestMode,
     LiveRetainedBasis,
     LiveControls(worth_query_host::facade::primary_graph::WorthQueryApplicationLiveControlDenial),
@@ -125,6 +131,12 @@ pub enum BankApplicationQueryDenial {
 }
 
 impl BankApplicationQueryDenial {
+    fn from_execution_request(
+        cause: worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial,
+    ) -> Self {
+        Self::ExecutionRequest(cause)
+    }
+
     pub(crate) fn from_history_selection(
         denial: WorthQueryApplicationHistorySelectionDenial,
     ) -> Self {
@@ -142,6 +154,9 @@ impl BankApplicationQueryDenial {
         denial: WorthQueryApplicationLiveOpenRequestDenial,
     ) -> Self {
         match denial {
+            WorthQueryApplicationLiveOpenRequestDenial::ExecutionRequest(cause) => {
+                Self::from_execution_request(cause)
+            }
             WorthQueryApplicationLiveOpenRequestDenial::RetainedBasis => Self::LiveRetainedBasis,
             WorthQueryApplicationLiveOpenRequestDenial::BindingInstallation(denial) => {
                 Self::from_installation(denial)
@@ -172,6 +187,9 @@ impl BankApplicationQueryDenial {
     }
     pub(crate) fn from_request_query(denial: WorthQueryApplicationRequestQueryDenial) -> Self {
         match denial {
+            WorthQueryApplicationRequestQueryDenial::ExecutionRequest(cause) => {
+                Self::from_execution_request(cause)
+            }
             WorthQueryApplicationRequestQueryDenial::ProductSelection(denial) => {
                 Self::from_product_selection(denial)
             }
@@ -252,6 +270,7 @@ impl BankApplicationQueryDenial {
         use WorthQueryOutputDemandDenialKind as Query;
 
         let kind = match denial.kind() {
+            Query::ExecutionRequest(cause) => Bank::ExecutionRequest(cause),
             Query::SourceQueryInstallation(kind) => {
                 Bank::SourceQueryInstallation(query_installation(kind))
             }

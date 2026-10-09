@@ -7,6 +7,16 @@ use crate::tests::support::{mask_b, version_ab, DependencyBatchBuilder, ASPECT_A
 
 #[test]
 fn game_engine_frame_session_handles_threshold_flapping_branch_churn_and_posthoc_debugging() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
@@ -47,7 +57,7 @@ fn game_engine_frame_session_handles_threshold_flapping_branch_churn_and_posthoc
     let mut runtime_ctx = ();
 
     runtime
-        .transaction(&mut runtime_ctx, |tx| {
+        .transaction(request_execution, &mut runtime_ctx, |tx| {
             tx.read(source, &|view| {
                 Ok(view.finish(
                     NodeEvaluationResult::from_version(version_ab(10, 100))
@@ -93,7 +103,7 @@ fn game_engine_frame_session_handles_threshold_flapping_branch_churn_and_posthoc
     for frame in [11_u64, 12, 13, 14, 15, 16, 17, 18] {
         let metadata_version = if frame % 3 == 0 { 100 + frame } else { 100 };
         runtime
-            .transaction(&mut runtime_ctx, |tx| {
+            .transaction(request_execution, &mut runtime_ctx, |tx| {
                 tx.mark_dirty(source, ASPECT_A)?;
                 if frame % 3 == 0 {
                     tx.mark_dirty(source, ASPECT_B)?;
@@ -138,7 +148,7 @@ fn game_engine_frame_session_handles_threshold_flapping_branch_churn_and_posthoc
             .unwrap();
 
         if frame % 2 == 0 {
-            let err = runtime.transaction(&mut runtime_ctx, |tx| {
+            let err = runtime.transaction(request_execution, &mut runtime_ctx, |tx| {
                 tx.mark_dirty(source, ASPECT_A)?;
                 tx.mark_dirty(source, ASPECT_B)?;
                 tx.read(source, &|view| {

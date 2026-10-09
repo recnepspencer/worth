@@ -46,6 +46,8 @@ impl WorthQueryDirectRunReadmissionPending {
 
     pub(in crate::domain_computation::managed_run) fn restore_provider(
         mut self,
+        active_request: worth_execution::ExecutionRequest<'_, '_>,
+
         execution: crate::domain_computation::managed_run::retained_graph_execution::WorthQueryRetainedManagedGraphExecution,
         contract: crate::domain_computation::managed_run::step_contract_admission::WorthQueryAdmittedManagedStepContract,
         _owner: &crate::domain_computation::managed_run::WorthQueryDirectReadmissionTransitionPermit,
@@ -54,7 +56,7 @@ impl WorthQueryDirectRunReadmissionPending {
             .fresh_call
             .take()
             .expect("direct readmission may consume its provider call exactly once");
-        match crate::domain_computation::managed_run::provider_restore::restore(
+        match crate::domain_computation::managed_run::provider_restore::restore(active_request,
             execution,
             fresh_call,
             contract,

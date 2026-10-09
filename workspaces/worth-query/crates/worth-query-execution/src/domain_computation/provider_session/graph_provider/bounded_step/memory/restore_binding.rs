@@ -10,22 +10,32 @@ use crate::domain_computation::{
 
 /// Step-external port that can provisionally rebind retained provider memory
 /// during the existing same-runtime readmission transaction.
-pub struct WorthQueryGraphProviderRestoreMemory {
+pub struct WorthQueryGraphProviderRestoreMemory<'scope> {
+    execution: worth_execution::ExecutionRequest<'scope, 'scope>,
     arena: WorthQueryGraphProviderMemoryArena,
     execution_admission_identity: u64,
     admitted_execution: Option<Box<dyn WorthQueryGraphProviderExecution>>,
     denial: Option<WorthQueryGraphProviderStepDenial>,
 }
 
-impl WorthQueryGraphProviderRestoreMemory {
-    pub(crate) fn new(arena: WorthQueryGraphProviderMemoryArena) -> Self {
+impl<'scope> WorthQueryGraphProviderRestoreMemory<'scope> {
+    pub(crate) fn new(
+        execution: worth_execution::ExecutionRequest<'scope, 'scope>,
+        arena: WorthQueryGraphProviderMemoryArena,
+    ) -> Self {
         Self {
+            execution,
             arena,
             execution_admission_identity:
                 crate::domain_computation::provider_session::graph_provider::bounded_step::cooperative_execution::next_cooperative_execution_admission_identity(),
             admitted_execution: None,
             denial: None,
         }
+    }
+
+    /// The active request owning this call; it is never stored in retained provider state.
+    pub fn execution_request(&self) -> worth_execution::ExecutionRequest<'scope, 'scope> {
+        self.execution
     }
 
     pub fn rebind(

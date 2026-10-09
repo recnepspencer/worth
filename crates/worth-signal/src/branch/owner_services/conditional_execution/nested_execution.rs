@@ -14,6 +14,13 @@ use super::{
     SignalConditionalServiceExecutionRequest,
 };
 
+struct NestedConditionalInvocation<'call, Condition, Comparator> {
+    evaluation: &'call SignalConditionalEvaluationAdmission,
+    request: SignalConditionalServiceExecutionRequest,
+    condition: &'call mut Condition,
+    comparator: &'call mut Comparator,
+}
+
 impl<D, I, T> SignalConditionalExecutionPort<D, I, T>
 where
     D: Copy + Ord + std::fmt::Debug + 'static,
@@ -23,6 +30,7 @@ where
     #[allow(clippy::too_many_arguments)]
     pub fn execute_within_transaction<E, Ctx>(
         &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
         transaction: &mut SignalTransaction<'_, D, I, E, Ctx, T>,
         evaluation: &SignalConditionalEvaluationAdmission,
         request: SignalConditionalServiceExecutionRequest,
@@ -30,7 +38,40 @@ where
         comparator: &mut impl ComparatorPolicyResolver,
         compute: impl FnOnce() -> Result<NodeEvaluationResult, SignalError>,
     ) -> Result<SignalConditionalServiceCompletion, SignalConditionalServiceExecutionDenial> {
+        super::request_completion::run_conditional_request(execution, |work| {
+            self.execute_within_transaction_in_request(
+                work,
+                transaction,
+                NestedConditionalInvocation {
+                    evaluation,
+                    request,
+                    condition,
+                    comparator,
+                },
+                compute,
+            )
+        })
+        .map_err(SignalConditionalServiceExecutionDenial::SlotAdmission)?
+    }
+
+    fn execute_within_transaction_in_request<E, Ctx, Condition, Comparator>(
+        &self,
+        work: &mut worth_execution::MapKernelContext<'_, '_>,
+        transaction: &mut SignalTransaction<'_, D, I, E, Ctx, T>,
+        invocation: NestedConditionalInvocation<'_, Condition, Comparator>,
+        compute: impl FnOnce() -> Result<NodeEvaluationResult, SignalError>,
+    ) -> Result<SignalConditionalServiceCompletion, SignalConditionalServiceExecutionDenial>
+    where
+        Condition: InstalledSignalConditionResolver,
+        Comparator: ComparatorPolicyResolver,
+    {
         use SignalConditionalServiceExecutionDenial as Denial;
+        let NestedConditionalInvocation {
+            evaluation,
+            request,
+            condition,
+            comparator,
+        } = invocation;
 
         if !Arc::ptr_eq(&self.authority, &evaluation.service_authority) {
             return Err(Denial::DefinitionMismatch);
@@ -62,6 +103,7 @@ where
         let slot_reused = evaluation_state.slot.is_some();
         let execution = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             super::execute_conditional_against_graph(
+                work,
                 transaction.conditional_execution_graph_mut(),
                 evaluation,
                 &mut evaluation_state,

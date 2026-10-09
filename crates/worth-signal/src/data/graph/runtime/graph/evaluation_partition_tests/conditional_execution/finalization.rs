@@ -57,18 +57,34 @@ impl ComparatorPolicyResolver for PoisonReuse {
 
 #[test]
 fn conditional_observation_panic_preserves_completed_decision_and_restores_graph() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (mut graph, contract) = installed_with(
         SignalConditionalCondition::Always,
         SignalConditionalArtifactReuse::RuntimeResolved,
     );
     let mut partition = SignalEvaluationPartition::retain_basis_storage(&mut graph);
-    let (decision, observation, _rejected) = partition
-        .execute_conditional(
-            &mut graph,
-            SignalConditionalExecutionRequest::new(&contract, "storage", "warm", 1),
-            &mut NoPredicate,
-            &mut DefaultComparatorPolicyResolver::default(),
-            || Ok(output(4)),
+    let (decision, observation, _rejected) =
+        crate::data::graph::storage::evaluation_partition::conditional_test_scope::run(
+            request_execution,
+            |work| {
+                partition.execute_conditional(
+                    work,
+                    &mut graph,
+                    SignalConditionalExecutionRequest::new(&contract, "storage", "warm", 1),
+                    &mut NoPredicate,
+                    &mut DefaultComparatorPolicyResolver::default(),
+                    || Ok(output(4)),
+                )
+            },
         )
         .unwrap()
         .into_parts();
@@ -83,12 +99,23 @@ fn conditional_observation_panic_preserves_completed_decision_and_restores_graph
         })
         .unwrap();
     let panic = catch_unwind(AssertUnwindSafe(|| {
-        let _ = partition.execute_conditional(
-            &mut graph,
-            SignalConditionalExecutionRequest::new(&contract, "storage", "poison-finish", 2),
-            &mut NoPredicate,
-            &mut PoisonReuse(bindings.clone()),
-            || panic!("warm read must not compute"),
+        let _ = crate::data::graph::storage::evaluation_partition::conditional_test_scope::run(
+            request_execution,
+            |work| {
+                partition.execute_conditional(
+                    work,
+                    &mut graph,
+                    SignalConditionalExecutionRequest::new(
+                        &contract,
+                        "storage",
+                        "poison-finish",
+                        2,
+                    ),
+                    &mut NoPredicate,
+                    &mut PoisonReuse(bindings.clone()),
+                    || panic!("warm read must not compute"),
+                )
+            },
         );
     }))
     .unwrap_err();
@@ -104,12 +131,16 @@ fn conditional_observation_panic_preserves_completed_decision_and_restores_graph
     );
     assert_eq!(graph.observation_session_active_generation(), 0);
     assert!(matches!(
-        partition.execute_conditional(
-            &mut graph,
-            SignalConditionalExecutionRequest::new(&contract, "storage", "held-evidence", 3),
-            &mut NoPredicate,
-            &mut DefaultComparatorPolicyResolver::default(),
-            || panic!("unconsumed evidence must deny before compute"),
+        crate::data::graph::storage::evaluation_partition::conditional_test_scope::run(
+            request_execution,
+            |work| partition.execute_conditional(
+                work,
+                &mut graph,
+                SignalConditionalExecutionRequest::new(&contract, "storage", "held-evidence", 3),
+                &mut NoPredicate,
+                &mut DefaultComparatorPolicyResolver::default(),
+                || panic!("unconsumed evidence must deny before compute"),
+            )
         ),
         Err(SignalPartitionConditionalDenial::UnconsumedUnwind)
     ));
@@ -142,6 +173,16 @@ fn conditional_observation_panic_preserves_completed_decision_and_restores_graph
 
 #[test]
 fn conditional_observation_panic_preserves_returned_compute_failure() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (mut graph, contract) = installed();
     let mut partition = SignalEvaluationPartition::retain_basis_storage(&mut graph);
     let bindings = partition
@@ -150,14 +191,25 @@ fn conditional_observation_panic_preserves_returned_compute_failure() {
         })
         .unwrap();
     assert!(catch_unwind(AssertUnwindSafe(|| {
-        let _ = partition.execute_conditional(
-            &mut graph,
-            SignalConditionalExecutionRequest::new(&contract, "storage", "failed-compute", 1),
-            &mut NoPredicate,
-            &mut DefaultComparatorPolicyResolver::default(),
-            || {
-                poison_capture(&bindings);
-                Err(SignalError::invalid_input("compute declined"))
+        let _ = crate::data::graph::storage::evaluation_partition::conditional_test_scope::run(
+            request_execution,
+            |work| {
+                partition.execute_conditional(
+                    work,
+                    &mut graph,
+                    SignalConditionalExecutionRequest::new(
+                        &contract,
+                        "storage",
+                        "failed-compute",
+                        1,
+                    ),
+                    &mut NoPredicate,
+                    &mut DefaultComparatorPolicyResolver::default(),
+                    || {
+                        poison_capture(&bindings);
+                        Err(SignalError::invalid_input("compute declined"))
+                    },
+                )
             },
         );
     }))
@@ -182,6 +234,16 @@ fn conditional_observation_panic_preserves_returned_compute_failure() {
 
 #[test]
 fn conditional_observation_admission_panic_restores_graph_before_provider_contact() {
+    // This standalone caller declares the operational serial memory policy.
+    let serial_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (mut graph, contract) = installed();
     let ambient_bindings = graph.invalidation_performed_work.shared_bindings();
     let mut partition = SignalEvaluationPartition::retain_basis_storage(&mut graph);
@@ -193,14 +255,25 @@ fn conditional_observation_admission_panic_restores_graph_before_provider_contac
     poison_capture(&bindings);
     let computes = std::cell::Cell::new(0);
     assert!(catch_unwind(AssertUnwindSafe(|| {
-        let _ = partition.execute_conditional(
-            &mut graph,
-            SignalConditionalExecutionRequest::new(&contract, "storage", "admission-fault", 1),
-            &mut NoPredicate,
-            &mut DefaultComparatorPolicyResolver::default(),
-            || {
-                computes.set(computes.get() + 1);
-                Ok(output(4))
+        let _ = crate::data::graph::storage::evaluation_partition::conditional_test_scope::run(
+            request_execution,
+            |work| {
+                partition.execute_conditional(
+                    work,
+                    &mut graph,
+                    SignalConditionalExecutionRequest::new(
+                        &contract,
+                        "storage",
+                        "admission-fault",
+                        1,
+                    ),
+                    &mut NoPredicate,
+                    &mut DefaultComparatorPolicyResolver::default(),
+                    || {
+                        computes.set(computes.get() + 1);
+                        Ok(output(4))
+                    },
+                )
             },
         );
     }))
@@ -222,15 +295,26 @@ fn conditional_observation_admission_panic_restores_graph_before_provider_contac
         .unwrap();
     assert!(bindings.is_poisoned());
     bindings.clear_poison(); // Explicitly repair the injected fixture fault only.
-    let (decision, observation, _rejected) = partition
-        .execute_conditional(
-            &mut graph,
-            SignalConditionalExecutionRequest::new(&contract, "storage", "admission-retry", 2),
-            &mut NoPredicate,
-            &mut DefaultComparatorPolicyResolver::default(),
-            || {
-                computes.set(computes.get() + 1);
-                Ok(output(4))
+    let (decision, observation, _rejected) =
+        crate::data::graph::storage::evaluation_partition::conditional_test_scope::run(
+            request_execution,
+            |work| {
+                partition.execute_conditional(
+                    work,
+                    &mut graph,
+                    SignalConditionalExecutionRequest::new(
+                        &contract,
+                        "storage",
+                        "admission-retry",
+                        2,
+                    ),
+                    &mut NoPredicate,
+                    &mut DefaultComparatorPolicyResolver::default(),
+                    || {
+                        computes.set(computes.get() + 1);
+                        Ok(output(4))
+                    },
+                )
             },
         )
         .unwrap()

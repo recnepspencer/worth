@@ -69,13 +69,16 @@ impl WorthQueryYieldedDirectConvergenceIteration {
 
     pub fn readmit_same_runtime(
         self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+
         query_runtime: &crate::domain_computation::WorthQueryExecutionRuntime,
         bridge_runtime: &worth_runtime_bridge::facade::RuntimeBridge,
     ) -> WorthQueryDirectConvergenceReadmissionOutcome {
-        readmission::admit_associated_readmission(
-            self.association
-                .readmit_same_runtime(query_runtime, bridge_runtime),
-        )
+        readmission::admit_associated_readmission(self.association.readmit_same_runtime(
+            phase,
+            query_runtime,
+            bridge_runtime,
+        ))
     }
 
     pub fn cleanup(self) -> WorthQueryDirectConvergenceYieldCleanupOutcome {

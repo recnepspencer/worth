@@ -1,4 +1,5 @@
 use super::WorthQueryProgramApplicationRuntime;
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use crate::domain_computation::primary_graph::WorthQueryApplicationDiscoveredOutputConnection;
 use worth_query_declaration::facade::application_program::{
     ApplicationConnectionShape, ApplicationOutputGraphShape, ApplicationProgramDefinition,
@@ -75,6 +76,8 @@ where
     /// unless it is the program this occurrence runs.
     fn compare_and_commit_output_source<Source>(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
         presented: Option<
             crate::domain_computation::primary_graph::program_occurrence::WorthQueryPresentedProgram<'_>,
         >,
@@ -108,7 +111,7 @@ where
             .begin_source_preparation(program.product_branch().occurrence());
         match self
             .runtime
-            .compare_and_commit_application_for_required_output_source(
+            .compare_and_commit_application_for_required_output_source(phase,
                 &presented,
                 program,
                 idempotency,

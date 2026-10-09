@@ -39,3 +39,14 @@ fn clean(court: &CompositeSupplyChainCourt, outcome: RuntimeWorldPublicationOutc
         RuntimeWorldPublicationOutcome::NoEffect(no) => drop(no),
     }
 }
+
+// Each independently executing test caller owns bounded serial custody.
+fn serial_request(
+    policy: worth_foundational::ExecutionRequestPolicy,
+) -> worth_execution::SerialRequest {
+    worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::from_policy(&policy),
+        worth_execution::CancellationToken::new(),
+        None,
+    )
+}

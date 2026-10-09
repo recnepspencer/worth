@@ -49,38 +49,42 @@ impl ApplicationSchema for InstalledCatalogAuthoritySchema {
 
 #[test]
 fn handler_sealing_consumes_the_retained_installed_catalog() {
-    let declaration = InstalledCatalogAuthoritySchema::declaration().unwrap();
-    let package = WorthQueryPortableDomainPackage::new(WorthQueryPortableDomainIdentity::new(
-        InstalledCatalogAuthoritySchema::OWNER,
-        InstalledCatalogAuthoritySchema::MAJOR,
-        InstalledCatalogAuthoritySchema::MINOR,
-    ))
-    .application_schema(declaration.clone())
-    .validate()
-    .unwrap();
-    let admitted = WorthQueryInstallationAdmissionProfile::new("support", "configuration")
-        .admit(package)
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+
+        let declaration = InstalledCatalogAuthoritySchema::declaration().unwrap();
+        let package = WorthQueryPortableDomainPackage::new(WorthQueryPortableDomainIdentity::new(
+            InstalledCatalogAuthoritySchema::OWNER,
+            InstalledCatalogAuthoritySchema::MAJOR,
+            InstalledCatalogAuthoritySchema::MINOR,
+        ))
+        .application_schema(declaration.clone())
+        .validate()
         .unwrap();
-    let installation = WorthQueryExecutionRuntimeInstaller::new()
-        .install(WorthQueryInstallationGeneration::initial(), [admitted])
-        .unwrap();
-    let (runtime, authority) = installation.into_parts();
-    let schema = runtime
-        .installed_packages()
-        .bind_application_schema(declaration)
-        .unwrap();
-    let bootstrap = authority
-        .prepare_primary_graph(
+        let admitted = WorthQueryInstallationAdmissionProfile::new("support", "configuration")
+            .admit(package)
+            .unwrap();
+        let installation = WorthQueryExecutionRuntimeInstaller::new()
+            .install(WorthQueryInstallationGeneration::initial(), [admitted])
+            .unwrap();
+        let (runtime, authority) = installation.into_parts();
+        let schema = runtime
+            .installed_packages()
+            .bind_application_schema(declaration)
+            .unwrap();
+        let bootstrap = authority
+        .prepare_primary_graph(&phase.bootstrap_for_test(),
             &runtime,
             &schema,
             crate::domain_computation::execution_runtime::product_world::test_product_world_resources(),
         )
         .unwrap();
 
-    bootstrap
-        .mutation_handlers
-        .seal(&schema, bootstrap.graph.binding_identity())
-        .unwrap();
+        bootstrap
+            .mutation_handlers
+            .seal(&schema, bootstrap.graph.binding_identity())
+            .unwrap();
 
-    assert_eq!(DECLARATION_CALLS.load(Ordering::SeqCst), 2);
+        assert_eq!(DECLARATION_CALLS.load(Ordering::SeqCst), 2);
+    })
 }

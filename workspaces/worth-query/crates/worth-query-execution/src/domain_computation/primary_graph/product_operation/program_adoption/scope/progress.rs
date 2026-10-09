@@ -5,6 +5,11 @@ use crate::basis::WorthQueryProductBranch;
 
 /// The disposition of one branch already attempted in a branch-set adoption.
 pub enum WorthQueryBranchSetAdoptionProgress {
+    /// The host call was refused before any owner effects.
+    ExecutionDenied {
+        branch: WorthQueryProductBranch,
+        cause: crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
+    },
     /// The branch's adoption is published.
     Performed {
         branch: WorthQueryProductBranch,
@@ -26,7 +31,8 @@ pub enum WorthQueryBranchSetAdoptionProgress {
 impl WorthQueryBranchSetAdoptionProgress {
     pub const fn branch(&self) -> WorthQueryProductBranch {
         match self {
-            Self::Performed { branch, .. }
+            Self::ExecutionDenied { branch, .. }
+            | Self::Performed { branch, .. }
             | Self::NoEffect { branch, .. }
             | Self::ProductUnpublished { branch, .. } => *branch,
         }
@@ -35,21 +41,25 @@ impl WorthQueryBranchSetAdoptionProgress {
     pub const fn performed(&self) -> Option<&WorthQueryPerformedBranchAdoption> {
         match self {
             Self::Performed { adoption, .. } => Some(adoption),
-            Self::NoEffect { .. } | Self::ProductUnpublished { .. } => None,
+            Self::ExecutionDenied { .. }
+            | Self::NoEffect { .. }
+            | Self::ProductUnpublished { .. } => None,
         }
     }
 
     pub const fn no_effect(&self) -> Option<&NoEffectCompositePublication> {
         match self {
             Self::NoEffect { no_effect, .. } => Some(no_effect),
-            Self::Performed { .. } | Self::ProductUnpublished { .. } => None,
+            Self::ExecutionDenied { .. }
+            | Self::Performed { .. }
+            | Self::ProductUnpublished { .. } => None,
         }
     }
 
     pub const fn unpublished(&self) -> Option<&WorthQueryUnpublishedBranchAdoption> {
         match self {
             Self::ProductUnpublished { adoption, .. } => Some(adoption),
-            Self::Performed { .. } | Self::NoEffect { .. } => None,
+            Self::ExecutionDenied { .. } | Self::Performed { .. } | Self::NoEffect { .. } => None,
         }
     }
 }

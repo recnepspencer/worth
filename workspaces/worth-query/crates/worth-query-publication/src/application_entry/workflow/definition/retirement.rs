@@ -117,6 +117,10 @@ where
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
+        let request_scope = self.request_scope().clone();
+        let runtime = self.application_runtime();
+        runtime.with_application_advancement(&request_scope, |_phase| {
+
         let workflow = workflow.into();
         let application = self.application_runtime();
         if !std::ptr::eq(application, workflow.runtime()) {
@@ -152,6 +156,8 @@ where
             prepared,
             idempotency: mutation.idempotency,
         })
+
+        }).map_err(|cause| PreparationDenial::RequestAdmission(WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause)))?
     }
 }
 
@@ -178,10 +184,22 @@ where
     Input: Clone + Send + Sync + 'static,
 {
     pub fn execute(self) -> WorkflowDefinitionRetirementOutcome {
-        WorthQueryWorkflowDefinitionRetirementAdapter::compare_and_commit(
-            self.application,
-            self.prepared,
-            self.idempotency,
-        )
+        self.application
+            .with_application_advancement(&self.prepared.request_scope().clone(), |phase| {
+                WorthQueryWorkflowDefinitionRetirementAdapter::compare_and_commit(
+                    &phase,
+                    self.application,
+                    self.prepared,
+                    self.idempotency,
+                )
+            })
+            .unwrap_or_else(|cause| {
+                WorkflowDefinitionRetirementOutcome::Application(
+                    cause
+                        .into_commit_outcome()
+                        .landed()
+                        .expect_err("request admission cannot commit"),
+                )
+            })
     }
 }

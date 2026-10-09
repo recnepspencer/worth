@@ -33,6 +33,7 @@ impl WorthQueryProvisionalGraphProvider for Arc<WorthQueryPrimaryGraphProvider> 
 
     fn discard_provisional_overlay(
         &self,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
         evidence: WorthQueryProvisionalOverlayEvidenceView<'_>,
     ) -> Result<(), WorthQueryProvisionalFailure> {
         let discarded = self

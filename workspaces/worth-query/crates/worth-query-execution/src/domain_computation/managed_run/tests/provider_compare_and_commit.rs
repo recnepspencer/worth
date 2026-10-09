@@ -16,105 +16,127 @@ use crate::domain_computation::{
 
 #[test]
 fn exact_invariant_progression_is_consumed_by_provider_commit() {
-    let state = provider_state();
-    let requirements = blocking_requirements();
-    let (mut running, graph) = invariant_run(Arc::clone(&state), requirements);
-    let inspection = proposed_inspection(&mut running, &graph);
-    let receipt = execute_installed_invariant(&inspection);
-    let progression = inspection
-        .admit_invariant_progression([receipt])
-        .expect("exact installed invariant must admit progression");
-    let candidate = match inspection.bind_invariant_progression(progression) {
-        Ok(candidate) => candidate,
-        Err(_) => panic!("progression must bind to its exact proposed state"),
-    };
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
 
-    let outcome = candidate.compare_and_commit();
-    let WorthQueryProviderCompareAndCommitOutcome::Committed(committed) = outcome else {
-        panic!("fresh invariant-approved state must commit")
-    };
-    assert_eq!(
-        committed.provider_description().as_str(),
-        "provisional commit completed"
-    );
-    assert_eq!(
-        state.lock().unwrap().authoritative.get("base").unwrap(),
-        "replaced"
-    );
-    cleanup(running);
+        let state = provider_state();
+        let requirements = blocking_requirements();
+        let (mut running, graph) = invariant_run(Arc::clone(&state), requirements);
+        let inspection = proposed_inspection(execution, &mut running, &graph);
+        let receipt = execute_installed_invariant(&inspection);
+        let progression = inspection
+            .admit_invariant_progression([receipt])
+            .expect("exact installed invariant must admit progression");
+        let candidate = match inspection.bind_invariant_progression(progression) {
+            Ok(candidate) => candidate,
+            Err(_) => panic!("progression must bind to its exact proposed state"),
+        };
+
+        let outcome = candidate.compare_and_commit();
+        let WorthQueryProviderCompareAndCommitOutcome::Committed(committed) = outcome else {
+            panic!("fresh invariant-approved state must commit")
+        };
+        assert_eq!(
+            committed.provider_description().as_str(),
+            "provisional commit completed"
+        );
+        assert_eq!(
+            state.lock().unwrap().authoritative.get("base").unwrap(),
+            "replaced"
+        );
+        cleanup(running);
+    });
 }
 
 #[test]
 fn identical_provider_text_cannot_substitute_for_terminal_owner_binding() {
-    let first = committed_provider_session();
-    let second = committed_provider_session();
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
 
-    assert_eq!(first.provider_description(), second.provider_description());
-    assert!(
-        !first
-            .terminal_binding()
-            .same_session(second.terminal_binding()),
-        "equal provider-authored descriptions must not identify a terminal owner"
-    );
+        let first = committed_provider_session(execution);
+        let second = committed_provider_session(execution);
+
+        assert_eq!(first.provider_description(), second.provider_description());
+        assert!(
+            !first
+                .terminal_binding()
+                .same_session(second.terminal_binding()),
+            "equal provider-authored descriptions must not identify a terminal owner"
+        );
+    });
 }
 
 #[test]
 fn relevant_drift_stales_before_provider_commit() {
-    let state = provider_state();
-    let (mut running, graph) = invariant_run(Arc::clone(&state), blocking_requirements());
-    let inspection = proposed_inspection(&mut running, &graph);
-    let receipt = execute_installed_invariant(&inspection);
-    let progression = inspection.admit_invariant_progression([receipt]).unwrap();
-    let candidate = match inspection.bind_invariant_progression(progression) {
-        Ok(candidate) => candidate,
-        Err(_) => panic!("exact progression must bind"),
-    };
-    state.lock().unwrap().decision_version = Some("base-v2".to_owned());
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
 
-    let outcome = candidate.compare_and_commit();
-    let WorthQueryProviderCompareAndCommitOutcome::Stale(stale) = outcome else {
-        panic!("changed decision evidence must stale")
-    };
-    assert_eq!(stale.stale_fact_count(), 9);
-    assert_eq!(
-        state.lock().unwrap().authoritative.get("base").unwrap(),
-        "base-value"
-    );
-    cleanup(running);
+        let state = provider_state();
+        let (mut running, graph) = invariant_run(Arc::clone(&state), blocking_requirements());
+        let inspection = proposed_inspection(execution, &mut running, &graph);
+        let receipt = execute_installed_invariant(&inspection);
+        let progression = inspection.admit_invariant_progression([receipt]).unwrap();
+        let candidate = match inspection.bind_invariant_progression(progression) {
+            Ok(candidate) => candidate,
+            Err(_) => panic!("exact progression must bind"),
+        };
+        state.lock().unwrap().decision_version = Some("base-v2".to_owned());
+
+        let outcome = candidate.compare_and_commit();
+        let WorthQueryProviderCompareAndCommitOutcome::Stale(stale) = outcome else {
+            panic!("changed decision evidence must stale")
+        };
+        assert_eq!(stale.stale_fact_count(), 9);
+        assert_eq!(
+            state.lock().unwrap().authoritative.get("base").unwrap(),
+            "base-value"
+        );
+        cleanup(running);
+    });
 }
 
 #[test]
 fn equivalent_proposal_from_another_session_rejects_foreign_progression() {
-    let first_state = provider_state();
-    let (mut first_run, first_graph) =
-        invariant_run(Arc::clone(&first_state), blocking_requirements());
-    let first = proposed_inspection(&mut first_run, &first_graph);
-    let receipt = execute_installed_invariant(&first);
-    let progression = first.admit_invariant_progression([receipt]).unwrap();
-    first.discard();
-    cleanup(first_run);
+    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+        let execution = phase;
 
-    let second_state = provider_state();
-    let (mut second_run, second_graph) =
-        invariant_run(Arc::clone(&second_state), blocking_requirements());
-    let second = proposed_inspection(&mut second_run, &second_graph);
-    let (denial, second) = match second.bind_invariant_progression(progression) {
-        Ok(_) => panic!("equivalent state from another session needs its own progression"),
-        Err(denial) => denial,
-    };
-    assert_eq!(
-        denial,
-        WorthQueryProviderCommitAdmissionDenial::ForeignInvariantProgression
-    );
-    second.discard();
-    cleanup(second_run);
+        let first_state = provider_state();
+        let (mut first_run, first_graph) =
+            invariant_run(Arc::clone(&first_state), blocking_requirements());
+        let first = proposed_inspection(execution, &mut first_run, &first_graph);
+        let receipt = execute_installed_invariant(&first);
+        let progression = first.admit_invariant_progression([receipt]).unwrap();
+        first.discard();
+        cleanup(first_run);
+
+        let second_state = provider_state();
+        let (mut second_run, second_graph) =
+            invariant_run(Arc::clone(&second_state), blocking_requirements());
+        let second = proposed_inspection(execution, &mut second_run, &second_graph);
+        let (denial, second) = match second.bind_invariant_progression(progression) {
+            Ok(_) => panic!("equivalent state from another session needs its own progression"),
+            Err(denial) => denial,
+        };
+        assert_eq!(
+            denial,
+            WorthQueryProviderCommitAdmissionDenial::ForeignInvariantProgression
+        );
+        second.discard();
+        cleanup(second_run);
+    });
 }
 
 fn proposed_inspection<'run>(
+    execution: &'run crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+
     running: &'run mut crate::domain_computation::WorthQueryRunningDirectRun,
     graph: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
 ) -> crate::domain_computation::WorthQueryProposedStateInspection<'run> {
-    let (staged, fresh) = staged_with_fresh_read_set(running, graph);
+    let (staged, fresh) = staged_with_fresh_read_set(execution, running, graph);
     let program = staged
         .effect_authority()
         .lower_provisional_program(
@@ -155,10 +177,12 @@ fn provider_state() -> Arc<Mutex<ProvisionalProviderState>> {
     super::invariant_execution::state()
 }
 
-fn committed_provider_session() -> crate::domain_computation::WorthQueryCommittedProviderSession {
+fn committed_provider_session(
+    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+) -> crate::domain_computation::WorthQueryCommittedProviderSession {
     let state = provider_state();
     let (mut running, graph) = invariant_run(Arc::clone(&state), blocking_requirements());
-    let inspection = proposed_inspection(&mut running, &graph);
+    let inspection = proposed_inspection(execution, &mut running, &graph);
     let receipt = execute_installed_invariant(&inspection);
     let progression = inspection.admit_invariant_progression([receipt]).unwrap();
     let candidate = inspection

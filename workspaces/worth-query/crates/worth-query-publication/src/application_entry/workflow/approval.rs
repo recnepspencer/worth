@@ -84,6 +84,10 @@ where
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
+        let request_scope = self.request_scope().clone();
+        let runtime = self.application_runtime();
+        runtime.with_application_advancement(&request_scope, |_phase| {
+
         let workflow = workflow.into();
         let application = self.application_runtime();
         if !std::ptr::eq(application, workflow.runtime()) {
@@ -128,6 +132,8 @@ where
                 idempotency: mutation.idempotency,
             },
         })
+
+        }).map_err(|cause| WorthQueryWorkflowAdvancePreparationDenial::RequestAdmission(WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause)))?
     }
 }
 

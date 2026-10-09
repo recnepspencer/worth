@@ -70,7 +70,7 @@ where
                 stage_task_candidates: false,
             },
             evaluator,
-            worth_execution::ExecutionRequest::serial(&self.tx.graph.bounded_serial_request()),
+            self.tx.execution,
         )
     }
 
@@ -111,7 +111,7 @@ where
                     stage_task_candidates: false,
                 },
                 evaluator,
-                worth_execution::ExecutionRequest::serial(&self.tx.graph.bounded_serial_request()),
+                self.tx.execution,
             )?;
         }
         self.tx.graph.node_aspect_version(*node)
@@ -141,7 +141,7 @@ where
                     stage_task_candidates: false,
                 },
                 evaluator,
-                worth_execution::ExecutionRequest::serial(&self.tx.graph.bounded_serial_request()),
+                self.tx.execution,
             )?;
         }
         self.targets

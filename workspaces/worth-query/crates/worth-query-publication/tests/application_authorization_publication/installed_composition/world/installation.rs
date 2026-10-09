@@ -1,5 +1,6 @@
 use worth_query_declaration::facade::authentication::WorthQueryPrincipalMappingStatus;
 use worth_query_execution::facade::{
+    application_contribution::WorthQueryBootstrapAdvancementPhase,
     primary_graph::WorthQueryApplicationPrincipalKey, runtime::WorthQueryExecutionRuntimeInstaller,
 };
 use worth_query_installation::facade::{
@@ -12,6 +13,19 @@ use super::{authentication, baseline_graph, scenario};
 use super::{CompositionScenario, InstalledWorld};
 
 pub(super) fn install_world(composition_scenario: CompositionScenario) -> InstalledWorld {
+    let resources = product_world_resources();
+    worth_query_execution::facade::application_contribution::with_bootstrap_advancement(
+        resources.execution_policy(),
+        |phase| install_in_advancement(&phase, resources, composition_scenario),
+    )
+    .expect("the declared fixture policy admits its installation")
+}
+
+fn install_in_advancement(
+    phase: &WorthQueryBootstrapAdvancementPhase<'_>,
+    resources: worth_query_execution::facade::runtime::WorthQueryProductWorldResources,
+    composition_scenario: CompositionScenario,
+) -> InstalledWorld {
     let declaration = PublicationAuthorizationSchema::declaration().unwrap();
     let package = WorthQueryPortableDomainPackage::new(WorthQueryPortableDomainIdentity::new(
         "publication_authorization_proof",
@@ -36,7 +50,7 @@ pub(super) fn install_world(composition_scenario: CompositionScenario) -> Instal
         .principal_binding(PublicationIdentityBinding::reference())
         .unwrap();
     let mut graph = authority
-        .prepare_primary_graph(&runtime, &schema, product_world_resources())
+        .prepare_primary_graph(phase, &runtime, &schema, resources)
         .unwrap();
 
     graph
@@ -53,6 +67,7 @@ pub(super) fn install_world(composition_scenario: CompositionScenario) -> Instal
 
     let runtime = graph
         .publish_application_runtime(
+            phase,
             runtime,
             authority,
             schema,
