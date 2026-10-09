@@ -17,7 +17,10 @@ mod root_selection;
 mod tree_materialization;
 mod work_observation;
 #[cfg(feature = "test-query-execution-observer")]
-pub use entry_observation::query_read_kernel_entries_on_this_thread_for_test;
+pub use entry_observation::{
+    query_read_kernel_entries_by_root_on_this_thread_for_test,
+    query_read_kernel_entries_on_this_thread_for_test,
+};
 pub(in crate::domain_computation::primary_graph::application_query) use work_observation::OneShotReadWorkObservation;
 
 use super::resource_lifecycle::WorthQueryApplicationResultBufferReservation;
@@ -117,7 +120,7 @@ pub(super) fn read_prepared_root_rows(
     interruption: ReadInterruption<'_>,
 ) -> Result<RawNonLiveKernelOutcome, WorthQueryApplicationReadExecutionDenial> {
     #[cfg(feature = "test-query-execution-observer")]
-    entry_observation::record_kernel_entry();
+    entry_observation::record_kernel_entry(plan.root);
     let contract = plan.contract;
     let selection = select_bounded_roots(
         runtime,

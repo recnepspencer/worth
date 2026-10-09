@@ -44,6 +44,22 @@ impl VisibilityProjectionView<'_> {
         )
     }
 
+    /// Height of the schema-kind descent within the exact entity probe.
+    /// The probe's remaining 38 units validate/read the entity and are logical work.
+    pub fn exact_entity_state_read_navigation_work_bound(&self) -> Option<u64> {
+        let SnapshotStateBasis::Exact(basis) = &self.basis else {
+            return None;
+        };
+        Some(kind_lookup_work(
+            basis
+                .root()
+                .schema_authority()
+                .registry()
+                .entity_kinds
+                .len(),
+        ))
+    }
+
     /// One owner-issued Work bound for the exact borrowed relation probe.
     pub fn exact_relation_metadata_read_work_bound(&self) -> Option<u64> {
         let SnapshotStateBasis::Exact(basis) = &self.basis else {

@@ -136,12 +136,16 @@ impl SourceInvalidationOwner {
             return Err(SettlementRegistrationStop::Foreign);
         }
         let identity = Arc::clone(&registration.identity);
-        let prepared = self.prepare_settlement_at_basis(
-            registration,
-            RegistrationReadBasis::CurrentOnly,
-            Some(&equality),
-            admission,
-        )?;
+        let prepared = self
+            .prepare_settlement_at_basis(
+                registration,
+                RegistrationReadBasis::CurrentOnly,
+                Some(&equality),
+                admission,
+            )
+            .inspect_err(|stop| {
+                self.evict_after_refused_edit(selected, stop, admission);
+            })?;
         Ok(PreparedCurrentSettlementRegistration {
             prepared,
             identity,

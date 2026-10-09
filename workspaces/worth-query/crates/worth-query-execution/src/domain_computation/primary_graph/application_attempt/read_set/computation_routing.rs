@@ -132,6 +132,13 @@ impl ComputationFactAttribution {
         self.readers.entry(key).or_default().record(read);
     }
 
+    pub(in crate::domain_computation::primary_graph) fn contains_key(
+        &self,
+        key: &WorthQueryApplicationFactKey,
+    ) -> bool {
+        self.readers.contains_key(key)
+    }
+
     pub(in crate::domain_computation::primary_graph) fn keys(
         &self,
     ) -> impl Iterator<Item = &WorthQueryApplicationFactKey> {

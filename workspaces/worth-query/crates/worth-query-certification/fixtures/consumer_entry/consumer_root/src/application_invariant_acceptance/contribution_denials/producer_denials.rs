@@ -79,7 +79,7 @@ fn missing_provider_precedes_initializer() {
         MissingProducerSchema::declaration().unwrap(),
         (Arc::clone(&setup_calls), Arc::clone(&setup_calls)),
         limits(),
-        |_, _| {
+        |_, _, _| {
             seed_calls.fetch_add(1, Ordering::SeqCst);
             Ok(())
         },
@@ -99,7 +99,7 @@ fn duplicate_provider_is_denied() {
         DuplicateProducerSchema::declaration().unwrap(),
         (Arc::clone(&setup_calls), Arc::clone(&setup_calls)),
         limits(),
-        |_, _| panic!("duplicate provider must deny before initial state"),
+        |_, _, _| panic!("duplicate provider must deny before initial state"),
     );
     assert_contribution_denial(
         result,
@@ -115,7 +115,7 @@ fn ambiguous_applicability_precedes_callbacks() {
         AmbiguousProducerSchema::declaration().unwrap(),
         (Arc::clone(&calls), Arc::clone(&calls)),
         limits(),
-        |_, _| panic!("ambiguous applicability must deny before initial state"),
+        |_, _, _| panic!("ambiguous applicability must deny before initial state"),
     );
     assert_contribution_denial(
         result,
@@ -332,9 +332,9 @@ fn install_topology_behavior<Schema: TopologySchemaBinding>(
         worth_query_topology_entry::AlternatePlanarOutputProvider,
     )?;
     setup.producer::<worth_query_topology_entry::PlanarFinalOutputProducer<Schema>>(
-        worth_query_topology_entry::PlanarFinalOutputProvider,
+        worth_query_topology_entry::PlanarFinalOutputProvider::default(),
     )?;
     setup.producer::<worth_query_topology_entry::PlanarFinalPreserveProducer<Schema>>(
-        worth_query_topology_entry::PlanarFinalOutputProvider,
+        worth_query_topology_entry::PlanarFinalOutputProvider::default(),
     )
 }

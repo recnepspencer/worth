@@ -56,6 +56,9 @@ where
             selected,
             admission,
         )?;
+        // A settled chain has no unfinished successor. Its wave pins end here;
+        // the Ready rows retain their own custody for their live owners.
+        drop(demand.required_continuations.take_all());
         // Settlement retains all executions initiated by this demand.
         return Ok(true);
     }
@@ -67,6 +70,9 @@ where
         runtime
             .output_demands
             .finish_settlement_admitted(caller_interest, selected, admission)?;
+        // A settled chain has no unfinished successor. Its wave pins end here;
+        // the Ready rows retain their own custody for their live owners.
+        drop(demand.required_continuations.take_all());
         // Settlement retains all executions initiated by this demand.
         return Ok(true);
     }

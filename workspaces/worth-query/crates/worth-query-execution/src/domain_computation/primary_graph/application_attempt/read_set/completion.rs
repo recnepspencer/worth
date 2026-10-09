@@ -81,8 +81,10 @@ impl<Schema, Operation, Input, Scope, Phase>
                 )
             })?;
         let (reads, completed) = self.computation_reads;
-        let computation_facts =
-            reads.map(|reads| SealedComputationFacts::at_seal(reads, &self.facts));
+        let computation_fact_ordinals = reads.ordinals(&self.facts);
+        let computation_facts = reads
+            .into_attribution()
+            .map(|reads| SealedComputationFacts::at_seal(reads, &self.facts));
         // Seal only validates carried reads. Absence was already written
         // where the decision or computation dropped its state.
         let retained = completed.seal(computation_facts.clone()).map_err(|()| {
@@ -93,14 +95,6 @@ impl<Schema, Operation, Input, Scope, Phase>
         })?;
         // `facts` keeps the decision facts in key order, ahead of the source
         // facts.
-        let computation_fact_ordinals =
-            computation_facts
-                .as_ref()
-                .map_or_else(Box::default, |sealed| {
-                    let keys = self.facts.keys().enumerate();
-                    keys.filter_map(|(ordinal, key)| sealed.fact(key).map(|_| ordinal))
-                        .collect()
-                });
         self.admission.record_completed_handler_facts(
             CompletedHandlerFactBoundary::from_completed_read(self.facts.len()),
             retained,

@@ -28,6 +28,7 @@ struct AdmissionTotals {
     work: u64,
     bytes: u64,
     navigation: u64,
+    ordered_operations: u64,
 }
 
 enum AdmissionCounters {
@@ -121,8 +122,25 @@ impl InvalidationEditAdmission {
                 work: 0,
                 bytes: 0,
                 navigation: 0,
+                ordered_operations: 0,
             }),
             request_local: PhantomData,
+        }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn charge_selected_index_read(
+        &mut self,
+        work: worth_relational::facade::indexes::SelectedIndexReadWork,
+        bytes: u64,
+    ) -> Result<(), CompanionPreflightStop> {
+        self.admit_read_scratch(bytes)?;
+        match work {
+            worth_relational::facade::indexes::SelectedIndexReadWork::Operation(work) => {
+                self.charge_external_work(work)
+            }
+            worth_relational::facade::indexes::SelectedIndexReadWork::OrderedNavigation(
+                navigation,
+            ) => self.charge_ordered_operations(1, navigation),
         }
     }
 
@@ -217,39 +235,6 @@ impl InvalidationEditAdmission {
         self.work(units)
     }
 
-    /// Physical ordered-index navigation over shared registries is admitted
-    /// and reported separately from the declared logical work. Its height is
-    /// bounded by the owning registry's installed record ledger, so another
-    /// consumer's population never spends this request's declared allowance.
-    pub(in crate::domain_computation) fn charge_navigation(
-        &mut self,
-        units: u64,
-    ) -> Result<(), CompanionPreflightStop> {
-        self.with_totals_mut(|totals| {
-            totals.navigation = totals
-                .navigation
-                .checked_add(units)
-                .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
-            Ok(())
-        })
-    }
-
-    /// Ordered-index operations over a shared registry: one declared unit per
-    /// operation, with their height-dependent paths reported as navigation.
-    pub(in crate::domain_computation) fn charge_ordered_operations(
-        &mut self,
-        operations: u64,
-        navigation: u64,
-    ) -> Result<(), CompanionPreflightStop> {
-        self.work(operations)?;
-        self.charge_navigation(navigation)
-    }
-
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn charged_navigation(&self) -> u64 {
-        self.with_totals(|totals| totals.navigation)
-    }
-
     /// Reserve the Query read's admitted maximum against the same counter
     /// before it performs work. Other carried claimants see the reserved
     /// amount until this custody settles its actual spent work.
@@ -313,44 +298,7 @@ impl InvalidationEditAdmission {
     }
 }
 
-impl IndexAdmission for InvalidationEditAdmission {
-    fn work(&mut self, visits: u64) -> Result<(), CompanionPreflightStop> {
-        let maximum = self.budget.maximum_work_visits;
-        self.with_totals_mut(|totals| {
-            let required = totals
-                .work
-                .checked_add(visits)
-                .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
-            if required > maximum {
-                return Err(CompanionPreflightStop::WorkExhausted { required, maximum });
-            }
-            totals.work = required;
-            Ok(())
-        })
-    }
-
-    fn navigation(&mut self, units: u64) -> Result<(), CompanionPreflightStop> {
-        self.charge_navigation(units)
-    }
-
-    fn bytes(&mut self, bytes: u64) -> Result<(), CompanionPreflightStop> {
-        let maximum = self.budget.maximum_preparation_bytes;
-        self.with_totals_mut(|totals| {
-            let required = totals
-                .bytes
-                .checked_add(bytes)
-                .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-            if required > maximum {
-                return Err(CompanionPreflightStop::PreparationMemoryExhausted {
-                    required,
-                    maximum,
-                });
-            }
-            totals.bytes = required;
-            Ok(())
-        })
-    }
-}
+mod meter;
 
 #[cfg(test)]
 mod carried_tests;

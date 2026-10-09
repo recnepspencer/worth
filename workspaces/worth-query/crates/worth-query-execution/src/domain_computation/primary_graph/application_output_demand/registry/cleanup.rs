@@ -122,7 +122,11 @@ impl DemandRegistryState {
                 .and_then(|work| work.checked_add(4))
                 .ok_or_else(work_denial)?;
             admission
-                .charge_ordered_operations(1, u64::try_from(movement).map_err(|_| work_denial())?)
+                .charge_external_work(
+                    (u64::try_from(movement).map_err(|_| work_denial())?)
+                        .checked_add(1)
+                        .ok_or_else(work_denial)?,
+                )
                 .map_err(|_| work_denial())?;
         }
         let edges = record.prerequisites.len();
@@ -142,7 +146,11 @@ impl DemandRegistryState {
             usize::try_from(maximum_key_work).map_err(|_| work_denial())?,
         )?;
         admission
-            .charge_ordered_operations(edges as u64, navigation as u64)
+            .charge_external_work(
+                (navigation as u64)
+                    .checked_add(edges as u64)
+                    .ok_or_else(work_denial)?,
+            )
             .map_err(|_| work_denial())?;
         // Each upstream edge reaches a record decrement, two membership
         // record probes, and a terminal-defer record probe. A released key
@@ -162,7 +170,11 @@ impl DemandRegistryState {
                 .and_then(|work| work.checked_add(4))
                 .ok_or_else(work_denial)?;
             admission
-                .charge_ordered_operations(1, u64::try_from(movement).map_err(|_| work_denial())?)
+                .charge_external_work(
+                    (u64::try_from(movement).map_err(|_| work_denial())?)
+                        .checked_add(1)
+                        .ok_or_else(work_denial)?,
+                )
                 .map_err(|_| work_denial())?;
         }
         self.settlement_keys.admit_selected_removal_work(

@@ -1,7 +1,11 @@
 //! Query-owned capacity shared by every canonical source subscription in one
 //! resource installation. Relational remains the publication authority.
 
+#[cfg(feature = "test-query-execution-observer")]
+mod native_reservation_observation;
 mod retention;
+#[cfg(feature = "test-query-execution-observer")]
+pub(in crate::domain_computation) use native_reservation_observation::NativeRetainedKind;
 
 use std::sync::Arc;
 
@@ -83,6 +87,12 @@ impl WorthQueryInvalidationResources {
         self.installation
     }
 
+    /// Live Native hint, branch, and completion reservations, including tickets.
+    #[cfg(feature = "test-query-execution-observer")]
+    #[doc(hidden)]
+    pub fn native_retained_allocations_for_test(&self) -> [(usize, u64); 3] {
+        native_reservation_observation::snapshot(Arc::as_ptr(&self.retention) as usize)
+    }
     pub fn retained_capacity_bytes(&self) -> u64 {
         self.retention.retained_bytes()
     }

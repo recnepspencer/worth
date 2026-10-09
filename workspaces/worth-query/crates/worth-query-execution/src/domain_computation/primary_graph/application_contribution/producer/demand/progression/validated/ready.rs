@@ -5,12 +5,18 @@ use crate::domain_computation::primary_graph::application_output_demand::{
 };
 
 /// What a Ready row proves on the branch as it stands.
+#[derive(Clone, Copy)]
+enum ReadyUnavailable {
+    Superseded,
+    WorkExhausted,
+}
+
 enum ReadyVerdict {
     Settled(std::sync::Arc<Settlement>),
     /// A superseded output, or an exhausted source-currentness allowance,
     /// leaves no current proof. Movable demands refresh into fresh execution;
     /// exact-publication recovery refuses that refresh.
-    Unavailable,
+    Unavailable(ReadyUnavailable),
 }
 
 /// Selected waves supply their own currentness proof; ordinary Ready uses a branch.
@@ -34,7 +40,10 @@ where
         completion: ReadyCompletion,
         certification: ReadyCertification,
         request_admission: &mut InvalidationEditAdmission,
-    ) -> Result<OwnStages, WorthQueryOutputDemandDenial>
+    ) -> Result<
+        OwnStages<FamilySourceQuery<Schema, Family>, FamilySourceValue<Schema, Family>>,
+        WorthQueryOutputDemandDenial,
+    >
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
         FamilySourceValue<Schema, Family>: 'static,
@@ -57,36 +66,66 @@ where
                 settlement,
             )));
         }
-        let (disclosed_value, disclosed_source) = disclosure.into_parts();
+        request_admission
+            .charge_external_work(std::mem::size_of_val(disclosure.source()) as u64)
+            .map_err(|_| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, ""))?;
         self.refresh_output_demand(
             demand,
-            disclosed_value,
-            disclosed_source,
+            disclosure.value(),
+            disclosure.source().clone(),
             Some(&completion.authority),
             request_admission,
         )?;
-        Ok(OwnStages::Refreshed)
+        Ok(OwnStages::Refreshed(disclosure))
     }
 
     /// Settle the Ready this call's own stages reached. Its disclosure went
-    /// into the execution, so an output superseded before it could settle
-    /// waits for the next advance to refresh it from a new one.
+    /// into the execution. A born-stale publication requests one reobservation
+    /// within this advance, using the same request admission.
     pub(super) fn settle_own_ready<Family>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         demand: &WorthQueryAdmittedOutputDemand<Schema, Family>,
         completion: &ReadyCompletion,
         delivery_branch: crate::basis::WorthQueryProductBranch,
-    ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
+        progress: CheckpointProgress,
+    ) -> Result<
+        CallerPass<FamilySourceQuery<Schema, Family>, FamilySourceValue<Schema, Family>>,
+        WorthQueryOutputDemandDenial,
+    >
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
         Ok(
             match self.certify_ready(phase, demand, completion, delivery_branch)? {
                 ReadyVerdict::Settled(settlement) => {
-                    WorthQueryOutputDemandAdvance::Settled(settlement)
+                    CallerPass::Answer(WorthQueryOutputDemandAdvance::Settled(settlement))
                 }
-                ReadyVerdict::Unavailable => WorthQueryOutputDemandAdvance::Pending,
+                ReadyVerdict::Unavailable(ReadyUnavailable::Superseded) => match progress {
+                    CheckpointProgress::Published(publication) => {
+                        let current = self.on_branch(delivery_branch).select().map_err(|stop| {
+                            WorthQueryOutputDemandDenial::product_selection(
+                                stop,
+                                "own publication readmission",
+                            )
+                        })?;
+                        if publication
+                            .0
+                            .is_selected_at(current.product().observation())
+                            && matches!(&completion.authority, Authority::Committed(receipt) if receipt.committed_product_publication() == &publication.0)
+                        {
+                            CallerPass::PublishedStale(publication)
+                        } else {
+                            CallerPass::Answer(WorthQueryOutputDemandAdvance::Pending)
+                        }
+                    }
+                    CheckpointProgress::Advanced => {
+                        CallerPass::Answer(WorthQueryOutputDemandAdvance::Pending)
+                    }
+                },
+                ReadyVerdict::Unavailable(ReadyUnavailable::WorkExhausted) => {
+                    CallerPass::Answer(WorthQueryOutputDemandAdvance::Pending)
+                }
             },
         )
     }
@@ -112,9 +151,11 @@ where
             )
         })?;
         let unavailable = |proof: Result<(), WorthQueryOutputDemandDenial>| match proof {
-            Ok(()) => Ok(false),
-            Err(denial) if current_proof_unavailable(&denial) => Ok(true),
-            Err(denial) => Err(denial),
+            Ok(()) => Ok(None),
+            Err(denial) => match ready_unavailable(&denial) {
+                Some(cause) => Ok(Some(cause)),
+                None => Err(denial),
+            },
         };
         // The source is proven by the disclosure. A stable alias or a
         // restored output and its facts are compared here as well, and for a
@@ -125,7 +166,10 @@ where
                 [settlement.as_ref()],
                 demand.currentness_work_limit(),
             );
-            unavailable(proof).map(|unavailable| (!unavailable).then_some(settlement))
+            unavailable(proof).map(|unavailable| match unavailable {
+                None => Ok(settlement),
+                Some(kind) => Err(kind),
+            })
         };
         let settlement = match &completion.authority {
             Authority::Committed(receipt) => {
@@ -134,8 +178,8 @@ where
                     [receipt],
                     demand.currentness_work_limit(),
                 );
-                if unavailable(proof)? {
-                    return Ok(ReadyVerdict::Unavailable);
+                if let Some(kind) = unavailable(proof)? {
+                    return Ok(ReadyVerdict::Unavailable(kind));
                 }
                 match Settlement::from_commit(
                     self,
@@ -145,11 +189,11 @@ where
                     Family::IDENTITY,
                     demand.producer_contacts_in_this_demand,
                 ) {
-                    Ok(settlement) => Some(settlement),
+                    Ok(settlement) => Ok(settlement),
                     Err(denial)
                         if denial.kind() == WorthQueryOutputDemandDenialKind::Superseded =>
                     {
-                        None
+                        Err(ReadyUnavailable::Superseded)
                     }
                     Err(denial) => return Err(denial),
                 }
@@ -169,8 +213,9 @@ where
                 demand.producer_contacts_in_this_demand,
             )?)?,
         };
-        let Some(settlement) = settlement else {
-            return Ok(ReadyVerdict::Unavailable);
+        let settlement = match settlement {
+            Ok(settlement) => settlement,
+            Err(kind) => return Ok(ReadyVerdict::Unavailable(kind)),
         };
         self.output_demands
             .finish_settlement(interest, &completion.authority)?;
@@ -178,10 +223,12 @@ where
     }
 }
 
-fn current_proof_unavailable(denial: &WorthQueryOutputDemandDenial) -> bool {
-    matches!(
-        denial.kind(),
-        WorthQueryOutputDemandDenialKind::Superseded
-            | WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
-    )
+fn ready_unavailable(denial: &WorthQueryOutputDemandDenial) -> Option<ReadyUnavailable> {
+    match denial.kind() {
+        WorthQueryOutputDemandDenialKind::Superseded => Some(ReadyUnavailable::Superseded),
+        WorthQueryOutputDemandDenialKind::WorkBudgetExceeded => {
+            Some(ReadyUnavailable::WorkExhausted)
+        }
+        _ => None,
+    }
 }

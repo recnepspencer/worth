@@ -198,14 +198,21 @@ impl SourceInvalidationOwner {
         if has_pending {
             equality::discharge_selected_downstream(&mut next, identity, admission)?;
         }
-        let root = retention::admit_live_replacement(
+        let prepared = retention::admit_live_replacement(
             image.payload(),
             next,
             before,
             &self.resources,
             admission,
-        )?;
-        self.prepare_root_replacement(cell, image, Arc::new(root), admission)
-            .map(|prepared| Some(PreparedVerifiedCurrent::LiveEdit(prepared)))
+        )
+        .map_err(SettlementRegistrationStop::from)
+        .and_then(|root| self.prepare_root_replacement(cell, image, Arc::new(root), admission));
+        match prepared {
+            Ok(prepared) => Ok(Some(PreparedVerifiedCurrent::LiveEdit(prepared))),
+            Err(stop) => {
+                self.evict_after_refused_edit(selected, &stop, admission);
+                Err(stop)
+            }
+        }
     }
 }

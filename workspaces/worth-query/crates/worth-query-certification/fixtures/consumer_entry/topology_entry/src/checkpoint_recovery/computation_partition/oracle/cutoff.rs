@@ -15,12 +15,11 @@ fn settle(
         .controls(input_cutoff::controls())
         .start_dependent_in_program::<OracleProgram<true>, RegionConnection>(application)
         .unwrap();
-    let settled = (0..256)
-        .find_map(|_| match demand.advance(request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
-            WorthQueryApplicationOutputDemandProgress::Settled(settled) => Some(settled),
-        })
-        .expect("the input-reuse producer settles");
+    let WorthQueryApplicationOutputDemandProgress::Settled(settled) =
+        demand.advance(request).unwrap()
+    else {
+        panic!("one advance settles managed input cutoff")
+    };
     (settled.posture(), take_runs(None))
 }
 
@@ -70,6 +69,16 @@ fn managed_partitioned_execution_prevents_cutoff_and_keeps_incremental_reuse() {
         "managed execution has untracked context and cannot publish an alias"
     );
     assert_eq!(runs[0].runs, [Run::Incremental]);
+    assert_eq!(
+        runs[0].calls,
+        OwnerCalls {
+            plans: 0,
+            keys: 0,
+            gathers: 0,
+            kernels: 0
+        },
+        "byte-equal gathered facts reuse every managed partition"
+    );
     request
         .mutate(EntryEdit::new("odd", 0, EntryFact::Value, 2.5_f64.to_bits()).commanded(9002))
         .without_source()
@@ -78,6 +87,15 @@ fn managed_partitioned_execution_prevents_cutoff_and_keeps_incremental_reuse() {
         .unwrap();
     let (_, runs) = settle(&request, &application);
     assert_eq!(runs.len(), 1);
+    assert_eq!(
+        runs[0].calls,
+        OwnerCalls {
+            plans: 0,
+            keys: 0,
+            gathers: 1,
+            kernels: 1
+        }
+    );
     assert_eq!(
         runs[0].runs,
         [Run::Incremental],

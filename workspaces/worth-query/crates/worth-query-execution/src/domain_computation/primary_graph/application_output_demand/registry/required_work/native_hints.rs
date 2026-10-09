@@ -86,3 +86,28 @@ impl Drop for NativeHint {
         }
     }
 }
+
+#[cfg(feature = "test-query-execution-observer")]
+impl<Schema>
+    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
+{
+    /// Declared hint, branch, completion allocations including their capacity tickets.
+    #[doc(hidden)]
+    pub fn native_required_hint_layout_for_test(branch_name_bytes: usize) -> [u64; 3] {
+        let ticket = native_ticket_bytes().unwrap();
+        [
+            RequiredWorkMembership::native_hint_bytes() + ticket,
+            RequiredWorkMembership::native_branch_retained_bytes(branch_name_bytes).unwrap()
+                + ticket,
+            CompanionPublicationCompletionObserver::retained_bytes() + ticket,
+        ]
+    }
+}
+
+#[cfg(feature = "test-query-execution-observer")]
+fn native_ticket_bytes() -> Option<u64> {
+    let (layout, _) = std::alloc::Layout::new::<[usize; 2]>()
+        .extend(std::alloc::Layout::new::<RetainedInvalidationCapacity>())
+        .ok()?;
+    Some(layout.pad_to_align().size() as u64)
+}

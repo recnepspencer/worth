@@ -65,6 +65,7 @@ pub(super) struct WorthQueryOutputProgress {
 }
 
 impl WorthQueryOutputProgress {
+    #[cfg(test)]
     pub(super) fn new(checkpoint: WorthQueryOutputCheckpoint) -> Self {
         let (output, retired_observation) = Self::new_with_detached_observation(checkpoint);
         drop(retired_observation);

@@ -27,6 +27,9 @@ pub struct WorthQueryRedoProgressionHandoff {
 }
 
 impl WorthQueryRedoProgressionHandoff {
+    pub(crate) fn recovery_handle(&self) -> &super::WorthQueryRecoveryHandle {
+        self.recovery.handle()
+    }
     pub const fn intent(&self) -> &WorthQueryRedoIntent {
         &self.intent
     }

@@ -25,6 +25,7 @@ use worth_query_host::facade::application_contribution::{
 use super::*;
 
 mod demand;
+mod entry_correction;
 mod entry_edit;
 mod execution;
 mod facts;
@@ -137,7 +138,9 @@ trait RegionTotalsBinding: 'static {
 pub(crate) fn declare<Schema: TopologySchemaBinding>(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    entry_edit::declare(region_output::declare(demand::declare(schema)))
+    entry_correction::declare(entry_edit::declare(region_output::declare(
+        demand::declare(schema),
+    )))
 }
 
 /// The topology's own handlers: the demand and the region output have no
@@ -158,7 +161,8 @@ fn idle_entry_handlers<Schema: TopologySchemaBinding>(
     setup.handler::<region_output::RegionOutputBinding<Schema>, _>(
         region_output::RegionOutputHandler::idle(),
     )?;
-    setup.handler::<entry_edit::EntryEditBinding<Schema>, _>(entry_edit::EntryEditHandler)
+    setup.handler::<entry_edit::EntryEditBinding<Schema>, _>(entry_edit::EntryEditHandler)?;
+    entry_correction::configure(setup)
 }
 
 /// A program that only declares the computation. Nothing installs its owner,

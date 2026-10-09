@@ -33,26 +33,26 @@ impl OutputPartitionIndex {
     ) -> Result<PreparedStablePartitionLocator, WorthQueryOutputDemandDenial> {
         let outer = tree_work::<SemanticSource>(self.slots.len()).ok_or_else(work_denial)?;
         admission
-            .charge_external_work(outer)
+            .charge_ordered_operations(1, outer)
             .map_err(|_| work_denial())?;
         let occurrences = self.slots.get(source);
         let middle =
             tree_work::<ProductBranchIncarnation>(occurrences.map_or(0, |rows| rows.len()))
                 .ok_or_else(work_denial)?;
         admission
-            .charge_external_work(middle)
+            .charge_ordered_operations(1, middle)
             .map_err(|_| work_denial())?;
         let partitions = occurrences.and_then(|rows| rows.get(&coordinate.occurrence));
         let inner = tree_work::<Option<[u8; 32]>>(partitions.map_or(0, |rows| rows.len()))
             .ok_or_else(work_denial)?;
         admission
-            .charge_external_work(inner)
+            .charge_ordered_operations(1, inner)
             .map_err(|_| work_denial())?;
         let generations = partitions.and_then(|rows| rows.get(&Some(partition)));
         let leaf =
             tree_work::<u64>(generations.map_or(0, |rows| rows.len())).ok_or_else(work_denial)?;
         admission
-            .charge_external_work(leaf)
+            .charge_ordered_operations(1, leaf)
             .map_err(|_| work_denial())?;
         let existing = generations.and_then(|rows| rows.get(&coordinate.generation));
         if existing.is_some_and(|cell| cell.get().is_none()) {
@@ -108,14 +108,16 @@ impl OutputPartitionIndex {
                         .checked_mul(2)?,
                 )
             })
-            .and_then(|n| n.checked_add(2))
             .ok_or_else(work_denial)?;
         admission
-            .charge_external_work(work)
+            .charge_ordered_operations(12, work)
             .map_err(|_| work_denial())?;
         admission
             .admit_read_scratch(bytes)
             .map_err(|_| capacity_denial())?;
+        admission
+            .charge_external_work(2)
+            .map_err(|_| work_denial())?;
         retained.reserve_additional(bytes)?;
         let cell = Arc::new(OnceLock::new());
         if inserted_vacancy {

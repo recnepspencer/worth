@@ -48,7 +48,7 @@ pub(super) fn assert_program_cannot_omit_an_installed_rule() {
         ConsumerSchema::declaration().expect("the contributed declaration is valid"),
         configuration,
         limits,
-        |graph, installed| {
+        |_bootstrap_phase, graph, installed| {
             let principal = installed
                 .principal_binding(ConsumerPrincipalBinding::reference::<ConsumerSchema>())
                 .expect("the contributed principal mapping is installed");
@@ -93,7 +93,7 @@ pub(super) fn assert_program_cannot_omit_a_required_binding() {
         ConsumerSchema::declaration().expect("the contributed declaration is valid"),
         configuration,
         limits,
-        |graph, installed| {
+        |_bootstrap_phase, graph, installed| {
             let principal = installed
                 .principal_binding(ConsumerPrincipalBinding::reference::<ConsumerSchema>())
                 .expect("the contributed principal mapping is installed");
@@ -146,7 +146,7 @@ pub(super) fn assert_required_output_source_cannot_be_an_action() {
         ConsumerSchema::declaration().unwrap(),
         configuration,
         limits,
-        |graph, installed| {
+        |_bootstrap_phase, graph, installed| {
             let principal = installed
                 .principal_binding(ConsumerPrincipalBinding::reference::<ConsumerSchema>())
                 .expect("the contributed principal mapping is installed");
@@ -325,7 +325,7 @@ fn install_with_resource_bytes(
         ConsumerSchema::declaration().expect("the contributed declaration is valid"),
         configuration,
         limits,
-        |graph, installed| {
+        |bootstrap_phase, graph, installed| {
             reject_foreign_invariant_factory(installed, foreign);
             let principal = installed
                 .principal_binding(ConsumerPrincipalBinding::reference::<ConsumerSchema>())
@@ -337,7 +337,7 @@ fn install_with_resource_bytes(
                 authentication::external_identity(),
                 WorthQueryPrincipalMappingStatus::Enabled,
             )?;
-            seed::seed_cycles(graph);
+            seed::seed_cycles(bootstrap_phase, graph);
             graph.bind_principal(
                 &principal,
                 primary_graph::WorthQueryApplicationPrincipalKey::new("sibling-owner").unwrap(),

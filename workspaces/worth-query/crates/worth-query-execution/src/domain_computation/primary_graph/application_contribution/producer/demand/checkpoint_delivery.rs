@@ -178,7 +178,7 @@ where
             }
             Err(cause) => {
                 let kind = match cause.kind() {
-                    DeliveryDenialKind::ExecutionRequest(cause) => WorthQueryOutputDemandDenialKind::ExecutionRequest(cause),
+                    DeliveryDenialKind::ExecutionRequest(cause) => WorthQueryOutputDemandDenialKind::of_execution_stop(cause),
                     DeliveryDenialKind::ForeignProductRoot
                     | DeliveryDenialKind::ForeignProductOccurrence
                     | DeliveryDenialKind::ForeignConditionalOperation

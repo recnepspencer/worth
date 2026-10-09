@@ -198,3 +198,36 @@ fn refusing_exclusive_ticket_growth_preserves_the_displaced_state() {
         RecordedComputation::Retained(_)
     ));
 }
+
+#[test]
+fn a_different_displaced_record_cannot_transfer_the_prior_ticket() {
+    let (lineage, prior) = prior_record();
+    let (_, foreign) = recorded_settlement();
+    let state = held(&prior);
+    let bytes = state.fixture_byte_formula();
+    assert_eq!(lineage.retention.retained_bytes(), bytes);
+    assert!(prior
+        .take_capacity(
+            state,
+            &foreign,
+            &lineage,
+            bytes,
+            lineage.prepay_computation_fork_scan_for_test()
+        )
+        .unwrap()
+        .is_none());
+    assert!(matches!(
+        prior
+            .cell
+            .get()
+            .unwrap()
+            .mutable
+            .lock()
+            .unwrap()
+            .computation,
+        RecordedComputation::Retained(_)
+    ));
+    assert_eq!(lineage.retention.retained_bytes(), bytes);
+    drop(prior);
+    drop(lineage);
+}

@@ -24,7 +24,9 @@ pub use current_output::{
 pub use decision_plan::{
     WorthQueryInvariantDecisionPlanDenial, WorthQueryInvariantDecisionPlanDenialKind,
 };
-pub(in crate::domain_computation::primary_graph) use decision_reads::DecisionReads;
+pub(in crate::domain_computation::primary_graph) use decision_reads::{
+    DecisionReads, ObservedComputationInputs,
+};
 pub use prior_output::WorthQueryPriorOutputFamilyMember;
 pub(in crate::domain_computation::primary_graph) use prior_output::WorthQueryPriorOutputRead;
 

@@ -92,3 +92,14 @@ where
         }
     }
 }
+
+#[cfg(feature = "test-query-execution-observer")]
+impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    /// Funded storage of one typed required successor, before its admission.
+    #[doc(hidden)]
+    pub fn required_successor_custody_bytes_for_test<
+        Family: WorthQueryProducerOutputFamily<Schema>,
+    >() -> usize {
+        std::mem::size_of::<TypedRequiredSuccessor<Schema, Family>>()
+    }
+}

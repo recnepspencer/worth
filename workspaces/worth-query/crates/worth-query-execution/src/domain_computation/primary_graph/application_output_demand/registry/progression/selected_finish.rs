@@ -31,10 +31,17 @@ impl<'a> PreparedSelectedSchedulingFinish<'a> {
         mut performed_source: Option<WorthQueryPerformedOutputDemandSource>,
         result: &mut Result<WorthQueryOutputSchedulingResult, WorthQueryOutputDemandDenial>,
     ) {
+        let interrupted = scheduling_was_interrupted(result);
         let terminal_kind = match result {
             Ok(WorthQueryOutputSchedulingResult::NoEffect(denial)) | Err(denial) => {
-                denial.recovery_posture =
-                    crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Terminal;
+                use crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture;
+                // An interrupted scheduling attempt leaves the row for a later claim,
+                // with the same caller posture as interrupted execution.
+                denial.recovery_posture = if interrupted && execution_failure_is_retryable(denial) {
+                    WorthQueryOutputDemandRecoveryPosture::Retryable
+                } else {
+                    WorthQueryOutputDemandRecoveryPosture::Terminal
+                };
                 Some(denial.kind())
             }
             _ => None,
@@ -56,7 +63,13 @@ impl<'a> PreparedSelectedSchedulingFinish<'a> {
         {
             return;
         }
-        let (released_bytes, obligations) = if let Some(kind) = terminal_kind {
+        let (released_bytes, obligations) = if interrupted {
+            // Interruption before execution leaves the exact reopened Ready
+            // with its owners, including its claims and retained custody.
+            record.performed_source = performed_source.take();
+            record.leave_refresh_unclaimed(DemandState::Admitted);
+            (0, Vec::new())
+        } else if let Some(kind) = terminal_kind {
             let mut retained = WorthQueryOutputDemandDenial::new(kind, "");
             retained.recovery_posture =
                 crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Terminal;
@@ -80,7 +93,7 @@ impl<'a> PreparedSelectedSchedulingFinish<'a> {
         state.obligation_reserved_bytes = state
             .obligation_reserved_bytes
             .saturating_sub(released_bytes);
-        if terminal_kind.is_some() {
+        if terminal_kind.is_some() && !interrupted {
             state.defer_terminal_cleanup(self.member.key_arc(), 0);
         }
         drop(state);

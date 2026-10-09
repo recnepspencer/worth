@@ -16,7 +16,7 @@ fn charge_tree<K>(
     entries: usize,
 ) -> Result<(), CompanionPreflightStop> {
     let work = tree_work::<K>(entries).ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
-    admission.charge_external_work(work)
+    admission.charge_ordered_operations(1, work)
 }
 
 impl OutputPartitionIndex {

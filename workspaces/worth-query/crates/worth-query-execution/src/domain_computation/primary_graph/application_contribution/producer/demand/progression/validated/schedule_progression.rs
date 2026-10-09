@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication;
 use worth_query_installation::facade::ApplicationSchema;
 
 use crate::domain_computation::primary_graph::application_contribution::producer::demand::MatchedRequiredPredecessors;
@@ -6,14 +7,14 @@ use crate::domain_computation::primary_graph::product_operation::SharedSelectedP
 use super::super::*;
 
 /// What one pass over a row's own stages reached.
-pub(super) enum OwnStages {
+pub(super) enum OwnStages<Query, Value> {
     /// Settled, or waiting on something outside this call.
     Answer(WorthQueryOutputDemandAdvance),
     /// This call published the row's checkpoint or moved it a stage.
-    Checkpoint,
+    Checkpoint(CheckpointProgress),
     /// This call replaced the demand's row with one admitted under the
     /// disclosed source.
-    Refreshed,
+    Refreshed(super::super::super::disclosure::ValidatedOutputDisclosure<Query, Value>),
 }
 
 /// Both entries drive a row's own stages in one call. A required wave does
@@ -38,3 +39,11 @@ where
         matches!(self, Self::Selected { .. })
     }
 }
+
+/// Only a performed publication minted during this pass can permit its own reobservation.
+pub(super) enum CheckpointProgress {
+    Advanced,
+    Published(OwnPublication),
+}
+pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand::progression)
+struct OwnPublication(pub(crate) WorthQueryCommittedProductPublication);

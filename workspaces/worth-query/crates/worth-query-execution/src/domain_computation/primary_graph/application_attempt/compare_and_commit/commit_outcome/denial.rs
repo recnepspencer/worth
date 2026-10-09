@@ -103,6 +103,10 @@ pub enum WorthQueryApplicationCommitDenialKind {
     /// programming error in the caller, not intent drift: build the binding from
     /// the same key and input the handler ran with.
     MutationInputMismatch,
+    /// A sealed undo or redo handoff belongs to different admitted truth.
+    RecoveryHandoffMismatch {
+        kind: crate::domain_computation::application_aftermath::WorthQueryRecoveryHandleDenialKind,
+    },
     /// The operation is bound to an elevation lifecycle and must be committed
     /// through its elevation lane, not as a plain commit.
     ElevationTransitionRequired,
@@ -203,6 +207,16 @@ pub struct WorthQueryApplicationCommitDenial {
 }
 
 impl WorthQueryApplicationCommitDenial {
+    pub(crate) const fn recovery_handoff_mismatch(
+        kind: crate::domain_computation::application_aftermath::WorthQueryRecoveryHandleDenialKind,
+    ) -> Self {
+        Self {
+            kind: WorthQueryApplicationCommitDenialKind::RecoveryHandoffMismatch { kind },
+            stage: WorthQueryApplicationCommitDenialStage::ProposalBinding,
+            detail: None,
+            cause: None,
+        }
+    }
     pub const fn kind(&self) -> WorthQueryApplicationCommitDenialKind {
         self.kind
     }

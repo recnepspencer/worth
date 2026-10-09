@@ -160,16 +160,19 @@ fn charge(
         .map_err(|_| replacement_work_denial())
 }
 
-/// Physical required-set navigation is reported apart from declared work.
+/// The prepaid selected replacement quote includes payload comparisons.
 fn navigate(
     admission: &mut InvalidationEditAdmission,
     work: Option<usize>,
 ) -> Result<(), WorthQueryOutputDemandDenial> {
     admission
-        .charge_ordered_operations(
-            1,
-            u64::try_from(work.ok_or_else(replacement_work_denial)?)
-                .map_err(|_| replacement_work_denial())?,
+        .charge_external_work(
+            u64::try_from(
+                work.ok_or_else(replacement_work_denial)?
+                    .checked_add(1)
+                    .ok_or_else(replacement_work_denial)?,
+            )
+            .map_err(|_| replacement_work_denial())?,
         )
         .map_err(|_| replacement_work_denial())
 }

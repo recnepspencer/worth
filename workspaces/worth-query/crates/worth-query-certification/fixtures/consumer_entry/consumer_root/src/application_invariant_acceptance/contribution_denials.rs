@@ -101,7 +101,7 @@ fn inventory_drift_precedes_callbacks() {
         MissingContributionSchema::declaration().unwrap(),
         (topology_configuration(&setup_calls),),
         limits(),
-        |_, _| {
+        |_, _, _| {
             seed_calls.fetch_add(1, Ordering::SeqCst);
             Ok(())
         },
@@ -119,7 +119,7 @@ fn inventory_drift_precedes_callbacks() {
             Arc::clone(&setup_calls),
         ),
         limits(),
-        |_, _| {
+        |_, _, _| {
             seed_calls.fetch_add(1, Ordering::SeqCst);
             Ok(())
         },
@@ -148,7 +148,7 @@ fn missing_handler_precedes_initializer() {
         MissingHandlerSchema::declaration().unwrap(),
         (Arc::clone(&setup_calls), Arc::clone(&setup_calls)),
         limits(),
-        |graph, installed| {
+        |_bootstrap_phase, graph, installed| {
             seed_calls.fetch_add(1, Ordering::SeqCst);
             let binding = installed
                 .installed_mutation_binding::<PlanarMutationBinding<MissingHandlerSchema>>()
@@ -184,7 +184,7 @@ fn foreign_member_registration_is_denied() {
                 topology_configuration(&setup_calls),
             ),
             limits(),
-            |_, _| {
+            |_, _, _| {
                 seed_calls.fetch_add(1, Ordering::SeqCst);
                 Ok(())
             },

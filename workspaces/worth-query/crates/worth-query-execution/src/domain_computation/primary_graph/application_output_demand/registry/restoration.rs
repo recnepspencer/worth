@@ -64,7 +64,7 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let key = newest_semantic_key(&state, &requested_key, accepts_semantic_join)
+        let key = newest_semantic_key(&state, &requested_key, admission, accepts_semantic_join)?
             .unwrap_or_else(|| requested_key.clone());
         admission.charge_external_work(4).map_err(|_| {
             WorthQueryOutputDemandDenial::new(
@@ -103,7 +103,7 @@ impl WorthQueryOutputDemandRegistry {
         )?;
         state.charge_record_lookup_after_insert(&key, admission)?;
         let posting = state.prepare_restored_posting(&key, settlement, admission)?;
-        if let Err(denial) = supersede_predecessors(&mut state, &requested_key) {
+        if let Err(denial) = supersede_predecessors(&mut state, &requested_key, admission) {
             state.defer_cancelled_settlement_vacancy(posting.cleanup);
             return Err(denial);
         }

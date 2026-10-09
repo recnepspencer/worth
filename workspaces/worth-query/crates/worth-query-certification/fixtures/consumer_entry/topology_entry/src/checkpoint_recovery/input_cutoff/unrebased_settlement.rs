@@ -49,6 +49,7 @@ fn a_commit_whose_facts_cannot_be_rebased_settles_and_leaves_no_candidate() {
     for _ in 0..2 {
         let before = request.retain_read().unwrap();
         let denial = demand_outcome(&request, &application, SURVEYED)
+            .map_err(|stop| *stop)
             .err()
             .expect("a row without facts is not reused");
         assert!(
@@ -97,7 +98,7 @@ fn a_commit_that_moved_its_own_read_refreshes_whether_or_not_it_rebased() {
 
     let demanded = |root: &str| {
         let before = request.retain_read().unwrap();
-        let outcome = demand_outcome(&request, &application, root);
+        let outcome = demand_outcome(&request, &application, root).map_err(|stop| *stop);
         let after = request.retain_read().unwrap();
         let landed = before.selected_commit() != after.selected_commit();
         let standing = match outcome {
@@ -170,14 +171,15 @@ fn demand_outcome<'application, 'principal, 'scope>(
     root: &str,
 ) -> Result<
     WorthQueryApplicationOutputDemandSettlement<PlanarQuery>,
-    WorthQueryApplicationOutputDemandDenial,
+    Box<WorthQueryApplicationOutputDemandDenial>,
 > {
     let mut demand = request
         .demand(PlanarOutputDemand::new(root))
         .controls(controls())
-        .start_in_program::<CheckpointProgram, CheckpointRoot>(application)?;
+        .start_in_program::<CheckpointProgram, CheckpointRoot>(application)
+        .map_err(Box::new)?;
     for _ in 0..256 {
-        match demand.advance(request)? {
+        match demand.advance(request).map_err(Box::new)? {
             WorthQueryApplicationOutputDemandProgress::Pending => std::thread::yield_now(),
             WorthQueryApplicationOutputDemandProgress::Settled(settled) => return Ok(settled),
         }

@@ -33,6 +33,7 @@ pub use partitioned_computation::WorthQueryPartitionedComputationFullCause;
 #[cfg(feature = "test-query-execution-observer")]
 pub use partitioned_computation::{
     discarded_computation_retention_on_this_thread_for_test,
+    full_partitioned_computation_preparations_on_this_thread_for_test,
     partitioned_computation_runs_on_this_thread_for_test,
     partitioned_computation_tree_work_on_this_thread_for_test,
     published_partitioned_computations_on_this_thread_for_test,

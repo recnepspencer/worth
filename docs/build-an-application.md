@@ -817,6 +817,12 @@ queries. An open live subscription is the exception: its `next` ends the
 subscription with the `Cancelled` or `DeadlineExceeded` outcome, and every
 later `next` reports `Closed`.
 An opening refusal is `ExecutionRequest`, not a handler failure: no handler ran.
+`ExecutionRequest` also carries resource and misuse refusals encountered while
+an admitted request is executing.
+An interruption observed after admission keeps the executing owner's cancellation
+or timeout outcome, including that owner's promised restoration and refunds.
+For an output demand refresh these are `Cancelled` and `TimedOut`; they are
+separate from admission's `ExecutionRequest(Interrupted(..))` refusals.
 Zero memory reports `PolicyMemoryLimit` at serial placement and a policy
 `MemoryLimit { requested, admitted: 0 }` at leased placement.
 
@@ -936,6 +942,13 @@ the input is encoded once, its identity is both the governed input and the
 intent, and the key is scoped to the operation and the requesting principal,
 so the same key from another principal or under another operation never
 replays the request.
+
+For governed correction, `compare_and_commit_program_undo::<Binding>` and
+`compare_and_commit_program_redo::<Binding>` take the effect program, the same
+mutation identities and idempotency extension, and the sealed progression
+handoff. Both entries preserve the program membership, selected occurrence,
+workflow authority, conditionals and operation posture checks of an action
+commit. A handoff authorizes only the admission to which it is bound.
 
 The identity is exactly the serialized value, so keep that value complete and
 ordered:

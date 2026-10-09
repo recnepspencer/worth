@@ -92,8 +92,7 @@ fn a_lone_caller_whose_chain_outgrows_its_budget_stops_without_retry() {
 fn a_refresh_cancelled_under_tight_custody_settles_on_the_next_advance() {
     let _guard = checkpoint_recovery_test_guard();
     let row = worth_query_host::facade::primary_graph::required_ready_custody_bytes_for_test();
-    // Thirteen rows keep the settled chain beside one refresh of it, with no
-    // room for what an interrupted refresh would leave reserved.
+    // Thirteen rows fund a settled chain beside one refresh.
     let (application, _invalidation) = limited_application(13 * row, 128 * 1_024 * 1_024, 8);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
@@ -174,111 +173,10 @@ macro_rules! settled_within_eight_advances {
 
 /// Overwrites the Length `anchor-b` publishes, as a writer that is not its
 /// producer.
-fn overwrite_middle_output(
-    application: &application_installation::WorthQueryProgramApplicationRuntime<
-        CheckpointSchema,
-        program::ChainProgram,
-    >,
-    request: &worth_query_host::facade::application_entry::WorthQueryApplicationRequest<
-        '_,
-        '_,
-        '_,
-        CheckpointSchema,
-    >,
-    value: u64,
-    idempotency: u64,
-) {
-    use worth_query_consumer_values::{PlanarDerivedOutput, PlanarOperation};
-    let selected = request
-        .query(PlanarRead {
-            body_key: "anchor-b".to_owned(),
-        })
-        .execute()
-        .unwrap();
-    let outcome = request
-        .mutate(PlanarEdit(PlanarMutation {
-            scope_key: "anchor-b".to_owned(),
-            operation: PlanarOperation::PublishDerivedOutput(PlanarDerivedOutput {
-                body_key: "anchor-b".to_owned(),
-                value: length(value),
-            }),
-            validator_work: 4_096,
-        }))
-        .expect_source(selected.observed_sources()[0].clone())
-        .idempotency(&idempotency)
-        .execute_in_program::<program::ChainProgram>(application);
-    assert!(
-        matches!(
-            &outcome,
-            Ok(worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::Committed { .. })
-        ),
-        "the middle output is overwritten: {outcome:?}"
-    );
-}
+mod reclamation;
 
-/// A chain node republishes the Length its own source reads, so its output
-/// does not vary with the root. Where `overwritten`, another writer changes
-/// the middle output every cycle: the last consumer's decision then reads a
-/// value no earlier cycle published.
-#[test]
-fn a_dependent_whose_row_was_reclaimed_decides_again_over_a_refreshed_upstream() {
-    let _guard = checkpoint_recovery_test_guard();
-    let row = worth_query_host::facade::primary_graph::required_ready_custody_bytes_for_test();
-    // Eight to ten rows keep the settled chain and too little beside it: the
-    // refresh of one row reclaims the closed cached row of another.
-    for (rows, overwritten) in [8_usize, 9, 10]
-        .into_iter()
-        .flat_map(|rows| [(rows, false), (rows, true)])
-    {
-        let (application, _invalidation) = limited_application(rows * row, 128 * 1_024 * 1_024, 8);
-        let (scope, principal) = authenticate(&application);
-        let request = application.request(&principal, &scope);
-        let (a, b, c) = chain!(application, request);
-        drop((a, b, c));
-        let mut custody = None;
-        for cycle in 0..4_u64 {
-            let at = format!("{rows} rows, cycle {cycle}, overwritten {overwritten}");
-            let y = 2 + (cycle % 2) * 3;
-            let idempotency =
-                0x9176_4200_u64 + u64::from(overwritten) * 0x400 + rows as u64 * 16 + cycle;
-            change_root_input!(request, application, y, idempotency);
-            let mut a = start_root!(application, request);
-            settled_within_eight_advances!(a, request, format!("{at}: the root"));
-            drop(a);
-            let middle = if overwritten {
-                overwrite_middle_output(&application, &request, 40 + cycle, idempotency + 8);
-                40 + cycle
-            } else {
-                16
-            };
-            take_decisions("anchor-b");
-            let mut b = start_consumer!(application, request, "anchor-b");
-            settled_within_eight_advances!(b, request, format!("{at}: the middle consumer"));
-            drop(b);
-            assert_eq!(
-                take_decisions("anchor-b"),
-                [[y + 1]],
-                "{at}: the middle consumer decides over the changed root"
-            );
-            // Those refreshes reclaimed the last consumer's cached row, and
-            // replaced the output its lineage consumed. Restarted, it neither
-            // reuses its evicted output nor awaits the replaced one.
-            take_decisions("anchor-c");
-            let mut c = start_consumer!(application, request, "anchor-c");
-            settled_within_eight_advances!(c, request, format!("{at}: the last consumer"));
-            drop(c);
-            assert_eq!(
-                take_decisions("anchor-c"),
-                [[middle]],
-                "{at}: the last consumer decides again over the refreshed output"
-            );
-            // Each restart retires what the rows it replaced had posted.
-            let held = application.required_custody_bytes_for_test();
-            assert_eq!(
-                *custody.get_or_insert(held),
-                held,
-                "{at}: the closed chain holds what it held a cycle before"
-            );
-        }
-    }
-}
+mod balance;
+
+mod stable_readmission;
+
+mod joined_refresh;

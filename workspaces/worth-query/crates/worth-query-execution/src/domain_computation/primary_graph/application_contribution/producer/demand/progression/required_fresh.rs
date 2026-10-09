@@ -105,6 +105,10 @@ where
             }
             Err(denial) => Err(denial),
         };
+        #[cfg(feature = "test-query-execution-observer")]
+        if let Err(stop) = &outcome {
+            crate::domain_computation::primary_graph::application_output_demand::observe_required_refresh_stop(successor.observed_source.source_root(),stop.kind());
+        }
         Ok(slot.finish(
             successor,
             match outcome {

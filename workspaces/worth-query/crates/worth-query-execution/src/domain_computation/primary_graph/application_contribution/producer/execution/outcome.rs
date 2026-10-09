@@ -168,7 +168,8 @@ pub(super) fn commit_receipt(
                 | Kind::WorkflowAuthorityRequired
                 | Kind::ProgramNotActiveOnOccurrence { .. }
                 | Kind::ProgramSupportRetired
-                | Kind::ProgramActivationUnresolved => failed(identity, commit_denial),
+                | Kind::ProgramActivationUnresolved
+                | Kind::RecoveryHandoffMismatch { .. } => failed(identity, commit_denial),
             };
             Err(failure
                 .with_commit_denial_kind(kind)

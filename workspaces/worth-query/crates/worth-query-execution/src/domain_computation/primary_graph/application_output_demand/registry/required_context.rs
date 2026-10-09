@@ -348,13 +348,12 @@ fn capacity_denial() -> WorthQueryOutputDemandDenial {
 /// resources are held through the precommit phase, beside the Ready cell the
 /// execution fills. SourceEpoch cloning shares its admitted meaning.
 fn context_bytes(key: &WorthQueryOutputDemandKey) -> Result<usize, WorthQueryOutputDemandDenial> {
-    std::mem::size_of::<WorthQueryOutputDemandKey>()
-        .checked_add(2 * std::mem::size_of::<usize>())
-        .and_then(|bytes| {
-            bytes.checked_add(std::mem::size_of::<
-                Option<crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerDemandResources>,
-            >())
-        })
-        .and_then(|bytes| bytes.checked_add(key.producer.len()))
+    minimum_context_bytes()
+        .checked_add(key.producer.len())
         .ok_or_else(capacity_denial)
+}
+
+pub(super) const fn minimum_context_bytes() -> usize {
+    std::mem::size_of::<WorthQueryOutputDemandKey>() + 2 * std::mem::size_of::<usize>()
+        + std::mem::size_of::<Option<crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerDemandResources>>()
 }

@@ -104,16 +104,19 @@ where
         entry: &InstalledProducerProvider<Schema>,
         commit_authority: WorthQueryProducerCommitAuthority,
         request_admission: &mut InvalidationEditAdmission,
-    ) -> Result<CallerPass, WorthQueryOutputDemandDenial>
+    ) -> Result<
+        CallerPass<FamilySourceQuery<Schema, Family>, FamilySourceValue<Schema, Family>>,
+        WorthQueryOutputDemandDenial,
+    >
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
         FamilySourceValue<Schema, Family>: 'static,
         FamilySourceQuery<Schema, Family>: 'static,
     {
         use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandAdvanceAdmission as Admission;
-        const WAITING: CallerPass = CallerPass::Answer(WorthQueryOutputDemandAdvance::Pending);
+        let waiting = || CallerPass::Answer(WorthQueryOutputDemandAdvance::Pending);
         let wave_authority = commit_authority.clone();
-        match self.advance_validated_output_demand_with_schedule(
+        let checkpoint_progress = match self.advance_validated_output_demand_with_schedule(
             phase,
             demand,
             principal,
@@ -126,9 +129,9 @@ where
             request_admission,
         )? {
             OwnStages::Answer(advance) => return Ok(CallerPass::Answer(advance)),
-            OwnStages::Refreshed => return Ok(CallerPass::Refreshed),
-            OwnStages::Checkpoint => {}
-        }
+            OwnStages::Refreshed(disclosure) => return Ok(CallerPass::Refreshed(disclosure)),
+            OwnStages::Checkpoint(progress) => progress,
+        };
         // The checkpoint this call published or moved is its own to finish.
         // A stage that did not move waits on a delivery outside this call.
         let completion = loop {
@@ -145,14 +148,23 @@ where
                         claim,
                         checkpoint,
                     )? {
-                        return Ok(WAITING);
+                        return Ok(waiting());
                     }
                 }
                 Admission::Ready(completion) => break completion,
                 Admission::Failed(denial) => return Err(denial),
-                _ => return Ok(WAITING),
+                _ => return Ok(waiting()),
             }
         };
+        if matches!(checkpoint_progress, CheckpointProgress::Published(_)) {
+            return self.settle_own_ready(
+                phase,
+                demand,
+                &completion,
+                delivery_branch,
+                checkpoint_progress,
+            );
+        }
         // The Ready this call reached is certified as any Ready is: by the
         // required wave when it has one, and otherwise on its own proof.
         if let Some(advance) = super::super::required_wave::advance_required_before_caller(
@@ -168,8 +180,13 @@ where
         )? {
             return Ok(CallerPass::Answer(advance));
         }
-        self.settle_own_ready(phase, demand, &completion, delivery_branch)
-            .map(CallerPass::Answer)
+        self.settle_own_ready(
+            phase,
+            demand,
+            &completion,
+            delivery_branch,
+            checkpoint_progress,
+        )
     }
 
     pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand::progression) fn advance_validated_required_fresh_on_selected<
@@ -218,7 +235,7 @@ where
                 OwnStages::Answer(advance) => advance,
                 // A selected pass never refreshes: its Ready waits on the
                 // wave that selected it.
-                OwnStages::Checkpoint | OwnStages::Refreshed => {
+                OwnStages::Checkpoint(_) | OwnStages::Refreshed(_) => {
                     WorthQueryOutputDemandAdvance::Pending
                 }
             },

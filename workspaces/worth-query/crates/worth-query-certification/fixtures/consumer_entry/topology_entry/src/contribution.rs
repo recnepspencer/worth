@@ -62,6 +62,17 @@ impl TopologyContribution {
         configuration: TopologyConfiguration,
         setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+        let provider = super::InitialPlanarProvider::new(Arc::clone(
+            &configuration.producer_authorization_denials,
+        ));
+        Self::configure_topology_with_provider(configuration, setup, provider)
+    }
+
+    pub(crate) fn configure_topology_with_provider<Schema: TopologySchemaBinding>(
+        configuration: TopologyConfiguration,
+        setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
+        provider: super::InitialPlanarProvider,
+    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         configuration.setup_calls.fetch_add(1, Ordering::SeqCst);
         #[cfg(test)]
         super::checkpoint_recovery::required_chain::configure(setup)?;
@@ -93,15 +104,16 @@ impl TopologyContribution {
         setup.handler::<super::PlanarSourceAdjustmentBinding<Schema>, _>(
             super::PlanarSourceAdjustmentHandler,
         )?;
-        setup.producer::<InitialPlanarProducer<Schema>>(super::InitialPlanarProvider::new(
-            configuration.producer_authorization_denials,
-        ))?;
-        setup.producer::<super::PlanarFinalOutputProducer<Schema>>(
-            super::PlanarFinalOutputProvider,
-        )?;
-        setup.producer::<super::PlanarFinalPreserveProducer<Schema>>(
-            super::PlanarFinalOutputProvider,
-        )?;
+        let final_provider = super::PlanarFinalOutputProvider::default();
+        #[cfg(test)]
+        let final_provider = if provider.has_uniform_decimal_key_width() {
+            final_provider.with_uniform_decimal_key_width()
+        } else {
+            final_provider
+        };
+        setup.producer::<InitialPlanarProducer<Schema>>(provider)?;
+        setup.producer::<super::PlanarFinalOutputProducer<Schema>>(final_provider)?;
+        setup.producer::<super::PlanarFinalPreserveProducer<Schema>>(final_provider)?;
         setup.producer::<super::AlternatePlanarOutputProducer<Schema>>(
             super::AlternatePlanarOutputProvider,
         )?;

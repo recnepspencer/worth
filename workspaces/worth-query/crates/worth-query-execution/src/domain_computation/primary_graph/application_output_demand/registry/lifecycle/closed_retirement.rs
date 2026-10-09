@@ -17,7 +17,7 @@ use super::super::refreshed_rejoin::{awaited_by_stale_owner, newest_of_occurrenc
 use super::super::{DemandRecord, DemandRegistryState, WorthQueryOutputDemandKey};
 use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
 
-type Records = BTreeMap<WorthQueryOutputDemandKey, DemandRecord>;
+type Records = super::super::record_map::DemandRecords;
 /// Each claimed row with the rows whose claims hold it.
 type Claimants = BTreeMap<WorthQueryOutputDemandKey, Vec<WorthQueryOutputDemandKey>>;
 

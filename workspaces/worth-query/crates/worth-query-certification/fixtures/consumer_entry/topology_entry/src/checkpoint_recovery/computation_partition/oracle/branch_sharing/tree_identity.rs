@@ -63,8 +63,7 @@ fn a_child_edit_shares_every_tree_node_outside_its_edit_path() {
         "the changed leaf copies its root path"
     );
     let keys = shared.iter().map(|(key, _)| *key).collect::<Vec<_>>();
-    let edited = worth_query_decl::facade::application_operation::application_computation_partition_identity(
-        &RegionKey(7), &mut |_| Ok::<(), ()>(())).unwrap().partition();
+    let edited = super::super::tree_work::identity(7);
     let path = super::super::tree_work::update_path(&keys, edited);
     for (key, shared) in shared {
         assert_eq!(

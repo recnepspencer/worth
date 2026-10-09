@@ -58,7 +58,7 @@ impl GenerationScope {
         &self,
         version: VersionId,
         schema: SchemaVersionId,
-        prepare: &mut impl FnMut(u64, u64) -> Result<(), Stop>,
+        prepare: &mut impl FnMut(crate::indexes::data::SelectedIndexReadWork, u64) -> Result<(), Stop>,
     ) -> Result<
         Option<DerivedIndexGenerationId>,
         crate::indexes::data::SelectedIndexGenerationAdmissionStop<Stop>,
@@ -67,24 +67,33 @@ impl GenerationScope {
         let version_work = navigation_work(self.published.versions.len(), 1).ok_or(
             crate::indexes::data::SelectedIndexGenerationAdmissionStop::AccountingOverflow,
         )?;
-        prepare(version_work, 0)
-            .map_err(crate::indexes::data::SelectedIndexGenerationAdmissionStop::Admission)?;
+        prepare(
+            crate::indexes::data::SelectedIndexReadWork::OrderedNavigation(version_work),
+            0,
+        )
+        .map_err(crate::indexes::data::SelectedIndexGenerationAdmissionStop::Admission)?;
         let Some(selected) = self.published.versions.get(&version) else {
             return Ok(None);
         };
         let schema_work = navigation_work(selected.schemas.len(), 1).ok_or(
             crate::indexes::data::SelectedIndexGenerationAdmissionStop::AccountingOverflow,
         )?;
-        prepare(schema_work, 0)
-            .map_err(crate::indexes::data::SelectedIndexGenerationAdmissionStop::Admission)?;
+        prepare(
+            crate::indexes::data::SelectedIndexReadWork::OrderedNavigation(schema_work),
+            0,
+        )
+        .map_err(crate::indexes::data::SelectedIndexGenerationAdmissionStop::Admission)?;
         let Some(ids) = selected.schemas.get(&schema) else {
             return Ok(None);
         };
         let id_work = navigation_work(ids.len(), 1).ok_or(
             crate::indexes::data::SelectedIndexGenerationAdmissionStop::AccountingOverflow,
         )?;
-        prepare(id_work, 0)
-            .map_err(crate::indexes::data::SelectedIndexGenerationAdmissionStop::Admission)?;
+        prepare(
+            crate::indexes::data::SelectedIndexReadWork::OrderedNavigation(id_work),
+            0,
+        )
+        .map_err(crate::indexes::data::SelectedIndexGenerationAdmissionStop::Admission)?;
         Ok(ids.last().copied())
     }
 

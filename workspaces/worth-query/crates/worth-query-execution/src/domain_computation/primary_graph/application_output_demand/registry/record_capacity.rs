@@ -83,8 +83,11 @@ impl DemandRegistryState {
     ) -> Result<PreparedRecord, WorthQueryOutputDemandDenial> {
         self.charge_record_lookup(key, admission)?;
         let node_bytes = ordered_node_bytes()?;
+        let index_bytes = super::record_map::DemandRecords::source_index_bytes(key)
+            .ok_or_else(capacity_denial)?;
         let record_bytes = node_bytes
-            .checked_add(key.producer.len())
+            .checked_add(index_bytes)
+            .and_then(|bytes| bytes.checked_add(key.producer.len()))
             .ok_or_else(capacity_denial)?;
         let root_bytes = self._empty_root_capacity.is_none().then_some(node_bytes);
         let wake_bytes = arc_bytes::<DemandWake>()?;
@@ -99,13 +102,19 @@ impl DemandRegistryState {
             .ok_or_else(capacity_denial)?;
         let peak = split_peak
             .checked_add(key.producer.len())
+            .and_then(|bytes| bytes.checked_add(index_bytes))
             .and_then(|bytes| bytes.checked_add(wake_bytes))
             .and_then(|bytes| bytes.checked_add(commit_bytes))
             .ok_or_else(capacity_denial)?;
         admission
             .admit_read_scratch(u64::try_from(peak).map_err(|_| capacity_denial())?)
             .map_err(admission_denial)?;
-        let copy_work = key.producer.len().checked_add(2).ok_or_else(work_denial)?;
+        let copy_work = key
+            .producer
+            .len()
+            .checked_mul(2)
+            .and_then(|bytes| bytes.checked_add(3))
+            .ok_or_else(work_denial)?;
         admission
             .charge_external_work(u64::try_from(copy_work).map_err(|_| work_denial())?)
             .map_err(admission_denial)?;
@@ -347,4 +356,22 @@ fn capacity_denial() -> WorthQueryOutputDemandDenial {
         WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
         "ordered demand-record storage exceeds retained capacity",
     )
+}
+
+impl super::WorthQueryOutputDemandRegistry {
+    pub(in crate::domain_computation::primary_graph) fn with_budgets(
+        obligation_bytes: usize,
+        record_bytes: usize,
+        required_bytes: usize,
+    ) -> Self {
+        let state = DemandRegistryState {
+            obligation_budget_bytes: obligation_bytes,
+            record_budget_bytes: record_bytes,
+            required_budget_bytes: required_bytes,
+            ..DemandRegistryState::default()
+        };
+        Self {
+            state: Arc::new(Mutex::new(state)),
+        }
+    }
 }

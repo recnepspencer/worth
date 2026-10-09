@@ -53,14 +53,16 @@ where
             .end_all(&self.output_demands, admission)
         {
             Ok(false) => {}
-            Ok(true) | Err(_) => return stop,
+            Ok(true) => return stop,
+            Err(error) => return error,
         }
         match self
             .output_demands
             .another_demand_holds_custody(interest.key(), admission)
         {
             Ok(false) => {}
-            Ok(true) | Err(_) => return stop,
+            Ok(true) => return stop,
+            Err(error) => return custody_walk_stop(error, stop),
         }
         if !demand.settled {
             match self
@@ -68,7 +70,8 @@ where
                 .release_joined_ready(interest, admission)
             {
                 Ok(false) => {}
-                Ok(true) | Err(_) => return stop,
+                Ok(true) => return stop,
+                Err(error) => return custody_walk_stop(error, stop),
             }
         }
         stop.with_recovery_posture(WorthQueryOutputDemandRecoveryPosture::Terminal)
@@ -89,7 +92,52 @@ where
             Ok(false) => {
                 stop.with_recovery_posture(WorthQueryOutputDemandRecoveryPosture::Terminal)
             }
-            Ok(true) | Err(_) => stop,
+            Ok(true) => stop,
+            Err(error) => custody_walk_stop(error, stop),
+        }
+    }
+}
+
+fn custody_walk_stop(
+    error: worth_relational::facade::mvcc::CompanionPreflightStop,
+    custody: WorthQueryOutputDemandDenial,
+) -> WorthQueryOutputDemandDenial {
+    use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
+    match error {
+        Stop::WorkExhausted { .. } | Stop::WorkCounterOverflow => {
+            WorthQueryOutputDemandDenial::new(
+                WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
+                "custody recovery exceeds request work",
+            )
+        }
+        _ => custody,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn a_custody_walks_work_stop_keeps_its_terminal_work_cause() {
+        for rows in [1, 1_001] {
+            let stopped = custody_walk_stop(
+                worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted {
+                    required: rows,
+                    maximum: 0,
+                },
+                WorthQueryOutputDemandDenial::new(
+                    WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
+                    "",
+                ),
+            );
+            assert_eq!(
+                stopped.kind(),
+                WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
+            );
+            assert_eq!(
+                stopped.recovery_posture(),
+                WorthQueryOutputDemandRecoveryPosture::Terminal
+            );
         }
     }
 }

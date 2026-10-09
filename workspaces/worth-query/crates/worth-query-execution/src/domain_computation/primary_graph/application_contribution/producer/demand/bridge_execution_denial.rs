@@ -6,8 +6,10 @@ use crate::domain_computation::primary_graph::application_contribution::{
 };
 use worth_runtime_bridge::facade::BridgeExecutionDenial as Bridge;
 
-pub(super) fn query_cause(cause: Bridge) -> Denial {
-    match cause {
+/// A carried Bridge denial is in flight; interruptions belong to the demand,
+/// whereas resource and custody refusals keep their typed request carrier.
+pub(super) fn query_cause(cause: Bridge) -> Result<Denial, Interruption> {
+    Ok(match cause {
         Bridge::WorkerLimitExceedsParent => Denial::Resource(Resource::WorkerLimit),
         Bridge::MemoryLimitExceedsParent => Denial::Resource(Resource::PolicyMemoryLimit),
         Bridge::WorkLimitExceedsParent => Denial::Resource(Resource::WorkLimit),
@@ -18,11 +20,11 @@ pub(super) fn query_cause(cause: Bridge) -> Denial {
         Bridge::UnrelatedNestedLease => Denial::Resource(Resource::NestedLeaseMisuse),
         Bridge::NoActiveExecutionScope => Denial::Resource(Resource::NoActiveExecutionScope),
         Bridge::EquivalenceContractUnavailable => Denial::Resource(Resource::EquivalenceContractUnavailable),
-        Bridge::Cancelled => Denial::Interrupted(Interruption::Cancelled),
-        Bridge::DeadlineElapsed => Denial::Interrupted(Interruption::DeadlineExceeded),
+        Bridge::Cancelled => return Err(Interruption::Cancelled),
+        Bridge::DeadlineElapsed => return Err(Interruption::DeadlineExceeded),
         Bridge::WorkCounterOverflow => Denial::Resource(Resource::WorkCounterOverflow),
         Bridge::WorkCeiling => Denial::Resource(Resource::WorkExhausted),
         Bridge::NestedStopped => Denial::NestedStopped,
         Bridge::Panicked => Denial::Panicked,
-    }
+    })
 }

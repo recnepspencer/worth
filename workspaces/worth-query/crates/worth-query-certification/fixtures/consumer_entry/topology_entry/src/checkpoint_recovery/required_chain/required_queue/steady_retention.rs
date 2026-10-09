@@ -60,12 +60,43 @@ fn an_unrelated_caller_advances_for_many_cycles_under_tight_custody() {
         let (scope, principal) = authenticate(&application);
         let request = application.request(&principal, &scope);
         let (a, b, c, mut d) = chain_with_unrelated!(application, request);
+        let roots = source_roots(&request);
         let settled_custody = application.required_custody_bytes_for_test();
         let mut steady = None;
+        let mut identity_steady = None;
         let mut queries = None;
         for cycle in 0..100_u64 {
             change_root_input!(request, application, 2 + cycle % 2, 0x9176_3d00_u64 + cycle);
+            let before = primary_graph::query_read_kernel_entries_by_root_on_this_thread_for_test();
             unrelated_settles_unverified!(queries, cycle, d, request);
+            // D alone advances; three-row custody stops queued B/C refreshes.
+            // Only A reads then. With five rows the whole dirty chain reads once.
+            assert_root_reads(
+                roots,
+                before,
+                cycle,
+                if rows_per_demand == 3 {
+                    [1, 0, 0, 0]
+                } else {
+                    [1, 1, 1, 0]
+                },
+            );
+            if cycle >= 2 * retained_positions as u64 {
+                // The held A key and the held B/C/D keys stay fixed. A's
+                // newly refreshed source epoch changes with each input edit.
+                let named = (
+                    application
+                        .registry_row_keys_for_test()
+                        .into_iter()
+                        .filter(|(_, root, generation, _)| *root != roots[0] || *generation == 0)
+                        .collect::<Vec<_>>(),
+                    invalidation
+                        .native_retained_allocations_for_test()
+                        .map(|(count, _)| count),
+                );
+                assert_eq!(identity_steady.get_or_insert(named.clone()), &named,
+                    "cycle {cycle}: held original chain row keys and hint/branch/completion counts are steady");
+            }
             assert_steady!(steady, cycle, retained_positions, application, invalidation);
         }
         // A refreshed row belongs to its own demand, never to the caller
@@ -143,14 +174,22 @@ fn cycle_chain_at_small_retention(
     let request = application.request(&principal, &scope);
     let (mut a, mut b, mut c, mut d) = chain_with_unrelated!(application, request);
     let mut queries = None;
+    let roots = source_roots(&request);
+    take_decisions("anchor-c");
     for cycle in 0..cycles {
         change_root_input!(request, application, 2 + cycle % 2, 0x9176_3c00_u64 + cycle);
         // This small index keeps every row of the chain: no registration
         // is refused, and each cycle refreshes each row once, from the first.
+        let before = primary_graph::query_read_kernel_entries_by_root_on_this_thread_for_test();
         unrelated_settles_unverified!(queries, cycle, d, request);
         settled_in_one_advance!(c, request, "the last consumer");
         settled_in_one_advance!(b, request, "the middle consumer");
         settled_in_one_advance!(a, request, "the open root demand");
+        assert!(
+            take_decisions("anchor-c").is_empty(),
+            "cycle {cycle}: equal consumed output keeps the held dependent reusable"
+        );
+        assert_root_reads(roots, before, cycle, [1, 1, 1, 0]);
         let (evidence_entries, evidence_bytes) = application.completed_evidence_retained_for_test();
         retained(
             cycle,
@@ -263,5 +302,43 @@ fn retained_versions_no_edit_separates_share_one_index() {
     assert!(
         single <= eight && eight - single < single,
         "eight versions over the same rows retain {eight} bytes and a single version {single}"
+    );
+}
+
+fn source_roots(
+    request: &worth_query_host::facade::application_entry::WorthQueryApplicationRequest<
+        '_,
+        '_,
+        '_,
+        CheckpointSchema,
+    >,
+) -> [worth_query_host::facade::application_invariants::EntityId; 4] {
+    ["anchor-a", "anchor-b", "anchor-c", "anchor-source-b"].map(|name| {
+        request
+            .query(PlanarRead {
+                body_key: name.to_owned(),
+            })
+            .execute()
+            .unwrap()
+            .observed_sources()[0]
+            .root_entity_for_test()
+    })
+}
+fn assert_root_reads(
+    roots: [worth_query_host::facade::application_invariants::EntityId; 4],
+    before: std::collections::BTreeMap<
+        worth_query_host::facade::application_invariants::EntityId,
+        u64,
+    >,
+    cycle: u64,
+    expected: [u64; 4],
+) {
+    let after = primary_graph::query_read_kernel_entries_by_root_on_this_thread_for_test();
+    assert_eq!(
+        roots
+            .map(|root| after.get(&root).copied().unwrap_or(0)
+                - before.get(&root).copied().unwrap_or(0)),
+        expected,
+        "cycle {cycle}: complete source root map across all advances"
     );
 }

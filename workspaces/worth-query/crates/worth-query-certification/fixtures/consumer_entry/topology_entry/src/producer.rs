@@ -62,12 +62,26 @@ impl<Schema: TopologySchemaBinding> WorthQueryProducerOutputFamily<Schema> for P
 
 pub struct InitialPlanarProvider {
     authorization_denials: Arc<AtomicUsize>,
+    key_mask: u64,
 }
 
 impl InitialPlanarProvider {
+    #[cfg(test)]
+    pub(crate) fn with_uniform_decimal_key_width(mut self) -> Self {
+        // Twenty decimal digits for every source identity, independent of hashing.
+        self.key_mask = 3 << 62;
+        self
+    }
+
+    #[cfg(test)]
+    pub(crate) fn has_uniform_decimal_key_width(&self) -> bool {
+        self.key_mask != 0
+    }
+
     pub fn new(authorization_denials: Arc<AtomicUsize>) -> Self {
         Self {
             authorization_denials,
+            key_mask: 0,
         }
     }
 }
@@ -97,7 +111,7 @@ impl<Schema: TopologySchemaBinding>
     fn idempotency_key(&self, _: &super::PlanarReadResult, source_identity: &[u8; 32]) -> u64 {
         #[cfg(test)]
         PROVIDER_CONTACTS.fetch_add(1, Ordering::SeqCst);
-        planar_source_key(source_identity)
+        planar_source_key(source_identity) | self.key_mask
     }
 
     fn demand_resources(&self, _: &super::PlanarReadResult) -> WorthQueryProducerDemandResources {

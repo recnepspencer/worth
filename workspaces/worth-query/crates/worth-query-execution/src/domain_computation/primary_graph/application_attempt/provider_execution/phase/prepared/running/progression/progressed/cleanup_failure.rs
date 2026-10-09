@@ -82,7 +82,8 @@ pub(super) fn cleanup_failed_outcome(outcome: Progression) -> Outcome {
             | Kind::WorkflowAuthorityRequired
             | Kind::ProgramNotActiveOnOccurrence { .. }
             | Kind::ProgramSupportRetired
-            | Kind::ProgramActivationUnresolved => cleanup_indeterminate(),
+            | Kind::ProgramActivationUnresolved
+            | Kind::RecoveryHandoffMismatch { .. } => cleanup_indeterminate(),
         },
         Progression::Committed(_)
         | Progression::AlreadyCommitted(_)

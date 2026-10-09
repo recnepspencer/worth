@@ -17,7 +17,7 @@ pub use crate::indexes::data::{
     RelatedEntityEndpoint, RelatedEntityOrderingBoundary, RelatedEntityOrderingDirection,
     RelatedEntityOrderingEntry, RelatedEntityOrderingField, RelatedEntityOrderingValue,
     RelationJoinDefinition, RelationJoinEntry, RelationJoinKey, RelationJoinLeg,
-    RelationJoinSharedEndpoint, SelectedIndexGenerationAdmissionStop, MAX_BOUNDED_INDEX_CANDIDATES,
-    MAX_BOUNDED_RELATED_ENTITY_PAGE_WIDTH,
+    RelationJoinSharedEndpoint, SelectedIndexGenerationAdmissionStop, SelectedIndexReadWork,
+    MAX_BOUNDED_INDEX_CANDIDATES, MAX_BOUNDED_RELATED_ENTITY_PAGE_WIDTH,
 };
 pub use crate::indexes::DerivedIndexDefinitionLookup;

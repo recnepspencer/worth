@@ -1,4 +1,5 @@
 use worth_query_consumer_values::PositiveLength;
+use worth_query_host::facade::application_contribution::WorthQueryBootstrapAdvancementPhase;
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationEntityKey, WorthQueryApplicationEntitySeed,
     WorthQueryApplicationRelationSeed, WorthQueryPrimaryGraphBootstrap,
@@ -9,7 +10,10 @@ use worth_query_topology_entry::{
 
 use crate::ConsumerSchema;
 
-pub(super) fn seed_cycles(graph: &mut WorthQueryPrimaryGraphBootstrap<ConsumerSchema>) {
+pub(super) fn seed_cycles(
+    phase: &WorthQueryBootstrapAdvancementPhase<'_>,
+    graph: &mut WorthQueryPrimaryGraphBootstrap<ConsumerSchema>,
+) {
     for (prefix, offset) in [("anchor", 0), ("sibling", 20), ("remote", 40)] {
         for (name, x, y) in [("a", 1, 1), ("b", 10, 1), ("c", 1, 10)] {
             let key = format!("{prefix}-{name}");
@@ -56,7 +60,7 @@ pub(super) fn seed_cycles(graph: &mut WorthQueryPrimaryGraphBootstrap<ConsumerSc
         ))
         .expect("the authored anchor discovers an independent output source");
     graph
-        .commit_seed_batch()
+        .commit_seed_batch(phase)
         .expect("the complete bounded seed batch commits before installation finishes");
 }
 

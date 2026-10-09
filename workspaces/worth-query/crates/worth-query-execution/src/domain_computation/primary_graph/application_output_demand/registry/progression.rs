@@ -131,10 +131,17 @@ impl WorthQueryOutputDemandRegistry {
         performed_source: Option<WorthQueryPerformedOutputDemandSource>,
         result: &mut Result<WorthQueryOutputSchedulingResult, WorthQueryOutputDemandDenial>,
     ) {
+        let interrupted = scheduling_was_interrupted(result);
         match result {
             Ok(WorthQueryOutputSchedulingResult::NoEffect(denial)) | Err(denial) => {
-                denial.recovery_posture =
-                    crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Terminal;
+                use crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture;
+                // An interrupted scheduling attempt leaves the row for a later claim,
+                // with the same caller posture as interrupted execution.
+                denial.recovery_posture = if interrupted && execution_failure_is_retryable(denial) {
+                    WorthQueryOutputDemandRecoveryPosture::Retryable
+                } else {
+                    WorthQueryOutputDemandRecoveryPosture::Terminal
+                };
             }
             _ => {}
         }
@@ -149,18 +156,25 @@ impl WorthQueryOutputDemandRegistry {
         if demand_record_is_closed(record) {
             return;
         }
-        record.state = match result {
-            Ok(WorthQueryOutputSchedulingResult::Scheduled) => DemandState::Scheduled,
-            Ok(WorthQueryOutputSchedulingResult::Deferred) => {
-                record.performed_source = performed_source;
-                DemandState::Admitted
-            }
-            Ok(WorthQueryOutputSchedulingResult::NoEffect(denial)) | Err(denial) => {
-                drop(performed_source);
-                record.performed_source = None;
-                DemandState::Failed(denial.clone())
-            }
-        };
+        if interrupted {
+            // A carried request can stop Signal before the producer starts.
+            // Give the reopened Ready back, just as interrupted execution does.
+            record.performed_source = performed_source;
+            record.leave_refresh_unclaimed(DemandState::Admitted);
+        } else {
+            record.state = match result {
+                Ok(WorthQueryOutputSchedulingResult::Scheduled) => DemandState::Scheduled,
+                Ok(WorthQueryOutputSchedulingResult::Deferred) => {
+                    record.performed_source = performed_source;
+                    DemandState::Admitted
+                }
+                Ok(WorthQueryOutputSchedulingResult::NoEffect(denial)) | Err(denial) => {
+                    drop(performed_source);
+                    record.performed_source = None;
+                    DemandState::Failed(denial.clone())
+                }
+            };
+        }
         let released = if matches!(record.state, DemandState::Failed(_)) {
             record.release_obligations()
         } else {
@@ -176,37 +190,7 @@ impl WorthQueryOutputDemandRegistry {
         drop(released_prerequisites);
     }
 
-    pub(in crate::domain_computation::primary_graph) fn publish_checkpoint(
-        &self,
-        interest: &WorthQueryOutputDemandInterest,
-        checkpoint: WorthQueryOutputCheckpoint,
-    ) -> Result<(), WorthQueryOutputDemandDenial> {
-        let mut state = self
-            .state
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let record = state.records.get_mut(&interest.key).ok_or_else(|| {
-            WorthQueryOutputDemandDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::Closed,
-                "published demand record was released during execution",
-            )
-        })?;
-        if let DemandState::Failed(denial) = &record.state {
-            return Err(denial.clone());
-        }
-        if !matches!(record.state, DemandState::Running) {
-            return Err(WorthQueryOutputDemandDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::SchedulingRejected,
-                "published output did not retain its running demand claim",
-            ));
-        }
-        record.state = DemandState::Output(WorthQueryOutputProgress::new(checkpoint));
-        record.performed_source = None;
-        record.successor_of = None;
-        record.wake.notify();
-        Ok(())
-    }
-
+    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn finish_execution_failure(
         &self,
         interest: &WorthQueryOutputDemandInterest,
@@ -383,4 +367,12 @@ pub(super) fn execution_failure_is_retryable(denial: &WorthQueryOutputDemandDeni
 /// request that met it, which still sees it as Terminal unless retryable.
 pub(super) fn execution_failure_reschedules(denial: &WorthQueryOutputDemandDenial) -> bool {
     !super::required_stop::fails_row(denial)
+}
+
+/// In-flight interruption belongs to this attempt, not to its retained Ready.
+pub(super) fn scheduling_was_interrupted(
+    result: &Result<WorthQueryOutputSchedulingResult, WorthQueryOutputDemandDenial>,
+) -> bool {
+    use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind as Kind;
+    matches!(result, Err(denial) if matches!(denial.kind(), Kind::Cancelled | Kind::TimedOut))
 }

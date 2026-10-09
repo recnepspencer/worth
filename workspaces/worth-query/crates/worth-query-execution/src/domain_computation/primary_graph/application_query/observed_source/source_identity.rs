@@ -23,7 +23,7 @@ enum WorthQueryObservedSourceOccurrence {
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-struct WorthQueryObservedSourceCoordinate {
+pub(in crate::domain_computation::primary_graph) struct WorthQueryObservedSourceCoordinate {
     query: [u8; 32],
     parameters: [u8; 32],
     occurrence: WorthQueryObservedSourceOccurrence,
@@ -292,6 +292,12 @@ impl WorthQueryObservedSourceEpoch {
         })
     }
 
+    pub(in crate::domain_computation::primary_graph) fn occurrence_coordinate(
+        &self,
+    ) -> WorthQueryObservedSourceCoordinate {
+        self.meaning.coordinate.clone()
+    }
+
     pub(in crate::domain_computation::primary_graph) fn same_occurrence(
         &self,
         other: &Self,
@@ -321,6 +327,13 @@ impl WorthQueryObservedSourceEpoch {
                     .cmp(&other.observation_generation)
             }
         })
+    }
+
+    #[cfg(feature = "test-query-execution-observer")]
+    pub(in crate::domain_computation::primary_graph) fn root_entity_for_test(
+        &self,
+    ) -> worth_relational::facade::identity::EntityId {
+        self.root
     }
 
     pub(in crate::domain_computation::primary_graph) const fn observation_generation(&self) -> u64 {

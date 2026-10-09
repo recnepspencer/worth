@@ -20,6 +20,9 @@ mod carriage;
 mod deposit;
 mod next_tree;
 mod observed;
+#[cfg(feature = "test-query-execution-observer")]
+pub use observed::full_partitioned_computation_preparations_on_this_thread_for_test;
+pub(super) use observed::observe_full_preparation;
 mod prepare;
 mod prior_absence;
 #[cfg(feature = "test-query-execution-observer")]

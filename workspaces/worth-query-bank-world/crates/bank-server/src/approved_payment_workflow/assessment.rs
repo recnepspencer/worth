@@ -107,7 +107,9 @@ impl<'runtime> BankApprovedPaymentWorkflow<'runtime, '_, '_> {
                     .settlement_attempts(settlement.attempts),
             )
             .start()
-            .map_err(BankApprovedPaymentWorkflowError::AssessmentDemand)?;
+            .map_err(|denial| {
+                BankApprovedPaymentWorkflowError::AssessmentDemand(Box::new(denial))
+            })?;
         Ok(BankApprovedPaymentAssessmentDemand { handle, settlement })
     }
 
@@ -115,17 +117,15 @@ impl<'runtime> BankApprovedPaymentWorkflow<'runtime, '_, '_> {
         &self,
         demand: &mut BankApprovedPaymentAssessmentDemand<'runtime>,
     ) -> Result<BankApprovedPaymentAssessmentProgress, BankApprovedPaymentWorkflowError> {
-        let notifications = demand
-            .handle
-            .notifications()
-            .map_err(BankApprovedPaymentWorkflowError::AssessmentDemand)?;
+        let notifications = demand.handle.notifications().map_err(|denial| {
+            BankApprovedPaymentWorkflowError::AssessmentDemand(Box::new(denial))
+        })?;
         let request = self.runtime.request(self.principal, self.scope);
         for _ in 0..demand.settlement.rounds.get() {
             let observed = notifications.generation();
-            let progress = demand
-                .handle
-                .settle(&request)
-                .map_err(BankApprovedPaymentWorkflowError::AssessmentDemand)?;
+            let progress = demand.handle.settle(&request).map_err(|denial| {
+                BankApprovedPaymentWorkflowError::AssessmentDemand(Box::new(denial))
+            })?;
             if matches!(
                 progress,
                 WorthQueryWorkflowAssessmentDemandProgress::Settled(_)

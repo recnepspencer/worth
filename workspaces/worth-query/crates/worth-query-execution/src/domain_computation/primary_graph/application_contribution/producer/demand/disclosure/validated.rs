@@ -76,16 +76,6 @@ impl<Query, Value> ValidatedOutputDisclosure<Query, Value> {
     ) -> &WorthQueryObservedSource<Query> {
         &self.admitted().source
     }
-
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn into_parts(
-        self,
-    ) -> (Value, WorthQueryObservedSource<Query>) {
-        let admitted = match self {
-            Self::Fresh(proof) => proof.0,
-            Self::RetainedProgram(proof) => proof.0,
-        };
-        (admitted.value, admitted.source)
-    }
 }
 
 impl<Query: 'static, Value: 'static> ValidatedOutputDisclosure<Query, Value> {

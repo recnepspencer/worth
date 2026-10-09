@@ -83,10 +83,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                     &encoded,
                     2,
                     BoundedIndexParityMode::Production,
-                    |work, bytes| {
-                        admission.admit_read_scratch(bytes)?;
-                        admission.charge_external_work(work)
-                    },
+                    |work, bytes| admission.charge_selected_index_read(work, bytes),
                 )
                 .map_err(|stop| match stop {
                     BoundedEntityFieldLookupAdmissionStop::Lookup(denial) => {

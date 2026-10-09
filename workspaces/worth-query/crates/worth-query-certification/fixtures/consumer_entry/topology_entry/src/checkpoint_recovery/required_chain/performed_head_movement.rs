@@ -73,6 +73,35 @@ fn one_caller_advance_rebinds_chain_after_actual_upstream_publication() {
         .execute_performed::<program::ChainProgram, program::ChainRoot>(&application)
         .unwrap();
     drop(selected);
+    let c_root = initial_c
+        .outputs_of::<PlanarOutputs>()
+        .unwrap()
+        .entity::<PlanarAnchorOutput<CheckpointSchema>>()
+        .unwrap()
+        .entity_id();
+    let roots = [
+        initial_a
+            .outputs_of::<PlanarOutputs>()
+            .unwrap()
+            .entity::<PlanarAnchorOutput<CheckpointSchema>>()
+            .unwrap()
+            .entity_id(),
+        initial_b
+            .outputs_of::<PlanarOutputs>()
+            .unwrap()
+            .entity::<PlanarAnchorOutput<CheckpointSchema>>()
+            .unwrap()
+            .entity_id(),
+        initial_c
+            .outputs_of::<PlanarOutputs>()
+            .unwrap()
+            .entity::<PlanarAnchorOutput<CheckpointSchema>>()
+            .unwrap()
+            .entity_id(),
+    ];
+    let contacts_before =
+        roots.map(|root| application.producer_contacts_at_root_on_this_thread_for_test(root));
+    let reads_before = primary_graph::query_read_kernel_entries_by_root_on_this_thread_for_test();
     let before = request.retain_read().unwrap();
     let settled = match c
         .advance(&request)
@@ -83,6 +112,13 @@ fn one_caller_advance_rebinds_chain_after_actual_upstream_publication() {
             panic!("the finite performed chain needs another caller advance")
         }
     };
+    let reads_after = primary_graph::query_read_kernel_entries_by_root_on_this_thread_for_test();
+    assert_eq!(
+        reads_after.get(&c_root).copied().unwrap_or(0)
+            - reads_before.get(&c_root).copied().unwrap_or(0),
+        1,
+        "C rebuilds its input once"
+    );
     let after = request.retain_read().unwrap();
     assert_ne!(before.selected_commit(), after.selected_commit());
     assert_eq!(
@@ -119,10 +155,11 @@ fn one_caller_advance_rebinds_chain_after_actual_upstream_publication() {
             panic!("a just-settled caller cannot lose its successor interest")
         }
     };
-    // C initiated once initially and once to refresh after the upstream write.
+    // A changed, B consumed the changed output and republished an equal value.
+    // C compares its input once and cuts off without contacting its producer.
     assert_eq!(
         settled.producer_contacts_in_this_demand(),
-        initial_c.producer_contacts_in_this_demand() + 1
+        initial_c.producer_contacts_in_this_demand()
     );
     assert_eq!(
         reused.producer_contacts_in_this_demand(),
@@ -132,6 +169,31 @@ fn one_caller_advance_rebinds_chain_after_actual_upstream_publication() {
         reused.observation().selected_commit(),
         after.selected_commit()
     );
-    // All three demand handles remain live; C may now own its authentic successor.
+    let contacts_after =
+        roots.map(|root| application.producer_contacts_at_root_on_this_thread_for_test(root));
+    assert_eq!(
+        std::array::from_fn::<_, 3, _>(|i| contacts_after[i] - contacts_before[i]),
+        [1, 1, 0],
+        "A changes, B performs an equal republication, C cuts off"
+    );
+    // A+1/B+1/C+0 are owner contacts; a handle excludes upstream handlers driven by C.
+    let WorthQueryApplicationOutputDemandProgress::Settled(current) = a.advance(&request).unwrap()
+    else {
+        panic!("the root remains settled")
+    };
+    assert_eq!(
+        current.producer_contacts_in_this_demand(),
+        initial_a.producer_contacts_in_this_demand()
+    );
+    let WorthQueryApplicationOutputDemandProgress::Settled(current_b) =
+        b.advance(&request).unwrap()
+    else {
+        panic!("the middle remains settled")
+    };
+    assert_eq!(
+        current_b.producer_contacts_in_this_demand(),
+        initial_b.producer_contacts_in_this_demand()
+    );
+    // All three demand handles remain live.
     drop((a, b, c));
 }

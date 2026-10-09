@@ -38,11 +38,12 @@ where
                     WorthQueryApplicationCommitDenial::application_program_required(),
                 );
             }
-            self.compare_and_commit_application_with_aftermath(
+            self.compare_and_commit_application_with_causality(
                 &phase,
                 program,
                 idempotency,
-                handoff.pending_causality(),
+                false,
+                super::ApplicationCommitCausality::undo(handoff),
             )
         })
         .unwrap_or_else(|cause| cause.into_commit_outcome())
@@ -72,11 +73,12 @@ where
                     WorthQueryApplicationCommitDenial::application_program_required(),
                 );
             }
-            self.compare_and_commit_application_with_aftermath(
+            self.compare_and_commit_application_with_causality(
                 &phase,
                 program,
                 idempotency,
-                handoff.pending_causality(),
+                false,
+                super::ApplicationCommitCausality::redo(handoff),
             )
         })
         .unwrap_or_else(|cause| cause.into_commit_outcome())

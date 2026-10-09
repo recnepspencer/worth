@@ -20,6 +20,7 @@ use crate::domain_computation::primary_graph::{
 mod equivalence;
 mod pending_dependency;
 mod publication_recovery;
+mod rebound;
 #[cfg(test)]
 mod test_support;
 mod verification;

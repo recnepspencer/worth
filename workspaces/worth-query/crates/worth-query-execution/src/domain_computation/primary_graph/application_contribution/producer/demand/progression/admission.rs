@@ -220,20 +220,24 @@ where
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
         let mut admission = self.demand_request_admission();
-        self.admit_output_demand_with_source_admitted::<Family>(
-            &source,
-            observed_source,
-            selection_source,
-            profile_kind,
-            limits,
-            performed_source,
-            admission_kind,
-            expected_source_commit,
-            successor_of,
-            retained_program_basis,
-            SourceAdmissionSelection::Ordinary,
-            &mut admission,
-        )
-        .map_err(|stop| self.starting_custody_stop(stop, &mut admission))
+        let result = self
+            .admit_output_demand_with_source_admitted::<Family>(
+                &source,
+                observed_source,
+                selection_source,
+                profile_kind,
+                limits,
+                performed_source,
+                admission_kind,
+                expected_source_commit,
+                successor_of,
+                retained_program_basis,
+                SourceAdmissionSelection::Ordinary,
+                &mut admission,
+            )
+            .map_err(|stop| self.starting_custody_stop(stop, &mut admission));
+        #[cfg(feature = "test-query-execution-observer")]
+        super::caller_pass_observation::observe_admission_work(&admission);
+        result
     }
 }

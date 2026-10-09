@@ -64,7 +64,7 @@ pub(super) fn reserve(
             .and_then(|outer| outer.checked_add(tree_lookup_work::<Address>(0)?))
             .ok_or_else(work_denial)?;
         admission
-            .charge_ordered_operations(1, extra_work)
+            .charge_ordered_operations(2, extra_work)
             .map_err(|_| work_denial())?;
         let growth = admit_growth(
             source_count,

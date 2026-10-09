@@ -33,10 +33,7 @@ pub(crate) fn selected_index_is_current_admitted(
         .has_published_generation_for_observation_admitted(
             index,
             &basis.observation(),
-            |work, bytes| {
-                admission.admit_read_scratch(bytes)?;
-                admission.charge_external_work(work)
-            },
+            |work, bytes| admission.charge_selected_index_read(work, bytes),
         )
         .map_err(|stop| match stop {
             SelectedIndexGenerationAdmissionStop::Admission(stop) => stop,

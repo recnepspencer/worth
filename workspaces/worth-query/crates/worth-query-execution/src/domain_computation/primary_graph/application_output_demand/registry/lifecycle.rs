@@ -1,5 +1,6 @@
 mod cached_reclaim;
 mod closed_retirement;
+mod completed_custody;
 mod joined_ready;
 mod occurrence_retirement;
 mod performed_release;
@@ -294,56 +295,6 @@ impl WorthQueryOutputDemandRegistry {
         drop(released_prerequisites);
         drop(finished);
         drop(unawaited);
-    }
-}
-
-impl DemandRegistryState {
-    pub(super) fn prune_completed_custody(&mut self) {
-        let prior_count = self.source_custody.len();
-        self.source_custody.retain(|commit, custody| {
-            if custody.token_count != 0 {
-                return true;
-            }
-            if custody.retired.is_some() {
-                return false;
-            }
-            let Some(bound) = &custody.bound_sources else {
-                return true;
-            };
-            let fully_superseded = !bound.is_empty()
-                && bound
-                    .iter()
-                    .all(|source| custody.source_denial(&source.identity).is_some());
-            if !custody.completed && !fully_superseded {
-                return true;
-            }
-            if !bound.iter().all(|source| {
-                custody.consumed_sources.contains(&source.identity)
-                    || custody.source_denial(&source.identity).is_some()
-            }) {
-                return true;
-            }
-            self.records.iter().any(|(key, record)| {
-                record.source_commits.contains(commit)
-                    && (record.interests != 0
-                        || refreshed_rejoin::awaited_by_stale_owner(&self.records, key)
-                        || !record.performed_obligations.is_empty()
-                        || !matches!(
-                            record.state,
-                            DemandState::Output(WorthQueryOutputProgress {
-                                checkpoint: Some(WorthQueryOutputCheckpoint::Ready(_)),
-                                ..
-                            }) | DemandState::Failed(_)
-                        ))
-            })
-        });
-        if self.source_custody.len() != prior_count {
-            for record in self.records.values_mut() {
-                record
-                    .source_commits
-                    .retain(|commit| self.source_custody.contains_key(commit));
-            }
-        }
     }
 }
 

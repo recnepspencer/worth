@@ -17,6 +17,9 @@ use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOu
 #[cfg(feature = "test-query-execution-observer")]
 use worth_query_host::facade::primary_graph::partitioned_computation_runs_on_this_thread_for_test as runs_on_this_thread;
 
+#[cfg(feature = "test-query-execution-observer")]
+pub(super) mod calls;
+
 use super::demand::{RegionTotalsDemand, RegionTotalsHandler, TotalRegions};
 use super::facts::{self, Entry, EntryData, InputDenial, Reader, RegionFault, Set, Sets};
 use super::*;
@@ -48,6 +51,8 @@ where
         reader: &mut Reader<'_, '_, '_>,
         set: &Set,
     ) -> Result<WorthQueryComputationPartitionPlan<Entry>, InputDenial> {
+        #[cfg(feature = "test-query-execution-observer")]
+        calls::record(0);
         Ok(facts::entries(reader, set)?)
     }
 
@@ -57,6 +62,8 @@ where
         _: &Set,
         entry: &Entry,
     ) -> Result<RegionKey, InputDenial> {
+        #[cfg(feature = "test-query-execution-observer")]
+        calls::record(1);
         Ok(RegionKey(facts::region(reader, entry)?))
     }
 
@@ -66,6 +73,8 @@ where
         _: &Set,
         partition: WorthQueryComputationPartitionMembers<'_, RegionKey, Entry>,
     ) -> Result<Vec<EntryData>, InputDenial> {
+        #[cfg(feature = "test-query-execution-observer")]
+        calls::record(2);
         Ok(facts::gathered(reader, partition.items())?)
     }
 
@@ -74,6 +83,8 @@ where
         partition: WorthQueryComputationPartitionView<'_, RegionKey, Vec<EntryData>>,
         checkpoint: &mut WorthQueryManagedComputationCheckpoint<'_>,
     ) -> Result<f64, WorthQueryManagedComputationDenial<u32>> {
+        #[cfg(feature = "test-query-execution-observer")]
+        calls::record(3);
         total_region(partition.key().0, partition.gathered(), checkpoint)
     }
 

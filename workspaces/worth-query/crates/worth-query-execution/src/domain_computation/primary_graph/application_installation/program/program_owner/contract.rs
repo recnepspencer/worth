@@ -91,8 +91,87 @@ pub trait WorthQueryProgramOwner<Schema>: sealed::WorthQueryProgramOwnership {
             phase,
             self,
             program,
+            ApplicationCommitCausality::Ordinary,
             extend(WorthQueryApplicationIdempotencyBinding::for_mutation_identities(identities)),
         )
+    }
+
+    /// Commits an admitted undo through the same occurrence and action gates.
+    fn compare_and_commit_program_undo<Binding>(
+        &self,
+        program: WorthQueryApplicationEffectProgram<
+            Schema,
+            Binding::Operation,
+            Binding::Input,
+            <Binding::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
+        >,
+        identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
+        extend: impl FnOnce(
+            WorthQueryApplicationIdempotencyBinding,
+        ) -> WorthQueryApplicationIdempotencyBinding,
+        handoff: &crate::domain_computation::application_aftermath::WorthQueryUndoProgressionHandoff,
+    ) -> WorthQueryApplicationCommitOutcome
+    where
+        Self: Sized,
+        Schema: ApplicationSchema,
+        Binding: ApplicationMutationBinding<Schema>,
+        Binding::Input: Clone + Send + Sync + 'static,
+    {
+        let request = program.request_scope().clone();
+        self.runtime()
+            .with_application_advancement(&request, |active_phase| {
+                commit_program_action::<Schema, Binding, Self>(
+                    &active_phase,
+                    self,
+                    program,
+                    ApplicationCommitCausality::undo(handoff),
+                    extend(
+                        WorthQueryApplicationIdempotencyBinding::for_mutation_identities(
+                            identities,
+                        ),
+                    ),
+                )
+            })
+            .unwrap_or_else(|denial| denial.into_commit_outcome())
+    }
+
+    /// Commits an admitted redo through the same occurrence and action gates.
+    fn compare_and_commit_program_redo<Binding>(
+        &self,
+        program: WorthQueryApplicationEffectProgram<
+            Schema,
+            Binding::Operation,
+            Binding::Input,
+            <Binding::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
+        >,
+        identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
+        extend: impl FnOnce(
+            WorthQueryApplicationIdempotencyBinding,
+        ) -> WorthQueryApplicationIdempotencyBinding,
+        handoff: &crate::domain_computation::application_aftermath::WorthQueryRedoProgressionHandoff,
+    ) -> WorthQueryApplicationCommitOutcome
+    where
+        Self: Sized,
+        Schema: ApplicationSchema,
+        Binding: ApplicationMutationBinding<Schema>,
+        Binding::Input: Clone + Send + Sync + 'static,
+    {
+        let request = program.request_scope().clone();
+        self.runtime()
+            .with_application_advancement(&request, |active_phase| {
+                commit_program_action::<Schema, Binding, Self>(
+                    &active_phase,
+                    self,
+                    program,
+                    ApplicationCommitCausality::redo(handoff),
+                    extend(
+                        WorthQueryApplicationIdempotencyBinding::for_mutation_identities(
+                            identities,
+                        ),
+                    ),
+                )
+            })
+            .unwrap_or_else(|denial| denial.into_commit_outcome())
     }
 
     /// Commits one action through the presented program and retains its

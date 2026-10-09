@@ -12,6 +12,8 @@ use worth_query_declaration::facade::application_schema::ApplicationStructuredVa
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding;
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 
+mod rebound_consumption;
+
 type BoundParameters<Schema, Binding> = <<SourceBinding<Schema, Binding> as ApplicationQueryBinding<Schema>>::ParameterBinding as ApplicationStructuredValueBinding>::Value;
 type BoundResult<Schema, Binding> = <<SourceBinding<Schema, Binding> as ApplicationQueryBinding<
     Schema,
@@ -197,6 +199,8 @@ where
                             // Every pending consumed edge must have resolved on
                             // this wave before the consumer refreshes; the first
                             // unresolved one is the next upstream to schedule.
+                            let consumer = candidate.retain_recorded_identity(admission)
+                                .map_err(|stop| ready::ready_resource_denial(Binding::IDENTITY, stop))?;
                             let mut matched = None;
                             loop {
                                 let old = match resolved
@@ -211,7 +215,11 @@ where
                                 let Some(old) = old else {
                                     break;
                                 };
-                                MatchedRequiredPredecessors::join(&mut matched, old, positioned, admission)
+                                let (old, successor) = old.into_parts();
+                                let evidence = rebound_consumption::retain(runtime, &successor, &pending, sealed.product(),
+                                    sealed.snapshot_handle(), positioned, admission)?;
+
+                                MatchedRequiredPredecessors::join(&mut matched, &runtime.output_demands, &consumer, old, evidence, positioned, admission)
                                     .map_err(ProducerExecutionStop::ExecutionStopped)?;
                                 let next = handle
                                     .with_runtime(|relational| {

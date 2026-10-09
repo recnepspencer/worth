@@ -41,7 +41,7 @@ impl WorthQueryOutputDemandRegistry {
                 "performed source is absent or has already been consumed",
             ));
         }
-        let key = newest_semantic_key(&state, &requested_key, accepts_semantic_join)
+        let key = newest_semantic_key(&state, &requested_key, admission, accepts_semantic_join)?
             .unwrap_or_else(|| requested_key.clone());
         admission.charge_external_work(4).map_err(|_| {
             WorthQueryOutputDemandDenial::new(
@@ -92,7 +92,7 @@ impl WorthQueryOutputDemandRegistry {
         } else {
             state.charge_record_lookup(&key, admission)?;
         }
-        supersede_predecessors(&mut state, &requested_key)?;
+        supersede_predecessors(&mut state, &requested_key, admission)?;
         let custody = state
             .source_custody
             .get_mut(source_commit)

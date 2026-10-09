@@ -23,6 +23,9 @@ use crate::domain_computation::primary_graph::merge_unique_values::{
 use crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFieldFixture;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle;
 
+#[path = "merge_unique_values/counts.rs"]
+mod counts;
+
 const FEATURE: &str = "unique-feature";
 
 #[test]
@@ -95,19 +98,20 @@ fn restored_duplicates_deny_merges_of_their_value_only() {
 /// An installed graph whose `Account.AccountLabel`, an equality-indexed
 /// field, is read as unique; raw commits let branches hold what a program
 /// would be refused.
-struct MergeWorld {
+pub(in crate::domain_computation::primary_graph) struct MergeWorld {
     _world: IdentityWorld,
-    handle: WorthQueryPrimaryGraphIntegrationHandle,
-    kind: KindId,
-    label: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) handle:
+        WorthQueryPrimaryGraphIntegrationHandle,
+    pub(in crate::domain_computation::primary_graph) kind: KindId,
+    pub(in crate::domain_computation::primary_graph) label: AspectFieldLocator,
     status: AspectFieldLocator,
     /// The fields a create must carry besides the two it varies.
     required: [AspectFieldLocator; 3],
-    index: DerivedIndexId,
+    pub(in crate::domain_computation::primary_graph) index: DerivedIndexId,
 }
 
 impl MergeWorld {
-    fn new() -> Self {
+    pub(in crate::domain_computation::primary_graph) fn new() -> Self {
         let world = installed_world(&[("merge-unique", WorthQueryPrincipalMappingStatus::Enabled)]);
         let handle = world
             .application
@@ -142,7 +146,10 @@ impl MergeWorld {
         }
     }
 
-    fn unique(&self, index: Option<DerivedIndexId>) -> WorthQueryUniqueFieldFixture {
+    pub(in crate::domain_computation::primary_graph) fn unique(
+        &self,
+        index: Option<DerivedIndexId>,
+    ) -> WorthQueryUniqueFieldFixture {
         WorthQueryUniqueFieldFixture::new(self.kind, self.label.clone(), index)
     }
 
@@ -157,7 +164,12 @@ impl MergeWorld {
         });
     }
 
-    fn create(&self, branch: &str, key: &str, handle: u64) -> EntityId {
+    pub(in crate::domain_computation::primary_graph) fn create(
+        &self,
+        branch: &str,
+        key: &str,
+        handle: u64,
+    ) -> EntityId {
         let created = CreatedEntityRef {
             partition_id: PartitionId::main(),
             kind_id: self.kind,
@@ -211,7 +223,10 @@ impl MergeWorld {
         ]))
     }
 
-    fn mutate<T>(&self, mutate: impl FnOnce(&mut RelationalRuntime) -> T) -> T {
+    pub(in crate::domain_computation::primary_graph) fn mutate<T>(
+        &self,
+        mutate: impl FnOnce(&mut RelationalRuntime) -> T,
+    ) -> T {
         self.handle
             .execute_mutation_with_index_refresh(|runtime| Ok::<_, ()>(mutate(runtime)))
             .expect("the unique field's index refreshes")

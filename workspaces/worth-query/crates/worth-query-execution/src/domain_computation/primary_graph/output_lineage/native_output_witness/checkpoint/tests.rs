@@ -69,7 +69,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         .field_locator(label_ref.entity(), label_ref.aspect(), label_ref.field())
         .unwrap()
         .clone();
-    handle.with_runtime_mut(|runtime| {
+    let changed_output_equal = handle.with_runtime_mut(|runtime| {
         let before = snapshot(runtime);
         let truth = runtime.read_truth();
         let mut facts = vec![Fact::Entity {
@@ -194,6 +194,18 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         )
         .unwrap()
         .unwrap();
+        let current_facts: Vec<_> = facts.iter().map(|fact| match fact {
+            Fact::SourceAspectRevision { entity_id, aspect, .. } => Fact::SourceAspectRevision {
+                entity_id: *entity_id, aspect: aspect.clone(),
+                native_revision: runtime.read_truth().exact_snapshot_entity_aspect_version(&after, *entity_id, aspect).unwrap(),
+            },
+            other => other.clone(),
+        }).collect();
+        let current = SealedNativeOutputWitness::from_checkpoint_facts(
+            &correspondence, layout, &current_facts, owner, &mut owner.edit_admission(),
+        ).unwrap().unwrap();
+        let changed_output_equal = restored.get().unwrap()
+            .same_output_as(current.get().unwrap(), &mut owner.edit_admission()).unwrap();
         assert!(!after_restore
             .get()
             .unwrap()
@@ -263,7 +275,12 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         );
         runtime.snapshots().release_snapshot(&before).unwrap();
         runtime.snapshots().release_snapshot(&after).unwrap();
+        changed_output_equal
     });
+    assert!(
+        !changed_output_equal,
+        "a changed consumed output must never be equal evidence"
+    );
 }
 
 fn snapshot(runtime: &RelationalRuntime) -> SnapshotHandle {

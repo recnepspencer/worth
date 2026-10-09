@@ -45,17 +45,15 @@ impl WorthQueryApplicationOutputLineage {
             return Ok(());
         };
         let history_work = tree_work::<u64>(history.len()).ok_or_else(work_denial)?;
-        charge(admission, history_work)?;
-        charge(
-            admission,
-            u64::try_from(window.get()).map_err(|_| work_denial())?,
-        )?;
+        charge_navigation(admission, 1, history_work)?;
+        // nth steps over retained entries; every stepped entry is logical work.
+        charge_history_window(admission, window.get().min(history.len()))?;
         let Some(&oldest_retained) = history.keys().rev().nth(window.get() - 1) else {
             return Ok(());
         };
         let mut next = history.keys().next().copied();
         while let Some(generation) = next.filter(|generation| *generation < oldest_retained) {
-            charge(admission, history_work)?;
+            charge_navigation(admission, 1, history_work)?;
             let retire =
                 !self.selectable(source, occurrence, generation, oldest_retained, admission)?;
             if retire {
@@ -146,12 +144,14 @@ impl WorthQueryApplicationOutputLineage {
         let records = history
             .get(&generation)
             .expect("a retired generation is retained");
-        charge(
+        let operations = u64::try_from(records.len())
+            .ok()
+            .and_then(|n| n.checked_add(1))
+            .ok_or_else(work_denial)?;
+        charge_navigation(
             admission,
-            u64::try_from(records.len())
-                .ok()
-                .and_then(|count| count.checked_add(1)?.checked_mul(removal))
-                .ok_or_else(work_denial)?,
+            operations,
+            operations.checked_mul(removal).ok_or_else(work_denial)?,
         )?;
         let retired = history
             .remove(&generation)
@@ -193,4 +193,43 @@ fn charge(
 
 fn work_denial() -> WorthQueryOutputDemandDenial {
     denial(Kind::WorkBudgetExceeded)
+}
+
+fn charge_navigation(
+    admission: &mut InvalidationEditAdmission,
+    operations: u64,
+    navigation: u64,
+) -> Result<(), WorthQueryOutputDemandDenial> {
+    admission
+        .charge_ordered_operations(operations, navigation)
+        .map_err(|_| work_denial())
+}
+
+fn charge_history_window(
+    admission: &mut InvalidationEditAdmission,
+    entries: usize,
+) -> Result<(), WorthQueryOutputDemandDenial> {
+    charge(
+        admission,
+        u64::try_from(entries).map_err(|_| work_denial())?,
+    )
+}
+#[cfg(test)]
+mod window_work {
+    use super::*;
+    #[test]
+    fn a_linear_history_window_spends_one_logical_visit_per_entry() {
+        let visits =
+            worth_relational::facade::indexes::SelectedIndexReadWork::MAXIMUM_ORDERED_DESCENT_WORK
+                + 1;
+        let mut admission = InvalidationEditAdmission::new(
+            worth_relational::facade::mvcc::CompanionPreflightBudget {
+                maximum_work_visits: visits,
+                maximum_preparation_bytes: 0,
+            },
+        );
+        charge_history_window(&mut admission, visits as usize).unwrap();
+        assert_eq!(admission.charged_work(), visits);
+        assert_eq!(admission.charged_navigation(), 0);
+    }
 }

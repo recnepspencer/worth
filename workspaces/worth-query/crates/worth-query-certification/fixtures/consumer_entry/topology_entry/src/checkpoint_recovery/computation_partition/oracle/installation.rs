@@ -52,6 +52,7 @@ impl<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>
         let handler = RegionOutputHandler::running(move |reader, set| {
             let mut last_value = None;
             for _ in 0..RUNS {
+                worth_query_host::facade::primary_graph::full_partitioned_computation_preparations_on_this_thread_for_test();
                 take_calls();
                 COMBINES.store(0, Ordering::Relaxed);
                 tree_count::reset();
@@ -71,7 +72,7 @@ impl<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>
                 last_value = outcome.as_ref().ok().map(|(bits, _)| *bits);
                 let runs = runs_on_this_thread().into_iter().map(|(run, _)| run);
                 room().push(OracleRun {
-                    published: Vec::new(),
+                    published: Vec::new(), full_preparations: worth_query_host::facade::primary_graph::full_partitioned_computation_preparations_on_this_thread_for_test(),
                     outcome,
                     runs: runs.collect(),
                     calls: take_calls(),
@@ -93,11 +94,20 @@ impl<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>
             owner::running::<program::UnretainedTotals<WORK>, _>(setup, owner::RegionTotalsOwner)?;
         setup.handler::<RegionTotalsDemandBinding<CheckpointSchema>, _>(unretained)?;
         setup.handler::<EntryEditBinding<CheckpointSchema>, _>(EntryEditHandler)?;
+        super::super::entry_correction::configure(setup)?;
         setup.producer::<RegionOutputProducer<CheckpointSchema, REUSE, MODE>>(
             RegionOutputProvider::<MODE>,
         )?;
         setup.conditional::<RegionOutputReadiness<CheckpointSchema, REUSE, MODE>>(())?;
-        TopologyContribution::configure_topology(configuration, setup)
+        if MODE == 4 {
+            let provider = crate::InitialPlanarProvider::new(std::sync::Arc::clone(
+                &configuration.producer_authorization_denials,
+            ))
+            .with_uniform_decimal_key_width();
+            TopologyContribution::configure_topology_with_provider(configuration, setup, provider)
+        } else {
+            TopologyContribution::configure_topology(configuration, setup)
+        }
     }
 }
 
@@ -123,6 +133,8 @@ impl<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>
                 .managed_computation::<program::UnretainedTotals<WORK>>()
                 .conditional_operation::<TotalRegionOutput>()
                 .mutation::<EntryEditBinding<CheckpointSchema>>()
+                .mutation::<super::super::entry_correction::EntryCorrectionBinding<CheckpointSchema>>()
+                .mutation::<super::super::entry_correction::EntryCorrectionBinding<CheckpointSchema, true>>()
                 .mutation::<RegionTotalsDemandBinding<CheckpointSchema>>()
                 .finish(),
         )
@@ -145,6 +157,7 @@ pub(super) type Request<'application, 'principal, 'scope> =
 pub(super) const SCOPE: &str = "anchor-isolated";
 /// The scope's seeded ordinate, which names the even set, and the one that
 /// names the odd set.
+pub(super) const RETAINED_POSITIONS: usize = 4;
 pub(super) const EVEN_Y: u64 = 50;
 pub(super) const ODD_Y: u64 = 51;
 
@@ -170,6 +183,20 @@ pub(super) fn install_variant<
     profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
     seed: impl FnOnce(&mut Graph),
 ) -> Application<REUSE, WORK, RUNS, MODE> {
+    install_variant_with_observations::<REUSE, WORK, RUNS, MODE>(checkpoint, profile, 0, seed)
+}
+
+pub(super) fn install_variant_with_observations<
+    const REUSE: bool,
+    const WORK: usize,
+    const RUNS: usize,
+    const MODE: u8,
+>(
+    checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
+    profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
+    additional_observations: u64,
+    seed: impl FnOnce(&mut Graph),
+) -> Application<REUSE, WORK, RUNS, MODE> {
     let width = u64::try_from(DECISION_FACT_BUDGET + WIDTH_BESIDE_DECISION).unwrap();
     let host = support::candidates();
     let candidates =
@@ -182,17 +209,32 @@ pub(super) fn install_variant<
         .and_then(|candidates| candidates.with_maximum_operation_width(width))
         .unwrap();
     const RETAINED_COMMITS: u64 = 32;
-    let positions = 4;
+    let positions = RETAINED_POSITIONS;
+    // The scale host gives all retention owners the same ample ceiling;
+    // this proof judges request work rather than retained-capacity stops.
+    // Preparation can coexist with four complete images.
+    let retained_bytes = if additional_observations == 0 {
+        128 * 1024 * 1024
+    } else {
+        1 << 40
+    };
     let invalidation = worth_query_host::facade::runtime::WorthQueryInvalidationResources::install(
         worth_query_host::facade::runtime::WorthQueryInvalidationResourceInstallation::bounded(
             1_000_000,
-            4 * 128 * 1024 * 1024,
-            128 * 1024 * 1024,
+            4 * retained_bytes,
+            retained_bytes,
             positions,
         ),
     )
     .expect("four retained image bounds fit preparation");
-    let limits = support::limits_with_room(RETAINED_COMMITS, 16, 64, invalidation, candidates);
+    let limits = support::limits_with_history_room(
+        RETAINED_COMMITS + additional_observations,
+        16 + additional_observations,
+        64 + 3 * additional_observations,
+        invalidation,
+        candidates,
+        524_288 + 4_096 * additional_observations,
+    );
     support::install_program_with_limits::<OracleProgram<REUSE, WORK, RUNS, MODE>>(
         checkpoint,
         profile,

@@ -22,6 +22,8 @@ fn record_admission() -> InvalidationEditAdmission {
 
 mod caller_chain;
 mod closed_retirement;
+mod consumer_custody;
+mod local_work;
 mod prerequisite_retry;
 mod ready_reuse;
 mod record_capacity;
@@ -30,6 +32,7 @@ mod replacement_preparation;
 mod required_lifecycle;
 mod required_stop;
 mod required_work;
+mod scheduling_interruption;
 mod selected_execution_release;
 mod semantic_epoch;
 mod settlement_work;
@@ -52,8 +55,9 @@ fn stale_successor_is_denied_without_mutating_newer_or_unrelated_records() {
         record(occurrence, DemandState::Admitted, 0),
     );
 
-    let denial = supersede_predecessors(&mut state, &key("producer", 7, 3))
-        .expect_err("an older revision cannot supersede an admitted newer revision");
+    let denial =
+        supersede_predecessors(&mut state, &key("producer", 7, 3), &mut record_admission())
+            .expect_err("an older revision cannot supersede an admitted newer revision");
 
     assert_eq!(denial.kind(), WorthQueryOutputDemandDenialKind::Superseded);
     assert_eq!(state.records.len(), 2);
@@ -79,7 +83,7 @@ fn newer_successor_supersedes_only_its_older_occurrence() {
         record(occurrence, DemandState::Admitted, 1),
     );
 
-    supersede_predecessors(&mut state, &key("producer", 8, 3))
+    supersede_predecessors(&mut state, &key("producer", 8, 3), &mut record_admission())
         .expect("a newer revision supersedes its predecessor");
 
     assert!(matches!(

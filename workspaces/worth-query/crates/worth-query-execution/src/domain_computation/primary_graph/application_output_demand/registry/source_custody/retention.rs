@@ -86,9 +86,14 @@ impl WorthQueryOutputDemandRegistry {
                             retained.receipt.principal_scope().scope() == scope
                         })
                 })
-                .filter(|(prior, _)| {
-                    !state.records.values().any(|record| {
-                        record.source_commits.contains(*prior) && record.interests != 0
+                .filter(|(prior, candidate)| {
+                    !candidate.bound_sources.iter().flatten().any(|source| {
+                        state
+                            .records
+                            .source_occurrence_rows(&source.identity)
+                            .any(|(_, record)| {
+                                record.source_commits.contains(*prior) && record.interests != 0
+                            })
                     })
                 })
                 .map(|(prior, _)| prior.clone())

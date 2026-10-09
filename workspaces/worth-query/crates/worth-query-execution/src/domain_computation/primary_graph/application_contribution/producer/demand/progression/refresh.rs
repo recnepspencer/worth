@@ -14,7 +14,7 @@ where
     pub(super) fn refresh_output_demand<Family>(
         &self,
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
-        source: FamilySourceValue<Schema, Family>,
+        source: &FamilySourceValue<Schema, Family>,
         observed_source: crate::domain_computation::primary_graph::WorthQueryObservedSource<
             FamilySourceQuery<Schema, Family>,
         >,
@@ -34,9 +34,9 @@ where
         let predecessor = predecessor.map(|accepted| {
             crate::domain_computation::primary_graph::application_output_demand::OutputRefreshPredecessor::of(accepted, interest)
         });
-        let profile_kind = Family::profile_kind(&source);
+        let profile_kind = Family::profile_kind(source);
         let mut refreshed = self.admit_output_demand_with_source_admitted::<Family>(
-            &source,
+            source,
             observed_source,
             None,
             profile_kind,

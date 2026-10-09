@@ -22,9 +22,12 @@ pub(super) fn bridge_denial_kind(
 ) -> WorthQueryOutputDemandDenialKind {
     use BridgeConditionalDenialKind as Kind;
     match failure.kind() {
-        Kind::ExecutionDenied(cause) => WorthQueryOutputDemandDenialKind::ExecutionRequest(
-            super::bridge_execution_denial::query_cause(cause),
-        ),
+        Kind::ExecutionDenied(cause) => match super::bridge_execution_denial::query_cause(cause) {
+            Ok(cause) => WorthQueryOutputDemandDenialKind::ExecutionRequest(cause),
+            Err(interruption) => {
+                WorthQueryOutputDemandDenialKind::of_execution_interruption(interruption)
+            }
+        },
         Kind::ConditionalRetentionCapacity
         | Kind::ConditionalEvaluationBusy
         | Kind::ConditionalEvaluationUnwindPending

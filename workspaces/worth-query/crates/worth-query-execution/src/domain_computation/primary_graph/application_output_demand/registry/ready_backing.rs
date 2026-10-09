@@ -43,10 +43,34 @@ pub fn required_ready_custody_bytes_for_test() -> usize {
     PreparedReadyBacking::retained_bytes()
 }
 
+/// A wave may keep the posted Ready beside its successor through one handoff.
+#[cfg(feature = "test-query-execution-observer")]
+#[doc(hidden)]
+pub fn required_handoff_custody_bytes_for_test(producer: &str) -> usize {
+    super::consumer_custody::ConsumerHandoff::retained_bytes(producer)
+        .expect("installed producer identity fits custody")
+}
+
 #[cfg(feature = "test-query-execution-observer")]
 impl<Schema>
     crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
 {
+    #[doc(hidden)]
+    pub fn has_required_row_for_test(
+        &self,
+        root: worth_relational::facade::identity::EntityId,
+    ) -> bool {
+        let state = self
+            .output_demands
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let held = state.records.iter().any(|(key, record)| {
+            key.source.root_entity_for_test() == root && !record.settlements.is_empty()
+        });
+        held
+    }
+
     /// The required-retained bytes this runtime's demand registry holds now:
     /// required members and the custody beneath them.
     #[doc(hidden)]

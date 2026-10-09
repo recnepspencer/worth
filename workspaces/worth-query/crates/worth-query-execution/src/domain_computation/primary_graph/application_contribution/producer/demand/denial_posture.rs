@@ -96,6 +96,32 @@ impl WorthQueryOutputDemandDenialKind {
         }
     }
 
+    /// Execution observed an interruption after the advancement opened.
+    pub(super) const fn of_execution_interruption(
+        interruption: crate::domain_computation::primary_graph::WorthQueryManagedComputationInterruption,
+    ) -> Self {
+        use crate::domain_computation::primary_graph::WorthQueryManagedComputationInterruption as Interruption;
+        match interruption {
+            Interruption::Cancelled => Self::Cancelled,
+            Interruption::DeadlineExceeded => Self::TimedOut,
+        }
+    }
+
+    /// Delivery is in flight; its interruption keeps the demand owner's kind.
+    pub(super) const fn of_execution_stop(
+        cause: crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
+    ) -> Self {
+        use crate::domain_computation::primary_graph::WorthQueryAdvancementDenial as Denial;
+        match cause {
+            Denial::Interrupted(interruption) => Self::of_execution_interruption(interruption),
+            Denial::Resource(_)
+            | Denial::NestedOpening
+            | Denial::ForeignPhase
+            | Denial::NestedStopped
+            | Denial::Panicked => Self::ExecutionRequest(cause),
+        }
+    }
+
     /// The request's interruption, met while verifying what an output
     /// consumed.
     pub(in crate::domain_computation::primary_graph) const fn of_interruption(

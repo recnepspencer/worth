@@ -1,3 +1,4 @@
+use crate::indexes::data::SelectedIndexReadWork;
 use worth_foundational::facade::{
     AspectFieldLocator, AspectValue, AuthoritativeRecordAspectState,
     ContractValidatedAspectValueView,
@@ -16,6 +17,8 @@ use crate::storage::overlay::PartitionAccess;
 
 use super::IndexAccess;
 
+mod candidate_comparison;
+use candidate_comparison::borrowed_matches;
 mod navigation;
 use navigation::{btree_navigation_work, ordered_navigation_work};
 
@@ -23,7 +26,9 @@ impl IndexAccess<'_> {
     /// The exact selected-basis variant of the ordinary bounded lookup. The
     /// issued view supplies snapshot and schema authority; each index read,
     /// native candidate comparison and Certification storage visit uses the
-    /// same caller admission before its work or allocation.
+    /// same caller admission before its work or allocation. The callback budgets
+    /// Operation against logical work; OrderedNavigation is one operation plus
+    /// a single capacity-bounded keyed descent, never candidates or payload.
     pub fn execute_bounded_entity_field_lookup_admitted<E>(
         &self,
         view: &VisibilityProjectionView<'_>,
@@ -33,7 +38,7 @@ impl IndexAccess<'_> {
         value: &AspectValue,
         limit: usize,
         parity: BoundedIndexParityMode,
-        mut prepare: impl FnMut(u64, u64) -> Result<(), E>,
+        mut prepare: impl FnMut(SelectedIndexReadWork, u64) -> Result<(), E>,
     ) -> Result<BoundedEntityFieldLookupOutcome, Stop<E>> {
         if !view.is_exact_basis() || !view.is_from_runtime(self.runtime) {
             return Err(Stop::ExactBasisRequired);
@@ -100,10 +105,14 @@ impl IndexAccess<'_> {
             1
         } else {
             ordered_navigation_work(entries.len())?
-                .checked_mul(key_bytes.checked_add(1).ok_or(Stop::AccountingOverflow)?)
-                .ok_or(Stop::AccountingOverflow)?
         };
-        charge(&mut prepare, seek, 0)?;
+        charge(
+            &mut prepare,
+            seek.checked_mul(key_bytes)
+                .ok_or(Stop::AccountingOverflow)?,
+            0,
+        )?;
+        prepare(SelectedIndexReadWork::OrderedNavigation(seek), 0).map_err(Stop::Admission)?;
         let rows = entries.get(&key);
         let indexed_count = rows.map_or(0, |rows| rows.len());
         let examined = indexed_count.min(limit);
@@ -174,71 +183,6 @@ impl IndexAccess<'_> {
     }
 }
 
-fn borrowed_matches<E>(
-    view: &VisibilityProjectionView<'_>,
-    entity: EntityId,
-    locator: &AspectFieldLocator,
-    expected: &AspectValue,
-    prepare: &mut impl FnMut(u64, u64) -> Result<(), E>,
-) -> Result<Option<(EntityId, KindId, bool)>, Stop<E>> {
-    let read = view
-        .exact_entity_state_read_work_bound()
-        .ok_or(Stop::ExactBasisRequired)?;
-    charge(prepare, read, 0)?;
-    view.with_exact_entity_state(entity, |metadata, state| {
-        let matches = state_matches(state, locator, expected, prepare)?;
-        Ok((metadata.entity_id, metadata.kind_id, matches))
-    })
-    .map_err(|_| Stop::ExactBasisRequired)?
-    .transpose()
-}
-
-fn state_matches<E>(
-    state: Option<&AuthoritativeRecordAspectState>,
-    locator: &AspectFieldLocator,
-    expected: &AspectValue,
-    prepare: &mut impl FnMut(u64, u64) -> Result<(), E>,
-) -> Result<bool, Stop<E>> {
-    let Some(state) = state else { return Ok(false) };
-    let aspect = locator.aspect().aspect_key();
-    charge(
-        prepare,
-        btree_navigation_work(state.aspects().len(), aspect.as_str().len())?,
-        0,
-    )?;
-    let Some(validated) = state.get(aspect) else {
-        return Ok(false);
-    };
-    let actual = match validated.view() {
-        ContractValidatedAspectValueView::Scalar(value) => Some(value),
-        ContractValidatedAspectValueView::Struct(value) => {
-            let [field] = locator.field_path().fields() else {
-                return Ok(false);
-            };
-            charge(
-                prepare,
-                btree_navigation_work(value.len(), field.as_str().len())?,
-                0,
-            )?;
-            value.get(field)
-        }
-    };
-    let Some(actual) = actual else {
-        return Ok(false);
-    };
-    let comparison = actual
-        .semantic_byte_width()
-        .max(expected.semantic_byte_width());
-    charge(
-        prepare,
-        width(comparison)?
-            .checked_add(1)
-            .ok_or(Stop::AccountingOverflow)?,
-        0,
-    )?;
-    Ok(actual == expected)
-}
-
 fn certify_storage<E>(
     view: &VisibilityProjectionView<'_>,
     kind: KindId,
@@ -247,7 +191,7 @@ fn certify_storage<E>(
     index: DerivedIndexId,
     limit: usize,
     outcome: &BoundedEntityFieldLookupOutcome,
-    prepare: &mut impl FnMut(u64, u64) -> Result<(), E>,
+    prepare: &mut impl FnMut(SelectedIndexReadWork, u64) -> Result<(), E>,
 ) -> Result<(), Stop<E>> {
     let root = view.selected_root().ok_or(Stop::ExactBasisRequired)?;
     let slots = root.entity_slot_count();
@@ -300,7 +244,7 @@ fn certify_storage<E>(
 /// initialized slot exchange is admitted immediately before it occurs.
 fn sort_fixed_ids<E>(
     ids: &mut [EntityId],
-    prepare: &mut impl FnMut(u64, u64) -> Result<(), E>,
+    prepare: &mut impl FnMut(SelectedIndexReadWork, u64) -> Result<(), E>,
 ) -> Result<(), Stop<E>> {
     for start in (0..ids.len() / 2).rev() {
         sift_down(ids, start, ids.len(), prepare)?;
@@ -317,7 +261,7 @@ fn sift_down<E>(
     ids: &mut [EntityId],
     mut root: usize,
     end: usize,
-    prepare: &mut impl FnMut(u64, u64) -> Result<(), E>,
+    prepare: &mut impl FnMut(SelectedIndexReadWork, u64) -> Result<(), E>,
 ) -> Result<(), Stop<E>> {
     loop {
         charge(prepare, 1, 0)?;
@@ -346,11 +290,11 @@ fn sift_down<E>(
 }
 
 fn charge<E>(
-    prepare: &mut impl FnMut(u64, u64) -> Result<(), E>,
+    prepare: &mut impl FnMut(SelectedIndexReadWork, u64) -> Result<(), E>,
     work: u64,
     bytes: u64,
 ) -> Result<(), Stop<E>> {
-    prepare(work, bytes).map_err(Stop::Admission)
+    prepare(SelectedIndexReadWork::Operation(work), bytes).map_err(Stop::Admission)
 }
 
 fn width<E>(value: usize) -> Result<u64, Stop<E>> {

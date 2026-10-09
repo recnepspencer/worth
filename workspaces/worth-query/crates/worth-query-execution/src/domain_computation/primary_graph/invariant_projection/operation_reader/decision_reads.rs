@@ -2,6 +2,8 @@
 //! partitioned computation read in which owner call.
 
 use std::collections::BTreeSet;
+mod computation_inputs;
+pub(in crate::domain_computation::primary_graph) use computation_inputs::ObservedComputationInputs;
 
 use super::WorthQueryApplicationOperationInvariantProjectionReader;
 use crate::domain_computation::primary_graph::application_attempt::{
@@ -111,7 +113,7 @@ impl DecisionReads {
     ///
     /// A key the handler read beside an owner call stays that call's: the
     /// handler reads its own facts again on every attempt. There is no
-    /// attribution unless exactly one partitioned computation ran: partition
+    /// reusable partition attribution unless exactly one computation ran: partition
     /// identities name the partitions of one computation only.
     /// The deposit is there only when exactly one partitioned computation
     /// ran under a producer. A projection with a failed read has no keys to
@@ -121,10 +123,7 @@ impl DecisionReads {
     ) -> Result<
         (
             BTreeSet<WorthQueryApplicationFactKey>,
-            (
-                Option<ComputationFactAttribution>,
-                CompletedComputationRetention,
-            ),
+            (ObservedComputationInputs, CompletedComputationRetention),
         ),
         WorthQueryApplicationFactKey,
     > {
@@ -142,19 +141,20 @@ impl DecisionReads {
         handler.extend(computation.keys().cloned());
         let result = match runs {
             ComputationRuns::None => (
-                None,
+                ObservedComputationInputs::None,
                 CompletedComputationRetention::Absent(PriorAbsence::NotProduced),
             ),
             ComputationRuns::One => (
-                Some(computation),
+                ObservedComputationInputs::One(computation),
                 deposit.expect("begin creates the run deposit").take(),
             ),
             ComputationRuns::Several => {
-                // Attribution identifies one computation only. Drop its state here
-                // with the precise reason, rather than pretending no run happened.
+                // Partition attribution identifies one computation only. Keep the
+                // union of input keys for own-effect currentness after its state
+                // is dropped; several runs still read every one of these facts.
                 drop(deposit);
                 (
-                    None,
+                    ObservedComputationInputs::Several(computation),
                     CompletedComputationRetention::Absent(PriorAbsence::Suppressed(
                         Suppression::Several,
                     )),

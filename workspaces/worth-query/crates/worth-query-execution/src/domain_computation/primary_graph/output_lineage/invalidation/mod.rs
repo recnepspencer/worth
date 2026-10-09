@@ -3,6 +3,8 @@
 mod admission;
 mod commit_touches;
 mod consumed_capacity;
+#[cfg(feature = "test-query-execution-observer")]
+mod consumed_capacity_observation;
 mod delivery;
 #[cfg(feature = "test-query-execution-observer")]
 mod delivery_observation;

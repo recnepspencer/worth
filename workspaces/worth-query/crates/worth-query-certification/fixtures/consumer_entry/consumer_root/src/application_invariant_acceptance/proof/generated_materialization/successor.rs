@@ -58,6 +58,7 @@ pub(super) fn failure_name(
 ) -> &'static str {
     use worth_query_host::facade::primary_graph::WorthQueryGeneratedOutputSuspensionFailure::*;
     match failure {
+        ExecutionDenied(_) => "execution-denied",
         Qualification(_) => "qualification",
         ProductActivationUnavailable => "product-activation-unavailable",
         Preparation(_) => "preparation",

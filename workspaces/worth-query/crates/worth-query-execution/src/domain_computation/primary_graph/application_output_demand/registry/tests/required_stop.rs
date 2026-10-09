@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use super::super::record_map::DemandRecords;
 
 use super::*;
 
@@ -9,7 +9,7 @@ use super::*;
 fn only_a_stop_intrinsic_to_the_head_row_fails_its_dependents() {
     let head = key("required-stop-head", 1, 1);
     let failed = |kind| {
-        let mut records = BTreeMap::new();
+        let mut records = DemandRecords::new();
         records.insert(
             head.clone(),
             record(

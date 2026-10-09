@@ -74,7 +74,10 @@ where
         >,
         selected: bool,
         request_admission: &mut InvalidationEditAdmission,
-    ) -> Result<OwnStages, WorthQueryOutputDemandDenial>
+    ) -> Result<
+        OwnStages<FamilySourceQuery<Schema, Family>, FamilySourceValue<Schema, Family>>,
+        WorthQueryOutputDemandDenial,
+    >
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
         FamilySourceValue<Schema, Family>: 'static,
@@ -123,14 +126,16 @@ where
                 None => end_row(),
             });
         }
-        let (disclosed_value, disclosed_source) = disclosure.into_parts();
+        request_admission
+            .charge_external_work(std::mem::size_of_val(disclosure.source()) as u64)
+            .map_err(|_| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, ""))?;
         self.refresh_output_demand(
             demand,
-            disclosed_value,
-            disclosed_source,
+            disclosure.value(),
+            disclosure.source().clone(),
             held,
             request_admission,
         )?;
-        Ok(OwnStages::Refreshed)
+        Ok(OwnStages::Refreshed(disclosure))
     }
 }

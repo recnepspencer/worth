@@ -49,7 +49,7 @@ mod resolved;
 mod selection;
 use resolved::ResolvedOnWave;
 pub(in crate::domain_computation::primary_graph) use resolved::{
-    MatchedRequiredPredecessors, ResolvedRequiredPredecessors,
+    MatchedRequiredPredecessors, ReboundConsumedOutput, ResolvedRequiredPredecessors,
 };
 use selection::{reselect_required_wave, select_required_wave};
 

@@ -30,6 +30,11 @@ impl SourceInvalidationOwner {
         let facts = fact_retention::reserve(facts, basis, &self.resources, admission)?;
         admission.bytes(metadata_bytes)?;
         let metadata = retention::reserve(&self.resources, metadata_bytes, admission)?;
+        #[cfg(feature = "test-query-execution-observer")]
+        {
+            super::consumed_capacity_observation::observe(self.runtime_instance_id, &facts);
+            super::consumed_capacity_observation::observe(self.runtime_instance_id, &metadata);
+        }
         Ok(RetainedConsumedOutputCapacity {
             _facts: facts,
             _metadata: metadata,
@@ -45,6 +50,9 @@ impl SourceInvalidationOwner {
     ) -> Result<Arc<RetainedInvalidationCapacity>, CompanionPreflightStop> {
         admission.bytes(bytes)?;
         admission.work(bytes)?;
-        retention::reserve(&self.resources, bytes, admission)
+        let ticket = retention::reserve(&self.resources, bytes, admission)?;
+        #[cfg(feature = "test-query-execution-observer")]
+        super::consumed_capacity_observation::observe(self.runtime_instance_id, &ticket);
+        Ok(ticket)
     }
 }

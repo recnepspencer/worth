@@ -14,10 +14,8 @@
 //! caller's would be; the Ready row answers its dependents ahead of the
 //! record, and an ordinary demand's refresh clears it.
 
-use std::collections::BTreeMap;
-
 use super::{
-    DemandRecord, DemandState, WorthQueryOutputAdvancement, WorthQueryOutputDemandKey,
+    DemandState, WorthQueryOutputAdvancement, WorthQueryOutputDemandKey,
     WorthQueryOutputDemandRegistry,
 };
 use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
@@ -113,7 +111,7 @@ pub(super) fn intrinsic_to_row(kind: WorthQueryOutputDemandDenialKind) -> bool {
 /// The newest row of `key`'s refresh lineage: `key` itself until a refresh of
 /// its occurrence replaced it. An edge that read `key` waits on that row.
 pub(super) fn lineage_head(
-    records: &BTreeMap<WorthQueryOutputDemandKey, DemandRecord>,
+    records: &super::record_map::DemandRecords,
     key: &WorthQueryOutputDemandKey,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<Option<WorthQueryOutputDemandKey>, WorthQueryOutputDemandDenial> {
@@ -136,7 +134,7 @@ pub(super) fn lineage_head(
 /// itself, or its refresh, met a stop intrinsic to it. Any other stop
 /// belonged to the advance that met it.
 pub(super) fn head_stop(
-    records: &BTreeMap<WorthQueryOutputDemandKey, DemandRecord>,
+    records: &super::record_map::DemandRecords,
     key: &WorthQueryOutputDemandKey,
 ) -> Option<WorthQueryOutputDemandDenial> {
     let record = records.get(key)?;

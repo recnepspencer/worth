@@ -9,8 +9,10 @@ fn unchanged_facts_carry_every_partition_to_the_same_outcome() {
     let installed = installed(StatusRead::Gather(1), sum);
     let first = first_run(&world, &installed);
     let outcome = *first.outcome.as_ref().unwrap();
+    let charged = first.work;
 
     let next = attempt(&world, &installed, Some(prior_of(first, false)));
+    assert_eq!(next.work, charged, "comparator reads add no charge");
     assert!(matches!(next.runs.as_slice(), [(Run::Incremental, None)]));
     assert!(next.gathered.is_empty(), "no partition is gathered again");
     // The total and the charged work are a full run's.

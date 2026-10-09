@@ -1,87 +1,41 @@
 //! Completed required successors may release their exact predecessor edges.
 
 use super::*;
+use crate::domain_computation::primary_graph::application_output_demand::ReadyCompletion;
+use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence;
 use crate::domain_computation::primary_graph::invariant_projection::SelectedPendingConsumedOutput;
 use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
 
-/// Old consumed identities, each joined to the successor row whose exact
-/// Ready was already certified Current on this selected wave, whether this
-/// wave or an earlier advance refreshed it. A consumer of several outputs
-/// carries one per resolved consumed edge.
-pub(in crate::domain_computation::primary_graph) struct MatchedRequiredPredecessors<'a> {
-    old_identities: Vec<Arc<RecordedSettlementIdentity>>,
-    selected: &'a PositionedRelationalSnapshot,
+/// An exact old edge joined to the Ready cell resolved on this selected wave.
+pub(in crate::domain_computation::primary_graph) struct ResolvedConsumedPredecessor {
+    old: Arc<RecordedSettlementIdentity>,
+    successor: ReadyCompletion,
 }
-
-impl<'a> MatchedRequiredPredecessors<'a> {
-    /// Adds one matched edge to `matched`, starting the set on its first.
-    pub(in crate::domain_computation::primary_graph) fn join(
-        matched: &mut Option<Self>,
-        old_identity: Arc<RecordedSettlementIdentity>,
-        selected: &'a PositionedRelationalSnapshot,
+impl ResolvedConsumedPredecessor {
+    fn retain(
+        old: Arc<RecordedSettlementIdentity>,
+        successor: &ReadyCompletion,
         admission: &mut InvalidationEditAdmission,
-    ) -> Result<(), WorthQueryOutputDemandDenial> {
-        let item = std::mem::size_of::<Arc<RecordedSettlementIdentity>>();
+    ) -> Result<Self, WorthQueryOutputDemandDenial> {
         admission
-            .charge_external_work(u64::try_from(item + 1).map_err(|_| work_denial())?)
-            .map_err(|_| work_denial())?;
-        let matched = matched.get_or_insert_with(|| Self {
-            old_identities: Vec::new(),
-            selected,
-        });
-        if matched.old_identities.len() == matched.old_identities.capacity() {
-            let next = matched.old_identities.capacity().saturating_mul(2).max(1);
-            admission
-                .admit_read_scratch(
-                    u64::try_from(next.saturating_mul(item)).map_err(|_| capacity_denial())?,
-                )
-                .map_err(admission_denial)?;
-            matched
-                .old_identities
-                .try_reserve_exact(next - matched.old_identities.len())
-                .map_err(|_| capacity_denial())?;
-        }
-        matched.old_identities.push(old_identity);
-        Ok(())
+            .charge_external_work((std::mem::size_of::<Self>() + 2) as u64)
+            .map_err(admission_denial)?;
+        Ok(Self {
+            old,
+            successor: successor.clone(),
+        })
     }
-
-    pub(in crate::domain_computation::primary_graph) fn old_identities(
-        &self,
-    ) -> &[Arc<RecordedSettlementIdentity>] {
-        &self.old_identities
-    }
-
-    /// The cutoff constructs its own positioned view of the issued snapshot.
-    /// Join its coordinates to this invocation's certified wave before using
-    /// the old consumed identities to choose a fresh handler path.
-    pub(in crate::domain_computation::primary_graph) fn matches_cutoff_root(
-        &self,
-        selected: &PositionedRelationalSnapshot,
-        admission: &mut InvalidationEditAdmission,
-    ) -> Result<bool, worth_relational::facade::mvcc::CompanionPreflightStop> {
-        admission.charge_external_work(4)?;
-        let branch_work = self
-            .selected
-            .branch_id()
-            .0
-            .len()
-            .checked_add(selected.branch_id().0.len())
-            .and_then(|work| {
-                work.checked_add(2 * std::mem::size_of::<PositionedRelationalSnapshot>())
-            })
-            .and_then(|work| u64::try_from(work).ok())
-            .ok_or(worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow)?;
-        admission.charge_external_work(branch_work)?;
-        Ok(
-            self.selected.runtime_instance_id() == selected.runtime_instance_id()
-                && self.selected.branch_id() == selected.branch_id()
-                && self.selected.root_id() == selected.root_id()
-                && self.selected.version_id() == selected.version_id()
-                && self.selected.commit_id() == selected.commit_id()
-                && self.selected.position() == selected.position(),
-        )
+    pub(in crate::domain_computation::primary_graph) fn into_parts(
+        self,
+    ) -> (Arc<RecordedSettlementIdentity>, ReadyCompletion) {
+        (self.old, self.successor)
     }
 }
+
+mod matched_predecessors;
+pub(in crate::domain_computation::primary_graph) use matched_predecessors::{
+    MatchedRequiredPredecessors, ReboundConsumedOutput,
+};
 
 /// The rows this wave certified Current while resolving one dependent's
 /// consumed edges. A dependent of several outputs is readmitted once every
@@ -173,7 +127,7 @@ where
         pending: &SelectedPendingConsumedOutput<'_>,
         positioned: &PositionedRelationalSnapshot,
         admission: &mut InvalidationEditAdmission,
-    ) -> Result<Option<Arc<RecordedSettlementIdentity>>, WorthQueryOutputDemandDenial> {
+    ) -> Result<Option<ResolvedConsumedPredecessor>, WorthQueryOutputDemandDenial> {
         for (successor_ready, current) in self.resolved {
             let mut progress = None;
             for entry in self.custody.iter().rev() {
@@ -211,7 +165,7 @@ where
         pending: &SelectedPendingConsumedOutput<'_>,
         positioned: &PositionedRelationalSnapshot,
         admission: &mut InvalidationEditAdmission,
-    ) -> Result<Option<Arc<RecordedSettlementIdentity>>, WorthQueryOutputDemandDenial> {
+    ) -> Result<Option<ResolvedConsumedPredecessor>, WorthQueryOutputDemandDenial> {
         let crate::domain_computation::primary_graph::application_output_demand::PendingUpstream::Ready(
             upstream,
         ) = runtime
@@ -224,8 +178,15 @@ where
             if upstream.same_ready_cell(successor_ready, admission)? {
                 return pending
                     .retain_identity(admission)
-                    .map(Some)
-                    .map_err(admission_denial);
+                    .map_err(admission_denial)
+                    .and_then(|old| {
+                        ResolvedConsumedPredecessor::retain(
+                            old,
+                            successor_ready.completion(),
+                            admission,
+                        )
+                        .map(Some)
+                    });
             }
         }
         Ok(None)
@@ -241,7 +202,7 @@ fn match_one<Schema>(
     pending: &SelectedPendingConsumedOutput<'_>,
     positioned: &PositionedRelationalSnapshot,
     admission: &mut InvalidationEditAdmission,
-) -> Result<Option<Arc<RecordedSettlementIdentity>>, WorthQueryOutputDemandDenial>
+) -> Result<Option<ResolvedConsumedPredecessor>, WorthQueryOutputDemandDenial>
 where
     Schema: ApplicationSchema + 'static,
 {
@@ -306,6 +267,9 @@ where
     }
     pending
         .retain_identity(admission)
-        .map(Some)
         .map_err(admission_denial)
+        .and_then(|old| {
+            ResolvedConsumedPredecessor::retain(old, successor_ready.completion(), admission)
+                .map(Some)
+        })
 }

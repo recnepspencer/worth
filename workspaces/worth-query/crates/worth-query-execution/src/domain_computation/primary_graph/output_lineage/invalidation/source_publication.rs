@@ -19,6 +19,8 @@ impl RelationalPublicationCompanion for SourceInvalidationOwner {
             return Err(CompanionPreflightStop::ForeignCell);
         }
         let cell = self.selected_cell(context)?;
+        #[cfg(feature = "test-query-execution-observer")]
+        let _held = super::delivery_observation::exhaust_delivery_capacity(&self.resources);
         match self.prepare_delivery(&cell, context) {
             Ok(effect) => Ok(effect),
             Err(CompanionPreflightStop::RetainedCompanionCapacityExhausted { .. }) => {
@@ -142,6 +144,8 @@ impl SourceInvalidationOwner {
                 CompanionPublicationCompletionObserver::retained_bytes(),
                 context,
             )?;
+            #[cfg(feature = "test-query-execution-observer")]
+            retained.observe_native(crate::domain_computation::execution_runtime::source_invalidation::NativeRetainedKind::Completion);
             let observer = effect.attach_completion_observer(context, retained)?;
             // Each hint's preparation was admitted with the marking that
             // selected it; construction draws down exactly that allowance.
@@ -173,6 +177,12 @@ impl SourceInvalidationOwner {
                     retained_branch_bytes,
                     &mut hint_allowance,
                 )?;
+                #[cfg(feature = "test-query-execution-observer")]
+                {
+                    use crate::domain_computation::execution_runtime::source_invalidation::NativeRetainedKind;
+                    hint_capacity.observe_native(NativeRetainedKind::Hint);
+                    branch_capacity.observe_native(NativeRetainedKind::Branch);
+                }
                 let branch = RequiredWorkMembership::prepared_native_branch(
                     context.branch_id().clone(),
                     branch_capacity,

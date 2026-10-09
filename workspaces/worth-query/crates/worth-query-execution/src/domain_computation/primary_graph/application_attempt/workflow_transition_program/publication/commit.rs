@@ -167,6 +167,7 @@ where
             &presented,
             program,
             idempotency,
+            crate::domain_computation::application_aftermath::ApplicationCommitCausality::Ordinary,
         );
         let projected = match outcome.landed() {
             Ok((receipt, replayed)) => self.primary_provider.graph.with_runtime(|runtime| {

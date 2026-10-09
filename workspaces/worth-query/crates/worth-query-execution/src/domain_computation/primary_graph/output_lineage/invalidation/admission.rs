@@ -8,10 +8,9 @@ pub(super) trait IndexAdmission {
     #[track_caller]
     fn work(&mut self, visits: u64) -> Result<(), CompanionPreflightStop>;
     fn bytes(&mut self, bytes: u64) -> Result<(), CompanionPreflightStop>;
-    /// Physical ordered-index navigation grows with index height, which other
-    /// consumers' population changes. It is bounded by height times the
-    /// declared operations that perform it, so each owner reports it apart
-    /// from declared work instead of spending a request's allowance on it.
+    /// Only a keyed descent's path is navigation, bounded by declared
+    /// operations times H. Validation, visited entries and key-payload
+    /// comparisons in the selected branch and scope remain logical work.
     fn navigation(&mut self, units: u64) -> Result<(), CompanionPreflightStop>;
 
     #[track_caller]
@@ -37,11 +36,18 @@ pub(super) trait IndexAdmission {
         navigation: u64,
     ) -> Result<(), CompanionPreflightStop> {
         self.work(key_traversal_work(key))?;
-        self.navigation(
-            key.comparison_work_bound()
-                .and_then(|payload| payload.checked_mul(navigation))
+        let payload = key
+            .comparison_work_bound()
+            .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
+        // Variable key payload is logical work; only the selected path is
+        // navigation. These indexes are already selected by branch and scope.
+        self.work(
+            payload
+                .saturating_sub(1)
+                .checked_mul(navigation)
                 .ok_or(CompanionPreflightStop::WorkCounterOverflow)?,
-        )
+        )?;
+        self.navigation(navigation)
     }
 
     #[track_caller]

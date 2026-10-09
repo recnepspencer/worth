@@ -13,7 +13,7 @@ use worth_query_declaration::facade::application_operation::{
 };
 use worth_query_installation::facade::ApplicationSchema;
 
-use super::{program_required, WorthQueryProgramOwner};
+use super::{program_required, ApplicationCommitCausality, WorthQueryProgramOwner};
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitOutcome,
     WorthQueryApplicationEffectProgram, WorthQueryApplicationIdempotencyBinding,
@@ -34,6 +34,7 @@ pub(super) fn commit_program_action<Schema, Binding, Owner>(
 
     owner: &Owner,
     program: ActionProgram<Schema, Binding>,
+    causality: ApplicationCommitCausality<'_>,
     idempotency: WorthQueryApplicationIdempotencyBinding,
 ) -> WorthQueryApplicationCommitOutcome
 where
@@ -64,6 +65,7 @@ where
         &presented,
         program,
         idempotency,
+        causality,
     )
 }
 
@@ -84,6 +86,7 @@ where
         phase,
         owner,
         program.with_client_observation(),
+        ApplicationCommitCausality::Ordinary,
         idempotency,
     );
     owner.owned_runtime().retained_commit_outcome(outcome)

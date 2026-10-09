@@ -55,7 +55,8 @@ pub(in crate::domain_computation::primary_graph) fn prepare(
     // Charge each selected lookup before performing it. No accumulated
     // history is traversed to reserve a single product address.
     admission
-        .charge_external_work(
+        .charge_ordered_operations(
+            1,
             tree_work::<SemanticSource>(lineage.by_source.len())
                 .ok_or_else(|| denial(Kind::WorkBudgetExceeded))?,
         )
@@ -63,14 +64,16 @@ pub(in crate::domain_computation::primary_graph) fn prepare(
     let occurrences = lineage.by_source.get(&source);
     let occurrence_count = occurrences.map_or(0, |value| value.len());
     admission
-        .charge_external_work(
+        .charge_ordered_operations(
+            1,
             tree_work::<worth_runtime_world::facade::ProductBranchIncarnation>(occurrence_count)
                 .ok_or_else(|| denial(Kind::WorkBudgetExceeded))?,
         )
         .map_err(|_| denial(Kind::WorkBudgetExceeded))?;
     let history = occurrences.and_then(|value| value.get(&coordinate.occurrence));
     admission
-        .charge_external_work(
+        .charge_ordered_operations(
+            1,
             tree_work::<u64>(history.map_or(0, |value| value.len()))
                 .ok_or_else(|| denial(Kind::WorkBudgetExceeded))?,
         )
@@ -81,7 +84,8 @@ pub(in crate::domain_computation::primary_graph) fn prepare(
     // The selected entry paths are walked again when the vacant history is
     // inserted; that work is separate from the lookups above.
     admission
-        .charge_external_work(
+        .charge_ordered_operations(
+            3,
             tree_work::<SemanticSource>(lineage.by_source.len())
                 .and_then(|work| {
                     work.checked_add(tree_work::<
@@ -134,7 +138,8 @@ pub(in crate::domain_computation::primary_graph) fn prepare(
         )
         .ok_or_else(|| denial(Kind::RetentionBudgetExceeded))?;
     admission
-        .charge_external_work(
+        .charge_ordered_operations(
+            1,
             tree_work::<worth_runtime_world::facade::ProductBranchIncarnation>(
                 lineage.live_occurrences.len(),
             )
@@ -143,7 +148,8 @@ pub(in crate::domain_computation::primary_graph) fn prepare(
         .map_err(|_| denial(Kind::WorkBudgetExceeded))?;
     if !lineage.live_occurrences.contains(&coordinate.occurrence) {
         admission
-            .charge_external_work(
+            .charge_ordered_operations(
+                1,
                 tree_work::<worth_runtime_world::facade::ProductBranchIncarnation>(
                     lineage.live_occurrences.len(),
                 )

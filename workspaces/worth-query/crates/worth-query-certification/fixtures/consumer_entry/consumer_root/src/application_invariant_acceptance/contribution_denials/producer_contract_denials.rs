@@ -282,7 +282,7 @@ fn missing_required_invariant_is_denied_before_initial_state() {
         MissingInvariantSchema::declaration().unwrap(),
         ((), Arc::new(AtomicUsize::new(0))),
         limits(),
-        |_, _| panic!("missing producer invariant must deny before initial state"),
+        |_, _, _| panic!("missing producer invariant must deny before initial state"),
     );
     assert_contribution_denial(
         result,
@@ -303,7 +303,7 @@ fn foreign_source_selector_is_denied_before_initial_state() {
         ForeignOperationSchema::declaration().unwrap(),
         (topology, ()),
         limits(),
-        |_, _| panic!("foreign producer source must deny before initial state"),
+        |_, _, _| panic!("foreign producer source must deny before initial state"),
     );
     match result {
         Err(application_installation::WorthQueryInMemoryApplicationDenial::Contributions(

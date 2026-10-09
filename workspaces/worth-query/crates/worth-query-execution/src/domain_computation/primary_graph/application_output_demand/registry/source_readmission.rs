@@ -72,10 +72,7 @@ impl WorthQueryOutputDemandRegistry {
         >,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<PreparedOutputReadmissionSource<Query>, WorthQueryOutputDemandDenial> {
-        let bytes = std::mem::size_of::<RetainedOutputReadmissionSource<Query>>()
-            .checked_add(std::mem::size_of::<RequiredOutputReadmission>())
-            .and_then(|bytes| bytes.checked_add(4 * std::mem::size_of::<usize>()))
-            .ok_or_else(capacity_denial)?;
+        let bytes = retained_bytes().ok_or_else(capacity_denial)?;
         // This wrapper is registry custody. The producer's retained-output
         // limit governs its output, while the shared required registry limit
         // governs this readmission source. A cached Ready nothing holds
@@ -140,12 +137,20 @@ impl<Query: 'static> PreparedOutputReadmissionSource<Query> {
         {
             return Err(source_denial());
         }
+        // Readmission retains frozen source meaning. Each read selects the
+        // current Product; a semantic join does not need to replace this Arc.
         if record.readmission_source.is_none() {
             record.readmission_source = Some(self.readmission);
         }
         drop(state);
         Ok(self.source)
     }
+}
+pub(super) fn retained_bytes() -> Option<usize> {
+    // The query marker has no backing; all concrete observations have this layout.
+    std::mem::size_of::<RetainedOutputReadmissionSource<()>>()
+        .checked_add(std::mem::size_of::<RequiredOutputReadmission>())
+        .and_then(|bytes| bytes.checked_add(4 * std::mem::size_of::<usize>()))
 }
 fn capacity_denial() -> WorthQueryOutputDemandDenial {
     WorthQueryOutputDemandDenial::new(

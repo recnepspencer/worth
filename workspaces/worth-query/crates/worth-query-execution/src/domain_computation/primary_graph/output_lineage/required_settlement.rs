@@ -212,7 +212,8 @@ impl WorthQueryApplicationOutputLineage {
         }
         // The accepted coordinate chooses one row at each index level. Each
         // ordered descent is paid before the corresponding selected read.
-        admission.charge_external_work(
+        admission.charge_ordered_operations(
+            1,
             super::prepared_slot::tree_work::<SemanticSource>(self.by_source.len())
                 .ok_or(CompanionPreflightStop::WorkCounterOverflow)?,
         )?;
@@ -220,7 +221,7 @@ impl WorthQueryApplicationOutputLineage {
             return Err(FullVerificationReason::NativeRevisionUnavailable.into());
         };
         admission
-            .charge_external_work(
+            .charge_ordered_operations(1,
                 super::prepared_slot::tree_work::<
                     worth_runtime_world::facade::ProductBranchIncarnation,
                 >(occurrences.len())
@@ -229,7 +230,8 @@ impl WorthQueryApplicationOutputLineage {
         let Some(history) = occurrences.get(&coordinate.occurrence) else {
             return Err(FullVerificationReason::NativeRevisionUnavailable.into());
         };
-        admission.charge_external_work(
+        admission.charge_ordered_operations(
+            1,
             super::prepared_slot::tree_work::<u64>(history.len())
                 .ok_or(CompanionPreflightStop::WorkCounterOverflow)?,
         )?;

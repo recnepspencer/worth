@@ -71,7 +71,7 @@ fn judge(kept: &[OracleRun], fresh: &[OracleRun], expected: Option<Run>) {
     );
 }
 
-fn close_ancestor<const MODE: u8>(
+pub(super) fn close_ancestor<const MODE: u8>(
     app: &Application<false, TOTALS_WORK, 1, MODE>,
     branch: WorthQueryProductBranch,
 ) -> worth_query_host::facade::product::WorthQueryApplicationProductBranchCleanup {
