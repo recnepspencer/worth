@@ -7,7 +7,7 @@ use worth_signal::facade::branch::{
 use super::super::world::AdversarialWorld;
 
 #[test]
-fn transaction_callback_panic_quarantines_source_and_keeps_sibling_healthy() {
+fn transaction_callback_panic_rolls_back_and_keeps_source_and_sibling_healthy() {
     let world = AdversarialWorld::new();
     let reference = world
         .basis
@@ -25,11 +25,27 @@ fn transaction_callback_panic_quarantines_source_and_keeps_sibling_healthy() {
         fault.is_err(),
         "the transaction callback panic must reach the caller"
     );
-    assert!(matches!(
-        world.basis.observe_current(&reference),
-        Err(SignalBranchBasisObservationDenial::QuarantinedBranch { branch_id })
-            if branch_id == world.root_basis.branch_id()
-    ));
+    // A caller panic whose rollback succeeds restores the canonical state: the branch is
+    // quarantined only when that rollback itself fails.
+    let observed = world
+        .basis
+        .observe_current(&reference)
+        .expect("a successful rollback leaves the source observable");
+    assert_eq!(
+        observed.observation().canonical_encoding(),
+        world.root_basis.observation().canonical_encoding(),
+        "the rolled-back callback performed no canonical movement"
+    );
+    drop(observed);
+    world
+        .mutation
+        .advance_exact(
+            &world.root_basis,
+            &mut (),
+            &SignalOwnerCancellationSource::new().token(),
+            |_| Ok(()),
+        )
+        .expect("a successful rollback keeps the source cell usable");
     world
         .mutation
         .advance_exact(

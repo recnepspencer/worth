@@ -27,11 +27,13 @@ fn same_branch_advance_retire_fences_retention_then_retires_uncontended() {
         .observe_current(&reference)
         .expect("the advancing contender receives current managed-reference custody");
     assert_eq!(contender_basis.branch_id(), branch_id);
+    // Observing the unmoved head returns the canonical admitted basis, so the contender is a
+    // second holder of the one lease rather than a second lease.
     assert!(matches!(
         lifecycle.plan_retirement_exact(child_basis, SignalBranchRetirementReason::Superseded),
-        TransitionOutcome::Denied(SignalBranchRetirementDenial::RetainedAdmittedBasis {
+        TransitionOutcome::Denied(SignalBranchRetirementDenial::SharedAdmittedBasis {
             branch_id: denied_branch,
-            active_leases: 2,
+            shared_holders: 2,
         }) if denied_branch == branch_id
     ));
     drop(contender_basis);
@@ -88,11 +90,13 @@ fn same_branch_restore_retire_fences_retention_then_retires_uncontended() {
         .observe_current(&reference)
         .expect("the restoring contender receives current managed-reference custody");
     assert_eq!(contender_basis.branch_id(), branch_id);
+    // Three leases: the pre-capture basis, the snapshot, and the current basis. The contender
+    // shares the current basis's canonical lease and adds none.
     assert!(matches!(
         lifecycle.plan_retirement_exact(current, SignalBranchRetirementReason::Superseded),
         TransitionOutcome::Denied(SignalBranchRetirementDenial::RetainedAdmittedBasis {
             branch_id: denied_branch,
-            active_leases: 4,
+            active_leases: 3,
         }) if denied_branch == branch_id
     ));
     drop(contender_basis);

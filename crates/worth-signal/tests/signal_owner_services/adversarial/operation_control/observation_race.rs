@@ -112,11 +112,13 @@ fn assert_observe_first(
         expected.canonical_encoding(),
         "an observer winner must expose one complete canonical posture"
     );
+    // The winning observer holds the canonical basis the retirement plan was issued for: one
+    // lease with two holders.
     assert!(matches!(
         retirement,
-        TransitionOutcome::Denied(SignalBranchRetirementDenial::RetainedAdmittedBasis {
+        TransitionOutcome::Denied(SignalBranchRetirementDenial::SharedAdmittedBasis {
             branch_id: denied_branch,
-            active_leases: 2,
+            shared_holders: 2,
         }) if denied_branch == branch_id
     ));
 
