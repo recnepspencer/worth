@@ -8,7 +8,6 @@ use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 mod checkpoint_priors;
 mod publication_heads;
 pub(in crate::domain_computation::primary_graph) use checkpoint_priors::NativePriorCheckpointOutput;
-#[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use checkpoint_priors::{
     CheckpointPriorSelectionDenial, CheckpointPriorStructure,
 };
@@ -18,18 +17,33 @@ impl WorthQueryApplicationOutputLineage {
     pub(in crate::domain_computation::primary_graph) fn checkpoint_family_role(
         &self,
         binding: Option<std::any::TypeId>,
-    ) -> Result<Option<(&str, &str)>, ()> {
+        admission: &mut super::InvalidationEditAdmission,
+    ) -> Result<Option<(&str, &str)>, CheckpointPriorSelectionDenial> {
         let Some(binding) = binding else {
             return Ok(None);
         };
         let mut found = None;
         for (family, bindings) in &self.output_families {
+            admission.charge_external_work(1).map_err(|stop| {
+                CheckpointPriorSelectionDenial::Admission {
+                    phase: "accepted family inventory visit",
+                    stop,
+                }
+            })?;
             for (candidate, role) in bindings {
+                admission.charge_external_work(1).map_err(|stop| {
+                    CheckpointPriorSelectionDenial::Admission {
+                        phase: "accepted binding inventory visit",
+                        stop,
+                    }
+                })?;
                 if *candidate != binding {
                     continue;
                 }
                 if found.is_some() {
-                    return Err(());
+                    return Err(CheckpointPriorSelectionDenial::Structural(
+                        CheckpointPriorStructure::DuplicateInstalledBinding,
+                    ));
                 }
                 found = Some((family.as_str(), role.as_str()));
             }

@@ -6,7 +6,10 @@ use super::{
 
 mod native_priors;
 mod output_facts;
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use native_priors::merge as merge_native_checkpoint_priors;
 
+#[cfg(test)]
 pub(super) fn merge_accepted_outputs(
     mut current: Vec<
         super::super::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity,
@@ -75,7 +78,7 @@ where
                 .native_checkpoint(policy)
                 .map_err(WorthQueryCheckpointCaptureDenial::from)
                 .and_then(|checkpoint| {
-                    let mut accepted = self.output_demands.accepted_checkpoint_records();
+                    let accepted = self.output_demands.accepted_checkpoint_records();
                     let mut admission = self
                         .primary_provider
                         .graph
@@ -100,7 +103,19 @@ where
                             &mut admission,
                         )
                         .map_err(|denial| denial.into_capture_denial())?;
-                    for (identity, source, _) in &mut accepted {
+                    let mut accepted = native_priors::merge(
+                        &lineage,
+                        accepted,
+                        self.recovered_outputs.iter().map(|accepted| {
+                            (
+                                accepted.checkpoint.clone(),
+                                accepted.correspondence.binding_type(),
+                            )
+                        }),
+                        priors,
+                        &mut admission,
+                    )?;
+                    for (identity, source) in &mut accepted {
                         policy.check_live()?;
                         let Some(source) = source else {
                             continue;
@@ -124,24 +139,12 @@ where
                             0
                         };
                     }
-                    let accepted_outputs = native_priors::merge(
-                        &lineage,
-                        accepted
-                            .into_iter()
-                            .map(|(identity, _, binding)| (identity, binding)),
-                        self.recovered_outputs.iter().map(|accepted| {
-                            (
-                                accepted.checkpoint.clone(),
-                                accepted.correspondence.binding_type(),
-                            )
-                        }),
-                        priors,
-                    )
-                    .map_err(|_| {
-                        native_priors::capture_denial(
-                            "checkpoint output family binding is ambiguous",
-                        )
-                    })?;
+                    let mut accepted_outputs = accepted
+                        .into_iter()
+                        .map(|(identity, _)| identity)
+                        .collect::<Vec<_>>();
+                    accepted_outputs.sort_by(|left, right| left.canonical_cmp(right));
+                    accepted_outputs.dedup();
                     drop(lineage);
                     WorthQueryApplicationCheckpoint::encode(
                         checkpoint,

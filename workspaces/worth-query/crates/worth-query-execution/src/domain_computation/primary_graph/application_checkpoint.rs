@@ -11,6 +11,8 @@ mod section_bytes;
 mod tests;
 #[cfg(test)]
 use capture::merge_accepted_outputs;
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use capture::merge_native_checkpoint_priors;
 pub use denial::WorthQueryCheckpointCaptureDenial;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use facts::decode as decode_producer_facts;

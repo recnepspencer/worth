@@ -131,7 +131,8 @@ mod accepted_checkpoint;
 mod accepted_checkpoint_identity;
 pub(in crate::domain_computation::primary_graph) use accepted_checkpoint::AcceptedCheckpointFactSource;
 pub(in crate::domain_computation::primary_graph) use accepted_checkpoint_identity::{
-    WorthQueryAcceptedOutputCheckpointIdentity, WorthQueryAcceptedOutputCheckpointPosture,
+    CheckpointOutputSlot, WorthQueryAcceptedOutputCheckpointIdentity,
+    WorthQueryAcceptedOutputCheckpointPosture,
 };
 mod admission;
 mod checkpoint;

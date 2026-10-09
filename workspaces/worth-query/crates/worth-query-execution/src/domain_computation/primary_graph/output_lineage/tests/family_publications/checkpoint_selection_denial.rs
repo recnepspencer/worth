@@ -13,7 +13,7 @@ fn select(
     court: &Court,
     work: u64,
     bytes: u64,
-) -> Result<Vec<NativePriorCheckpointOutput>, Denial> {
+) -> Result<Vec<NativePriorCheckpointOutput<'_>>, Denial> {
     let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
         maximum_work_visits: work,
         maximum_preparation_bytes: bytes,

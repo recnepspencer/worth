@@ -14,6 +14,7 @@ use super::super::{
 };
 
 mod denial;
+mod materialization;
 pub(in crate::domain_computation::primary_graph) use denial::CheckpointPriorSelectionDenial;
 pub(in crate::domain_computation::primary_graph) use denial::CheckpointPriorStructure;
 use CheckpointPriorSelectionDenial as Denial;
@@ -36,7 +37,7 @@ pub(in crate::domain_computation::primary_graph) struct OutputFamilyRole {
 
 /// A selected native family head, with a reusable locator only when that
 /// exact performed lineage retained one before its effect.
-pub(in crate::domain_computation::primary_graph) struct NativePriorCheckpointOutput {
+pub(in crate::domain_computation::primary_graph) struct NativePriorCheckpointOutput<'a> {
     pub(in crate::domain_computation::primary_graph) family_role: OutputFamilyRole,
     pub(in crate::domain_computation::primary_graph) scope:
         crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
@@ -44,9 +45,14 @@ pub(in crate::domain_computation::primary_graph) struct NativePriorCheckpointOut
     pub(in crate::domain_computation::primary_graph) idempotency_key: [u8; 32],
     pub(in crate::domain_computation::primary_graph) partition: Option<[u8; 32]>,
     pub(in crate::domain_computation::primary_graph) entity: Option<EntityId>,
-    pub(in crate::domain_computation::primary_graph) identity: Option<
-        crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity,
-    >,
+    pub(in crate::domain_computation::primary_graph) identity:
+        Option<NativePriorCheckpointIdentity<'a>>,
+}
+
+pub(in crate::domain_computation::primary_graph) struct NativePriorCheckpointIdentity<'a> {
+    pub(in crate::domain_computation::primary_graph) producer: &'a str,
+    pub(in crate::domain_computation::primary_graph) source: [u8; 32],
+    recorded: &'a super::super::RecordedOutput,
 }
 
 impl WorthQueryApplicationOutputLineage {
@@ -57,7 +63,7 @@ impl WorthQueryApplicationOutputLineage {
         occurrence: ProductBranchIncarnation,
         generation: u64,
         admission: &mut InvalidationEditAdmission,
-    ) -> Result<Vec<NativePriorCheckpointOutput>, Denial> {
+    ) -> Result<Vec<NativePriorCheckpointOutput<'_>>, Denial> {
         let mut installed = BTreeMap::<TypeId, (&str, &str)>::new();
         for (family, bindings) in &self.output_families {
             admission
@@ -208,88 +214,12 @@ impl WorthQueryApplicationOutputLineage {
                     .unwrap_or(recorded);
                 let identity = match performed.native_prior_checkpoint.as_ref() {
                     Some(locator) => {
-                        let partition = partition
-                            .ok_or(Denial::Structural(Structure::MissingSourcePartition))?;
-                        let role_views = recorded.correspondence.native_witness_roles();
-                        let role_count = role_views.len();
-                        let role_bytes = role_views
-                            .clone()
-                            .try_fold(0usize, |total, (role, _, entity_name, _)| {
-                                total
-                                    .checked_add(role.len())?
-                                    .checked_add(entity_name.len())?
-                                    .checked_add(64)
-                            })
-                            .ok_or(Denial::arithmetic("native role text layout"))?;
-                        let retained_bytes = std::mem::size_of::<
-                            crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity,
-                        >()
-                        .checked_add(locator.producer.len())
-                        .and_then(|bytes| bytes.checked_add(role_bytes))
-                        .and_then(|bytes| {
-                            bytes.checked_add(
-                                role_count.checked_mul(std::mem::size_of::<
-                                    crate::domain_computation::primary_graph::application_attempt::WorthQueryCheckpointOutputRole,
-                                >() + 2 * std::mem::size_of::<String>())?,
-                            )
+                        partition.ok_or(Denial::Structural(Structure::MissingSourcePartition))?;
+                        Some(NativePriorCheckpointIdentity {
+                            producer: &locator.producer,
+                            source: locator.source,
+                            recorded,
                         })
-                        .ok_or(Denial::arithmetic("native locator layout"))?;
-                        admission
-                            .admit_read_scratch(u64::try_from(retained_bytes).map_err(|_| {
-                                Denial::arithmetic("checkpoint size or work conversion")
-                            })?)
-                            .map_err(|stop| Denial::admission("native locator scratch", stop))?;
-                        admission
-                            .charge_external_work(u64::try_from(retained_bytes).map_err(|_| {
-                                Denial::arithmetic("checkpoint size or work conversion")
-                            })?)
-                            .map_err(|stop| Denial::admission("native locator copy work", stop))?;
-                        let mut producer = String::new();
-                        producer
-                            .try_reserve_exact(locator.producer.len())
-                            .map_err(|error| Denial::allocation("producer locator text", error))?;
-                        producer.push_str(&locator.producer);
-                        let mut roles = Vec::new();
-                        roles
-                            .try_reserve_exact(role_count)
-                            .map_err(|error| Denial::allocation("native output roles", error))?;
-                        for (role, posture, entity_name, entity) in role_views {
-                            let mut copied_role = String::new();
-                            copied_role.try_reserve_exact(role.len()).map_err(|error| {
-                                Denial::allocation("native output role text", error)
-                            })?;
-                            copied_role.push_str(role);
-                            let mut copied_entity_name = String::new();
-                            copied_entity_name
-                                .try_reserve_exact(entity_name.len())
-                                .map_err(|error| {
-                                    Denial::allocation("native output entity name", error)
-                                })?;
-                            copied_entity_name.push_str(entity_name);
-                            roles.push(
-                                crate::domain_computation::primary_graph::application_attempt::WorthQueryCheckpointOutputRole {
-                                    role: copied_role,
-                                    posture,
-                                    entity_name: copied_entity_name,
-                                    entity,
-                                },
-                            );
-                        }
-                        Some(
-                            crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity {
-                                producer,
-                                posture: crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointPosture::Performed,
-                                source: locator.source,
-                                scope,
-                                source_partition: partition,
-                                producer_dependency: recorded.producer_dependency_identity,
-                                idempotency_key: recorded.idempotency_key_identity,
-                                resources: recorded.resources(),
-                                roles,
-                                producer_facts: None,
-                                producer_fact_wire_version: 0,
-                            },
-                        )
                     }
                     None => None,
                 };

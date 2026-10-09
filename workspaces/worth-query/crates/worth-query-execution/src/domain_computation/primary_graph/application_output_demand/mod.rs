@@ -22,12 +22,12 @@ pub(in crate::domain_computation::primary_graph) use registry::SelectedRequiredW
 pub(in crate::domain_computation::primary_graph) use registry::SelectedRequiredWorkKind;
 pub use registry::WorthQueryOutputDemandNotifications;
 pub(super) use registry::{
-    AcceptedCheckpointFactSource, BoundOutputSource, DemandAdmissionKind, OutputRefreshPredecessor,
-    OutputRowStage, PreparedOutputRootKind, PreparedReadyBacking, PreparedSelectedCheckpointFinish,
-    ReadyCompletion, RequiredOutputCustodyCapacity, SelectedCheckpointFinishStop,
-    WorthQueryAcceptedOutputAuthority, WorthQueryAcceptedOutputCheckpointIdentity,
-    WorthQueryAcceptedOutputCheckpointPosture, WorthQueryCompletedOutputDemand,
-    WorthQueryOutputCheckpoint, WorthQueryOutputClaimIdentity,
+    AcceptedCheckpointFactSource, BoundOutputSource, CheckpointOutputSlot, DemandAdmissionKind,
+    OutputRefreshPredecessor, OutputRowStage, PreparedOutputRootKind, PreparedReadyBacking,
+    PreparedSelectedCheckpointFinish, ReadyCompletion, RequiredOutputCustodyCapacity,
+    SelectedCheckpointFinishStop, WorthQueryAcceptedOutputAuthority,
+    WorthQueryAcceptedOutputCheckpointIdentity, WorthQueryAcceptedOutputCheckpointPosture,
+    WorthQueryCompletedOutputDemand, WorthQueryOutputCheckpoint, WorthQueryOutputClaimIdentity,
     WorthQueryOutputDemandAdvanceAdmission, WorthQueryOutputDemandInterest,
     WorthQueryOutputDemandKey, WorthQueryOutputDemandRegistry, WorthQueryOutputSchedulingResult,
     WorthQueryPendingOutputDelivery, WorthQueryPerformedOutputDemandSource,
