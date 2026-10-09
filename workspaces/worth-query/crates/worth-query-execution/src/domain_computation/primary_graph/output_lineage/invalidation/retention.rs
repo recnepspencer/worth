@@ -23,7 +23,7 @@ use super::InvalidationEditAdmission;
 
 type Capacity = Option<Arc<RetainedInvalidationCapacity>>;
 
-#[track_caller]
+#[cfg_attr(any(test, feature = "test-query-execution-observer"), track_caller)]
 pub(super) fn reserve(
     resources: &WorthQueryInvalidationResources,
     bytes: u64,

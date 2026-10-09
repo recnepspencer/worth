@@ -121,7 +121,10 @@ fn chain_application_with_marking_work(
 
 /// A, B and C form the dirty chain; D is required but reads none of it.
 macro_rules! chain_with_unrelated {
-    ($application:expr, $request:expr) => {{
+    ($application:expr, $request:expr) => {
+        chain_with_unrelated!($application, $request, (), ())
+    };
+    ($application:expr, $request:expr, $before:expr, $after:expr) => {{
         let mut a = $request
             .demand(PlanarOutputDemand::new("anchor-a"))
             .start_in_program::<program::ChainProgram, program::ChainRoot>(&$application)
@@ -142,10 +145,12 @@ macro_rules! chain_with_unrelated {
             .demand(PlanarOutputDemand::new("anchor-source-b"))
             .start_in_program::<program::ChainProgram, program::ChainRoot>(&$application)
             .unwrap();
+        $before;
         settle!(a, $request);
         settle!(b, $request);
         settle!(c, $request);
         settle!(d, $request);
+        $after;
         (a, b, c, d)
     }};
 }
@@ -363,6 +368,7 @@ fn dependents_of_a_failed_required_refresh_never_stay_pending() {
     drop((a, b, c, d));
 }
 
+mod calibration;
 mod custody_model;
 mod custody_stops;
 mod exhausted_index;

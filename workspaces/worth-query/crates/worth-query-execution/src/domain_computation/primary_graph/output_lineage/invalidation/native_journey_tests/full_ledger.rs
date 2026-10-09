@@ -193,16 +193,27 @@ fn empty_index_custody_bytes(owner: &SourceInvalidationOwner) -> u64 {
     );
     for root in roots {
         if let Some(history) = &root.history_capacity {
-            use super::super::index_capacity::{arc_bytes, retained_map_bytes};
             use super::super::source_alignment::HistoricalMarkState;
             use worth_relational::facade::publication::PatchStreamPosition;
             // Each live history map owns its declared node bound and shared ticket.
             // retention::admit_edited_history funds this before replacing the map.
-            let declared = retained_map_bytes::<Option<PatchStreamPosition>, HistoricalMarkState>(
-                root.past.len(),
-            )
-            .unwrap()
-                + arc_bytes::<RetainedInvalidationCapacity>().unwrap();
+            use std::mem::{align_of, size_of};
+            type Entry = (Option<PatchStreamPosition>, HistoricalMarkState);
+            // im 15.1 has 64 entries, 65 child pointers, six usize bounds,
+            // four alignment regions, and at least 31 keys per nonroot.
+            let alignment = align_of::<Entry>().max(align_of::<usize>());
+            let node = 64 * size_of::<Entry>()
+                + 65 * size_of::<Option<Arc<()>>>()
+                + 6 * size_of::<usize>()
+                + 4 * alignment;
+            let nodes = 1 + root.past.len().saturating_sub(1) / 31;
+            let ticket_alignment =
+                align_of::<RetainedInvalidationCapacity>().max(align_of::<usize>());
+            let offset = (2 * size_of::<usize>()).div_ceil(ticket_alignment) * ticket_alignment;
+            let ticket = (offset + size_of::<RetainedInvalidationCapacity>())
+                .div_ceil(ticket_alignment)
+                * ticket_alignment;
+            let declared = (nodes * node + ticket) as u64;
             assert_eq!(history.bytes(), declared);
             add(history);
         }

@@ -23,6 +23,7 @@ use worth_query_host::facade::{
 };
 
 use super::*;
+pub(super) mod custody_calibration;
 mod installation;
 
 pub(super) type Application = application_installation::WorthQueryProgramApplicationRuntime<

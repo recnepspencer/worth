@@ -202,10 +202,12 @@ impl RetainedInputCutoffCandidate {
             SourceSettlementCurrentness::Clean => {}
             SourceSettlementCurrentness::Dirty(ordinals) => dirty_prefix = Some(ordinals),
             SourceSettlementCurrentness::PendingUpstream(edges) => {
+                // Input equality replaces the source-query suffix. Changed
+                // handler facts still require disclosure before old edges.
                 // Source input equality does not prove handler facts equal.
                 // A changed own decision may remove the old consumed edges.
                 match ConsumedOutputEvidence::own_evidence_is_current(
-                    &facts,
+                    &facts[..count],
                     self.consumed_outputs(),
                     witness,
                     runtime,

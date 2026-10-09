@@ -1,6 +1,7 @@
 //! Real admitted pair reads across request backings; projection stays on the owner.
 use super::super::*;
 use super::{Case, Observation, ScopeInterruption};
+mod denial_custody;
 mod verification;
 use crate::domain_computation::primary_graph::application_contribution::{
     test_authority, test_policy,
@@ -9,7 +10,7 @@ use crate::domain_computation::primary_graph::tests::fixture::{
     NestedAccountQuery, PublicAccountMembershipQuery, PublicScopedAccountSummaryQuery,
 };
 use std::num::NonZeroUsize;
-use worth_execution::{ChargedBytes, ExecutionRequest, ExecutionWorkCeiling, LeaseRequest};
+use worth_execution::{ExecutionRequest, ExecutionWorkCeiling, LeaseRequest};
 
 pub(super) fn observe(
     workers: Option<usize>,
@@ -330,16 +331,18 @@ pub(super) fn observe_case(
     });
     // Owner finalization retains its returned denial's payload. Every other hold
     // must release: the payload plus this probe fills the entire selected limit.
-    let denial_bytes = if case.query_interruption.is_some() {
-        let error = result.as_ref().unwrap_err();
-        assert!(matches!(
-            error,
-            WorthQueryManagedDerivedViewDenial::ReadDenied { .. }
-        ));
-        error.additional_charged_bytes()
-    } else {
-        0
-    };
+    let denial_bytes =
+        if let Err(error @ WorthQueryManagedDerivedViewDenial::ReadDenied { .. }) = &result {
+            let name = if case.query_interruption.is_some() {
+                query.name()
+            } else {
+                second_query.name()
+            };
+            denial_custody::check(error, name);
+            denial_custody::bytes(name)
+        } else {
+            0
+        };
     let available = serial.memory().limit().checked_sub(denial_bytes).unwrap();
     if let Some(lease) = &lease {
         drop(lease.reserve_memory(available).unwrap());

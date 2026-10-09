@@ -19,6 +19,7 @@ pub(super) mod pair_plans;
 mod result;
 pub use pair_plans::WorthQueryDerivedPairReadPlans;
 
+pub(in crate::domain_computation::primary_graph) use denial::retain_reconstruction_result;
 use denial::{authorization_denial, denial};
 pub use denial::{WorthQueryApplicationOneShotDenial, WorthQueryApplicationOneShotDenialKind};
 

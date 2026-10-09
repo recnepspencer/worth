@@ -364,3 +364,6 @@ pub use super::provider::relational_execution_denial::relational_execution_kind;
 
 pub use crate::domain_computation::primary_graph::application_query::WorthQueryDerivedPairReadPlans;
 pub use worth_execution::ExecutionRequest;
+
+#[cfg(feature = "test-query-execution-observer")]
+pub use super::output_lineage::invalidation::carried_read_basis_custody_for_test;

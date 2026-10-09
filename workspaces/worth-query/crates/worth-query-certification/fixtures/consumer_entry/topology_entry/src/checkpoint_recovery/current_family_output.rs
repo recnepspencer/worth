@@ -32,7 +32,6 @@ fn preserved_family_head_reopens_for_current_output_before_any_demand() {
         .entity_id();
     drop(initial);
     drop(demand);
-    drop(request);
     drop(principal);
     drop(scope);
     let initial_checkpoint = application
@@ -101,7 +100,6 @@ fn preserved_family_head_reopens_for_current_output_before_any_demand() {
     );
     drop(preserved);
     drop(demand);
-    drop(request);
     drop(principal);
     drop(scope);
     let checkpoint = application

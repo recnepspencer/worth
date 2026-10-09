@@ -79,18 +79,29 @@ fn queue_drained_reclamation_balances_the_complete_retained_tuple() {
 #[test]
 fn the_model_upper_edge_keeps_the_cached_consumer_without_a_handler_contact() {
     let _guard = checkpoint_recovery_test_guard();
-    let model = super::custody_model::ChainCustody::new();
-    let rows = model.reclaim_rows().end() + 1;
-    assert!(rows * model.layout.ready >= model.root_refresh_before_reclaim());
-    assert!((rows - 1) * model.layout.ready < model.root_refresh_before_reclaim());
-    run_reclamation(rows, false, false);
-    run_reclamation(rows - 1, false, true);
-    // A World writer changes B's consumed value: held C still contacts once.
-    // Its first ordinary refresh has no typed required-successor slot. Later
-    // cycles include the written output's own history, so this edge is primed.
-    let written_rows = model.middle_write_reclaim_rows().end() + 1;
-    assert!(written_rows * model.layout.ready >= model.middle_write_refresh_before_reclaim());
-    run_reclamation_cycles(written_rows, true, false, 1);
+    for overwritten in [false, true] {
+        let mut readings = support::custody_calibration::Readings::default();
+        support::custody_calibration::calibrate(|required, _, _| {
+            run_reclamation_budget(required, overwritten, false, 1, Some(&mut readings), false);
+        });
+        let ready = (readings
+            .at("settled_chain")
+            .class_bytes("shared_ready_source_continuation")
+            - readings
+                .at("before_chain")
+                .class_bytes("shared_ready_source_continuation"))
+            / 3;
+        let peak = readings
+            .at("after_root")
+            .required_bytes()
+            .max(readings.at("after_middle").required_bytes());
+        // The upper row-sized allowance keeps the cached consumer beside the refreshed upstream.
+        let budget = peak.div_ceil(ready) * ready;
+        run_reclamation_budget(budget, overwritten, false, 1, None, false);
+        if !overwritten {
+            run_reclamation_budget(budget - ready, false, true, 2 * 8 + 4, None, false);
+        }
+    }
 }
 
 #[test]
@@ -124,7 +135,20 @@ fn run_reclamation(rows: usize, overwritten: bool, reclaims: bool) {
 
 fn run_reclamation_cycles(rows: usize, overwritten: bool, reclaims: bool, cycles: u64) {
     let row = worth_query_host::facade::primary_graph::required_ready_custody_bytes_for_test();
-    let (application, invalidation) = limited_application(rows * row, 128 * 1_024 * 1_024, 8);
+    run_reclamation_budget(rows * row, overwritten, reclaims, cycles, None, true);
+}
+
+fn run_reclamation_budget(
+    budget: usize,
+    overwritten: bool,
+    reclaims: bool,
+    cycles: u64,
+    mut readings: Option<&mut support::custody_calibration::Readings>,
+    certify_closed_model: bool,
+) {
+    let row = worth_query_host::facade::primary_graph::required_ready_custody_bytes_for_test();
+    let rows = budget / row;
+    let (application, invalidation) = limited_application(budget, 128 * 1_024 * 1_024, 8);
     application.consumed_output_custody_for_test();
     let branch_bytes = application
         .on_branch(application.current_world())
@@ -138,21 +162,49 @@ fn run_reclamation_cycles(rows: usize, overwritten: bool, reclaims: bool, cycles
     let native_layout = primary_graph::WorthQueryPrimaryGraphApplicationRuntime::<CheckpointSchema>::native_required_hint_layout_for_test(branch_bytes);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
-    let (a, b, c) = chain!(application, request);
-    drop((a, b, c));
-    assert_eq!(
-        application.required_custody_bytes_for_test(),
-        super::custody_model::ChainCustody::new().closed_chain(),
-        "the closed chain's named owners"
+    macro_rules! record {
+        ($point:literal) => {
+            if let Some(readings) = &mut readings {
+                readings.record_peak(
+                    $point,
+                    support::custody_calibration::Inventory::new(
+                        application.required_custody_breakdown_for_test(),
+                        invalidation.retained_custody_breakdown_for_test(),
+                        application.output_lineage_retained_bytes_for_test(),
+                    ),
+                );
+            }
+        };
+    }
+    let (a, b, c) = chain!(
+        application,
+        request,
+        record!("before_chain"),
+        record!("settled_chain")
     );
+    drop((a, b, c));
+    if certify_closed_model {
+        assert_eq!(
+            application.required_custody_bytes_for_test(),
+            super::custody_model::ChainCustody::new().closed_chain(),
+            "the closed chain's named owners"
+        );
+    }
     let mut custody = None;
-    let mut reclaimed_ledger = None;
-    let mut settled_ledger = None;
-    // Each retained owner has eight version positions. Two windows of
-    // refreshes retire the differently shaped priming positions; the four
-    // measured cycles then contain only this constructed repeated schedule.
+    use support::custody_calibration::{Inventory, SteadyCycles};
+    let mut steady = SteadyCycles::new();
+    let measured_cycles = cycles.saturating_sub(2 * 8) as usize;
+    let warm_up = measured_cycles != 0;
+    // Each retained owner has eight version positions. After two windows,
+    // complete inventories must repeat within 24 cycles before the four
+    // following cycles certify this repeated schedule.
     let steady_start = 2 * 8_u64;
-    for cycle in 0..cycles {
+    for cycle in 0..if warm_up {
+        24 + measured_cycles as u64 + 1
+    } else {
+        cycles
+    } {
+        let mut reclaimed_inventory = None;
         let boundary_baseline = invalidation.native_retained_allocations_for_test();
         let at = format!("{rows} rows, cycle {cycle}, overwritten {overwritten}");
         let y = 2 + (cycle % 2) * 3;
@@ -162,6 +214,7 @@ fn run_reclamation_cycles(rows: usize, overwritten: bool, reclaims: bool, cycles
         let mut a = start_root!(application, request);
         settled_within_eight_advances!(a, request, format!("{at}: the root"));
         drop(a);
+        record!("after_root");
         let middle = if overwritten {
             overwrite_middle_output(&application, &request, 40 + cycle, idempotency + 8);
             40 + cycle
@@ -172,6 +225,7 @@ fn run_reclamation_cycles(rows: usize, overwritten: bool, reclaims: bool, cycles
         let mut b = start_consumer!(application, request, "anchor-b");
         settled_within_eight_advances!(b, request, format!("{at}: the middle consumer"));
         drop(b);
+        record!("after_middle");
         assert_eq!(
             take_decisions("anchor-b"),
             [[y + 1]],
@@ -247,16 +301,11 @@ fn run_reclamation_cycles(rows: usize, overwritten: bool, reclaims: bool, cycles
                     "{at}: each named Native reservation includes its capacity ticket"
                 );
             }
-            let bytes = (
-                application.required_custody_bytes_for_test(),
-                invalidation.retained_capacity_bytes(),
+            reclaimed_inventory = Some(Inventory::new(
+                application.required_custody_breakdown_for_test(),
+                invalidation.retained_custody_breakdown_for_test(),
                 application.output_lineage_retained_bytes_for_test(),
-            );
-            assert_eq!(
-                *reclaimed_ledger.get_or_insert(bytes),
-                bytes,
-                "{at}: real reclamation balances the complete retained tuple"
-            );
+            ));
         }
         take_decisions("anchor-c");
         let owner_before = application.producer_contacts_on_this_thread_for_test();
@@ -296,16 +345,21 @@ fn run_reclamation_cycles(rows: usize, overwritten: bool, reclaims: bool, cycles
                     "{at}: each named Native reservation includes its capacity ticket"
                 );
             }
-            let bytes = (
-                application.required_custody_bytes_for_test(),
-                invalidation.retained_capacity_bytes(),
+            let settled_inventory = Inventory::new(
+                application.required_custody_breakdown_for_test(),
+                invalidation.retained_custody_breakdown_for_test(),
                 application.output_lineage_retained_bytes_for_test(),
             );
-            assert_eq!(
-                *settled_ledger.get_or_insert(bytes),
-                bytes,
-                "{at}: real supersession and re-settlement balance the complete retained tuple"
-            );
+            if warm_up
+                && steady.observe(
+                    cycle,
+                    reclaimed_inventory.unwrap(),
+                    settled_inventory,
+                    measured_cycles,
+                )
+            {
+                break;
+            }
         }
         let held = application.required_custody_bytes_for_test();
         assert_eq!(
@@ -314,44 +368,12 @@ fn run_reclamation_cycles(rows: usize, overwritten: bool, reclaims: bool, cycles
             "{at}: the closed chain holds what it held a cycle before"
         );
     }
-}
-
-fn drain_queue(
-    application: &application_installation::WorthQueryProgramApplicationRuntime<
-        CheckpointSchema,
-        program::ChainProgram,
-    >,
-    request: &worth_query_host::facade::application_entry::WorthQueryApplicationRequest<
-        '_,
-        '_,
-        '_,
-        CheckpointSchema,
-    >,
-    c_root: worth_query_host::facade::application_invariants::EntityId,
-    at: &str,
-) {
-    if application.queued_required_work_for_test() == 0 {
-        return;
-    }
-    let held = application.has_required_row_for_test(c_root);
-    let before = application.producer_contacts_on_this_thread_for_test();
-    let mut drain = start_consumer!(application, request, "anchor-b");
-    settled_in_one_advance!(drain, request, "the queue-draining current middle consumer");
-    drop(drain);
-    // Reopening B can leave the root's retained publication cue pending.
-    // Admit that exact root once; these are two named owners, not a wait loop.
-    let mut root = start_root!(application, request);
-    settled_in_one_advance!(root, request, "the queue-draining current root");
-    drop(root);
-    if !held {
-        assert!(
-            !application.has_required_row_for_test(c_root),
-            "{at}: drainage cannot recreate the reclaimed last row"
-        );
-    }
-    assert_eq!(
-        application.producer_contacts_on_this_thread_for_test(),
-        before,
-        "{at}: queue drainage contacts no handler"
+    assert!(
+        !warm_up || steady.settled_at.is_some(),
+        "the complete inventory reaches a steady cycle"
     );
 }
+
+#[path = "reclamation/queue_drain.rs"]
+mod queue_drain;
+use queue_drain::drain_queue;

@@ -158,7 +158,6 @@ fn mixed_retirement_performed_product_settles_and_checkpoint_stays_ineligible() 
     drop(settled);
     drop(outputs);
     drop(source);
-    drop(request);
     drop(principal);
     drop(scope);
     drop(application);

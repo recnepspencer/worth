@@ -291,3 +291,6 @@ pub use crate::domain_computation::{
 pub use crate::domain_computation::primary_graph::ExecutionRequest;
 pub use crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints;
 pub use crate::domain_computation::primary_graph::WorthQueryDerivedPairReadPlans;
+
+#[cfg(feature = "test-query-execution-observer")]
+pub use crate::domain_computation::primary_graph::carried_read_basis_custody_for_test;

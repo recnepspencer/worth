@@ -16,28 +16,34 @@ fn cached_checkpoint_initial_pair_reports_owner_custody_classes() {
         .start_in_program::<CheckpointProgram, CheckpointRoot>(&application)
         .unwrap();
     let root = settle(&mut first, &request);
-    eprintln!(
-        "CACHED_ROOT_OPEN {:?}",
-        application.required_custody_breakdown_for_test()
-    );
+    assert_classes(&application, 1, 0, 1, 0);
     drop((first, root));
-    eprintln!(
-        "CACHED_ROOT_CLOSED {:?}",
-        application.required_custody_breakdown_for_test()
-    );
+    assert_classes(&application, 1, 0, 0, 0);
     let mut final_initial = request
         .demand(PlanarFinalOutputDemand::new("anchor-a"))
         .start_dependent_in_program::<CheckpointProgram, FinalConnection>(&application)
         .unwrap();
     let final_result = settle_final(&mut final_initial, &request);
-    eprintln!(
-        "CACHED_PAIR_OPEN {:?}",
-        application.required_custody_breakdown_for_test()
-    );
+    assert_classes(&application, 1, 1, 0, 1);
     drop((final_initial, final_result));
-    eprintln!(
-        "CACHED_PAIR_CLOSED {:?}",
-        application.required_custody_breakdown_for_test()
+    assert_classes(&application, 1, 1, 0, 0);
+}
+
+fn assert_classes(
+    application: &support::Application,
+    roots: usize,
+    finals: usize,
+    root_members: usize,
+    final_members: usize,
+) {
+    let actual: Vec<_> = application
+        .required_custody_breakdown_for_test()
+        .into_iter()
+        .map(|(class, _, bytes)| (class, bytes))
+        .collect();
+    assert_eq!(
+        actual,
+        custody_model::expected_classes(roots, finals, root_members, final_members),
+        "every settled class has its layout-derived owner"
     );
-    custody_model::report_models();
 }

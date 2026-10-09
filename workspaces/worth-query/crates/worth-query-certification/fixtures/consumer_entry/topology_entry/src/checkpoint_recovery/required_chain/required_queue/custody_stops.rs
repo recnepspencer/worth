@@ -26,13 +26,18 @@ macro_rules! start_consumer {
 
 /// A, B and C form the chain, settled; no other demand is open.
 macro_rules! chain {
-    ($application:expr, $request:expr) => {{
+    ($application:expr, $request:expr) => {
+        chain!($application, $request, (), ())
+    };
+    ($application:expr, $request:expr, $before:expr, $after:expr) => {{
         let mut a = start_root!($application, $request);
         let mut b = start_consumer!($application, $request, "anchor-b");
         let mut c = start_consumer!($application, $request, "anchor-c");
+        $before;
         settle!(a, $request);
         settle!(b, $request);
         settle!(c, $request);
+        $after;
         (a, b, c)
     }};
 }
@@ -40,20 +45,14 @@ macro_rules! chain {
 #[test]
 fn a_lone_caller_whose_chain_outgrows_its_budget_stops_without_retry() {
     let _guard = checkpoint_recovery_test_guard();
-    let model = super::custody_model::ChainCustody::new();
-    let budget = model.terminal_before_publication();
-    assert!(budget < model.first_root_publication());
+    let readings = super::calibration::chain();
+    // Eight settled Ready units keep the predecessor chain but not the last consumer's full refresh.
+    let budget = 8 * super::calibration::ready_unit(&readings);
     // Dispatch fits beside the settled chain; its typed successor cannot fit.
-    let (application, _invalidation) = limited_application(budget, 128 * 1_024 * 1_024, 8);
+    let (application, invalidation) = limited_application(budget, 128 * 1_024 * 1_024, 8);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let (a, b, mut c) = chain!(application, request);
-    let settled_custody = application.required_custody_bytes_for_test();
-    assert_eq!(
-        settled_custody,
-        model.open_chain(),
-        "the initial chain owners"
-    );
     change_root_input!(request, application, 2, 0x9176_4000_u64);
     // The last consumer's caller is the only open demand, so every row that
     // holds custody is one its own advance needs: no other demand's advance
@@ -79,11 +78,12 @@ fn a_lone_caller_whose_chain_outgrows_its_budget_stops_without_retry() {
             query_entries() > entries,
             "attempt {attempt}: the advance ran the chain's refresh again"
         );
-        assert_eq!(
-            application.required_custody_bytes_for_test(),
-            settled_custody,
-            "attempt {attempt}: the stop keeps what the settled chain held"
-        );
+        support::custody_calibration::Inventory::new(
+            application.required_custody_breakdown_for_test(),
+            invalidation.retained_custody_breakdown_for_test(),
+            application.output_lineage_retained_bytes_for_test(),
+        )
+        .assert_no_request_or_excess(readings.at("refreshed_chain"));
     }
     // Nor are the rows it reads: demands that fit refresh them and settle.
     drop(c);
@@ -181,17 +181,16 @@ macro_rules! settled_within_eight_advances {
 fn publication_driven_retryable_progress_is_followed_by_stable_terminal_stops() {
     let _guard = checkpoint_recovery_test_guard();
     let model = super::custody_model::ChainCustody::new();
-    let budget = model.first_root_publication();
-    let (application, _invalidation) = limited_application(budget, 128 * 1_024 * 1_024, 8);
+    let readings = super::calibration::chain();
+    // The predecessor chain coexists with exactly the first root publication quote.
+    let budget = readings.at("settled_chain").required_bytes() + model.first_root_publication()
+        - model.open_chain();
+    let (application, invalidation) = limited_application(budget, 128 * 1_024 * 1_024, 8);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let (a, b, mut c) = chain!(application, request);
     let settled_custody = application.required_custody_bytes_for_test();
-    assert_eq!(
-        settled_custody,
-        model.open_chain(),
-        "the initial chain owners"
-    );
+
     change_root_input!(request, application, 2, 0x9176_4080_u64);
     let source_commit = request.retain_read().unwrap().selected_commit().clone();
     drop((a, b));
@@ -234,6 +233,12 @@ fn publication_driven_retryable_progress_is_followed_by_stable_terminal_stops() 
         "partial publication retains {stopped_custody} bytes within its declared {}-byte allowance; the earlier settled baseline was {settled_custody}",
         budget
     );
+    support::custody_calibration::Inventory::new(
+        application.required_custody_breakdown_for_test(),
+        invalidation.retained_custody_breakdown_for_test(),
+        application.output_lineage_retained_bytes_for_test(),
+    )
+    .assert_no_request_or_excess(readings.at("refreshed_chain"));
     let published_commit = request.retain_read().unwrap().selected_commit().clone();
     let mut held_custody = stopped_custody;
     for attempt in 0..2 {

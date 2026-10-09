@@ -29,6 +29,7 @@ static TEST_LOCK: Mutex<()> = Mutex::new(());
 
 mod adversarial;
 mod controlled_child;
+mod map_dispatch;
 mod memory_level;
 mod nesting;
 mod owned_map;

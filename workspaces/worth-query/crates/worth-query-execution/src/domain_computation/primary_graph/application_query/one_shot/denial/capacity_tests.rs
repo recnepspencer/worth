@@ -46,13 +46,73 @@ fn denial_clones_share_payload_and_keep_its_reservation_until_last_drop() {
         "query",
         "subject",
     );
-    let bytes = denial.additional_charged_bytes();
-    let budget = worth_execution::SerialMemoryBudget::new(bytes);
-    denial.retain_custody(budget.reserve(bytes).unwrap());
-    let clone = denial.clone();
-    assert_eq!(denial, clone);
-    drop(denial);
-    assert_eq!(budget.reserve(1).unwrap_err().admitted, 0);
+    use super::super::super::WorthQueryManagedDerivedViewDenial as ViewDenial;
+    use worth_execution::{ExecutionMap, MapKernelFailure, MapOutcome, MapPartition, MapStop};
+    let bytes = (std::mem::size_of::<OneShotDenialPayload>()
+        + 2 * std::mem::size_of::<usize>()
+        + "query".len()
+        + "subject".len()) as u64;
+    let budget = worth_execution::SerialMemoryBudget::new(1 << 20);
+    let request = worth_execution::SerialRequest::from_memory(
+        budget.clone(),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let root = worth_relational::facade::identity::EntityId::new(
+        worth_relational::facade::identity::PartitionId::main(),
+        1,
+        1,
+    );
+    let (result, _) = worth_execution::ExecutionWorkCeiling::new(u64::MAX)
+        .run_serial(&request, || {
+            let identity = worth_foundational::PartitionIdentity::new(1);
+            let map = ExecutionMap::<_, u64>::try_from_declared_partitions(
+                vec![identity],
+                vec![MapPartition {
+                    identity,
+                    value: denial,
+                    read_keys: vec![],
+                    write_keys: vec![],
+                    kernel_scratch_bytes: 0,
+                    max_result_bytes: bytes,
+                }],
+            )
+            .unwrap();
+            let outcome = map.run_owned(
+                None,
+                |denial, _| -> Result<u64, MapKernelFailure<ViewDenial>> {
+                    Err(MapKernelFailure::Domain(ViewDenial::ReadDenied {
+                        root,
+                        denial,
+                    }))
+                },
+            );
+            let MapOutcome::Stopped {
+                reason:
+                    MapStop::Failure {
+                        cause: MapKernelFailure::Domain(error),
+                        ..
+                    },
+                ..
+            } = outcome
+            else {
+                panic!("the worker must return its original read denial")
+            };
+            // The allowance is gone at the map boundary; only the returned payload is funded.
+            retain_reconstruction_result::<()>(None, Err(error), |_| unreachable!())
+        })
+        .unwrap();
+    let error = result.unwrap_err();
+    let clone = error.clone();
+    assert_eq!(
+        budget.reserve(budget.limit()).unwrap_err().admitted,
+        budget.limit() - bytes
+    );
+    drop(error);
+    assert_eq!(
+        budget.reserve(budget.limit()).unwrap_err().admitted,
+        budget.limit() - bytes
+    );
     drop(clone);
-    assert!(budget.reserve(bytes).is_ok());
+    assert!(budget.reserve(budget.limit()).is_ok());
 }
