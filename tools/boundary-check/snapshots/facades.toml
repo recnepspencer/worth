@@ -215,6 +215,7 @@ exports = [
     "WorthQueryApplicationProgramOutputHandle",
     "WorthQueryApplicationProgramOutputProgress",
     "WorthQueryApplicationProgramOutputSettlement",
+    "WorthQueryApplicationProgramOutputUnavailable",
     "WorthQueryApplicationProgramWork",
     "WorthQueryApplicationProgramsRequest",
     "WorthQueryApplicationQueryBatchDenial",
