@@ -50,28 +50,8 @@ impl ChainCustody {
             + 3 * self.layout.settlement_slot
             + 2 * self.layout.prerequisite_slot
     }
-    /// The open C member joins the closed chain's A/B prerequisite members.
-    pub(super) fn open_chain(&self) -> usize {
-        self.closed_chain() + self.consumer_member
-    }
     pub(super) fn continuation_slot(&self) -> usize {
         primary_graph::WorthQueryPrimaryGraphApplicationRuntime::<CheckpointSchema>::required_continuation_slot_custody_bytes_for_test()
-    }
-    /// Leave room for dispatch and its real source query, but no typed successor.
-    pub(super) fn terminal_before_publication(&self) -> usize {
-        self.open_chain() + self.continuation_slot()
-    }
-    /// A's first publication coexists with the entire predecessor chain.
-    /// Its new address shares A's inner tree; no new semantic source is added.
-    pub(super) fn first_root_publication(&self) -> usize {
-        self.terminal_before_publication()
-            + primary_graph::WorthQueryPrimaryGraphApplicationRuntime::<CheckpointSchema>::required_successor_custody_bytes_for_test::<crate::producer::PlanarOutputFamily>()
-            + self.layout.source + self.root_member
-            + self.layout.context_without_producer
-            + crate::producer::InitialPlanarProducer::<CheckpointSchema>::IDENTITY.len()
-            + self.layout.ready
-            + self.postings(&[2, 1, 1]) - self.postings(&[1, 1, 1])
-            + 4 * self.layout.settlement_slot
     }
     pub(super) fn root_refresh_before_reclaim(&self) -> usize {
         // The cached chain coexists with A's newly admitted source and member,
@@ -98,31 +78,6 @@ impl ChainCustody {
             // A and B each prepare a new address before old claims retire.
             + self.postings(&[2,2,1]) - self.postings(&[1,1,1])
             + 8 * self.layout.settlement_slot + self.layout.prerequisite_slot
-    }
-    pub(super) fn middle_write_refresh_before_reclaim(&self) -> usize {
-        // After the World writes B, the explicit ordinary B demand reads A's
-        // already-current output. It needs no typed required successor or
-        // overlapping A refresh. Its new address is prepared beside C's cache.
-        let root = self.closed_chain()
-            + self.layout.source
-            + self.root_member
-            + self.layout.context_without_producer
-            + crate::producer::InitialPlanarProducer::<CheckpointSchema>::IDENTITY.len()
-            + self.layout.ready;
-        let middle = self.closed_chain()
-            + self.layout.source
-            + self.consumer_member
-            + self.layout.context_without_producer
-            + super::super::producer::ChainProducer::<CheckpointSchema>::IDENTITY.len()
-            + self.layout.ready
-            + self.postings(&[2, 1, 1])
-            - self.postings(&[1, 1, 1])
-            + 4 * self.layout.settlement_slot
-            + self.layout.prerequisite_slot;
-        root.max(middle)
-    }
-    pub(super) fn middle_write_reclaim_rows(&self) -> std::ops::RangeInclusive<usize> {
-        self.rows_below_peak(self.middle_write_refresh_before_reclaim())
     }
     pub(super) fn reclaim_rows(&self) -> std::ops::RangeInclusive<usize> {
         self.rows_below_peak(self.root_refresh_before_reclaim())

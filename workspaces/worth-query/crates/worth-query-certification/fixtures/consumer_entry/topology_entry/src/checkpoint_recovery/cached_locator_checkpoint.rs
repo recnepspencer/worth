@@ -11,54 +11,31 @@ use worth_query_host::facade::application_installation::WorthQueryCheckpointCapt
 #[test]
 fn an_unreclaimed_root_reopens_under_the_same_custody_profile() {
     let _guard = checkpoint_recovery_test_guard();
-    let readings = support::custody_calibration::calibrate(|_, _, readings| {
-        run_root(WorthQueryOutputDemandResourceProfile::standard(), readings);
-    });
-    // Four measured Ready units preserve the checkpoint exercise's four-row custody intent.
-    let budget = 4
-        * (readings
-            .at("initial_root")
-            .class_bytes("shared_ready_source_continuation")
-            - readings
-                .at("registered_root")
-                .class_bytes("shared_ready_source_continuation"));
-    let profile = WorthQueryOutputDemandResourceProfile::standard()
-        .with_registry_required_retained_bytes(NonZeroUsize::new(budget).unwrap());
-    run_root(
-        profile,
-        &mut support::custody_calibration::Readings::default(),
-    );
+    support::capacity_region::search(
+        "root checkpoint",
+        1,
+        128 * 1024,
+        support::capacity_region::Goal::Hit,
+        run_root,
+    )
+    .require_hit("root checkpoint");
 }
 
 #[test]
 fn a_reclaimed_ready_keeps_its_native_prior_locator_across_checkpoint() {
     let _guard = checkpoint_recovery_test_guard();
-    let readings = support::custody_calibration::calibrate(|_, _, readings| {
-        run_pair(
-            WorthQueryOutputDemandResourceProfile::standard(),
-            readings,
-            true,
-        );
-    });
-    // The four-row allowance exercises closed-pair reclamation before checkpoint capture.
-    let budget = 4
-        * (readings
-            .at("initial_root")
-            .class_bytes("shared_ready_source_continuation")
-            - readings
-                .at("registered_root")
-                .class_bytes("shared_ready_source_continuation"));
-    let profile = WorthQueryOutputDemandResourceProfile::standard()
-        .with_registry_required_retained_bytes(NonZeroUsize::new(budget).unwrap());
-    run_pair(
-        profile,
-        &mut support::custody_calibration::Readings::default(),
-        false,
-    );
+    support::capacity_region::search(
+        "cached pair checkpoint",
+        1,
+        128 * 1024,
+        support::capacity_region::Goal::Hit,
+        run_pair,
+    )
+    .require_hit("cached pair checkpoint");
 }
 
-mod calibrated_workloads;
-use calibrated_workloads::{run_pair, run_root};
+mod capacity_workloads;
+use capacity_workloads::{run_pair, run_root};
 
 fn settle_final<'application>(
     demand: &mut worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandHandle<

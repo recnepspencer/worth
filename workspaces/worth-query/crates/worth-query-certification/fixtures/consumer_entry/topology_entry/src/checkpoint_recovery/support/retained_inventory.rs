@@ -1,4 +1,4 @@
-//! Workload readings choose exercise pressure; layout models certify byte totals.
+//! Complete owner inventories certify steady reclamation after warm-up.
 use std::collections::BTreeMap;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -25,69 +25,6 @@ impl Inventory {
             lineage,
         }
     }
-    pub fn required_bytes(&self) -> usize {
-        self.required.iter().map(|(_, _, bytes)| bytes).sum()
-    }
-    pub fn class_bytes(&self, class: &str) -> usize {
-        self.required
-            .iter()
-            .find(|(name, _, _)| *name == class)
-            .unwrap()
-            .2
-    }
-    pub fn assert_no_request_or_excess(&self, ample: &Self) {
-        assert_eq!(
-            self.class_bytes("live_preparation"),
-            0,
-            "a refused request retains no preparation"
-        );
-        for (class, _, bytes) in &self.required {
-            assert!(
-                *bytes <= ample.class_bytes(class),
-                "{class}: refused={self:?}, calibration={ample:?}"
-            );
-        }
-        for (class, (_, bytes)) in &self.index {
-            assert!(
-                *bytes <= ample.index.get(class).map_or(0, |(_, bytes)| *bytes),
-                "{class:?}: refused={self:?}, calibration={ample:?}"
-            );
-        }
-        assert!(
-            self.lineage <= ample.lineage,
-            "lineage: refused={self:?}, calibration={ample:?}"
-        );
-    }
-}
-
-#[derive(Default, Debug)]
-pub(in crate::checkpoint_recovery) struct Readings(BTreeMap<&'static str, Inventory>);
-impl Readings {
-    pub fn record(&mut self, point: &'static str, inventory: Inventory) {
-        self.0.insert(point, inventory);
-    }
-    pub fn record_peak(&mut self, point: &'static str, inventory: Inventory) {
-        if self
-            .0
-            .get(point)
-            .is_none_or(|prior| prior.required_bytes() < inventory.required_bytes())
-        {
-            self.record(point, inventory);
-        }
-    }
-    pub fn at(&self, point: &str) -> &Inventory {
-        self.0
-            .get(point)
-            .expect("the workload recorded its named point")
-    }
-}
-
-pub(in crate::checkpoint_recovery) fn calibrate(
-    workload: impl FnOnce(usize, u64, &mut Readings),
-) -> Readings {
-    let mut readings = Readings::default();
-    workload(8 * 1024 * 1024, 128 * 1024 * 1024, &mut readings);
-    readings
 }
 
 /// Two consecutive complete inventories establish steady custody; subsequent

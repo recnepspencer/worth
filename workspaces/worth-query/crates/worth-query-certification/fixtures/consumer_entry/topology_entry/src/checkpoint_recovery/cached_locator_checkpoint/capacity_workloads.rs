@@ -1,9 +1,9 @@
-//! Ample and pressured runs use the same checkpoint lifecycle.
+//! Capacity regions exercise the ordinary checkpoint lifecycle.
 use super::*;
-pub(super) fn run_root(
-    profile: WorthQueryOutputDemandResourceProfile,
-    readings: &mut support::custody_calibration::Readings,
-) {
+use support::capacity_region::{settle as setup_settle, Attempt};
+pub(super) fn run_root(budget: usize) -> Attempt {
+    let profile = WorthQueryOutputDemandResourceProfile::standard()
+        .with_registry_required_retained_bytes(NonZeroUsize::new(budget).unwrap());
     let application = support::install_program_with_seed::<CheckpointProgram>(
         None,
         profile,
@@ -18,25 +18,9 @@ pub(super) fn run_root(
         .demand(PlanarOutputDemand::new("anchor-a"))
         .start_in_program::<CheckpointProgram, CheckpointRoot>(&application)
         .unwrap();
-    readings.record(
-        "registered_root",
-        support::custody_calibration::Inventory::new(
-            application.required_custody_breakdown_for_test(),
-            Vec::new(),
-            application.output_lineage_retained_bytes_for_test(),
-        ),
-    );
     assert_eq!(
-        settle(&mut original, &request).producer_contacts_in_this_demand(),
+        setup_settle!(original, request, "initial root").producer_contacts_in_this_demand(),
         1
-    );
-    readings.record(
-        "initial_root",
-        support::custody_calibration::Inventory::new(
-            application.required_custody_breakdown_for_test(),
-            Vec::new(),
-            application.output_lineage_retained_bytes_for_test(),
-        ),
     );
     drop(original);
     drop(principal);
@@ -52,34 +36,17 @@ pub(super) fn run_root(
         .demand(PlanarOutputDemand::new("anchor-a"))
         .start_in_program::<CheckpointProgram, CheckpointRoot>(&reopened)
         .unwrap();
-    readings.record(
-        "restored_start",
-        support::custody_calibration::Inventory::new(
-            reopened.required_custody_breakdown_for_test(),
-            Vec::new(),
-            reopened.output_lineage_retained_bytes_for_test(),
-        ),
-    );
     assert_eq!(
-        settle(&mut restored, &request).producer_contacts_in_this_demand(),
+        setup_settle!(restored, request, "restored root").producer_contacts_in_this_demand(),
         0,
         "the constrained profile itself must preserve ordinary checkpoint reuse"
     );
-    readings.record(
-        "restored_root",
-        support::custody_calibration::Inventory::new(
-            reopened.required_custody_breakdown_for_test(),
-            Vec::new(),
-            reopened.output_lineage_retained_bytes_for_test(),
-        ),
-    );
+    Attempt::Hit
 }
 
-pub(super) fn run_pair(
-    profile: WorthQueryOutputDemandResourceProfile,
-    readings: &mut support::custody_calibration::Readings,
-    calibration: bool,
-) {
+pub(super) fn run_pair(budget: usize) -> Attempt {
+    let profile = WorthQueryOutputDemandResourceProfile::standard()
+        .with_registry_required_retained_bytes(NonZeroUsize::new(budget).unwrap());
     let application = support::install_program_with_seed::<CheckpointProgram>(
         None,
         profile,
@@ -94,34 +61,18 @@ pub(super) fn run_pair(
         .demand(PlanarOutputDemand::new("anchor-a"))
         .start_in_program::<CheckpointProgram, CheckpointRoot>(&application)
         .unwrap();
-    readings.record(
-        "registered_root",
-        support::custody_calibration::Inventory::new(
-            application.required_custody_breakdown_for_test(),
-            Vec::new(),
-            application.output_lineage_retained_bytes_for_test(),
-        ),
-    );
-    let original = settle(&mut first, &request);
+    let original = setup_settle!(first, request, "initial pair root");
     assert_eq!(
         original.posture(),
         WorthQueryOutputSettlementPosture::Performed
     );
     assert_eq!(original.producer_contacts_in_this_demand(), 1);
-    readings.record(
-        "initial_root",
-        support::custody_calibration::Inventory::new(
-            application.required_custody_breakdown_for_test(),
-            Vec::new(),
-            application.output_lineage_retained_bytes_for_test(),
-        ),
-    );
     drop((first, original));
     let mut final_initial = request
         .demand(PlanarFinalOutputDemand::new("anchor-a"))
         .start_dependent_in_program::<CheckpointProgram, FinalConnection>(&application)
         .unwrap();
-    let final_result = settle_final(&mut final_initial, &request);
+    let final_result = setup_settle!(final_initial, request, "initial final consumer");
     let final_entity = final_result
         .outputs_of::<FinalPlanarOutputs>()
         .unwrap()
@@ -138,35 +89,12 @@ pub(super) fn run_pair(
             .demand(PlanarOutputDemand::new(key))
             .start_in_program::<CheckpointProgram, CheckpointRoot>(&application)
             .unwrap();
-        if key == "anchor-island" {
-            readings.record(
-                "fourth_start",
-                support::custody_calibration::Inventory::new(
-                    application.required_custody_breakdown_for_test(),
-                    Vec::new(),
-                    application.output_lineage_retained_bytes_for_test(),
-                ),
-            );
-        }
-        let other_result = settle(&mut other, &request);
-        if key == "anchor-isolated" {
-            readings.record(
-                "third_open",
-                support::custody_calibration::Inventory::new(
-                    application.required_custody_breakdown_for_test(),
-                    Vec::new(),
-                    application.output_lineage_retained_bytes_for_test(),
-                ),
-            );
-        }
+        let other_result = setup_settle!(other, request, "displacing publication");
         assert_eq!(
             other_result.posture(),
             WorthQueryOutputSettlementPosture::Performed
         );
         drop((other, other_result));
-    }
-    if calibration {
-        return;
     }
     let prior = request
         .query(PlanarOutputRead {
@@ -198,7 +126,10 @@ pub(super) fn run_pair(
         .demand(PlanarFinalOutputDemand::new("anchor-a"))
         .start_dependent_in_program::<CheckpointProgram, FinalConnection>(&reopened)
         .unwrap();
-    let restored = settle_final(&mut demand, &request);
+    let restored = setup_settle!(demand, request, "restored final consumer");
+    if restored.outputs_of::<FinalPlanarOutputs>().is_ok() {
+        return Attempt::Above("cached Initial survives instead of prior-only Preserve");
+    }
     let preserved = restored
         .outputs_of::<FinalPlanarPreserveOutputs>()
         .expect("a prior-only locator must select Preserve rather than duplicate Initial");
@@ -261,4 +192,5 @@ pub(super) fn run_pair(
             .value,
         length(3)
     );
+    Attempt::Hit
 }

@@ -1,44 +1,22 @@
-//! The complete 100-cycle workload under ample calibration or deliberate pressure.
+//! A hundred cycles certify queued pressure, then reopening and retry.
 use super::*;
-use support::custody_calibration::{Inventory, Readings};
-pub(super) fn run(
-    rows_per_demand: usize,
-    custody_budget: usize,
-    mut readings: Option<&mut Readings>,
-) {
+use support::capacity_region::{settle as setup_settle, start as setup_start, Attempt};
+pub(super) fn run(rows_per_demand: usize, tight: bool) -> Attempt {
     let retained_positions = 8;
+    let row = primary_graph::required_ready_custody_bytes_for_test();
+    let custody_budget = 4 * rows_per_demand * row;
     let (application, invalidation) =
-        limited_application(custody_budget, 128 * 1_024 * 1_024, retained_positions);
+        limited_application(custody_budget, 128 * 1024 * 1024, retained_positions);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
-    let (a, b, c, mut d) = chain_with_unrelated!(
-        application,
-        request,
-        {
-            if let Some(readings) = &mut readings {
-                readings.record(
-                    "before_rows",
-                    Inventory::new(
-                        application.required_custody_breakdown_for_test(),
-                        invalidation.retained_custody_breakdown_for_test(),
-                        application.output_lineage_retained_bytes_for_test(),
-                    ),
-                );
-            }
-        },
-        {
-            if let Some(readings) = &mut readings {
-                readings.record(
-                    "settled_rows",
-                    Inventory::new(
-                        application.required_custody_breakdown_for_test(),
-                        invalidation.retained_custody_breakdown_for_test(),
-                        application.output_lineage_retained_bytes_for_test(),
-                    ),
-                );
-            }
-        }
+    let (a, b, c) = setup_chain!(application, request);
+    let mut d = setup_start!(
+        request
+            .demand(PlanarOutputDemand::new("anchor-source-b"))
+            .start_in_program::<program::ChainProgram, program::ChainRoot>(&application),
+        "register unrelated"
     );
+    setup_settle!(d, request, "initial unrelated");
     let roots = source_roots(&request);
     let settled_custody = application.required_custody_bytes_for_test();
     let mut steady = None;
@@ -47,18 +25,46 @@ pub(super) fn run(
     for cycle in 0..100_u64 {
         change_root_input!(request, application, 2 + cycle % 2, 0x9176_3d00_u64 + cycle);
         let before = primary_graph::query_read_kernel_entries_by_root_on_this_thread_for_test();
-        unrelated_settles_unverified!(queries, cycle, d, request);
+        let entries = query_entries();
+        let advanced = d.advance(&request);
+        if cycle == 0
+            && matches!(&advanced, Err(worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(denial))
+                if denial.kind() == WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded)
+        {
+            return Attempt::Below("unrelated cannot advance the queued chain");
+        }
+        assert!(
+            matches!(
+                advanced.unwrap(),
+                WorthQueryApplicationOutputDemandProgress::Settled(_)
+            ),
+            "the unrelated demand settles in one advance"
+        );
+        let ran = query_entries() - entries;
+        assert_eq!(
+            *queries.get_or_insert(ran),
+            ran,
+            "cycle {cycle}: untouched output is not fully verified"
+        );
         // D alone advances; three-row custody stops queued B/C refreshes.
         // Only A reads then. With five rows the whole dirty chain reads once.
+        if cycle == 0 && tight {
+            let after = primary_graph::query_read_kernel_entries_by_root_on_this_thread_for_test();
+            let reads = roots.map(|root| {
+                after.get(&root).copied().unwrap_or(0) - before.get(&root).copied().unwrap_or(0)
+            });
+            if reads == [0, 0, 0, 0] {
+                return Attempt::Below("queued root source admission");
+            }
+            if reads[1] != 0 || reads[2] != 0 {
+                return Attempt::Above("queued refreshes fit");
+            }
+        }
         assert_root_reads(
             roots,
             before,
             cycle,
-            if rows_per_demand == 3 && readings.is_none() {
-                [1, 0, 0, 0]
-            } else {
-                [1, 1, 1, 0]
-            },
+            if tight { [1, 0, 0, 0] } else { [1, 1, 1, 0] },
         );
         if cycle >= 2 * retained_positions as u64 {
             // The held A key and the held B/C/D keys stay fixed. A's
@@ -96,8 +102,11 @@ pub(super) fn run(
         .demand(ChainDemand("anchor-b".to_owned()))
         .start_dependent_in_program::<program::ChainProgram, program::ChainConnection>(&application)
         .unwrap();
-    if rows_per_demand == 3 && readings.is_none() {
+    if tight {
         let stopped = b.advance(&request);
+        if stopped.is_ok() {
+            return Attempt::Above("reopened middle was admitted instead of refused");
+        }
         assert!(
             matches!(
                 &stopped,
@@ -157,4 +166,5 @@ pub(super) fn run(
         application.required_custody_bytes_for_test() <= settled_custody,
         "{rows_per_demand} rows per demand: custody returns within the settled chain's"
     );
+    Attempt::Hit
 }

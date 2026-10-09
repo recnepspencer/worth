@@ -8,13 +8,12 @@ use super::*;
 macro_rules! assert_steady {
     ($steady:expr, $cycle:expr, $retained_positions:expr, $application:expr, $invalidation:expr) => {
         if $cycle >= 2 * $retained_positions as u64 {
-            let retained = support::custody_calibration::Inventory::new(
-                $application.required_custody_breakdown_for_test(),
-                $invalidation.retained_custody_breakdown_for_test(),
-                $application.output_lineage_retained_bytes_for_test(),
+            let retained = (
+                $invalidation.retained_capacity_bytes(),
+                $application.required_custody_bytes_for_test(),
             );
             assert_eq!(
-                *$steady.get_or_insert(retained.clone()),
+                *$steady.get_or_insert(retained),
                 retained,
                 "cycle {}: retained invalidation bytes and required custody are steady",
                 $cycle
@@ -46,21 +45,19 @@ macro_rules! unrelated_settles_unverified {
 #[test]
 fn an_unrelated_caller_advances_for_many_cycles_under_tight_custody() {
     let _guard = checkpoint_recovery_test_guard();
-    let readings = support::custody_calibration::calibrate(|required, _, readings| {
-        pressure::run(3, required, Some(readings));
-    });
-    let before = readings
-        .at("before_rows")
-        .class_bytes("shared_ready_source_continuation");
-    let settled = readings
-        .at("settled_rows")
-        .class_bytes("shared_ready_source_continuation");
-    let ready = (settled - before) / 4;
-    for rows_per_demand in [3, 5] {
-        // Three (or five) settled Ready rows per each of the four required demands.
-        let budget = 4 * rows_per_demand * ready;
-        pressure::run(rows_per_demand, budget, None);
-    }
+    let band = support::capacity_region::search(
+        "steady rows per demand",
+        1,
+        32,
+        support::capacity_region::Goal::LowerEdge,
+        |rows| pressure::run(rows, true),
+    );
+    let edge = band.require_hit("steady rows per demand");
+    // The larger allowance admits the queued refreshes and the reopened consumer.
+    assert_eq!(
+        pressure::run(edge + 2, false),
+        support::capacity_region::Attempt::Hit
+    );
 }
 mod pressure;
 

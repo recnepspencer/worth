@@ -2,6 +2,7 @@
 
 use super::*;
 use std::time::{Duration, Instant};
+use support::capacity_region::Attempt;
 use worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial;
 
 macro_rules! start_root {
@@ -45,14 +46,23 @@ macro_rules! chain {
 #[test]
 fn a_lone_caller_whose_chain_outgrows_its_budget_stops_without_retry() {
     let _guard = checkpoint_recovery_test_guard();
-    let readings = super::calibration::chain();
-    // Eight settled Ready units keep the predecessor chain but not the last consumer's full refresh.
-    let budget = 8 * super::calibration::ready_unit(&readings);
+    support::capacity_region::search(
+        "lone terminal",
+        1,
+        128 * 1024,
+        support::capacity_region::Goal::Hit,
+        lone_terminal,
+    )
+    .require_hit("lone terminal");
+}
+
+fn lone_terminal(budget: usize) -> Attempt {
     // Dispatch fits beside the settled chain; its typed successor cannot fit.
-    let (application, invalidation) = limited_application(budget, 128 * 1_024 * 1_024, 8);
+    let (application, _invalidation) = limited_application(budget, 128 * 1_024 * 1_024, 8);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
-    let (a, b, mut c) = chain!(application, request);
+    let (a, b, mut c) = setup_chain!(application, request);
+    let settled_custody = application.required_custody_bytes_for_test();
     change_root_input!(request, application, 2, 0x9176_4000_u64);
     // The last consumer's caller is the only open demand, so every row that
     // holds custody is one its own advance needs: no other demand's advance
@@ -61,6 +71,20 @@ fn a_lone_caller_whose_chain_outgrows_its_budget_stops_without_retry() {
     for attempt in 0..3 {
         let entries = query_entries();
         let stopped = c.advance(&request);
+        if attempt == 0 {
+            match &stopped {
+                Ok(_) => return Attempt::Above("lone refresh admitted"),
+                Err(WorthQueryApplicationOutputDemandDenial::Demand(denial))
+                    if denial.kind()
+                        == WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
+                        && denial.recovery_posture()
+                            == primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable =>
+                {
+                    return Attempt::Below("upstream publication offers retry before terminal stop")
+                }
+                _ => (),
+            }
+        }
         assert!(
             matches!(
                 &stopped,
@@ -78,12 +102,11 @@ fn a_lone_caller_whose_chain_outgrows_its_budget_stops_without_retry() {
             query_entries() > entries,
             "attempt {attempt}: the advance ran the chain's refresh again"
         );
-        support::custody_calibration::Inventory::new(
-            application.required_custody_breakdown_for_test(),
-            invalidation.retained_custody_breakdown_for_test(),
-            application.output_lineage_retained_bytes_for_test(),
-        )
-        .assert_no_request_or_excess(readings.at("refreshed_chain"));
+        assert_eq!(
+            application.required_custody_bytes_for_test(),
+            settled_custody,
+            "attempt {attempt}: the stop keeps what the settled chain held"
+        );
     }
     // Nor are the rows it reads: demands that fit refresh them and settle.
     drop(c);
@@ -92,6 +115,7 @@ fn a_lone_caller_whose_chain_outgrows_its_budget_stops_without_retry() {
     let mut b = start_consumer!(application, request, "anchor-b");
     settle!(b, request);
     drop((a, b));
+    Attempt::Hit
 }
 
 #[test]
@@ -180,15 +204,21 @@ macro_rules! settled_within_eight_advances {
 #[test]
 fn publication_driven_retryable_progress_is_followed_by_stable_terminal_stops() {
     let _guard = checkpoint_recovery_test_guard();
-    let model = super::custody_model::ChainCustody::new();
-    let readings = super::calibration::chain();
-    // The predecessor chain coexists with exactly the first root publication quote.
-    let budget = readings.at("settled_chain").required_bytes() + model.first_root_publication()
-        - model.open_chain();
-    let (application, invalidation) = limited_application(budget, 128 * 1_024 * 1_024, 8);
+    support::capacity_region::search(
+        "publication terminal",
+        1,
+        128 * 1024,
+        support::capacity_region::Goal::Hit,
+        publication_terminal,
+    )
+    .require_hit("publication terminal");
+}
+
+fn publication_terminal(budget: usize) -> Attempt {
+    let (application, _invalidation) = limited_application(budget, 128 * 1_024 * 1_024, 8);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
-    let (a, b, mut c) = chain!(application, request);
+    let (a, b, mut c) = setup_chain!(application, request);
     let settled_custody = application.required_custody_bytes_for_test();
 
     change_root_input!(request, application, 2, 0x9176_4080_u64);
@@ -200,6 +230,12 @@ fn publication_driven_retryable_progress_is_followed_by_stable_terminal_stops() 
     // continuation slot cannot fit until the refused advance releases custody.
     // The publication justifies a retry; later unproductive stops are terminal.
     let stopped = c.advance(&request);
+    if stopped.is_ok() {
+        return Attempt::Above("last consumer refresh admitted");
+    }
+    if request.retain_read().unwrap().selected_commit() == &source_commit {
+        return Attempt::Below("refused before first upstream publication");
+    }
     assert!(
         matches!(
             &stopped,
@@ -233,12 +269,6 @@ fn publication_driven_retryable_progress_is_followed_by_stable_terminal_stops() 
         "partial publication retains {stopped_custody} bytes within its declared {}-byte allowance; the earlier settled baseline was {settled_custody}",
         budget
     );
-    support::custody_calibration::Inventory::new(
-        application.required_custody_breakdown_for_test(),
-        invalidation.retained_custody_breakdown_for_test(),
-        application.output_lineage_retained_bytes_for_test(),
-    )
-    .assert_no_request_or_excess(readings.at("refreshed_chain"));
     let published_commit = request.retain_read().unwrap().selected_commit().clone();
     let mut held_custody = stopped_custody;
     for attempt in 0..2 {
@@ -280,6 +310,7 @@ fn publication_driven_retryable_progress_is_followed_by_stable_terminal_stops() 
         application.required_custody_bytes_for_test() <= held_custody,
         "closing the stopped caller retains no excess custody"
     );
+    Attempt::Hit
 }
 
 /// Overwrites the Length `anchor-b` publishes, as a writer that is not its

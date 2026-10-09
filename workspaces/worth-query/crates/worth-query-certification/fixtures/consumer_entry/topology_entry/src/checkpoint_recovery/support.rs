@@ -23,8 +23,9 @@ use worth_query_host::facade::{
 };
 
 use super::*;
-pub(super) mod custody_calibration;
+pub(super) mod capacity_region;
 mod installation;
+pub(super) mod retained_inventory;
 
 pub(super) type Application = application_installation::WorthQueryProgramApplicationRuntime<
     CheckpointSchema,

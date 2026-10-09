@@ -51,18 +51,27 @@ pub(super) fn overwrite_middle_output(
 #[test]
 fn a_dependent_whose_row_was_reclaimed_decides_again_over_a_refreshed_upstream() {
     let _guard = checkpoint_recovery_test_guard();
-    let model = super::custody_model::ChainCustody::new();
-    for (overwritten, reclamation_rows) in [
-        (false, model.reclaim_rows()),
-        (true, model.middle_write_reclaim_rows()),
-    ] {
-        assert!(
-            !reclamation_rows.is_empty(),
-            "the reclamation schedule runs cases"
-        );
-        for rows in reclamation_rows {
-            run_reclamation(rows, overwritten, true);
-        }
+    for overwritten in [false, true] {
+        support::capacity_region::search(
+            if overwritten {
+                "reclaimed written rows"
+            } else {
+                "reclaimed rows"
+            },
+            1,
+            64,
+            support::capacity_region::Goal::Hit,
+            |rows| {
+                run_reclamation_budget(
+                    rows * primary_graph::required_ready_custody_bytes_for_test(),
+                    overwritten,
+                    true,
+                    20,
+                    false,
+                )
+            },
+        )
+        .require_hit("a reclaimed dependent decides over refreshed upstream");
     }
 }
 
@@ -80,26 +89,33 @@ fn queue_drained_reclamation_balances_the_complete_retained_tuple() {
 fn the_model_upper_edge_keeps_the_cached_consumer_without_a_handler_contact() {
     let _guard = checkpoint_recovery_test_guard();
     for overwritten in [false, true] {
-        let mut readings = support::custody_calibration::Readings::default();
-        support::custody_calibration::calibrate(|required, _, _| {
-            run_reclamation_budget(required, overwritten, false, 1, Some(&mut readings), false);
-        });
-        let ready = (readings
-            .at("settled_chain")
-            .class_bytes("shared_ready_source_continuation")
-            - readings
-                .at("before_chain")
-                .class_bytes("shared_ready_source_continuation"))
-            / 3;
-        let peak = readings
-            .at("after_root")
-            .required_bytes()
-            .max(readings.at("after_middle").required_bytes());
-        // The upper row-sized allowance keeps the cached consumer beside the refreshed upstream.
-        let budget = peak.div_ceil(ready) * ready;
-        run_reclamation_budget(budget, overwritten, false, 1, None, false);
+        let row = primary_graph::required_ready_custody_bytes_for_test();
+        let band = support::capacity_region::search(
+            if overwritten {
+                "cached written upper edge"
+            } else {
+                "cached upper edge"
+            },
+            1,
+            64,
+            support::capacity_region::Goal::LowerEdge,
+            |rows| {
+                run_reclamation_budget(
+                    rows * row,
+                    overwritten,
+                    false,
+                    if overwritten { 1 } else { 20 },
+                    false,
+                )
+            },
+        );
+        let edge = band.require_hit("cached consumer upper edge");
         if !overwritten {
-            run_reclamation_budget(budget - ready, false, true, 2 * 8 + 4, None, false);
+            assert_eq!(
+                run_reclamation_budget((edge - 1) * row, false, true, 20, false),
+                Attempt::Hit,
+                "one row below the band edge reclaims the cached consumer"
+            );
         }
     }
 }
@@ -135,7 +151,10 @@ fn run_reclamation(rows: usize, overwritten: bool, reclaims: bool) {
 
 fn run_reclamation_cycles(rows: usize, overwritten: bool, reclaims: bool, cycles: u64) {
     let row = worth_query_host::facade::primary_graph::required_ready_custody_bytes_for_test();
-    run_reclamation_budget(rows * row, overwritten, reclaims, cycles, None, true);
+    assert_eq!(
+        run_reclamation_budget(rows * row, overwritten, reclaims, cycles, true),
+        Attempt::Hit
+    );
 }
 
 fn run_reclamation_budget(
@@ -143,9 +162,8 @@ fn run_reclamation_budget(
     overwritten: bool,
     reclaims: bool,
     cycles: u64,
-    mut readings: Option<&mut support::custody_calibration::Readings>,
     certify_closed_model: bool,
-) {
+) -> Attempt {
     let row = worth_query_host::facade::primary_graph::required_ready_custody_bytes_for_test();
     let rows = budget / row;
     let (application, invalidation) = limited_application(budget, 128 * 1_024 * 1_024, 8);
@@ -162,26 +180,7 @@ fn run_reclamation_budget(
     let native_layout = primary_graph::WorthQueryPrimaryGraphApplicationRuntime::<CheckpointSchema>::native_required_hint_layout_for_test(branch_bytes);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
-    macro_rules! record {
-        ($point:literal) => {
-            if let Some(readings) = &mut readings {
-                readings.record_peak(
-                    $point,
-                    support::custody_calibration::Inventory::new(
-                        application.required_custody_breakdown_for_test(),
-                        invalidation.retained_custody_breakdown_for_test(),
-                        application.output_lineage_retained_bytes_for_test(),
-                    ),
-                );
-            }
-        };
-    }
-    let (a, b, c) = chain!(
-        application,
-        request,
-        record!("before_chain"),
-        record!("settled_chain")
-    );
+    let (a, b, c) = setup_chain!(application, request);
     drop((a, b, c));
     if certify_closed_model {
         assert_eq!(
@@ -191,7 +190,7 @@ fn run_reclamation_budget(
         );
     }
     let mut custody = None;
-    use support::custody_calibration::{Inventory, SteadyCycles};
+    use support::retained_inventory::{Inventory, SteadyCycles};
     let mut steady = SteadyCycles::new();
     let measured_cycles = cycles.saturating_sub(2 * 8) as usize;
     let warm_up = measured_cycles != 0;
@@ -212,9 +211,12 @@ fn run_reclamation_budget(
             0x9176_4200_u64 + u64::from(overwritten) * 0x400 + rows as u64 * 16 + cycle;
         change_root_input!(request, application, y, idempotency);
         let mut a = start_root!(application, request);
-        settled_within_eight_advances!(a, request, format!("{at}: the root"));
+        if cycle == 0 && !certify_closed_model {
+            support::capacity_region::settle!(a, request, "root refresh before consumer");
+        } else {
+            settled_within_eight_advances!(a, request, format!("{at}: the root"));
+        }
         drop(a);
-        record!("after_root");
         let middle = if overwritten {
             overwrite_middle_output(&application, &request, 40 + cycle, idempotency + 8);
             40 + cycle
@@ -223,9 +225,12 @@ fn run_reclamation_budget(
         };
         take_decisions("anchor-b");
         let mut b = start_consumer!(application, request, "anchor-b");
-        settled_within_eight_advances!(b, request, format!("{at}: the middle consumer"));
+        if cycle == 0 && !certify_closed_model {
+            support::capacity_region::settle!(b, request, "middle refresh before consumer");
+        } else {
+            settled_within_eight_advances!(b, request, format!("{at}: the middle consumer"));
+        }
         drop(b);
-        record!("after_middle");
         assert_eq!(
             take_decisions("anchor-b"),
             [[y + 1]],
@@ -241,6 +246,16 @@ fn run_reclamation_budget(
             .execute()
             .unwrap();
         let c_root = selected_c.observed_sources()[0].root_entity_for_test();
+        if cycle == 0
+            && !certify_closed_model
+            && application.has_required_row_for_test(c_root) == reclaims
+        {
+            return if reclaims {
+                Attempt::Above("cached consumer retained")
+            } else {
+                Attempt::Below("cached consumer reclaimed")
+            };
+        }
         assert_eq!(
             application.has_required_row_for_test(c_root),
             !reclaims,
@@ -372,6 +387,7 @@ fn run_reclamation_budget(
         !warm_up || steady.settled_at.is_some(),
         "the complete inventory reaches a steady cycle"
     );
+    Attempt::Hit
 }
 
 #[path = "reclamation/queue_drain.rs"]

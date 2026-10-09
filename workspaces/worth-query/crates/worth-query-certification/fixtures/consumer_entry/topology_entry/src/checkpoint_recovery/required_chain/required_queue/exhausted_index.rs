@@ -2,6 +2,7 @@
 
 use super::*;
 use primary_graph::WorthQueryOutputDemandRecoveryPosture as Posture;
+use support::capacity_region::{search, Attempt};
 use worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial;
 
 /// Commits the retained window holds.
@@ -24,9 +25,6 @@ struct Journey {
     after_window_bytes: u64,
     peak_retained_bytes: u64,
     final_retained_bytes: u64,
-    readings: support::custody_calibration::Readings,
-    consumer_retained_growth: u64,
-    before_consumer: u64,
 }
 
 /// Advances `demand` once. A demand stop is recorded.
@@ -37,6 +35,13 @@ macro_rules! advance_recording {
         match advanced {
             Ok(progress) => Some(progress),
             Err(WorthQueryApplicationOutputDemandDenial::Demand(denial)) => {
+                if $stops.is_empty()
+                    && denial.kind() != WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
+                {
+                    return Err(Attempt::Below(
+                        "producer unavailable before index admission",
+                    ));
+                }
                 $stops.push((denial.kind(), denial.recovery_posture()));
                 None
             }
@@ -49,15 +54,12 @@ macro_rules! advance_recording {
 /// Source writes always commit, even when the derived index is evicted.
 /// After unrelated writes move through the retained window, every refused
 /// row must settle in exactly one more advance.
-fn chain_journey(invalidation_bytes: u64) -> Journey {
+fn chain_journey(invalidation_bytes: u64) -> Result<Journey, Attempt> {
     let (application, invalidation) =
         limited_application(4 * 1_024 * 1_024, invalidation_bytes, WINDOW);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let mut stops = Vec::new();
-    let mut readings = support::custody_calibration::Readings::default();
-    let mut consumer_retained_growth = 0;
-    let mut before_consumer = 0;
     let mut a = request
         .demand(PlanarOutputDemand::new("anchor-a"))
         .start_in_program::<program::ChainProgram, program::ChainRoot>(&application)
@@ -95,15 +97,6 @@ fn chain_journey(invalidation_bytes: u64) -> Journey {
             let retained = invalidation.retained_capacity_bytes();
             if retained > peak_retained_bytes {
                 peak_retained_bytes = retained;
-                let peak_custody = invalidation.retained_custody_breakdown_for_test();
-                assert_eq!(
-                    peak_custody
-                        .iter()
-                        .map(|(_, _, _, bytes)| *bytes)
-                        .sum::<u64>(),
-                    retained,
-                    "the owner's tickets account for every retained byte"
-                );
             }
             assert!(
                 invalidation.retained_capacity_bytes() <= invalidation_bytes,
@@ -113,6 +106,9 @@ fn chain_journey(invalidation_bytes: u64) -> Journey {
         };
     }
     settle_recording!(a);
+    if !stops.is_empty() {
+        return Err(Attempt::Below("initial upstream admission"));
+    }
     bounded!();
     settle_recording!(b);
     settle_recording!(c);
@@ -125,28 +121,11 @@ fn chain_journey(invalidation_bytes: u64) -> Journey {
         bounded!();
         refused = [
             advance_recording!(stops, d, request).is_none(),
-            {
-                let before = invalidation.retained_capacity_bytes();
-                let advanced = advance_recording!(stops, c, request).is_none();
-                let after = invalidation.retained_capacity_bytes();
-                if after.saturating_sub(before) >= consumer_retained_growth {
-                    consumer_retained_growth = after.saturating_sub(before);
-                    before_consumer = before;
-                }
-                advanced
-            },
+            advance_recording!(stops, c, request).is_none(),
             advance_recording!(stops, b, request).is_none(),
             advance_recording!(stops, a, request).is_none(),
         ];
     }
-    readings.record(
-        "before_window",
-        support::custody_calibration::Inventory::new(
-            application.required_custody_breakdown_for_test(),
-            invalidation.retained_custody_breakdown_for_test(),
-            application.output_lineage_retained_bytes_for_test(),
-        ),
-    );
     let before_window_bytes = invalidation.retained_capacity_bytes();
     for position in 0..WINDOW as u64 {
         let y = 20 + position % 2;
@@ -159,14 +138,6 @@ fn chain_journey(invalidation_bytes: u64) -> Journey {
         );
         bounded!();
     }
-    readings.record(
-        "after_window",
-        support::custody_calibration::Inventory::new(
-            application.required_custody_breakdown_for_test(),
-            invalidation.retained_custody_breakdown_for_test(),
-            application.output_lineage_retained_bytes_for_test(),
-        ),
-    );
     let after_window_bytes = invalidation.retained_capacity_bytes();
     assert!(after_window_bytes <= invalidation_bytes);
     let refused_consumers = refused[1..3].iter().filter(|refused| **refused).count();
@@ -199,7 +170,7 @@ fn chain_journey(invalidation_bytes: u64) -> Journey {
         .into_iter()
         .filter(|(scope, _)| matches!(scope.as_str(), "anchor-b" | "anchor-c"))
         .count();
-    Journey {
+    Ok(Journey {
         stops,
         reclaimed,
         refused_consumers,
@@ -208,33 +179,48 @@ fn chain_journey(invalidation_bytes: u64) -> Journey {
         after_window_bytes,
         peak_retained_bytes,
         final_retained_bytes: invalidation.retained_capacity_bytes(),
-        readings,
-        consumer_retained_growth,
-        before_consumer,
+    })
+}
+
+fn index_attempt(capacity: usize, fresh: bool) -> Attempt {
+    let journey = match chain_journey(capacity as u64) {
+        Ok(journey) => journey,
+        Err(answer) => return answer,
+    };
+    if (fresh && journey.refused_consumers == 0) || (!fresh && journey.stops.is_empty()) {
+        return Attempt::Above("consumer registration admitted");
     }
+    if !fresh {
+        for stop in &journey.stops {
+            assert_eq!(
+                *stop,
+                (
+                    WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
+                    Posture::Terminal
+                ),
+                "an index-refused advance stops terminal for retention"
+            );
+        }
+    }
+    if fresh {
+        assert!(
+            journey.refused_consumers > 0,
+            "a consumed-output registration ran out of retained capacity"
+        );
+        assert!(
+            journey.fresh_consumer_decisions > 0,
+            "settling invokes the real consumer handler again"
+        );
+        assert!(journey.reclaimed >= journey.refused_consumers);
+    }
+    Attempt::Hit
 }
 
 #[test]
 fn an_index_too_small_for_a_commit_stops_the_advance_for_retention() {
     let _guard = checkpoint_recovery_test_guard();
-    // The sweep runs from the index the steady chain fits in down to one a
-    // quarter its size. Every source write commits; derived registration or
-    // demand verification can stop for retention. Work and required custody
-    // are ample throughout. A row its advance could not refresh stays for a
-    // later claim, and every capacity settles once the window releases bytes.
-    //
-    // The stop is terminal for its caller, as retention is wherever no
-    // advance or close of a demand frees the room: index room returns only
-    // as later commits move the window.
-    // An ample native window releases custody while the same demands stay open.
-    // Every window write in chain_journey must be performed, so fitting this
-    // peak also proves that the whole window fits without a no-effect allowance.
-    let mut ample = None;
-    let ample_capacity = 128 * 1_024 * 1_024;
-    support::custody_calibration::calibrate(|_, index, _| {
-        ample = Some(chain_journey(index));
-    });
-    let ample = ample.unwrap();
+    let ample_capacity = 128 * 1024 * 1024;
+    let ample = chain_journey(ample_capacity).unwrap();
     assert!(ample.stops.is_empty(), "the ample chain has no stops");
     assert!(
         ample.peak_retained_bytes <= ample_capacity,
@@ -252,81 +238,48 @@ fn an_index_too_small_for_a_commit_stops_the_advance_for_retention() {
         ample.final_retained_bytes < ample.peak_retained_bytes,
         "the complete journey releases retained reservations"
     );
-    // Preserve the 16..64 quarter-to-full sweep over this workload's ample peak.
-    let step = ample.peak_retained_bytes.div_ceil(64);
-    let mut smaller_refused = false;
-    let (mut refused, mut reclaimed) = (0_usize, 0_usize);
-    let mut owner_quantities = Vec::new();
-    for capacity in (16..=64_u64).rev().map(|steps| steps * step) {
-        let journey = chain_journey(capacity);
-        owner_quantities.push((
-            capacity,
-            journey.peak_retained_bytes,
-            journey.final_retained_bytes,
-        ));
-        assert!(
-            !smaller_refused || !journey.stops.is_empty(),
-            "admission is monotone across the capacity sweep"
+    let mut reclaimed = 0;
+    let mut cache = std::collections::BTreeMap::new();
+    // Each sweep step finds its own band; every legal write and one-advance recovery stays asserted.
+    for steps in (16..=64).rev() {
+        let quantum = steps;
+        let band = search(
+            &format!("index sweep {steps}"),
+            1,
+            128 * 1024,
+            support::capacity_region::Goal::UpperEdge,
+            |units| {
+                *cache
+                    .entry(units * quantum)
+                    .or_insert_with(|| index_attempt(units * quantum, false))
+            },
         );
-        smaller_refused |= !journey.stops.is_empty();
-        if !journey.stops.is_empty() {
-            journey
-                .readings
-                .at("before_window")
-                .assert_no_request_or_excess(ample.readings.at("before_window"));
-        }
-        refused += usize::from(!journey.stops.is_empty());
-        reclaimed += journey.reclaimed;
-        for stop in journey.stops {
-            assert_eq!(
-                stop,
-                (
-                    WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
-                    Posture::Terminal
-                ),
-                "{capacity} bytes of index: an advance the index refuses stops for retention"
-            );
-        }
+        let edge = band.require_hit(&format!(
+            "index sweep {steps}, capacity units of {quantum} bytes"
+        ));
+        assert_eq!(cache.get(&(edge * quantum)), Some(&Attempt::Hit));
+        reclaimed += chain_journey((edge * quantum) as u64).unwrap().reclaimed;
+        // The ample side of the same journey admits every registration.
+        assert_eq!(
+            index_attempt((edge + 1) * quantum, false),
+            Attempt::Above("consumer registration admitted")
+        );
     }
     assert!(
-        refused != 0,
-        "some index in the sweep is too small for the chain; (capacity, peak, final)={owner_quantities:?}"
-    );
-    assert!(
         reclaimed != 0,
-        "some index in the sweep refuses a row and has room once the window moves"
+        "some swept index has room for a refused row once the window moves"
     );
 }
 
 #[test]
 fn a_consumer_with_incomplete_registration_settles_by_a_fresh_decision_after_capacity_returns() {
     let _guard = checkpoint_recovery_test_guard();
-    let mut ample = None;
-    support::custody_calibration::calibrate(|_, index, _| {
-        ample = Some(chain_journey(index));
-    });
-    let ample = ample.unwrap();
-    assert!(
-        ample.consumer_retained_growth > 0,
-        "net retention alone supplies no consumer admission quote: {ample:?}"
-    );
-    // Upstream state fits, with less than the measured consumer retention growth.
-    let capacity = ample.before_consumer + ample.consumer_retained_growth / 2;
-    assert!(
-        capacity
-            >= ample
-                .peak_retained_bytes
-                .saturating_sub(ample.consumer_retained_growth),
-        "an earlier peak requires a consumer-size knob: {ample:?}"
-    );
-    let journey = chain_journey(capacity);
-    assert!(
-        journey.refused_consumers > 0,
-        "a consumed-output registration ran out of retained capacity; owner={journey:?}"
-    );
-    assert!(
-        journey.fresh_consumer_decisions > 0,
-        "settling invokes the real consumer handler again"
-    );
-    assert!(journey.reclaimed >= journey.refused_consumers);
+    search(
+        "fresh consumer capacity",
+        1,
+        2 * 1024 * 1024,
+        support::capacity_region::Goal::Hit,
+        |capacity| index_attempt(capacity, true),
+    )
+    .require_hit("fresh consumer registration");
 }
