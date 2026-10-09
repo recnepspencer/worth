@@ -41,10 +41,16 @@ fn live_lineage_allocator_exhaustion_denies_before_public_effects() {
 
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
-        .push_batch(batch_create("lineage-exhaustion-denied"))
+        .push_batch(
+            batch_create("lineage-exhaustion-denied"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     let error = transaction
-        .commit(&runtime)
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect_err("lineage reservation must deny at the allocator boundary");
 
     assert!(format!("{error:?}").contains("lineage id allocator exhausted"));

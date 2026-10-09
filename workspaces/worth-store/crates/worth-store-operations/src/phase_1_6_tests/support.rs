@@ -211,7 +211,7 @@ pub(super) const fn artifact_format(family: BackupArtifactFamily) -> BackupBundl
         BackupArtifactFamily::WalSegment => BackupBundleArtifactFormat::WalSegmentV1,
         BackupArtifactFamily::Page => BackupBundleArtifactFormat::PhysicalDataPageV1,
         BackupArtifactFamily::Extent => BackupBundleArtifactFormat::PhysicalExtentRecordV1,
-        BackupArtifactFamily::Index => BackupBundleArtifactFormat::LayoutBTreeLeafV1,
+        BackupArtifactFamily::Index => BackupBundleArtifactFormat::BTreeNodeV1,
         BackupArtifactFamily::BlobChunk => BackupBundleArtifactFormat::BlobChunkV1,
         BackupArtifactFamily::SecondaryRoot => {
             BackupBundleArtifactFormat::PhysicalSecondaryRootManifestV1

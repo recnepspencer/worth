@@ -212,9 +212,17 @@ impl UpdateWorld {
             )
             .expect("the fixture transaction begins");
         transaction
-            .push_batch(WorkerIntentBatch::new("unique-update").push(intent))
+            .push_batch(
+                WorkerIntentBatch::new("unique-update").push(intent),
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .expect("the fixture batch stages");
-        transaction.commit(runtime).expect("the fixture commits")
+        transaction
+            .commit(
+                runtime,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .expect("the fixture commits")
     }
 
     /// Builds the label index at the new commit and releases its snapshot.

@@ -11,6 +11,12 @@ pub(super) fn map_transaction_admission_failure(
             WorthQueryInvariantExecutionDenialKind::ProductBasisStale,
             "the exact product basis became stale before invariant candidate admission",
         ),
+        Denial::Cancelled => request_interruption(
+            worth_relational::facade::mvcc::RelationalOperationInterruption::Cancelled,
+        ),
+        Denial::TimedOut => request_interruption(
+            worth_relational::facade::mvcc::RelationalOperationInterruption::TimedOut,
+        ),
         Denial::RetentionCapacityExhausted => retention_capacity_failure(),
         Denial::RetentionIdentityExhausted => exhausted_failure(
             WorthQueryInvariantExecutionDenialKind::RetentionIdentityExhausted,
@@ -25,37 +31,31 @@ pub(super) fn map_transaction_staging_failure(
 ) -> WorthQueryInvariantExecutionFailure {
     use worth_relational::facade::mvcc::RelationalTransactionStagingDenial as Denial;
     let kind = match denial {
-        Denial::OverlayCapacityExhausted {
-            maximum_bytes,
-            required_bytes,
-        } => WorthQueryInvariantExecutionDenialKind::TransactionOverlayCapacityExhausted {
-            maximum_bytes,
-            required_bytes,
-        },
-        Denial::FootprintCapacityExhausted {
-            maximum_loci,
-            required_loci,
-        } => WorthQueryInvariantExecutionDenialKind::TransactionFootprintCapacityExhausted {
-            maximum_loci,
-            required_loci,
-        },
+        native @ (Denial::AllocationDenied(_)
+        | Denial::CardinalityOverflow
+        | Denial::InputDirectoryAllocationDenied { .. }) => {
+            return WorthQueryInvariantExecutionFailure::native_staging(
+                native,
+                "Relational staging owner refused backing or cardinality",
+            );
+        }
         Denial::SavepointCapacityExhausted { maximum_savepoints } => {
             WorthQueryInvariantExecutionDenialKind::SavepointCapacityExhausted {
                 maximum_savepoints,
             }
         }
-        Denial::SavepointFootprintCapacityExhausted {
-            maximum_loci,
-            required_loci,
-        } => WorthQueryInvariantExecutionDenialKind::SavepointFootprintCapacityExhausted {
-            maximum_loci,
-            required_loci,
-        },
         Denial::SavepointIdentityExhausted => {
             WorthQueryInvariantExecutionDenialKind::SavepointIdentityExhausted
         }
-        Denial::MaterializationAuthorityRequired | Denial::MaterializationModeMismatch => {
-            WorthQueryInvariantExecutionDenialKind::ProviderRejected
+        Denial::MaterializationAuthorityRequired => {
+            return provider_failure(
+                "Relational invariant transaction requires materialization authority",
+            );
+        }
+        Denial::MaterializationModeMismatch => {
+            return provider_failure(
+                "Relational invariant transaction materialization mode does not match its intents",
+            );
         }
     };
     exhausted_failure(
@@ -93,7 +93,16 @@ pub(in crate::domain_computation::primary_graph) fn map_validation_failure(
                 format!("{denial:?}"),
             );
         }
+        Error::Interrupted { interruption, .. } => {
+            return request_interruption(interruption.interruption());
+        }
         Error::Conflict { error, .. } => {
+            if let Some(cause) = error.allocation_denial() {
+                return WorthQueryInvariantExecutionFailure::physical_allocation(
+                    cause.clone(),
+                    error.detail(),
+                );
+            }
             let relational_detail = error.detail();
             let ConflictClass::InvariantViolation { fields, detail, .. } = error.class else {
                 return provider_failure(relational_detail);
@@ -148,7 +157,6 @@ pub(in crate::domain_computation::primary_graph) fn map_validation_failure(
         }
         Error::Preparation { .. }
         | Error::Publication { .. }
-        | Error::Interrupted { .. }
         | Error::PublicationDenied { .. }
         | Error::PerformedButDurabilityDeferred { .. } => return owner_failure(),
     };
@@ -223,9 +231,20 @@ fn provider_failure(detail: impl Into<std::sync::Arc<str>>) -> WorthQueryInvaria
     )
 }
 
+fn request_interruption(
+    reason: worth_relational::facade::mvcc::RelationalOperationInterruption,
+) -> WorthQueryInvariantExecutionFailure {
+    WorthQueryInvariantExecutionFailure::new(
+        WorthQueryInvariantExecutionDenialKind::RequestInterrupted(reason),
+        "the admitted request interrupted Relational candidate validation",
+    )
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{map_custom_invariant_failure, map_invariant_failure};
+    use super::{
+        map_custom_invariant_failure, map_invariant_failure, map_transaction_staging_failure,
+    };
     use crate::domain_computation::WorthQueryCustomInvariantDenial;
     use worth_relational::facade::transactions::{
         CustomInvariantFailureIdentity, CustomInvariantFailurePhase, CustomInvariantRuleId,
@@ -252,6 +271,15 @@ mod tests {
             failure.custom_invariant_denial(),
             Some(&WorthQueryCustomInvariantDenial::Violation { identity })
         );
+        let denial = crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::invariant_execution_denied(
+            crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage::InvariantExecution,
+            failure.clone(),
+        );
+        assert_eq!(
+            denial.custom_invariant_denial(),
+            failure.custom_invariant_denial()
+        );
+        assert_eq!(denial.invariant_execution_failure(), Some(&failure));
     }
 
     #[test]
@@ -299,6 +327,30 @@ mod tests {
             failure.detail(),
             "relation endpoint deletion leaves an incident edge"
         );
+    }
+
+    #[test]
+    fn invariant_materialization_refusal_is_not_exhaustion() {
+        for (owner_denial, expected_detail) in [
+            (
+                worth_relational::facade::mvcc::RelationalTransactionStagingDenial::MaterializationAuthorityRequired,
+                "Relational invariant transaction requires materialization authority",
+            ),
+            (
+                worth_relational::facade::mvcc::RelationalTransactionStagingDenial::MaterializationModeMismatch,
+                "Relational invariant transaction materialization mode does not match its intents",
+            ),
+        ] {
+            let failure = map_transaction_staging_failure(owner_denial);
+            let denial = crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::invariant_execution_denied(
+                crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage::InvariantExecution,
+                failure,
+            );
+            let retained = denial.invariant_execution_failure().unwrap();
+            assert_eq!(retained.kind(), crate::domain_computation::WorthQueryInvariantExecutionDenialKind::ProviderRejected);
+            assert_eq!(retained.posture(), crate::domain_computation::WorthQueryInvariantExecutionFailurePosture::Denied);
+            assert_eq!(retained.detail(), expected_detail);
+        }
     }
 
     fn semantic_identity() -> CustomInvariantSemanticIdentity {

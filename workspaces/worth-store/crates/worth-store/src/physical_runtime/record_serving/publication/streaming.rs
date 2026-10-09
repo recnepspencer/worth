@@ -19,6 +19,8 @@ pub enum RecordStreamFailureKind {
     SourceExceededDeclaredLength,
     InvalidTransferCount,
     Backend,
+    SchedulerUnavailable,
+    SelectedDataFrameChecksumDamaged,
     RuntimeReleased,
     ResidencyUnavailable(super::super::PhysicalRecordResidencyFailure),
     ArtifactUnavailable,

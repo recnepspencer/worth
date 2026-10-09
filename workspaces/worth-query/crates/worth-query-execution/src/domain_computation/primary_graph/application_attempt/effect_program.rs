@@ -54,7 +54,6 @@ use super::{
     WorthQueryProjectedApplicationMutation,
 };
 use crate::domain_computation::primary_graph::WorthQueryApplicationEntityKey;
-pub(in crate::domain_computation::primary_graph) use candidate_reservation::WorthQueryCandidateValidatorWorkAdmission;
 use candidate_reservation::{CandidateItemKind, WorthQueryCandidateReservation};
 use candidate_retained_representation as retained_representation;
 pub(in crate::domain_computation::primary_graph) use output_correspondence::{
@@ -142,14 +141,10 @@ impl<Schema, Operation, Input, Scope>
         let reservation = WorthQueryCandidateReservation::admit(
             requested,
             ceiling,
-            self.admission
-                .allowed_graph_contract()
-                .candidate_validator_work(),
             envelope.scale_ceiling(WorthQuerySemanticScaleAxis::CandidateItems),
             envelope.resource_ceiling(
                 WorthQueryResourceDimension::CandidateRetainedRepresentationBytes,
             ),
-            envelope.scale_ceiling(WorthQuerySemanticScaleAxis::WorkItems),
         )?;
         let capacity = reservation.total_items();
         let layout = Arc::clone(&self.lease.layout);
@@ -281,10 +276,6 @@ impl<Schema, Operation, Input, Scope>
             .validate_current_authority()
             .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
         self.output_correspondence.validate_effects(&self.effects)?;
-        let validator_work_admission = self.candidate_reservation.as_ref().map_or_else(
-            WorthQueryCandidateValidatorWorkAdmission::unreserved_internal,
-            WorthQueryCandidateReservation::validator_work_admission,
-        );
         Ok(WorthQueryApplicationEffectProgram {
             read_set: self.read_set,
             effects: self.effects,
@@ -292,7 +283,6 @@ impl<Schema, Operation, Input, Scope>
             emission_retained_bytes_ceiling: self.emission_retained_bytes_ceiling,
             conditional_definition: self.conditional_definition,
             effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Application,
-            validator_work_admission,
             output_correspondence: self.output_correspondence,
             retain_output_demand_observation: false,
             retain_client_observation: false,

@@ -264,14 +264,20 @@ fn routed(
                     .require_decision_field(root, AccountStatus::reference())
                     .unwrap();
             }
-        })
+        }, worth_execution::ExecutionAllocationPolicy::SystemAllocation)
         .unwrap()
         .into_parts();
     let read_set = world
         .application
-        .begin_projected_application_read_attempt(admission, projection)
+        .begin_projected_application_read_attempt(
+            admission,
+            projection,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let mut gathered = installed.owner.gathered.lock().unwrap().clone();
     gathered.sort_unstable();

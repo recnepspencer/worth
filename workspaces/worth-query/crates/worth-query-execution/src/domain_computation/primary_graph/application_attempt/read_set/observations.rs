@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_attempt::check_request_live;
 use std::marker::PhantomData;
 
 use worth_query_installation::facade::{
@@ -34,7 +35,10 @@ impl<Schema, Operation, Input, Scope, Phase>
             entity: entity.name().to_string(),
             entity_id: identity.entity_id(),
         };
-        self.admit_fact_key(&key)?;
+        check_request_live(
+            self.admission.publication_request(),
+            self.admission.operation(),
+        )?;
         self.validate_identity_freshness(entity.name(), identity)?;
         self.installed_read_scopes.insert(key.clone(), read_scope);
         self.facts.insert(
@@ -71,7 +75,10 @@ impl<Schema, Operation, Input, Scope, Phase>
             entity_id: identity.entity_id(),
             locator: graph_layout.clone(),
         };
-        self.admit_fact_key(&key)?;
+        check_request_live(
+            self.admission.publication_request(),
+            self.admission.operation(),
+        )?;
         self.validate_identity_freshness(field.entity(), identity)?;
         let value = self
             .lease
@@ -145,7 +152,10 @@ impl<Schema, Operation, Input, Scope, Phase>
             from: from.entity_id(),
             to: to.entity_id(),
         };
-        self.admit_fact_key(&key)?;
+        check_request_live(
+            self.admission.publication_request(),
+            self.admission.operation(),
+        )?;
         self.validate_identity_freshness(relation.from(), from)?;
         self.validate_identity_freshness(relation.to(), to)?;
         let matching_relations = self.lease.handle().with_runtime(|runtime| {

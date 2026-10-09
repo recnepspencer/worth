@@ -1,6 +1,7 @@
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationOutputDemandDenial, WorthQueryApplicationOutputDemandProgress,
 };
+use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 
 use super::*;
 
@@ -37,7 +38,9 @@ fn restored_output_retains_its_resource_profile_without_provider_contact() {
     drop(settle(&request, &application));
     drop(principal);
     drop(scope);
-    let checkpoint = application.capture_application_checkpoint().unwrap();
+    let checkpoint = application
+        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
+        .unwrap();
     drop(application);
 
     let restored = support::install_with_demand_profile(
@@ -67,7 +70,9 @@ fn restored_output_denies_smaller_host_work_without_provider_contact_or_effects(
     drop(settle(&request, &application));
     drop(principal);
     drop(scope);
-    let checkpoint = application.capture_application_checkpoint().unwrap();
+    let checkpoint = application
+        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
+        .unwrap();
     drop(application);
 
     super::super::producer::reset_provider_contacts();
@@ -118,7 +123,9 @@ fn restored_final_output_keeps_original_create_producer_and_zero_contact() {
     drop(settle(&request, &application));
     drop(principal);
     drop(scope);
-    let checkpoint = application.capture_application_checkpoint().unwrap();
+    let checkpoint = application
+        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
+        .unwrap();
     drop(application);
 
     let restored = install(Some(checkpoint));

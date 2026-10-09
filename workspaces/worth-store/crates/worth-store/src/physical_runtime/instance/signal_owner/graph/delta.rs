@@ -1,4 +1,4 @@
-use worth_signal::facade::ChangedRegion;
+use worth_signal::facade::{ChangedRegion, ScopeCoverage};
 
 use crate::physical_runtime::work::{PhysicalSignalAspectBindingDigest, PhysicalWorkAspectDelta};
 
@@ -24,10 +24,12 @@ impl super::PhysicalSignalGraph {
             .source_for_slot(route_slot)
             .ok_or(PhysicalSignalDeltaApplicationFailure::BindingNotInstalled)?;
         let aspect = binding.signal_aspect();
-        let region = binding.partition().map(|partition| ChangedRegion {
-            partition: partition.partition.clone(),
-            detail: partition.detail.clone(),
-        });
+        let region = binding
+            .partition()
+            .map(|partition| match partition.coverage() {
+                ScopeCoverage::Exact => ChangedRegion::exact(partition.path().clone()),
+                ScopeCoverage::Subtree => ChangedRegion::subtree(partition.path().clone()),
+            });
         let expected_basis = self
             .runtime
             .observe_signal_branch_basis(self.runtime.current_branch())
@@ -39,8 +41,16 @@ impl super::PhysicalSignalGraph {
             .version
             .checked_add(1)
             .ok_or(PhysicalSignalDeltaApplicationFailure::VersionExhausted)?;
+        let serial_request = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(
+                self.runtime.runtime_policy().serial_memory_bytes,
+            ),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
         self.runtime
             .advance_signal_branch(
+                worth_execution::ExecutionRequest::serial(&serial_request),
                 &mut self.context,
                 &expected_basis,
                 |transaction| match region.as_ref() {

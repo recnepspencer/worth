@@ -80,7 +80,7 @@ impl WorthQueryPortableApplicationOperationContractRecord {
         Ok(targets)
     }
 
-    pub(crate) fn authored_program_width(&self) -> usize {
-        self.touches().len() + self.emissions().len()
+    pub(crate) fn authored_program_width(&self) -> Option<usize> {
+        self.touches().len().checked_add(self.emissions().len())
     }
 }

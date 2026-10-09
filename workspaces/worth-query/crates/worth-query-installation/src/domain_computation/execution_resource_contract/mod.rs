@@ -1,3 +1,4 @@
+mod atomic_validation;
 mod canonical_identity;
 mod contract;
 mod envelope;
@@ -20,3 +21,6 @@ pub use safe_point_contract::*;
 pub use strategy::*;
 pub use workflow_stage_contract::*;
 pub use yield_contract::*;
+
+#[cfg(test)]
+mod atomic_tests;

@@ -71,10 +71,10 @@ use super::root_commitment::{
 ///     .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
 ///     .expect("the exact basis admits a branch transaction");
 /// transaction
-///     .push_batch(WorkerIntentBatch::new("sharing-observation-doc"))
+///     .push_batch(WorkerIntentBatch::new("sharing-observation-doc"), worth_execution::ExecutionAllocationPolicy::SystemAllocation)
 ///     .expect("an empty batch stages");
 /// let candidate = runtime
-///     .prepare_branch_transaction(transaction)
+///     .prepare_branch_transaction(transaction, worth_execution::ExecutionAllocationPolicy::SystemAllocation,)
 ///     .expect("preparation validates");
 /// let performed = match runtime.publication_port().compare_and_publish(candidate) {
 ///     RelationalPublicationOutcome::Performed(performed) => performed,

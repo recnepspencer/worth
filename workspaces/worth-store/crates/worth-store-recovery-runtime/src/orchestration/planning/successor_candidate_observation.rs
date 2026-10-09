@@ -3,18 +3,23 @@ use worth_store_physical_format::{
     DurablePhysicalRootManifest, PhysicalRecordFormatDeclaration, RecordArtifactFile,
 };
 
-use super::manifest_entry_budget::ManifestEntryBudget;
+use super::manifest_entry_budget::{spend, ManifestEntryBudget};
 use crate::entry::PhysicalRecoverySuccessorCandidateDenial;
+use crate::progression::PlanningResidentAllowance;
 use crate::progression::RecoveryObservedSuccessorCandidate;
 
 mod artifact_read;
 mod attempt;
+#[cfg(test)]
+mod charge_pins;
 mod denial;
 mod free_space;
 mod materialization;
+mod resident;
 mod root_manifest;
 mod root_routing;
 mod segment_membership;
+mod tree_walk_resident;
 
 use artifact_read::observed;
 pub(super) use attempt::observe;
@@ -26,58 +31,72 @@ fn observe_bounded(
     selected: &DurablePhysicalRootManifest,
     format: PhysicalRecordFormatDeclaration,
     budget: &mut ManifestEntryBudget,
-    byte_limit: u64,
     materialization: &mut CandidateMaterialization,
     root_protocol_counters: &mut crate::entry::PhysicalRecoveryRootProtocolCounters,
     integrity_trace: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
+    allowance: &mut PlanningResidentAllowance,
 ) -> Result<Option<RecoveryObservedSuccessorCandidate>, PhysicalRecoverySuccessorCandidateDenial> {
+    let generation = root_manifest::successor_generation(selected)?;
+    let charge = denial::charge_successor_root(budget, generation)?;
     let Some(observed_root) = root_manifest::read(
         discovery,
-        selected,
+        generation,
         format,
-        byte_limit,
+        &charge,
         materialization,
         root_protocol_counters,
+        allowance,
     )?
     else {
+        // Looking was the absent root's one read: it spends the entry.
+        spend(charge, generation);
         return Ok(None);
     };
     let root = observed_root.manifest;
     let root_artifact = observed_root.artifact;
-    let mut artifacts = vec![observed(root_artifact, observed_root.bytes)];
-    let mut referenced_artifacts = vec![root_artifact];
+    let mut artifacts = allowance
+        .reserve(1)
+        .map_err(|denial| resident::memory_failure(root_artifact, denial))?;
+    artifacts.push(observed(root_artifact, observed_root.bytes, allowance)?);
+    let mut referenced_artifacts = allowance
+        .reserve(1)
+        .map_err(|denial| resident::memory_failure(root_artifact, denial))?;
+    referenced_artifacts.push(root_artifact);
     let placements = root_routing::read(
         discovery,
         &root,
         format,
+        &charge,
         budget,
-        byte_limit,
         &mut artifacts,
         &mut referenced_artifacts,
         materialization,
         integrity_trace,
+        allowance,
     )?;
     let segment_entries = segment_membership::read(
         discovery,
         &root,
         format,
+        &charge,
         budget,
-        byte_limit,
         &mut artifacts,
         &mut referenced_artifacts,
         materialization,
         integrity_trace,
+        allowance,
     )?;
     let (free_space, free_entries) = free_space::read(
         discovery,
         &root,
         format,
+        charge,
         budget,
-        byte_limit,
         &mut artifacts,
         &mut referenced_artifacts,
         materialization,
         integrity_trace,
+        allowance,
     )?;
     artifacts.sort_unstable_by_key(|item| item.artifact);
     if artifacts
@@ -96,11 +115,21 @@ fn observe_bounded(
     Ok(Some(RecoveryObservedSuccessorCandidate {
         root,
         free_space,
-        placements: placements.into_boxed_slice(),
-        segment_entries: segment_entries.into_boxed_slice(),
-        free_entries: free_entries.into_boxed_slice(),
-        referenced_artifacts: referenced_artifacts.into_boxed_slice(),
-        artifacts: artifacts.into_boxed_slice(),
+        placements: allowance
+            .into_box(placements)
+            .map_err(|denial| resident::memory_failure(root_artifact, denial))?,
+        segment_entries: allowance
+            .into_box(segment_entries)
+            .map_err(|denial| resident::memory_failure(root_artifact, denial))?,
+        free_entries: allowance
+            .into_box(free_entries)
+            .map_err(|denial| resident::memory_failure(root_artifact, denial))?,
+        referenced_artifacts: allowance
+            .into_box(referenced_artifacts)
+            .map_err(|denial| resident::memory_failure(root_artifact, denial))?,
+        artifacts: allowance
+            .into_box(artifacts)
+            .map_err(|denial| resident::memory_failure(root_artifact, denial))?,
     }))
 }
 

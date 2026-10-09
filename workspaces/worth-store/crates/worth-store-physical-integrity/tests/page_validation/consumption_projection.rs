@@ -132,7 +132,7 @@ fn placement(
     let segment = PhysicalGenerationAuthority::for_canonical_physical_format()
         .segment_cell(page.segment_id())
         .with_segment_generation(PhysicalGeneration::from_raw(8).unwrap());
-    DurableInlineRecordPlacement::new(
+    DurableInlineRecordPlacement::legacy_unknown(
         record,
         segment,
         page,

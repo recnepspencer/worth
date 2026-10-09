@@ -3,18 +3,40 @@ use worth_query_execution::facade::application_contribution::WorthQueryManagedCo
 
 #[test]
 fn resource_pressure_remains_typed_across_the_effect_boundary() {
-    let staging = transaction_staging(
-        RelationalTransactionStagingDenial::OverlayCapacityExhausted {
-            maximum_bytes: 64,
-            required_bytes: 65,
-        },
-    );
+    let owner = crate::test_execution_authority::authority();
+    let lease = owner
+        .request_lease(worth_execution::LeaseRequest {
+            policy: worth_foundational::ExecutionRequestPolicy::new(
+                worth_foundational::ExecutionPosture::Serial,
+                worth_foundational::DeterminismContract::CanonicalBitwise,
+                worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::MIN, 64, 1),
+            ),
+            deadline: None,
+            cancellation: worth_execution::CancellationToken::new(),
+        })
+        .unwrap();
+    let allocation = worth_execution::ExecutionByteBuffer::allocate(
+        65,
+        worth_execution::ExecutionAllocationPolicy::Execution(&lease),
+    )
+    .unwrap_err();
+    let staging = transaction_staging(RelationalTransactionStagingDenial::AllocationDenied(
+        allocation,
+    ));
     assert!(matches!(
         staging,
         RelationalEffectExecutionFailure::Denied {
-            kind: EffectExecutionDenialKind::TransactionOverlayBudgetExceeded {
-                maximum_bytes: 64,
-                required_bytes: 65,
+            kind: EffectExecutionDenialKind::TransactionAllocationDenied {
+                kind: worth_execution::ExecutionAllocationDenialKind::Lease(
+                    worth_execution::LeaseDenial::MemoryExhausted(
+                        worth_execution::MemoryLimitDenial {
+                            requested: 65,
+                            admitted: 64,
+                            level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 },
+                        }
+                    ),
+                ),
+                requested_payload_bytes: Some(65),
             },
             ..
         }

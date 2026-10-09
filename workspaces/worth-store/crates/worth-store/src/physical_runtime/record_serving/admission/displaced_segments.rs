@@ -18,8 +18,10 @@ struct SegmentDisplacement {
 /// Rewrite steps in the publication chain whose source segment file remains
 /// although the current root reads no frame from it.
 ///
-/// An append changes the record count, so its predecessor stays out of this
-/// charge. A rewrite keeps the count and advances the same segment generation.
+/// An append names a new last inline record, so its predecessor stays out of
+/// this charge even when the same batch drops as many records as it inserts.
+/// A rewrite keeps the count and the tail record and advances the same segment
+/// generation.
 /// A span rewrite can leave live frames before the span in its source file,
 /// so only the current membership decides whether the source is displaced.
 /// Retirement removes the source file; the charge ends with the file.
@@ -62,7 +64,10 @@ fn rewrite_displacement(
     before: &DurablePhysicalRootManifest,
     after: &DurablePhysicalRootManifest,
 ) -> Option<SegmentDisplacement> {
-    if !after.requires_maintenance_protocol() || before.record_count() != after.record_count() {
+    if !after.requires_maintenance_protocol()
+        || before.record_count() != after.record_count()
+        || before.last_inline_record() != after.last_inline_record()
+    {
         return None;
     }
     let before_segment = before.last_inline_segment()?;

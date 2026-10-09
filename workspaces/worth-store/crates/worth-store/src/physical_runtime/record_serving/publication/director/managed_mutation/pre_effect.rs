@@ -2,8 +2,8 @@ use super::super::RecordPublicationDirector;
 use super::indeterminate;
 use crate::physical_runtime::{
     PhysicalMutationAttempt, PhysicalMutationIndeterminateStage,
-    PhysicalMutationProvenNoEffectCause, PhysicalMutationTerminalFact,
-    PhysicalPreSealCancellationOutcome, PreparedPhysicalMutation,
+    PhysicalMutationPreSealAdmissionDetail, PhysicalMutationProvenNoEffectCause,
+    PhysicalMutationTerminalFact, PhysicalPreSealCancellationOutcome, PreparedPhysicalMutation,
 };
 
 impl RecordPublicationDirector {
@@ -37,8 +37,22 @@ impl RecordPublicationDirector {
         attempt: &PhysicalMutationAttempt,
         cause: PhysicalMutationProvenNoEffectCause,
     ) -> PhysicalMutationTerminalFact {
+        self.pre_effect_terminal_with_admission_detail(prepared, attempt, cause, None)
+    }
+
+    pub(super) fn pre_effect_terminal_with_admission_detail(
+        &self,
+        prepared: PreparedPhysicalMutation,
+        attempt: &PhysicalMutationAttempt,
+        cause: PhysicalMutationProvenNoEffectCause,
+        detail: Option<PhysicalMutationPreSealAdmissionDetail>,
+    ) -> PhysicalMutationTerminalFact {
         match self.settle_prepared_before_group_seal(prepared, cause) {
             PhysicalPreSealCancellationOutcome::ProvenNoEffect(terminal) => {
+                let terminal = match detail {
+                    Some(detail) => terminal.with_admission_detail(detail),
+                    None => terminal,
+                };
                 PhysicalMutationTerminalFact::ProvenNoEffect(terminal)
             }
             PhysicalPreSealCancellationOutcome::NotCancelled { .. } => {

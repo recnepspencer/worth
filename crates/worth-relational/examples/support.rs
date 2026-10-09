@@ -90,9 +90,15 @@ pub fn create_entity(
                 fields: string_field_patch(aspect_key("name"), field_key("name"), name),
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("example entity batch must stage");
-    let outcome = tx.commit(runtime).expect("entity commit");
+    let outcome = tx
+        .commit(
+            runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .expect("entity commit");
     let entity_id = changed_entity(&outcome).expect("created entity id");
     (outcome, entity_id)
 }
@@ -137,9 +143,14 @@ pub fn update_entity_on_branch(
                 fields: string_field_patch(aspect_key("name"), field_key("name"), name),
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("example update batch must stage");
-    tx.commit(runtime).expect("update commit")
+    tx.commit(
+        runtime,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .expect("update commit")
 }
 
 pub fn delete_entity(
@@ -159,9 +170,14 @@ pub fn delete_entity(
         WorkerIntentBatch::new("delete-entity").push(MutationIntent::Entity(
             EntityMutationIntent::Delete(DeleteEntityIntent { entity_id }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("example delete batch must stage");
-    tx.commit(runtime).expect("delete entity commit")
+    tx.commit(
+        runtime,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .expect("delete entity commit")
 }
 
 pub fn create_relation(
@@ -193,9 +209,15 @@ pub fn create_relation(
                 fields: string_field_patch(aspect_key("label"), field_key("label"), label),
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("example relation batch must stage");
-    let outcome = tx.commit(runtime).expect("relation commit");
+    let outcome = tx
+        .commit(
+            runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .expect("relation commit");
     let relation_id = changed_relation(&outcome).expect("created relation id");
     (outcome, relation_id)
 }

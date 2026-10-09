@@ -154,10 +154,6 @@ pub enum ApplicationSchemaMember {
         operation: String,
         target: ApplicationMutationPreconditionTarget,
     },
-    OperationDecisionFactBudget {
-        operation: String,
-        maximum_fact_count: usize,
-    },
     OperationProjectionWorkBudget {
         operation: String,
         maximum_work_units: usize,

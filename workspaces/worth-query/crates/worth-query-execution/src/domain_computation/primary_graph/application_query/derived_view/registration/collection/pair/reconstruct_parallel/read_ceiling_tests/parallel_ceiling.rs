@@ -75,7 +75,7 @@ fn parallel_work_exhaustion_retains_only_the_declared_completed_root_prefix() {
             .collect::<Vec<_>>();
         request
             .in_scope(|lease| {
-                owner_stage::run(lease, 8192, |context| {
+                owner_stage::run(lease, |context| {
                     for (pair, root) in plans.iter_mut().zip(&roots) {
                         pair.admit(&world.application, root.entity_id(), context)?;
                     }
@@ -89,16 +89,17 @@ fn parallel_work_exhaustion_retains_only_the_declared_completed_root_prefix() {
                 Some(roots[1].entity_id()),
             );
         let partitions = plans
-            .iter()
+            .iter_mut()
             .zip(&roots)
             .enumerate()
             .map(|(index, (pair, root))| {
+                let capacity = pair.result_capacity().unwrap();
                 (
                     PartitionIdentity::new(index as u64 + 1),
                     KeylessPartition {
                         value: pair.worker(&world.application, root.entity_id()).unwrap(),
                         kernel_scratch_bytes: 0,
-                        max_result_bytes: pair.result_capacity().unwrap(),
+                        max_result_bytes: capacity,
                     },
                 )
             })

@@ -94,17 +94,23 @@ mod tests {
                 .expect("owner-admitted transaction context")
         };
         transaction
-            .push_batch(WorkerIntentBatch::new("branch-affinity-fixture").push(
-                MutationIntent::Create(CreateIntent::Entity(EntitySpec {
-                    partition_id: PartitionId::main(),
-                    kind_id: KindId(1),
-                    client_key: ClientKey::raw("branch-affinity-root"),
-                    fields: AspectFieldPatch::new(BTreeMap::new()),
-                })),
-            ))
+            .push_batch(
+                WorkerIntentBatch::new("branch-affinity-fixture").push(MutationIntent::Create(
+                    CreateIntent::Entity(EntitySpec {
+                        partition_id: PartitionId::main(),
+                        kind_id: KindId(1),
+                        client_key: ClientKey::raw("branch-affinity-root"),
+                        fields: AspectFieldPatch::new(BTreeMap::new()),
+                    }),
+                )),
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .expect("test staging stays within configured resource budgets");
         let committed = transaction
-            .commit(&runtime)
+            .commit(
+                &runtime,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .expect("branch-affinity fixture root commits");
         assert!(runtime
             .snapshots()

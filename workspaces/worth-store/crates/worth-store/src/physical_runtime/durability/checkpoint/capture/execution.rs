@@ -30,6 +30,7 @@ impl PhysicalCheckpointCaptureOwner {
         attempt: &PhysicalCheckpointAttempt,
     ) -> PhysicalCheckpointExecutionResult {
         let basis = admitted.basis;
+        let custody = admitted.custody;
         let key = attempt.idempotency_key();
         if attempt.cancellation_requested() {
             return PhysicalCheckpointExecutionResult::no_effect(
@@ -38,7 +39,7 @@ impl PhysicalCheckpointCaptureOwner {
                 PhysicalCheckpointProvenNoEffectCause::CancelledBeforeCandidate,
             );
         }
-        let candidate = match self.create_capture_candidate(basis, attempt, key) {
+        let candidate = match self.create_capture_candidate(basis, custody, attempt, key) {
             Ok(candidate) => candidate,
             Err(terminal) => return terminal,
         };
@@ -63,15 +64,15 @@ impl PhysicalCheckpointCaptureOwner {
     fn create_capture_candidate(
         &self,
         basis: super::PhysicalCheckpointCaptureBasis,
+        custody: Option<crate::physical_runtime::durability::SelectedCheckpointCustodySnapshot>,
         attempt: &PhysicalCheckpointAttempt,
         key: PhysicalCheckpointIdempotencyKey,
     ) -> Result<CreatedCheckpointCandidate, PhysicalCheckpointExecutionResult> {
         attempt.enter(PhysicalCheckpointProgressPhase::CandidateCreation);
-        let candidate = CreatedCheckpointCandidate::create(basis, self.work.clone()).map_err(
-            |(cleanup, action)| {
+        let candidate = CreatedCheckpointCandidate::create(basis, self.work.clone(), custody)
+            .map_err(|(cleanup, action)| {
                 initial_action_failure(cleanup, attempt, basis.identity(), key, action)
-            },
-        )?;
+            })?;
         if attempt.cancellation_requested() {
             return Err(remove_created_candidate(
                 candidate,

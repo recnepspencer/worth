@@ -269,6 +269,7 @@ fn run(
         snapshot_mode,
         &packages,
         &config.rule_contracts.query_audience,
+        &config.snapshot_dependency_packages,
     );
     diagnostics.extend(snapshot_session.preparation_diagnostics().iter().cloned());
     if let Some(facade_authority) = snapshot_session.facade_vocabulary_authority() {

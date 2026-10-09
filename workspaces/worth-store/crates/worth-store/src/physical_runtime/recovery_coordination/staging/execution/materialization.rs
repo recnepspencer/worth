@@ -50,6 +50,7 @@ pub(super) fn execute(
         })?;
     match media.stage_recovery_artifact_scheduled(
         command.artifact,
+        command.offset,
         command.bytes,
         plan.backend_completion_binding()
             .backend_execution_binding(),
@@ -126,9 +127,12 @@ pub(super) fn execute(
             }
             Ok(match physical.disposition() {
                 RecoveryStagingWriteDisposition::Created
+                | RecoveryStagingWriteDisposition::RangeWritten
                 | RecoveryStagingWriteDisposition::CompletedFromExactPrefix => {
                     let completed_from_prefix = physical.disposition()
                         == RecoveryStagingWriteDisposition::CompletedFromExactPrefix;
+                    let range_written =
+                        physical.disposition() == RecoveryStagingWriteDisposition::RangeWritten;
                     let performed = crate::physical_runtime::recovery_coordination::PerformedRecoveryPhysicalEffect::record_write(
                         RecoveryStagingWriteOccurrence::new(
                             coordination.session_identity(),
@@ -143,6 +147,8 @@ pub(super) fn execute(
                     );
                     if completed_from_prefix {
                         PhysicalRecoveryStagingMaterialization::CompletedFromExactPrefix(performed)
+                    } else if range_written {
+                        PhysicalRecoveryStagingMaterialization::RangeWritten(performed)
                     } else {
                         PhysicalRecoveryStagingMaterialization::Created(performed)
                     }
@@ -204,7 +210,11 @@ fn command_coordinate(
     command: &PhysicalRecoveryStagingCommand<'_>,
 ) -> Option<worth_store_physical_format::RecordFrameCoordinate> {
     u32::try_from(command.bytes.len()).ok().and_then(|length| {
-        worth_store_physical_format::RecordFrameCoordinate::new(command.artifact, 0, length)
+        worth_store_physical_format::RecordFrameCoordinate::new(
+            command.artifact,
+            command.offset,
+            length,
+        )
     })
 }
 

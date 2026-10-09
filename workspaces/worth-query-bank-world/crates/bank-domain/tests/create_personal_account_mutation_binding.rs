@@ -84,10 +84,6 @@ fn personal_account_creation_binding_declares_its_complete_fixed_shape() {
             .maximum_retained_representation_bytes(),
         1392
     );
-    assert_eq!(
-        descriptor.candidates().resources().maximum_validator_work(),
-        Some(16)
-    );
 }
 
 #[test]

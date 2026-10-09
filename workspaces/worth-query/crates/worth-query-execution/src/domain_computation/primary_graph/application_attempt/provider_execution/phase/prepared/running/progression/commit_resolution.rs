@@ -220,3 +220,35 @@ use committed_components::{
     committed_component_recovery_evidence, resolve_committed_components, seal_committed_outcome,
     WorthQueryCommittedComponentResolutionDenial,
 };
+
+#[cfg(test)]
+mod index_preparation_tests {
+    use super::*;
+
+    #[test]
+    fn pre_effect_index_exhaustion_remains_typed_at_application_boundary() {
+        let failure = crate::domain_computation::WorthQueryProviderSessionFailure::new(
+            crate::domain_computation::WorthQueryProviderSessionDenialKind::IndexMaintenanceBudgetExceeded,
+            crate::domain_computation::WorthQueryProviderSessionProtocolStage::Commit,
+            "candidate index work exceeded its finite budget",
+            crate::domain_computation::WorthQueryProviderSessionProtocolCounters::default(),
+        );
+        let outcome = crate::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_compare_denied(
+            crate::domain_computation::WorthQueryProviderCompareAndCommitDenial::ProviderSession(
+                failure,
+            ),
+        );
+        let WorthQueryProviderProgressionOutcome::Denied(denial) = outcome else {
+            panic!("pre-effect index refusal must remain a denial");
+        };
+        assert_eq!(
+            denial.kind(),
+            crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenialKind::IndexMaintenanceBudgetExceeded,
+        );
+        assert_eq!(denial.stage(), crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenialStage::ProviderCommit);
+        assert_eq!(
+            denial.detail(),
+            Some("candidate index work exceeded its finite budget")
+        );
+    }
+}

@@ -26,14 +26,12 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationAtt
     >,
     conditional_definition:
         Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
-    validator_work_admission:
-        super::super::effect_program::WorthQueryCandidateValidatorWorkAdmission,
     indexed_rebase_work_budget: usize,
     retain_output_demand_observation: bool,
     retain_client_observation: bool,
     producer_required_invariants:
         &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
-    output_currentness_facts: Option<super::super::OutputCurrentnessFacts>,
+    source_fact_rebase: crate::domain_computation::primary_graph::provider::PreparedSourceFactRebase,
     consumed_outputs: Vec<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence>,
 }
 
@@ -70,6 +68,7 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
     authorization: crate::domain_computation::authorization::WorthQueryProviderAuthorizationDecisionFacts,
     attempt_basis: super::super::provider_execution::WorthQueryApplicationAttemptBasis,
     context: WorthQueryProviderAttemptRegistrationContext<'_, Schema, Operation, Input, Scope>,
+    allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<WorthQueryRegisteredProviderAttempt<'run>, WorthQueryProviderProgressionOutcome> {
     let inspection = WorthQueryProviderRegistrationInspectionPermit::mint();
     let WorthQueryPreparedApplicationProviderAttempt {
@@ -79,7 +78,6 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
         effects,
         preimage_demand,
         conditional_definition,
-        validator_work_admission,
         retain_output_demand_observation,
         retain_client_observation,
         producer_required_invariants,
@@ -104,6 +102,37 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
             );
         }
     };
+    let (source_facts, moved_by_own_effect) = match &output_currentness_facts {
+        Some(facts) => (facts.facts().to_vec(), facts.moved_by_own_effect()),
+        None => (
+            decision_facts
+                .facts()
+                .values()
+                .filter_map(|fact| fact.observed_source_fact().cloned())
+                .collect(),
+            std::sync::Arc::from([]),
+        ),
+    };
+    // Preserve producer source order or authorization-merged decision fact order.
+    // Temporary Vec/other nested heaps remain separately uncharged.
+    let allocation_control = crate::domain_computation::primary_graph::request_allocation_control::RequestAllocationControl::new(context.admission(&inspection).publication_request(), allocation_policy);
+    let source_fact_rebase = match crate::domain_computation::primary_graph::provider::PreparedSourceFactRebase::admit(
+        source_facts,
+        moved_by_own_effect,
+        crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(allocation_control.policy(), Some(context.admission(&inspection).publication_request())),
+    ) {
+        Ok(prepared) => prepared,
+        Err(denial) => {
+            let _ = staged.abort();
+            let denial = super::super::WorthQueryApplicationCommitDenial::source_rebase_denied(denial);
+            use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption as Stop;
+            return Err(match denial.source_rebase_interruption() {
+                Some(Stop::Cancelled) => WorthQueryProviderProgressionOutcome::Cancelled,
+                Some(Stop::DeadlineExceeded) => WorthQueryProviderProgressionOutcome::TimedOut,
+                None => WorthQueryProviderProgressionOutcome::Denied(denial),
+            });
+        }
+    };
     let expected_steps = effects.shared_expected_steps();
     let dispatch_outbox = context.provider(&inspection).register_application_attempt(
         WorthQueryApplicationAttemptRegistration {
@@ -124,7 +153,6 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
             preimage_demand: preimage_demand.as_ref(),
             aftermath_causality: context.aftermath_causality(&inspection).cloned(),
             conditional_definition,
-            validator_work_admission,
             indexed_rebase_work_budget: context
                 .admission(&inspection)
                 .allowed_graph_contract()
@@ -132,7 +160,7 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
             retain_output_demand_observation,
             retain_client_observation,
             producer_required_invariants,
-            output_currentness_facts,
+            source_fact_rebase,
             consumed_outputs,
         },
     );

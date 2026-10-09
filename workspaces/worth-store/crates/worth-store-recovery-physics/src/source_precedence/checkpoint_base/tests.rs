@@ -8,7 +8,7 @@ use worth_store_physical_format::{
     CheckpointRootBasis, CheckpointWalSourceRange, DurablePhysicalRootManifest,
     DurableRootSelector, FreeSpaceBlockReference, FreeSpaceKey, PhysicalCheckpointIdentity,
     PhysicalCheckpointSource, PhysicalPageSizeClass, PhysicalRecordFormatDeclaration,
-    RecordAllocationClass, RootSelectorIdentity, RootSelectorRole,
+    RootSelectorIdentity, RootSelectorRole,
 };
 use worth_store_physical_integrity::{
     validate_root_manifest, PhysicalArtifactScope, PhysicalByteRange,
@@ -132,7 +132,10 @@ fn candidate(generation: u64, tree: u64) -> super::super::PhysicalRootSourceCand
 }
 
 fn manifest(generation: u64, tree: u64) -> DurablePhysicalRootManifest {
-    let key = FreeSpaceKey::new(RecordAllocationClass::Extent, 1).unwrap();
+    let key = FreeSpaceKey::arena(
+        worth_store_physical_format::ExtentArenaId::new(1).unwrap(),
+        0,
+    );
     let free = FreeSpaceBlockReference::new(generation, 1, 0, 17, key, key).unwrap();
     DurablePhysicalRootManifest::builder(generation, tree, 4, 19)
         .free_space_root(Some(free))

@@ -44,13 +44,6 @@ pub(super) fn write(
             output.text(operation)?;
             write_precondition_target(output, target)
         }
-        ApplicationSchemaMember::OperationDecisionFactBudget {
-            operation,
-            maximum_fact_count,
-        } => {
-            output.text(operation)?;
-            write_usize(output, *maximum_fact_count)
-        }
         ApplicationSchemaMember::OperationProjectionWorkBudget {
             operation,
             maximum_work_units,
@@ -130,10 +123,6 @@ pub(super) fn decode(
         14 => ApplicationSchemaMember::OperationMutationPrecondition {
             operation,
             target: decode_precondition_target(input)?,
-        },
-        15 => ApplicationSchemaMember::OperationDecisionFactBudget {
-            operation,
-            maximum_fact_count: decode_usize(input)?,
         },
         16 => ApplicationSchemaMember::OperationProjectionWorkBudget {
             operation,

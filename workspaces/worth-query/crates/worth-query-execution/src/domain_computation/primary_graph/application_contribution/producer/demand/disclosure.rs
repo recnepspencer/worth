@@ -15,7 +15,9 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphApplicationRuntime,
 };
 
+mod required_successor;
 mod validated;
+pub(super) use required_successor::bind_required_successor;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use validated::{
     FreshDisclosureAdmissionStop, FreshOutputDisclosure, ValidatedOutputDisclosure,
     ValidatedProducerInput,

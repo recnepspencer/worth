@@ -52,6 +52,18 @@ pub(in crate::physical_runtime::durability) fn plan_reclamation(
         &entries[..retained_index],
         &state.unresolved_retirement_spans,
     );
+    let candidates = match candidates.iter().position(|entry| {
+        state.copy_obligations.iter().any(|copy| {
+            copy.holds_at(compaction.wal_cutoff_lsn_exclusive())
+                && copy.overlaps(
+                    entry.lsn_range().start().get(),
+                    entry.lsn_range().end_exclusive().get(),
+                )
+        })
+    }) {
+        Some(index) => &candidates[..index],
+        None => candidates,
+    };
     if candidates.is_empty() {
         return Ok(PhysicalWalReclamationPlan::NotRequired { checkpoint });
     }

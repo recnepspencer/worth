@@ -1,0 +1,16 @@
+error[E0308]: mismatched types
+  --> tests/ui/recovery_limit_cannot_be_minted_by_a_caller.rs:23:71
+   |
+23 |     let limit = mint(PhysicalRecoveryLimitDimension::ManifestEntries, refusal());
+   |                 ---- arguments to this function are incorrect         ^^^^^^^^^ expected `RecoveryBudgetAuthority`, found `CallerAuthority`
+   |
+   = note: expected struct `Performed<BudgetRefused, worth_store_recovery_runtime::orchestration::recovery_budget::RecoveryBudgetAuthority, LimitCounts>`
+              found struct `Performed<BudgetRefused, CallerAuthority, LimitCounts>`
+note: function defined here
+  --> tests/ui/recovery_limit_cannot_be_minted_by_a_caller.rs:15:4
+   |
+15 | fn mint<D: LimitDimension>(
+   |    ^^^^
+16 |     dimension: D,
+17 |     refusal: Performed<BudgetRefused, D::Authority, LimitCounts>,
+   |     ------------------------------------------------------------

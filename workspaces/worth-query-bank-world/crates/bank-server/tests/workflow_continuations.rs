@@ -73,7 +73,7 @@ fn initiation_recovers_one_continuation_and_a_fresh_approver_starts_its_workflow
     let direct = approval_request
         .mutate(authority.clone())
         .idempotency(&BankIdempotencyKey::new("approve-directly").unwrap())
-        .execute();
+        .execute(worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation);
     assert!(
         matches!(
             direct,

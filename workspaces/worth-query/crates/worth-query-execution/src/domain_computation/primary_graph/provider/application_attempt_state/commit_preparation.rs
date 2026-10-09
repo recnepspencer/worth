@@ -16,7 +16,6 @@ pub(in crate::domain_computation::primary_graph) use preimage_retention::WorthQu
 pub(crate) use preimage_retention::WorthQueryRetainedPreImageSeal;
 pub(in crate::domain_computation::primary_graph::provider) use relational_commit::publish_recovered;
 pub(in crate::domain_computation::primary_graph::provider) use relational_commit::ManagedUnpublishedAttempt;
-pub(in crate::domain_computation::primary_graph) use relational_commit::RetainedTouchedRecords;
 pub(in crate::domain_computation::primary_graph) use relational_commit::{
     FactlessCurrentness, OwnEffectOnReads, RebaseVerificationReason,
     WorthQueryMutationWorkCommitSeal, WorthQueryPrimaryGraphCommittedApplication,
@@ -52,6 +51,7 @@ impl WorthQueryPreparedApplicationCommit {
 pub(in crate::domain_computation::primary_graph::provider) fn commit_prepared_application(
     provider: &WorthQueryPrimaryGraphProvider,
     session: crate::domain_computation::WorthQueryProviderSessionView<'_>,
+    allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<
     crate::domain_computation::WorthQueryProviderTerminalDescription,
     crate::domain_computation::WorthQueryProviderSessionCommitStop,
@@ -71,7 +71,12 @@ pub(in crate::domain_computation::primary_graph::provider) fn commit_prepared_ap
     prepared
         .validate_decision_work()
         .map_err(crate::domain_computation::WorthQueryProviderSessionCommitStop::from)?;
-    relational_commit::commit_owner_validated(session.execution_request(), provider, prepared)
+    relational_commit::commit_owner_validated(
+        session.execution_request(),
+        provider,
+        prepared,
+        allocation_policy,
+    )
 }
 
 fn take_prepared_session(
@@ -88,13 +93,8 @@ fn take_prepared_session(
     .ok_or_else(|| {
         commit_failure("primary graph session has no exact commit-prepared application attempt")
     })?;
-    let (attempt, candidate, work, completion) = prepared.into_parts();
-    let (source_facts, moved_by_own_effect) = attempt.observed_source_facts();
-    let source_fact_rebase =
-        relational_commit::PreparedSourceFactRebase::admit(source_facts, moved_by_own_effect)
-            .map_err(|_| {
-                commit_failure("candidate source-fact rebase capacity exhausted before effects")
-            })?;
+    let (mut attempt, candidate, work, completion) = prepared.into_parts();
+    let source_fact_rebase = attempt.take_source_fact_rebase();
     let (retained_preimage, preimage_retention_work) =
         preimage_retention::retain_attempt_preimage(&attempt, &candidate)?.into_parts();
     Ok(WorthQueryPreparedApplicationCommit {
@@ -114,3 +114,7 @@ fn commit_failure(detail: &'static str) -> WorthQueryProviderSessionFailure {
         detail,
     )
 }
+
+pub(in crate::domain_computation::primary_graph) use relational_commit::{
+    PreparedRebaseDenial, PreparedSourceFactRebase,
+};

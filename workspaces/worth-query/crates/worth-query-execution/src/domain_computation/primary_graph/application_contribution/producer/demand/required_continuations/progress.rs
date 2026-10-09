@@ -119,6 +119,29 @@ impl<Schema> RequiredContinuations<Schema>
 where
     Schema: ApplicationSchema + 'static,
 {
+    /// Attach a newly claimed native read to the actual installed successor
+    /// whose Fresh attempt issued the packet, before entering the child frame.
+    pub(in super::super) fn requested_readmission(
+        &mut self,
+        registry: &WorthQueryOutputDemandRegistry,
+        requested: &crate::domain_computation::primary_graph::invariant_projection::RequestedOutputRead,
+        selected: &worth_relational::facade::runtime::PositionedRelationalSnapshot,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<
+        crate::domain_computation::primary_graph::application_output_demand::PendingUpstream,
+        WorthQueryOutputDemandDenial,
+    > {
+        let mut claims = RequestedOutputReadClaims::default();
+        let upstream =
+            registry.requested_ready_readmission(requested, selected, admission, &mut claims)?;
+        self.entries
+            .last_mut()
+            .expect("Fresh refusal retains its installed typed successor")
+            .successor
+            .retain_requested(&mut claims);
+        Ok(upstream)
+    }
+
     /// End each entry whose row went back to the Ready it reopened. However
     /// its refresh stopped, refused at admission, interrupted while it
     /// advanced, or stopped when resumed, the next wave claims that refresh

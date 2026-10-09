@@ -63,6 +63,7 @@ pub trait WorthQueryProviderSessionLifecycle: Send + Sync + 'static {
     fn commit_prepared_session(
         &self,
         session: &crate::domain_computation::WorthQueryProviderSessionView<'_>,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         crate::domain_computation::WorthQueryProviderTerminalDescription,
         crate::domain_computation::WorthQueryProviderSessionCommitStop,

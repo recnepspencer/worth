@@ -2,6 +2,7 @@ use super::*;
 use crate::{PlanarEdit, PlanarMutation};
 use worth_query_consumer_values::{PlanarCurrentOutputExpectation, PlanarOperation};
 use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
+use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 
 #[test]
 fn restored_current_output_is_tracked_before_any_producer_demand_and_rejects_source_change() {
@@ -12,7 +13,9 @@ fn restored_current_output_is_tracked_before_any_producer_demand_and_rejects_sou
     drop(settle(&request, &application));
     drop(principal);
     drop(scope);
-    let checkpoint = application.capture_application_checkpoint().unwrap();
+    let checkpoint = application
+        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
+        .unwrap();
     drop(application);
 
     super::super::producer::reset_provider_contacts();
@@ -35,11 +38,13 @@ fn restored_current_output_is_tracked_before_any_producer_demand_and_rejects_sou
                         output_key: "anchor-a".into(),
                     },
                 ]),
-                validator_work: 4096,
             }))
             .expect_source(observed.observed_sources()[0].clone())
             .idempotency(&command)
-            .execute_in_program(&restored)
+            .execute_in_program(
+                &restored,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
     };
     let outcome =
         verify(901_u64).expect("restored lineage is available to the ordinary tracked reader");
@@ -69,7 +74,10 @@ fn restored_current_output_is_tracked_before_any_producer_demand_and_rejects_sou
         })
         .expect_source(observed.observed_sources()[0].clone())
         .idempotency(&902_u64)
-        .execute_performed::<CheckpointProgram, CheckpointRoot>(&restored)
+        .execute_performed::<CheckpointProgram, CheckpointRoot>(
+            &restored,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let denial = verify(903_u64).expect_err("restored facts must still reject a changed source");
     use std::error::Error;

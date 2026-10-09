@@ -46,3 +46,94 @@ dependencies = []
 [[packages]]
 package = "worth-schema-graph"
 dependencies = []
+
+[[packages]]
+package = "worth-store"
+dependencies = [
+    "getrandom",
+    "serde",
+    "serde_json",
+    "sha2",
+    "stats_alloc",
+    "tempfile",
+    "tracking-allocator",
+    "trybuild",
+    "worth-execution",
+    "worth-foundational",
+    "worth-proof",
+    "worth-signal",
+    "worth-store-aspect-native",
+    "worth-store-authority",
+    "worth-store-blob-chunks",
+    "worth-store-buffer-pool",
+    "worth-store-contracts",
+    "worth-store-io-scheduler",
+    "worth-store-layout-indexes",
+    "worth-store-lsm-authority",
+    "worth-store-offline-integrity-observer",
+    "worth-store-offline-verifier",
+    "worth-store-physical-backend",
+    "worth-store-physical-format",
+    "worth-store-physical-integrity",
+    "worth-store-physical-isolation",
+    "worth-store-recovery-physics",
+    "worth-store-security",
+    "worth-store-wal",
+]
+
+[[packages]]
+package = "worth-store-blob-chunks"
+dependencies = [
+    "sha2",
+    "tempfile",
+    "worth-foundational",
+    "worth-proof",
+    "worth-store-aspect-native",
+    "worth-store-authority",
+    "worth-store-budgets",
+    "worth-store-contracts",
+    "worth-store-io-scheduler",
+    "worth-store-offline-verifier",
+    "worth-store-physical-backend",
+    "worth-store-physical-format",
+    "worth-store-physical-isolation",
+    "worth-store-reclaim-policy",
+    "worth-store-retention",
+    "worth-store-security",
+    "worth-store-tiering",
+    "worth-store-wal",
+]
+
+[[packages]]
+package = "worth-store-layout-indexes"
+dependencies = [
+    "sha2",
+    "tempfile",
+    "worth-foundational",
+    "worth-proof",
+    "worth-store-aspect-native",
+    "worth-store-authority",
+    "worth-store-blob-chunks",
+    "worth-store-budgets",
+    "worth-store-contracts",
+    "worth-store-io-scheduler",
+    "worth-store-lsm-authority",
+    "worth-store-physical-backend",
+    "worth-store-physical-format",
+    "worth-store-physical-isolation",
+    "worth-store-recovery-physics",
+    "worth-store-security",
+    "worth-store-test-support",
+    "worth-store-wal",
+]
+
+[[packages]]
+package = "worth-store-lsm-authority"
+dependencies = [
+    "sha2",
+    "worth-store-authority",
+    "worth-store-physical-isolation",
+    "worth-store-recovery-physics",
+    "worth-store-security",
+    "worth-store-wal",
+]

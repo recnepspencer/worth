@@ -186,10 +186,14 @@ fn declared_cost(world: &AuthorizationWorld) -> (u64, u64) {
         .unwrap();
     world
         .invariant
-        .project_admitted_operation(&admission, |_, root| {
-            application_computation_input_digest::<Input, _, _>(root, &mut declare).unwrap();
-            Ok::<_, ()>(())
-        })
+        .project_admitted_operation(
+            &admission,
+            |_, root| {
+                application_computation_input_digest::<Input, _, _>(root, &mut declare).unwrap();
+                Ok::<_, ()>(())
+            },
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .into_parts()
         .0

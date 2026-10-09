@@ -13,10 +13,12 @@ mod current_output;
 pub(in crate::domain_computation::primary_graph) use current_output::RetainedOutputCurrentnessRead;
 mod denial;
 mod family_selection;
+pub(in crate::domain_computation::primary_graph) use family_selection::NativePriorCheckpointOutput;
 mod input_cutoff;
 mod input_reuse_key;
 pub(in crate::domain_computation::primary_graph) mod invalidation;
 mod native_output_witness;
+mod native_prior_checkpoint;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) mod own_write_fixture;
 mod partition_index;
@@ -154,6 +156,8 @@ pub(super) struct WorthQueryProducerLineageHead {
     /// The head's record consumed upstream outputs. Only a row that posts its
     /// settlement holds the claims on them.
     pub(super) claims_upstream: bool,
+    /// Runtime origins retain a replayable receipt; checkpoint origins retain prior identity.
+    pub(super) may_replay_idempotency: bool,
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -180,8 +184,9 @@ pub(super) struct WorthQueryCurrentOutputCandidate {
 
 pub(super) struct WorthQueryCurrentOutputFamilyResolution {
     pub(super) family_installed: bool,
+    pub(super) ambiguous_publication: bool,
     pub(super) candidates: Vec<WorthQueryCurrentOutputCandidate>,
-    pub(super) source_lookups: usize,
+    pub(super) selection_work: usize,
 }
 
 impl WorthQueryApplicationOutputLineage {
@@ -202,30 +207,6 @@ impl WorthQueryApplicationOutputLineage {
             .install(maximum_bytes as u64, history_positions);
     }
 
-    fn record_prepared(
-        &mut self,
-        application: &WorthQueryPrimaryGraphCommittedApplication,
-        consumed_outputs: Arc<[super::invariant_projection::ConsumedOutputEvidence]>,
-        prepared: &PreparedOutputLineageSlot,
-        completed_handler_facts: Option<super::application_attempt::CompletedHandlerFactBoundary>,
-        completed_decision_reuse: Option<CompletedDecisionReuseProof>,
-        prepared_input_reuse_key: Option<PreparedInputReuseKey>,
-        retained_capacity: retained_capacity::RetainedLineageCapacity,
-        computation: retained_computation::RecordedComputation,
-    ) -> Arc<RecordedSettlementIdentity> {
-        self.record_inner(
-            computation,
-            application,
-            consumed_outputs,
-            Some(prepared),
-            completed_handler_facts,
-            completed_decision_reuse,
-            prepared_input_reuse_key,
-            Some(retained_capacity),
-        )
-        .expect("a prepared output slot has a sealed output binding")
-    }
-
     fn record_inner(
         &mut self,
         computation: retained_computation::RecordedComputation,
@@ -235,6 +216,7 @@ impl WorthQueryApplicationOutputLineage {
         completed_handler_facts: Option<super::application_attempt::CompletedHandlerFactBoundary>,
         completed_decision_reuse: Option<CompletedDecisionReuseProof>,
         prepared_input_reuse_key: Option<PreparedInputReuseKey>,
+        native_prior_checkpoint: Option<native_prior_checkpoint::NativePriorCheckpointLocator>,
         retained_capacity: Option<retained_capacity::RetainedLineageCapacity>,
     ) -> Option<Arc<RecordedSettlementIdentity>> {
         let evidence = application.commit_evidence();
@@ -332,6 +314,7 @@ impl WorthQueryApplicationOutputLineage {
             };
         let computation_source = ComputationSourceEvidence::from_completed(application);
         let recorded = RecordedOutput {
+            native_prior_checkpoint,
             computation_source,
             performed_origin: None,
             _retained_capacity: retained_capacity,

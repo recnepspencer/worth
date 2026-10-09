@@ -15,6 +15,8 @@ const VERSION_TWO_MINIMAL_ARCHIVE_HEX: &str = include_str!("archive_stream/archi
 
 #[test]
 fn version_two_minimal_archive_is_deterministic_and_frozen() {
+    // package/identity.rs:81 declares canonical identity v4: hash the fixture's
+    // canonical tokens with that domain, then encode the v2 archive framing.
     let export = fixture::minimal_package().export_typed_records().unwrap();
     let limits = WorthQueryPackageArchiveLimits::DEFAULT;
     let first = encode_package_archive(&export, limits).unwrap();

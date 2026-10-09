@@ -30,24 +30,6 @@ impl<Schema, Operation, Input, Scope, Phase>
         })
     }
 
-    pub(super) fn admit_fact_key(
-        &self,
-        key: &WorthQueryApplicationFactKey,
-    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
-        let budget = self
-            .admission
-            .allowed_graph_contract()
-            .decision_fact_budget();
-        if !self.facts.contains_key(key) && self.facts.len() >= budget {
-            Err(denial(
-                WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
-                self.admission.operation(),
-            ))
-        } else {
-            Ok(())
-        }
-    }
-
     pub(super) fn validate_identity_authority<Entity>(
         &self,
         entity: &str,

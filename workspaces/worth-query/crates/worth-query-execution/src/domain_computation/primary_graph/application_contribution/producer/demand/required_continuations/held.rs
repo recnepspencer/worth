@@ -3,7 +3,7 @@
 
 use super::*;
 use crate::domain_computation::primary_graph::application_output_demand::{
-    HeldRequiredSuccessor, WorthQueryOutputDemandKey,
+    HeldRequiredSuccessor, OutputRowStage, WorthQueryOutputDemandKey,
 };
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 
@@ -220,8 +220,17 @@ where
         {
             return Ok(None);
         }
-        self.successor
-            .resume(phase, runtime, principal, request, branch, admission)?;
+        // Complete the already committed change before testing the producer's
+        // frozen source again. A later source edit can require a fresh producer,
+        // but it cannot erase the checkpoint or its exact scheduling identity.
+        // The required wave still proves Current after this Ready delivery.
+        if !matches!(
+            registry.row_stage_admitted(self.interest(), admission)?,
+            OutputRowStage::Published
+        ) {
+            self.successor
+                .resume(phase, runtime, principal, request, branch, admission)?;
+        }
         loop {
             if let Some(ready) = registry.interest_ready_readmission(self.interest(), admission)? {
                 return Ok(Some(ready));

@@ -8,6 +8,7 @@
 //! ledger carries the patch-stream position, so the first write resumes the
 //! stream where the capture left it.
 
+use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 #[path = "restored_primary_backend/adapters.rs"]
 mod adapters;
 
@@ -37,7 +38,7 @@ fn the_first_production_write_after_restore_answers_as_before_the_capture() {
     let captured = ledger_position(&host.granular_invalidation_installation());
     let checkpoint = host
         .runtime()
-        .capture_application_checkpoint()
+        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
         .expect("the host captures");
     drop(host);
 

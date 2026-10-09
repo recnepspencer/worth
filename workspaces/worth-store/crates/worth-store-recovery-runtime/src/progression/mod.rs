@@ -1,5 +1,6 @@
 mod admitted;
 mod completion;
+mod custody;
 mod discovered;
 mod integrity_evidence;
 mod namespace_durable;
@@ -9,15 +10,18 @@ mod selected;
 mod staged;
 
 pub(crate) use planned::{
-    derive_execution_basis, requires_successor_candidate, CandidateMaterializationCost,
-    ExecutionBasisDenial, RecoveryObservedCandidateArtifact, RecoveryObservedSuccessorCandidate,
-    RecoverySelectedSegmentPage, RecoverySelectedSourceInventory,
+    derive_execution_basis, requires_successor_candidate, verified_historical_release_transition,
+    CandidateMaterializationCost, ExecutionBasisDenial, PlanningMemoryDenial,
+    PlanningResidentAllowance, RecoveryObservedCandidateArtifact,
+    RecoveryObservedSuccessorCandidate, RecoverySelectedSegmentPage,
+    RecoverySelectedSourceInventory,
 };
 
 pub use admitted::AdmittedPhysicalRecovery;
 pub use completion::RecoveryCompletion;
 #[cfg(feature = "certification-test-authority")]
 pub use completion::{complete_recovery, RecoveryCompletionDenial};
+pub(crate) use custody::{CustodyState, PendingReleaseReplay, PlanningCustody};
 pub use discovered::{DiscoveredPhysicalRecovery, PhysicalRecoveryDiscoveryCounters};
 pub(crate) use integrity_evidence::RecoveryIntegrityEvidence;
 pub use namespace_durable::NamespaceDurablePhysicalRecovery;

@@ -109,6 +109,17 @@ impl BulkImportStage {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ConflictClass {
+    /// In-process physical refusal; never a serialized graph verdict.
+    #[serde(skip)]
+    ExecutionAllocationDenied {
+        denial: worth_execution::ExecutionAllocationDenial,
+    },
+    #[serde(skip)]
+    TransactionStagingCardinalityOverflow,
+    #[serde(skip)]
+    TransactionInputDirectoryAllocationDenied {
+        requested_batches: usize,
+    },
     StaleTarget {
         target: ExistingRecordTarget,
         context: String,
@@ -184,20 +195,8 @@ pub enum ConflictClass {
         expected_runtime_instance_id: u64,
         actual_runtime_instance_id: u64,
     },
-    TransactionFootprintBudgetExceeded {
-        maximum_loci: usize,
-        required_loci: usize,
-    },
-    TransactionOverlayBudgetExceeded {
-        maximum_bytes: u64,
-        required_bytes: u64,
-    },
     TransactionSavepointBudgetExceeded {
         maximum_savepoints: usize,
-    },
-    TransactionSavepointFootprintBudgetExceeded {
-        maximum_loci: usize,
-        required_loci: usize,
     },
     TransactionSavepointIdentityExhausted,
     MaterializationAuthorityRequired,

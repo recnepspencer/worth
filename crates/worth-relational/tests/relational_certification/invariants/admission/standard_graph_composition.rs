@@ -212,7 +212,10 @@ fn graph_execution(runtime: &RelationalRuntime, branch: &BranchId) -> InvariantE
         )
         .expect("owner-admitted transaction context");
     transaction
-        .push_batch(graph_entity_batch("common-graph-plan"))
+        .push_batch(
+            graph_entity_batch("common-graph-plan"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     transaction
         .graph_composition_plan(runtime)
@@ -233,10 +236,16 @@ fn commit_graph_entity(
         )
         .expect("owner-admitted transaction context");
     transaction
-        .push_batch(graph_entity_batch(client_key))
+        .push_batch(
+            graph_entity_batch(client_key),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let commit = transaction
-        .commit(runtime)
+        .commit(
+            runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("branch divergence commits");
     commit
         .changed_records

@@ -4,14 +4,14 @@ use super::{PhysicalWorkOperationFamily, PhysicalWorkPressureClass, PhysicalWork
 
 pub(in crate::physical_runtime::work) struct PhysicalWorkAccounting {
     declared: AtomicU64,
-    terminal_by_family_and_pressure: [[AtomicU64; 8]; 9],
+    terminal_by_family_and_pressure: [[AtomicU64; 13]; 9],
 }
 
 impl PhysicalWorkAccounting {
     pub(in crate::physical_runtime::work) const fn new() -> Self {
         Self {
             declared: AtomicU64::new(0),
-            terminal_by_family_and_pressure: [const { [const { AtomicU64::new(0) }; 8] }; 9],
+            terminal_by_family_and_pressure: [const { [const { AtomicU64::new(0) }; 13] }; 9],
         }
     }
 
@@ -41,7 +41,7 @@ impl PhysicalWorkAccounting {
 
     pub(in crate::physical_runtime::work) fn terminal_by_family_and_pressure(
         &self,
-    ) -> [[u64; 8]; 9] {
+    ) -> [[u64; 13]; 9] {
         std::array::from_fn(|family| {
             std::array::from_fn(|pressure| {
                 self.terminal_by_family_and_pressure[family][pressure].load(Ordering::Acquire)
@@ -99,5 +99,10 @@ pub(in crate::physical_runtime::work) const fn pressure_index(
         PhysicalWorkPressureClass::ForegroundMutation => 5,
         PhysicalWorkPressureClass::BackgroundCheckpoint => 6,
         PhysicalWorkPressureClass::BackgroundScrub => 7,
+        PhysicalWorkPressureClass::BackgroundCompaction => 8,
+        PhysicalWorkPressureClass::BackgroundBlobIngest => 9,
+        PhysicalWorkPressureClass::BackgroundRebuild => 10,
+        PhysicalWorkPressureClass::BackgroundBlobMovement => 11,
+        PhysicalWorkPressureClass::BackgroundBlobReclaim => 12,
     }
 }

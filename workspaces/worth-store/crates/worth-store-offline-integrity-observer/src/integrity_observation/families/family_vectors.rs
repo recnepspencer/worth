@@ -24,7 +24,7 @@ use crate::integrity_observation::{
 };
 use worth_foundational::PhysicalArtifactFamily as Family;
 
-const FORMAT: [u8; 10] = [1, 0, 0, 64, 0, 0, 1, 1, 1, 24];
+const FORMAT: [u8; 10] = [2, 0, 0, 64, 0, 0, 1, 1, 1, 24];
 fn hex(value: &str) -> Vec<u8> {
     value
         .as_bytes()
@@ -41,9 +41,12 @@ fn segment_key(segment: u64, page: u64) -> Vec<u8> {
     [segment.to_le_bytes(), page.to_le_bytes()].concat()
 }
 fn free_key(class: u8, owner: u64) -> Vec<u8> {
-    let mut key = vec![0; 16];
+    let mut key = vec![0; 24];
     key[0] = class;
-    key[8..].copy_from_slice(&owner.to_le_bytes());
+    key[8..16].copy_from_slice(&owner.to_le_bytes());
+    if class == 2 {
+        key[16..24].copy_from_slice(&5_u64.to_le_bytes());
+    }
     key
 }
 fn expected(family: Family, generation: u64, scope: ChildScope) -> ChildExpectation {
@@ -125,9 +128,11 @@ fn every_durable_family_reader_consumes_frozen_bytes_and_rejects_poison() {
                 Family::ExtentManifest,
                 5,
                 ChildScope::ExtentManifest {
+                    arena: 1,
                     extent: 4,
                     record: record(0x22, 7),
                     logical_bytes: 6,
+                    allocated_bytes: 20480,
                 },
             ),
         ),
@@ -136,6 +141,7 @@ fn every_durable_family_reader_consumes_frozen_bytes_and_rejects_poison() {
                 Family::ExtentChunkFrame,
                 5,
                 ChildScope::ExtentChunk {
+                    arena: 1,
                     extent: 4,
                     record: record(0x22, 7),
                     logical_bytes: 6,
@@ -164,7 +170,11 @@ fn every_durable_family_reader_consumes_frozen_bytes_and_rejects_poison() {
             scope.family
         );
         let mut unsupported = clean.clone();
-        unsupported[9] = 3;
+        unsupported[9] = if scope.family == Family::RootRoutingBlock {
+            4
+        } else {
+            3
+        };
         assert!(
             matches!(inspect(&unsupported,&scope),Err(Outcome::Unsupported(version)) if version.axis()==OfflineUnsupportedVersionAxis::EnvelopeSchema)
         );
@@ -269,6 +279,8 @@ fn checkpoint_stream_preserves_record_kinds_and_selective_aggregates() {
     let store = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
     let records =
         super::checkpoint::read_checkpoint(&stream, store, None, 100, &mut Counters::default());
+    assert!(records.completed_source.is_some());
+    let records = records.records;
     assert_eq!(records.len(), 5);
     assert!(
         records
@@ -282,7 +294,7 @@ fn checkpoint_stream_preserves_record_kinds_and_selective_aggregates() {
     );
     for (index, offset) in [0, 164, 232, 268, 291].into_iter().enumerate() {
         let mut unsupported = stream.clone();
-        unsupported[offset + 8] = 2;
+        unsupported[offset + 8] = 4;
         let records = super::checkpoint::read_checkpoint(
             &unsupported,
             store,
@@ -290,6 +302,8 @@ fn checkpoint_stream_preserves_record_kinds_and_selective_aggregates() {
             100,
             &mut Counters::default(),
         );
+        assert!(records.completed_source.is_none());
+        let records = records.records;
         assert_eq!(records.len(), index + 1);
         assert!(
             matches!(&records[index].outcome,Outcome::Unsupported(version) if version.axis()==OfflineUnsupportedVersionAxis::CheckpointRecord)
@@ -301,6 +315,8 @@ fn checkpoint_stream_preserves_record_kinds_and_selective_aggregates() {
     aggregate[228..232].copy_from_slice(&crc.to_le_bytes());
     let records =
         super::checkpoint::read_checkpoint(&aggregate, store, None, 100, &mut Counters::default());
+    assert!(records.completed_source.is_none());
+    let records = records.records;
     assert_eq!(records.len(), 5);
     assert!(
         matches!(&records[4].outcome,Outcome::Damaged(damage) if damage.cause()==Cause::ChecksumMismatch)

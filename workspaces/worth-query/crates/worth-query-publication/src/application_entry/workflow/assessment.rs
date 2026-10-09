@@ -301,6 +301,10 @@ where
                         let settlement = WorthQueryApplicationOutputDemandSettlement::new(
                             retained,
                             self.admitted.observed_source().clone(),
+                            self.admitted.checkpoint_readmission_work_units(),
+                            self.admitted.checkpoint_readmission_work_bound(),
+                            self.admitted
+                                .checkpoint_readmission_charged_preparation_bytes(),
                         );
                         return Ok(WorthQueryWorkflowAssessmentDemandProgress::Settled(
                             WorthQueryWorkflowAssessmentDemandSettlement {

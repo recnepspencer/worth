@@ -95,11 +95,6 @@ where
             )),
         ),
         Ok(Err(IdempotencyDenial::Unavailable)) => Some(denied(DenialStage::Idempotency)),
-        Ok(Err(IdempotencyDenial::WindowExpired)) => {
-            Some(WorthQueryApplicationCommitOutcome::Denied(
-                WorthQueryApplicationCommitDenial::idempotency_window_expired(),
-            ))
-        }
         Ok(Err(IdempotencyDenial::CommittedReceiptNotRetained { commit })) => {
             Some(WorthQueryApplicationCommitOutcome::Denied(
                 WorthQueryApplicationCommitDenial::idempotency_receipt_not_retained(commit),

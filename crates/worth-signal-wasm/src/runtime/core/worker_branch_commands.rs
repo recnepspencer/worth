@@ -103,18 +103,28 @@ impl RuntimeCore {
                 None::<(Vec<PendingCallbackDependencyPatch>, u64)>,
             ));
             let dependency_patches_for_tx = dependency_patches.clone();
-            let outcome =
-                self.runtime
-                    .advance_signal_branch(&mut self.store, &native_basis, move |tx| {
-                        apply_set_changes(tx, &store, &dense_grids, &changes)?;
-                        tx.evaluate_dirty(&evaluator)?;
-                        tx.evaluate_demand(&evaluator, &standing_demand)?;
-                        let patches = apply_pending_dependency_patches_in_transaction(tx, &store)?;
-                        *dependency_patches_for_tx.lock().map_err(|_| {
-                            SignalError::internal("dependency patch receipt mutex poisoned")
-                        })? = Some(patches);
-                        Ok(())
-                    });
+            let serial_request = worth_execution::SerialRequest::from_memory(
+                worth_execution::SerialMemoryBudget::new(
+                    self.runtime.runtime_policy().serial_memory_bytes,
+                ),
+                worth_execution::CancellationToken::new(),
+                None,
+            );
+            let outcome = self.runtime.advance_signal_branch(
+                worth_execution::ExecutionRequest::serial(&serial_request),
+                &mut self.store,
+                &native_basis,
+                move |tx| {
+                    apply_set_changes(tx, &store, &dense_grids, &changes)?;
+                    tx.evaluate_dirty(&evaluator)?;
+                    tx.evaluate_demand(&evaluator, &standing_demand)?;
+                    let patches = apply_pending_dependency_patches_in_transaction(tx, &store)?;
+                    *dependency_patches_for_tx.lock().map_err(|_| {
+                        SignalError::internal("dependency patch receipt mutex poisoned")
+                    })? = Some(patches);
+                    Ok(())
+                },
+            );
             let transaction = outcome.map_err(|error| {
                 WorthSignalJsError::invalid_input(format!(
                     "execute targeted worker transaction denied: {error:?}"

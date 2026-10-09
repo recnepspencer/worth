@@ -8,8 +8,10 @@ description = "Internal OS-backed filesystem effects and media qualification for
 publish = false
 
 [dependencies]
-cap-std = "4.0.2"
-cap-fs-ext = "4.0.2"
+cap-std = "=4.0.2"
+cap-fs-ext = "=4.0.2"
+cap-primitives = "=4.0.2"
+maybe-owned = "=0.3.4"
 fs4 = "0.8"
 file-id = "0.2"
 getrandom = "0.4"
@@ -18,7 +20,7 @@ sha2 = "0.10"
 tempfile = "3"
 sysinfo = { version = "0.38.4", default-features = false, features = ["disk"] }
 worth-proof = { path = "../../../../crates/worth-proof" }
-worth-foundational = { path = "../../../../crates/worth-foundational", optional = true }
+worth-foundational = { path = "../../../../crates/worth-foundational" }
 worth-store-contracts.workspace = true
 worth-store-authority.workspace = true
 worth-store-physical-format.workspace = true
@@ -27,6 +29,7 @@ worth-store-wal.workspace = true
 
 [target.'cfg(windows)'.dependencies]
 winapi-util = "0.1"
+winx = "=0.36.4"
 
 [dev-dependencies]
 stats_alloc = "0.1.10"
@@ -38,11 +41,16 @@ sha2 = "0.10"
 
 [features]
 store-runtime-owner = []
+# Mints observation limits for other crates' tests. No production dependency
+# enables it.
+test-support = []
 recovery-runtime-owner = []
 certification-test-authority = [
     "store-runtime-owner",
-    "dep:worth-foundational",
 ]
+# Test-only: skip the OS flush inside synchronization media operations. Enable
+# only from dev-dependencies; release builds ignore it.
+volatile-sync-for-tests = []
 
 [lints]
 workspace = true

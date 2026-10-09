@@ -53,8 +53,9 @@ Store mutation contract.
 | `PhysicalRecordSubmission::rewrite_selected_inline_segment(...)` | Prepare a record-preserving rewrite of the selected tail segment. |
 | `PhysicalRecordSubmission::rewrite_selected_inline_pages(...)` | Prepare a rewrite of an exact live page span into a compact destination generation. |
 | `PhysicalRecordSubmission::{plan_inline_artifact_rewrites,rewrite_planned_inline_artifact}` | Plan a bounded set of inline artifacts, then prepare one planned rewrite. |
-| `PhysicalRecordSubmission::rewrite_selected_extent_record(...)` | Prepare a copy-on-write rewrite of one extent record (at most 256 KiB) into extent generation g+1. |
-| `ServingPhysicalRuntime::retire_displaced_segment()` | Durably retire one displaced inline or extent generation that no live reader protects. |
+| `PhysicalRecordSubmission::rewrite_selected_extent_record(...)` | Prepare a copy-on-write rewrite of one extent record (at most 256 KiB of stored payload) into extent generation g+1. |
+| `PhysicalRecordSubmission::{prepare_arena_evacuation,advance_extent_copy,prepare_completed_extent_copy}` | Select a sparse arena, advance a bounded durable source copy, then adopt its completed destination through the ordinary root publication owner. |
+| `ServingPhysicalRuntime::retire_displaced_segment()` | Durably retire one displaced inline or extent generation that no live reader protects; release an extent's arena range or delete an evacuated arena. |
 | `ServingPhysicalRuntime::close_plan()` | Drain checkpoints and mutations, dispose Signal, close residency, and release media in order. |
 
 ## Core Mental Model
@@ -346,24 +347,36 @@ been retired is a successful publication, not a partial one.
 
 An extent rewrite (`ExtentRewrite` mutation family) keeps the record identity,
 extent identity and bytes and writes the payload as extent generation g+1 with
-a new manifest. It changes neither the record count nor the inline tail. Its
-redo names the extent id as both placements and digests the full payload, so
-recovery can prove or rebuild the successor from the verified source.
+a new manifest in a copy-on-write arena range. It changes neither the record
+count nor the inline tail. Its redo names the extent id as both placements and
+digests the full payload, so recovery can prove or rebuild the successor from
+the verified source.
 Generation g stays readable until retired.
 
-`retire_displaced_segment()` is the only deletion path for displaced data, and
-it retires a displaced extent generation's data and manifest together. It
-denies `Protected` while a live reader holds the source and `Unresolved` while
-an earlier publication is still unsettled. Otherwise it claims the generation,
-makes the retirement intent WAL-durable, checkpoints the successor root, then
-deletes and synchronizes the namespace. The growth charge is released only after
-namespace durability. Each stage names its failure (`WalWrite`, `WalSync`,
-`Checkpoint`, `Delete` and so on). The intent survives WAL rotation and
-checkpoint until the completion record is durable. Reopen charges retained WAL
-bytes plus the overhead of the newest publications whose frames remain, so a
-fresh process cannot recover growth it has not reclaimed. Displaced extent
-generations are recharged by walking only the routing blocks each same-count
-maintenance root wrote.
+The non-streaming selected-extent rewrite refuses stored payloads above 256
+KiB before effect. Sparse-arena evacuation instead uses the same Store
+submission facade to select one live extent, retain its source-root protection,
+copy and verify one frame at a time under a durable copy intent, and adopt the
+settled destination into ordinary root publication. This source-copy path does
+not materialize the whole extent or apply that non-streaming payload ceiling.
+The old route remains protected until its displaced generation can retire.
+
+`retire_displaced_segment()` is the retirement entry point for displaced data.
+It denies `Protected` while a live reader holds the source and `Unresolved`
+while an earlier publication is unsettled. For an extent, a WAL-durable
+retirement intent and successor checkpoint precede a root-changing free-range
+publication; the extent's manifest and data range become reusable only after
+durable completion and allocator admission. No per-extent data or manifest file
+is deleted. Once evacuation leaves an arena empty, retirement may delete that
+whole arena file after protection and checkpoint gates, then synchronize its
+namespace. The retained-byte charge is released only after the applicable
+durable release or namespace deletion completes. Each stage names its failure
+(`WalWrite`, `WalSync`, `Checkpoint`, `Delete` and so on). The intent survives
+WAL rotation and checkpoint until the completion record is durable. Reopen
+charges retained WAL bytes plus the overhead of the newest publications whose
+frames remain, so a fresh process cannot recover growth it has not reclaimed.
+Displaced extent generations are recharged by walking only the routing blocks
+each same-count maintenance root wrote.
 
 ## Backend Profiles And Admission
 
@@ -436,8 +449,8 @@ retry with fresh idempotency material merely to make the alert disappear.
 - Cancelling by dropping a handle.
 - Merging group-member identities because the group shares a barrier.
 - Deleting WAL because checkpoint bytes exist.
-- Deleting a displaced segment outside `retire_displaced_segment()`, or
-  treating an absent file as completed retirement.
+- Reusing a displaced extent range or deleting an emptied arena outside
+  `retire_displaced_segment()`, or treating an absent file as completed retirement.
 - Retrying `RetentionPressure` without checkpointing or retiring first.
 - Using a raw backend profile or Foundational receipt as durability authority.
 - Feeding evidence projections back into Store progression.
@@ -450,9 +463,10 @@ rewrite, retirement and namespace-durable checkpoint publication. It does not
 perform fresh-process source precedence, redo, root selection, or
 indeterminate-operation reconciliation; recovery owns those.
 
-Rewrite and retirement are caller-invoked. No Store producer schedules
-compaction automatically, and the retained-storage profile is not a public
-configuration surface.
+Rewrite and retirement remain caller-invoked. The Store-owned
+`prepare_arena_evacuation` producer scans a sparse arena in bounded steps and
+admits its copy under compaction pressure; it is not an automatic compaction
+daemon. The retained-storage profile is not a public configuration surface.
 
 C.8 independently reopens sealed persisted facts: current and previous root
 bases, the latest namespace-durable checkpoint and covered LSN range, the

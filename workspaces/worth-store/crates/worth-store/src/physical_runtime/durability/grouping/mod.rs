@@ -32,6 +32,7 @@ pub(in crate::physical_runtime) use admission::{
 };
 pub(in crate::physical_runtime) use member_settlement::CompletionBoundPhysicalWalBarrierSettlement;
 pub(in crate::physical_runtime) use unique_membership::reopened_membership_digest;
+pub(in crate::physical_runtime) use unique_membership::reopened_membership_digest_fields;
 pub(in crate::physical_runtime) use unique_membership::PhysicalDurabilityGroupSealingFailure;
 pub(in crate::physical_runtime) use wal_barrier::PhysicalWalGroupBarrierPort;
 pub use wal_barrier::{

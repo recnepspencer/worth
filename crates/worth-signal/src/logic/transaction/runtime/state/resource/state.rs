@@ -1,3 +1,4 @@
+use super::super::retention_omission::RetentionOmission;
 use super::retry::budget::ResourceRetryBudgetLedger;
 use crate::data::resource::{
     AsyncDenialId, DeniedResourceCompletion, FrozenResourcePolicyRegistry, InFlightResourceRequest,
@@ -49,6 +50,7 @@ pub(in crate::logic::transaction::runtime) struct ResourceRuntimeState {
             ResourceRequestId,
             ResourceRetainedHistoryAvailability,
         >,
+    pub(super) expired_lifecycle_availability: RetentionOmission,
     pub(super) terminal_in_flight_by_request:
         crate::data::persistent_ord_set::PersistentOrdSet<ResourceRequestId>,
     pub(super) active_request_by_node:
@@ -71,6 +73,7 @@ pub(in crate::logic::transaction::runtime) struct ResourceRuntimeState {
         ResourceRetryOrdinal,
         ResourceRetainedRetryLineageAvailability,
     >,
+    pub(super) expired_retry_availability: RetentionOmission,
     pub(super) retry_budget_ledger: ResourceRetryBudgetLedger,
     pub(super) denied_completions:
         crate::data::persistent_ord_map::PersistentOrdMap<AsyncDenialId, DeniedResourceCompletion>,
@@ -78,6 +81,7 @@ pub(in crate::logic::transaction::runtime) struct ResourceRuntimeState {
         AsyncDenialId,
         ResourceRetainedDeniedCompletionAvailability,
     >,
+    pub(super) expired_denied_availability: RetentionOmission,
     pub(super) latest_denied_completion_by_node:
         crate::data::persistent_ord_map::PersistentOrdMap<ResourceNodeId, DeniedResourceCompletion>,
     pub(super) latest_branch_restore_report: Option<ResourceBranchRestoreReport>,
@@ -106,6 +110,7 @@ impl Default for ResourceRuntimeState {
             in_flight_by_request: Default::default(),
             retained_in_flight_history_by_request: Default::default(),
             pruned_in_flight_history_by_request: Default::default(),
+            expired_lifecycle_availability: Default::default(),
             terminal_in_flight_by_request: crate::data::persistent_ord_set::PersistentOrdSet::new(),
             active_request_by_node: Default::default(),
             stale_after_wake_by_node: Default::default(),
@@ -114,9 +119,11 @@ impl Default for ResourceRuntimeState {
             pending_retry_by_node: Default::default(),
             retained_retry_lineage_by_ordinal: Default::default(),
             pruned_retry_lineage_by_ordinal: Default::default(),
+            expired_retry_availability: Default::default(),
             retry_budget_ledger: ResourceRetryBudgetLedger::default(),
             denied_completions: Default::default(),
             pruned_denied_completions_by_id: Default::default(),
+            expired_denied_availability: Default::default(),
             latest_denied_completion_by_node: Default::default(),
             latest_branch_restore_report: None,
         }
@@ -150,6 +157,7 @@ impl ResourceRuntimeState {
             pruned_in_flight_history_by_request: self
                 .pruned_in_flight_history_by_request
                 .fork_persistent(),
+            expired_lifecycle_availability: self.expired_lifecycle_availability,
             terminal_in_flight_by_request: self.terminal_in_flight_by_request.fork_persistent(),
             active_request_by_node: self.active_request_by_node.fork_persistent(),
             stale_after_wake_by_node: self.stale_after_wake_by_node.fork_persistent(),
@@ -160,9 +168,11 @@ impl ResourceRuntimeState {
                 .retained_retry_lineage_by_ordinal
                 .fork_persistent(),
             pruned_retry_lineage_by_ordinal: self.pruned_retry_lineage_by_ordinal.fork_persistent(),
+            expired_retry_availability: self.expired_retry_availability,
             retry_budget_ledger: self.retry_budget_ledger.fork_persistent(),
             denied_completions: self.denied_completions.fork_persistent(),
             pruned_denied_completions_by_id: self.pruned_denied_completions_by_id.fork_persistent(),
+            expired_denied_availability: self.expired_denied_availability,
             latest_denied_completion_by_node: self
                 .latest_denied_completion_by_node
                 .fork_persistent(),
@@ -197,6 +207,7 @@ impl ResourceRuntimeState {
             pruned_in_flight_history_by_request: self
                 .pruned_in_flight_history_by_request
                 .fork_storage_identity(),
+            expired_lifecycle_availability: self.expired_lifecycle_availability,
             terminal_in_flight_by_request: self
                 .terminal_in_flight_by_request
                 .fork_storage_identity(),
@@ -211,11 +222,13 @@ impl ResourceRuntimeState {
             pruned_retry_lineage_by_ordinal: self
                 .pruned_retry_lineage_by_ordinal
                 .fork_storage_identity(),
+            expired_retry_availability: self.expired_retry_availability,
             retry_budget_ledger: self.retry_budget_ledger.fork_storage_identity(),
             denied_completions: self.denied_completions.fork_storage_identity(),
             pruned_denied_completions_by_id: self
                 .pruned_denied_completions_by_id
                 .fork_storage_identity(),
+            expired_denied_availability: self.expired_denied_availability,
             latest_denied_completion_by_node: self
                 .latest_denied_completion_by_node
                 .fork_storage_identity(),
@@ -241,6 +254,7 @@ impl ResourceRuntimeState {
             && self
                 .pruned_in_flight_history_by_request
                 .ptr_eq(&other.pruned_in_flight_history_by_request)
+            && self.expired_lifecycle_availability == other.expired_lifecycle_availability
             && self
                 .terminal_in_flight_by_request
                 .ptr_eq(&other.terminal_in_flight_by_request)
@@ -265,6 +279,7 @@ impl ResourceRuntimeState {
             && self
                 .pruned_retry_lineage_by_ordinal
                 .ptr_eq(&other.pruned_retry_lineage_by_ordinal)
+            && self.expired_retry_availability == other.expired_retry_availability
             && self
                 .retry_budget_ledger
                 .shares_storage_with(&other.retry_budget_ledger)
@@ -272,6 +287,7 @@ impl ResourceRuntimeState {
             && self
                 .pruned_denied_completions_by_id
                 .ptr_eq(&other.pruned_denied_completions_by_id)
+            && self.expired_denied_availability == other.expired_denied_availability
             && self
                 .latest_denied_completion_by_node
                 .ptr_eq(&other.latest_denied_completion_by_node)

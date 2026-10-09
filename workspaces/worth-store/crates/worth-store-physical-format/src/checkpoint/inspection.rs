@@ -4,8 +4,10 @@ use super::{
     CheckpointBindingRecordFrameLength, CheckpointStreamDecodeDenial, CheckpointStreamDecoder,
     CheckpointStreamFooter, PersistedCompactionCutoverRecord, PhysicalCheckpointSource,
     CHECKPOINT_BINDING_COMPACTION_HEADER_RECORD_BYTES, CHECKPOINT_BINDING_RECORD_PREFIX_BYTES,
+    CHECKPOINT_CERTIFICATE_PREFIX_BYTES, CHECKPOINT_CERTIFIED_FOOTER_RECORD_BYTES,
     CHECKPOINT_DIRTY_FRAME_RECORD_BYTES, CHECKPOINT_STREAM_FOOTER_RECORD_BYTES,
-    CHECKPOINT_STREAM_HEADER_RECORD_BYTES,
+    CHECKPOINT_STREAM_HEADER_RECORD_BYTES, MAX_CHECKPOINT_CERTIFICATE_BYTES,
+    MAX_CHECKPOINT_CERTIFICATE_RECORDS,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -16,6 +18,7 @@ pub(crate) struct VerifiedCheckpointStream {
     encoded_digest: [u8; 32],
     compaction_cutover: PersistedCompactionCutoverRecord,
     binding_records: Box<[Box<[u8]>]>,
+    certificate_records: Box<[Box<[u8]>]>,
 }
 
 impl VerifiedCheckpointStream {
@@ -29,6 +32,7 @@ impl VerifiedCheckpointStream {
         compaction_generation: u64,
         wal_cutoff_lsn_exclusive: u64,
         binding_records: Box<[Box<[u8]>]>,
+        certificate_records: Box<[Box<[u8]>]>,
     ) -> Self {
         let compaction_cutover =
             PersistedCompactionCutoverRecord::admitted_from_verified_checkpoint(
@@ -45,6 +49,7 @@ impl VerifiedCheckpointStream {
             encoded_digest,
             compaction_cutover,
             binding_records,
+            certificate_records,
         }
     }
 
@@ -79,6 +84,10 @@ impl VerifiedCheckpointStream {
     pub fn binding_records(&self) -> &[Box<[u8]>] {
         &self.binding_records
     }
+
+    pub fn certificate_records(&self) -> &[Box<[u8]>] {
+        &self.certificate_records
+    }
 }
 
 pub(crate) fn inspect_checkpoint_stream(
@@ -86,16 +95,24 @@ pub(crate) fn inspect_checkpoint_stream(
     maximum_dirty_records: u64,
     maximum_binding_records: u64,
 ) -> Result<VerifiedCheckpointStream, CheckpointStreamDecodeDenial> {
+    let certified = bytes.get(8) == Some(&super::record::CERTIFIED_CHECKPOINT_SCHEMA);
+    let footer_bytes = if certified {
+        CHECKPOINT_CERTIFIED_FOOTER_RECORD_BYTES
+    } else {
+        CHECKPOINT_STREAM_FOOTER_RECORD_BYTES
+    };
     let minimum = CHECKPOINT_STREAM_HEADER_RECORD_BYTES
         + CHECKPOINT_BINDING_COMPACTION_HEADER_RECORD_BYTES
-        + CHECKPOINT_STREAM_FOOTER_RECORD_BYTES;
+        + footer_bytes;
     if bytes.len() < minimum {
         return Err(CheckpointStreamDecodeDenial::Truncated);
     }
-    let footer_offset = bytes.len() - CHECKPOINT_STREAM_FOOTER_RECORD_BYTES;
+    let footer_offset = bytes.len() - footer_bytes;
     let footer = CheckpointStreamFooter::decode_record(&bytes[footer_offset..])?;
     if footer.dirty_record_count() > maximum_dirty_records
         || footer.binding_record_count() > maximum_binding_records
+        || footer.certificate_record_count() > MAX_CHECKPOINT_CERTIFICATE_RECORDS
+        || footer.certificate_record_bytes() > MAX_CHECKPOINT_CERTIFICATE_BYTES
     {
         return Err(CheckpointStreamDecodeDenial::RecordCountMismatch);
     }
@@ -140,6 +157,25 @@ pub(crate) fn inspect_checkpoint_stream(
         binding_records.push(binding_decoder.decode_binding_record(record)?.into());
         offset = end;
     }
+    let mut certificate_records = Vec::with_capacity(footer.certificate_record_count() as usize);
+    for _ in 0..footer.certificate_record_count() {
+        let prefix_end = offset
+            .checked_add(CHECKPOINT_CERTIFICATE_PREFIX_BYTES)
+            .ok_or(CheckpointStreamDecodeDenial::LengthMismatch)?;
+        let prefix = bytes
+            .get(offset..prefix_end)
+            .ok_or(CheckpointStreamDecodeDenial::Truncated)?;
+        let frame_bytes = super::checkpoint_certificate_frame_bytes(prefix)?;
+        let end = offset
+            .checked_add(frame_bytes)
+            .ok_or(CheckpointStreamDecodeDenial::LengthMismatch)?;
+        let record = bytes
+            .get(offset..end)
+            .ok_or(CheckpointStreamDecodeDenial::Truncated)?;
+        binding_decoder.decode_certificate_record(record)?;
+        certificate_records.push(record.into());
+        offset = end;
+    }
     if offset != footer_offset {
         return Err(CheckpointStreamDecodeDenial::RecordByteCountMismatch);
     }
@@ -152,5 +188,6 @@ pub(crate) fn inspect_checkpoint_stream(
         verified_footer.binding_compaction_generation(),
         verified_footer.binding_wal_cutoff_lsn_exclusive(),
         binding_records.into_boxed_slice(),
+        certificate_records.into_boxed_slice(),
     ))
 }

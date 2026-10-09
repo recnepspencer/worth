@@ -16,6 +16,8 @@ pub(in crate::domain_computation::primary_graph) struct RecordedOutput {
     /// The performed computation read a fact that its own effect replaced.
     /// Postcondition facts cannot discharge this knowledge after index loss.
     pub(super) computation_source: super::ComputationSourceEvidence,
+    pub(super) native_prior_checkpoint:
+        Option<super::native_prior_checkpoint::NativePriorCheckpointLocator>,
     pub(super) _retained_capacity: Option<RetainedLineageCapacity>,
     /// Stable settlements pin the original performed record, never another
     /// alias. This preserves completion proof and its original lifetime cost.

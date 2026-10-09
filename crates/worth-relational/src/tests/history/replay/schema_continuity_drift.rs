@@ -1,4 +1,5 @@
 use super::*;
+use worth_execution::ExecutionAllocationPolicy as Allocation;
 
 #[test]
 fn replay_contract_reports_schema_continuation_descriptor_drift_when_envelope_is_tampered() {
@@ -54,9 +55,9 @@ fn replay_contract_reports_schema_continuation_descriptor_drift_when_envelope_is
             )
             .expect("owner-admitted transaction context")
     };
-    txn.push_batch(batch_create("b"))
+    txn.push_batch(batch_create("b"), Allocation::SystemAllocation)
         .expect("test staging stays within configured resource budgets");
-    let outcome = txn.commit(&runtime).unwrap();
+    let outcome = txn.commit(&runtime, Allocation::SystemAllocation).unwrap();
 
     assert!(runtime.history_authority().tamper_commit_envelope_for_test(
         outcome.commit.commit_id,
@@ -143,9 +144,9 @@ fn replay_contract_audit_mode_confirms_schema_continuation_descriptor_drift_at_d
             )
             .expect("owner-admitted transaction context")
     };
-    txn.push_batch(batch_create("b"))
+    txn.push_batch(batch_create("b"), Allocation::SystemAllocation)
         .expect("test staging stays within configured resource budgets");
-    let outcome = txn.commit(&runtime).unwrap();
+    let outcome = txn.commit(&runtime, Allocation::SystemAllocation).unwrap();
 
     assert!(runtime.history_authority().tamper_commit_envelope_for_test(
         outcome.commit.commit_id,
@@ -232,9 +233,9 @@ fn replay_certification_audit_drift_is_explained_and_counted() {
             )
             .expect("owner-admitted transaction context")
     };
-    txn.push_batch(batch_create("b"))
+    txn.push_batch(batch_create("b"), Allocation::SystemAllocation)
         .expect("test staging stays within configured resource budgets");
-    let outcome = txn.commit(&runtime).unwrap();
+    let outcome = txn.commit(&runtime, Allocation::SystemAllocation).unwrap();
 
     assert!(runtime.history_authority().tamper_commit_envelope_for_test(
         outcome.commit.commit_id,
@@ -346,9 +347,9 @@ fn replay_contract_reports_schema_lineage_drift_at_summary_layer_when_digest_is_
             )
             .expect("owner-admitted transaction context")
     };
-    txn.push_batch(batch_create("b"))
+    txn.push_batch(batch_create("b"), Allocation::SystemAllocation)
         .expect("test staging stays within configured resource budgets");
-    let outcome = txn.commit(&runtime).unwrap();
+    let outcome = txn.commit(&runtime, Allocation::SystemAllocation).unwrap();
 
     assert!(runtime.history_authority().tamper_commit_envelope_for_test(
         outcome.commit.commit_id,

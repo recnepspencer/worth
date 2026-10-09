@@ -80,6 +80,22 @@ impl WorthQueryApplicationQueryResourceProfile {
         WorthQueryGraphReadBudget::bounded(index, result, intermediate)
     }
 
+    /// A request may narrow the host's whole-result envelope before canonical
+    /// planning. This preserves every other host admission dimension.
+    pub(crate) fn admission_budget_with_result_cap(
+        self,
+        maximum_result_count: NonZeroUsize,
+        request_maximum_work: NonZeroUsize,
+        maximum_result_bytes: Option<NonZeroUsize>,
+    ) -> WorthQueryGraphReadBudget {
+        let Some(cap) = maximum_result_bytes else {
+            return self.admission_budget(maximum_result_count, request_maximum_work);
+        };
+        let (index, result, intermediate) =
+            self.admission_limits(maximum_result_count, request_maximum_work);
+        WorthQueryGraphReadBudget::bounded(index, result.min(cap.get()), intermediate)
+    }
+
     pub(crate) fn admission_budget_admitted<Stop>(
         self,
         maximum_result_count: NonZeroUsize,

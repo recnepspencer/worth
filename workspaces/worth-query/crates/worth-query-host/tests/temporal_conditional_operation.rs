@@ -18,6 +18,8 @@ mod product_query_support;
 mod public_live_route;
 #[path = "temporal_conditional_operation/public_product_journey.rs"]
 mod public_product_journey;
+#[path = "temporal_conditional_operation/retained_query_batch.rs"]
+mod retained_query_batch;
 #[path = "temporal_conditional_operation/schema.rs"]
 mod schema;
 #[path = "temporal_conditional_operation/selected_product_lifecycle.rs"]

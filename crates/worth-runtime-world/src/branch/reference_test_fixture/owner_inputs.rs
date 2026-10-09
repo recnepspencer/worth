@@ -53,11 +53,17 @@ impl RealReferenceFixture {
             .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
             .expect("current owner basis admits a transaction");
         transaction
-            .push_batch(WorkerIntentBatch::new(operation_name))
+            .push_batch(
+                WorkerIntentBatch::new(operation_name),
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .expect("bounded empty batch stages through the production transaction path");
         services
             .preparation_port()
-            .prepare_branch_transaction(transaction)
+            .prepare_branch_transaction(
+                transaction,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .expect("production Relational owner prepares the change")
     }
 

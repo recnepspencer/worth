@@ -27,14 +27,18 @@ fn concurrent_independent_attempts_preserve_one_product_winner_and_the_exact_los
     let second = admitted_program(&world, &principal, &accounts[1], &request, replacements[1]);
     let (left, right) = std::thread::scope(|scope| {
         let left = scope.spawn(|| {
-            world
-                .application
-                .compare_and_commit_application(first, keys[0])
+            world.application.compare_and_commit_application(
+                first,
+                keys[0],
+                crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
         });
         let right = scope.spawn(|| {
-            world
-                .application
-                .compare_and_commit_application(second, keys[1])
+            world.application.compare_and_commit_application(
+                second,
+                keys[1],
+                crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
         });
         (left.join().unwrap(), right.join().unwrap())
     });
@@ -95,7 +99,7 @@ fn concurrent_independent_attempts_preserve_one_product_winner_and_the_exact_los
             );
             let outcome = world
                 .application
-                .compare_and_commit_application(readmitted, keys[loser_index]);
+                .compare_and_commit_application(readmitted, keys[loser_index], crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation);
             let WorthQueryApplicationCommitOutcome::Committed(fresh) = outcome else {
                 panic!("explicit fresh admission must commit the unchanged independent facts: {outcome:?}");
             };
@@ -130,7 +134,7 @@ fn concurrent_independent_attempts_preserve_one_product_winner_and_the_exact_los
             );
             let outcome = world
                 .application
-                .compare_and_commit_application(readmitted, keys[loser_index]);
+                .compare_and_commit_application(readmitted, keys[loser_index], crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation);
             let WorthQueryApplicationCommitOutcome::Committed(fresh) = outcome else {
                 panic!("fresh admission after pre-effect product staleness must commit: {outcome:?}");
             };
@@ -187,9 +191,11 @@ fn unrelated_product_drift_preserves_the_prepared_attempt_and_changed_facts_stal
     let unrelated_program =
         admitted_program(&world, &principal, &unrelated, &request, "unrelated-after");
 
-    let unrelated_outcome = world
-        .application
-        .compare_and_commit_application(unrelated_program, idempotency(1, 1));
+    let unrelated_outcome = world.application.compare_and_commit_application(
+        unrelated_program,
+        idempotency(1, 1),
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+    );
     assert!(
         matches!(
             unrelated_outcome,
@@ -203,9 +209,11 @@ fn unrelated_product_drift_preserves_the_prepared_attempt_and_changed_facts_stal
         current.product().selected_commit()
     );
     assert_eq!(commit_count(), baseline + 1);
-    let outcome = world
-        .application
-        .compare_and_commit_application(first, idempotency(2, 2));
+    let outcome = world.application.compare_and_commit_application(
+        first,
+        idempotency(2, 2),
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+    );
     assert!(matches!(
         outcome,
         WorthQueryApplicationCommitOutcome::Committed(_)
@@ -216,15 +224,19 @@ fn unrelated_product_drift_preserves_the_prepared_attempt_and_changed_facts_stal
     );
     assert_eq!(commit_count(), baseline + 2);
     assert!(matches!(
-        world
-            .application
-            .compare_and_commit_application(fresh, idempotency(2, 2)),
+        world.application.compare_and_commit_application(
+            fresh,
+            idempotency(2, 2),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
+        ),
         WorthQueryApplicationCommitOutcome::AlreadyCommitted(_)
     ));
     assert_eq!(commit_count(), baseline + 2);
-    let outcome = world
-        .application
-        .compare_and_commit_application(losing, idempotency(3, 3));
+    let outcome = world.application.compare_and_commit_application(
+        losing,
+        idempotency(3, 3),
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+    );
     super::assert_changed_decision(outcome, "the sealed status changed");
     assert_eq!(commit_count(), baseline + 2);
 }

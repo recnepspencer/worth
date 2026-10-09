@@ -33,13 +33,6 @@ impl AccessPlanningFacade {
     ) -> crate::CurrentMaterializationFrontier {
         crate::CurrentMaterializationFrontier::from_catalog(catalog)
     }
-    pub fn current_btree_materialization_frontier(
-        &self,
-        catalog: &crate::BootstrapCatalogReadAdmission,
-        source: &crate::BaselineBTreeReadSource,
-    ) -> crate::CurrentMaterializationFrontier {
-        crate::CurrentMaterializationFrontier::from_btree_source(catalog, source)
-    }
     pub fn current_lsm_materialization_frontier(
         &self,
         catalog: &crate::BootstrapCatalogReadAdmission,

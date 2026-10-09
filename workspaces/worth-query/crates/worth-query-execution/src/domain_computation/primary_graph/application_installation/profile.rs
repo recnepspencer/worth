@@ -26,8 +26,6 @@ impl WorthQueryInMemoryApplicationProfile {
         .policy;
         if self == Self::WorkflowScale {
             policy.max_patch_records_per_commit = 240_000;
-            policy.max_transaction_footprint_loci = 240_000;
-            policy.max_transaction_overlay_bytes = 256 * 1024 * 1024;
             policy.max_prepared_root_bytes = 512 * 1024 * 1024;
         }
         if let Some(maximum) = maximum_records {
@@ -98,8 +96,6 @@ mod tests {
         let profile = WorthQueryInMemoryApplicationProfile::WorkflowScale;
         let publication = profile.publication_override(None).unwrap();
         assert_eq!(publication.max_patch_records_per_commit, 240_000);
-        assert_eq!(publication.max_transaction_footprint_loci, 240_000);
-        assert_eq!(publication.max_transaction_overlay_bytes, 256 * 1024 * 1024);
         assert_eq!(publication.max_prepared_root_bytes, 512 * 1024 * 1024);
         let integrity = profile.relation_integrity_scope_budget().unwrap();
         assert_eq!(integrity.max_planned_edges, 80_000);

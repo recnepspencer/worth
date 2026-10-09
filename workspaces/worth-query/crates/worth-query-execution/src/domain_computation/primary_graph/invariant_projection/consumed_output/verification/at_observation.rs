@@ -79,6 +79,44 @@ impl ConsumedOutputEvidence {
         Ok(None)
     }
 
+    /// A changed accepted consumer may disclose a new dependency set before
+    /// following its old pending edges. Consumed native content remains the
+    /// child's evidence; only a disjoint changed fact can reject those edges.
+    /// This comparison grants no currentness.
+    pub(in crate::domain_computation::primary_graph) fn own_evidence_is_current(
+        facts: &[WorthQueryApplicationObservedFact],
+        consumed: &[ConsumedOutputEvidence],
+        witness: &SealedNativeOutputWitness,
+        runtime: &RelationalRuntime,
+        snapshot: &SnapshotHandle,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<bool, ConsumedOutputVerificationStop> {
+        for fact in facts {
+            let mut child_content = false;
+            for child in consumed {
+                charge_external(admission, 1)?;
+                let witness = child
+                    .native_output_witness
+                    .as_ref()
+                    .and_then(|cell| cell.get())
+                    .ok_or(ConsumedOutputVerificationStop::Unavailable)?;
+                if witness
+                    .covers_content_fact(fact, admission)
+                    .map_err(map_admission_stop)?
+                {
+                    child_content = true;
+                    break;
+                }
+            }
+            if !child_content && !fact_is_current(fact, runtime, snapshot, admission)? {
+                return Ok(false);
+            }
+        }
+        witness
+            .unchanged_in(runtime, snapshot, admission)
+            .map_err(map_admission_stop)
+    }
+
     /// Verify the settlement a reader at a retained observation selected, at
     /// that reader's own position. The lineage row it selected may be older
     /// than the row recorded at its observation, which retention has since

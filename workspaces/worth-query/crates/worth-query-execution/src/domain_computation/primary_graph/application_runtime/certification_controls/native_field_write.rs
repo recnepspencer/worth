@@ -83,10 +83,16 @@ where
                 )
                 .expect("the selected product basis admits the native transaction");
             transaction
-                .push_batch(batch)
+                .push_batch(
+                    batch,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
                 .expect("the native field write stays within resource budgets");
             runtime
-                .prepare_branch_transaction(transaction)
+                .prepare_branch_transaction(
+                    transaction,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
                 .expect("the native field write prepares a Relational candidate")
         });
         let outcome = product

@@ -48,10 +48,16 @@ fn preflight_counter_overflow_denies_without_moving_the_native_head() {
             .expect("overflow fixture is active");
         let mut transaction = test_owner_begin_transaction_for_main(&runtime);
         transaction
-            .push_batch(batch_create("overflow-stops-before-movement"))
+            .push_batch(
+                batch_create("overflow-stops-before-movement"),
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .expect("candidate stages");
         let candidate = runtime
-            .prepare_branch_transaction(transaction)
+            .prepare_branch_transaction(
+                transaction,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .expect("candidate prepares");
         let outcome = runtime.publication_port().compare_and_publish(candidate);
         let expected = match meter {

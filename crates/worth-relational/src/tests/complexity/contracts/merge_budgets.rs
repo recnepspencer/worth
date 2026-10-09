@@ -92,9 +92,16 @@ fn complexity_budget_merge_execution_reports_admitted_records_and_emitted_mutati
                 ),
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let feature_only = changed_entities(&txn.commit(&runtime).expect("feature-only create"))[0];
+    let feature_only = changed_entities(
+        &txn.commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .expect("feature-only create"),
+    )[0];
 
     let prepared = runtime
         .prepare_merge_execution(MergeExecutionRequest {

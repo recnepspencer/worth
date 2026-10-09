@@ -66,10 +66,39 @@ where
         Value: WorthQueryManagedDerivedValue,
     {
         let limits = definition.limits();
-        if definition.name().is_empty()
-            || limits.maximum_entries() == 0
-            || limits.maximum_retained_bytes() == 0
-        {
+        if limits.maximum_entries() == 0 || limits.maximum_retained_bytes() == 0 {
+            return Err(Denial::InvalidLimits);
+        }
+        if definition.query().name() != query.name() {
+            return Err(Denial::ForeignQuery);
+        }
+        self.open_managed_derived_view_with_policy(
+            definition.name(),
+            query,
+            entry_query,
+            secondary_entry_query,
+            product,
+            super::retention::ManagedStoragePolicy::Bounded(limits),
+        )
+    }
+
+    fn open_managed_derived_view_with_policy<Query, Parameters, QueryResult, Scope, Value>(
+        &self,
+        name: &'static str,
+        query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
+        entry_query: Option<
+            worth_query_installation::facade::WorthQueryInstalledApplicationQueryIdentity,
+        >,
+        secondary_entry_query: Option<
+            worth_query_installation::facade::WorthQueryInstalledApplicationQueryIdentity,
+        >,
+        product: &WorthQueryProductBranchLease,
+        limits: super::retention::ManagedStoragePolicy,
+    ) -> Result<WorthQueryManagedDerivedView<Query, Value>, Denial>
+    where
+        Value: WorthQueryManagedDerivedValue,
+    {
+        if name.is_empty() {
             return Err(Denial::InvalidLimits);
         }
         self.installed_schema
@@ -80,9 +109,6 @@ where
             WorthQueryInstalledApplicationQueryAuthorization::Public
         ) {
             return Err(Denial::AuthorizationRequired);
-        }
-        if definition.query().name() != query.name() {
-            return Err(Denial::ForeignQuery);
         }
         self.admit_current_view_product(product)?;
         let graph = self
@@ -166,7 +192,7 @@ where
         if result.rows().len() != result.observed_sources().len() {
             return Err(Denial::IncompleteDependencies);
         }
-        if result.rows().len() > view.state.limits.maximum_entries() {
+        if view.state.limits.rejects_entries(result.rows().len()) {
             return Err(Denial::EntryCapacityExceeded);
         }
         let membership = self.checked_view_dependencies(
@@ -240,7 +266,11 @@ where
             .primary_graph()
             .ok_or(Denial::ForeignApplication)?;
         let facts = source
-            .retained_checkpoint_facts(&graph.layout)
+            .retained_checkpoint_facts(
+                &graph.layout,
+                None,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .map_err(|_| Denial::IncompleteDependencies)?;
         source_dependencies(&facts).ok_or(Denial::IncompleteDependencies)
     }

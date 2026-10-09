@@ -199,16 +199,24 @@ pub(super) fn create_entity_of_kind(
     client_key: &str,
 ) -> crate::identity::data::EntityId {
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(runtime);
-    txn.push_batch(WorkerIntentBatch::new(format!("entity-{client_key}")).push(
-        MutationIntent::Create(CreateIntent::Entity(EntitySpec {
-            partition_id: PartitionId::main(),
-            kind_id,
-            client_key: ClientKey::raw(client_key),
-            fields: crate::transactions::data::AspectFieldPatch::default(),
-        })),
-    ))
+    txn.push_batch(
+        WorkerIntentBatch::new(format!("entity-{client_key}")).push(MutationIntent::Create(
+            CreateIntent::Entity(EntitySpec {
+                partition_id: PartitionId::main(),
+                kind_id,
+                client_key: ClientKey::raw(client_key),
+                fields: crate::transactions::data::AspectFieldPatch::default(),
+            }),
+        )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
     .expect("test staging stays within configured resource budgets");
-    let outcome = txn.commit(runtime).expect("entity creation must succeed");
+    let outcome = txn
+        .commit(
+            runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .expect("entity creation must succeed");
     outcome
         .changed_records
         .iter()
@@ -238,9 +246,15 @@ pub(super) fn create_relation_of_kind(
                 fields: crate::transactions::data::AspectFieldPatch::default(),
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let outcome = txn.commit(runtime).expect("relation creation must succeed");
+    let outcome = txn
+        .commit(
+            runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .expect("relation creation must succeed");
     outcome
         .changed_records
         .iter()
@@ -307,30 +321,36 @@ pub(super) fn commit_entity_with_summary(
     crate::transactions::data::TransactionCommitError,
 > {
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(runtime);
-    txn.push_batch(WorkerIntentBatch::new(format!("entity-{client_key}")).push(
-        MutationIntent::Create(CreateIntent::Entity(EntitySpec {
-            partition_id: PartitionId::main(),
-            kind_id: KindId(1),
-            client_key: ClientKey::raw(client_key),
-            fields: aspect_field_patch_from_values([
-                (
-                    aspect_key("name"),
-                    field_key("name"),
-                    string_aspect_value(client_key),
-                ),
-                (
-                    aspect_key("summary"),
-                    field_key("title"),
-                    string_aspect_value(title),
-                ),
-                (
-                    aspect_key("summary"),
-                    field_key("status"),
-                    string_aspect_value(status),
-                ),
-            ]),
-        })),
-    ))
+    txn.push_batch(
+        WorkerIntentBatch::new(format!("entity-{client_key}")).push(MutationIntent::Create(
+            CreateIntent::Entity(EntitySpec {
+                partition_id: PartitionId::main(),
+                kind_id: KindId(1),
+                client_key: ClientKey::raw(client_key),
+                fields: aspect_field_patch_from_values([
+                    (
+                        aspect_key("name"),
+                        field_key("name"),
+                        string_aspect_value(client_key),
+                    ),
+                    (
+                        aspect_key("summary"),
+                        field_key("title"),
+                        string_aspect_value(title),
+                    ),
+                    (
+                        aspect_key("summary"),
+                        field_key("status"),
+                        string_aspect_value(status),
+                    ),
+                ]),
+            }),
+        )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
     .expect("test staging stays within configured resource budgets");
-    txn.commit(runtime)
+    txn.commit(
+        runtime,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
 }

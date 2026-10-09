@@ -17,9 +17,6 @@ pub(super) fn encode(
     let mut encoded = facts::encode(producer)?;
     let projection = witness.prepare_fact_projection(admission).ok()??;
     let count = producer.len().checked_add(projection.count())?;
-    if count > facts::MAXIMUM_FACTS {
-        return None;
-    }
     let fact_bytes = projection
         .count()
         .checked_mul(std::mem::size_of::<Fact>())?;

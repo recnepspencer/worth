@@ -1,4 +1,4 @@
-use super::writer::{CanonicalMaterialResult, CanonicalMaterialWriter};
+use super::sink::CanonicalMaterialSink;
 use std::fmt::Write;
 
 struct ScalarToken {
@@ -21,11 +21,11 @@ impl Write for ScalarToken {
     }
 }
 
-fn format_scalar(
-    material: &mut CanonicalMaterialWriter,
+fn format_scalar<S: CanonicalMaterialSink>(
+    material: &mut S,
     value: impl std::fmt::Display,
     maximum_bytes: usize,
-) -> CanonicalMaterialResult<ScalarToken> {
+) -> Result<ScalarToken, S::Error> {
     material.admit_work(40 + maximum_bytes + 1)?;
     let mut token = ScalarToken {
         bytes: [0; 40],
@@ -41,11 +41,11 @@ impl ScalarToken {
     }
 }
 
-pub(super) fn append_token(
-    material: &mut CanonicalMaterialWriter,
+pub(super) fn append_token<S: CanonicalMaterialSink>(
+    material: &mut S,
     label: &str,
     value: &str,
-) -> CanonicalMaterialResult {
+) -> Result<(), S::Error> {
     material.append(label)?;
     material.append("#")?;
     let length = format_scalar(material, value.len(), 20)?;
@@ -55,11 +55,11 @@ pub(super) fn append_token(
     material.append(";")
 }
 
-pub(super) fn append_bytes(
-    material: &mut CanonicalMaterialWriter,
+pub(super) fn append_bytes<S: CanonicalMaterialSink>(
+    material: &mut S,
     label: &str,
     value: &[u8],
-) -> CanonicalMaterialResult {
+) -> Result<(), S::Error> {
     material.append(label)?;
     material.append("#")?;
     let length = format_scalar(material, value.len(), 20)?;
@@ -74,74 +74,74 @@ pub(super) fn append_bytes(
     material.append(";")
 }
 
-pub(super) fn append_u32(
-    material: &mut CanonicalMaterialWriter,
+pub(super) fn append_u32<S: CanonicalMaterialSink>(
+    material: &mut S,
     label: &str,
     value: u32,
-) -> CanonicalMaterialResult {
+) -> Result<(), S::Error> {
     let value = format_scalar(material, value, 10)?;
     append_token(material, label, value.as_str())
 }
 
-pub(super) fn append_u32_text(
-    material: &mut CanonicalMaterialWriter,
+pub(super) fn append_u32_text<S: CanonicalMaterialSink>(
+    material: &mut S,
     value: u32,
-) -> CanonicalMaterialResult {
+) -> Result<(), S::Error> {
     let value = format_scalar(material, value, 10)?;
     material.append(value.as_str())
 }
 
-pub(super) fn append_u64(
-    material: &mut CanonicalMaterialWriter,
+pub(super) fn append_u64<S: CanonicalMaterialSink>(
+    material: &mut S,
     label: &str,
     value: u64,
-) -> CanonicalMaterialResult {
+) -> Result<(), S::Error> {
     let value = format_scalar(material, value, 20)?;
     append_token(material, label, value.as_str())
 }
 
-pub(super) fn append_i32(
-    material: &mut CanonicalMaterialWriter,
+pub(super) fn append_i32<S: CanonicalMaterialSink>(
+    material: &mut S,
     label: &str,
     value: i32,
-) -> CanonicalMaterialResult {
+) -> Result<(), S::Error> {
     let value = format_scalar(material, value, 11)?;
     append_token(material, label, value.as_str())
 }
 
-pub(super) fn append_i64(
-    material: &mut CanonicalMaterialWriter,
+pub(super) fn append_i64<S: CanonicalMaterialSink>(
+    material: &mut S,
     label: &str,
     value: i64,
-) -> CanonicalMaterialResult {
+) -> Result<(), S::Error> {
     let value = format_scalar(material, value, 20)?;
     append_token(material, label, value.as_str())
 }
 
-pub(super) fn append_i128(
-    material: &mut CanonicalMaterialWriter,
+pub(super) fn append_i128<S: CanonicalMaterialSink>(
+    material: &mut S,
     label: &str,
     value: i128,
-) -> CanonicalMaterialResult {
+) -> Result<(), S::Error> {
     let value = format_scalar(material, value, 40)?;
     append_token(material, label, value.as_str())
 }
 
-pub(super) fn append_u128(
-    material: &mut CanonicalMaterialWriter,
+pub(super) fn append_u128<S: CanonicalMaterialSink>(
+    material: &mut S,
     label: &str,
     value: u128,
-) -> CanonicalMaterialResult {
+) -> Result<(), S::Error> {
     let value = format_scalar(material, value, 39)?;
     append_token(material, label, value.as_str())
 }
 
-pub(super) fn append_token_parts(
-    material: &mut CanonicalMaterialWriter,
+pub(super) fn append_token_parts<S: CanonicalMaterialSink>(
+    material: &mut S,
     label: &str,
     suffix: &str,
     parts: &[&str],
-) -> CanonicalMaterialResult {
+) -> Result<(), S::Error> {
     material.admit_work(parts.len())?;
     material.append(label)?;
     material.append(suffix)?;
@@ -149,9 +149,7 @@ pub(super) fn append_token_parts(
     let length = parts
         .iter()
         .try_fold(0usize, |length, part| length.checked_add(part.len()))
-        .ok_or(
-            super::super::resource_admission::CanonicalDigestPreparationStop::AccountingOverflow,
-        )?;
+        .ok_or_else(|| material.accounting_overflow())?;
     let length = format_scalar(material, length, 20)?;
     material.append(length.as_str())?;
     material.append(":")?;

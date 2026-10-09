@@ -1,6 +1,7 @@
 //! Recovered output expectations survive a change outside the source field.
 
 use super::*;
+mod mixed_retirement;
 use crate::domain_computation::primary_graph::{
     application_attempt::WorthQueryCheckpointOutputRole,
     output_reuse::{
@@ -98,15 +99,25 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
             locator: status.clone(),
             native_revision: Some(original_source),
         }];
+        let mut recovery_admission = owner.edit_admission();
+        let comparison_bound = SealedNativeOutputWitness::checkpoint_comparison_work_bound(
+            &correspondence, layout, &facts, &mut recovery_admission,
+        ).unwrap();
+        assert!(recovery_admission.charged_work() > 0, "ceiling derivation is charged");
+        let reconstruction_start = recovery_admission.charged_work();
         let restored = SealedNativeOutputWitness::from_checkpoint_facts(
             &correspondence,
             layout,
             &facts,
             owner,
-            &mut owner.edit_admission(),
+            &mut recovery_admission,
         )
         .unwrap()
         .expect("complete old native facts reconstruct the witness");
+        assert!(restored.get().unwrap().checkpoint_facts_current_in(
+            runtime, &before, &facts, &mut recovery_admission,
+        ).unwrap());
+        assert!(recovery_admission.charged_work() - reconstruction_start <= comparison_bound);
         assert!(restored
             .get()
             .unwrap()
@@ -122,6 +133,42 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
                 &mut owner.edit_admission(),
             )
             .unwrap());
+        let index = layout.equality_field(status_ref.entity(), status_ref.aspect(), status_ref.field())
+            .unwrap().equality_index_id.unwrap();
+        let indexed = crate::domain_computation::primary_graph::application_attempt::observe_indexed_entity_selection(
+            runtime, &before, index,
+            runtime.read_truth().exact_snapshot_live_entity_kind(&before, entity).unwrap(),
+            planned_status.clone(), AspectValue::String("open".into()), 100_001,
+        ).expect("the actual installed sparse selection supplies the checkpoint fact");
+        let witness = restored.get().unwrap();
+        let mut witness_only = owner.edit_admission_within(std::num::NonZeroUsize::new(4_096).unwrap());
+        assert!(witness.unchanged_in(runtime, &before, &mut witness_only).unwrap());
+        let witness_work = usize::try_from(witness_only.charged_work()).unwrap();
+        let mut sparse = owner.edit_admission_within(std::num::NonZeroUsize::new(witness_work + 6).unwrap());
+        assert!(witness.checkpoint_facts_current_in(runtime, &before,
+            &[indexed.clone(), indexed.clone()], &mut sparse).unwrap());
+        assert_eq!(sparse.remaining_work(), 0, "two one-row selections spend six units beyond the witness");
+        let mut duplicate_facts = facts.clone();
+        duplicate_facts.extend([indexed.clone(), indexed.clone()]);
+        let duplicate_bound = SealedNativeOutputWitness::checkpoint_comparison_work_bound(
+            &correspondence, layout, &duplicate_facts, &mut recovery_admission,
+        ).unwrap();
+        assert!(duplicate_bound >= 200_006,
+            "both authentic 100001 candidate limits contribute, not their one-row results");
+        let duplicate_start = recovery_admission.charged_work();
+        let duplicate_witness = SealedNativeOutputWitness::from_checkpoint_facts(
+            &correspondence, layout, &duplicate_facts, owner, &mut recovery_admission,
+        ).unwrap().unwrap();
+        assert!(duplicate_witness.get().unwrap().checkpoint_facts_current_in(
+            runtime, &before, &duplicate_facts, &mut recovery_admission,
+        ).unwrap());
+        let duplicate_work = recovery_admission.charged_work() - duplicate_start;
+        assert!(duplicate_work <= duplicate_bound);
+        assert!(duplicate_work < 100_001, "the declared worst case is not prepaid");
+        let mut exhausted = owner.edit_admission_within(std::num::NonZeroUsize::new(witness_work + 2).unwrap());
+        assert!(matches!(witness.checkpoint_facts_current_in(runtime, &before,
+            std::slice::from_ref(&indexed), &mut exhausted),
+            Err(CompanionPreflightStop::WorkExhausted { .. })));
         // Producer selection reads both halves of the retained fact set.
         let mut selection_work =
             owner.edit_admission_within(std::num::NonZeroUsize::new(4_096).unwrap());
@@ -314,8 +361,18 @@ fn change_label(
     let mut transaction = runtime
         .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
         .unwrap();
-    transaction.push_batch(batch).unwrap();
-    let candidate = runtime.prepare_branch_transaction(transaction).unwrap();
+    transaction
+        .push_batch(
+            batch,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
+    let candidate = runtime
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
     let RelationalPublicationOutcome::Performed(performed) =
         runtime.publication_port().compare_and_publish(candidate)
     else {

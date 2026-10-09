@@ -11,7 +11,7 @@ use worth_query_declaration::facade::{
 
 use super::{
     candidate_retained_representation as representation, CandidateItemKind,
-    WorthQueryCandidateReservation, WorthQueryCandidateValidatorWorkAdmission,
+    WorthQueryCandidateReservation,
 };
 use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
@@ -61,7 +61,6 @@ fn admit_query_owned_effects(
     declared: Option<ApplicationCandidateRequirements>,
     demand: PlatformEffectDemand,
 ) -> Result<PlatformEffectReservation, WorthQueryApplicationAttemptDenial> {
-    let validator_work = demand.validator_work()?;
     let requirements = ApplicationCandidateRequirements::fixed_shape(
         ApplicationCandidateCardinalityCeiling::fixed(
             demand.creates,
@@ -71,7 +70,7 @@ fn admit_query_owned_effects(
             demand.writes,
             demand.emits,
         ),
-        ApplicationCandidateResourceCeiling::bounded(demand.retained_bytes, validator_work),
+        ApplicationCandidateResourceCeiling::representation_bytes(demand.retained_bytes),
     );
     let envelope = contracts
         .execution_strategy()
@@ -86,11 +85,9 @@ fn admit_query_owned_effects(
     let reservation = WorthQueryCandidateReservation::admit(
         requirements,
         declared,
-        u64::try_from(validator_work).map_err(|_| overflow())?,
         envelope.scale_ceiling(WorthQuerySemanticScaleAxis::CandidateItems),
         envelope
             .resource_ceiling(WorthQueryResourceDimension::CandidateRetainedRepresentationBytes),
-        envelope.scale_ceiling(WorthQuerySemanticScaleAxis::WorkItems),
     )?;
     Ok(PlatformEffectReservation { reservation })
 }
@@ -112,27 +109,6 @@ impl PlatformEffectDemand {
         effect: &WorthQueryApplicationRealizedEffect,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         observe(self, effect)
-    }
-
-    fn total_items(&self) -> Result<usize, WorthQueryApplicationAttemptDenial> {
-        [
-            self.creates,
-            self.deletes,
-            self.links,
-            self.unlinks,
-            self.writes,
-            self.emits,
-        ]
-        .into_iter()
-        .try_fold(0, add)
-    }
-
-    fn validator_work(&self) -> Result<usize, WorthQueryApplicationAttemptDenial> {
-        // Query-owned platform facts never execute application invariant slots.
-        // Reserve the exact candidate breadth consumed by the provider's
-        // relational validation rather than importing unrelated application
-        // invariant budgets from the authorizing operation.
-        self.total_items().map(|work| work.max(1))
     }
 }
 
@@ -221,7 +197,7 @@ impl PlatformEffectReservation {
     pub(in crate::domain_computation::primary_graph) fn materialize(
         mut self,
         effects: &[WorthQueryApplicationRealizedEffect],
-    ) -> Result<WorthQueryCandidateValidatorWorkAdmission, WorthQueryApplicationAttemptDenial> {
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         for effect in effects {
             match effect {
                 WorthQueryApplicationRealizedEffect::CreateEntity { key, fields, .. } => {
@@ -304,7 +280,7 @@ impl PlatformEffectReservation {
                 }
             }
         }
-        Ok(self.reservation.validator_work_admission())
+        Ok(())
     }
 }
 

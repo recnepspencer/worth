@@ -74,9 +74,11 @@ fn two_bindings_sharing_key_namespace_operation_and_input_type_never_replay_each
     let account = resolved_account(&world, "open", &request);
     let first = admitted_program(&world, &principal, &account, &request, "committed");
     assert!(matches!(
-        world
-            .application
-            .compare_and_commit_application(first, original),
+        world.application.compare_and_commit_application(
+            first,
+            original,
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
+        ),
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));
 
@@ -84,18 +86,23 @@ fn two_bindings_sharing_key_namespace_operation_and_input_type_never_replay_each
     let retry = admitted_program(&world, &principal, &account, &request, "committed");
     assert!(
         matches!(
-            world
-                .application
-                .compare_and_commit_application(retry, original),
+            world.application.compare_and_commit_application(
+                retry,
+                original,
+                crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
+            ),
             WorthQueryApplicationCommitOutcome::AlreadyCommitted(_)
         ),
         "the same binding replays its own commit"
     );
 
     let crossed = admitted_program(&world, &principal, &account, &request, "committed");
-    let WorthQueryApplicationCommitOutcome::Denied(denial) = world
-        .application
-        .compare_and_commit_application(crossed, sibling)
+    let WorthQueryApplicationCommitOutcome::Denied(denial) =
+        world.application.compare_and_commit_application(
+            crossed,
+            sibling,
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("another binding must not replay a key committed under this one");
     };
@@ -147,6 +154,7 @@ fn a_binding_the_schema_never_installed_is_refused_instead_of_panicking() {
                     principal.principal_identity(),
                     admission,
                     || contacts += 1,
+                    crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
                 )
         })
         .expect("fixture owner admits its advancement");
@@ -198,6 +206,7 @@ fn handler_contact_is_preserved_after_a_later_execution_denial() {
                         principal.principal_identity(),
                         admission,
                         || contacts += 1,
+                        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
                     )
             })
             .expect("fixture owner admits its advancement");

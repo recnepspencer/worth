@@ -96,10 +96,14 @@ fn publication_cannot_mint_a_missing_branch_cell() {
     transaction
         .push_batch(
             worth_relational::facade::transactions::WorkerIntentBatch::new("cannot-create-ghost"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
     transaction
-        .commit(&world.runtime)
+        .commit(
+            &world.runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("main publication still advances the admitted main cell");
     let after = capture_reference_evidence(
         &world.runtime,

@@ -13,28 +13,21 @@ use worth_store_security::{
 use worth_store_wal::StoreWalRecordIdentity;
 
 #[test]
-fn concrete_request_identity_changes_plan_binding_for_equal_shaped_page_reads() {
-    let (lifecycle, key_domain) = admit_strategy_scope(
-        DurableArtifactFamilyId::PhysicalPage,
-        StoreKeyScope::PageEnvelope,
-        StoreTenantScope::TenantPhysicalBoundary,
-        StoreAuthenticityRequirement::required(
-            StoreAuthenticityRequirementClass::AuthenticatedFrame,
-        ),
-        StoreCustodyPosture::InternalStoreCustody,
-    );
-    let coverage = access_planning()
-        .exact_root_epoch_coverage(
-            crate::bootstrap::test_support::bootstrap_exact_materialization(
-                lifecycle.declaration().family(),
-            ),
-            PhysicalEpoch::from_raw(31).unwrap(),
-        )
-        .unwrap();
+fn concrete_request_identity_changes_plan_binding_for_equal_shaped_wal_reads() {
+    let (lifecycle, key_domain) = admit_persisted_lsm_scope();
+    let catalog = crate::bootstrap::test_support::bootstrap_catalog_read_admission();
     let shape = access_planning().point_access();
-    let materialization = admitted_materialization(lifecycle, coverage);
-    let first_key = page_key(key_domain, 7);
-    let second_key = page_key(key_domain, 8);
+    let materialization = persisted_lsm_materialization(lifecycle, &catalog).0;
+    let wal_key = |id| {
+        crate::keyspace::admit_wal_key(
+            key_domain,
+            WalRecordFamily::DurableMutationIntent,
+            StoreWalRecordIdentity::new(id),
+        )
+        .unwrap()
+    };
+    let first_key = wal_key(7);
+    let second_key = wal_key(8);
 
     let first_request = deterministic_plan_selection()
         .admit_read_request(lifecycle, first_key, materialization.clone(), shape)
@@ -44,8 +37,8 @@ fn concrete_request_identity_changes_plan_binding_for_equal_shaped_page_reads() 
             first_request,
             PreExecutionBudgetEnvelope::foreground_default(),
         )
-        .into_btree_lookup()
-        .expect("page point request must select B-tree lookup execution");
+        .into_lsm_lookup()
+        .expect("WAL point request must select LSM lookup");
     let second_request = deterministic_plan_selection()
         .admit_read_request(lifecycle, second_key, materialization.clone(), shape)
         .unwrap();
@@ -54,8 +47,8 @@ fn concrete_request_identity_changes_plan_binding_for_equal_shaped_page_reads() 
             second_request,
             PreExecutionBudgetEnvelope::foreground_default(),
         )
-        .into_btree_lookup()
-        .expect("page point request must select B-tree lookup execution");
+        .into_lsm_lookup()
+        .expect("WAL point request must select LSM lookup");
 
     assert_ne!(first.request_identity(), second.request_identity());
     assert_ne!(first.fingerprint(), second.fingerprint());

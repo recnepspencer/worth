@@ -17,11 +17,14 @@ impl<'media> IntegrityAdmittedWalFrame<'media> {
         owner: &worth_store::physical_runtime::PhysicalRecoveryCoordination,
         source: ObservedWalFrameSource<'media>,
         validated: IntegrityValidatedWalFrame<'media>,
-    ) -> Result<Self, RecoveryIntegrityIngressRejection> {
+    ) -> Result<Self, RecoveryWalIntegrityAdmissionDenial> {
         let scope = source.scope();
-        let admitted = owner
-            .admit_recovery_wal_frame(source.observed(), scope, source.relative_range(), validated)
-            .map_err(map_store_denial)?;
+        let admitted = owner.admit_recovery_wal_frame(
+            source.observed(),
+            scope,
+            source.relative_range(),
+            validated,
+        )?;
         Ok(Self {
             admitted,
             _source_lifetime: std::marker::PhantomData,
@@ -38,7 +41,7 @@ impl<'media> IntegrityAdmittedWalFrame<'media> {
     }
 }
 
-fn map_store_denial(
+pub(in crate::integrity_ingress) fn map_store_denial(
     denial: RecoveryWalIntegrityAdmissionDenial,
 ) -> RecoveryIntegrityIngressRejection {
     match denial {
@@ -53,6 +56,9 @@ fn map_store_denial(
         }
         RecoveryWalIntegrityAdmissionDenial::SourceIncarnationMismatch => {
             RecoveryIntegrityIngressRejection::SourceIncarnationMismatch
+        }
+        RecoveryWalIntegrityAdmissionDenial::Allocation(_) => {
+            unreachable!("resource denials leave WAL ingress through its allocation result")
         }
     }
 }

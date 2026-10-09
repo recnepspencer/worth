@@ -4,6 +4,44 @@ use super::{
     ScheduledTemporalWake, TemporalWakeId, TemporalWakeReschedule, TemporalWakeReuse, WakeOrdinal,
 };
 
+/// Diagnostic retention is bounded independently of active temporal readiness.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TemporalRetiredWakeCompactionReport {
+    expired_now: u32,
+    retained_width: u32,
+    expired_total: u64,
+    expired_digest: [u8; 32],
+}
+
+impl TemporalRetiredWakeCompactionReport {
+    pub(crate) const fn new(
+        expired_now: u32,
+        retained_width: u32,
+        expired_total: u64,
+        expired_digest: [u8; 32],
+    ) -> Self {
+        Self {
+            expired_now,
+            retained_width,
+            expired_total,
+            expired_digest,
+        }
+    }
+
+    pub const fn expired_now(self) -> u32 {
+        self.expired_now
+    }
+    pub const fn retained_width(self) -> u32 {
+        self.retained_width
+    }
+    pub const fn expired_total(self) -> u64 {
+        self.expired_total
+    }
+    pub const fn expired_digest(self) -> [u8; 32] {
+        self.expired_digest
+    }
+}
+
 /// Cost-honest summary of runtime-owned temporal admission work.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct TemporalWakeAdmissionSummary {

@@ -12,7 +12,8 @@ use worth_store_physical_format::{
     CHECKPOINT_STREAM_HEADER_RECORD_BYTES,
 };
 use worth_store_recovery_runtime::{
-    PhysicalRecoveryCheckpointIntegrityDenial, PhysicalRecoveryLimits, PhysicalRecoverySourceDenial,
+    PhysicalRecoveryBlockKind, PhysicalRecoveryCheckpointIntegrityDenial,
+    PhysicalRecoveryLimitDimension, PhysicalRecoveryLimits, PhysicalRecoverySourceDenial,
 };
 
 #[test]
@@ -23,6 +24,8 @@ fn production_discovery_projects_all_five_checkpoint_families_without_raw_decode
     publish_synthetic_genesis(&root, store);
     let (checkpoint, bytes) = checkpoint_with_dirty_and_bindings(store, 1);
     write_checkpoint(&root, &bytes);
+    // C.11 continuation: the cutoff needs its retained covered WAL anchor.
+    publish_synthetic_covered_wal(&root);
 
     let discovered = admitted_recovery(&root).discover().unwrap();
     assert_eq!(discovered.counters().checkpoint_candidates, 1);
@@ -124,12 +127,27 @@ fn checkpoint_binding_record_limit_is_a_typed_discovery_denial() {
         .any(|denial| matches!(
             denial,
             PhysicalRecoverySourceDenial::CheckpointIntegrity(
-                PhysicalRecoveryCheckpointIntegrityDenial::BindingRecordLimit {
-                    observed: 2,
-                    admitted: 1
-                }
+                PhysicalRecoveryCheckpointIntegrityDenial::BindingRecordLimit
             )
         )));
+    let limit = blocked
+        .cause()
+        .limit()
+        .expect("the binding count is a limit");
+    assert_eq!(
+        (
+            blocked.cause().phase(),
+            limit.dimension(),
+            limit.observed(),
+            limit.admitted()
+        ),
+        (
+            PhysicalRecoveryBlockKind::Checkpoint,
+            PhysicalRecoveryLimitDimension::OperationBindings,
+            2,
+            1
+        )
+    );
 }
 
 #[test]

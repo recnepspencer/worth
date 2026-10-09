@@ -1,7 +1,6 @@
 //! Exact-commit evidence minted only from the committed session stage.
 
 mod postcommit_currentness;
-pub(in crate::domain_computation::primary_graph::provider) use postcommit_currentness::PreparedSourceFactRebase;
 pub(in crate::domain_computation::primary_graph) use postcommit_currentness::{
     FactlessCurrentness, FailedRebase, OwnEffectOnReads, RebaseVerificationReason,
 };
@@ -36,8 +35,11 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphCo
 pub(in crate::domain_computation::primary_graph) struct WorthQueryMutationWorkCommitSeal {
     counters: WorthQueryPrimaryMutationWorkCounters,
     index_maintenance_work: worth_relational::facade::indexes::DerivedIndexMaintenanceWork,
-    touched_records:
-        std::sync::Arc<crate::domain_computation::primary_graph::provider::RetainedTouchedRecords>,
+    touched_records: std::sync::Arc<
+        worth_execution::ExecutionArray<
+            crate::domain_computation::primary_graph::provider::WorthQueryTouchedRecordIdentity,
+        >,
+    >,
     preimage: WorthQueryPreImageRetentionWork,
 }
 
@@ -46,7 +48,8 @@ pub(super) fn seal(
     committed: &mut WorthQueryCommittedApplicationSession,
 ) -> WorthQueryPrimaryGraphCommitEvidence {
     let prepared_touched_records = committed.take_prepared_touched_records();
-    let touched_records = prepared_touched_records.fill(&committed.committed().changed_records);
+    let touched_records =
+        prepared_touched_records.verify_performed(&committed.committed().changed_records);
     let mutation_work =
         WorthQueryPrimaryMutationWorkEvidence::from_commit_seal(WorthQueryMutationWorkCommitSeal {
             counters: committed.work(),
@@ -100,7 +103,11 @@ impl WorthQueryMutationWorkCommitSeal {
     ) -> (
         WorthQueryPrimaryMutationWorkCounters,
         worth_relational::facade::indexes::DerivedIndexMaintenanceWork,
-        std::sync::Arc<crate::domain_computation::primary_graph::provider::RetainedTouchedRecords>,
+        std::sync::Arc<
+            worth_execution::ExecutionArray<
+                crate::domain_computation::primary_graph::provider::WorthQueryTouchedRecordIdentity,
+            >,
+        >,
         WorthQueryPreImageRetentionWork,
     ) {
         (
@@ -197,3 +204,7 @@ impl WorthQueryPrimaryGraphCommitEvidence {
         self.observed_source_facts.superseded_by_own_effect()
     }
 }
+
+pub(in crate::domain_computation::primary_graph) use postcommit_currentness::{
+    PreparedRebaseDenial, PreparedSourceFactRebase,
+};

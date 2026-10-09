@@ -6,7 +6,7 @@ use std::time::{Duration, Instant};
 
 #[path = "fixture/authentication.rs"]
 mod authentication;
-use authentication::authenticate_external;
+pub(in crate::domain_computation::primary_graph) use authentication::authenticate_external;
 #[path = "fixture/account_seed.rs"]
 mod account_seed;
 #[path = "fixture/authorization_time.rs"]
@@ -87,6 +87,14 @@ mod optional_account_field_query;
 pub(super) use optional_account_field_query::{
     OptionalAccountFieldQuery, OptionalAccountFieldResult,
 };
+#[path = "fixture/optional_account_owner_query.rs"]
+mod optional_account_owner_query;
+#[path = "fixture/owner_members_query.rs"]
+mod owner_members_query;
+pub(super) use optional_account_owner_query::{
+    OptionalAccountOwnerQuery, OptionalAccountOwnerResult,
+};
+pub(super) use owner_members_query::{OwnerMembersQuery, OwnerMembersResult};
 #[path = "fixture/nested_account.rs"]
 mod nested_account;
 pub(in crate::domain_computation::primary_graph) use nested_account::NestedAccountQuery;
@@ -141,7 +149,7 @@ mod handler_installation;
 mod operation_contracts;
 #[path = "fixture/optional_output_binding.rs"]
 mod optional_output_binding;
-pub(super) use optional_output_binding::{
+pub(in crate::domain_computation::primary_graph) use optional_output_binding::{
     OptionalCompanion, OptionalOutputInput, OptionalOutputMutationBinding, OptionalOutputOperation,
     OptionalOutputPlan, OptionalOutputs, OptionalSubject,
 };
@@ -154,8 +162,11 @@ pub(in crate::domain_computation::primary_graph) use program_required_binding::{
 pub(super) use program_required_binding::{
     ProgramRequiredOperation, ProgramRequiredSiblingBinding,
 };
+#[path = "fixture/program_activation.rs"]
+mod program_activation;
 #[path = "fixture/program_roster.rs"]
 mod program_roster;
+pub(in crate::domain_computation::primary_graph) use program_activation::seed_program_activation;
 pub(in crate::domain_computation::primary_graph) use program_roster::{
     installed_program_support, rostered_program_revision, unadmitted_program_revision,
 };
@@ -178,8 +189,8 @@ pub(in crate::domain_computation::primary_graph) use capability_world_installati
 };
 pub(in crate::domain_computation::primary_graph) use schema_types::*;
 pub(in crate::domain_computation::primary_graph) use world_installation::{
-    installed_authorization_world, installed_authorization_world_with_completed_evidence_capacity,
-    installed_authorization_world_with_label, installed_authorization_world_with_product_resources,
+    installed_authorization_world, installed_authorization_world_with_label,
+    installed_authorization_world_with_product_resources,
     installed_authorization_world_with_resource_profile, installed_blocked_authorization_world,
     installed_two_principal_authorization_world,
 };
@@ -343,6 +354,8 @@ worth_query_application_schema! {
                 .application_query(application_queries::governed_account_summary_definition())
                 .application_query(application_queries::ordered_account_summary_definition())
                 .application_query(optional_account_field_query::optional_account_field_definition())
+                .application_query(optional_account_owner_query::definition())
+                .application_query(owner_members_query::definition())
                 .application_query(nested_account::nested_account_definition())
                 .application_query(filtered_activity_query::selected_activity_definition())
                 .application_query(forged_selector::forged_selector_definition())

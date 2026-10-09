@@ -18,6 +18,7 @@ pub struct IntegrityValidatedExtentManifest<'media> {
     maximum_frame_bytes: u32,
     chunk_payload_capacity: u32,
     chunk_count: u32,
+    layout: worth_store_physical_format::ExtentArenaFrameLayout,
     validation_record: PhysicalIntegrityValidationRecord,
     inspected: UntrustedPhysicalArtifact<'media>,
 }
@@ -33,6 +34,7 @@ pub struct IntegrityValidatedExtentMembership {
     logical_bytes: u64,
     chunk_payload_capacity: u32,
     chunk_count: u32,
+    layout: worth_store_physical_format::ExtentArenaFrameLayout,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -50,11 +52,17 @@ impl<'media> IntegrityValidatedExtentManifest<'media> {
         inspected: UntrustedPhysicalArtifact<'media>,
     ) -> Option<Self> {
         let placement = scope.extent_manifest_placement()?;
+        let layout = worth_store_physical_format::ExtentArenaFrameLayout::new(
+            record_format,
+            manifest.alignment(),
+        )?;
         if !scope.is_extent_manifest()
             || record_format != scope.record_format()
             || manifest.record() != placement.record()
             || manifest.extent_cell() != placement.extent_cell()
             || manifest.logical_bytes() != placement.payload_bytes()
+            || !layout.admits(placement.arena_range(), manifest.chunk_count())
+            || scope.byte_range().offset() != placement.arena_range().offset()
             || inspected.byte_count() != scope.byte_range().length()
         {
             return None;
@@ -64,7 +72,8 @@ impl<'media> IntegrityValidatedExtentManifest<'media> {
             PhysicalIntegrityValidationDigest::crc32c(scope.exact_extent_scope_digest()),
             PhysicalIntegrityValidationDigest::crc32c(validated_range_checksum),
             PhysicalIntegrityValidationMechanism::Crc32cV1,
-        )?;
+        )?
+        .with_extent_layout(layout);
         Some(Self {
             scope,
             record_format,
@@ -74,6 +83,7 @@ impl<'media> IntegrityValidatedExtentManifest<'media> {
             maximum_frame_bytes: manifest.maximum_frame_bytes(),
             chunk_payload_capacity: manifest.chunk_payload_capacity(),
             chunk_count: manifest.chunk_count(),
+            layout,
             validation_record,
             inspected,
         })
@@ -110,6 +120,9 @@ impl<'media> IntegrityValidatedExtentManifest<'media> {
     pub const fn chunk_count(&self) -> u32 {
         self.chunk_count
     }
+    pub const fn alignment(&self) -> u64 {
+        self.layout.alignment()
+    }
 
     pub const fn membership(&self) -> IntegrityValidatedExtentMembership {
         IntegrityValidatedExtentMembership {
@@ -120,6 +133,7 @@ impl<'media> IntegrityValidatedExtentManifest<'media> {
             logical_bytes: self.logical_bytes,
             chunk_payload_capacity: self.chunk_payload_capacity,
             chunk_count: self.chunk_count,
+            layout: self.layout,
         }
     }
 
@@ -138,6 +152,7 @@ impl IntegrityValidatedExtentMembership {
         scope: PhysicalArtifactScope,
     ) -> Option<Self> {
         let placement = scope.extent_manifest_placement()?;
+        let layout = record.extent_layout()?;
         if !record.matches_scope(scope) {
             return None;
         }
@@ -159,11 +174,23 @@ impl IntegrityValidatedExtentMembership {
             logical_bytes: placement.payload_bytes(),
             chunk_payload_capacity,
             chunk_count,
+            layout,
         })
     }
 
     pub(crate) const fn scope(self) -> PhysicalArtifactScope {
         self.scope
+    }
+    pub const fn arena_range(self) -> worth_store_physical_format::ExtentArenaRange {
+        self.scope
+            .extent_arena_range()
+            .expect("validated extent membership has placement")
+    }
+    pub const fn alignment(self) -> u64 {
+        self.layout.alignment()
+    }
+    pub const fn frame_layout(self) -> worth_store_physical_format::ExtentArenaFrameLayout {
+        self.layout
     }
 
     pub(crate) const fn record_format(self) -> PhysicalRecordFormatDeclaration {

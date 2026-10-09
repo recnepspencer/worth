@@ -236,9 +236,15 @@ fn create_entity(
                     .expect("entity name aspect patch"),
             }),
         )),
+        worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("execution fixture staging fits its transaction budget");
-    let outcome = txn.commit(runtime).expect("seed commit should succeed");
+    let outcome = txn
+        .commit(
+            runtime,
+            worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .expect("seed commit should succeed");
     let entity = outcome
         .changed_records
         .iter()
@@ -280,10 +286,14 @@ fn update_entity_name(
                     .expect("entity name aspect patch"),
             }),
         )),
+        worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("execution fixture staging fits its transaction budget");
     let outcome = txn
-        .commit(runtime)
+        .commit(
+            runtime,
+            worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("intervening update should succeed");
     let commit_id = outcome.outcome().commit.commit_id;
     runtime

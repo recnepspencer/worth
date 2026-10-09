@@ -4,7 +4,6 @@ pub(in crate::domain_computation) use aftermath_causality::WorthQueryAftermathCa
 mod application_attempt_state;
 pub(in crate::domain_computation::primary_graph::provider) use application_attempt_state::publish_recovered;
 pub(in crate::domain_computation::primary_graph::provider) use application_attempt_state::ManagedUnpublishedAttempt;
-pub(in crate::domain_computation::primary_graph) use application_attempt_state::RetainedTouchedRecords;
 pub(in crate::domain_computation::primary_graph) use application_attempt_state::{
     FactlessCurrentness, OwnEffectOnReads, RebaseVerificationReason,
 };
@@ -14,7 +13,6 @@ mod application_touch_admission;
 mod branch_commit_coordination;
 mod commit_causality;
 pub(super) mod committed_dispatch_outbox;
-mod completed_evidence_capacity;
 mod completed_observation;
 mod decision_facts;
 pub(in crate::domain_computation::primary_graph) mod dispatch_outbox;
@@ -96,7 +94,6 @@ use std::sync::{Arc, Mutex};
 pub(crate) struct WorthQueryPrimaryGraphProvider {
     pub(crate) graph: WorthQueryPrimaryGraphIntegrationHandle,
     resource_support: resource_support::WorthQueryPrimaryGraphResourceSupport,
-    completed_evidence_capacity: completed_evidence_capacity::CompletedEvidenceCapacity,
     branch_commit_coordination:
         branch_commit_coordination::WorthQueryApplicationBranchCommitCoordinator,
     pub(super) live_delivery: super::live_delivery::WorthQueryLiveDeliverySource,
@@ -123,12 +120,6 @@ pub(crate) use branch_commit_coordination::{
 };
 
 impl WorthQueryPrimaryGraphProvider {
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn completed_evidence_capacity_for_test(
-        &self,
-    ) -> completed_evidence_capacity::CompletedEvidenceCapacity {
-        self.completed_evidence_capacity.clone()
-    }
     pub(in crate::domain_computation::primary_graph) fn reserve_outstanding_dispatch(
         &self,
         record: Option<
@@ -309,4 +300,8 @@ pub(super) struct WorthQueryPrimaryLogicalGraph;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use inbound_completion::{
     completion_preparation_denial, completion_validation_denial,
+};
+
+pub(in crate::domain_computation::primary_graph) use application_attempt_state::{
+    PreparedRebaseDenial, PreparedSourceFactRebase,
 };

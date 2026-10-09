@@ -105,7 +105,7 @@ fn canonical_journal_alias_storm_does_not_repeat_reads_checksums_or_stream_vecto
                 "--max-bytes",
                 "16384",
                 "--max-open-files",
-                "5",
+                crate::support::FIXTURE_OPEN_FILE_ARGUMENT,
                 "--max-depth",
                 "8",
                 "--max-symlinks",

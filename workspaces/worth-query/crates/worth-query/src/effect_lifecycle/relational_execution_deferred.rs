@@ -59,30 +59,18 @@ pub(super) fn transaction_staging(
 ) -> RelationalEffectExecutionFailure {
     use RelationalTransactionStagingDenial as Denial;
     let kind = match denial {
-        Denial::OverlayCapacityExhausted {
-            maximum_bytes,
-            required_bytes,
-        } => EffectExecutionDenialKind::TransactionOverlayBudgetExceeded {
-            maximum_bytes,
-            required_bytes,
-        },
-        Denial::FootprintCapacityExhausted {
-            maximum_loci,
-            required_loci,
-        } => EffectExecutionDenialKind::TransactionFootprintBudgetExceeded {
-            maximum_loci,
-            required_loci,
-        },
+        Denial::AllocationDenied(ref allocation) => return allocation_failure(allocation),
+        Denial::CardinalityOverflow => {
+            EffectExecutionDenialKind::TransactionStagingCardinalityOverflow
+        }
+        Denial::InputDirectoryAllocationDenied { requested_batches } => {
+            EffectExecutionDenialKind::TransactionInputDirectoryAllocationDenied {
+                requested_batches,
+            }
+        }
         Denial::SavepointCapacityExhausted { maximum_savepoints } => {
             EffectExecutionDenialKind::TransactionSavepointBudgetExceeded { maximum_savepoints }
         }
-        Denial::SavepointFootprintCapacityExhausted {
-            maximum_loci,
-            required_loci,
-        } => EffectExecutionDenialKind::TransactionSavepointFootprintBudgetExceeded {
-            maximum_loci,
-            required_loci,
-        },
         Denial::SavepointIdentityExhausted => {
             return RelationalEffectExecutionFailure::Denied {
                 kind: EffectExecutionDenialKind::TransactionSavepointIdentityExhausted,
@@ -129,6 +117,20 @@ pub(super) fn transaction_commit(
                 },
             }
         }
+        TransactionCommitError::Conflict { error, .. } => {
+            if let Some(allocation) = error.allocation_denial() {
+                return allocation_failure(allocation);
+            }
+            let kind = match &error.class {
+                worth_relational::facade::transactions::ConflictClass::TransactionStagingCardinalityOverflow => EffectExecutionDenialKind::TransactionStagingCardinalityOverflow,
+                worth_relational::facade::transactions::ConflictClass::TransactionInputDirectoryAllocationDenied { requested_batches } => EffectExecutionDenialKind::TransactionInputDirectoryAllocationDenied { requested_batches: *requested_batches },
+                _ => return denied(&error),
+            };
+            RelationalEffectExecutionFailure::Denied {
+                kind,
+                message: format!("{error:?}"),
+            }
+        }
         TransactionCommitError::Interrupted { interruption, .. } => {
             interruption_event(interruption)
         }
@@ -137,8 +139,7 @@ pub(super) fn transaction_commit(
         TransactionCommitError::PerformedButDurabilityDeferred {
             settlement, error, ..
         } => RelationalEffectExecutionFailure::settlement_deferred(error.detail, settlement),
-        other @ (TransactionCommitError::Conflict { .. }
-        | TransactionCommitError::Publication { .. }
+        other @ (TransactionCommitError::Publication { .. }
         | TransactionCommitError::Preparation { .. }
         | TransactionCommitError::PublicationDenied { .. }) => denied(&other),
     }
@@ -218,6 +219,36 @@ pub(super) fn publication_failure(
     RelationalEffectExecutionFailure::Denied {
         kind,
         message: failure.detail().to_owned(),
+    }
+}
+
+fn allocation_failure(
+    denial: &worth_execution::ExecutionAllocationDenial,
+) -> RelationalEffectExecutionFailure {
+    use worth_execution::ExecutionAllocationDenialKind as Kind;
+    let control = match denial.kind() {
+        Kind::Cancelled => Some(super::EffectExecutionControlStopKind::Cancelled),
+        Kind::DeadlineElapsed => Some(super::EffectExecutionControlStopKind::TimedOut),
+        Kind::Layout
+        | Kind::Lease(_)
+        | Kind::Allocator
+        | Kind::CapacityMismatch
+        | Kind::WriteBeyondReserved
+        | Kind::IncompleteSeal => None,
+    };
+    if let Some(kind) = control {
+        RelationalEffectExecutionFailure::ControlStopped {
+            kind,
+            message: denial.to_string(),
+        }
+    } else {
+        RelationalEffectExecutionFailure::Denied {
+            kind: EffectExecutionDenialKind::TransactionAllocationDenied {
+                kind: denial.kind(),
+                requested_payload_bytes: denial.requested_payload_bytes(),
+            },
+            message: denial.to_string(),
+        }
     }
 }
 

@@ -87,11 +87,11 @@ fn managed_scrub_reads_real_bytes_once_and_settles_background_resources() {
     assert_eq!(observation.validation_counters.inspected_frames(), 1);
     assert_eq!(
         observation.counters.acquired_bytes,
-        target.range().length() as u64
+        target.declared_bytes() as u64
     );
     assert_eq!(
         observation.counters.peak_allocation_bytes,
-        target.range().length() as u64
+        target.declared_bytes() as u64
     );
     assert_released(&serving);
     for _ in 0..2 {

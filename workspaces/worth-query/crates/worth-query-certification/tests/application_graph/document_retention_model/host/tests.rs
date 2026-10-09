@@ -113,7 +113,10 @@ fn the_ordinary_lane_refuses_a_workflow_control_binding() {
         })
         .without_source()
         .idempotency(&0x9176_d000_u64)
-        .execute_in_program(&host);
+        .execute_in_program(
+            &host,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        );
     assert!(
         matches!(
             settlement,

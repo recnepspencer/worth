@@ -10,8 +10,14 @@ mod authorization_observation;
 mod authorization_work;
 mod authorized_read;
 mod basis;
+mod batch;
 pub(in crate::domain_computation::primary_graph) use basis::PreparedSelectedReadIndexes;
 pub(in crate::domain_computation::primary_graph) use basis::WorthQueryApplicationQueryBasisCustody;
+pub use batch::{
+    WorthQueryApplicationQueryBatchAdmission, WorthQueryApplicationQueryBatchLimits,
+    WorthQueryApplicationQueryBatchMemory, WorthQueryApplicationQueryBatchReadPlan,
+    WorthQueryApplicationQueryBatchResourceDenial, WorthQueryApplicationQueryBatchWork,
+};
 mod continuation;
 mod control_validation;
 mod controls;
@@ -71,7 +77,8 @@ pub use denial::{
     WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
 };
 pub use derived_view::{
-    WorthQueryManagedDerivedMemberToken, WorthQueryManagedDerivedValue,
+    WorthQueryManagedDerivedCollectionBatchRefreshDenial, WorthQueryManagedDerivedMemberToken,
+    WorthQueryManagedDerivedStorageQuote, WorthQueryManagedDerivedValue,
     WorthQueryManagedDerivedView, WorthQueryManagedDerivedViewDenial,
     WorthQueryManagedDerivedViewKey, WorthQueryManagedDerivedViewReconciliation,
     WorthQueryManagedDerivedViewSnapshot,
@@ -98,9 +105,11 @@ pub(in crate::domain_computation::primary_graph) use observed_source::{
 };
 pub use observed_source::{
     WorthQueryBoundSourceExpectation, WorthQueryObservedResultSet, WorthQueryObservedSource,
-    WorthQuerySourceExpectationDenial, WorthQuerySourceExpectationDenialKind,
+    WorthQueryPendingSourceExpectation, WorthQuerySourceExpectationDenial,
+    WorthQuerySourceExpectationDenialKind,
 };
 pub use one_shot::{
+    WorthQueryApplicationBatchReadDenial, WorthQueryApplicationBatchResult,
     WorthQueryApplicationOneShotDenial, WorthQueryApplicationOneShotDenialKind,
     WorthQueryApplicationOneShotResult,
 };

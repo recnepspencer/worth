@@ -27,9 +27,11 @@ pub(crate) fn read_extent_manifest(
     )?;
     format_scope(&frame, expected.format)?;
     let ChildScope::ExtentManifest {
+        arena,
         extent,
         record,
         logical_bytes,
+        allocated_bytes,
     } = expected.scope
     else {
         unreachable!()
@@ -55,10 +57,35 @@ pub(crate) fn read_extent_manifest(
     let page_bytes = read_u32(&expected.format, 2);
     let payload_bytes = u64::from(page_bytes - 112);
     let chunks = logical_bytes.div_ceil(payload_bytes);
+    let alignment = read_u64(frame.payload, 48);
+    shape(alignment.is_power_of_two(), 96, 8)?;
+    let aligned = |bytes: u64| {
+        bytes
+            .checked_add(alignment - 1)
+            .map(|value| value & !(alignment - 1))
+    };
+    let manifest_stride = aligned(104).ok_or_else(|| {
+        super::super::record_walk::damage(
+            super::super::OfflinePhysicalDamageCause::Framing,
+            Some((96, 8)),
+            super::super::OfflinePhysicalBlastRadius::Artifact,
+        )
+    })?;
+    let chunk_stride = aligned(u64::from(page_bytes)).ok_or_else(|| {
+        super::super::record_walk::damage(
+            super::super::OfflinePhysicalDamageCause::Framing,
+            Some((96, 8)),
+            super::super::OfflinePhysicalBlastRadius::Artifact,
+        )
+    })?;
     shape(
         read_u32(frame.payload, 40) == page_bytes
             && u64::from(read_u32(frame.payload, 44)) == chunks
-            && frame.payload[48..56] == [0; 8],
+            && chunks
+                .checked_mul(chunk_stride)
+                .and_then(|bytes| bytes.checked_add(manifest_stride))
+                == Some(allocated_bytes)
+            && expected.offset % alignment == 0,
         88,
         16,
     )?;
@@ -73,17 +100,15 @@ pub(crate) fn read_extent_manifest(
         let logical_offset = index * payload_bytes;
         let length = 112 + (logical_bytes - logical_offset).min(payload_bytes);
         children.push(ChildExpectation {
-            path: format!(
-                "families/records/extents/extent-{extent:016x}-{:016x}.data",
-                expected.generation
-            ),
+            path: expected.path.clone(),
             family: PhysicalArtifactFamily::ExtentChunkFrame,
             generation: expected.generation,
             format: expected.format,
-            offset: index * u64::from(page_bytes),
+            offset: expected.offset + manifest_stride + index * chunk_stride,
             length: Some(length),
             checksum: None,
             scope: ChildScope::ExtentChunk {
+                arena,
                 extent,
                 record,
                 logical_bytes,
@@ -109,6 +134,7 @@ pub(crate) fn read_extent_chunk(
     )?;
     format_scope(&frame, expected.format)?;
     let ChildScope::ExtentChunk {
+        arena: _,
         extent,
         record,
         logical_bytes,

@@ -34,6 +34,7 @@ pub struct WorthQueryAdmittedApplicationQueryPlan<
     PrincipalIdentity,
     Scope,
 > {
+    pub(super) planned_batch_item: Option<super::batch::PlannedBatchItem>,
     pub(super) runtime_authority: WorthQueryRuntimeAuthorityIdentity,
     pub(super) graph_authority_identity: String,
     pub(super) provider_identity: String,
@@ -79,6 +80,13 @@ impl<'a, Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, S
         Scope,
     >
 {
+    pub(in crate::domain_computation::primary_graph) fn carry_planned_batch_item(
+        &mut self,
+        item: Option<super::batch::PlannedBatchItem>,
+    ) {
+        self.planned_batch_item = item;
+    }
+
     pub fn query_identity(&self) -> &WorthQueryInstalledApplicationQueryIdentity {
         self.query.identity()
     }

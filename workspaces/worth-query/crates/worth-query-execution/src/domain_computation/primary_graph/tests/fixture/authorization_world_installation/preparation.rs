@@ -5,7 +5,6 @@ pub(super) fn prepare_authorization_world(
     resources: WorthQueryApplicationQueryResourceProfile,
     relational: Option<worth_relational::facade::runtime::RelationalRuntime>,
     product_resources: crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldResources,
-    completed_evidence: crate::domain_computation::execution_runtime::WorthQueryCompletedEvidenceResourceProfile,
 ) -> PreparedAuthorizationWorld {
     let declaration = IdentityExecutionSchema::declaration().unwrap();
     let admitted = WorthQueryInstallationAdmissionProfile::new("support", "configuration")
@@ -13,7 +12,6 @@ pub(super) fn prepare_authorization_world(
         .unwrap();
     let installation = WorthQueryExecutionRuntimeInstaller::new()
         .application_query_resources(resources)
-        .completed_evidence_resources(completed_evidence)
         .install(WorthQueryInstallationGeneration::initial(), [admitted])
         .unwrap();
     let (runtime, authority) = installation.into_parts();

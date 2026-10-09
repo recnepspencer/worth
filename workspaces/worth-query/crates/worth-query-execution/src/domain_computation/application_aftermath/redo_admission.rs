@@ -316,6 +316,9 @@ pub(crate) fn map_recovery_denial(
         | K::CompletionPublicationPending
         | K::CompletionExecutionDenied { .. }
         | K::CompletionExecutionControlStopped { .. }
+        | K::CompletionAllocationDenied { .. }
+        | K::CompletionStagingCardinalityOverflow
+        | K::CompletionInputDirectoryAllocationDenied { .. }
         | K::TerminalIndexUnavailable
         | K::DispatchOutboxMissing
         | K::TransportNotInstalled

@@ -21,5 +21,8 @@ serde = { version = "1", features = ["derive"] }
 worth-foundational = { path = "../../../../crates/worth-foundational" }
 worth-store-physical-format.workspace = true
 
+[target.'cfg(windows)'.dependencies]
+file-id = "0.2.3"
+
 [lints]
 workspace = true

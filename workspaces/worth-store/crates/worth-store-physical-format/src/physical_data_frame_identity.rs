@@ -82,6 +82,11 @@ fn write_artifact(artifact: RecordArtifactFile, target: &mut Vec<u8>) {
             target.extend_from_slice(&generation.to_le_bytes());
             target.extend_from_slice(&block.to_le_bytes());
         }
+        RecordArtifactFile::ReleaseCustodyHeadBlock { generation, block } => {
+            target.push(17);
+            target.extend_from_slice(&generation.to_le_bytes());
+            target.extend_from_slice(&block.to_le_bytes());
+        }
         RecordArtifactFile::Segment {
             segment,
             generation,
@@ -103,15 +108,9 @@ fn write_artifact(artifact: RecordArtifactFile, target: &mut Vec<u8>) {
             target.extend_from_slice(&generation.to_le_bytes());
             target.extend_from_slice(&block.to_le_bytes());
         }
-        RecordArtifactFile::Extent { extent, generation } => {
-            target.push(8);
-            target.extend_from_slice(&extent.to_le_bytes());
-            target.extend_from_slice(&generation.to_le_bytes());
-        }
-        RecordArtifactFile::ExtentManifest { extent, generation } => {
-            target.push(9);
-            target.extend_from_slice(&extent.to_le_bytes());
-            target.extend_from_slice(&generation.to_le_bytes());
+        RecordArtifactFile::ExtentArena { arena } => {
+            target.push(16);
+            target.extend_from_slice(&arena.to_le_bytes());
         }
         RecordArtifactFile::FreeSpaceManifest { generation } => {
             target.push(10);

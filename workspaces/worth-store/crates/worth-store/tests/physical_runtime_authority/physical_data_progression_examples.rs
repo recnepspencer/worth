@@ -21,12 +21,11 @@ fn dispatch_and_settle_exact_data(
         PhysicalDataDispatchOutcome::NotStarted { durable, cause } => {
             let _preserved_authority = (durable.mutation_identity(), cause);
         }
-        PhysicalDataDispatchOutcome::RetryableAfterCleanup(retry) => {
-            let _proved_cleanup = (
+        PhysicalDataDispatchOutcome::Suspended(retry) => {
+            let _retained_progress = (
                 retry.durable().mutation_identity(),
-                retry.discarded_effects().len(),
-                retry.pressure(),
-                retry.deleted_artifacts().len(),
+                retry.completed_effects().len(),
+                retry.cause(),
             );
             let _preserved_authority = retry.into_durable();
         }

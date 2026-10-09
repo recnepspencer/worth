@@ -23,6 +23,7 @@ pub enum PhysicalRootPublicationTransitionDenial {
     CurrentRootMismatch,
     TransitionActive,
     InspectionRequired,
+    ReclaimFenced,
 }
 
 enum PhysicalRootPublicationTransitionState {

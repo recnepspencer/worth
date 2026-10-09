@@ -8,6 +8,11 @@ mod child;
 const WRITER_ENV: &str = "WORTH_STORE_PHASE8_WRITER";
 const OBSERVER_ENV: &str = "WORTH_STORE_PHASE8_OBSERVER";
 const RECOVERY_ENV: &str = "WORTH_STORE_PHASE8_RECOVERY";
+// The children are killed, never power-cut, so they skip the OS flush exactly
+// as the in-process suites do.
+const WRITER_FEATURES: &str = "volatile-sync-for-tests";
+const RECOVERY_FEATURES: &str =
+    "worth-store-recovery-runtime/certification-test-authority,worth-store/volatile-sync-for-tests";
 
 struct ProcessBinaries {
     target: PathBuf,
@@ -21,8 +26,6 @@ pub(super) fn run(workspace: &Path, target_root: Option<&Path>) -> Result<(), St
     let mut command = cargo(workspace);
     command.args([
         "test",
-        "-j",
-        "1",
         "-p",
         "worth-store-recovery-runtime",
         "--test",
@@ -30,7 +33,6 @@ pub(super) fn run(workspace: &Path, target_root: Option<&Path>) -> Result<(), St
         "--features",
         "certification-test-authority",
     ]);
-    command.args(["--", "--test-threads=1"]);
     command
         .env("CARGO_TARGET_DIR", &binaries.target)
         .env(WRITER_ENV, &binaries.writer)
@@ -50,7 +52,7 @@ impl ProcessBinaries {
             &target,
             "worth-store",
             "physical_store_c8_writer",
-            None,
+            Some(WRITER_FEATURES),
         )?;
         build(
             workspace,
@@ -64,7 +66,7 @@ impl ProcessBinaries {
             &target,
             "worth-store-recovery-runtime",
             "physical_store_recover",
-            Some("worth-store-recovery-runtime/certification-test-authority"),
+            Some(RECOVERY_FEATURES),
         )?;
         Ok(Self {
             writer: executable(&target, "physical_store_c8_writer")?,
@@ -100,8 +102,6 @@ fn build(
     command.env("CARGO_TARGET_DIR", target).args([
         "build",
         "--locked",
-        "-j",
-        "1",
         "--no-default-features",
         "-p",
         package,

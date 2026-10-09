@@ -11,10 +11,6 @@ pub enum BankCommitDenialKind {
     /// The execution worker panicked before publication.
     ProviderPanicked,
     CustomInvariantDenied,
-    CandidateValidatorWorkExceeded {
-        maximum_work: usize,
-        required_work: usize,
-    },
     WorkflowSettlementDenied {
         kind: WorthQueryApplicationAttemptDenialKind,
     },
@@ -33,7 +29,6 @@ pub enum BankCommitDenialKind {
         required_bytes: u64,
     },
     IdempotencyIntentDrift,
-    IdempotencyWindowExpired,
     /// The key is recorded with the same intent and that commit took effect,
     /// but the runtime no longer holds its receipt, as after a restore.
     IdempotencyReceiptNotRetained,
@@ -91,13 +86,6 @@ pub(crate) const fn denial_kind(
         Query::ExecutionIdentitiesNotCanonical { .. } => BankCommitDenialKind::ProviderRejected,
         Query::ProviderRejected => BankCommitDenialKind::ProviderRejected,
         Query::CustomInvariantDenied => BankCommitDenialKind::CustomInvariantDenied,
-        Query::CandidateValidatorWorkExceeded {
-            maximum_work,
-            required_work,
-        } => BankCommitDenialKind::CandidateValidatorWorkExceeded {
-            maximum_work,
-            required_work,
-        },
         Query::WorkflowSettlementDenied { kind } => {
             BankCommitDenialKind::WorkflowSettlementDenied { kind }
         }
@@ -121,7 +109,6 @@ pub(crate) const fn denial_kind(
             required_bytes,
         },
         Query::IdempotencyIntentDrift => BankCommitDenialKind::IdempotencyIntentDrift,
-        Query::IdempotencyWindowExpired => BankCommitDenialKind::IdempotencyWindowExpired,
         Query::IdempotencyReceiptNotRetained { .. } => {
             BankCommitDenialKind::IdempotencyReceiptNotRetained
         }

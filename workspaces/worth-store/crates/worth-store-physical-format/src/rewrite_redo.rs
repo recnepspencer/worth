@@ -2,9 +2,12 @@
 //!
 //! This payload is not a reinterpretation of `store.physical.wal.canonical-redo.v3`.
 
-pub const REWRITE_REDO_DOMAIN: &[u8] = b"store.physical.rewrite-redo.v1";
+mod arena;
+pub use arena::PhysicalExtentArenaRewrite;
 
-const BODY_BYTES: usize = 216;
+pub const REWRITE_REDO_DOMAIN: &[u8] = b"store.physical.rewrite-redo.v2";
+
+const BODY_BYTES: usize = 280;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PhysicalRewriteRedo {
@@ -24,6 +27,7 @@ pub struct PhysicalRewriteRedo {
     destination_placement: u64,
     candidate_bytes: u64,
     resulting_root_generation: u64,
+    extent_arena: Option<PhysicalExtentArenaRewrite>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -33,6 +37,7 @@ pub enum PhysicalRewriteRedoDenial {
     TrailingBytes,
     LengthMismatch,
     CandidateLimit,
+    ArenaRange,
 }
 
 impl PhysicalRewriteRedo {
@@ -72,11 +77,22 @@ impl PhysicalRewriteRedo {
             destination_placement,
             candidate_bytes: u64::from(source_length),
             resulting_root_generation,
+            extent_arena: None,
         })
     }
 
     pub const fn operation(self) -> [u8; 32] {
         self.operation
+    }
+    pub fn with_extent_arena(mut self, ranges: PhysicalExtentArenaRewrite) -> Option<Self> {
+        if self.source_placement != self.destination_placement {
+            return None;
+        }
+        self.extent_arena = Some(ranges);
+        Some(self)
+    }
+    pub const fn extent_arena(self) -> Option<PhysicalExtentArenaRewrite> {
+        self.extent_arena
     }
 
     pub const fn group(self) -> [u8; 32] {
@@ -168,6 +184,7 @@ impl PhysicalRewriteRedo {
         encoded.extend_from_slice(&self.destination_placement.to_le_bytes());
         encoded.extend_from_slice(&self.candidate_bytes.to_le_bytes());
         encoded.extend_from_slice(&self.resulting_root_generation.to_le_bytes());
+        arena::encode(&mut encoded, self.extent_arena);
         encoded
     }
 
@@ -204,6 +221,7 @@ impl PhysicalRewriteRedo {
             destination_placement: take_u64(&mut cursor)?,
             candidate_bytes: take_u64(&mut cursor)?,
             resulting_root_generation: take_u64(&mut cursor)?,
+            extent_arena: arena::decode(&mut cursor)?,
         };
         if !cursor.is_empty() {
             return Err(PhysicalRewriteRedoDenial::TrailingBytes);
@@ -213,6 +231,9 @@ impl PhysicalRewriteRedo {
             || u64::from(redo.destination_length) != redo.candidate_bytes
         {
             return Err(PhysicalRewriteRedoDenial::LengthMismatch);
+        }
+        if redo.extent_arena.is_some() && redo.source_placement != redo.destination_placement {
+            return Err(PhysicalRewriteRedoDenial::ArenaRange);
         }
         if redo.candidate_bytes > maximum_candidate_bytes {
             return Err(PhysicalRewriteRedoDenial::CandidateLimit);
@@ -289,6 +310,38 @@ mod tests {
         assert_eq!(
             PhysicalRewriteRedo::decode(&encoded[..encoded.len() - 1], 32),
             Err(PhysicalRewriteRedoDenial::Truncated)
+        );
+    }
+
+    #[test]
+    fn extent_rewrite_carries_both_independent_arena_routes() {
+        let range = |arena, offset| {
+            crate::ExtentArenaRange::new(crate::ExtentArenaId::new(arena).unwrap(), offset, 20480)
+                .unwrap()
+        };
+        let source = range(3, 4096);
+        let destination = range(8, 8192);
+        let routes = PhysicalExtentArenaRewrite::new(source, destination, 4096).unwrap();
+        let redo = PhysicalRewriteRedo::new(
+            [1; 32], [2; 32], 4, 7, 0, 32, [9; 32], 8, 0, 11, [3; 32], 41, 41, 5,
+        )
+        .unwrap()
+        .with_extent_arena(routes)
+        .unwrap();
+        let encoded = redo.encode();
+        assert_eq!(PhysicalRewriteRedo::decode(&encoded, 32).unwrap(), redo);
+        let extension = &encoded[encoded.len() - 64..];
+        assert_eq!(&extension[8..16], &3_u64.to_le_bytes());
+        assert_eq!(&extension[32..40], &8_u64.to_le_bytes());
+        assert_eq!(&extension[56..64], &4096_u64.to_le_bytes());
+        assert!(PhysicalExtentArenaRewrite::new(source, range(3, 8192), 4096).is_none());
+        assert!(sample().with_extent_arena(routes).is_none());
+        let mut malformed = encoded;
+        let alignment = malformed.len() - 8;
+        malformed[alignment..].copy_from_slice(&3_u64.to_le_bytes());
+        assert_eq!(
+            PhysicalRewriteRedo::decode(&malformed, 32),
+            Err(PhysicalRewriteRedoDenial::ArenaRange)
         );
     }
 }

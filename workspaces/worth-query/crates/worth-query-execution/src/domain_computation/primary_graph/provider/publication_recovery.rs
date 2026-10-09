@@ -88,7 +88,8 @@ fn settlement_publication_denial(
         | Kind::ExecutionUncheckedCustomKernel { .. }) => {
             WorthQueryApplicationSettlementRecoveryError::ExecutionDenied(kind)
         }
-        Kind::ForeignOperationAttempt
+        Kind::AllocationDenied
+        | Kind::ForeignOperationAttempt
         | Kind::ForeignExecutionBasis
         | Kind::ForeignGraphAuthority
         | Kind::UndeclaredOperationScope

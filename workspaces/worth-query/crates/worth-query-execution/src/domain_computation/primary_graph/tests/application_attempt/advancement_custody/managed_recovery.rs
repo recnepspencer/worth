@@ -10,9 +10,12 @@ fn managed_recovery_refuses_before_revalidation_at_both_placements() {
         let account = resolved_account(&world, "open", &request);
         let program = admitted_program(&world, &principal, &account, &request, "recovered");
         world.application.fail_next_durable_append_for_test();
-        let WorthQueryApplicationCommitOutcome::ProductUnpublished(partial) = world
-            .application
-            .compare_and_commit_application(program, idempotency(191, 191))
+        let WorthQueryApplicationCommitOutcome::ProductUnpublished(partial) =
+            world.application.compare_and_commit_application(
+                program,
+                idempotency(191, 191),
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
         else {
             panic!("real durability fault retains recovery")
         };

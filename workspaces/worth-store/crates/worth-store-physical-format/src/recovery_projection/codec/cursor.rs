@@ -27,6 +27,18 @@ impl<'a> Cursor<'a> {
     pub(super) const fn new(bytes: &'a [u8]) -> Self {
         Self { remaining: bytes }
     }
+    pub(super) fn require_sequence_backing(
+        &self,
+        count: u64,
+    ) -> Result<(), PhysicalRecoveryProjectionDenial> {
+        let required = usize::try_from(count)
+            .ok()
+            .and_then(|count| count.checked_mul(8));
+        if required.is_none_or(|required| required > self.remaining.len()) {
+            return Err(PhysicalRecoveryProjectionDenial::Malformed);
+        }
+        Ok(())
+    }
     pub(super) fn take(
         &mut self,
         len: usize,

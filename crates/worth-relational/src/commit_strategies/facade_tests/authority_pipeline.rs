@@ -69,9 +69,14 @@ fn validated_strategy_proposal_keeps_its_unique_version_across_unrelated_sibling
                 fields: strategy_name_and_replicas_patch("main-before-fork", 1),
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    seed.commit(&runtime).expect("pre-fork main commit");
+    seed.commit(
+        &runtime,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .expect("pre-fork main commit");
     let (_, basis) = runtime
         .observe_fork_source(&BranchId("main".to_owned()))
         .expect("main remains forkable");
@@ -110,9 +115,15 @@ fn validated_strategy_proposal_keeps_its_unique_version_across_unrelated_sibling
                     fields: strategy_name_and_replicas_patch("main-after-validation", 1),
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    sibling.commit(&runtime).expect("unrelated sibling commit");
+    sibling
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .expect("unrelated sibling commit");
 
     assert_ne!(
         validated_version,
@@ -211,17 +222,23 @@ fn validate_lowered_plan_rejects_stale_basis_with_zero_residue() {
     };
     let mut intervening = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     intervening
-        .push_batch(WorkerIntentBatch::new("advance-before-validation").push(
-            MutationIntent::Create(CreateIntent::Entity(EntitySpec {
-                partition_id: PartitionId(1),
-                kind_id: KindId(1),
-                client_key: ClientKey::from("advance-before-validation"),
-                fields: strategy_name_and_replicas_patch("advance-before-validation", 1),
-            })),
-        ))
+        .push_batch(
+            WorkerIntentBatch::new("advance-before-validation").push(MutationIntent::Create(
+                CreateIntent::Entity(EntitySpec {
+                    partition_id: PartitionId(1),
+                    kind_id: KindId(1),
+                    client_key: ClientKey::from("advance-before-validation"),
+                    fields: strategy_name_and_replicas_patch("advance-before-validation", 1),
+                }),
+            )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     intervening
-        .commit(&runtime)
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("intervening commit advances the exact branch");
     let symbols_before = runtime.services.symbols.clone();
     let configured_symbols_before = runtime.config().identity.symbol_table.clone();
@@ -297,10 +314,14 @@ fn execute_validated_commit_rejects_stale_validation_basis_after_intervening_com
                     fields: strategy_name_and_replicas_patch("ordinary-a", 1),
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
     ordinary_txn
-        .commit(&runtime)
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("ordinary commit succeeds");
     let symbols_before = runtime.services.symbols.clone();
     let configured_symbols_before = runtime.config().identity.symbol_table.clone();

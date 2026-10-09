@@ -13,6 +13,7 @@ use worth_query_execution::facade::primary_graph::{
     WorthQueryApplicationEffectProgram, WorthQueryApplicationReadObservation as RetainedRead,
     WorthQueryApplicationRetainedCommitOutcome, WorthQueryPrimaryGraphApplicationRuntime,
 };
+use worth_query_execution::facade::runtime::ExecutionAllocationPolicy;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{
@@ -72,6 +73,7 @@ where
 {
     pub fn execute_retained(
         self,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         WorthQueryApplicationRetainedMutationOutcome<
             <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
@@ -102,8 +104,10 @@ where
                             phase,
                             program,
                             binding.idempotency(),
+                            allocation_policy,
                         )
                     },
+                    allocation_policy,
                 )
             })
             .map_err(WorthQueryApplicationRequestMutationDenial::ExecutionRequest)?
@@ -116,6 +120,7 @@ where
     pub fn execute_retained_in_program<Program>(
         self,
         application: &'application worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime<Schema, Program>,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         WorthQueryApplicationRetainedMutationOutcome<
             <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
@@ -166,6 +171,7 @@ where
                                 program,
                                 binding.identities(),
                                 |idempotency| binding.extension().apply(idempotency),
+                                allocation_policy,
                             )
                         } else {
                             application.commit_program_action_retained_in_advancement(
@@ -173,9 +179,11 @@ where
                                 program,
                                 binding.identities(),
                                 |idempotency| binding.extension().apply(idempotency),
+                                allocation_policy,
                             )
                         }
                     },
+                    allocation_policy,
                 )
             })
             .map_err(WorthQueryApplicationRequestMutationDenial::ExecutionRequest)?
@@ -203,6 +211,7 @@ where
             >,
             &WorthQueryMutationCommitBinding<'_, '_, Schema, Intent::Binding>,
         ) -> WorthQueryApplicationRetainedCommitOutcome,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         WorthQueryApplicationRetainedMutationOutcome<
             <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
@@ -224,6 +233,7 @@ where
                 }
                 WorthQueryApplicationRetainedCommitOutcome::Other(outcome) => outcome,
             },
+            allocation_policy,
         )?;
         Ok(match outcome {
             WorthQueryApplicationMutationOutcome::Committed { receipt, result } => {

@@ -32,7 +32,7 @@ fn authority() -> &'static ExecutionAuthority {
         ExecutionAuthority::try_construct_with_equivalences(
             ExecutionAuthorityConfig {
                 max_workers: NonZeroUsize::new(4).unwrap(),
-                charged_memory_bytes: 1 << 20,
+                charged_memory_bytes: Some(1 << 20),
             },
             [EquivalencePredicate::new(
                 CONTRACT,

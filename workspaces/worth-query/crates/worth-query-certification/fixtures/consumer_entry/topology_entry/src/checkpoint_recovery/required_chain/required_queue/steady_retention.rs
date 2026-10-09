@@ -120,7 +120,12 @@ fn an_unrelated_caller_advances_for_many_cycles_under_tight_custody() {
             )
             .unwrap();
         if rows_per_demand == 3 {
+            let before_classes = application.required_custody_breakdown_for_test();
             let stopped = b.advance(&request);
+            eprintln!(
+                "STEADY_12R_CLASSES before={before_classes:?} after={:?}",
+                application.required_custody_breakdown_for_test()
+            );
             assert!(
                 matches!(
                     &stopped,
@@ -143,8 +148,35 @@ fn an_unrelated_caller_advances_for_many_cycles_under_tight_custody() {
             application.required_custody_bytes_for_test() <= settled_custody,
             "{rows_per_demand} rows per demand: the unrelated caller retains no refreshed chain row"
         );
+        let closed_ready_custody = application.required_custody_bytes_for_test();
+        let current_commit = request.retain_read().unwrap().selected_commit().clone();
+        // Unchanged cached rows retain their custody plateau without publication.
+        for reopen in 0..8 {
+            let mut b = request
+                .demand(ChainDemand("anchor-b".to_owned()))
+                .start_dependent_in_program::<program::ChainProgram, program::ChainConnection>(
+                    &application,
+                )
+                .unwrap();
+            settled_in_one_advance!(b, request, "the unchanged reopened middle consumer");
+            drop(b);
+            assert_eq!(
+                application.required_custody_bytes_for_test(),
+                closed_ready_custody,
+                "reopen {reopen}: closed Ready custody stays on its actual plateau"
+            );
+            assert_eq!(
+                request.retain_read().unwrap().selected_commit(),
+                &current_commit,
+                "reopen {reopen}: unchanged output is not republished"
+            );
+        }
         settled_in_one_advance!(d, request, "the unrelated required demand");
         drop(d);
+        assert!(
+            application.required_custody_bytes_for_test() <= closed_ready_custody,
+            "closing the unrelated caller adds no custody"
+        );
         assert!(
             application.required_custody_bytes_for_test() <= settled_custody,
             "{rows_per_demand} rows per demand: custody returns within the settled chain's"
@@ -154,8 +186,8 @@ fn an_unrelated_caller_advances_for_many_cycles_under_tight_custody() {
 
 /// Query-owned state one cycle leaves retained: invalidation index bytes,
 /// required custody, output-lineage history, and the completed evidence
-/// entries inside the idempotency window with the bytes their tickets hold.
-type QueryRetained = (u64, usize, u64, usize, usize);
+/// entries retained by the committed idempotency evidence owner.
+type QueryRetained = (u64, usize, u64, usize);
 
 /// History one cycle leaves retained: installed World commits, World history
 /// metadata bytes, unique World component pins and Relational retired roots.
@@ -190,7 +222,7 @@ fn cycle_chain_at_small_retention(
             "cycle {cycle}: equal consumed output keeps the held dependent reusable"
         );
         assert_root_reads(roots, before, cycle, [1, 1, 1, 0]);
-        let (evidence_entries, evidence_bytes) = application.completed_evidence_retained_for_test();
+        let evidence_entries = application.completed_evidence_retained_for_test();
         retained(
             cycle,
             (
@@ -198,7 +230,6 @@ fn cycle_chain_at_small_retention(
                 application.required_custody_bytes_for_test(),
                 application.output_lineage_retained_bytes_for_test(),
                 evidence_entries,
-                evidence_bytes,
             ),
             application.history_retained_for_test(),
         );
@@ -228,27 +259,34 @@ fn a_refreshed_row_releases_the_custody_of_the_one_it_supersedes() {
 fn the_required_chain_stays_live_for_a_hundred_cycles_at_small_retention() {
     let _guard = checkpoint_recovery_test_guard();
     let cycles = 100;
-    // World capacity is the fixture's own: history behind the settled head
-    // retires each cycle, and the idempotency window evicts the oldest
-    // completed evidence once full, so World, Relational and Query retention
-    // all stop growing once every one of the eight retained positions has
-    // rotated.
+    // World history retires behind the settled head. Invalidation, required
+    // custody and lineage rotate; committed idempotency evidence is retained.
     let mut steady = None;
     let mut steady_history = None;
-    cycle_chain_at_small_retention(cycles, |cycle, retained, history| {
-        if cycle >= 16 {
-            assert_eq!(
-                *steady.get_or_insert(retained),
-                retained,
-                "cycle {cycle}: Query-owned retained bytes are steady"
+    let mut prior_evidence = 0;
+    cycle_chain_at_small_retention(
+        cycles,
+        |cycle, (index, custody, lineage, evidence), history| {
+            assert!(
+                evidence >= prior_evidence,
+                "completed idempotency evidence is retained"
             );
-            assert_eq!(
-                *steady_history.get_or_insert(history),
-                history,
-                "cycle {cycle}: World history, pins and Relational retired roots are steady"
-            );
-        }
-    });
+            prior_evidence = evidence;
+            if cycle >= 16 {
+                let retained = (index, custody, lineage);
+                assert_eq!(
+                    *steady.get_or_insert(retained),
+                    retained,
+                    "cycle {cycle}: Query-owned retained bytes are steady"
+                );
+                assert_eq!(
+                    *steady_history.get_or_insert(history),
+                    history,
+                    "cycle {cycle}: World history, pins and Relational retired roots are steady"
+                );
+            }
+        },
+    );
 }
 
 /// What the index retains once every retained version holds the same rows.

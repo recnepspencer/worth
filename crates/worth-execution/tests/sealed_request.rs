@@ -179,7 +179,7 @@ fn authority() -> &'static ExecutionAuthority {
     OWNER.get_or_init(|| {
         ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
             max_workers: NonZeroUsize::MIN,
-            charged_memory_bytes: 1 << 20,
+            charged_memory_bytes: Some(1 << 20),
         })
         .unwrap()
     })

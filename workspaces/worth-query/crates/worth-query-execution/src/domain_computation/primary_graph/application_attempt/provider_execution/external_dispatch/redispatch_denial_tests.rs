@@ -64,6 +64,9 @@ fn every_refusal() -> Vec<Redispatch> {
         | Redispatch::CompletionPublicationPending
         | Redispatch::CompletionExecutionDenied { .. }
         | Redispatch::CompletionExecutionControlStopped { .. }
+        | Redispatch::CompletionAllocationDenied { .. }
+        | Redispatch::CompletionStagingCardinalityOverflow
+        | Redispatch::CompletionInputDirectoryAllocationDenied { .. }
         | Redispatch::TerminalIndexUnavailable
         | Redispatch::CanonicalDerivationDenied
         | Redispatch::TimeObservationDenied => denial,
@@ -86,6 +89,13 @@ fn every_refusal() -> Vec<Redispatch> {
             stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage::ProviderCommit,
             kind: crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled,
         },
+        Redispatch::CompletionAllocationDenied {
+            stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage::ProviderCommit,
+            kind: worth_execution::ExecutionAllocationDenialKind::Allocator,
+            requested_payload_bytes: Some(17),
+        },
+        Redispatch::CompletionStagingCardinalityOverflow,
+        Redispatch::CompletionInputDirectoryAllocationDenied { requested_batches: 3 },
         Redispatch::TerminalIndexUnavailable,
         Redispatch::CanonicalDerivationDenied,
         Redispatch::TimeObservationDenied,

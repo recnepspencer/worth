@@ -209,6 +209,8 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
             &observed_source.query_identifier,
             &observed_source.query_identity,
             &graph.layout,
+            None,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("ordinary source binding retains root-path native facts");
     observed_source.assert_fact_materialization_capacity_for_test(&graph.layout);
@@ -269,7 +271,7 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
         direction: observed.direction,
         native_revision: observed.native_revision,
         comparison_work_limit: observed.comparison_work_limit,
-        endpoints: vec![target],
+        endpoints: crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints::from_observed(&[target], worth_execution::ExecutionAllocationPolicy::SystemAllocation, None).unwrap(),
     };
     let current = world.selected_product();
     assert!(

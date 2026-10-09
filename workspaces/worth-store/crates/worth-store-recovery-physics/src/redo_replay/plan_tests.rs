@@ -7,12 +7,18 @@ use crate::{
 use worth_store_physical_format::store_namespace::{
     ProposedStoreIdentity, StableStoreIdentity, StoreNamespaceIdentityRecord, StoreNamespaceVersion,
 };
-use worth_store_physical_format::RecordArtifactFile;
+use worth_store_physical_format::{PhysicalRecordFormatDeclaration, RecordArtifactFile};
 
 #[path = "plan_tests/fixtures.rs"]
 mod fixtures;
 #[path = "plan_tests/group_atomic.rs"]
 mod group_atomic;
+#[path = "plan_tests/historical_consumed.rs"]
+mod historical_consumed;
+#[path = "plan_tests/historical_retired.rs"]
+mod historical_retired;
+#[path = "plan_tests/member_limits.rs"]
+mod member_limits;
 #[path = "plan_tests/observation_membership.rs"]
 mod observation_membership;
 #[path = "plan_tests/projection_mutants.rs"]
@@ -21,6 +27,8 @@ mod projection_mutants;
 mod rewrite_payload;
 #[path = "plan_tests/supersession.rs"]
 mod supersession;
+#[path = "plan_tests/terminal_head_retirement.rs"]
+mod terminal_head_retirement;
 
 use fixtures::*;
 
@@ -29,7 +37,17 @@ fn plan_physical_redo(
     observations: Vec<RecoveryPageObservation>,
     maximum_targets: u64,
 ) -> Result<ImmutablePhysicalRedoPlan, PhysicalRedoPlanningDenial> {
-    super::plan_physical_redo(members, observations, maximum_targets, test_store())
+    super::plan_physical_redo(
+        members,
+        observations,
+        maximum_targets,
+        test_store(),
+        test_format(),
+    )
+}
+
+fn test_format() -> PhysicalRecordFormatDeclaration {
+    PhysicalRecordFormatDeclaration::builder().admit().unwrap()
 }
 
 fn test_store() -> StableStoreIdentity {
@@ -98,7 +116,10 @@ fn page_lsn_and_operation_fate_make_one_fixed_apply_or_skip_decision() {
     assert_eq!(promoted.indeterminate(), 0);
     assert_eq!(
         plan_physical_redo(vec![indeterminate], Vec::new(), 0),
-        Err(PhysicalRedoPlanningDenial::TargetLimit)
+        Err(PhysicalRedoPlanningDenial::TargetLimit {
+            observed: 1,
+            admitted: 0
+        })
     );
 
     let durable = PhysicalRedoMemberInput::new(
@@ -167,18 +188,20 @@ fn legacy_redo_domains_cannot_masquerade_as_the_v3_projection_grammar() {
 }
 
 #[test]
-fn legacy_projection_domains_cannot_masquerade_as_the_v3_grammar() {
+fn unsupported_projection_domains_retain_typed_c9_denial_before_planning() {
     let target = canonical_target_bytes_with_generations(1, 2);
-    for legacy in [
+    for (version, unsupported) in [
         b"store.physical.recovery-projection.v1".as_slice(),
         b"store.physical.recovery-projection.v2".as_slice(),
-    ] {
+        b"store.physical.recovery-projection.v3".as_slice(),
+        b"store.physical.recovery-projection.v4".as_slice(),
+        b"store.physical.recovery-projection.v5".as_slice(),
+    ]
+    .into_iter()
+    .enumerate()
+    {
         let mut projection = projection_with_generations(1, 1, 2).encode();
-        replace_first(
-            &mut projection,
-            b"store.physical.recovery-projection.v3",
-            legacy,
-        );
+        replace_projection_domain(&mut projection, unsupported);
         let member = PhysicalRedoMemberInput::new(
             range(),
             [1; 32],
@@ -191,7 +214,11 @@ fn legacy_projection_domains_cannot_masquerade_as_the_v3_grammar() {
         );
         assert_eq!(
             plan_physical_redo(vec![member], vec![], 1),
-            Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection)
+            Err(
+                PhysicalRedoPlanningDenial::UnsupportedRecoveryProjectionVersion(
+                    u16::try_from(version + 1).unwrap()
+                )
+            )
         );
     }
 }
@@ -211,7 +238,8 @@ fn inline_page_and_segment_artifact_generations_remain_independent() {
         RecoveryOperationFate::Indeterminate,
         &redo,
     );
-    let observed = physical_redo_observation_targets(std::slice::from_ref(&member), 1).unwrap();
+    let observed =
+        physical_redo_observation_targets(std::slice::from_ref(&member), 1, test_format()).unwrap();
     assert_eq!(
         observed[0].artifact(),
         RecordArtifactFile::Segment {

@@ -145,7 +145,7 @@ fn public_mutation_controls_preserve_interruptions_permissions_and_intent_drift(
             )
     ));
 
-    assert_program_committed::<SendMoney>(
+    assert_program_committed(
         execute!(fixture, owner, mutations::send_money(send), "drift"),
         true,
     );

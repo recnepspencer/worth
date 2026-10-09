@@ -1764,7 +1764,7 @@ the product facade before acceptance journeys grant C.4 closure.
   internals.
 - Do not expose `FilesystemMediaOwner` through `Deref`, generic subsystem
   lookup, debugging accessors, or test support.
-- Do not issue physical-platform readiness; C.13 remains the only S.10 handoff.
+- Do not issue physical-platform readiness; C.13 remains the only runtime-integration handoff.
 
 **Test requirements**
 
@@ -2435,7 +2435,7 @@ Test-lane posture:
 - C.5 may begin only after C.4 closeout proves the media-owned phase and the
   internal artifact-family handoff. C.5 must consume the phase rather than
   recreate or select a backend.
-- C.4 does not issue an S.10 readiness object and does not restore any reopened
+- C.4 does not issue a runtime-integration handoff and does not restore any reopened
   S.1 through S.9 claim beyond its precise media/namespace boundary.
 
 ## Completion Standard

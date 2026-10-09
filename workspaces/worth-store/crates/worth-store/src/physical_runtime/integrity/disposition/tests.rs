@@ -10,8 +10,7 @@ use worth_store_physical_format::store_namespace::{
 };
 use worth_store_physical_format::{
     DurablePhysicalRootManifest, FreeSpaceBlockReference, FreeSpaceKey, PhysicalPageSizeClass,
-    PhysicalRecordFormatDeclaration, RecordAllocationClass, RecordArtifactFile,
-    RecordFrameCoordinate,
+    PhysicalRecordFormatDeclaration, RecordArtifactFile, RecordFrameCoordinate,
 };
 use worth_store_physical_integrity::{
     PhysicalArtifactScope, PhysicalByteRange, PhysicalIntegrityObservationOutcome,
@@ -92,7 +91,7 @@ fn unsupported_version_remains_distinct_from_corruption_and_gets_no_owner_role()
     let format = format();
     let mut unsupported_bytes = manifest_bytes(31, format);
     let scope = manifest_scope(store(4), format, 31, unsupported_bytes.len());
-    unsupported_bytes[10..12].copy_from_slice(&2_u16.to_le_bytes());
+    unsupported_bytes[10..12].copy_from_slice(&3_u16.to_le_bytes());
     reseal_durable_frame(&mut unsupported_bytes);
     let unsupported_source = resident_manifest_source(store(4), 31, &unsupported_bytes);
 
@@ -237,7 +236,7 @@ fn format() -> PhysicalRecordFormatDeclaration {
 }
 
 fn manifest_bytes(generation: u64, format: PhysicalRecordFormatDeclaration) -> Vec<u8> {
-    let key = FreeSpaceKey::new(RecordAllocationClass::InlinePage, 1).unwrap();
+    let key = FreeSpaceKey::inline(1).unwrap();
     let free_space_root = FreeSpaceBlockReference::new(generation, 1, 0, 41, key, key).unwrap();
     DurablePhysicalRootManifest::builder(generation, 71, 2, 43)
         .free_space_root(Some(free_space_root))

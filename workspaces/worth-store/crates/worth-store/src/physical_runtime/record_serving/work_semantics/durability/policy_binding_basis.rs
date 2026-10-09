@@ -119,7 +119,7 @@ mod tests {
             assert!(!families.contains(family));
         }
         assert_eq!(
-            installed.declaration.partition().unwrap().partition.0,
+            installed.declaration.partition().unwrap().path().segments()[0],
             partition
         );
     }

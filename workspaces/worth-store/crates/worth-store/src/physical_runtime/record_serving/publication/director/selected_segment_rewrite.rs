@@ -10,9 +10,7 @@ use worth_store_physical_format::{
 };
 
 use super::super::durable_preparation::CanonicalPayloadMaterializationObservation;
-use super::durable_preparation::{
-    canonical_request_failure, map_record_denial, PhysicalMutationPreparationAdmission,
-};
+use super::durable_preparation::{map_record_denial, PhysicalMutationPreparationAdmission};
 use super::RecordPublicationDirector;
 use crate::physical_runtime::durability::{PhysicalMutationOperationFamily, RetiredArtifact};
 use crate::physical_runtime::record_serving::planning::batch_placement::append_operation_allocation_bytes;
@@ -34,12 +32,18 @@ use crate::physical_runtime::{
     PreparedPhysicalMutation, PreparedPhysicalMutationContext,
 };
 
+mod terminal;
+pub(super) use terminal::admitted_terminal;
+
 impl RecordPublicationDirector {
     pub(super) fn rewrite_source_changed(&self, prepared: &PreparedPhysicalMutation) -> bool {
         if !prepared.selected_segment_rewrite() {
             return false;
         }
         let (root, _) = self.root_owner.snapshot();
+        if let Some(source) = prepared.extent_copy_source() {
+            return self.current_extent_source(&root, source.record()).ok() != Some(source);
+        }
         root.generation() != prepared.source_root_generation()
     }
 
@@ -96,6 +100,11 @@ impl RecordPublicationDirector {
                 batch,
                 CanonicalPayloadMaterializationObservation::default(),
                 PreparedPhysicalMutationContext {
+                    blob_record_kind: None,
+                    selected_content_class: worth_store_physical_format::SelectedRecordContentClass::UnknownLegacy,
+                    inline_only: false,
+                    derived_directory_basis: None,
+                    reuse_declaration_basis: None,
                     placement,
                     manifest_capacity_transition:
                         crate::physical_runtime::PhysicalManifestCapacityTransition::PreserveCurrent,
@@ -129,7 +138,13 @@ impl RecordPublicationDirector {
             RecordAppendDenial::PublicationAuthorityReleased,
         ))?;
         let batch = prepared.duplicate_prepared_batch();
-        let bytes = append_operation_allocation_bytes(self.format, prepared.placement(), &batch);
+        let bytes = append_operation_allocation_bytes(
+            self.format,
+            prepared.placement(),
+            &batch,
+            None,
+            false,
+        );
         let allocation = self
             .residency
             .begin_foreground_write_operation(NonZeroU64::new(bytes).ok_or(
@@ -225,9 +240,22 @@ impl RecordPublicationDirector {
         )
         .map_err(|_| damaged())?;
         let mut placements = BTreeMap::new();
+        let selected_routes = crate::physical_runtime::record_serving::access::manifest_routing::ManifestReader::serving(
+            self.residency.clone(), self.format, self.access, current_root.clone(),
+        );
         let mut records = Vec::with_capacity(loaded.records.len());
         let mut logical_bytes = 0_u64;
         for descriptor in &loaded.records {
+            let route_metadata = selected_routes
+                .require_selected_inline_metadata(
+                    &allocation,
+                    descriptor.record,
+                    loaded.geometry.page_cell(),
+                    descriptor.slot,
+                    descriptor.slot_generation,
+                    u64::from(descriptor.payload_bytes),
+                )
+                .map_err(|_| damaged())?;
             let slot = authority
                 .slot_cell(
                     segment.segment.segment_id(),
@@ -235,13 +263,14 @@ impl RecordPublicationDirector {
                     descriptor.slot,
                 )
                 .with_slot_generation(admitted_generation(Some(descriptor.slot_generation))?);
-            let placement = DurableInlineRecordPlacement::new(
+            let placement = DurableInlineRecordPlacement::new_selected(
                 descriptor.record,
                 segment.segment,
                 candidate_page,
                 slot,
                 segment.page_capacity,
                 u64::from(descriptor.payload_bytes),
+                route_metadata,
             )
             .ok_or_else(damaged)?;
             placements.insert(
@@ -289,6 +318,7 @@ impl RecordPublicationDirector {
         .ok_or_else(damaged)?;
         self.root_owner
             .hold_rewrite_candidate(
+                prepared.mutation_identity(),
                 RecordArtifactFile::Segment {
                     segment: segment.segment.segment_id().get(),
                     generation: segment.segment.generation().get(),
@@ -299,6 +329,7 @@ impl RecordPublicationDirector {
         // Live frames besides the tail keep the source file reachable.
         if displaces_source {
             self.root_owner.note_displaced(
+                prepared.mutation_identity(),
                 current_root.generation(),
                 RetiredArtifact::Segment {
                     segment: segment.segment.segment_id().get(),
@@ -311,14 +342,20 @@ impl RecordPublicationDirector {
             .map_err(|_| damaged())?
             .with_rewrite(rewrite);
         let root = PreparedPhysicalRootProjection {
+            derived_updates: Default::default(),
+            release_head_effect: None,
+            arena_reservations: Vec::new(),
             root_publication_allocation_bytes: NonZeroU64::new(bytes).ok_or_else(damaged)?,
             source_root: current_root,
+            blob_reuse_source_fence: false,
             manifest_capacity_transition: prepared.manifest_capacity_transition(),
             placement: prepared.placement(),
             records,
+            drop_records: Default::default(),
             inserted_records: 0,
             payload_manifests: Vec::new(),
             placements,
+            retired_inline_witnesses: BTreeMap::new(),
             segment_updates,
             inline_allocations: vec![working.allocation()],
             last_inline_record: Some(tail),
@@ -341,26 +378,6 @@ impl RecordPublicationDirector {
             },
         };
         Ok((data, root))
-    }
-}
-
-pub(super) fn admitted_terminal(
-    admitted: PhysicalMutationPreparationAdmission,
-) -> PhysicalMutationPreparationOutcome {
-    match admitted {
-        PhysicalMutationPreparationAdmission::Prepared(_) => canonical_request_failure(),
-        PhysicalMutationPreparationAdmission::ProvenNoEffect(terminal) => {
-            TransitionOutcome::success(PhysicalMutationPreparationSuccess::ProvenNoEffect(terminal))
-                .into()
-        }
-        PhysicalMutationPreparationAdmission::Completed(terminal) => {
-            TransitionOutcome::success(PhysicalMutationPreparationSuccess::Completed(terminal))
-                .into()
-        }
-        PhysicalMutationPreparationAdmission::Indeterminate(terminal) => {
-            TransitionOutcome::success(PhysicalMutationPreparationSuccess::Indeterminate(terminal))
-                .into()
-        }
     }
 }
 

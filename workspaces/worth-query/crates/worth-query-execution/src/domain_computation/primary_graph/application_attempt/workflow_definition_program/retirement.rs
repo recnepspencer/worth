@@ -3,6 +3,7 @@
 //! Retirement stops new starts on the lineage. It never touches the retired
 //! definition, its nodes, or instances pinned to it, so waiting work still
 //! completes under the retained revision.
+use crate::domain_computation::primary_graph::application_attempt::check_request_live;
 
 use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityMarkerIdentity,
@@ -73,18 +74,14 @@ where
         let observed = self.lease.handle().with_runtime(|runtime| {
             observe_retirement::<Spec>(runtime, self.lease.snapshot(), &layout, &published)
         })?;
-        if self.facts.len().saturating_add(observed.facts.len())
-            > self
-                .admission
-                .allowed_graph_contract()
-                .decision_fact_budget()
-        {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
-                self.admission.operation(),
-            ));
-        }
-        self.facts.extend(observed.facts);
+        check_request_live(
+            self.admission.publication_request(),
+            self.admission.operation(),
+        )?;
+        self.append_completed_facts(
+            observed.facts,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )?;
         let program_revision = *installed.program_revision();
         let workflow_intent_identity = intent_identity::workflow_definition_retirement_identity::<
             Spec,
@@ -159,7 +156,7 @@ where
             demand.observe(effect)?;
         }
         let reservation = admit_platform_effects(&self, demand)?;
-        let validator_work_admission = reservation.materialize(&effects)?;
+        reservation.materialize(&effects)?;
         Ok(WorthQueryApplicationEffectProgram {
             read_set: self,
             effects,
@@ -167,7 +164,6 @@ where
             emission_retained_bytes_ceiling: 0,
             conditional_definition: None,
             effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Platform,
-            validator_work_admission,
             output_correspondence: Default::default(),
             retain_output_demand_observation: false,
             retain_client_observation: false,

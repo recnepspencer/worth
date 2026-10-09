@@ -6,7 +6,7 @@ use worth_relational::facade::{
 };
 
 use crate::domain_computation::primary_graph::application_attempt::{
-    reobserve_indexed_entity_selection, IndexedReobservation, Movement,
+    reobserve_indexed_entity_selection, IndexedSelectionReobserveDenial, Movement,
     WorthQuerySourceCurrentnessFailure,
 };
 use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
@@ -55,6 +55,9 @@ impl PreparedFactRebase {
         producer_output: bool,
         admission: &mut InvalidationEditAdmission,
         indexed_width: &mut InvalidationEditAdmission,
+        prepared_endpoints: Option<
+            crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints,
+        >,
     ) -> Result<Result<Self, RebaseVerificationReason>, CompanionPreflightStop> {
         let unavailable = RebaseVerificationReason::NativeRevisionUnavailable;
         if let Some(entity_id) = retirement::retired_anchor(fact, retired) {
@@ -101,6 +104,7 @@ impl PreparedFactRebase {
             producer_output,
             maximum_pair_rebase_work,
             indexed_width,
+            prepared_endpoints,
         ))
     }
 
@@ -111,6 +115,9 @@ impl PreparedFactRebase {
         producer_output: bool,
         maximum_pair_rebase_work: usize,
         indexed_width: &mut InvalidationEditAdmission,
+        prepared_endpoints: Option<
+            crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints,
+        >,
     ) -> Result<Self, RebaseVerificationReason> {
         let unavailable = RebaseVerificationReason::NativeRevisionUnavailable;
         match fact {
@@ -190,6 +197,7 @@ impl PreparedFactRebase {
                     snapshot,
                     fact,
                     maximum_pair_rebase_work,
+                    prepared_endpoints,
                 ) {
                     Some(rebased) => Ok(Self::Replace(rebased)),
                     None if producer_output => Err(unavailable),
@@ -199,30 +207,26 @@ impl PreparedFactRebase {
             Fact::IndexedEntitySelection {
                 candidate_limit, ..
             } => {
-                // The selection is observed again at the committed snapshot,
-                // so it names the members this commit itself published. It is
-                // charged what it examined, as the decision that read it was.
-                // Facts are walked in key order, not the order they were read
-                // in, so the width that decision admitted bounds each
-                // observation and no selection waits on the ones before it.
-                // The observation reserves the least of its worst case and
-                // the width left before it reads, and reads within that
-                // reservation. One the width cannot pay for is not decided,
-                // and never kept.
+                // The selection is observed again at the committed snapshot.
+                // The width reserves before probing and settles actual work,
+                // including entries examined by a failed native lookup.
                 let most = candidate_limit.saturating_add(1);
                 let reserved_work = most.min(indexed_width.remaining_work());
                 let reserved = indexed_width
                     .reserve_external_work(u64::try_from(reserved_work).unwrap_or(u64::MAX))
                     .map_err(RebaseVerificationReason::AdmissionDenied)?;
-                match reobserve_indexed_entity_selection(fact, runtime, snapshot, reserved_work) {
-                    Ok((observed, examined)) => {
-                        reserved
-                            .settle(u64::try_from(examined.saturating_add(1)).unwrap_or(u64::MAX))
-                            .map_err(RebaseVerificationReason::AdmissionDenied)?;
-                        Ok(Self::Replace(observed))
-                    }
-                    Err(IndexedReobservation::Unpaid) => {
-                        let maximum = indexed_width.charged_work();
+                let mut remaining = reserved_work;
+                let observed =
+                    reobserve_indexed_entity_selection(fact, runtime, snapshot, &mut remaining);
+                reserved
+                    .settle(u64::try_from(reserved_work - remaining).unwrap_or(u64::MAX))
+                    .map_err(RebaseVerificationReason::AdmissionDenied)?;
+                match observed {
+                    Ok(observed) => Ok(Self::Replace(observed)),
+                    Err(IndexedSelectionReobserveDenial::WorkBudgetExceeded) => {
+                        let maximum = indexed_width.charged_work().saturating_add(
+                            u64::try_from(indexed_width.remaining_work()).unwrap_or(u64::MAX),
+                        );
                         Err(RebaseVerificationReason::AdmissionDenied(
                             CompanionPreflightStop::WorkExhausted {
                                 required: maximum.saturating_add(1),
@@ -230,8 +234,10 @@ impl PreparedFactRebase {
                             },
                         ))
                     }
-                    Err(IndexedReobservation::Unavailable) if producer_output => Err(unavailable),
-                    Err(IndexedReobservation::Unavailable) => Ok(Self::Keep),
+                    Err(denial) if producer_output => {
+                        Err(RebaseVerificationReason::IndexedSelectionDenied(denial))
+                    }
+                    Err(_) => Ok(Self::Keep),
                 }
             }
             Fact::RetiredOutputEntity { .. } => Ok(Self::Keep),

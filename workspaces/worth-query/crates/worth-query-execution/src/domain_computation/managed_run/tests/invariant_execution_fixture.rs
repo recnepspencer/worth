@@ -126,6 +126,19 @@ pub(super) fn execute_invariant(
     slot: &str,
     locators: impl IntoIterator<Item = WorthQueryInvariantStateLocator>,
 ) -> InvariantExecutionObservation {
+    execute_invariant_with_request(execution, state, requirements, slot, locators, None)
+}
+
+pub(super) fn execute_invariant_with_request(
+    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    state: Arc<Mutex<ProvisionalProviderState>>,
+    requirements: Vec<WorthQueryInstalledInvariantExecutionRequirement>,
+    slot: &str,
+    locators: impl IntoIterator<Item = WorthQueryInvariantStateLocator>,
+    request: Option<
+        &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+    >,
+) -> InvariantExecutionObservation {
     let (mut running, graph) = invariant_run(state, requirements);
     let (staged, fresh) = staged_with_fresh_read_set(execution, &mut running, &graph);
     let program = staged
@@ -148,7 +161,7 @@ pub(super) fn execute_invariant(
         .any(|fact| fact.semantic_value() == "corrupt");
     let result = inspection
         .select_installed_invariant(slot)
-        .and_then(|selected| selected.admit_state_load_plan(locators))
+        .and_then(|selected| selected.admit_state_load_plan(locators, request))
         .and_then(|bound| bound.execute());
     inspection.discard();
     cleanup(running);
@@ -189,11 +202,15 @@ pub(super) fn admit_progression(
         .map(|slot| {
             inspection
                 .select_installed_invariant(slot)?
-                .admit_state_load_plan([WorthQueryInvariantStateLocator::new("region", "base")?])?
+                .admit_state_load_plan(
+                    [WorthQueryInvariantStateLocator::new("region", "base")?],
+                    None,
+                )?
                 .execute()
         })
-        .collect::<Result<Vec<_>, _>>()?;
-    let progression = inspection.admit_invariant_progression(receipts);
+        .collect::<Result<Vec<_>, _>>();
+    let progression =
+        receipts.and_then(|receipts| inspection.admit_invariant_progression(receipts));
     inspection.discard();
     cleanup(running);
     progression

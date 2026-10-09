@@ -47,9 +47,9 @@ impl PhysicalRecordScanSession {
         runtime: &PhysicalStoreWorkRuntime,
     ) -> Result<bool, RecordScanError> {
         let shape = self.read_shape(placement)?;
-        if placement.payload_bytes() > u64::from(self.reader.access.scratch_limit().get()) {
+        if placement.payload_bytes() > self.payload_limit {
             self.total.records = self.total.records.saturating_add(1);
-            batch.push(shape.record, None, placement.payload_bytes());
+            batch.push(shape.record, None, placement);
             return Ok(true);
         }
         if shape.payload_bytes > scratch.len().saturating_sub(batch.used) {
@@ -67,7 +67,7 @@ impl PhysicalRecordScanSession {
         self.read_payload(placement, shape, &mut scratch[start..end], runtime)?;
         batch.used = end;
         self.total.records += 1;
-        batch.push(record, Some(start..end), placement.payload_bytes());
+        batch.push(record, Some(start..end), placement);
         Ok(true)
     }
 
@@ -190,9 +190,13 @@ impl ScanBatchAssembly {
         &mut self,
         record: PhysicalRecordId,
         payload: Option<std::ops::Range<usize>>,
-        payload_bytes: u64,
+        placement: CurrentPhysicalRecordPlacement,
     ) {
-        self.records
-            .push(ScannedPhysicalRecord::new(record, payload, payload_bytes));
+        self.records.push(ScannedPhysicalRecord::new(
+            record,
+            payload,
+            placement.payload_bytes(),
+            placement.route_metadata(),
+        ));
     }
 }

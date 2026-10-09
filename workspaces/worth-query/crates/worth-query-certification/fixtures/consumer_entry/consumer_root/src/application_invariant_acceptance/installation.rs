@@ -1,7 +1,8 @@
+mod external_input;
 use super::{authentication, resources, seed};
 use crate::{ConsumerProgram, ConsumerSchema};
 use std::sync::{
-    atomic::{AtomicUsize, Ordering},
+    atomic::{AtomicBool, AtomicUsize, Ordering},
     Arc,
 };
 use worth_query_host::facade::{
@@ -33,12 +34,14 @@ pub(super) fn assert_program_cannot_omit_an_installed_rule() {
             invariant_calls: Arc::new(AtomicUsize::new(0)),
             invariant_probe: Arc::new(AtomicUsize::new(0)),
             producer_authorization_denials: Arc::new(AtomicUsize::new(0)),
+            producer_domain_denial: Arc::new(AtomicBool::new(false)),
         },
         Arc::new(AtomicUsize::new(0)),
     );
     let limits = WorthQueryInMemoryApplicationLimits::new(
         resources::world_resources(),
-        runtime::WorthQueryApplicationCandidateResourceProfile::bounded(4096, 8192, 4096).unwrap(),
+        runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(4096, 8192)
+            .unwrap(),
         runtime::WorthQueryApplicationQueryResourceProfile::bounded(4096, 4096, 4096, 32).unwrap(),
         primary_graph::SignalConditionalEvaluationBudget::development(),
     );
@@ -79,12 +82,14 @@ pub(super) fn assert_program_cannot_omit_a_required_binding() {
             invariant_calls: Arc::new(AtomicUsize::new(0)),
             invariant_probe: Arc::new(AtomicUsize::new(0)),
             producer_authorization_denials: Arc::new(AtomicUsize::new(0)),
+            producer_domain_denial: Arc::new(AtomicBool::new(false)),
         },
         Arc::new(AtomicUsize::new(0)),
     );
     let limits = WorthQueryInMemoryApplicationLimits::new(
         resources::world_resources(),
-        runtime::WorthQueryApplicationCandidateResourceProfile::bounded(4096, 8192, 4096).unwrap(),
+        runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(4096, 8192)
+            .unwrap(),
         runtime::WorthQueryApplicationQueryResourceProfile::bounded(4096, 4096, 4096, 32).unwrap(),
         primary_graph::SignalConditionalEvaluationBudget::development(),
     );
@@ -126,12 +131,14 @@ pub(super) fn assert_required_output_source_cannot_be_an_action() {
             invariant_calls: Arc::new(AtomicUsize::new(0)),
             invariant_probe: Arc::new(AtomicUsize::new(0)),
             producer_authorization_denials: Arc::new(AtomicUsize::new(0)),
+            producer_domain_denial: Arc::new(AtomicBool::new(false)),
         },
         Arc::new(AtomicUsize::new(0)),
     );
     let limits = WorthQueryInMemoryApplicationLimits::new(
         resources::world_resources(),
-        runtime::WorthQueryApplicationCandidateResourceProfile::bounded(4096, 8192, 4096).unwrap(),
+        runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(4096, 8192)
+            .unwrap(),
         runtime::WorthQueryApplicationQueryResourceProfile::bounded(4096, 4096, 4096, 32).unwrap(),
         primary_graph::SignalConditionalEvaluationBudget::development(),
     );
@@ -178,7 +185,7 @@ pub(super) fn assert_repeated_optional_member_correspondence(world: &ConsumerWor
     };
     use worth_query_consumer_values::{PlanarOperation, PositiveLength};
     use worth_query_host::facade::declaration::application_program::ApplicationOptionalMemberEdit;
-    use worth_query_topology_entry::{EditPlanar, PlanarEditBinding};
+    use worth_query_topology_entry::PlanarEditBinding;
 
     let correspondence = world
         .application
@@ -233,44 +240,7 @@ pub(super) fn assert_repeated_optional_member_correspondence(world: &ConsumerWor
     assert_eq!(second.initial_member(), None);
     assert_eq!(second.required_source(), "source-b");
 
-    let external = world
-        .application
-        .installed_program()
-        .external_input_provider::<
-            EditPlanar,
-            crate::application_program::external_input::NeutralExternalProvider,
-        >()
-        .expect("the neutral external provider slot is installed on the action");
-    let provider = crate::application_program::external_input::NeutralExternalProvider::new(7);
-    let changed = external.resolve(&provider, "material").unwrap();
-    assert_eq!(changed.resolution().provenance(), &"neutral-catalog");
-    provider.change(8);
-    assert_eq!(
-        changed.admit(&provider).err(),
-        Some(crate::application_program::external_input::NeutralExternalDenial::Changed)
-    );
-    let removed = external.resolve(&provider, "material").unwrap();
-    provider.remove();
-    assert_eq!(
-        removed.admit(&provider).err(),
-        Some(crate::application_program::external_input::NeutralExternalDenial::Removed)
-    );
-    provider.change(9);
-    let invalid = external.resolve(&provider, "material").unwrap();
-    provider.invalidate();
-    assert_eq!(
-        invalid.admit(&provider).err(),
-        Some(crate::application_program::external_input::NeutralExternalDenial::Invalid)
-    );
-    provider.change(10);
-    let admitted = external
-        .resolve(&provider, "material")
-        .unwrap()
-        .admit(&provider)
-        .unwrap()
-        .into_resolution();
-    assert_eq!(admitted.values(), &10);
-    assert_eq!(admitted.revision(), &10);
+    external_input::assert_external_inputs(world);
 }
 
 pub(super) fn install_with_candidate_bytes(
@@ -304,15 +274,15 @@ fn install_with_resource_bytes(
             invariant_calls: Arc::clone(&invariant_calls),
             invariant_probe: Arc::clone(&invariant_probe),
             producer_authorization_denials: Arc::clone(&producer_authorization_denials),
+            producer_domain_denial: Arc::new(AtomicBool::new(false)),
         },
         Arc::clone(&parameter_calls),
     );
     let limits = WorthQueryInMemoryApplicationLimits::new(
         resources::world_resources(),
-        runtime::WorthQueryApplicationCandidateResourceProfile::bounded(
+        runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(
             4096,
             candidate_bytes,
-            4096,
         )
         .unwrap(),
         runtime::WorthQueryApplicationQueryResourceProfile::bounded(4096, query_bytes, 4096, 32)

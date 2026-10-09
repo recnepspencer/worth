@@ -36,10 +36,16 @@ fn deleting_one_edge_preserves_a_survivors_other_outgoing_edges() {
                 },
             ),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("stage one relation deletion");
 
-    let outcome = txn.commit(&runtime).expect("source retains another edge");
+    let outcome = txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .expect("source retains another edge");
     release_test_commit_snapshot(&runtime, &outcome);
 }
 
@@ -65,10 +71,16 @@ fn deleting_an_endpoint_preserves_a_survivors_other_outgoing_edges() {
                 },
             ),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("stage endpoint deletion");
 
-    let outcome = txn.commit(&runtime).expect("survivor retains another edge");
+    let outcome = txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .expect("survivor retains another edge");
     release_test_commit_snapshot(&runtime, &outcome);
 }
 
@@ -94,11 +106,15 @@ fn deleting_an_endpoint_preserves_a_survivors_unchanged_incoming_edges() {
                 },
             ),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("stage endpoint deletion");
 
     let outcome = txn
-        .commit(&runtime)
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("survivor retains incoming edge");
     release_test_commit_snapshot(&runtime, &outcome);
 }
@@ -128,11 +144,15 @@ fn deleting_the_only_incoming_edge_and_its_target_does_not_recheck_the_deleted_t
                     },
                 ),
             )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("stage the relation and target deletion together");
 
     let outcome = txn
-        .commit(&runtime)
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the deleted target has no remaining minimum");
     release_test_commit_snapshot(&runtime, &outcome);
 }
@@ -154,11 +174,15 @@ fn deleting_the_only_incoming_edge_without_its_target_denies_the_target_minimum(
                 },
             ),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("stage the relation deletion without the target deletion");
 
     let error = txn
-        .commit(&runtime)
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect_err("the retained target still requires an incoming edge");
     assert!(matches!(
         error,
@@ -216,8 +240,17 @@ fn seed_graph(
         )));
     }
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(runtime);
-    txn.push_batch(batch).expect("stage valid graph");
-    let outcome = txn.commit(runtime).expect("seed valid minimum graph");
+    txn.push_batch(
+        batch,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .expect("stage valid graph");
+    let outcome = txn
+        .commit(
+            runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .expect("seed valid minimum graph");
     let entities = created_entities
         .iter()
         .map(|created| outcome.created_entity(created).expect("created entity"))

@@ -44,8 +44,8 @@ pub enum PhysicalRootPublicationPreparationFailureCause {
     CurrentRootMismatch,
     ProjectionRejected(SettledRootProjectionMergeDenial),
     TransitionDenied(PhysicalRootPublicationTransitionDenial),
-    Planning,
-    CandidateAdmission,
+    Planning(RecordAppendError),
+    CandidateAdmission(RecordAppendError),
     CandidateWrite {
         candidate_generation: u64,
         failed_artifact: RecordArtifactFile,

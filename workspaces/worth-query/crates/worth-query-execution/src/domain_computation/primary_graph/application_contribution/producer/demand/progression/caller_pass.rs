@@ -1,8 +1,7 @@
-//! One caller advance over its own row: a pass, and a second one when the
-//! first replaced its Ready with a row admitted under the disclosed source.
+//! Typed caller disclosure, publication, and requested-output progression.
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 
 use super::*;
-use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 
 /// What one pass of a caller over its own row answered.
 pub(super) enum CallerPass<Query, Value> {
@@ -25,6 +24,8 @@ enum AdvancePass<Query, Value> {
         super::super::disclosure::ValidatedOutputDisclosure<Query, Value>,
         super::validated::OwnPublication,
     ),
+    /// A completed requested chain permits one final frozen-source disclosure.
+    RetryDisclosure,
 }
 enum AdvancePassProgress<Query, Value> {
     Answer(WorthQueryOutputDemandAdvance),
@@ -46,14 +47,13 @@ where
 {
     /// `disclosure` answers `None` once the caller has no further source to
     /// disclose in this call. A caller that reads its retained source again
-    /// settles a refreshed row in the same advance; one that handed over its
+    /// retries after source replacement or upstream completion; one that handed over its
     /// only disclosure answers `Pending` and discloses on its next advance.
     pub(in crate::domain_computation::primary_graph) fn advance_output_demand_with_prepared_source<
         Family,
     >(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
-
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
@@ -88,9 +88,18 @@ where
             );
             #[cfg(feature = "test-query-execution-observer")]
             super::super::super::super::request_execution::record_caller_pass(&result);
-            match result? {
-                AdvancePassProgress::Answer(answer) => return Ok(answer),
-                AdvancePassProgress::Continue(next) => pass = next,
+            match result {
+                Ok(AdvancePassProgress::Answer(answer)) => {
+                    if matches!(&answer, WorthQueryOutputDemandAdvance::Settled(_)) {
+                        demand.required_continuations.requested.clear();
+                    }
+                    return Ok(answer);
+                }
+                Ok(AdvancePassProgress::Continue(next)) => pass = next,
+                Err(stop) => {
+                    demand.required_continuations.requested.clear();
+                    return Err(stop);
+                }
             }
         }
     }
@@ -98,7 +107,6 @@ where
     fn advance_caller_pass<Family>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
-
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
@@ -124,7 +132,7 @@ where
     {
         let publication = match &pass {
             AdvancePass::OwnPublication(receipt) | AdvancePass::Final(_, receipt) => Some(receipt),
-            AdvancePass::Initial | AdvancePass::Refreshed(_) => None,
+            AdvancePass::Initial | AdvancePass::Refreshed(_) | AdvancePass::RetryDisclosure => None,
         };
         if let Some(publication) = publication {
             #[cfg(feature = "test-query-execution-observer")]
@@ -189,7 +197,10 @@ where
             &entry.edition,
             request_admission,
         )?;
-        if matches!(&pass, AdvancePass::Initial | AdvancePass::Refreshed(_)) {
+        if matches!(
+            &pass,
+            AdvancePass::Initial | AdvancePass::Refreshed(_) | AdvancePass::RetryDisclosure
+        ) {
             if let Some(advance) = required_wave::advance_required_before_caller(
                 phase,
                 self,
@@ -198,135 +209,165 @@ where
                 request_scope,
                 delivery_branch,
                 &commit_authority,
-                &entry.edition,
                 request_admission,
             )? {
                 return Ok(AdvancePassProgress::Answer(advance));
             }
         }
-        Ok(match pass {
-            AdvancePass::Initial => {
-                let Some(disclosed) = disclosure(&demand.observed_source, request_admission)?
-                else {
-                    return Ok(AdvancePassProgress::Answer(
-                        WorthQueryOutputDemandAdvance::Pending,
-                    ));
-                };
-                let disclosed = validate_disclosure(
-                    self,
-                    demand,
-                    principal,
-                    request_scope,
-                    delivery_branch,
-                    matches!(
+        let final_disclosure = matches!(&pass, AdvancePass::RetryDisclosure);
+        let requested_authority = commit_authority.clone();
+        (|| {
+            Ok(match pass {
+                AdvancePass::Initial | AdvancePass::RetryDisclosure => {
+                    let Some(disclosed) = disclosure(&demand.observed_source, request_admission)?
+                    else {
+                        return Ok(AdvancePassProgress::Answer(
+                            WorthQueryOutputDemandAdvance::Pending,
+                        ));
+                    };
+                    let disclosed = validate_disclosure(
+                        self,
+                        demand,
+                        principal,
+                        request_scope,
+                        delivery_branch,
+                        matches!(
+                            commit_authority,
+                            WorthQueryProducerCommitAuthority::ProgramOutput
+                        ),
+                        disclosed,
+                        entry.edition,
+                    )?;
+                    let answer = self.advance_validated_output_demand(
+                        phase,
+                        demand,
+                        principal,
+                        request_scope,
+                        delivery_branch,
+                        disclosed,
+                        entry,
                         commit_authority,
-                        WorthQueryProducerCommitAuthority::ProgramOutput
-                    ),
-                    disclosed,
-                    entry.edition,
-                )?;
-                let answer = self.advance_validated_output_demand(
-                    phase,
-                    demand,
-                    principal,
-                    request_scope,
-                    delivery_branch,
-                    disclosed,
-                    entry,
-                    commit_authority,
-                    request_admission,
-                )?;
-                match answer {
-                    CallerPass::Answer(answer) => AdvancePassProgress::Answer(answer),
-                    CallerPass::Refreshed(disclosed) => {
-                        AdvancePassProgress::Continue(AdvancePass::Refreshed(disclosed))
-                    }
-                    CallerPass::PublishedStale(receipt) => {
-                        AdvancePassProgress::Continue(AdvancePass::OwnPublication(receipt))
+                        request_admission,
+                    )?;
+                    match answer {
+                        CallerPass::Answer(answer) => AdvancePassProgress::Answer(answer),
+                        CallerPass::Refreshed(_) | CallerPass::PublishedStale(_)
+                            if final_disclosure =>
+                        {
+                            AdvancePassProgress::Answer(WorthQueryOutputDemandAdvance::Pending)
+                        }
+                        CallerPass::Refreshed(disclosed) => {
+                            AdvancePassProgress::Continue(AdvancePass::Refreshed(disclosed))
+                        }
+                        CallerPass::PublishedStale(receipt) => {
+                            AdvancePassProgress::Continue(AdvancePass::OwnPublication(receipt))
+                        }
                     }
                 }
-            }
-            AdvancePass::Refreshed(disclosed) => {
-                let answer = self.advance_validated_output_demand(
-                    phase,
-                    demand,
-                    principal,
-                    request_scope,
-                    delivery_branch,
-                    disclosed,
-                    entry,
-                    commit_authority,
-                    request_admission,
-                )?;
-                match answer {
-                    CallerPass::Answer(answer) => AdvancePassProgress::Answer(answer),
-                    CallerPass::PublishedStale(receipt) => {
-                        AdvancePassProgress::Continue(AdvancePass::OwnPublication(receipt))
-                    }
-                    CallerPass::Refreshed(_) => {
-                        AdvancePassProgress::Answer(WorthQueryOutputDemandAdvance::Pending)
-                    }
-                }
-            }
-            AdvancePass::OwnPublication(receipt) => {
-                let Some(disclosed) = disclosure(&demand.observed_source, request_admission)?
-                else {
-                    return Ok(AdvancePassProgress::Answer(
-                        WorthQueryOutputDemandAdvance::Pending,
-                    ));
-                };
-                let disclosed = validate_disclosure(
-                    self,
-                    demand,
-                    principal,
-                    request_scope,
-                    delivery_branch,
-                    matches!(
+                AdvancePass::Refreshed(disclosed) => {
+                    let answer = self.advance_validated_output_demand(
+                        phase,
+                        demand,
+                        principal,
+                        request_scope,
+                        delivery_branch,
+                        disclosed,
+                        entry,
                         commit_authority,
-                        WorthQueryProducerCommitAuthority::ProgramOutput
-                    ),
-                    disclosed,
-                    entry.edition,
-                )?;
-                let answer = self.advance_validated_output_demand(
-                    phase,
-                    demand,
-                    principal,
-                    request_scope,
-                    delivery_branch,
-                    disclosed,
-                    entry,
-                    commit_authority,
-                    request_admission,
-                )?;
-                match answer {
-                    CallerPass::Answer(answer) => AdvancePassProgress::Answer(answer),
-                    CallerPass::Refreshed(disclosed) => {
-                        AdvancePassProgress::Continue(AdvancePass::Final(disclosed, receipt))
-                    }
-                    CallerPass::PublishedStale(_) => {
-                        AdvancePassProgress::Answer(WorthQueryOutputDemandAdvance::Pending)
+                        request_admission,
+                    )?;
+                    match answer {
+                        CallerPass::Answer(answer) => AdvancePassProgress::Answer(answer),
+                        CallerPass::PublishedStale(receipt) => {
+                            AdvancePassProgress::Continue(AdvancePass::OwnPublication(receipt))
+                        }
+                        CallerPass::Refreshed(_) => {
+                            AdvancePassProgress::Answer(WorthQueryOutputDemandAdvance::Pending)
+                        }
                     }
                 }
-            }
-            AdvancePass::Final(disclosed, _receipt) => {
-                let answer = self.advance_validated_output_demand(
-                    phase,
-                    demand,
-                    principal,
-                    request_scope,
-                    delivery_branch,
-                    disclosed,
-                    entry,
-                    commit_authority,
-                    request_admission,
-                )?;
-                match answer {
-                    CallerPass::Answer(answer) => AdvancePassProgress::Answer(answer),
-                    CallerPass::Refreshed(_) | CallerPass::PublishedStale(_) => {
-                        AdvancePassProgress::Answer(WorthQueryOutputDemandAdvance::Pending)
+                AdvancePass::OwnPublication(receipt) => {
+                    let Some(disclosed) = disclosure(&demand.observed_source, request_admission)?
+                    else {
+                        return Ok(AdvancePassProgress::Answer(
+                            WorthQueryOutputDemandAdvance::Pending,
+                        ));
+                    };
+                    let disclosed = validate_disclosure(
+                        self,
+                        demand,
+                        principal,
+                        request_scope,
+                        delivery_branch,
+                        matches!(
+                            commit_authority,
+                            WorthQueryProducerCommitAuthority::ProgramOutput
+                        ),
+                        disclosed,
+                        entry.edition,
+                    )?;
+                    let answer = self.advance_validated_output_demand(
+                        phase,
+                        demand,
+                        principal,
+                        request_scope,
+                        delivery_branch,
+                        disclosed,
+                        entry,
+                        commit_authority,
+                        request_admission,
+                    )?;
+                    match answer {
+                        CallerPass::Answer(answer) => AdvancePassProgress::Answer(answer),
+                        CallerPass::Refreshed(disclosed) => {
+                            AdvancePassProgress::Continue(AdvancePass::Final(disclosed, receipt))
+                        }
+                        CallerPass::PublishedStale(_) => {
+                            AdvancePassProgress::Answer(WorthQueryOutputDemandAdvance::Pending)
+                        }
                     }
                 }
+                AdvancePass::Final(disclosed, _receipt) => {
+                    let answer = self.advance_validated_output_demand(
+                        phase,
+                        demand,
+                        principal,
+                        request_scope,
+                        delivery_branch,
+                        disclosed,
+                        entry,
+                        commit_authority,
+                        request_admission,
+                    )?;
+                    match answer {
+                        CallerPass::Answer(answer) => AdvancePassProgress::Answer(answer),
+                        CallerPass::Refreshed(_) | CallerPass::PublishedStale(_) => {
+                            AdvancePassProgress::Answer(WorthQueryOutputDemandAdvance::Pending)
+                        }
+                    }
+                }
+            })
+        })()
+        .or_else(|mut stop| {
+            match required_wave::advance_requested_output(
+                phase,
+                self,
+                demand,
+                principal,
+                request_scope,
+                delivery_branch,
+                &requested_authority,
+                &mut stop,
+                request_admission,
+            )? {
+                Some(WorthQueryOutputDemandAdvance::Settled(_)) if !final_disclosure => {
+                    Ok(AdvancePassProgress::Continue(AdvancePass::RetryDisclosure))
+                }
+                Some(WorthQueryOutputDemandAdvance::Settled(_)) => Ok(AdvancePassProgress::Answer(
+                    WorthQueryOutputDemandAdvance::Pending,
+                )),
+                Some(answer) => Ok(AdvancePassProgress::Answer(answer)),
+                None => Err(stop),
             }
         })
     }

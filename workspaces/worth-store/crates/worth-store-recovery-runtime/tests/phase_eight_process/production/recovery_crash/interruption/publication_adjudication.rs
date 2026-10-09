@@ -1,13 +1,15 @@
 use std::path::Path;
 
 use worth_store_offline_verifier::RecoveryObserverReport;
-use worth_store_recovery_runtime::{RecoveryReportEnvelope, RecoveryReportOutcome};
+use worth_store_recovery_runtime::{
+    RecoveryReportDenialCause, RecoveryReportEnvelope, RecoveryReportOutcome,
+};
 
 use super::super::super::super::{comparison, history};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum RawPublicationPosture {
-    ProvenNoEffect,
+    NoDurablePublicationObserved,
     PhysicalEffectObserved,
 }
 
@@ -19,25 +21,41 @@ pub(super) fn adjudicate(
     observer: &RecoveryObserverReport,
     label: &str,
 ) -> RawPublicationPosture {
-    let posture = if after.publication_changed_from(before) {
+    let changed_paths = after.changed_paths_from(before);
+    let selected_publication_changed = after.publication_changed_from(before);
+    let candidate_changed = after.root_candidate_materialized_from(before);
+    let posture = if selected_publication_changed || candidate_changed {
         RawPublicationPosture::PhysicalEffectObserved
     } else {
-        RawPublicationPosture::ProvenNoEffect
+        RawPublicationPosture::NoDurablePublicationObserved
     };
     match posture {
-        RawPublicationPosture::ProvenNoEffect => {
+        RawPublicationPosture::NoDurablePublicationObserved => {
             assert_eq!(
                 report.outcome(),
                 RecoveryReportOutcome::Blocked,
-                "{label} raw publication state did not change"
+                "{label} had no candidate or selected publication change; changed_paths={changed_paths:?} effects={} cause={:?}",
+                report.counters().recovery_effects(),
+                report.denial_cause()
             );
         }
         RawPublicationPosture::PhysicalEffectObserved => {
+            if candidate_changed && !selected_publication_changed {
+                assert_eq!(
+                    after.current_root_generation(),
+                    before.current_root_generation(),
+                    "{label} candidate-only effect must not alter selected root generation"
+                );
+            }
             assert_eq!(
                 report.outcome(),
                 RecoveryReportOutcome::PublicationIndeterminate,
-                "{label} raw publication state changed; paths={:?}",
-                after.changed_paths_from(before)
+                "{label} candidate or selected publication changed; paths={changed_paths:?}"
+            );
+            assert_eq!(
+                report.denial_cause(),
+                Some(RecoveryReportDenialCause::PublicationSettlementIndeterminate),
+                "{label} physical publication effect requires typed indeterminate settlement"
             );
             assert!(
                 report.counters().recovery_effects() > 0,

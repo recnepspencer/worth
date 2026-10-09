@@ -37,7 +37,7 @@ fn cancelled_cleanup_preserves_the_interleaved_peer() {
             let victim = finish_application_commit(
                 phase,
                 &world.application,
-                progress_application_commit(phase, &world.application, victim),
+                progress_application_commit(phase, &world.application, victim, crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation),
             );
             assert!(
                 matches!(victim, WorthQueryApplicationCommitOutcome::Cancelled),

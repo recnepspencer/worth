@@ -182,6 +182,7 @@ const fn tag_background_class(class: crate::BackgroundIoPressureClass) -> u8 {
         crate::BackgroundIoPressureClass::BackupPrepRead => 7,
         crate::BackgroundIoPressureClass::RepairScan => 8,
         crate::BackgroundIoPressureClass::VerificationPressure => 9,
+        crate::BackgroundIoPressureClass::BlobReclaimPressure => 10,
     }
 }
 

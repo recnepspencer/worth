@@ -1,5 +1,4 @@
 //! Read proof grammar: admit_read → observe_chunk_window → finish_verified_read.
-mod admission;
 mod classification;
 mod counters;
 mod denial;
@@ -7,24 +6,18 @@ mod observation;
 mod orchestration;
 mod receipt_construction;
 mod request;
-mod residency;
 mod transitions;
 mod types;
 mod verification;
 
 #[cfg(test)]
-mod pressure_tests;
-#[cfg(test)]
 pub(crate) mod test_support;
 #[cfg(test)]
 mod tests;
 
-pub use admission::BlobStreamingReadAdmission;
 pub use counters::BlobStreamingReadCounterSnapshot;
 pub use denial::{reject_full_blob_vec_as_streaming_read, BlobStreamingReadDenial};
 pub use observation::{BlobStreamingReadObservation, BlobStreamingReadObservedChunk};
-pub use orchestration::BlobStreamingReadExecution;
 pub use receipt_construction::BlobStreamingReadCounterBackedPerformanceReceipt;
 pub use request::{BlobStreamingReadRequest, BlobStreamingReadWindow};
-pub use residency::BlobStreamingReadResidencyProof;
 pub use types::BlobStreamingVerifiedRead;

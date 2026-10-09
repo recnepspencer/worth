@@ -1,6 +1,7 @@
 #[allow(dead_code)]
 mod phase_three_support;
 
+use phase_three_support::synthetic_topology::publish_synthetic_nonempty_genesis;
 use phase_three_support::*;
 use worth_store::physical_runtime::{ArtifactTreeFailureKind, RecoveryDiscoveryArtifact};
 use worth_store_physical_format::{
@@ -78,7 +79,10 @@ fn assert_media_denial(
     blocked: &worth_store_recovery_runtime::PhysicalRecoveryBlock,
     expected_artifact: RecoveryDiscoveryArtifact,
 ) {
-    assert_eq!(blocked.kind, PhysicalRecoveryBlockKind::MediaObservation);
+    assert_eq!(
+        blocked.cause().damage(),
+        Some(PhysicalRecoveryBlockKind::MediaObservation)
+    );
     let Some((artifact, failure)) =
         blocked
             .evidence()

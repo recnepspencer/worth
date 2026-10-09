@@ -105,7 +105,7 @@ fn publish_observation_bytes(
         attempt.indeterminate(attempted_bytes);
         return Err(effect_possible(error));
     }
-    if let Err(error) = lock.sync_data() {
+    if let Err(error) = super::os_synchronization::synchronize_data(lock) {
         attempt.indeterminate(attempted_bytes);
         return Err(effect_possible(error));
     }

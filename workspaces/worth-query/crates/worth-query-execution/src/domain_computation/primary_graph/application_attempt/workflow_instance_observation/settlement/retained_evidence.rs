@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_attempt::check_request_live;
 use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
     WorthQueryApplicationObservedFact,
@@ -5,6 +6,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
 use crate::domain_computation::primary_graph::workflow::{
     instance::WorkflowAssessmentEvidenceLocator, schema::WorthQueryWorkflowLayout,
 };
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 
 use super::super::ObservedWorkflowAssessmentEvidence;
 
@@ -13,7 +15,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
     locator: WorkflowAssessmentEvidenceLocator,
-    maximum_facts: usize,
+    observation_request: &WorthQueryRequestScope,
 ) -> Result<
     (
         ObservedWorkflowAssessmentEvidence,
@@ -33,12 +35,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
     )?
     .filter(|evidence| evidence.entity == locator.evidence())
     .ok_or_else(|| mismatch("retained assessment evidence locator changed"))?;
-    if facts.len() > maximum_facts {
-        return Err(WorthQueryApplicationAttemptDenial::new(
-            WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
-            "workflow assessment evidence fact budget",
-        ));
-    }
+    check_request_live(observation_request, "workflow retained evidence")?;
     Ok((evidence, facts))
 }
 

@@ -142,7 +142,10 @@ fn approved_operation_requires_and_consumes_the_exact_performed_effect() {
         })
         .without_source()
         .idempotency(&812_u64)
-        .execute_in_program(application.program_runtime());
+        .execute_in_program(
+            application.program_runtime(),
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        );
     assert!(matches!(
         unbound,
         Err(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::RequiresWorkflowTransition)
@@ -218,7 +221,10 @@ fn approved_operation_requires_and_consumes_the_exact_performed_effect() {
         .idempotency(&815_u64)
         .for_workflow_operation(&application, &required)
         .expect("the effect request matches the durable operation requirement")
-        .execute_in_program(application.program_runtime())
+        .execute_in_program(
+            application.program_runtime(),
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the approved effect request must execute");
     let receipt = match effect {
         WorthQueryApplicationMutationOutcome::Committed { receipt, .. } => receipt,
@@ -267,7 +273,10 @@ fn approved_operation_requires_and_consumes_the_exact_performed_effect() {
         .idempotency(&820_u64)
         .for_workflow_operation(&application, &required)
         .expect("the descriptor still identifies the old operation")
-        .execute_in_program(application.program_runtime());
+        .execute_in_program(
+            application.program_runtime(),
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        );
     assert!(matches!(
         stale,
         Ok(WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift)

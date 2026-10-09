@@ -136,9 +136,17 @@ fn snapshot_audit_failure_blocks_publication() {
         )],
     });
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
-    txn.push_batch(batch_create("blocked"))
-        .expect("test staging stays within configured resource budgets");
-    let error = txn.commit(&runtime).unwrap_err();
+    txn.push_batch(
+        batch_create("blocked"),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .expect("test staging stays within configured resource budgets");
+    let error = txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap_err();
 
     assert!(matches!(
         error,

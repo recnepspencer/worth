@@ -66,7 +66,10 @@ pub(super) fn preserved_outputs_remain_read_only(
         })
         .expect_source(observed_source(request, "anchor-b"))
         .idempotency(&982)
-        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(application)
+        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
+            application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = outcome else {
         panic!("the second source change must freshly publish")

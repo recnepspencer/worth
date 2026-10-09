@@ -55,18 +55,26 @@ fn typed_migration_repairs_state_inside_the_adoption_publication() {
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let migration = match host
         .runtime()
-        .request(&principal, &scope)
-        .on_branch(branch)
-        .mutate(SetRetentionIntent {
-            input: SetRetentionInput {
-                identity: DOCUMENT_IDENTITY.to_owned(),
-                retention_days: P1_VALID_RETENTION,
-            },
+        .with_application_advancement(&scope, |phase| {
+            host.runtime()
+                .request(&principal, &scope)
+                .on_branch(branch)
+                .mutate(SetRetentionIntent {
+                    input: SetRetentionInput {
+                        identity: DOCUMENT_IDENTITY.to_owned(),
+                        retention_days: P1_VALID_RETENTION,
+                    },
+                })
+                .without_source()
+                .idempotency(&0x9175_2102)
+                .prepare_program_migration(
+                    &phase,
+                    &target,
+                    worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .expect("the target-owned migration must prepare")
         })
-        .without_source()
-        .idempotency(&0x9175_2102)
-        .prepare_program_migration(&target)
-        .expect("the target-owned migration must prepare")
+        .expect("the installed host admits migration preparation")
     {
         WorthQueryApplicationProgramMigrationPreparationOutcome::Prepared(prepared) => prepared,
         WorthQueryApplicationProgramMigrationPreparationOutcome::DomainDenied(denial) => {
@@ -131,18 +139,26 @@ fn migration_candidate_cannot_cross_the_source_product_head() {
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let migration = match host
         .runtime()
-        .request(&principal, &scope)
-        .on_branch(branch)
-        .mutate(SetRetentionIntent {
-            input: SetRetentionInput {
-                identity: DOCUMENT_IDENTITY.to_owned(),
-                retention_days: 16,
-            },
+        .with_application_advancement(&scope, |phase| {
+            host.runtime()
+                .request(&principal, &scope)
+                .on_branch(branch)
+                .mutate(SetRetentionIntent {
+                    input: SetRetentionInput {
+                        identity: DOCUMENT_IDENTITY.to_owned(),
+                        retention_days: 16,
+                    },
+                })
+                .without_source()
+                .idempotency(&0x9175_2111)
+                .prepare_program_migration(
+                    &phase,
+                    &target,
+                    worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .expect("migration prepares on the original source")
         })
-        .without_source()
-        .idempotency(&0x9175_2111)
-        .prepare_program_migration(&target)
-        .expect("migration prepares on the original source")
+        .expect("the installed host admits migration preparation")
     {
         WorthQueryApplicationProgramMigrationPreparationOutcome::Prepared(prepared) => prepared,
         _ => panic!("migration must complete before the source moves"),
@@ -201,18 +217,26 @@ fn unpublished_migration_recovery_never_reruns_candidate_authoring() {
     reset_candidate_count(MIGRATION_CANDIDATE_PROBE_RETENTION);
     let migration = match host
         .runtime()
-        .request(&principal, &scope)
-        .on_branch(branch)
-        .mutate(SetRetentionIntent {
-            input: SetRetentionInput {
-                identity: DOCUMENT_IDENTITY.to_owned(),
-                retention_days: MIGRATION_CANDIDATE_PROBE_RETENTION,
-            },
+        .with_application_advancement(&scope, |phase| {
+            host.runtime()
+                .request(&principal, &scope)
+                .on_branch(branch)
+                .mutate(SetRetentionIntent {
+                    input: SetRetentionInput {
+                        identity: DOCUMENT_IDENTITY.to_owned(),
+                        retention_days: MIGRATION_CANDIDATE_PROBE_RETENTION,
+                    },
+                })
+                .without_source()
+                .idempotency(&0x9175_2122)
+                .prepare_program_migration(
+                    &phase,
+                    &target,
+                    worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .expect("migration prepares")
         })
-        .without_source()
-        .idempotency(&0x9175_2122)
-        .prepare_program_migration(&target)
-        .expect("migration prepares")
+        .expect("the installed host admits migration preparation")
     {
         WorthQueryApplicationProgramMigrationPreparationOutcome::Prepared(prepared) => prepared,
         _ => panic!("migration must complete"),

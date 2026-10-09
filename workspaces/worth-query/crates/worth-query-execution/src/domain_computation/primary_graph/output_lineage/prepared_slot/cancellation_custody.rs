@@ -66,6 +66,7 @@ fn a_canceled_prepared_publication_cannot_take_its_priors_custody() {
         completed_decision_reuse: None,
         prepared_input_reuse_key: None,
         native_output_witness: None,
+        native_prior_checkpoint: None,
         actual_resources: None,
         prior_computation: None,
         filled: false,

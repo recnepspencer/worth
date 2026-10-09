@@ -1,9 +1,8 @@
 use super::candidates::EligibleStrategyOperation;
 use super::cost::derive_access_plan_cost;
 use super::decision::{
-    BTreeLookupSelectionGrant, BTreeReplaySelectionGrant, DegradedScanSelectionGrant,
-    LsmCompactionSelectionGrant, LsmLookupSelectionGrant, LsmPublicationSelectionGrant,
-    LsmReplaySelectionGrant,
+    DegradedScanSelectionGrant, LsmCompactionSelectionGrant, LsmLookupSelectionGrant,
+    LsmPublicationSelectionGrant, LsmReplaySelectionGrant,
 };
 use super::plan_identity::AccessPlanIdentityBasis;
 use super::{
@@ -316,16 +315,6 @@ fn required_materialization(basis: &SelectedAccessPlanBasis) -> AdmittedLayoutMa
 }
 
 define_materialized_degraded_operation!(SelectedDegradedExactScan, DegradedScanSelectionGrant);
-define_strategy_operation!(
-    SelectedBTreeLookup,
-    BTreeLookupSelectionGrant,
-    materialization
-);
-define_strategy_operation!(
-    SelectedBTreeReplayRecovery,
-    BTreeReplaySelectionGrant,
-    materialization
-);
 define_strategy_operation!(SelectedLsmLookup, LsmLookupSelectionGrant, materialization);
 define_strategy_operation!(
     SelectedLsmRunPublication,
@@ -342,12 +331,3 @@ define_strategy_operation!(
     LsmCompactionSelectionGrant,
     no_materialization
 );
-
-impl SelectedBTreeLookup {
-    pub fn operation(&self) -> super::BTreeLookupOperation {
-        match self.basis.selected_operation() {
-            Some(EligibleStrategyOperation::BTreeLookup(operation)) => operation,
-            _ => unreachable!("B-tree lookup authority retains its classified operation"),
-        }
-    }
-}

@@ -114,7 +114,7 @@ fn differing_fields(runtime: Option<&Artifact>, offline: Option<&Artifact>) -> V
     }
     fields
 }
-fn encode_bounded(value: &Value, maximum: u64) -> Result<String, Denial> {
+pub(super) fn encode_bounded(value: &Value, maximum: u64) -> Result<String, Denial> {
     let mut writer = BoundedWriter {
         bytes: Vec::new(),
         maximum,

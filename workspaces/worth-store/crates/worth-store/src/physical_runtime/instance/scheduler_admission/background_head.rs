@@ -2,19 +2,23 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 use worth_store_io_scheduler::{BackgroundPacingOutcome, PhysicalDispatchSelection};
 
-/// One checkpoint or reclamation producer may keep a background head across a
+/// One background producer may keep a head across a
 /// temporary pacing result. Capacity shortage and yield do not clear it.
 /// A completed quantum or an explicit cancel does.
 #[derive(Debug, Default)]
 pub(super) struct RetainedBackgroundHeads {
     checkpoint: AtomicBool,
     reclamation: AtomicBool,
+    compaction: AtomicBool,
+    blob_movement: AtomicBool,
 }
 
 #[derive(Clone, Copy)]
 pub(super) enum BackgroundHeadKind {
     Checkpoint,
     Reclamation,
+    Compaction,
+    BlobMovement,
 }
 
 impl RetainedBackgroundHeads {
@@ -22,6 +26,8 @@ impl RetainedBackgroundHeads {
         match kind {
             BackgroundHeadKind::Checkpoint => &self.checkpoint,
             BackgroundHeadKind::Reclamation => &self.reclamation,
+            BackgroundHeadKind::Compaction => &self.compaction,
+            BackgroundHeadKind::BlobMovement => &self.blob_movement,
         }
     }
 

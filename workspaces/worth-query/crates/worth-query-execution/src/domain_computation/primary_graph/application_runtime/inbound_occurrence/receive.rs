@@ -52,6 +52,15 @@ pub enum WorthQueryInboundAdmissionDenial {
     TerminalCleanupUnavailable,
     PublicationInProgress,
     PublicationRetryRequired,
+    PublicationAllocationDenied {
+        stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
+        kind: worth_execution::ExecutionAllocationDenialKind,
+        requested_payload_bytes: Option<u64>,
+    },
+    PublicationStagingCardinalityOverflow,
+    PublicationInputDirectoryAllocationDenied {
+        requested_batches: usize,
+    },
     /// Publication remains retryable; the execution owner retains its cause.
     PublicationExecutionDenied {
         stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,

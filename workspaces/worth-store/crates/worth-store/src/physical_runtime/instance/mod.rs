@@ -11,8 +11,10 @@ mod work_lifecycle;
 mod work_runtime;
 
 pub(in crate::physical_runtime) use construction::PhysicalStoreInstanceFoundation;
-pub(in crate::physical_runtime) use durability_bootstrap::reopen_durability_basis;
 pub use durability_bootstrap::PhysicalDurabilityStateReopenFailure;
+pub(in crate::physical_runtime) use durability_bootstrap::{
+    reopen_durability_basis, OpenedCheckpointCustody,
+};
 pub(in crate::physical_runtime) use executor::PhysicalWorkExecutor;
 #[cfg(feature = "certification-test-authority")]
 pub use executor::{
@@ -20,10 +22,13 @@ pub use executor::{
 };
 pub(in crate::physical_runtime) use parts::PhysicalStoreInstanceParts;
 pub(in crate::physical_runtime) use residency_owner::PhysicalResidencyOwner;
+pub(in crate::physical_runtime) use scheduler_admission::BlobMovementFrameAdmission;
+pub(in crate::physical_runtime) use scheduler_admission::CompactionFrameAdmission;
 pub(in crate::physical_runtime) use scheduler_admission::PhysicalSchedulerAdmissionOwner;
 pub(in crate::physical_runtime) use scheduler_admission::PhysicalScrubSchedulerAdmissionDenial;
 #[cfg(feature = "recovery-runtime-owner")]
 pub(in crate::physical_runtime) use scheduler_admission::PhysicalWalReclamationSchedulerAdmissionDenial;
+pub(in crate::physical_runtime) use scheduler_admission::RebuildReadAdmission;
 pub use scheduler_admission::RecordSchedulerReservationDenial;
 #[cfg(feature = "certification-test-authority")]
 pub use signal_owner::CertificationPhysicalSignalPauseGate;

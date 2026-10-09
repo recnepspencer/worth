@@ -131,7 +131,7 @@ fn exact_declarations_accept_owner_threads_and_reject_growth_or_stale_sites() {
         "owner-thread",
         None,
     );
-    assert!(enforce_threading_boundary(fixture.root(), &[site.clone()]).is_empty());
+    assert!(enforce_threading_boundary(fixture.root(), std::slice::from_ref(&site)).is_empty());
 
     fs::write(
         fixture.root().join("crates/owner/src/lib.rs"),
@@ -140,7 +140,7 @@ fn exact_declarations_accept_owner_threads_and_reject_growth_or_stale_sites() {
     .unwrap();
     let grown = format!(
         "{:?}",
-        enforce_threading_boundary(fixture.root(), &[site.clone()])
+        enforce_threading_boundary(fixture.root(), std::slice::from_ref(&site))
     );
     assert!(
         grown.contains("expects 1 production site(s), found 2"),
@@ -236,7 +236,7 @@ fn legacy_parallel_requires_a_retirement_phase_and_cannot_disguise_rayon() {
         "legacy-parallel",
         Some(3),
     );
-    assert!(enforce_threading_boundary(fixture.root(), &[valid.clone()]).is_empty());
+    assert!(enforce_threading_boundary(fixture.root(), std::slice::from_ref(&valid)).is_empty());
     let mut wrong = valid.clone();
     wrong.category = "owner-thread".into();
     assert!(

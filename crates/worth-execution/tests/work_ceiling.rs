@@ -120,7 +120,7 @@ fn a_declared_ceiling_decides_the_canonical_exhaustion_boundary_without_a_lease(
 fn the_narrower_of_the_lease_and_the_declared_ceiling_binds() {
     let authority = ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
         max_workers: NonZeroUsize::new(2).unwrap(),
-        charged_memory_bytes: 1 << 20,
+        charged_memory_bytes: Some(1 << 20),
     })
     .unwrap();
     let lease = |work| {

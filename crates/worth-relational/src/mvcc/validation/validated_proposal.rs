@@ -164,7 +164,10 @@ mod tests {
         let candidate = runtime
             .begin_branch_transaction(validation_input.basis(), validation_input.intent().clone())
             .expect("current basis belongs to the same runtime")
-            .validate(&runtime)
+            .validate(
+                &runtime,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .expect("head is current at validation");
         let candidate_ordinal = candidate.proposal_identity.ordinal();
 
@@ -190,7 +193,10 @@ mod tests {
         let fresh = runtime
             .begin_branch_transaction(fresh_options.basis(), fresh_options.intent().clone())
             .expect("fresh basis belongs to the same runtime")
-            .validate(&runtime)
+            .validate(
+                &runtime,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .expect("fresh validation remains admissible");
         assert_eq!(
             fresh.proposal_identity.ordinal(),

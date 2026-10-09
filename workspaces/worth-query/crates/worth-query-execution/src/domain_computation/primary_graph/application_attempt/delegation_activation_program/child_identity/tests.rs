@@ -20,7 +20,7 @@ fn delegation_child_identity_records_absence_and_taken_values_once() {
                 partition: super::super::super::effect_program::WorthQueryApplicationCreationPartition::Issued,
             };
             let mut calls = 0;
-            let facts = observe_created_values(&[], unique.fields(), &[effect(), effect()], 1, "child", |index, kind, locator, value| {
+            let facts = observe_created_values(&[], unique.fields(), &[effect(), effect()], |index, kind, locator, value| {
                 calls += 1;
                 observe_indexed_entity_selection(runtime, &snapshot, index, kind, locator, value, CHILD_IDENTITY_CANDIDATE_LIMIT)
             }).unwrap();
@@ -28,11 +28,10 @@ fn delegation_child_identity_records_absence_and_taken_values_once() {
             assert_eq!(facts.len(), 1);
             let WorthQueryApplicationObservedFact::IndexedEntitySelection { candidates, .. } = &facts[0] else { panic!("the exact indexed selection is carried") };
             assert_eq!(candidates, &holders);
-            let lower = |facts, effects: Vec<WorthQueryApplicationRealizedEffect>| {
+            let lower = |facts: Vec<WorthQueryApplicationObservedFact>, effects: Vec<WorthQueryApplicationRealizedEffect>| {
                 super::super::super::provider_binding::prepare_provider_attempt(
                     unique.fields(), worth_relational::facade::identity::PartitionId::main(),
-                    effects.len(), Vec::new(), facts, Vec::new(), effects, 0, 0, None, None,
-                    super::super::super::effect_program::WorthQueryCandidateValidatorWorkAdmission::unreserved_internal(),
+                    effects.len(), super::super::super::read_set::admit_array(0, [], worth_execution::ExecutionAllocationPolicy::SystemAllocation, "read scopes", || Ok(())).unwrap(), super::super::super::read_set::admit_array(facts.len(), facts, worth_execution::ExecutionAllocationPolicy::SystemAllocation, "unique fixture", || Ok(())).unwrap(), Vec::new(), effects, 0, 0, None, None,
                     Default::default(), false, false, &[], None,
                 ).map(|_| ()).map_err(|denial| denial.kind())
             };
@@ -47,9 +46,7 @@ fn delegation_child_identity_records_absence_and_taken_values_once() {
                     "one delegation cannot write its unique child identity twice");
             }
 
-            assert!(observe_created_values(&facts, unique.fields(), &[effect()], 1, "child", |_, _, _, _| panic!("already observed identity is not read again")).unwrap().is_empty());
-            let stop = observe_created_values(&[], unique.fields(), &[effect()], 0, "child", |_, _, _, _| panic!("budget rejects before the read")).unwrap_err();
-            assert_eq!(stop.kind(), WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded);
+            assert!(observe_created_values(&facts, unique.fields(), &[effect()], |_, _, _, _| panic!("already observed identity is not read again")).unwrap().is_empty());
         }
         runtime.snapshots().release_snapshot(&snapshot).unwrap();
     });

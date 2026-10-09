@@ -2,9 +2,8 @@ use sha2::Digest;
 use worth_proof::NonEmpty;
 use worth_store_physical_backend::{ArtifactAppendRange, ArtifactTreeDirectory, ArtifactTreeFile};
 use worth_store_physical_format::{
-    PersistedInlineSegmentAllocation, PersistedPhysicalRecoveryFrame,
-    PersistedPhysicalRecoveryManifest, PersistedPhysicalRecoveryProjection,
-    PersistedPhysicalRecoveryRootState,
+    DerivedFamilyRootDirectoryBinding, IndexedThroughBlobPublication,
+    PersistedPhysicalRecoveryOperation,
 };
 use worth_store_wal::{
     plan_wal_frame_append, LogSequenceNumber, WalAppendFrontier, WalLsnRange,
@@ -24,6 +23,9 @@ use crate::physical_runtime::{
 
 use super::{nonempty, restore_admitted_vec, ReservedPhysicalWalGroupMembers};
 use crate::physical_runtime::durability::wal::PhysicalWalReservationDenial;
+mod blob_semantic;
+mod recovery_projection;
+use recovery_projection::recovery_projection;
 
 pub(super) fn plan_group(
     admitted: Vec<(
@@ -126,7 +128,7 @@ fn plan_member(
     }
     let Some(end) = start
         .get()
-        .checked_add(u64::from(prepared.resources().record_count()))
+        .checked_add(u64::from(prepared.resources().wal_lsn_span()))
         .map(LogSequenceNumber::new)
     else {
         return Err((
@@ -134,13 +136,13 @@ fn plan_member(
             PhysicalWalReservationDenial::LsnExhausted,
         ));
     };
-    let lsn_range = WalLsnRange::new(start, end)
-        .expect("canonical redo is nonempty and therefore has a nonempty LSN range");
+    let lsn_range =
+        WalLsnRange::new(start, end).expect("every WAL member occupies at least one LSN");
     let PlannedPhysicalMutationParts {
         admission,
         batch,
         data,
-        root,
+        mut root,
         context,
     } = prepared.into_parts();
     let data = match data.bind(lsn_range) {
@@ -163,13 +165,52 @@ fn plan_member(
     let binding = admission
         .into_fresh_binding()
         .expect("fresh disposition carries one unallocated WAL binding");
-    let projection = recovery_projection(&data, &root);
-    let redo = CanonicalRedoRecords::from_prepared_records(
-        batch.into_prepared_record_bytes(),
-        lsn_range,
-        data.redo_targets(),
-        &projection,
+    let prepared_bytes = batch.into_prepared_record_bytes();
+    if let Some(basis) = context.derived_directory_basis.as_ref() {
+        let records = root.recovery_record_identities().collect::<Vec<_>>();
+        let [directory_record] = records.as_slice() else {
+            unreachable!("classified directory append owns exactly one assigned record")
+        };
+        root.set_derived_directory(
+            DerivedFamilyRootDirectoryBinding::new(*directory_record, basis.indexed_through),
+            basis.expected_previous,
+            basis.indexed_through_quarantine,
+            basis.replaced_nodes(),
+        );
+    }
+    let projection = recovery_projection(
+        &data,
+        &root,
+        context.blob_record_kind,
+        context.derived_directory_basis.as_ref(),
+        &prepared_bytes,
     );
+    if let PersistedPhysicalRecoveryOperation::GenerationPublished(binding) = projection.operation()
+    {
+        root.set_latest_blob_publication(
+            IndexedThroughBlobPublication::new(
+                binding.candidate_root_generation(),
+                binding.record(),
+                binding.record_payload_sha256(),
+            )
+            .expect("validated WAL blob binding has a nonzero candidate generation"),
+        );
+    }
+    if let PersistedPhysicalRecoveryOperation::DedupeQuarantined(binding) = projection.operation() {
+        root.set_latest_blob_quarantine(binding.record());
+    }
+    let redo = match data.redo_targets() {
+        Some(targets) => CanonicalRedoRecords::from_prepared_records(
+            prepared_bytes,
+            lsn_range,
+            targets,
+            &projection,
+        ),
+        None if data.terminal_head_retirement().is_some() => {
+            CanonicalRedoRecords::without_records(&projection)
+        }
+        None => CanonicalRedoRecords::from_source_copy(lsn_range, &projection),
+    };
     let redo = match data.rewrite() {
         Some(rewrite) => redo.with_encoded_payload(
             rewrite
@@ -228,6 +269,10 @@ fn plan_member(
             context.durability_policy_basis,
             context.resources,
             context.start,
+            context.blob_record_kind,
+            context.selected_content_class,
+            context.inline_only,
+            context.derived_directory_basis,
         ),
     ))
 }
@@ -248,60 +293,6 @@ fn release_planning(
         root,
         context,
     })
-}
-
-fn recovery_projection(
-    data: &crate::physical_runtime::durability::WalBoundPhysicalDataPlan,
-    root: &PreparedPhysicalRootProjection,
-) -> PersistedPhysicalRecoveryProjection {
-    let frames = data
-        .frames()
-        .iter()
-        .map(|frame| {
-            let target = frame.basis().target();
-            PersistedPhysicalRecoveryFrame::new(
-                target.persisted_subject(),
-                target.coordinate(),
-                frame.bytes(),
-            )
-            .expect("the WAL-bound frame retains its exact admitted materialization")
-        })
-        .collect();
-    let manifests = root
-        .recovery_payload_manifests()
-        .map(|(artifact, bytes)| {
-            PersistedPhysicalRecoveryManifest::new(*artifact, bytes)
-                .expect("the payload projection retains only governed recovery manifests")
-        })
-        .collect();
-    let root_state = PersistedPhysicalRecoveryRootState::new(
-        root.root_publication_allocation_bytes().get(),
-        root.manifest_capacity_transition().identity_code(),
-        root.recovery_manifest_capacity(),
-        root.recovery_inline_allocations()
-            .map(|allocation| {
-                PersistedInlineSegmentAllocation::new(
-                    allocation.segment(),
-                    allocation.page_capacity(),
-                    allocation.used_pages(),
-                )
-                .expect("ordinary planning retains a valid inline allocation")
-            })
-            .collect(),
-        root.recovery_last_inline_record(),
-        root.recovery_last_inline_segment(),
-    )
-    .expect("the prepared root retains an exact recovery root state");
-    PersistedPhysicalRecoveryProjection::new(
-        root.source_root_generation(),
-        root_state,
-        root.recovery_record_identities().collect(),
-        frames,
-        root.recovery_placements().collect(),
-        root.recovery_segment_updates().collect(),
-        manifests,
-    )
-    .expect("a WAL-bound physical mutation has one nonempty recovery projection")
 }
 
 fn release_reserved_member(

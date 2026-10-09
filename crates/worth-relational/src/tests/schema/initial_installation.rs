@@ -179,11 +179,15 @@ fn held_preparation_port_observes_atomic_initial_schema_replacement() {
                     fields: Default::default(),
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("post-installation transaction stages");
 
     let candidate = preparation
-        .prepare_branch_transaction(transaction)
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("held port validates against the atomically replaced schema world");
     preparation
         .discard_prepared_candidate(candidate)
@@ -201,16 +205,24 @@ fn initial_schema_authority_closes_after_first_commit() {
         .build();
     let mut transaction = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     transaction
-        .push_batch(WorkerIntentBatch::new("close-schema-installation").push(
-            MutationIntent::Create(CreateIntent::Entity(EntitySpec {
-                partition_id: PartitionId::main(),
-                kind_id: KindId(1),
-                client_key: ClientKey::raw("first"),
-                fields: Default::default(),
-            })),
-        ))
+        .push_batch(
+            WorkerIntentBatch::new("close-schema-installation").push(MutationIntent::Create(
+                CreateIntent::Entity(EntitySpec {
+                    partition_id: PartitionId::main(),
+                    kind_id: KindId(1),
+                    client_key: ClientKey::raw("first"),
+                    fields: Default::default(),
+                }),
+            )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
-    transaction.commit(&runtime).unwrap();
+    transaction
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
 
     let denial = runtime.prepare_initial_schema_installation().unwrap_err();
     assert_eq!(

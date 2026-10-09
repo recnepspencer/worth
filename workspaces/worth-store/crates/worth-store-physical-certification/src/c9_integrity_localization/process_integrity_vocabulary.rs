@@ -89,6 +89,7 @@ pub(super) fn project_artifact_family(
         Source::NamespaceIdentity => Target::NamespaceIdentity,
         Source::PhysicalWorkObligation => Target::PhysicalWorkObligation,
         Source::PageFrame => Target::PageFrame,
+        Source::ExtentArenaFrame => Target::ExtentArenaFrame,
         Source::ExtentChunk => Target::ExtentChunk,
         Source::WalFrame => Target::WalFrame,
         Source::CheckpointStreamHeader => Target::CheckpointStreamHeader,
@@ -105,5 +106,12 @@ pub(super) fn project_artifact_family(
         Source::ExtentManifest => Target::ExtentManifest,
         Source::FreeSpaceHeader => Target::FreeSpaceHeader,
         Source::FreeSpaceMembershipBlock => Target::FreeSpaceMembershipBlock,
+        Source::BlobResumeSession => Target::BlobResumeSession,
+        Source::BlobChunkFrame => Target::BlobChunkFrame,
+        Source::BlobTreeNode => Target::BlobTreeNode,
+        Source::BlobGenerationPublication => Target::BlobGenerationPublication,
+        Source::BlobDropSetManifest => Target::BlobDropSetManifest,
+        Source::BlobReclaimDescriptor => Target::BlobReclaimDescriptor,
+        Source::BTreeNode => Target::BTreeNode,
     }
 }

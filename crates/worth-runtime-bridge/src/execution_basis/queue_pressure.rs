@@ -68,6 +68,7 @@ impl BridgeManagedQueueMutation {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BridgeManagedQueueFailureKind {
+    AtomicExecutionUnsupported,
     SignalRuntimeThreadAffinityViolation,
     SignalQueueMutationDenied,
     SignalRequestMismatch,
@@ -101,8 +102,12 @@ impl BridgeBoundExecutionBasis {
         &mut self,
         width: u64,
     ) -> Result<BridgeManagedQueueAdmission, BridgeManagedQueueFailure> {
+        let managed = self
+            .posture
+            .managed_mut()
+            .ok_or_else(atomic_queue_failure)?;
         let report = with_async_request_signal_runtime(self.bridge_runtime_key, |signal_runtime| {
-            signal_runtime.enqueue_resource_managed_queue(&self.managed_queue, width)
+            signal_runtime.enqueue_resource_managed_queue(&managed.queue, width)
         })
         .map_err(thread_affinity_failure)?
         .map_err(|denial| {
@@ -112,8 +117,12 @@ impl BridgeBoundExecutionBasis {
             )
         })?;
         let mutation = project_queue_mutation(self, report)?;
-        self.managed_queue_occupancy_width = self
-            .managed_queue_occupancy_width
+        let managed = self
+            .posture
+            .managed_mut()
+            .expect("queue mutation retains managed posture");
+        managed.occupancy_width = managed
+            .occupancy_width
             .checked_add(width)
             .expect("Signal queue admission cannot exceed its bounded u64 capacity");
         let occupancy = BridgeManagedQueueOccupancy::new(self, width);
@@ -124,8 +133,12 @@ impl BridgeBoundExecutionBasis {
         &mut self,
         width: u64,
     ) -> Result<BridgeManagedQueueMutation, BridgeManagedQueueFailure> {
+        let managed = self
+            .posture
+            .managed_mut()
+            .ok_or_else(atomic_queue_failure)?;
         let report = with_async_request_signal_runtime(self.bridge_runtime_key, |signal_runtime| {
-            signal_runtime.dequeue_resource_managed_queue(&self.managed_queue, width)
+            signal_runtime.dequeue_resource_managed_queue(&managed.queue, width)
         })
         .map_err(thread_affinity_failure)?
         .map_err(|denial| {
@@ -184,5 +197,12 @@ fn thread_affinity_failure(
             error.owner(),
             error.current()
         ),
+    )
+}
+
+fn atomic_queue_failure() -> BridgeManagedQueueFailure {
+    BridgeManagedQueueFailure::new(
+        BridgeManagedQueueFailureKind::AtomicExecutionUnsupported,
+        "atomic execution has no managed queue authority",
     )
 }

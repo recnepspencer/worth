@@ -10,6 +10,8 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphIntegrationHandle,
 };
 use std::sync::Arc;
+mod batch;
+use super::super::super::batch::WorthQueryApplicationQueryBatchMemory;
 use worth_relational::facade::{
     branch::{AdmittedRelationalBranchBasis, RelationalBranchRetentionLease},
     mvcc::CompanionPreflightStop,
@@ -19,6 +21,7 @@ use worth_relational::facade::{
 pub(crate) struct WorthQueryApplicationBasisLease {
     identity: WorthQueryApplicationBasisIdentity,
     custody: BasisCustody,
+    _batch_identity: Option<WorthQueryApplicationQueryBatchMemory>,
 }
 
 enum BasisCustody {
@@ -35,6 +38,7 @@ struct BasisLeaseCore {
     state: Arc<WorthQueryApplicationBasisRegistryState>,
     program_interpretation: Option<WorthQueryProgramSupportInterpretation>,
     selected_program_inspected: bool,
+    _batch_shared: Option<WorthQueryApplicationQueryBatchMemory>,
 }
 
 impl WorthQueryApplicationBasisLease {
@@ -56,7 +60,9 @@ impl WorthQueryApplicationBasisLease {
                 state,
                 program_interpretation: None,
                 selected_program_inspected: false,
+                _batch_shared: None,
             }),
+            _batch_identity: None,
         }
     }
 
@@ -141,6 +147,7 @@ impl WorthQueryApplicationBasisLease {
         Ok(Self {
             identity: self.identity.clone(),
             custody: BasisCustody::Shared(Arc::clone(core)),
+            _batch_identity: None,
         })
     }
 }
@@ -236,7 +243,11 @@ impl WorthQueryApplicationBasisLease {
     }
 
     pub fn release(self) -> WorthQueryApplicationBasisReleaseReceipt {
-        let Self { identity, custody } = self;
+        let Self {
+            identity,
+            custody,
+            _batch_identity,
+        } = self;
         let outcome = match custody {
             BasisCustody::Exclusive(core) => core.release(&identity),
             BasisCustody::Shared(core) => match Arc::try_unwrap(core) {

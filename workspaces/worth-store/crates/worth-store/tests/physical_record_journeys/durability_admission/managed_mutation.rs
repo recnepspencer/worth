@@ -35,6 +35,8 @@ mod retirement_reconstruction;
 mod retirement_wal_hold;
 #[path = "managed_mutation/rewrite_integrity.rs"]
 mod rewrite_integrity;
+#[path = "managed_mutation/root_preparation_failure.rs"]
+mod root_preparation_failure;
 #[path = "managed_mutation/segment_retirement.rs"]
 mod segment_retirement;
 #[path = "managed_mutation/selected_segment_rewrite.rs"]

@@ -3,6 +3,12 @@
 version = 4
 
 [[package]]
+name = "allocator-api2"
+version = "0.2.21"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "683d7910e743518b0e34f1186f92494becacb047c7b6bf616c96772180fef923"
+
+[[package]]
 name = "ambient-authority"
 version = "0.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1231,6 +1237,7 @@ dependencies = [
 name = "worth-execution"
 version = "0.1.0"
 dependencies = [
+ "allocator-api2",
  "rayon",
  "worth-foundational",
  "worth-proof",
@@ -1297,19 +1304,25 @@ dependencies = [
  "tempfile",
  "tracking-allocator",
  "trybuild",
+ "worth-execution",
  "worth-foundational",
  "worth-proof",
  "worth-signal",
  "worth-store-aspect-native",
  "worth-store-authority",
+ "worth-store-blob-chunks",
  "worth-store-buffer-pool",
  "worth-store-contracts",
  "worth-store-io-scheduler",
+ "worth-store-layout-indexes",
+ "worth-store-lsm-authority",
+ "worth-store-offline-integrity-observer",
  "worth-store-offline-verifier",
  "worth-store-physical-backend",
  "worth-store-physical-format",
  "worth-store-physical-integrity",
  "worth-store-physical-isolation",
+ "worth-store-recovery-physics",
  "worth-store-security",
  "worth-store-wal",
 ]
@@ -1352,7 +1365,6 @@ dependencies = [
  "tempfile",
  "worth-foundational",
  "worth-proof",
- "worth-store",
  "worth-store-aspect-native",
  "worth-store-authority",
  "worth-store-budgets",
@@ -1365,7 +1377,6 @@ dependencies = [
  "worth-store-reclaim-policy",
  "worth-store-retention",
  "worth-store-security",
- "worth-store-test-support",
  "worth-store-tiering",
  "worth-store-wal",
 ]
@@ -1452,14 +1463,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "worth-store-compatibility"
-version = "0.1.0"
-dependencies = [
- "worth-store-authority",
- "worth-store-contracts",
-]
-
-[[package]]
 name = "worth-store-contracts"
 version = "0.1.0"
 dependencies = [
@@ -1528,7 +1531,6 @@ dependencies = [
  "worth-store-authority",
  "worth-store-blob-chunks",
  "worth-store-budgets",
- "worth-store-compatibility",
  "worth-store-contracts",
  "worth-store-io-scheduler",
  "worth-store-lsm-authority",
@@ -1584,6 +1586,7 @@ dependencies = [
 name = "worth-store-offline-integrity-observer"
 version = "0.1.0"
 dependencies = [
+ "file-id",
  "serde",
  "serde_json",
  "worth-foundational",
@@ -1646,16 +1649,19 @@ name = "worth-store-physical-backend"
 version = "0.1.0"
 dependencies = [
  "cap-fs-ext",
+ "cap-primitives",
  "cap-std",
  "file-id",
  "fs4",
  "getrandom",
+ "maybe-owned",
  "same-file",
  "sha2",
  "stats_alloc",
  "sysinfo",
  "tempfile",
  "winapi-util",
+ "winx",
  "worth-foundational",
  "worth-proof",
  "worth-store-aspect-native",
@@ -1720,6 +1726,7 @@ dependencies = [
 name = "worth-store-physical-integrity"
 version = "0.1.0"
 dependencies = [
+ "sha2",
  "trybuild",
  "worth-foundational",
  "worth-store-physical-format",
@@ -1774,6 +1781,7 @@ name = "worth-store-recovery-physics"
 version = "0.1.0"
 dependencies = [
  "sha2",
+ "worth-foundational",
  "worth-store-physical-format",
  "worth-store-physical-integrity",
  "worth-store-wal",
@@ -1792,10 +1800,14 @@ dependencies = [
  "worth-proof",
  "worth-store",
  "worth-store-authority",
+ "worth-store-blob-chunks",
+ "worth-store-contracts",
+ "worth-store-offline-integrity-observer",
  "worth-store-offline-verifier",
  "worth-store-physical-format",
  "worth-store-physical-integrity",
  "worth-store-recovery-physics",
+ "worth-store-security",
  "worth-store-test-support",
 ]
 
@@ -1856,7 +1868,6 @@ dependencies = [
 name = "worth-store-subscription-support"
 version = "0.1.0"
 dependencies = [
- "worth-store-compatibility",
  "worth-store-contracts",
  "worth-store-maintenance",
  "worth-store-replication",
@@ -1879,7 +1890,6 @@ dependencies = [
  "worth-store-authority",
  "worth-store-blob-chunks",
  "worth-store-budgets",
- "worth-store-compatibility",
  "worth-store-contracts",
  "worth-store-io-scheduler",
  "worth-store-layout-indexes",

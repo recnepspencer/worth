@@ -211,6 +211,9 @@ fn recovery_coordination(
         .admit_coordination(
             &media,
             PhysicalRecoveryCoordinationCapacity::admit(64, 1 << 20, 16, 1 << 20).unwrap(),
+            worth_store::physical_runtime::AdmittedPhysicalRecordResidencyPolicy::canonical(
+                configuration().0,
+            ),
             None,
         )
         .unwrap();

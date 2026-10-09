@@ -1,4 +1,3 @@
-use std::num::NonZeroUsize;
 use worth_query_declaration::facade::application_program::{
     ApplicationConnectionShape, ApplicationOutputGraphShape, ApplicationProgramDefinition,
 };
@@ -17,59 +16,7 @@ use worth_query_execution::facade::primary_graph::{
     WorthQueryApplicationProjection, WorthQueryApplicationRequiredOutputConnection,
 };
 
-use super::{WorthQueryApplicationRequest, WorthQueryApplicationRetainedRequest};
-
-/// Why `require_current_program_output` refused: the request could not open,
-/// the retained observation could not be
-/// selected, it is on another branch, or an output no longer retains its source lineage at
-/// that observation.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum WorthQueryProgramOutputCurrentnessDenial {
-    /// The call was refused before its retained-output validation read.
-    ExecutionRequest(
-        worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
-    ),
-    Observation(
-        worth_query_execution::facade::primary_graph::WorthQueryProductBranchAdmissionDenial,
-    ),
-    ForeignBranch,
-    Output(worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenial),
-}
-
-impl<'application, 'principal, 'scope, Schema>
-    WorthQueryApplicationRetainedRequest<'application, 'principal, 'scope, Schema>
-where
-    Schema: ApplicationSchema,
-{
-    /// Requires every output in a program settlement to retain its Query-owned
-    /// source lineage at this request's one exact World observation.
-    pub fn require_current_program_output<RootQuery>(
-        &self,
-        settlement: &crate::application_entry::WorthQueryApplicationProgramOutputSettlement<
-            RootQuery,
-        >,
-        maximum_work: NonZeroUsize,
-    ) -> Result<(), WorthQueryProgramOutputCurrentnessDenial> {
-        self.application
-            .with_application_advancement(self.scope, |phase| {
-                let selected = self
-                    .application
-                    .select_application_read_observation(&self.observation)
-                    .map_err(WorthQueryProgramOutputCurrentnessDenial::Observation)?;
-                if selected.product().product_branch() != self.branch {
-                    return Err(WorthQueryProgramOutputCurrentnessDenial::ForeignBranch);
-                }
-                selected
-                    .require_current_output_settlements(
-                        &phase,
-                        settlement.retained_settlements(),
-                        maximum_work,
-                    )
-                    .map_err(WorthQueryProgramOutputCurrentnessDenial::Output)
-            })
-            .map_err(WorthQueryProgramOutputCurrentnessDenial::ExecutionRequest)?
-    }
-}
+use super::WorthQueryApplicationRequest;
 
 type RootConnectionRef<Schema, Root> =
     <Root as ApplicationOutputGraphShape<Schema>>::RootConnection;

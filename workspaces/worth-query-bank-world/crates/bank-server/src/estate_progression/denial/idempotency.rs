@@ -13,7 +13,6 @@ pub enum BankEstateIdempotencyResolutionDenial {
     RetentionCapacityExhausted,
     RetentionIdentityExhausted,
     SnapshotIdentityExhausted,
-    IdempotencyWindowExpired,
     ProviderUnavailable,
     /// Pending publication was refused by the execution owner.
     ExecutionDenied(worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind),
@@ -67,9 +66,6 @@ fn from_kind(
         }
         WorthQueryApplicationIdempotencyResolutionDenialKind::SnapshotIdentityExhausted => {
             BankEstateIdempotencyResolutionDenial::SnapshotIdentityExhausted
-        }
-        WorthQueryApplicationIdempotencyResolutionDenialKind::IdempotencyWindowExpired => {
-            BankEstateIdempotencyResolutionDenial::IdempotencyWindowExpired
         }
         WorthQueryApplicationIdempotencyResolutionDenialKind::ProviderUnavailable => {
             BankEstateIdempotencyResolutionDenial::ProviderUnavailable

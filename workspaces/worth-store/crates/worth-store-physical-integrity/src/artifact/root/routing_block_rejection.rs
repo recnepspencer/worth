@@ -1,7 +1,9 @@
 use worth_store_physical_format::{
-    BoundedRootRoutingBlockDecodeDenial, PhysicalRootRoutingBlock, RootManifestDenial,
-    RootRoutingBlockDenial,
+    BoundedRootRoutingBlockDecodeDenial, RootManifestDenial, RootRoutingBlockDenial,
 };
+
+mod scope;
+pub(super) use scope::scope_mismatch;
 
 use crate::artifact::durable_frame_rejection::{
     damaged, field_damage, from_frame_denial, DurableFrameFieldRange,
@@ -27,94 +29,6 @@ const BODY_OFFSET: u64 = 88;
 const LEAF_ENTRY_BYTES: u64 = 88;
 const BRANCH_REFERENCE_BYTES: u64 = 72;
 
-pub(super) fn scope_mismatch(
-    scope: PhysicalArtifactScope,
-    block: &PhysicalRootRoutingBlock,
-) -> Option<PhysicalIntegrityRejection> {
-    let expected = scope.root_routing_block_identity().unwrap();
-    let reference = expected.reference();
-    if block.tree_identity() != expected.tree().get() {
-        return Some(field_damage(
-            scope,
-            PhysicalDamageCause::ArtifactIdentityMismatch,
-            TREE_FIELD,
-            PhysicalFormatField::TreeIdentity,
-            PhysicalBlastRadius::ReachableSubtree,
-        ));
-    }
-    if block.block() != reference.block() {
-        return Some(field_damage(
-            scope,
-            PhysicalDamageCause::ArtifactIdentityMismatch,
-            ENVELOPE_BLOCK_FIELD,
-            PhysicalFormatField::BlockIdentity,
-            PhysicalBlastRadius::ReachableSubtree,
-        ));
-    }
-    if block.generation() != reference.generation() {
-        return Some(field_damage(
-            scope,
-            PhysicalDamageCause::PhysicalGenerationMismatch,
-            GENERATION_FIELD,
-            PhysicalFormatField::PhysicalGeneration,
-            PhysicalBlastRadius::ReachableSubtree,
-        ));
-    }
-    if block.level() != reference.level() {
-        return Some(field_damage(
-            scope,
-            PhysicalDamageCause::ChildReferenceMismatch,
-            LEVEL_FIELD,
-            PhysicalFormatField::ChildReference,
-            PhysicalBlastRadius::ReachableSubtree,
-        ));
-    }
-    range_mismatch(scope, block)
-}
-
-fn range_mismatch(
-    scope: PhysicalArtifactScope,
-    block: &PhysicalRootRoutingBlock,
-) -> Option<PhysicalIntegrityRejection> {
-    let expected = scope.root_routing_block_identity().unwrap().reference();
-    let observed = block.reference(expected.checksum());
-    let field = if block.entries().is_some() {
-        PhysicalFormatField::RecordIdentity
-    } else {
-        PhysicalFormatField::ChildReference
-    };
-    let offset = if observed.first() != expected.first() {
-        first_range_offset(block)
-    } else if observed.last() != expected.last() {
-        last_range_offset(block)
-    } else {
-        return None;
-    };
-    Some(damaged(
-        scope,
-        PhysicalDamageCause::ChildReferenceMismatch,
-        PhysicalByteRange::new(scope.byte_range().offset() + offset, 24).unwrap(),
-        Some(field),
-        PhysicalBlastRadius::ReachableSubtree,
-    ))
-}
-
-fn first_range_offset(block: &PhysicalRootRoutingBlock) -> u64 {
-    if block.entries().is_some() {
-        BODY_OFFSET
-    } else {
-        BODY_OFFSET + 24
-    }
-}
-
-fn last_range_offset(block: &PhysicalRootRoutingBlock) -> u64 {
-    if let Some(entries) = block.entries() {
-        BODY_OFFSET + (entries.len() as u64 - 1) * LEAF_ENTRY_BYTES
-    } else {
-        BODY_OFFSET + (block.children().unwrap().len() as u64 - 1) * BRANCH_REFERENCE_BYTES + 48
-    }
-}
-
 pub(super) fn routing_denial(
     scope: PhysicalArtifactScope,
     bytes: &[u8],
@@ -124,6 +38,9 @@ pub(super) fn routing_denial(
         BoundedRootRoutingBlockDecodeDenial::Format(denial) => format_denial(scope, bytes, denial),
         BoundedRootRoutingBlockDecodeDenial::LeafEntries { .. }
         | BoundedRootRoutingBlockDecodeDenial::BranchChildren { .. } => count_damage(scope),
+        BoundedRootRoutingBlockDecodeDenial::CoordinateScratchInsufficient { .. } => {
+            unreachable!("resource denial is not malformed media")
+        }
     }
 }
 

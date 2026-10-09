@@ -1,10 +1,12 @@
+use crate::domain_computation::primary_graph::application_attempt::check_request_live;
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_program::ApplicationWorkflowSubjectSelector;
 use worth_relational::facade::identity::{EntityId, PartitionId};
 
 use super::{decode_identity, denial, optional_identity, required_text, required_u64};
 use crate::domain_computation::primary_graph::application_attempt::{
     observe_adjacency, WorthQueryApplicationAdjacencyDirection, WorthQueryApplicationAttemptDenial,
-    WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationObservedFact,
+    WorthQueryApplicationObservedFact,
 };
 use crate::domain_computation::primary_graph::workflow::{
     proposal::{identity::WorkflowProposalCoverageScope, WorkflowProposalCoverageMeaning},
@@ -16,7 +18,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_workflow_proposal_co
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
     proposal: EntityId,
-    maximum_facts: usize,
+    observation_request: &WorthQueryRequestScope,
 ) -> Result<
     (
         Vec<WorkflowProposalCoverageMeaning>,
@@ -24,9 +26,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_workflow_proposal_co
     ),
     WorthQueryApplicationAttemptDenial,
 > {
-    if maximum_facts < 6 {
-        return Err(budget_denial());
-    }
+    check_request_live(observation_request, "workflow coverage")?;
     let mut facts = Vec::new();
     let scope = observe_proposal_scope(runtime, snapshot, layout, proposal, &mut facts)?;
     let kind = layout.proposal.entity_kind;
@@ -40,25 +40,19 @@ pub(in crate::domain_computation::primary_graph) fn observe_workflow_proposal_co
     )?;
     let count = usize::try_from(count)
         .map_err(|_| denial("workflow proposal coverage count exceeds this host"))?;
-    // Scope, count, and adjacency cost six facts; each coverage costs an
-    // entity and five fields. Reject before allocating or scanning inventory.
-    if count > maximum_facts.saturating_sub(6) / 6 {
-        return Err(budget_denial());
-    }
+    check_request_live(observation_request, "workflow coverage")?;
     let coverages = observe_coverages(
-        runtime, snapshot, layout, proposal, count, scope, &mut facts,
+        runtime,
+        snapshot,
+        layout,
+        proposal,
+        count,
+        scope,
+        &mut facts,
+        observation_request,
     )?;
-    if facts.len() > maximum_facts {
-        return Err(budget_denial());
-    }
+    check_request_live(observation_request, "workflow coverage")?;
     Ok((coverages, facts))
-}
-
-fn budget_denial() -> WorthQueryApplicationAttemptDenial {
-    WorthQueryApplicationAttemptDenial::new(
-        WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
-        "workflow proposal coverage fact budget",
-    )
 }
 
 fn observe_proposal_scope(
@@ -119,9 +113,12 @@ pub(super) fn observe_coverages(
     count: usize,
     scope: WorkflowProposalCoverageScope,
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
+    observation_request: &WorthQueryRequestScope,
 ) -> Result<Vec<WorkflowProposalCoverageMeaning>, WorthQueryApplicationAttemptDenial> {
     let direction = WorthQueryApplicationAdjacencyDirection::Outgoing;
-    let maximum_work_units = count.saturating_add(1).saturating_mul(2);
+    check_request_live(observation_request, "workflow proposal coverage")?;
+    let maximum_work_units = count.checked_add(1).and_then(|count| count.checked_mul(2))
+        .ok_or_else(|| crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial::Representability.into_attempt_denial("workflow proposal coverage"))?;
     let relations = observe_adjacency(
         runtime,
         snapshot,
@@ -143,6 +140,7 @@ pub(super) fn observe_coverages(
     });
     let mut coverages = Vec::with_capacity(count);
     for relation in relations {
+        check_request_live(observation_request, "workflow proposal coverage")?;
         let entity = relation.to;
         let kind = layout.proposal_coverage.entity_kind;
         facts.push(WorthQueryApplicationObservedFact::Entity {

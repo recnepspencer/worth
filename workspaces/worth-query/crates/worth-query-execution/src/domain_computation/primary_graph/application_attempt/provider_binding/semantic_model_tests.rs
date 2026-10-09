@@ -7,7 +7,6 @@ use self::world::mixed_effect_world;
 use super::{prepare_provider_attempt, WorthQueryApplicationRealizedEffect};
 use crate::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedRelation;
 use crate::domain_computation::primary_graph::application_attempt::{
-    effect_program::WorthQueryCandidateValidatorWorkAdmission,
     WorthQueryApplicationAdjacencyDirection, WorthQueryApplicationObservedFact,
 };
 use worth_relational::facade::identity::{EntityId, KindId, PartitionId, RelationId};
@@ -19,15 +18,14 @@ fn mixed_effects_lower_to_the_exact_independent_semantic_model() {
         crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields::none(),
         PartitionId::main(),
         world.effects.len(),
-        Vec::new(),
-        world.facts,
+        admitted(Vec::new()),
+        admitted(world.facts),
         Vec::new(),
         world.effects,
         world.retained_bytes,
         world.retained_bytes,
         None,
         None,
-        WorthQueryCandidateValidatorWorkAdmission::unreserved_internal(),
         Default::default(),
         false,
         false,
@@ -46,15 +44,14 @@ fn alternate_effect_insertion_preserves_each_exact_association_and_order() {
         crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields::none(),
         PartitionId::main(),
         world.alternate_effects.len(),
-        Vec::new(),
-        world.facts,
+        admitted(Vec::new()),
+        admitted(world.facts),
         Vec::new(),
         world.alternate_effects,
         world.retained_bytes,
         world.retained_bytes,
         None,
         None,
-        WorthQueryCandidateValidatorWorkAdmission::unreserved_internal(),
         Default::default(),
         false,
         false,
@@ -72,15 +69,14 @@ fn created_records_and_symbolic_endpoints_use_the_issued_mutation_partition() {
         crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields::none(),
         PartitionId(7),
         world.effects.len(),
-        Vec::new(),
-        world.facts,
+        admitted(Vec::new()),
+        admitted(world.facts),
         Vec::new(),
         world.effects,
         world.retained_bytes,
         world.retained_bytes,
         None,
         None,
-        WorthQueryCandidateValidatorWorkAdmission::unreserved_internal(),
         Default::default(),
         false,
         false,
@@ -130,15 +126,14 @@ fn two_relation_deletes_from_one_adjacency_share_one_provisional_retirement() {
         crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields::none(),
         PartitionId::main(),
         effects.len(),
-        Vec::new(),
-        facts,
+        admitted(Vec::new()),
+        admitted(facts),
         Vec::new(),
         effects,
         0,
         0,
         None,
         None,
-        WorthQueryCandidateValidatorWorkAdmission::unreserved_internal(),
         Default::default(),
         false,
         false,
@@ -148,4 +143,16 @@ fn two_relation_deletes_from_one_adjacency_share_one_provisional_retirement() {
     .expect("both relation deletes are authorized by the observed adjacency");
 
     assert_eq!(prepared.effects.expected_steps().len(), 1);
+}
+
+fn admitted<T>(values: Vec<T>) -> worth_execution::ExecutionArray<T> {
+    let mut array = worth_execution::ExecutionArrayBuilder::allocate(
+        values.len(),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .unwrap();
+    for value in values {
+        array.push(value).unwrap();
+    }
+    array.seal().unwrap()
 }

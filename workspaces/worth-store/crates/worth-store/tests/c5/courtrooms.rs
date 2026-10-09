@@ -1,7 +1,8 @@
 use super::child_process::{run_courtroom_reopener, run_courtroom_writer};
 use super::courtroom_evidence_support::{
     hex, inline_placement, locator_identities, offline_completion, placement_identities,
-    reopener_completion, segment_files, segment_page_bytes, writer_completion,
+    publication_barriers, reopener_completion, segment_files, segment_page_bytes,
+    writer_completion,
 };
 use super::scenario_evidence::ScenarioProcessEvidence;
 
@@ -87,8 +88,23 @@ fn record_world_survives_fresh_processes() {
     assert_eq!(placement_identity_set, locator_identity_set);
     assert_ne!(writer_completion.positioned_writes, 0);
     assert!(writer_completion.file_barriers >= writer_completion.positioned_writes);
-    assert!(writer_completion.directory_barriers >= writer_completion.file_barriers);
     assert_eq!(writer_completion.catalog_replacements, 12);
+    // Each publication makes one catalog replacement (three renames: both
+    // root selectors and the catalog), followed by exactly one barrier on
+    // their parent directory. Recovery-journal barriers are counted apart.
+    let publications = publication_barriers(&writer_stdout);
+    assert_eq!(publications.len(), 4);
+    for (renames, parent_barriers, _) in &publications {
+        assert_eq!((*renames, *parent_barriers), (3, 1), "{publications:?}");
+    }
+    assert_eq!(
+        publications.iter().map(|row| row.0).sum::<u64>(),
+        writer_completion.catalog_replacements
+    );
+    assert_eq!(
+        publications.iter().map(|row| row.1 + row.2).sum::<u64>(),
+        writer_completion.directory_barriers
+    );
     let extent_placements = walk
         .placements()
         .iter()

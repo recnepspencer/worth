@@ -13,7 +13,7 @@ use worth_signal::facade::{Aspect, BoundedSignalInputs, DeclaredSignalInput, Nod
 pub(super) fn host() -> ExecutionAuthority {
     ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
         max_workers: NonZeroUsize::new(4).unwrap(),
-        charged_memory_bytes: 256 * 1024 * 1024,
+        charged_memory_bytes: Some(256 * 1024 * 1024),
     })
     .expect("command execution host")
 }

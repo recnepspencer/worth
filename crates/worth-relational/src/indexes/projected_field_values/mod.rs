@@ -1,5 +1,6 @@
 mod checked_entry_map;
 mod entity_field_index_values;
+mod exact_entity_field_match;
 mod field_projection_scope;
 mod index_projection_source;
 mod related_entity_ordering;
@@ -14,6 +15,7 @@ pub(super) use entity_field_index_values::{
     build_entity_aspect_field_index, build_entity_aspect_field_index_checked,
     entity_aspect_field_index_entry, entity_aspect_field_ordering_value,
 };
+pub(super) use exact_entity_field_match::exact_entity_field_matches;
 pub(super) use index_projection_source::IndexProjectionSource;
 pub(super) use related_entity_ordering::{
     build_related_entity_ordering_index, build_related_entity_ordering_index_checked,

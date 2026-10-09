@@ -74,7 +74,7 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationIntent<Schema> for Vertex
 pub(super) const fn replacement_requirements() -> ApplicationCandidateRequirements {
     ApplicationCandidateRequirements::fixed_shape(
         ApplicationCandidateCardinalityCeiling::fixed(1, 1, 2, 2, 4, 0),
-        ApplicationCandidateResourceCeiling::bounded(8192, 4096),
+        ApplicationCandidateResourceCeiling::representation_bytes(8192),
     )
 }
 

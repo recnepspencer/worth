@@ -28,6 +28,7 @@ pub enum BridgeExecutionBasisSignalTerminal {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BridgeExecutionBasisFinalizationFailureKind {
+    AtomicExecutionUnsupported,
     ManagedQueueOccupied,
     SignalRuntimeThreadAffinityViolation,
     SignalCompletionDenied,
@@ -59,12 +60,25 @@ impl BridgeBoundExecutionBasis {
         disposition: BridgeExecutionBasisTerminalDisposition,
     ) -> Result<BridgeExecutionBasisFinalizationReceipt, BridgeExecutionBasisFinalizationFailure>
     {
-        if self.managed_queue_occupancy_width != 0 {
+        if disposition == BridgeExecutionBasisTerminalDisposition::Yielded
+            && self.step_contract().is_none()
+        {
+            return Err(BridgeExecutionBasisFinalizationFailure::new(
+                BridgeExecutionBasisFinalizationFailureKind::AtomicExecutionUnsupported,
+                "atomic execution cannot yield",
+                self,
+            ));
+        }
+        let occupancy_width = self
+            .posture
+            .managed()
+            .map_or(0, |managed| managed.occupancy_width);
+        if occupancy_width != 0 {
             return Err(BridgeExecutionBasisFinalizationFailure {
                 kind: BridgeExecutionBasisFinalizationFailureKind::ManagedQueueOccupied,
                 detail: format!(
                     "managed execution basis retains {} units of Signal queue occupancy",
-                    self.managed_queue_occupancy_width
+                    occupancy_width
                 ),
                 basis: self,
             });

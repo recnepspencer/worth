@@ -193,12 +193,14 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         calls.fetch_add(1, Ordering::SeqCst);
         install_topology_behavior(setup)?;
-        setup.producer::<InitialPlanarProducer<Schema>>(InitialPlanarProvider::new(Arc::new(
-            AtomicUsize::new(0),
-        )))?;
-        setup.producer::<InitialPlanarProducer<Schema>>(InitialPlanarProvider::new(Arc::new(
-            AtomicUsize::new(0),
-        )))
+        setup.producer::<InitialPlanarProducer<Schema>>(InitialPlanarProvider::new(
+            Arc::new(AtomicUsize::new(0)),
+            Arc::new(std::sync::atomic::AtomicBool::new(false)),
+        ))?;
+        setup.producer::<InitialPlanarProducer<Schema>>(InitialPlanarProvider::new(
+            Arc::new(AtomicUsize::new(0)),
+            Arc::new(std::sync::atomic::AtomicBool::new(false)),
+        ))
     }
 }
 

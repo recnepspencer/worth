@@ -18,6 +18,7 @@ profile-standard = ["worth-signal/profile-standard"]
 profile-extended = ["worth-signal/profile-extended"]
 
 [dependencies]
+worth-execution.workspace = true
 worth-proof = { workspace = true }
 worth-signal = { path = "../worth-signal", default-features = false }
 worth-foundational = { workspace = true }

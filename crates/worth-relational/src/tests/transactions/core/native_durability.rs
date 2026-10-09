@@ -38,21 +38,30 @@ fn native_struct_reference_and_clear_state_survive_checkpoint_readmission() {
                     aspect_patch: whole_struct_set(&summary_contract, summary),
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
     initial
-        .push_batch(WorkerIntentBatch::new("native-relation-reference").push(
-            MutationIntent::Create(CreateIntent::RelationAspects(RelationAspectCreateIntent {
-                partition_id: PartitionId::main(),
-                kind_id: KindId(2),
-                client_key: crate::symbols::data::ClientKey::raw("native-durable-relation"),
-                source: EntityReference::Existing(source),
-                target: EntityReference::Existing(target),
-                aspect_patch: whole_scalar_set(&label_contract, "durable-edge"),
-            })),
-        ))
+        .push_batch(
+            WorkerIntentBatch::new("native-relation-reference").push(MutationIntent::Create(
+                CreateIntent::RelationAspects(RelationAspectCreateIntent {
+                    partition_id: PartitionId::main(),
+                    kind_id: KindId(2),
+                    client_key: crate::symbols::data::ClientKey::raw("native-durable-relation"),
+                    source: EntityReference::Existing(source),
+                    target: EntityReference::Existing(target),
+                    aspect_patch: whole_scalar_set(&label_contract, "durable-edge"),
+                }),
+            )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
-    let initial = initial.commit(&runtime).unwrap();
+    let initial = initial
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
     let relation = changed_relations(&initial)[0];
 
     let status = field_key("status");
@@ -72,9 +81,15 @@ fn native_struct_reference_and_clear_state_survive_checkpoint_readmission() {
                     aspect_patch: clear,
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    let cleared = clear_transaction.commit(&runtime).unwrap();
+    let cleared = clear_transaction
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
 
     let (expected_entity_state, expected_relation_state) = {
         let read = runtime

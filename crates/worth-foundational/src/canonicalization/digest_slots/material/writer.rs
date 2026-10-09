@@ -1,16 +1,29 @@
+use super::super::resource_admission::{
+    CanonicalDigestPreparationStop, CanonicalResourceAdmission,
+};
+use super::super::CanonicalDigestDerivationDenial;
+use super::sink::CanonicalMaterialSink;
 pub(super) type CanonicalMaterialResult<T = ()> = Result<T, CanonicalDigestPreparationStop>;
 
 pub(super) struct CanonicalMaterialWriter<'a> {
     material: String,
-    maximum_encoded_bytes: usize,
+    maximum_encoded_bytes: Option<usize>,
     admission: Option<&'a mut CanonicalResourceAdmission<'a>>,
 }
 
 impl<'a> CanonicalMaterialWriter<'a> {
+    pub(super) fn owned() -> Self {
+        Self {
+            material: String::new(),
+            maximum_encoded_bytes: None,
+            admission: None,
+        }
+    }
+
     pub(super) fn bounded(maximum_encoded_bytes: usize) -> Self {
         Self {
             material: String::new(),
-            maximum_encoded_bytes,
+            maximum_encoded_bytes: Some(maximum_encoded_bytes),
             admission: None,
         }
     }
@@ -21,7 +34,7 @@ impl<'a> CanonicalMaterialWriter<'a> {
     ) -> Self {
         Self {
             material: String::new(),
-            maximum_encoded_bytes,
+            maximum_encoded_bytes: Some(maximum_encoded_bytes),
             admission: Some(admission),
         }
     }
@@ -42,9 +55,11 @@ impl<'a> CanonicalMaterialWriter<'a> {
             .material
             .len()
             .checked_add(value.len())
-            .ok_or_else(|| self.byte_limit(usize::MAX))?;
-        if attempted > self.maximum_encoded_bytes {
-            return Err(self.byte_limit(attempted));
+            .ok_or(CanonicalDigestPreparationStop::AccountingOverflow)?;
+        if let Some(maximum) = self.maximum_encoded_bytes {
+            if attempted > maximum {
+                return Err(self.byte_limit(maximum, attempted));
+            }
         }
         let growth = attempted > self.material.capacity();
         if self.admission.is_some() {
@@ -55,7 +70,10 @@ impl<'a> CanonicalMaterialWriter<'a> {
                     .ok_or(CanonicalDigestPreparationStop::AccountingOverflow)?
                     .max(8)
                     .max(attempted)
-                    .min(self.maximum_encoded_bytes)
+                    .min(
+                        self.maximum_encoded_bytes
+                            .expect("admitted writers have a byte limit"),
+                    )
             } else {
                 0
             };
@@ -79,12 +97,9 @@ impl<'a> CanonicalMaterialWriter<'a> {
         Ok(())
     }
 
-    fn byte_limit(&self, attempted: usize) -> CanonicalDigestPreparationStop {
+    fn byte_limit(&self, maximum: usize, attempted: usize) -> CanonicalDigestPreparationStop {
         CanonicalDigestPreparationStop::Derivation(
-            CanonicalDigestDerivationDenial::EncodedByteLimitExceeded {
-                maximum: self.maximum_encoded_bytes,
-                attempted,
-            },
+            CanonicalDigestDerivationDenial::EncodedByteLimitExceeded { maximum, attempted },
         )
     }
 
@@ -97,6 +112,19 @@ impl<'a> CanonicalMaterialWriter<'a> {
 
     pub(super) fn finish_string(self) -> String {
         self.material
+    }
+}
+
+impl CanonicalMaterialSink for CanonicalMaterialWriter<'_> {
+    type Error = CanonicalDigestPreparationStop;
+    fn append(&mut self, value: &str) -> CanonicalMaterialResult {
+        self.append(value)
+    }
+    fn admit_work(&mut self, work: usize) -> CanonicalMaterialResult {
+        self.admit_work(work)
+    }
+    fn accounting_overflow(&mut self) -> Self::Error {
+        CanonicalDigestPreparationStop::AccountingOverflow
     }
 }
 
@@ -183,7 +211,3 @@ mod tests {
         );
     }
 }
-use super::super::resource_admission::{
-    CanonicalDigestPreparationStop, CanonicalResourceAdmission,
-};
-use super::super::CanonicalDigestDerivationDenial;

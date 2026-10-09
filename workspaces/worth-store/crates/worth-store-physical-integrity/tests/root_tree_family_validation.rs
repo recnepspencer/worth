@@ -1,5 +1,7 @@
 #[path = "root_tree_family_validation/bootstrap_catalog.rs"]
 mod bootstrap_catalog;
+#[path = "root_tree_family_validation/borrowed_root_routing_block.rs"]
+mod borrowed_root_routing_block;
 #[path = "root_tree_family_validation/hostile_prefixes.rs"]
 mod hostile_prefixes;
 #[path = "root_tree_family_validation/literal_vectors.rs"]

@@ -121,6 +121,7 @@ fn unrelated_partition_selection(population: u64) {
         .or_default();
     let slot = records.len();
     let recorded = RecordedOutput {
+            native_prior_checkpoint: None,
         computation_source: crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false),
         performed_origin: None,
         _retained_capacity: None,

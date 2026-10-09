@@ -28,6 +28,7 @@ where
         &self,
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> WorthQueryApplicationRetainedCommitOutcome
     where
         Operation: 'static,
@@ -39,6 +40,7 @@ where
                 &phase,
                 program,
                 idempotency,
+                allocation_policy,
             )
         })
         .unwrap_or_else(|denial| {
@@ -53,6 +55,7 @@ where
         phase: &super::super::WorthQueryAdvancementPhase<'_>,
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> WorthQueryApplicationRetainedCommitOutcome
     where
         Operation: 'static,
@@ -62,6 +65,7 @@ where
             phase,
             program.with_client_observation(),
             idempotency,
+            allocation_policy,
         );
         self.retained_commit_outcome(outcome)
     }

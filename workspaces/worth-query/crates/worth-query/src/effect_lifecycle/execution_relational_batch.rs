@@ -68,10 +68,16 @@ pub(super) fn execute_lowered_mutation_batch(
             worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
         )
         .map_err(super::relational_execution_deferred::transaction_admission)?;
-    txn.push_batch(batch)
-        .map_err(super::relational_execution_deferred::transaction_staging)?;
+    txn.push_batch(
+        batch,
+        worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .map_err(super::relational_execution_deferred::transaction_staging)?;
     let candidate = runtime
-        .prepare_branch_transaction(txn)
+        .prepare_branch_transaction(
+            txn,
+            worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .map_err(super::relational_execution_deferred::transaction_commit)?;
     let performed = match runtime.publication_port().compare_and_publish(candidate) {
         worth_relational::facade::mvcc::RelationalPublicationOutcome::Performed(performed) => {

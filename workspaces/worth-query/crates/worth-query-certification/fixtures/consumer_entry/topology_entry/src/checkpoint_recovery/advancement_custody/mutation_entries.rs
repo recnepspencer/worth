@@ -33,7 +33,6 @@ fn mutation_prepare_and_one_call_refuse_before_their_admitted_reader() {
                                     },
                                 ],
                             ),
-                        validator_work: 4_096,
                     })
                 };
                 let before = reads();
@@ -45,14 +44,14 @@ fn mutation_prepare_and_one_call_refuse_before_their_admitted_reader() {
                         drop(
                             mutation
                                 .idempotency(&key)
-                                .prepare_in_program(&application)
+                                .prepare_in_program(&application, worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
                                 .unwrap(),
                         );
                     }
                     1 => {
                         mutation
                             .idempotency(&key)
-                            .execute_in_program(&application)
+                            .execute_in_program(&application, worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
                             .unwrap();
                     }
                     2 => {
@@ -85,12 +84,12 @@ fn mutation_prepare_and_one_call_refuse_before_their_admitted_reader() {
                 let denial = match entry {
                     0 => mutation
                         .idempotency(&key)
-                        .prepare_in_program(&application)
+                        .prepare_in_program(&application, worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
                         .err()
                         .unwrap(),
                     1 => mutation
                         .idempotency(&key)
-                        .execute_in_program(&application)
+                        .execute_in_program(&application, worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
                         .err()
                         .unwrap(),
                     2 => mutation.assess_current_authorization().err().unwrap(),

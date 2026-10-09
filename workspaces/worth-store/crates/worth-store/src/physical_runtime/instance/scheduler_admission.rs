@@ -8,14 +8,22 @@ use worth_store_physical_backend::QualifiedFilesystemMedia;
 
 mod background_dispatch;
 mod background_head;
+mod blob_ingest;
+mod blob_movement;
+pub(in crate::physical_runtime) use blob_movement::BlobMovementFrameAdmission;
+mod blob_reclaim;
 mod capacity;
 mod checkpoint;
+mod compaction;
+pub(in crate::physical_runtime) use compaction::CompactionFrameAdmission;
 mod foreground_budget;
 use foreground_budget::{
     metadata_budget, read_budget, wal_append_budget, wal_barrier_budget, write_budget,
 };
 mod scrub;
 pub(in crate::physical_runtime) use scrub::PhysicalScrubSchedulerAdmissionDenial;
+mod rebuild;
+pub(in crate::physical_runtime) use rebuild::RebuildReadAdmission;
 mod reclamation;
 #[cfg(feature = "recovery-runtime-owner")]
 pub(in crate::physical_runtime) use reclamation::PhysicalWalReclamationSchedulerAdmissionDenial;

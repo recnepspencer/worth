@@ -84,6 +84,7 @@ pub(super) struct IndependentCheckpointReopenCounters {
     pub(super) bytes_read: u64,
     pub(super) dirty_bytes: u64,
     pub(super) binding_records: u64,
+    pub(super) certificate_records: u64,
 }
 
 pub(super) fn inspect_checkpoint_reopen(root: &Path) -> IndependentCheckpointReopenCounters {
@@ -97,11 +98,18 @@ pub(super) fn inspect_checkpoint_reopen(root: &Path) -> IndependentCheckpointReo
         .iter()
         .map(|record| record.len() as u64)
         .sum::<u64>();
+    // Tier (6) and release-custody (7) certificates follow the bindings.
+    let tail = &records[compaction_index + 1..records.len() - 1];
+    let certificate_records = tail
+        .iter()
+        .filter(|record| matches!(record[9], 6 | 7))
+        .count() as u64;
     IndependentCheckpointReopenCounters {
         artifact_bytes: bytes.len() as u64,
         bytes_read: bytes.len() as u64 - dirty_bytes,
         dirty_bytes,
-        binding_records: (records.len() - compaction_index - 2) as u64,
+        binding_records: tail.len() as u64 - certificate_records,
+        certificate_records,
     }
 }
 

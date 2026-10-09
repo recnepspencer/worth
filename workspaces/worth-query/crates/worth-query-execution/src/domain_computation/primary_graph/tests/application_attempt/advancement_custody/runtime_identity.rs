@@ -38,6 +38,7 @@ fn foreign_runtime_phase_refuses_query_and_commit_before_source_read() {
             let before = reads();
             let refused = b.application.compare_and_commit_application_in_advancement(
                 &phase, b_program, idempotency(179, 179),
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             );
             let WorthQueryApplicationCommitOutcome::Denied(denial) = refused else {
                 panic!("foreign commit must refuse before revalidation");
@@ -53,6 +54,7 @@ fn foreign_runtime_phase_refuses_query_and_commit_before_source_read() {
             assert_eq!(reads(), before, "foreign mutation cannot reach B's reader");
             let admitted = a.application.compare_and_commit_application_in_advancement(
                 &phase, a_program, idempotency(178, 178),
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             );
             assert!(matches!(admitted, WorthQueryApplicationCommitOutcome::Committed(_)));
             assert!(reads() > before, "A's same commit door reaches its reader");

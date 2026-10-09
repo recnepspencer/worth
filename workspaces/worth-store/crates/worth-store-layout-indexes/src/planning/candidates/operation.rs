@@ -4,16 +4,7 @@ use crate::strategy::LayoutStrategyFamily;
 use super::super::denial::SelectionCandidateRejection;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum BTreeLookupOperation {
-    Point,
-    Range,
-    Prefix,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(in crate::planning) enum EligibleStrategyOperation {
-    BTreeLookup(BTreeLookupOperation),
-    BTreeReplayRecovery,
     LsmLookup,
     LsmRunPublication,
     LsmReplayRecovery,
@@ -29,7 +20,7 @@ pub(in crate::planning) enum CandidateStrategyFamily {
 impl CandidateStrategyFamily {
     pub(in crate::planning) const fn strategy_family(self) -> LayoutStrategyFamily {
         match self {
-            Self::BTree => LayoutStrategyFamily::BaselineBTreeRange,
+            Self::BTree => LayoutStrategyFamily::BTreeRange,
             Self::Lsm => LayoutStrategyFamily::BaselineLsmWriteOptimized,
         }
     }
@@ -40,18 +31,6 @@ pub(in crate::planning) const fn classify_candidate_operation(
     shape: AccessShape,
 ) -> Result<EligibleStrategyOperation, SelectionCandidateRejection> {
     let operation = match (family, shape) {
-        (CandidateStrategyFamily::BTree, AccessShape::PointLookup) => {
-            EligibleStrategyOperation::BTreeLookup(BTreeLookupOperation::Point)
-        }
-        (CandidateStrategyFamily::BTree, AccessShape::RangeLookup) => {
-            EligibleStrategyOperation::BTreeLookup(BTreeLookupOperation::Range)
-        }
-        (CandidateStrategyFamily::BTree, AccessShape::PrefixLookup) => {
-            EligibleStrategyOperation::BTreeLookup(BTreeLookupOperation::Prefix)
-        }
-        (CandidateStrategyFamily::BTree, AccessShape::RebuildRead) => {
-            EligibleStrategyOperation::BTreeReplayRecovery
-        }
         (CandidateStrategyFamily::Lsm, AccessShape::PointLookup) => {
             EligibleStrategyOperation::LsmLookup
         }
@@ -66,7 +45,8 @@ pub(in crate::planning) const fn classify_candidate_operation(
         }
         (
             CandidateStrategyFamily::BTree,
-            AccessShape::BatchPointLookup
+            AccessShape::PointLookup
+            | AccessShape::BatchPointLookup
             | AccessShape::SortedBatchLookup
             | AccessShape::MultiRangeLookup
             | AccessShape::GroupedPrefixLookup
@@ -77,6 +57,9 @@ pub(in crate::planning) const fn classify_candidate_operation(
             | AccessShape::FullDeclaredScan
             | AccessShape::StreamingRead
             | AccessShape::StreamingContinuationRead
+            | AccessShape::RangeLookup
+            | AccessShape::PrefixLookup
+            | AccessShape::RebuildRead
             | AccessShape::Append
             | AccessShape::CompactionRead
             | AccessShape::VerifierRead

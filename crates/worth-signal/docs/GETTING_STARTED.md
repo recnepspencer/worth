@@ -40,7 +40,7 @@ The main pieces are:
 
 - `SignalGraph`
 - `SignalRuntime`
-- `runtime.advance_signal_branch(...)`
+- `runtime.advance_signal_branch(execution, ...)`
 - `runtime.observe_nodes(...)`
 - `runtime.target(node).read(...)`
 - `runtime.diagnostics()`
@@ -66,7 +66,13 @@ let mut runtime = SignalRuntime::build_for::<()>(graph);
 let basis = runtime
     .observe_signal_branch_basis(runtime.current_branch())
     .expect("current branch should admit an owner basis");
-let _next_basis = runtime.advance_signal_branch(&mut (), &basis, |tx| {
+let serial_request = worth_execution::SerialRequest::from_memory(
+    worth_execution::SerialMemoryBudget::new(runtime.runtime_policy().serial_memory_bytes),
+    worth_execution::CancellationToken::new(),
+    None,
+);
+let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+let _next_basis = runtime.advance_signal_branch(execution, &mut (), &basis, |tx| {
     tx.mark_changed(product_price, PRICE)?;
     tx.target(checkout_summary).run(&|view| {
         let result = if view.node() == product_price {
@@ -132,7 +138,13 @@ let handle = runtime.observe_nodes(
 let basis = runtime
     .observe_signal_branch_basis(runtime.current_branch())
     .expect("current branch should admit an owner basis");
-let _next_basis = runtime.advance_signal_branch(&mut (), &basis, |tx| {
+let serial_request = worth_execution::SerialRequest::from_memory(
+    worth_execution::SerialMemoryBudget::new(runtime.runtime_policy().serial_memory_bytes),
+    worth_execution::CancellationToken::new(),
+    None,
+);
+let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+let _next_basis = runtime.advance_signal_branch(execution, &mut (), &basis, |tx| {
     tx.mark_changed(source, ASPECT_A)?;
     tx.target(derived).run(&|view| {
         let version = view.read_aspect_version(source, ASPECT_A)?;

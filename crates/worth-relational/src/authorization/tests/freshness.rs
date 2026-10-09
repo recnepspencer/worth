@@ -151,7 +151,13 @@ fn create_relation_of_kind(
                     fields: AspectFieldPatch::default(),
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    transaction.commit(runtime).unwrap();
+    transaction
+        .commit(
+            runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
 }

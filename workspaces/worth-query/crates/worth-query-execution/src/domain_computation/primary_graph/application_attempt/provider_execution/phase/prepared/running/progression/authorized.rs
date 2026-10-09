@@ -81,6 +81,7 @@ fn authorize_provider_commit<'run, 'a, 'provider, Schema, Operation, Input, Scop
 
 fn resolve_authorized_provider_commit<Schema, Operation, Input, Scope>(
     authorized: WorthQueryAuthorizedProviderCommit<'_, '_, '_, Schema, Operation, Input, Scope>,
+    allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> WorthQueryProviderProgressionOutcome
 where
     Schema: worth_query_installation::facade::ApplicationSchema,
@@ -103,7 +104,12 @@ where
         }
     };
     match proof.govern(candidate, |candidate| {
-        resolve_idempotency_under_authority(candidate, authority, dispatch_outbox)
+        resolve_idempotency_under_authority(
+            candidate,
+            authority,
+            dispatch_outbox,
+            allocation_policy,
+        )
     }) {
         Ok(outcome) => outcome,
         Err((candidate, denial)) => {
@@ -126,16 +132,16 @@ pub(super) fn authorize_and_resolve_provider_commit<Schema, Operation, Input, Sc
     dispatch_outbox: Option<
         crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord,
     >,
+    allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> WorthQueryProviderProgressionOutcome
 where
     Schema: worth_query_installation::facade::ApplicationSchema,
     Input: Clone + Send + Sync + 'static,
 {
-    resolve_authorized_provider_commit(authorize_provider_commit(
-        candidate,
-        authority,
-        dispatch_outbox,
-    ))
+    resolve_authorized_provider_commit(
+        authorize_provider_commit(candidate, authority, dispatch_outbox),
+        allocation_policy,
+    )
 }
 
 fn resolve_idempotency_under_authority<Schema, Operation, Input, Scope>(
@@ -151,6 +157,7 @@ fn resolve_idempotency_under_authority<Schema, Operation, Input, Scope>(
     dispatch_outbox: Option<
         crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord,
     >,
+    allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> WorthQueryProviderProgressionOutcome
 where
     Input: Clone + Send + Sync + 'static,
@@ -160,14 +167,26 @@ where
         .provider()
         .resolve_application_idempotency(&provider_session)
     {
-        Ok(WorthQueryProviderIdempotencyResolution::Absent) => finish_authorized_compare(
-            candidate.compare_and_commit(),
+        Ok(WorthQueryProviderIdempotencyResolution::Absent) => {
+            let control = crate::domain_computation::primary_graph::request_allocation_control::RequestAllocationControl::new(
+                authority.admission().publication_request(), allocation_policy,
+            );
+            finish_authorized_compare(
+            candidate.compare_and_commit_with(control.policy(), |read_authority, fresh| {
+                authority.provider().recompare_application_read_set(
+                    read_authority, fresh,
+                    crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(
+                        control.policy(), Some(authority.admission().publication_request()),
+                    ),
+                )
+            }),
             WorthQueryAuthorizedCompareContext::from_progression(
                 authority,
                 dispatch_outbox,
                 provider_session,
             ),
-        ),
+        )
+        }
         Ok(WorthQueryProviderIdempotencyResolution::Equivalent(receipt)) => {
             candidate.discard();
             resolve_equivalent_commit(receipt, authority, provider_session)
@@ -204,12 +223,6 @@ where
         Err(IdempotencyDenial::Unavailable) => {
             candidate.discard();
             progression_denied(DenialStage::Idempotency)
-        }
-        Err(IdempotencyDenial::WindowExpired) => {
-            candidate.discard();
-            WorthQueryProviderProgressionOutcome::Denied(
-                WorthQueryApplicationCommitDenial::idempotency_window_expired(),
-            )
         }
         Err(IdempotencyDenial::CommittedReceiptNotRetained { commit }) => {
             candidate.discard();

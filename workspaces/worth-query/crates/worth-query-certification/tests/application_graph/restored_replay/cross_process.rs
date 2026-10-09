@@ -5,6 +5,7 @@
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 
 use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
 use worth_query_host::facade::application_installation::{
@@ -47,7 +48,7 @@ fn capture_phase() {
     };
     let checkpoint = host
         .runtime()
-        .capture_application_checkpoint()
+        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
         .expect("the host captures");
     std::fs::write(directory.join("checkpoint"), checkpoint.bytes()).expect("capture is written");
     let commit = receipt.committed_changes().commit_reference().commit_id.0;

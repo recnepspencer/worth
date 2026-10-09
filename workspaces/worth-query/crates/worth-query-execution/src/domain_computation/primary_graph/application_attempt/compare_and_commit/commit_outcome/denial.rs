@@ -2,8 +2,10 @@
 
 mod advancement;
 mod capacity;
+mod decision_read_set;
 mod denial_cause;
 mod execution;
+mod invariant_execution;
 mod lane;
 mod program_binding;
 mod recorded_idempotency;
@@ -31,16 +33,12 @@ pub enum WorthQueryApplicationCommitDenialKind {
     ExecutionIdentitiesNotCanonical { partition_identity: Option<u64> },
     /// The owner refused the attempt at the denial's stage. Execution evidence
     /// is available through `WorthQueryApplicationCommitDenial::execution_denial_cause`.
-    /// Its historical category and stage do not determine the evidence's identity.
+    /// Its category and stage do not determine the evidence's identity.
     ProviderRejected,
     /// An installed custom invariant refused the candidate; see
     /// `custom_invariant_denial()`.
     CustomInvariantDenied,
-    /// Validating the candidate needed more work than its budget allows.
-    CandidateValidatorWorkExceeded {
-        maximum_work: usize,
-        required_work: usize,
-    },
+
     /// The workflow step this commit carries could not be settled; `kind` says why.
     WorkflowSettlementDenied {
         kind: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenialKind,
@@ -77,10 +75,6 @@ pub enum WorthQueryApplicationCommitDenialKind {
     /// The idempotency key is already bound to a different intent. New intent needs
     /// a new key.
     IdempotencyIntentDrift,
-    /// The key's commit left the declared idempotency window, so what it
-    /// committed can no longer be answered. The original commit stands and
-    /// nothing was re-executed; resubmitting under a new key repeats it.
-    IdempotencyWindowExpired,
     /// The key records `commit` for this intent, but this runtime does not
     /// retain its receipt: the commit was performed before a restore or
     /// reopen, or by a product occurrence that has since retired. The commit
@@ -203,7 +197,7 @@ pub struct WorthQueryApplicationCommitDenial {
     kind: WorthQueryApplicationCommitDenialKind,
     stage: WorthQueryApplicationCommitDenialStage,
     detail: Option<std::sync::Arc<str>>,
-    cause: Option<denial_cause::DenialCause>,
+    cause: Option<Box<denial_cause::DenialCause>>,
 }
 
 impl WorthQueryApplicationCommitDenial {
@@ -265,19 +259,6 @@ impl WorthQueryApplicationCommitDenial {
         }
     }
 
-    pub(in crate::domain_computation::primary_graph::application_attempt) fn custom_invariant_denied(
-        stage: WorthQueryApplicationCommitDenialStage,
-        custom_invariant: crate::domain_computation::WorthQueryCustomInvariantDenial,
-        detail: impl Into<std::sync::Arc<str>>,
-    ) -> Self {
-        Self {
-            kind: WorthQueryApplicationCommitDenialKind::CustomInvariantDenied,
-            stage,
-            detail: Some(detail.into()),
-            cause: Some(denial_cause::DenialCause::CustomInvariant(custom_invariant)),
-        }
-    }
-
     pub(in crate::domain_computation::primary_graph::application_attempt) const fn provider_rejected(
         stage: WorthQueryApplicationCommitDenialStage,
     ) -> Self {
@@ -301,31 +282,10 @@ impl WorthQueryApplicationCommitDenial {
         }
     }
 
-    pub(in crate::domain_computation::primary_graph::application_attempt) const fn product_basis_stale(
-        stage: WorthQueryApplicationCommitDenialStage,
-    ) -> Self {
-        Self {
-            kind: WorthQueryApplicationCommitDenialKind::ProductBasisStale,
-            stage,
-            detail: None,
-            cause: None,
-        }
-    }
-
     pub(in crate::domain_computation::primary_graph::application_attempt) const fn idempotency_intent_drift(
     ) -> Self {
         Self {
             kind: WorthQueryApplicationCommitDenialKind::IdempotencyIntentDrift,
-            stage: WorthQueryApplicationCommitDenialStage::Idempotency,
-            detail: None,
-            cause: None,
-        }
-    }
-
-    pub(in crate::domain_computation::primary_graph::application_attempt) const fn idempotency_window_expired(
-    ) -> Self {
-        Self {
-            kind: WorthQueryApplicationCommitDenialKind::IdempotencyWindowExpired,
             stage: WorthQueryApplicationCommitDenialStage::Idempotency,
             detail: None,
             cause: None,

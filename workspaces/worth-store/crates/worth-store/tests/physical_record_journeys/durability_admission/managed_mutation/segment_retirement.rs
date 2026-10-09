@@ -10,9 +10,10 @@ use super::super::independent_wal_oracle::{
 use super::published_segments::{segment_identity, segment_names};
 use super::selected_segment_rewrite::prepare_rewrite;
 use super::*;
+use crate::manifest_fixture::current_extent_route;
 
 #[test]
-fn retirement_waits_for_the_source_reader_then_restores_growth() {
+fn retirement_waits_for_the_source_reader_then_releases_charge() {
     let parent = tempfile::tempdir().unwrap();
     let root = parent.path().join("store");
     let serving = serving_from_initialization(&root);
@@ -24,8 +25,10 @@ fn retirement_waits_for_the_source_reader_then_restores_growth() {
     let appended = serving.certification_charged_growth_bytes();
     completed(prepare_rewrite(&serving, placement, [52; 32]).execute());
     let charged = serving.certification_charged_growth_bytes();
-    // Another rewrite costs what this one did. Half a page short of that
-    // denies it while the displaced page is held, and fits once retired.
+    // The settled prior rewrite is a lower bound on a fresh admission; a
+    // half-page deficit proves pressure while the displaced source is held.
+    // The later rewrite is tested under a fresh finite cap because its WAL
+    // publication reserves a conservative routing ceiling before settlement.
     let rewrite_cost = charged - appended;
     serving.certification_limit_candidate_growth_bytes(charged + rewrite_cost - page_bytes / 2);
     let successor_reader = serving.records().unwrap();
@@ -54,8 +57,14 @@ fn retirement_waits_for_the_source_reader_then_restores_growth() {
     );
     assert_eq!(segment_names(&root), before);
     drop(second_reader);
+    let before_retirement_charge = serving.certification_charged_growth_bytes();
     serving.retire_displaced_segment().unwrap();
     drop(successor_reader);
+    let after_retirement_charge = serving.certification_charged_growth_bytes();
+    assert!(
+        after_retirement_charge < before_retirement_charge,
+        "the released page must exceed the newly retained maintenance WAL charge"
+    );
     let after = segment_names(&root);
     assert_eq!(after.len(), before.len() - 1);
     let retired = before
@@ -80,6 +89,9 @@ fn retirement_waits_for_the_source_reader_then_restores_growth() {
         "the WAL must carry exactly one intent and one completion for the retired generation"
     );
     assert!(records.iter().all(|record| record.bytes == page_bytes));
+    // This is a new bounded allowance, not a claim that a fresh publication
+    // has the same peak reservation as the already-settled prior rewrite.
+    serving.certification_limit_candidate_growth_bytes(after_retirement_charge + 1024 * 1024);
     completed(prepare_rewrite(&serving, placement, [54; 32]).execute());
     assert!(
         serving
@@ -313,7 +325,7 @@ fn reopened_store_keeps_a_multi_page_rewrite_charge() {
 }
 
 #[test]
-fn reopened_store_keeps_an_extent_published_after_a_reserved_gap() {
+fn reopened_store_keeps_an_extent_published_after_a_denied_reservation() {
     let parent = tempfile::tempdir().unwrap();
     let root = parent.path().join("store");
     let serving = serving_from_initialization(&root);
@@ -329,20 +341,19 @@ fn reopened_store_keeps_an_extent_published_after_a_reserved_gap() {
             panic!("growth denial must prove no effect")
         }
     }
-    let published = vec![7_u8; 8_192];
-    completed(prepare(&serving, placement, [74; 32], &published).execute());
-    let charged = serving.certification_charged_growth_bytes();
-    let skipped =
-        root.join("families/records/extents/extent-0000000000000001-0000000000000001.data");
-    let published_extent =
-        root.join("families/records/extents/extent-0000000000000002-0000000000000001.data");
+    let arena_dir = root.join("families/records/arenas");
     assert!(
-        !skipped.exists(),
-        "the denied reservation must not publish extent 1"
+        !arena_dir.exists() || std::fs::read_dir(&arena_dir).unwrap().next().is_none(),
+        "the denied reservation must not publish an arena"
     );
+    let published = vec![7_u8; 8_192];
+    let publication = completed(prepare(&serving, placement, [74; 32], &published).execute());
+    let charged = serving.certification_charged_growth_bytes();
+    let route = current_extent_route(&root, publication.persisted_records()[0]);
+    let published_arena = arena_dir.join(format!("arena-{:016x}.data", route.arena));
     assert!(
-        published_extent.is_file(),
-        "the later append must publish extent 2"
+        published_arena.is_file(),
+        "the later append must publish a routed arena range"
     );
     serving.close();
     let serving = crate::serving_from_open(&root);
@@ -358,11 +369,14 @@ fn reopened_store_keeps_the_published_extent_charge() {
     let (format, placement, _) = configuration();
     let payload =
         vec![7_u8; usize::try_from(format.declaration().page_size().bytes() / 2).unwrap()];
-    completed(prepare(&serving, placement, [70; 32], &payload).execute());
+    let publication = completed(prepare(&serving, placement, [70; 32], &payload).execute());
     let charged = serving.certification_charged_growth_bytes();
-    let extent =
-        root.join("families/records/extents/extent-0000000000000001-0000000000000001.data");
-    assert!(extent.is_file(), "the payload must publish an extent");
+    let route = current_extent_route(&root, publication.persisted_records()[0]);
+    let arena = root.join(format!(
+        "families/records/arenas/arena-{:016x}.data",
+        route.arena
+    ));
+    assert!(arena.is_file(), "the payload must publish an arena range");
     serving.close();
     let serving = crate::serving_from_open(&root);
     assert_eq!(

@@ -168,6 +168,7 @@ where
             program,
             idempotency,
             crate::domain_computation::application_aftermath::ApplicationCommitCausality::Ordinary,
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         );
         let projected = match outcome.landed() {
             Ok((receipt, replayed)) => self.primary_provider.graph.with_runtime(|runtime| {

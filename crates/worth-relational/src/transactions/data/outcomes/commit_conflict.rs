@@ -25,6 +25,13 @@ impl CommitConflict {
         }
     }
 
+    /// Original physical owner cause; quota/conflict variants carry none.
+    pub fn allocation_denial(&self) -> Option<&worth_execution::ExecutionAllocationDenial> {
+        match &self.class {
+            ConflictClass::ExecutionAllocationDenied { denial } => Some(denial),
+            _ => None,
+        }
+    }
     pub fn code(&self) -> DiagnosticCode {
         self.code
     }

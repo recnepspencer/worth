@@ -21,7 +21,17 @@ pub(super) fn validate_resource_contract(
         if !names.insert(strategy.name().as_str()) {
             return Err("duplicate-execution-resource-strategy");
         }
-        WorthQueryInstalledBoundedStepContract::derive(strategy.envelope())?;
+        let envelope = strategy.envelope();
+        if envelope.boundary() == worth_query_declaration::facade::domain_computation::WorthQueryExecutionBoundary::Atomic {
+            super::atomic_validation::validate(envelope)?;
+            continue;
+        }
+        if worth_query_declaration::facade::domain_computation::WorthQuerySemanticScaleAxis::ALL.into_iter()
+            .any(|axis| axis != worth_query_declaration::facade::domain_computation::WorthQuerySemanticScaleAxis::WorkItems && envelope.optional_scale_ceiling(axis).is_none())
+            || WorthQueryResourceDimension::ALL.into_iter().any(|dimension| envelope.optional_resource_ceiling(dimension).is_none()) {
+            return Err("incomplete-bounded-step-envelope");
+        }
+        WorthQueryInstalledBoundedStepContract::derive(envelope)?;
         if strategy.envelope().yielded_state_posture()
             == WorthQueryYieldedStatePosture::ProviderCheckpoint
             && strategy.envelope().retained_progress_posture()

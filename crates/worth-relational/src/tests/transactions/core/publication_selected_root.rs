@@ -29,10 +29,16 @@ fn rootless_selected_publication_fails_before_movement_and_releases_preflight_re
         .retained_basis_registry_entries;
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
-        .push_batch(batch_create("selected-root-unavailable"))
+        .push_batch(
+            batch_create("selected-root-unavailable"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     let candidate = runtime
-        .prepare_branch_transaction(transaction)
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("candidate preparation succeeds before the injected owner fault");
     assert_eq!(candidate.reservation_count(), 1);
     let prepared_symbols = runtime.services.symbols.clone();

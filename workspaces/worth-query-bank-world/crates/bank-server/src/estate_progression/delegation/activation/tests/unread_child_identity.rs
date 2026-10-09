@@ -159,30 +159,42 @@ fn materialize_unread(
         .expect("the delegation admits");
     let projected = runtime
         .invariant_projection()
-        .project_admitted_operation(&admission, |reader, estate| {
-            let branch =
-                reader.resolve_entity(BranchIdentityField::reference(), child.scope.branch)?;
-            let institution = reader.resolve_entity(
-                InstitutionIdentityField::reference(),
-                child.scope.institution,
-            )?;
-            reader.require_decision_relation(EstateBranch::reference(), estate, &branch)?;
-            reader.require_decision_relation(
-                BranchInstitution::reference(),
-                &branch,
-                &institution,
-            )?;
-            Ok::<_, BankCapabilityDelegationProjectionDenial>(())
-        })
+        .project_admitted_operation(
+            &admission,
+            |reader, estate| {
+                let branch =
+                    reader.resolve_entity(BranchIdentityField::reference(), child.scope.branch)?;
+                let institution = reader.resolve_entity(
+                    InstitutionIdentityField::reference(),
+                    child.scope.institution,
+                )?;
+                reader.require_decision_relation(EstateBranch::reference(), estate, &branch)?;
+                reader.require_decision_relation(
+                    BranchInstitution::reference(),
+                    &branch,
+                    &institution,
+                )?;
+                Ok::<_, BankCapabilityDelegationProjectionDenial>(())
+            },
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the scope projects");
     let (result, projection, _) = projected.into_parts();
     result.expect("the scope's relations hold");
     runtime
         .application_runtime()
-        .begin_projected_application_read_attempt(admission, projection)
+        .begin_projected_application_read_attempt(
+            admission,
+            projection,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the read attempt begins")
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the dependencies complete")
-        .materialize_capability_delegation_program()
+        .materialize_capability_delegation_program(
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("Query materializes the activation with its child id's absence")
 }

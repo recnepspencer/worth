@@ -131,6 +131,7 @@ fn reject_occupied_registration(
             outcome_identity,
             aftermath_causality.as_ref(),
         ),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     ) {
         Ok(_) => panic!("the actual occupied store must reject duplicate registration"),
         Err(failure) => failure,
@@ -209,6 +210,7 @@ fn while_peer_is_registered(
                 outcome_identity,
                 aftermath_causality.as_ref(),
             ),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap_or_else(|_| panic!("the interleaved peer must register in the actual store"));
     let authorization = authorization
@@ -252,12 +254,17 @@ fn while_peer_is_registered(
     let peer = finish_application_commit(
         phase,
         &world.application,
-        registered.progress(&authority).finish(
-            lease,
-            running,
-            None,
-            admission.publication_request().clone(),
-        ),
+        registered
+            .progress(
+                &authority,
+                crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .finish(
+                lease,
+                running,
+                None,
+                admission.publication_request().clone(),
+            ),
     );
     assert!(matches!(
         peer,

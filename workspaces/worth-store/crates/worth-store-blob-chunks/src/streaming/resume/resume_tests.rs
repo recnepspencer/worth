@@ -8,7 +8,6 @@ use worth_store_security::StoreTenantScope;
 use crate::lifecycle::generation_registry_test_support::current_authority;
 use crate::test_support::{
     admitted_multichunk_sequence_for_scope, blob_scope, physical_payload_for_bytes,
-    with_blob_allocation,
 };
 use crate::{
     run_resumable_streaming_ingest, BlobChunkOrdinal, BlobChunkSize, BlobChunkingRuleAdmission,
@@ -29,20 +28,15 @@ fn public_streaming_ingest_requires_and_records_resume_session_admission() {
     )
     .unwrap();
 
-    let ingest = with_blob_allocation(4, |_, allocation| {
-        run_resumable_streaming_ingest(
-            request(),
-            resume_admission,
-            crate::BlobStreamingIngestExecution::new(
-                BlobStreamingWindow::bounded(4).unwrap(),
-                allocation,
-                pressure,
-                CounterEvidenceStrength::Exact,
-            ),
-            source_frames(),
-            &mut TestChunkWriter,
-        )
-    })
+    let ingest = run_resumable_streaming_ingest(
+        request(),
+        resume_admission,
+        BlobStreamingWindow::bounded(4).unwrap(),
+        pressure,
+        CounterEvidenceStrength::Exact,
+        source_frames(),
+        &mut TestChunkWriter,
+    )
     .unwrap();
 
     assert_eq!(
@@ -62,20 +56,15 @@ fn public_streaming_ingest_denies_request_not_bound_to_resume_session() {
     )
     .unwrap();
 
-    let denial = with_blob_allocation(4, |_, allocation| {
-        run_resumable_streaming_ingest(
-            request_for_total_bytes(8),
-            resume_admission,
-            crate::BlobStreamingIngestExecution::new(
-                BlobStreamingWindow::bounded(4).unwrap(),
-                allocation,
-                pressure,
-                CounterEvidenceStrength::Exact,
-            ),
-            source_frames(),
-            &mut TestChunkWriter,
-        )
-    })
+    let denial = run_resumable_streaming_ingest(
+        request_for_total_bytes(8),
+        resume_admission,
+        BlobStreamingWindow::bounded(4).unwrap(),
+        pressure,
+        CounterEvidenceStrength::Exact,
+        source_frames(),
+        &mut TestChunkWriter,
+    )
     .expect_err("mismatched request must not enter resume-bound ingest");
 
     assert_eq!(

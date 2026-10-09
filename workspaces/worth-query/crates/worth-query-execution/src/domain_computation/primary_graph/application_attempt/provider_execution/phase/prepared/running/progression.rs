@@ -173,6 +173,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt::provider_e
         Schema,
     >,
     running_commit: WorthQueryRunningApplicationCommit<Schema, Operation, Input, Scope>,
+    allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> WorthQueryProgressedApplicationCommit
 where
     Schema: worth_query_installation::facade::ApplicationSchema,
@@ -207,6 +208,7 @@ where
             aftermath_causality,
         },
         mutation_run,
+        allocation_policy,
     )
     .finish(
         lease,
@@ -220,6 +222,7 @@ fn progress_provider_application<Schema, Operation, Input, Scope>(
     phase: &WorthQueryAdvancementPhase<'_>,
     progression: WorthQueryProviderProgression<'_, Schema, Operation, Input, Scope>,
     mutation_run: crate::domain_computation::provider_session::WorthQueryMutationRunBinding,
+    allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> WorthQueryProviderProgressionCompletion
 where
     Schema: worth_query_installation::facade::ApplicationSchema,
@@ -260,6 +263,7 @@ where
             outcome_identity,
             aftermath_causality.as_ref(),
         ),
+        allocation_policy,
     ) {
         Ok(registered) => registered,
         Err(failure) => return failure.into_completion(),
@@ -297,5 +301,5 @@ where
         product: &product,
         aftermath_causality,
     };
-    registered_session.progress(&authority)
+    registered_session.progress(&authority, allocation_policy)
 }

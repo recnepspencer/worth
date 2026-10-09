@@ -183,11 +183,15 @@ fn commit_publication_stage_rejects_sources_without_required_connectivity() {
                 fields: crate::transactions::data::AspectFieldPatch::default(),
             },
         ))),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
 
     let error = txn
-        .commit(&runtime)
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect_err("connectivity publication failure");
     match error {
         crate::facade::transactions::TransactionCommitError::Publication { error, .. } => {
@@ -215,9 +219,15 @@ fn minimum_cardinality_current_version_scans_only_live_slots() {
                     relation_id: retired_relation,
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    delete_txn.commit(&runtime).expect("retire relation");
+    delete_txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .expect("retire relation");
 
     runtime.performance_access().reset_counters();
     let results = InvariantEngine::new(&runtime).execute(

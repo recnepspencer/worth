@@ -113,6 +113,7 @@ impl<Terminate> ShutdownProtocol<CheckpointDrained, Terminate> {
             record_work: _record_work,
             core,
             record_owner,
+            artifact_families: _artifact_families,
             format: _format,
             access: _access,
             publication,

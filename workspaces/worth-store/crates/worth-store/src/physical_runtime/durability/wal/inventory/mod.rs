@@ -1,7 +1,12 @@
+mod copy_publication;
 mod live_segment_inventory;
+mod publication_roster;
 mod reopen;
 mod reopened_member;
+mod retained_maintenance;
 mod snapshot;
+pub(super) use copy_publication::observe_bound as observe_bound_copy_publication;
+pub(super) use retained_maintenance::RetainedMaintenanceIntent;
 
 use worth_store_physical_backend::ArtifactTreeFile;
 use worth_store_wal::{WalAppendFrontier, WalArtifactStoreDenial, WalTopologyDenialKind};
@@ -10,6 +15,7 @@ pub(in crate::physical_runtime::durability) use live_segment_inventory::Physical
 pub(super) use live_segment_inventory::{
     PhysicalWalSegmentInventory, PhysicalWalSegmentInventoryUpdateDenial,
 };
+pub(in crate::physical_runtime) use publication_roster::ReopenedWalPublicationGroup;
 pub(in crate::physical_runtime) use reopen::reopen_wal_inventory;
 pub(in crate::physical_runtime) use reopened_member::{
     PhysicalWalBindingReopenCutoff, ReopenedPhysicalWalMember,
@@ -24,23 +30,33 @@ pub enum PhysicalWalOpenFailure {
     EmptySegment,
     SegmentByteLimitExceeded { admitted: u64, observed: u64 },
     SegmentAllocationRejected,
+    ReopenAllocationRejected,
+    ReopenAllocationLimitExceeded { admitted: u64, required: u64 },
     SegmentInspection(WalArtifactStoreDenial),
     MemberPayloadRejected,
+    UnsupportedRecoveryProjectionVersion(u16),
+    IncompletePublicationGroup,
     CheckpointCutoffOutsideRetainedWal,
     Topology(WalTopologyDenialKind),
     CounterOverflow,
 }
 
 pub(in crate::physical_runtime) struct ReopenedPhysicalWalInventory {
+    pub(super) record_format: worth_store_physical_format::PhysicalRecordFormatDeclaration,
+    pub(super) copy_obligations: Vec<super::RetainedExtentCopyObligation>,
+    pub(super) checkpoint_cutoff: u64,
     pub(super) frontier: WalAppendFrontier,
     pub(super) active_artifact: ArtifactTreeFile,
     pub(super) segment_count: u32,
     pub(super) frame_count: u64,
-    /// Mutation frames still retained; each one's publication stays charged.
-    pub(super) publication_frames: u64,
+    pub(super) publication_groups: Vec<ReopenedWalPublicationGroup>,
+    /// Candidate root, exact charge, and the retained intent's WAL segment/generation.
+    pub(super) release_metadata: Vec<(u64, u64, u64, u64)>,
+    pub(super) retained_maintenance: Vec<RetainedMaintenanceIntent>,
     pub(super) byte_count: u64,
     pub(super) peak_buffer_bytes: u64,
     pub(super) requires_inspection: bool,
+    pub(super) release_evidence: RetainedWalReleaseEvidence,
     pub(super) segments: PhysicalWalSegmentInventory,
     pub(in crate::physical_runtime::durability) members: Vec<ReopenedPhysicalWalMember>,
     pub(in crate::physical_runtime::durability) retirement_spans: Vec<(u64, u64)>,
@@ -49,7 +65,63 @@ pub(in crate::physical_runtime) struct ReopenedPhysicalWalInventory {
     pub(in crate::physical_runtime::durability) retirement_locations: Vec<(u64, u64)>,
 }
 
+/// Retained-WAL facts that decide whether ordinary reopen may install the
+/// selected checkpoint custody itself instead of waiting for C.8.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::physical_runtime) struct RetainedWalReleaseEvidence {
+    /// A released-drop member at or after the checkpoint cutoff is retained.
+    retained_released_drop: bool,
+    /// How much of the WAL history is retained.
+    history: RetainedWalHistory,
+}
+
+/// How much WAL history reopen retained.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::physical_runtime) enum RetainedWalHistory {
+    /// No WAL segment is retained. Only the first root has no WAL history.
+    Empty,
+    /// No checkpoint was selected and the WAL starts at its canonical origin.
+    FromOrigin,
+    /// Only a suffix is retained: after a checkpoint, or past a lost origin.
+    Suffix,
+}
+
+impl RetainedWalReleaseEvidence {
+    pub(in crate::physical_runtime) const fn new(
+        retained_released_drop: bool,
+        history: RetainedWalHistory,
+    ) -> Self {
+        Self {
+            retained_released_drop,
+            history,
+        }
+    }
+
+    /// The retained suffix after a selected checkpoint has no released drop.
+    pub(in crate::physical_runtime) const fn admits_selected_checkpoint_custody(self) -> bool {
+        !self.retained_released_drop
+    }
+
+    /// The whole history is retained with no released drop: from the WAL's
+    /// canonical origin, or as an empty WAL under the first root.
+    pub(in crate::physical_runtime) const fn admits_trusted_genesis_custody(
+        self,
+        first_root: bool,
+    ) -> bool {
+        let whole = match self.history {
+            RetainedWalHistory::Empty => first_root,
+            RetainedWalHistory::FromOrigin => true,
+            RetainedWalHistory::Suffix => false,
+        };
+        whole && !self.retained_released_drop
+    }
+}
+
 impl ReopenedPhysicalWalInventory {
+    pub(in crate::physical_runtime) const fn release_evidence(&self) -> RetainedWalReleaseEvidence {
+        self.release_evidence
+    }
+
     pub(in crate::physical_runtime) fn take_members(&mut self) -> Vec<ReopenedPhysicalWalMember> {
         std::mem::take(&mut self.members)
     }

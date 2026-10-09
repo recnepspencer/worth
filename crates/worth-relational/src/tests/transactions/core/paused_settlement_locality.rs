@@ -113,7 +113,10 @@ fn phase3_paused_settlement_does_not_block_an_unrelated_branch_commit() {
         BranchId("progressing-settlement".to_owned()),
     );
     progressing
-        .push_batch(batch_create("progressing-write"))
+        .push_batch(
+            batch_create("progressing-write"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     // Branch B commits on a worker so this court can bound it: only a thread
     // outside the commit can hold the completion receiver and convict
@@ -126,7 +129,10 @@ fn phase3_paused_settlement_does_not_block_an_unrelated_branch_commit() {
     let progressing_result = std::thread::scope(|scope| {
         let committer = scope.spawn(move || {
             let committed = committing
-                .commit_branch_transaction(progressing)
+                .commit_branch_transaction(
+                    progressing,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
                 .expect("branch B commits end to end while branch A settlement is paused");
             finished
                 .send(())

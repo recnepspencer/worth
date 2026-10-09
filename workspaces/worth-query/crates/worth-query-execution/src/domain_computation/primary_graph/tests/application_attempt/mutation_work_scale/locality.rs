@@ -75,9 +75,11 @@ fn run_locality(count: usize) -> LocalityRun {
     let unrelated = resolved_account(&world, "unrelated", &request);
     let program = admitted_program(&world, &principal, &unrelated, &request, "local-edit");
     let local_edit_start = Instant::now();
-    let outcome = world
-        .application
-        .compare_and_commit_application(program, idempotency(101, 101));
+    let outcome = world.application.compare_and_commit_application(
+        program,
+        idempotency(101, 101),
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+    );
     let local_edit = local_edit_start.elapsed();
     let WorthQueryApplicationCommitOutcome::Committed(receipt) = outcome else {
         panic!("the unrelated Account edit must commit");

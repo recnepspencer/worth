@@ -23,10 +23,20 @@ cannot substitute for any of these owner admissions.
 
 The current families include bootstrap catalogs, current/previous selectors,
 root manifests, routing and membership nodes, free-space header/nodes, pages,
-extent manifests/chunks, WAL records, physical-work obligations, and checkpoint
-header/dirty-basis/compaction/binding/footer records. Unsupported format versions
+extent manifests/chunks, extent arena frames, WAL records, physical-work
+obligations, and checkpoint header/dirty-basis/compaction/binding/footer
+records, plus native blob session declarations, chunk frames, tree nodes, and
+generation publications carried inside C.5 records. Unsupported format versions
 are not damaged bytes. Version changes require a declaration and explicit
 compatibility handling, not silently accepting a new layout.
+
+The offline blob walk validates occurrence custody and tree edges as well as
+frame checksums and content digests. A valid checksum and SHA do not excuse a
+missing session/ordinal claim. A root-published declaration with claimed chunks
+but no generation remains unfinished custody; incomplete bounded acquisition
+does not turn that state into an invented orphan or a definite damage verdict.
+The observer reads persisted artifacts without a serving-runtime API and cannot
+grant resume, publication, or deletion authority.
 
 `Intact` covers the exact inspected scope. `Damaged` includes the artifact,
 range, failed relation/field, and defensible blast radius. `Unknown` means an
@@ -101,6 +111,17 @@ Terminal pulls are idempotent. Close/abort stops admissions and waits for the
 single in-flight scrub window before media teardown. Retained handles then
 report `Closed` and cannot reopen the old generation. A deadline cannot interrupt
 an OS call: late reads are counted and reported indeterminate, not intact.
+
+An `ExtentArenaFrame` validator inspects a frame at its absolute offset in the
+arena file. The selected root supplies the manifest placement; only an
+integrity-admitted manifest supplies chunk membership. Alignment padding is
+part of the allocated range, not the frame checksum or decoded payload. The
+offline observer independently compares each selected root's routed ranges
+with its free-range membership and retained historical coverage. Overlapping
+routes, a routed-and-free range, or genuinely unaccounted bytes with complete
+parent evidence are damage. A gap needing unavailable historical evidence
+remains `Unknown`, never invented as intact. An unrooted copy destination is
+not promoted to a published route by a successful checksum.
 
 Extent chunks require the matching previously inspected manifest. Checkpoint
 aggregate validation requires an ordered, contiguous header-to-footer sequence.
@@ -190,6 +211,21 @@ It retains both inputs and exact disagreements, including same-posture identity,
 range, or localization differences. It never chooses a winner or reconciles
 observations into authority. Its output must also stay outside the Store; the
 comparator does not open the Store to enforce that operational fact.
+
+C.11 selected-record comparison is a separate library API and protocol, not a
+reinterpretation of the path-keyed version-1 command. The offline encoder uses
+the admitted canonical current selector/root and independently selected C.5
+record walk; Store scrub supplies protected selected RecordIds. Version-2
+reports bind Store/scenario and exact root generation/reference, join canonical
+RecordIds without physical paths, and report family, disposition, and outcome
+differences separately. Physical paths remain offline observation evidence.
+The comparison scope is the runtime-declared scrub targets; additional offline
+selected records are explicitly `offline_unobserved`, never silently counted as
+runtime agreements. Neither comparison protocol selects repair authority.
+`physical_store_integrity_observer observe-selected` runs the same bounded
+independent walk in a separate process and emits the version-2 selected report
+to an external create-new destination; it does not change `observe` or make
+the version-1 `compare` command accept version-2 inputs.
 
 The Rust example above is included in the scrub module's documentation tests.
 Real-media lifecycle tests exercise that facade; observer integration tests

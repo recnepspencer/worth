@@ -73,5 +73,6 @@ where
         |_phase, _graph, _installed| Ok(()),
         None,
         Some(checkpoint),
+        None,
     )
 }

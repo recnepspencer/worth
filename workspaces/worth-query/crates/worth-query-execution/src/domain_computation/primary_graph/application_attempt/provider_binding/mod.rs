@@ -1,3 +1,4 @@
+use worth_execution::ExecutionArray;
 mod effect_accumulator;
 pub(in crate::domain_computation::primary_graph) use effect_accumulator::WorthQueryExpectedEffectStepPreparationWork;
 mod effect_lowering;
@@ -26,14 +27,13 @@ use super::{
 
 pub(in crate::domain_computation) struct WorthQueryPreparedApplicationProviderAttempt {
     required_output_demand: Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,
-    installed_read_scopes: Vec<worth_query_installation::facade::WorthQueryOperationGraphReadScope>,
-    facts: Vec<WorthQueryApplicationObservedFact>,
+    installed_read_scopes: ExecutionArray<worth_query_installation::facade::WorthQueryOperationGraphReadScope>,
+    facts: ExecutionArray<WorthQueryApplicationObservedFact>,
     consumed_outputs: Vec<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence>,
     effects: effect_accumulator::WorthQueryRegisteredProviderEffects,
     preimage_demand: Option<InstalledPreImageDemand>,
     conditional_definition:
         Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
-    validator_work_admission: super::effect_program::WorthQueryCandidateValidatorWorkAdmission,
     retain_output_demand_observation: bool,
     retain_client_observation: bool,
     producer_required_invariants:
@@ -62,11 +62,19 @@ impl WorthQueryPreparedApplicationProviderAttempt {
             Input,
             Scope,
         >,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         super::provider_execution::WorthQueryRegisteredProviderAttempt<'run>,
         super::provider_execution::WorthQueryProviderProgressionOutcome,
     > {
-        registration::register_provider_attempt(self, staged, authorization, attempt_basis, context)
+        registration::register_provider_attempt(
+            self,
+            staged,
+            authorization,
+            attempt_basis,
+            context,
+            allocation_policy,
+        )
     }
 }
 
@@ -92,8 +100,10 @@ pub(super) fn prepare_provider_attempt(
     >,
     mutation_partition: worth_relational::facade::identity::PartitionId,
     application_effect_count: usize,
-    installed_read_scopes: Vec<worth_query_installation::facade::WorthQueryOperationGraphReadScope>,
-    facts: Vec<WorthQueryApplicationObservedFact>,
+    installed_read_scopes: ExecutionArray<
+        worth_query_installation::facade::WorthQueryOperationGraphReadScope,
+    >,
+    facts: ExecutionArray<WorthQueryApplicationObservedFact>,
     consumed_outputs: Vec<
         crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence,
     >,
@@ -104,7 +114,6 @@ pub(super) fn prepare_provider_attempt(
     conditional_definition: Option<
         crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition,
     >,
-    validator_work_admission: super::effect_program::WorthQueryCandidateValidatorWorkAdmission,
     output_correspondence: super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
     retain_output_demand_observation: bool,
     retain_client_observation: bool,
@@ -135,7 +144,6 @@ pub(super) fn prepare_provider_attempt(
         effects: completed,
         preimage_demand,
         conditional_definition,
-        validator_work_admission,
         retain_output_demand_observation,
         retain_client_observation,
         producer_required_invariants,

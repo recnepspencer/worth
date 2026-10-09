@@ -84,11 +84,13 @@ pub(crate) fn complete_dependency_aba_advances_the_live_demand(
                 body_key: "anchor-a".to_owned(),
                 value: length(7),
             }),
-            validator_work: 4_096,
         }))
         .expect_source(source.observed_sources()[0].clone())
         .idempotency(&10_052)
-        .execute_in_program(&world.application)
+        .execute_in_program(
+            &world.application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the producer dependency advances to B");
     let b_commit = changed
         .receipt()

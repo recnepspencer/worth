@@ -8,12 +8,15 @@ description = "Pure C.8 WAL, checkpoint, LSN, source-precedence, and recovery pl
 
 [dependencies]
 sha2 = "0.10"
+worth-foundational = { path = "../../../../crates/worth-foundational" }
 worth-store-physical-format.workspace = true
 worth-store-physical-integrity.workspace = true
 worth-store-wal.workspace = true
 
 [features]
 default = []
+# Mints limits for other crates' tests. No production dependency enables it.
+test-support = []
 
 [lints]
 workspace = true

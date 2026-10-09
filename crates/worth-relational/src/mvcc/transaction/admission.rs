@@ -153,15 +153,7 @@ impl crate::runtime::RelationalRuntime {
             schema_authority_input: None,
             schema_authority: basis.inner.root.retained_schema_authority(),
             overlay: super::DetachedRelationalTransactionOverlay::default(),
-            overlay_bytes: 0,
-            maximum_overlay_bytes: self.config.publication.policy.max_transaction_overlay_bytes,
-            maximum_footprint_loci: self
-                .config
-                .publication
-                .policy
-                .max_transaction_footprint_loci,
             maximum_savepoints: self.config.publication.policy.max_transaction_savepoints,
-            savepoint_footprint_loci: 0,
             footprint,
             savepoints: Vec::new(),
             next_savepoint_ordinal: 1,

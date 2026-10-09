@@ -1,14 +1,26 @@
 mod algorithm;
+#[cfg(test)]
+mod borrowed_tests;
 mod domain_tokens;
 mod input_id;
+mod scalar_view;
 mod sequence;
 mod sha256_hash;
+mod sink;
 mod token_writer;
 mod value;
 mod writer;
 
 pub(crate) use sequence::basis_sequence_material;
-pub(crate) use value::{struct_value_material, value_material};
+pub use sink::{
+    CanonicalMaterialByteCount, CanonicalMaterialLengthOverflow, CanonicalMaterialSink,
+};
+#[cfg(test)]
+use value::value_material;
+pub(crate) use value::{aspect_value_material, struct_value_material};
+pub use value::{
+    write_aspect_value_identity_material, write_struct_aspect_value_identity_material,
+};
 
 pub(super) use input_id::digest_input_id;
 pub(super) use sha256_hash::sha256_digest;

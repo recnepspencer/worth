@@ -1,48 +1,41 @@
-use std::sync::Mutex;
+use std::sync::{
+    atomic::{AtomicU64, Ordering},
+    Mutex,
+};
 
 use worth_store_physical_backend::{
     ArtifactTreeDirectory, ArtifactTreeFile, QualifiedFilesystemMedia,
 };
-use worth_store_physical_format::{
-    physical_work_obligation::{
-        encode_physical_work_obligation_v6, PhysicalWorkObligationV6,
-        PHYSICAL_WORK_OBLIGATION_V6_RECORD_BYTES,
-    },
-    store_namespace::StableStoreIdentity,
+use worth_store_physical_format::physical_work_obligation::{
+    encode_physical_work_obligation_v6, PhysicalWorkObligationV6,
+    PHYSICAL_WORK_OBLIGATION_V6_RECORD_BYTES,
 };
 
 use super::{
     super::{PhysicalWorkIdentity, PhysicalWorkOperationFamily},
+    effect_classification::{journaling, PhysicalEffectJournaling},
     format_mapping::{operation_to_format, target_to_format},
-    integrity_admission::{admit_bounded_obligation, scope_from_pending_name},
-    observation::{
-        PhysicalWorkRecoveryAdmissionCounters, PhysicalWorkRecoveryAdmissionObservation,
-        PhysicalWorkRecoveryIngressRejection,
-    },
-    PhysicalWorkRecoveryLocator, PhysicalWorkRecoveryTarget,
+    journal_counters::PhysicalRecoveryJournalCounters,
+    PhysicalWorkRecoveryTarget,
 };
 
+/// Durable recovery obligations of in-flight physical effects.
 pub(in crate::physical_runtime) struct PhysicalEffectJournal {
     directory: ArtifactTreeDirectory,
     initialized: Mutex<bool>,
+    records_written: AtomicU64,
+    directory_barriers: AtomicU64,
 }
 
+/// One effect's recovery obligation between its dispatch and its settlement.
 pub(in crate::physical_runtime) struct PreparedPhysicalEffect {
     artifact: ArtifactTreeFile,
+    record: PreparedObligationRecord,
 }
 
-pub(in crate::physical_runtime) struct PhysicalEffectRecoveryInventory {
-    obligations: Box<[PhysicalWorkRecoveryLocator]>,
-    observations: Box<[PhysicalWorkRecoveryAdmissionObservation]>,
-    counters: PhysicalWorkRecoveryAdmissionCounters,
-}
-
-enum PhysicalWorkEntryInspection {
-    Admitted {
-        locator: PhysicalWorkRecoveryLocator,
-        observation: PhysicalWorkRecoveryAdmissionObservation,
-    },
-    Rejected(PhysicalWorkRecoveryAdmissionObservation),
+enum PreparedObligationRecord {
+    Durable,
+    Deferred([u8; PHYSICAL_WORK_OBLIGATION_V6_RECORD_BYTES]),
 }
 
 impl PhysicalEffectJournal {
@@ -55,19 +48,8 @@ impl PhysicalEffectJournal {
         Self {
             directory,
             initialized: Mutex::new(initialized),
-        }
-    }
-
-    pub(in crate::physical_runtime) fn inspect(
-        media: &QualifiedFilesystemMedia,
-        limit: usize,
-    ) -> PhysicalEffectRecoveryInventory {
-        let tree = media.artifact_tree();
-        let directory = journal_directory();
-        match tree.directory_exists(&directory) {
-            Ok(false) => PhysicalEffectRecoveryInventory::empty(),
-            Ok(true) => inspect_entries(media.store_identity(), tree, directory, limit),
-            Err(failure) => PhysicalEffectRecoveryInventory::damaged(failure.kind()),
+            records_written: AtomicU64::new(0),
+            directory_barriers: AtomicU64::new(0),
         }
     }
 
@@ -79,7 +61,6 @@ impl PhysicalEffectJournal {
         target: PhysicalWorkRecoveryTarget,
         payload_digest: Option<[u8; 32]>,
     ) -> Result<PreparedPhysicalEffect, ()> {
-        self.ensure_directory(media)?;
         let artifact = self
             .directory
             .file(&format!(
@@ -90,22 +71,71 @@ impl PhysicalEffectJournal {
             ))
             .map_err(|_| ())?;
         let record = encode_record(identity, operation, target, payload_digest);
-        let tree = media.artifact_tree();
-        tree.write_new_obligation_record(&artifact, &record)
-            .map_err(|_| ())?;
-        tree.synchronize_directory(&self.directory)
-            .map_err(|_| ())?;
-        Ok(PreparedPhysicalEffect { artifact })
+        let record = match journaling(operation, target) {
+            PhysicalEffectJournaling::OnlyIfRetained => PreparedObligationRecord::Deferred(record),
+            PhysicalEffectJournaling::BeforeEffect => {
+                self.persist(media, &artifact, &record)?;
+                PreparedObligationRecord::Durable
+            }
+        };
+        Ok(PreparedPhysicalEffect { artifact, record })
     }
 
+    /// Settles the obligation of an effect that completed: a durable record
+    /// is removed and its removal synchronized.
     pub(in crate::physical_runtime) fn finish(
         &self,
         media: &QualifiedFilesystemMedia,
         prepared: PreparedPhysicalEffect,
     ) -> Result<(), ()> {
+        let PreparedObligationRecord::Durable = prepared.record else {
+            return Ok(());
+        };
+        self.directory_barriers.fetch_add(1, Ordering::AcqRel);
         media
             .artifact_tree()
             .remove_file_durably(&prepared.artifact)
+            .map_err(|_| ())
+    }
+
+    /// Keeps the obligation of an effect whose outcome is retained for
+    /// inspection, writing the deferred record of a retained flush. A failed
+    /// write leaves only this runtime's fence; the caller reports it as
+    /// retained without a record.
+    pub(in crate::physical_runtime) fn retain(
+        &self,
+        media: &QualifiedFilesystemMedia,
+        prepared: PreparedPhysicalEffect,
+    ) -> Result<(), ()> {
+        let PreparedObligationRecord::Deferred(record) = prepared.record else {
+            return Ok(());
+        };
+        self.persist(media, &prepared.artifact, &record)
+    }
+
+    pub(in crate::physical_runtime) fn counters(&self) -> PhysicalRecoveryJournalCounters {
+        PhysicalRecoveryJournalCounters::new(
+            self.records_written.load(Ordering::Acquire),
+            self.directory_barriers.load(Ordering::Acquire),
+        )
+    }
+
+    fn persist(
+        &self,
+        media: &QualifiedFilesystemMedia,
+        artifact: &ArtifactTreeFile,
+        record: &[u8; PHYSICAL_WORK_OBLIGATION_V6_RECORD_BYTES],
+    ) -> Result<(), ()> {
+        self.ensure_directory(media)?;
+        media
+            .artifact_tree()
+            .write_new_obligation_record(artifact, record)
+            .map_err(|_| ())?;
+        self.records_written.fetch_add(1, Ordering::AcqRel);
+        self.directory_barriers.fetch_add(1, Ordering::AcqRel);
+        media
+            .artifact_tree()
+            .synchronize_directory(&self.directory)
             .map_err(|_| ())
     }
 
@@ -120,6 +150,7 @@ impl PhysicalEffectJournal {
         let tree = media.artifact_tree();
         if !tree.directory_exists(&self.directory).map_err(|_| ())? {
             tree.create_directory(&self.directory).map_err(|_| ())?;
+            self.directory_barriers.fetch_add(1, Ordering::AcqRel);
             tree.synchronize_directory(&ArtifactTreeDirectory::families())
                 .map_err(|_| ())?;
         }
@@ -128,7 +159,7 @@ impl PhysicalEffectJournal {
     }
 }
 
-fn journal_directory() -> ArtifactTreeDirectory {
+pub(super) fn journal_directory() -> ArtifactTreeDirectory {
     ArtifactTreeDirectory::families()
         .child("physical-work")
         .expect("portable physical-work recovery path")
@@ -151,148 +182,4 @@ pub(super) fn encode_record(
     )
     .expect("Store physical-work identity and target satisfy v6 format");
     encode_physical_work_obligation_v6(value)
-}
-
-fn inspect_entries(
-    store: StableStoreIdentity,
-    tree: worth_store_physical_backend::ArtifactTreeMedia<'_>,
-    directory: ArtifactTreeDirectory,
-    limit: usize,
-) -> PhysicalEffectRecoveryInventory {
-    let names = match tree.list_file_names_bounded(&directory, limit) {
-        Ok(names) => names,
-        Err(failure) => return PhysicalEffectRecoveryInventory::damaged(failure.kind()),
-    };
-    let mut obligations = Vec::with_capacity(names.len());
-    let mut observations = Vec::with_capacity(names.len());
-    let mut counters = PhysicalWorkRecoveryAdmissionCounters::default();
-    for name in names {
-        match inspect_entry(store, &tree, &directory, &name, &mut counters) {
-            PhysicalWorkEntryInspection::Admitted {
-                locator,
-                observation,
-            } => {
-                obligations.push(locator);
-                observations.push(observation);
-            }
-            PhysicalWorkEntryInspection::Rejected(observation) => observations.push(observation),
-        }
-    }
-    PhysicalEffectRecoveryInventory {
-        obligations: obligations.into_boxed_slice(),
-        observations: observations.into_boxed_slice(),
-        counters,
-    }
-}
-
-fn inspect_entry(
-    store: StableStoreIdentity,
-    tree: &worth_store_physical_backend::ArtifactTreeMedia<'_>,
-    directory: &ArtifactTreeDirectory,
-    name: &str,
-    counters: &mut PhysicalWorkRecoveryAdmissionCounters,
-) -> PhysicalWorkEntryInspection {
-    counters.attempt();
-    let scope = match scope_from_pending_name(store, name) {
-        Ok(scope) => scope,
-        Err(rejection) => {
-            counters.rejected_before_owner_interpretation();
-            return rejected_entry(name, None, rejection);
-        }
-    };
-    let file = match directory.file(name) {
-        Ok(file) => file,
-        Err(_) => {
-            counters.rejected_before_owner_interpretation();
-            return rejected_entry(
-                name,
-                Some(scope),
-                PhysicalWorkRecoveryIngressRejection::InvalidPendingName,
-            );
-        }
-    };
-    let record = match tree.read_bounded(&file, PHYSICAL_WORK_OBLIGATION_V6_RECORD_BYTES as u64) {
-        Ok(record) => record,
-        Err(failure) => {
-            counters.rejected_before_owner_interpretation();
-            return rejected_entry(
-                name,
-                Some(scope),
-                PhysicalWorkRecoveryIngressRejection::ReadFailure(failure.kind()),
-            );
-        }
-    };
-    match admit_bounded_obligation(scope, &record, counters) {
-        Ok(locator) => PhysicalWorkEntryInspection::Admitted {
-            locator,
-            observation: PhysicalWorkRecoveryAdmissionObservation::admitted(name, scope),
-        },
-        Err(rejection) => rejected_entry(name, Some(scope), rejection),
-    }
-}
-
-fn rejected_entry(
-    name: &str,
-    scope: Option<worth_store_physical_integrity::PhysicalArtifactScope>,
-    rejection: PhysicalWorkRecoveryIngressRejection,
-) -> PhysicalWorkEntryInspection {
-    PhysicalWorkEntryInspection::Rejected(PhysicalWorkRecoveryAdmissionObservation::rejected(
-        name, scope, rejection,
-    ))
-}
-
-impl PhysicalEffectRecoveryInventory {
-    fn empty() -> Self {
-        Self {
-            obligations: Box::new([]),
-            observations: Box::new([]),
-            counters: PhysicalWorkRecoveryAdmissionCounters::default(),
-        }
-    }
-
-    fn damaged(failure: worth_store_physical_backend::ArtifactTreeFailureKind) -> Self {
-        Self {
-            obligations: Box::new([]),
-            observations: Box::from([
-                PhysicalWorkRecoveryAdmissionObservation::inventory_rejected(
-                    PhysicalWorkRecoveryIngressRejection::ReadFailure(failure),
-                ),
-            ]),
-            counters: PhysicalWorkRecoveryAdmissionCounters::default(),
-        }
-    }
-
-    pub(in crate::physical_runtime) fn requires_inspection(&self) -> bool {
-        if self.observations.len() != self.obligations.len() {
-            return true;
-        }
-        self.obligations.iter().any(|obligation| {
-            !matches!(
-                obligation.target(),
-                super::PhysicalWorkRecoveryTarget::ArtifactRemoval(
-                    worth_store_physical_format::RecordArtifactFile::Segment { .. }
-                )
-            )
-        })
-    }
-
-    pub(in crate::physical_runtime) fn obligations(&self) -> &[PhysicalWorkRecoveryLocator] {
-        &self.obligations
-    }
-
-    pub(in crate::physical_runtime) const fn evidence_damaged(&self) -> bool {
-        self.observations.len() != self.obligations.len()
-    }
-
-    pub(in crate::physical_runtime) fn admission_observations(
-        &self,
-    ) -> &[PhysicalWorkRecoveryAdmissionObservation] {
-        &self.observations
-    }
-
-    pub(in crate::physical_runtime) const fn admission_counters(
-        &self,
-    ) -> PhysicalWorkRecoveryAdmissionCounters {
-        self.counters
-    }
 }

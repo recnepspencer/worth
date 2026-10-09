@@ -23,8 +23,8 @@ pub struct WorthQueryInstalledInvariantExecutionRequirement {
     enforcement: WorthQueryInvariantEnforcement,
     executor_role: String,
     state_load_families: Vec<String>,
-    max_state_facts: usize,
-    max_work_units: u64,
+    max_state_facts: Option<usize>,
+    max_work_units: Option<u64>,
     application_invariant:
         Option<crate::application_schema::WorthQueryInstalledApplicationInvariantDescriptor>,
 }
@@ -40,6 +40,33 @@ impl WorthQueryInstalledInvariantExecutionRequirement {
         max_state_facts: usize,
         max_work_units: u64,
     ) -> Result<Self, &'static str> {
+        if max_state_facts == 0 || max_work_units == 0 {
+            return Err("invalid-invariant-execution-bounds");
+        }
+        Self::with_optional_bounds(
+            slot,
+            family,
+            version,
+            enforcement,
+            executor_role,
+            state_load_families,
+            Some(max_state_facts),
+            Some(max_work_units),
+        )
+    }
+
+    /// Explicit aggregate restrictions. None leaves traversal request-controlled;
+    /// Some(0) preserves an actual zero restriction without a sentinel.
+    pub fn with_optional_bounds(
+        slot: impl Into<String>,
+        family: impl Into<String>,
+        version: NonZeroU32,
+        enforcement: WorthQueryInvariantEnforcement,
+        executor_role: impl Into<String>,
+        state_load_families: impl IntoIterator<Item = impl Into<String>>,
+        max_state_facts: Option<usize>,
+        max_work_units: Option<u64>,
+    ) -> Result<Self, &'static str> {
         let slot = canonical(slot.into())?;
         let family = canonical(family.into())?;
         let executor_role = canonical(executor_role.into())?;
@@ -49,7 +76,7 @@ impl WorthQueryInstalledInvariantExecutionRequirement {
             .collect::<Result<Vec<_>, _>>()?;
         state_load_families.sort();
         state_load_families.dedup();
-        if state_load_families.is_empty() || max_state_facts == 0 || max_work_units == 0 {
+        if state_load_families.is_empty() {
             return Err("invalid-invariant-execution-bounds");
         }
         Ok(Self {
@@ -89,11 +116,11 @@ impl WorthQueryInstalledInvariantExecutionRequirement {
         &self.state_load_families
     }
 
-    pub fn max_state_facts(&self) -> usize {
+    pub fn max_state_facts(&self) -> Option<usize> {
         self.max_state_facts
     }
 
-    pub fn max_work_units(&self) -> u64 {
+    pub fn max_work_units(&self) -> Option<u64> {
         self.max_work_units
     }
 
@@ -111,6 +138,19 @@ impl WorthQueryInstalledInvariantExecutionRequirement {
         self.application_invariant.as_ref()
     }
 
+    fn canonical_bounds(&self) -> Vec<String> {
+        match (self.max_state_facts, self.max_work_units) {
+            (Some(state), Some(work)) if state > 0 && work > 0 => {
+                vec![state.to_string(), work.to_string()]
+            }
+            (state, work) => vec![
+                "optional-invariant-bounds-v1".to_owned(),
+                state.map_or_else(|| "none".to_owned(), |value| format!("some:{value}")),
+                work.map_or_else(|| "none".to_owned(), |value| format!("some:{value}")),
+            ],
+        }
+    }
+
     pub(crate) fn canonical_parts(&self) -> Vec<String> {
         let mut parts = [
             vec![
@@ -119,9 +159,8 @@ impl WorthQueryInstalledInvariantExecutionRequirement {
                 self.version.get().to_string(),
                 self.enforcement.as_str().to_owned(),
                 self.executor_role.clone(),
-                self.max_state_facts.to_string(),
-                self.max_work_units.to_string(),
             ],
+            self.canonical_bounds(),
             self.state_load_families.clone(),
         ]
         .concat();

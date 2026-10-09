@@ -91,32 +91,9 @@ pub(super) fn install_authorization_world_in_advancement(
     spec: AuthorizationWorldSpec<'_>,
     product_resources: crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldResources,
 ) -> AuthorizationWorld {
-    let mut prepared = prepare_authorization_world(phase,
-        spec.resources,
-        None,
-        product_resources,
-        crate::domain_computation::execution_runtime::WorthQueryCompletedEvidenceResourceProfile::default(),
-    );
+    let mut prepared = prepare_authorization_world(phase, spec.resources, None, product_resources);
     populate_authorization_world(&mut prepared, &spec);
     publish_authorization_world(phase, prepared)
-}
-
-pub(super) fn install_authorization_world_with_completed_evidence_resources(
-    spec: AuthorizationWorldSpec<'_>,
-    completed_evidence: crate::domain_computation::execution_runtime::WorthQueryCompletedEvidenceResourceProfile,
-) -> AuthorizationWorld {
-    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
-        let phase = &active_phase;
-
-        let mut prepared = prepare_authorization_world(phase,
-        spec.resources,
-        None,
-        crate::domain_computation::execution_runtime::product_world::test_product_world_resources(),
-        completed_evidence,
-    );
-        populate_authorization_world(&mut prepared, &spec);
-        publish_authorization_world(phase, prepared)
-    })
 }
 
 fn populate_authorization_world(

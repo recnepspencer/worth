@@ -326,15 +326,15 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
                     return Ok(outcome);
                 }
                 let projected = invariant_projection
-                    .project_admitted_operation(&admission, project)
+                    .project_admitted_operation(&admission, project, worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
                     .map_err(|denial| Failure::consumed(Denial::Projection(denial)))?;
                 let (decision, projection, _) = projected.into_parts();
                 decision.map_err(|denial| Failure::consumed(Denial::Decision(denial)))?;
                 let program = self
                     .application
-                    .begin_projected_application_read_attempt(admission, projection)
+                    .begin_projected_application_read_attempt(admission, projection, worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
                     .map_err(|denial| Failure::consumed(Denial::Attempt(denial)))?
-                    .complete_projected_dependencies()
+                    .complete_projected_dependencies(worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
                     .map_err(|denial| Failure::consumed(Denial::Attempt(denial)))?
                     .materialize_elevation_approval_program()
                     .map_err(|denial| Failure::consumed(Denial::Attempt(denial)))?;

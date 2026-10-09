@@ -1,4 +1,5 @@
-use cap_fs_ext::{FollowSymlinks, OpenOptionsFollowExt};
+use cap_fs_ext::OpenOptionsFollowExt;
+use cap_primitives::fs::FollowSymlinks;
 use cap_std::fs::{Dir, OpenOptions};
 
 use super::super::artifact_tree_effects::{begin, open_directory, open_optional_directory};
@@ -35,15 +36,28 @@ impl ArtifactTreeMedia<'_> {
         file_name: &str,
         options: &OpenOptions,
     ) -> Result<cap_std::fs::File, ArtifactTreeFailure> {
+        self.open_file_with_backing(directory, file_name, options, ())
+    }
+
+    pub(super) fn open_file_with_backing<B>(
+        &self,
+        directory: &Dir,
+        file_name: &str,
+        options: &OpenOptions,
+        backing: B,
+    ) -> Result<cap_std::fs::File, ArtifactTreeFailure> {
         let open = begin(self.owner, MediaOperationRole::OpenExisting, 0);
         if let Some(error) = open.fail_before_error() {
+            drop(backing);
             open.denied();
             return Err(ArtifactTreeFailure::io(
                 ArtifactTreeFailureKind::DeniedBeforeEffect,
                 &error,
             ));
         }
-        match directory.open_with(file_name, options) {
+        let result = directory.open_with(file_name, options);
+        drop(backing);
+        match result {
             Ok(file) => {
                 open.completed(0);
                 Ok(file)

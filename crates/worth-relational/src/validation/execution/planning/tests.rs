@@ -109,9 +109,15 @@ fn create_entity(
                 fields: crate::transactions::data::AspectFieldPatch::default(),
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let outcome = txn.commit(runtime).unwrap();
+    let outcome = txn
+        .commit(
+            runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
     outcome
         .changed_records
         .iter()
@@ -139,9 +145,16 @@ fn planner_packets_only_include_relation_integrity_registrations_authorized_by_p
                 fields: crate::transactions::data::AspectFieldPatch::default(),
             },
         ))),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let plan = txn.merged_plan(&runtime).unwrap().clone();
+    let plan = txn
+        .merged_plan(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap()
+        .clone();
 
     let request = request_for_plan(&runtime, &plan);
     let view = crate::validation::engine::InvariantRuntimeView::from_runtime(&runtime);
@@ -179,9 +192,16 @@ fn planner_proof_boundary_reports_partition_scoped_relation_integrity_packets() 
                 fields: crate::transactions::data::AspectFieldPatch::default(),
             },
         ))),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let plan = txn.merged_plan(&runtime).unwrap().clone();
+    let plan = txn
+        .merged_plan(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap()
+        .clone();
 
     let request = request_for_plan(&runtime, &plan);
     let view = crate::validation::engine::InvariantRuntimeView::from_runtime(&runtime);

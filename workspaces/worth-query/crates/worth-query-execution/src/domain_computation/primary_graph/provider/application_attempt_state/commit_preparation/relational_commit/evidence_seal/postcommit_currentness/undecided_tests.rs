@@ -8,6 +8,7 @@ use worth_relational::facade::mvcc::{CompanionPreflightBudget, CompanionPrefligh
 
 use super::tests::{account_note, planned, rebase_at_current, rebase_result_within};
 use super::*;
+use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl;
 use crate::domain_computation::primary_graph::{
     output_lineage::invalidation::InvalidationEditAdmission,
     tests::{
@@ -18,6 +19,7 @@ use crate::domain_computation::primary_graph::{
         },
     },
 };
+use worth_execution::ExecutionAllocationPolicy;
 
 #[test]
 fn an_indexed_selection_the_width_cannot_pay_for_is_not_kept() {
@@ -135,19 +137,27 @@ fn indexed_selection(world: &AuthorizationWorld) -> WorthQueryApplicationObserve
         .unwrap();
     let (_, projection, _) = world
         .invariant
-        .project_admitted_operation(&admission, |reader, _| {
-            assert!(reader
-                .decision_select_entities(AccountStatus::reference(), "missing".to_owned(), 2)
-                .unwrap()
-                .is_empty());
-        })
+        .project_admitted_operation(
+            &admission,
+            |reader, _| {
+                assert!(reader
+                    .decision_select_entities(AccountStatus::reference(), "missing".to_owned(), 2)
+                    .unwrap()
+                    .is_empty());
+            },
+            ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .into_parts();
     world
         .application
-        .begin_projected_application_read_attempt(admission, projection)
+        .begin_projected_application_read_attempt(
+            admission,
+            projection,
+            ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(ExecutionAllocationPolicy::SystemAllocation)
         .unwrap()
         .decision_facts()
         .iter()
@@ -182,7 +192,12 @@ fn rebase_within_width(
             rebase(
                 runtime,
                 selected.application_basis().snapshot_handle(),
-                PreparedSourceFactRebase::admit(vec![selection], [].into()).unwrap(),
+                PreparedSourceFactRebase::admit(
+                    vec![selection],
+                    [].into(),
+                    StorageControl::new(ExecutionAllocationPolicy::SystemAllocation, None),
+                )
+                .unwrap(),
                 &BTreeSet::new(),
                 producer_output,
                 indexed_width,

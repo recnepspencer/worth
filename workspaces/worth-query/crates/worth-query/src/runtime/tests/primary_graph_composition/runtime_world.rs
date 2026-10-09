@@ -131,13 +131,19 @@ impl WorthQueryRuntimeWriteAuthorityAdapter for CommittingWriteAuthority {
                         fields: AspectFieldPatch::default(),
                     })),
                 ),
+                worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
             .expect("test staging stays within configured resource budgets");
-        let committed = transaction.commit(runtime).map_err(|error| {
-            WorthQueryWorkspaceError::new(format!(
-                "ordinary Query write could not commit to the shared graph: {error:?}"
-            ))
-        })?;
+        let committed = transaction
+            .commit(
+                runtime,
+                worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .map_err(|error| {
+                WorthQueryWorkspaceError::new(format!(
+                    "ordinary Query write could not commit to the shared graph: {error:?}"
+                ))
+            })?;
         runtime
             .snapshots()
             .release_snapshot(&committed.snapshot)

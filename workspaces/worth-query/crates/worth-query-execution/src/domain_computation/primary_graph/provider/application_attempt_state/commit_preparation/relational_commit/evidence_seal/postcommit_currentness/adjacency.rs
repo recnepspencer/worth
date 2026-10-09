@@ -18,7 +18,8 @@ pub(super) fn rebase_decision_adjacency(
     fact: Fact,
     admitted_work: usize,
 ) -> Fact {
-    prepare_decision_adjacency(runtime, snapshot, &fact, admitted_work).unwrap_or(fact)
+    let endpoints = prepare_endpoints(&fact, crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap();
+    prepare_decision_adjacency(runtime, snapshot, &fact, admitted_work, endpoints).unwrap_or(fact)
 }
 
 pub(super) fn prepare_decision_adjacency(
@@ -26,6 +27,9 @@ pub(super) fn prepare_decision_adjacency(
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     fact: &Fact,
     admitted_work: usize,
+    prepared_endpoints: Option<
+        crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints,
+    >,
 ) -> Option<Fact> {
     if admitted_work == 0 {
         return None;
@@ -73,21 +77,7 @@ pub(super) fn prepare_decision_adjacency(
                 | AdjacencyStructuralRevisionDenial::BasisUnavailable,
             ) => return None,
         };
-    let endpoints = match fact {
-        Fact::Relation { to, .. } => vec![*to],
-        Fact::Adjacency {
-            direction,
-            relations,
-            ..
-        } => relations
-            .iter()
-            .map(|relation| match direction {
-                DecisionDirection::Outgoing => relation.to,
-                DecisionDirection::Incoming => relation.from,
-            })
-            .collect(),
-        _ => unreachable!("decision adjacency was classified above"),
-    };
+    let endpoints = prepared_endpoints?;
     Some(Fact::SourceAdjacencyRevision {
         relation_kind,
         anchor,
@@ -96,6 +86,34 @@ pub(super) fn prepare_decision_adjacency(
         comparison_work_limit: limit,
         endpoints,
     })
+}
+
+/// BEFORE effects: every endpoint is already known from the complete decision
+/// fact. The later selected native revision changes no endpoint payload.
+pub(super) fn prepare_endpoints(
+    fact: &Fact,
+    control: crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl<'_, '_>,
+) -> Result<Option<crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints>, crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial>{
+    use crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints as Endpoints;
+    let endpoints = match fact {
+        Fact::Relation { to, .. } => {
+            Endpoints::from_exact_iterator(1, std::iter::once(*to), control)?
+        }
+        Fact::Adjacency {
+            direction,
+            relations,
+            ..
+        } => Endpoints::from_exact_iterator(
+            relations.len(),
+            relations.iter().map(|relation| match direction {
+                DecisionDirection::Outgoing => relation.to,
+                DecisionDirection::Incoming => relation.from,
+            }),
+            control,
+        )?,
+        _ => return Ok(None),
+    };
+    Ok(Some(endpoints))
 }
 
 #[cfg(test)]
@@ -155,8 +173,7 @@ mod tests {
                     super::super::rebase(
                         runtime,
                         snapshot,
-                        super::super::PreparedSourceFactRebase::admit(vec![fact], [].into())
-                            .unwrap(),
+                        super::super::PreparedSourceFactRebase::admit(vec![fact], [].into(), crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(),
                         &std::collections::BTreeSet::new(),
                         true,
                         0,
@@ -172,18 +189,15 @@ mod tests {
                 direction: NativeDirection::Outgoing,
                 native_revision: None,
                 comparison_work_limit: 0,
-                endpoints: Vec::new(),
+                endpoints: crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints::empty(),
             };
             let mut producer_work = admission(64);
             assert!(matches!(
                 super::super::rebase(
                     runtime,
                     snapshot,
-                    super::super::PreparedSourceFactRebase::admit(
-                        vec![stale_revision.clone()],
-                        [].into()
-                    )
-                    .unwrap(),
+                    super::super::PreparedSourceFactRebase::admit(vec![stale_revision.clone()], [].into(), crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None))
+                        .unwrap(),
                     &std::collections::BTreeSet::new(),
                     true,
                     64,
@@ -195,11 +209,8 @@ mod tests {
             match super::super::rebase(
                 runtime,
                 snapshot,
-                super::super::PreparedSourceFactRebase::admit(
-                    vec![stale_revision.clone()],
-                    [].into(),
-                )
-                .unwrap(),
+                super::super::PreparedSourceFactRebase::admit(vec![stale_revision.clone()], [].into(), crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None))
+                    .unwrap(),
                 &std::collections::BTreeSet::new(),
                 false,
                 64,

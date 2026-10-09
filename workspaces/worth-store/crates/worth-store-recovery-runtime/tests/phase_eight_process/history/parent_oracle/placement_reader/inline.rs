@@ -13,7 +13,9 @@ pub(super) fn read_inline(
     page_generation: u64,
     slot_generation: u64,
     slot: u16,
+    segment_page_capacity: u32,
     payload_bytes: u64,
+    expected_format: [u8; 10],
 ) -> Result<(RecordIdentity, Vec<u8>), String> {
     let path =
         format!("families/records/segments/segment-{segment:016x}-{segment_generation:016x}.pages");
@@ -23,6 +25,7 @@ pub(super) fn read_inline(
         let frame =
             frame_at(bytes, offset).ok_or_else(|| format!("parent oracle malformed {path}"))?;
         if frame.kind == INLINE_PAGE_KIND
+            && frame.format == expected_format
             && frame.identity == page_generation
             && frame.payload.len() >= 24
             && read_u64(frame.payload, 0) == Some(segment)
@@ -49,7 +52,7 @@ pub(super) fn read_inline(
                 .map_err(|_| "inline offset does not fit usize")?;
             let length = usize::try_from(read_u32(entry, 28).ok_or("inline length missing")?)
                 .map_err(|_| "inline length does not fit usize")?;
-            if u64::try_from(length).ok() != Some(payload_bytes) {
+            if segment_page_capacity == 0 || u64::try_from(length).ok() != Some(payload_bytes) {
                 return Err("parent oracle inline payload length disagrees with root".to_owned());
             }
             return Ok((

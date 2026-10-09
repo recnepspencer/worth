@@ -30,6 +30,7 @@ impl WorthQueryOutputDemandDenialKind {
             | Self::MissingApplicableProducer
             | Self::AmbiguousApplicableProducer
             | Self::ProducerUnavailable
+            | Self::ProducerDomainDenied
             | Self::RequestAuthorization(_)
             | Self::SchedulingRejected
             | Self::PublicationStale

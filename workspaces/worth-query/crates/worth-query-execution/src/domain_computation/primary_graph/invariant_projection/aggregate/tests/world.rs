@@ -167,13 +167,16 @@ impl AggregateWorld {
     pub(super) fn observe(&self) -> AggregateObservation {
         let completed = self
             .authority
-            .project(|reader| {
-                reader.summarize_exclusive_incoming(
-                    AggregateContribution::reference(),
-                    SourceAmount::reference(),
-                    &self.target,
-                )
-            })
+            .project(
+                |reader| {
+                    reader.summarize_exclusive_incoming(
+                        AggregateContribution::reference(),
+                        SourceAmount::reference(),
+                        &self.target,
+                    )
+                },
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .expect("aggregate observation projection");
         let work = completed.work();
         let result = completed.output().as_ref().map_or_else(
@@ -204,6 +207,8 @@ impl AggregateWorld {
                 work.set(reader.work);
                 result
             },
+            None,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         );
         BoundedAggregateObservation {
             exhausted: completed.is_err(),
@@ -310,9 +315,12 @@ impl AggregateWorld {
                 )
                 .expect("primary graph publishes");
             let target = projection
-                .project(|reader| {
-                    reader.resolve_entity(TargetIdentity::reference(), "target".to_owned())
-                })
+                .project(
+                    |reader| {
+                        reader.resolve_entity(TargetIdentity::reference(), "target".to_owned())
+                    },
+                    crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                )
                 .expect("target projection")
                 .output()
                 .as_ref()

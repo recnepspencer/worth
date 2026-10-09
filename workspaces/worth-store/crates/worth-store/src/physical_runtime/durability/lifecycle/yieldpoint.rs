@@ -19,6 +19,12 @@ pub enum PhysicalMutationCheckpoint {
     /// A writeback claim and scheduler admission are live, immediately before
     /// the physical writeback effect begins.
     AfterWritebackAdmissionBeforeEffect,
+    /// A packed-arena range write is scheduler-admitted after an earlier frame
+    /// settled, immediately before this frame's physical effect begins.
+    AfterArenaWriteAdmissionBeforeEffect,
+    /// A data frame has settled and released its transient residency claims,
+    /// before admission of the next frame.
+    AfterDataFrameSettlement,
     DuringDataSettlement,
     AfterDataSettlement,
     DuringRootPublication,

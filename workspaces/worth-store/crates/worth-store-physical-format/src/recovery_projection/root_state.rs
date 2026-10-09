@@ -1,3 +1,7 @@
+use super::{
+    decode_storage, PhysicalRecoveryDecodeFailure, PhysicalRecoveryDecodeStorage,
+    PhysicalRecoveryProjectionDenial,
+};
 use crate::{
     PersistedRecordIdentity, PhysicalGeneration, PhysicalGenerationAuthority, PhysicalSegmentId,
     SegmentGenerationCell,
@@ -21,6 +25,14 @@ pub struct PersistedInlineSegmentAllocation {
 }
 
 impl PersistedPhysicalRecoveryRootState {
+    pub fn owned_heap_bytes(&self) -> Option<u64> {
+        u64::try_from(self.inline_allocations.len())
+            .ok()?
+            .checked_mul(
+                u64::try_from(std::mem::size_of::<PersistedInlineSegmentAllocation>()).ok()?,
+            )
+    }
+
     pub fn new(
         root_publication_allocation_bytes: u64,
         manifest_capacity_transition: u8,
@@ -89,31 +101,59 @@ impl PersistedPhysicalRecoveryRootState {
         target
     }
 
-    pub(super) fn decode(bytes: &[u8], maximum_allocations: u64) -> Option<Self> {
+    pub(super) fn decode_with_storage<S: PhysicalRecoveryDecodeStorage>(
+        bytes: &[u8],
+        maximum_allocations: u64,
+        storage: &mut S,
+    ) -> Result<Self, PhysicalRecoveryDecodeFailure<S::Denial>> {
+        let malformed = || PhysicalRecoveryProjectionDenial::Malformed;
         let mut cursor = Cursor::new(bytes);
-        let root_bytes = cursor.u64()?;
-        let transition = cursor.byte()?;
-        let successor_capacity = cursor.u16()?;
-        let count = cursor.u64()?;
+        let root_bytes = cursor.u64().ok_or_else(malformed)?;
+        let transition = cursor.byte().ok_or_else(malformed)?;
+        let successor_capacity = cursor.u16().ok_or_else(malformed)?;
+        let count = cursor.u64().ok_or_else(malformed)?;
         if count > maximum_allocations {
-            return None;
+            return Err(PhysicalRecoveryProjectionDenial::EntryLimit.into());
         }
-        let mut allocations = Vec::with_capacity(count as usize);
+        let minimum = usize::try_from(count)
+            .ok()
+            .and_then(|count| count.checked_mul(24))
+            .and_then(|bytes| bytes.checked_add(2));
+        if minimum.is_none_or(|minimum| minimum > cursor.remaining.len()) {
+            return Err(malformed().into());
+        }
+        let mut allocations = decode_storage::reserve_vec(
+            usize::try_from(count).map_err(|_| PhysicalRecoveryProjectionDenial::EntryLimit)?,
+            storage,
+        )?;
         for _ in 0..count {
-            let segment = segment_cell(cursor.u64()?, cursor.u64()?)?;
-            allocations.push(PersistedInlineSegmentAllocation::new(
-                segment,
-                cursor.u32()?,
-                cursor.u32()?,
-            )?);
+            let segment = segment_cell(
+                cursor.u64().ok_or_else(malformed)?,
+                cursor.u64().ok_or_else(malformed)?,
+            )
+            .ok_or_else(malformed)?;
+            allocations.push(
+                PersistedInlineSegmentAllocation::new(
+                    segment,
+                    cursor.u32().ok_or_else(malformed)?,
+                    cursor.u32().ok_or_else(malformed)?,
+                )
+                .ok_or_else(malformed)?,
+            );
         }
-        let last_record = read_optional_record(&mut cursor)?;
-        let last_segment = match cursor.byte()? {
+        let last_record = read_optional_record(&mut cursor).ok_or_else(malformed)?;
+        let last_segment = match cursor.byte().ok_or_else(malformed)? {
             0 => None,
-            1 => Some(segment_cell(cursor.u64()?, cursor.u64()?)?),
-            _ => return None,
+            1 => Some(
+                segment_cell(
+                    cursor.u64().ok_or_else(malformed)?,
+                    cursor.u64().ok_or_else(malformed)?,
+                )
+                .ok_or_else(malformed)?,
+            ),
+            _ => return Err(malformed().into()),
         };
-        cursor.end()?;
+        cursor.end().ok_or_else(malformed)?;
         Self::new(
             root_bytes,
             transition,
@@ -122,6 +162,7 @@ impl PersistedPhysicalRecoveryRootState {
             last_record,
             last_segment,
         )
+        .ok_or_else(|| malformed().into())
     }
 }
 
@@ -156,6 +197,35 @@ fn allocation_key(allocation: PersistedInlineSegmentAllocation) -> (u64, u64) {
         allocation.segment.segment_id().get(),
         allocation.segment.generation().get(),
     )
+}
+
+#[cfg(test)]
+mod decode_admission_tests {
+    use super::*;
+    #[test]
+    fn truncated_inline_roster_denies_before_allocation() {
+        struct Admission(usize);
+        impl PhysicalRecoveryDecodeStorage for Admission {
+            type Denial = ();
+            fn admit_allocation(&mut self, _: u64) -> Result<(), ()> {
+                self.0 += 1;
+                Ok(())
+            }
+        }
+        let root = PersistedPhysicalRecoveryRootState::new(1, 1, 2, vec![], None, None).unwrap();
+        let mut bytes = root.encode();
+        bytes[11..19].copy_from_slice(&1_u64.to_le_bytes());
+        let mut storage = Admission(0);
+        let result =
+            PersistedPhysicalRecoveryRootState::decode_with_storage(&bytes, 1, &mut storage);
+        assert!(matches!(
+            result,
+            Err(PhysicalRecoveryDecodeFailure::Projection(
+                PhysicalRecoveryProjectionDenial::Malformed
+            ))
+        ));
+        assert_eq!(storage.0, 0);
+    }
 }
 
 fn segment_cell(segment: u64, generation: u64) -> Option<SegmentGenerationCell> {

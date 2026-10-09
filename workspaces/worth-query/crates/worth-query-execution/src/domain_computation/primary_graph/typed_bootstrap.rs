@@ -30,6 +30,25 @@ pub struct WorthQueryApplicationEntitySeed<Schema, Entity> {
 }
 
 impl<Schema, Entity> WorthQueryApplicationEntitySeed<Schema, Entity> {
+    pub(super) fn migration_cost(&self) -> (usize, usize) {
+        let bytes = std::mem::size_of::<Self>()
+            .saturating_add(self.key.owned_allocation_capacity_bytes())
+            .saturating_add(self.fields.capacity().saturating_mul(std::mem::size_of::<
+                Result<
+                    (&'static str, &'static str, AspectValue),
+                    worth_query_installation::facade::ApplicationValueEncodeDenial,
+                >,
+            >()));
+        let bytes = self.fields.iter().fold(bytes, |bytes, field| {
+            bytes.saturating_add(
+                field
+                    .as_ref()
+                    .map_or(0, |(_, _, value)| value.owned_allocation_capacity_bytes()),
+            )
+        });
+        (1_usize.saturating_add(self.fields.len()), bytes)
+    }
+
     pub fn new(
         entity: ApplicationEntityRef<Schema, Entity>,
         key: WorthQueryApplicationEntityKey<Schema, Entity>,
@@ -73,6 +92,16 @@ pub struct WorthQueryApplicationRelationSeed<Schema, Relation, From, To> {
 }
 
 impl<Schema, Relation, From, To> WorthQueryApplicationRelationSeed<Schema, Relation, From, To> {
+    pub(super) fn migration_cost(&self) -> (usize, usize) {
+        (
+            1,
+            std::mem::size_of::<Self>()
+                .saturating_add(self.key.capacity())
+                .saturating_add(self.from.owned_allocation_capacity_bytes())
+                .saturating_add(self.to.owned_allocation_capacity_bytes()),
+        )
+    }
+
     pub fn new(
         relation: ApplicationRelationRef<Schema, Relation, From, To>,
         key: impl Into<String>,

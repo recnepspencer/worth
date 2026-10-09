@@ -37,11 +37,7 @@ impl RecoveryCleanupCommandBasis {
         descriptive_plan_identity: [u8; 32],
         candidates: &[RecoveryCleanupEligibility],
     ) -> Self {
-        let checkpoint = reopened
-            .state
-            .selection
-            .checkpoint()
-            .map(|checkpoint| checkpoint.share_checkpoint());
+        let checkpoint = reopened.state.coordination.owner().checkpoint().cloned();
         let fresh_reopen = reopened.take_fresh_reopen();
         let admitted_wal = reopened
             .state

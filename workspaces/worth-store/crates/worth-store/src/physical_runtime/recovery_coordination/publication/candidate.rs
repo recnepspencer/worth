@@ -9,6 +9,9 @@ use crate::physical_runtime::recovery_coordination::{
 
 use super::RecoveryRootProtocolPublicationPlan;
 
+#[cfg(test)]
+mod tests;
+
 pub struct PhysicalRecoveryPublicationCandidate {
     artifact: RecordArtifactFile,
     bytes: Box<[u8]>,
@@ -112,6 +115,10 @@ pub(super) fn is_complete_and_canonical(
                 generation: observed,
             }
             | RecordArtifactFile::RootRoutingBlock {
+                generation: observed,
+                ..
+            }
+            | RecordArtifactFile::ReleaseCustodyHeadBlock {
                 generation: observed,
                 ..
             }

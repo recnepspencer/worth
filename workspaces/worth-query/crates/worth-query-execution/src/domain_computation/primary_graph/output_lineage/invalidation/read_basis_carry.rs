@@ -12,7 +12,8 @@ use worth_relational::facade::{
 
 use super::super::RecordedSettlementIdentity;
 use super::{
-    admission::IndexAdmission,
+    admission::{IndexAdmission, RetainedIndexAdmission},
+    edit_admission::RetainedIndexCheckpoint,
     index_capacity,
     mark_state::{MarkState, SettlementCurrentness, SettlementMarks},
     retention,
@@ -31,7 +32,7 @@ pub(super) fn carry_row(
     selected: &PositionedRelationalSnapshot,
     basis: &mut Option<Arc<PositionedRelationalSnapshot>>,
     identity: &Arc<RecordedSettlementIdentity>,
-    admission: &mut impl IndexAdmission,
+    admission: &mut impl RetainedIndexAdmission,
 ) -> Result<bool, CompanionPreflightStop> {
     admission.work(1)?;
     admission.ordered_read(next.settlements.len())?;
@@ -49,21 +50,21 @@ pub(super) fn carry_row(
     let basis = match basis {
         Some(basis) => Arc::clone(basis),
         None => {
-            admission.bytes(
-                index_capacity::arc_bytes::<PositionedRelationalSnapshot>()
-                    .and_then(|bytes| bytes.checked_add(selected.branch_id().0.len() as u64))
-                    .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
-            )?;
+            let bytes = index_capacity::arc_bytes::<PositionedRelationalSnapshot>()
+                .and_then(|bytes| bytes.checked_add(selected.branch_id().0.len() as u64))
+                .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
+            admission.index_bytes(bytes)?;
+            next.maximum_basis_allocation_bytes = next.maximum_basis_allocation_bytes.max(bytes);
             Arc::clone(basis.insert(Arc::new(selected.clone())))
         }
     };
-    admission.bytes(
+    admission.index_bytes(
         index_capacity::arc_bytes::<SettlementMarks>()
             .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
     )?;
     let mut replacement = (**row).clone();
     replacement.read_basis = basis;
-    admission.ordered_edit::<Arc<RecordedSettlementIdentity>, Arc<SettlementMarks>>(
+    admission.index_edit::<Arc<RecordedSettlementIdentity>, Arc<SettlementMarks>>(
         next.settlements.len(),
     )?;
     next.settlements
@@ -110,7 +111,7 @@ impl SourceInvalidationOwner {
         admission.ordered_read(image.payload().past.len())?;
         let aligned = SnapshotAlignedMarkState::observe_image(&image, selected)
             .map_err(|_| SettlementVerificationStop::Alignment)?;
-        let before = admission.charged_bytes();
+        let before = admission.index_checkpoint();
         admission.bytes(
             index_capacity::arc_bytes::<MarkState>()
                 .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
@@ -132,12 +133,12 @@ impl SourceInvalidationOwner {
     }
 
     /// Replaces the live mark state of the image it was prepared against.
-    /// `before` is the admission's byte total when the edit of `next` began.
+    /// `before` is the retained-index checkpoint when the edit of `next` began.
     pub(super) fn install_live_state(
         &self,
         cell: CompanionBranchCell<BranchMarkRoot>,
         image: CompanionBranchImage<BranchMarkRoot>,
-        (next, before): (MarkState, u64),
+        (next, before): (MarkState, RetainedIndexCheckpoint),
         admission: &mut InvalidationEditAdmission,
     ) -> Result<(), SettlementVerificationStop> {
         let root = retention::admit_live_replacement(

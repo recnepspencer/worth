@@ -108,7 +108,8 @@ fn root_manifest(
             PhysicalRecordSlot::from_raw(1).unwrap(),
         )
         .with_slot_generation(PhysicalGeneration::from_raw(1).unwrap());
-    let placement = DurableInlineRecordPlacement::new(record, segment, page, slot, 1, 1).unwrap();
+    let placement =
+        DurableInlineRecordPlacement::legacy_unknown(record, segment, page, slot, 1, 1).unwrap();
     let block = PhysicalRootRoutingBlock::leaf(
         1,
         1,
@@ -119,11 +120,7 @@ fn root_manifest(
     .unwrap();
     let block_bytes = block.encode(format);
     let block_reference = block.reference(durable_artifact_checksum(&block_bytes));
-    let free_space_key = FreeSpaceKey::new(
-        worth_store_physical_format::RecordAllocationClass::InlinePage,
-        1,
-    )
-    .unwrap();
+    let free_space_key = FreeSpaceKey::inline(1).unwrap();
     let free_space = FreeSpaceBlockReference::new(1, 1, 0, 1, free_space_key, free_space_key);
     let manifest = DurablePhysicalRootManifest::builder(1, 1, 2, 1)
         .record_count(1)
@@ -175,7 +172,7 @@ fn checkpoint_base(
     else {
         panic!("canonical checkpoint source root must validate")
     };
-    worth_store_recovery_physics::PhysicalCheckpointBase::admit(&root, verified, &source_root)
+    worth_store_recovery_physics::PhysicalCheckpointBase::admit(&root, &verified, &source_root)
         .unwrap()
 }
 
@@ -278,20 +275,19 @@ fn wal_tail(frontier: u64) -> worth_store_recovery_physics::SelectedPhysicalWalT
     let inspection = inspect_verified_wal_segment(identity, frame.encoded_frame())
         .unwrap()
         .inspection();
-    admit_physical_wal_tail(
-        frontier,
-        vec![PhysicalWalSegmentCandidate::from_frame_facts(
-            inspection,
-            None,
-            vec![worth_store_recovery_physics::PhysicalWalFrameFacts::new(
-                inspection.lsn_range(),
-                inspection.byte_count(),
-            )
-            .unwrap()],
+    let candidates = vec![PhysicalWalSegmentCandidate::from_frame_facts(
+        inspection,
+        None,
+        vec![worth_store_recovery_physics::PhysicalWalFrameFacts::new(
+            inspection.lsn_range(),
+            inspection.byte_count(),
         )
         .unwrap()],
     )
-    .unwrap()
+    .unwrap()];
+    let covered = Vec::with_capacity(candidates.len());
+    let retained = Vec::with_capacity(candidates.len());
+    admit_physical_wal_tail(frontier, Some(frontier), candidates, covered, retained).unwrap()
 }
 
 fn stable_store() -> worth_store_physical_format::store_namespace::StableStoreIdentity {

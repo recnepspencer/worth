@@ -50,8 +50,8 @@ pub(super) fn pointer(row: &Value, target: &ArtifactGranule, runtime: bool) {
         ("root_routing_block" | "segment_membership_block", false) => {
             ("manifest_pointer", 88, 20, "field")
         }
-        ("free_space_header", true) => ("child_reference", 112, 64, "reachable_root_subtree"),
-        ("free_space_header", false) => ("manifest_pointer", 120, 56, "field"),
+        ("free_space_header", true) => ("child_reference", 112, 80, "reachable_root_subtree"),
+        ("free_space_header", false) => ("manifest_pointer", 120, 72, "field"),
         ("free_space_membership_block", true) => (
             "membership_range",
             88,

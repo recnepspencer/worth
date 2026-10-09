@@ -1,5 +1,6 @@
 //! The worker carries a scope-free read capability and a closed raw binding.
 //! Native reads still borrow the installed owner under its runtime lock.
+pub(in crate::domain_computation::primary_graph::application_query) mod batch;
 
 use super::super::{
     derived_view::WorthQueryManagedDerivedViewDenial as Denial,
@@ -21,6 +22,8 @@ pub(in crate::domain_computation::primary_graph::application_query) struct Prepa
         WorthQueryPreparedSessionRead<'a>,
     pub(in crate::domain_computation::primary_graph::application_query) buffer:
         WorthQueryApplicationResultBufferReservation,
+    pub(in crate::domain_computation::primary_graph::application_query) batch:
+        Option<batch::PreparedBatchRead>,
 }
 
 /// Construction remains with the owner-side admission stage.
@@ -41,6 +44,8 @@ pub(in crate::domain_computation::primary_graph::application_query) struct ReadO
         RawNonLiveKernelOutcome,
     pub(in crate::domain_computation::primary_graph::application_query) proof:
         WorthQueryPreparedReadCompletion,
+    pub(in crate::domain_computation::primary_graph::application_query) batch_rows:
+        Option<super::super::WorthQueryApplicationQueryBatchMemory>,
 }
 
 pub(in crate::domain_computation::primary_graph::application_query) struct PairOutput {
@@ -54,6 +59,7 @@ impl ChargedBytes for PreparedRead<'_> {
             plan,
             session,
             buffer,
+            batch: _,
         } = self;
         plan.additional_charged_bytes()
             .saturating_add(session.additional_charged_bytes())
@@ -80,7 +86,11 @@ impl ChargedBytes for PreparedPair<'_> {
 }
 impl ChargedBytes for ReadOutput {
     fn additional_charged_bytes(&self) -> u64 {
-        let Self { raw, proof } = self;
+        let Self {
+            raw,
+            proof,
+            batch_rows: _,
+        } = self;
         raw.additional_charged_bytes()
             .saturating_add(proof.additional_charged_bytes())
     }
@@ -158,6 +168,16 @@ impl PreparedRead<'_> {
         context: &mut MapKernelContext<'_, '_>,
         #[cfg(test)] witness: Option<&super::dispatch_witness::DispatchWitness>,
     ) -> Result<ReadOutput, MapKernelFailure<Denial>> {
+        let Self {
+            plan,
+            session,
+            buffer,
+            batch,
+        } = self;
+        let entered = Cell::new(false);
+        let maximum = batch
+            .as_ref()
+            .map_or(plan.maximum_work, batch::PreparedBatchRead::maximum);
         let stop = Cell::new(None);
         let meter = RefCell::new(context);
         let charge = |units: usize, subject: &str| {
@@ -180,27 +200,48 @@ impl PreparedRead<'_> {
         };
         let spent = OneShotReadWorkObservation::with_charge(&charge);
         let check = |subject: &str| charge(0, subject);
-        let read = self.session.execute(|runtime, graph| {
+        let read = session.execute(|runtime, graph| {
+            entered.set(true);
             super::read_prepared_root_rows(
                 runtime,
                 graph,
-                &self.plan,
-                self.buffer,
+                &plan,
+                buffer,
                 Some(&spent),
-                self.plan.maximum_work,
+                maximum,
                 super::ReadInterruption::Execution(&check),
             )
         });
+        let batch_rows = if let Some(batch) = batch {
+            let actual = if entered.get() {
+                Some(
+                    spent
+                        .read()
+                        .ok_or(MapKernelFailure::Domain(Denial::WorkCounterOverflow))?,
+                )
+            } else {
+                None
+            };
+            batch.settle(actual).map_err(|denial| {
+                MapKernelFailure::Domain(Denial::BatchResource { root, denial })
+            })?
+        } else {
+            None
+        };
         if let Some(stop) = stop.get() {
             return Err(MapKernelFailure::Stop(stop));
         }
         use super::super::authorized_read::WorthQueryAuthorizedApplicationReadDenial as ReadDenial;
         use super::super::one_shot::map_authorized_read_denial;
         match read {
-            Ok((Ok(raw), proof)) => Ok(ReadOutput { raw, proof }),
+            Ok((Ok(raw), proof)) => Ok(ReadOutput {
+                raw,
+                proof,
+                batch_rows,
+            }),
             Ok((Err(read), _)) => Err(MapKernelFailure::Domain(Denial::ReadDenied {
                 root,
-                denial: map_authorized_read_denial(ReadDenial::Read(read), self.plan.name),
+                denial: map_authorized_read_denial(ReadDenial::Read(read), plan.name),
             })),
             Err(
                 WorthQueryManagedGraphReadDenial::MutationSession
@@ -210,7 +251,7 @@ impl PreparedRead<'_> {
                 | WorthQueryManagedGraphReadDenial::TerminalReleaseMismatch,
             ) => Err(MapKernelFailure::Domain(Denial::ReadDenied {
                 root,
-                denial: map_authorized_read_denial(ReadDenial::Session, self.plan.name),
+                denial: map_authorized_read_denial(ReadDenial::Session, plan.name),
             })),
         }
     }

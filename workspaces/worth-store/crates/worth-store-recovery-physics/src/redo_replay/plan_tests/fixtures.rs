@@ -148,7 +148,7 @@ pub(super) fn projection_with_page_allocation(
     let segment_cell = authority
         .segment_cell(segment)
         .with_segment_generation(PhysicalGeneration::from_raw(artifact_generation).unwrap());
-    let placement = DurableInlineRecordPlacement::new(
+    let placement = DurableInlineRecordPlacement::legacy_unknown(
         record,
         segment_cell,
         page,
@@ -287,4 +287,15 @@ pub(super) fn replace_first(bytes: &mut [u8], old: &[u8], new: &[u8]) {
         .position(|window| window == old)
         .expect("fixture contains the governed field");
     bytes[offset..offset + old.len()].copy_from_slice(new);
+}
+
+pub(super) fn replace_projection_domain(bytes: &mut Vec<u8>, replacement: &[u8]) {
+    let declared = u64::from_le_bytes(bytes[..8].try_into().expect("domain length field"));
+    let domain_len = usize::try_from(declared).expect("fixture domain length fits usize");
+    assert_eq!(
+        &bytes[8..8 + domain_len],
+        b"store.physical.recovery-projection.v16"
+    );
+    bytes.splice(8..8 + domain_len, replacement.iter().copied());
+    bytes[..8].copy_from_slice(&(replacement.len() as u64).to_le_bytes());
 }

@@ -9,7 +9,6 @@ pub(super) fn install(
 ) -> ApplicationSchemaDeclarationBuilder<BankSchema> {
     let operation = FreezeEstateAccountOperation::reference();
     schema
-        .operation_decision_fact_budget(operation, 3)
         .operation_projection_work_budget(operation, 32)
         .operation_read_field(operation, AccountIdentity::reference())
         .operation_read_field(operation, Status::reference())

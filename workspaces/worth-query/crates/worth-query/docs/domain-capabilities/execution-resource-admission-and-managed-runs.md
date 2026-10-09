@@ -159,10 +159,10 @@ fixture constants cannot satisfy this proof.
   Child allowance intersects host, caller and artifact ceilings. Admission checks
   the child's required resources, not the parent's offered maximum against a
   child maximum. Framework currentness and provider algorithm work stay separate.
-- Candidate validator allowance is derived from installed finite fact bounds and
-  custom invariant contracts; ordinary handlers do not sum that closure. Explicit
-  validator caps restrict it. Exact closure remains checked before publication;
-  item, representation-byte and real concurrent-capacity admission remain intact.
+- Candidate validation has no aggregate work quota or descriptor-max prediction.
+  Installed invariants retain their own algorithm controls and actual execution
+  evidence. Exact closure remains checked before publication; effect shape,
+  representation-byte and real concurrent-capacity admission remain intact.
 - Local result-buffer and candidate-representation accounting is not a global
   heap reservation. Provider demand estimates are not aggregate memory proof.
   Managed reservations retain their consuming lifecycle.
@@ -175,7 +175,7 @@ const LIMITS: ApplicationQueryBindingLimits =
 // host has configured different limits from the standard profile.
 let controls = WorthQueryOutputDemandControls::default();
 
-// Candidate representation is authored; validator closure is installed.
+// Candidate representation is authored; actual invariant closure is installed.
 let resources = ApplicationCandidateResourceCeiling::representation_bytes(4096);
 ```
 
@@ -201,10 +201,10 @@ Destination owners, under `workspaces/worth-query/crates` (existing paths revise
 ```text
 worth-query-declaration/src/
   application_query/binding/limits.rs       semantic bound and optional cap
-  application_operation/candidate/         optional validator cap
+  application_operation/candidate/         retained candidate representation
 worth-query-installation/src/
   application_query/binding/limits.rs       installed/resolved limit types
-  application_operation/contracts/         derived validator allowance
+  application_operation/contracts/         exact invariant closure
 worth-query-execution/src/domain_computation/
   execution_runtime/                       installed host policies
   primary_graph/application_query/          admission and interruption

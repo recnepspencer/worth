@@ -103,7 +103,7 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     const IDENTITY: &'static str = "worth.query.certification.region-output.v1";
     const HANDLER_IDENTITY: &'static str = "worth.query.certification.region-output-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.certification.region-output-command.v1";
-    const CANDIDATES: ApplicationCandidateRequirements = requirements(3, 3, 0, 14, 8192, 4096);
+    const CANDIDATES: ApplicationCandidateRequirements = requirements(3, 3, 0, 14, 8192);
 
     fn scope_field() -> ApplicationFieldRef<
         Schema,
@@ -332,7 +332,6 @@ pub(super) fn declare<Schema: TopologySchemaBinding>(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_decision_fact_budget(operation, DECISION_FACT_BUDGET)
         .operation_projection_work_budget(operation, PROJECTION_WORK_PER_ENTRY * LARGEST_SET)
         .operation_read_entity(operation, Body::reference())
         .operation_read_field(operation, BodyKey::reference())

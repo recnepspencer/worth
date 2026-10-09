@@ -42,21 +42,27 @@ fn relation_integrity_rejected_branch_local_commit_does_not_advance_truth_or_lea
         &runtime,
         BranchId("feature".to_string()),
     );
-    txn.push_batch(WorkerIntentBatch::new("illegal-feature-relation").push(
-        MutationIntent::Create(CreateIntent::Relation(
-            crate::transactions::data::RelationSpec {
+    txn.push_batch(
+        WorkerIntentBatch::new("illegal-feature-relation").push(MutationIntent::Create(
+            CreateIntent::Relation(crate::transactions::data::RelationSpec {
                 partition_id: PartitionId::main(),
                 kind_id: KindId(2),
                 client_key: crate::symbols::data::ClientKey::raw("illegal-feature"),
                 source: crate::transactions::data::EntityReference::Existing(source),
                 target: crate::transactions::data::EntityReference::Existing(target_b),
                 fields: crate::transactions::data::AspectFieldPatch::default(),
-            },
+            }),
         )),
-    ))
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
     .expect("test staging stays within configured resource budgets");
 
-    let error = txn.commit(&runtime).unwrap_err();
+    let error = txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap_err();
     match error {
         TransactionCommitError::Conflict { error, .. } => {
             assert_eq!(error.code(), DiagnosticCode::RelationCardinalityViolation);

@@ -100,9 +100,10 @@ impl<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>
         )?;
         setup.conditional::<RegionOutputReadiness<CheckpointSchema, REUSE, MODE>>(())?;
         if MODE == 4 {
-            let provider = crate::InitialPlanarProvider::new(std::sync::Arc::clone(
-                &configuration.producer_authorization_denials,
-            ))
+            let provider = crate::InitialPlanarProvider::new(
+                std::sync::Arc::clone(&configuration.producer_authorization_denials),
+                std::sync::Arc::clone(&configuration.producer_domain_denial),
+            )
             .with_uniform_decimal_key_width();
             TopologyContribution::configure_topology_with_provider(configuration, setup, provider)
         } else {
@@ -200,11 +201,10 @@ pub(super) fn install_variant_with_observations<
     let width = u64::try_from(DECISION_FACT_BUDGET + WIDTH_BESIDE_DECISION).unwrap();
     let host = support::candidates();
     let candidates =
-        worth_query_host::facade::runtime::WorthQueryApplicationCandidateResourceProfile::bounded(
+        worth_query_host::facade::runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(
             host.maximum_items().max(width),
             host.maximum_retained_representation_bytes()
                 .max((1024 * LARGEST_SET + 320 * 256) as u64),
-            host.maximum_validator_work().max(width),
         )
         .and_then(|candidates| candidates.with_maximum_operation_width(width))
         .unwrap();

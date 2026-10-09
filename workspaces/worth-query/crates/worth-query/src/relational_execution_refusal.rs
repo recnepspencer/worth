@@ -49,6 +49,7 @@ pub(crate) fn work_exhausted() -> TransactionCommitError {
                     fields: AspectFieldPatch::default(),
                 },
             ))),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
     let lease = owner

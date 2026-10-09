@@ -25,6 +25,7 @@ pub(in crate::domain_computation::primary_graph) struct PreparedLineageRecoveryM
         crate::domain_computation::primary_graph::application_attempt::CompletedDecisionReuseProof,
     >,
     reuse: Option<crate::domain_computation::primary_graph::output_lineage::PreparedInputReuseKey>,
+    resources: Option<crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerDemandResources>,
 }
 
 impl PreparedOutputLineageSlot {
@@ -68,6 +69,7 @@ impl PreparedOutputLineageSlot {
             handler: self.completed_handler_facts.take(),
             decision_reuse: self.completed_decision_reuse.take(),
             reuse: self.prepared_input_reuse_key.take(),
+            resources: self.actual_resources.take(),
         };
         drop(self);
         metadata
@@ -80,11 +82,13 @@ impl PreparedOutputLineageSlot {
         assert!(self.completed_handler_facts.is_none());
         assert!(self.completed_decision_reuse.is_none());
         assert!(self.prepared_input_reuse_key.is_none());
+        assert!(self.actual_resources.is_none());
         self.computation.assign(metadata.computation);
         self.prior_computation = metadata.prior_computation.take();
         self.completed_handler_facts = metadata.handler.take();
         self.completed_decision_reuse = metadata.decision_reuse.take();
         self.prepared_input_reuse_key = metadata.reuse.take();
+        self.actual_resources = metadata.resources.take();
     }
 }
 
@@ -167,6 +171,7 @@ mod tests {
                 prepared_input_reuse_key: None,
                 native_output_witness: None,
                 actual_resources: None,
+                native_prior_checkpoint: None,
                 prior_computation: None,
                 filled: false,
                 computation: PreparedComputationCustody::Unassigned,

@@ -3,6 +3,11 @@ use crate::domain_computation::primary_graph::tests::fixture::{
     AccountSummaryResult, PublicAccountMembershipQuery, PublicScopedAccountSummaryQuery,
 };
 
+use crate::domain_computation::primary_graph::WorthQueryManagedDerivedCollectionBatchRefreshDenial;
+
+mod batch_custody;
+mod batch_refresh;
+
 #[test]
 fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entry() {
     let world = installed_authorization_world(true);
@@ -120,13 +125,15 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
         .unwrap();
     assert_eq!(keys.len(), 1);
     let key = keys[0].clone();
-    let original = world
+    let original_snapshot = world
         .application
         .observe_managed_derived_view(&view)
-        .unwrap()
-        .get(&key)
-        .unwrap()
         .unwrap();
+    assert_eq!(
+        original_snapshot.selected_commit(),
+        selected.product().selected_commit()
+    );
+    let original = original_snapshot.get(&key).unwrap().unwrap();
     assert_eq!(original.0, "primary");
     let denied = world
         .application
@@ -215,6 +222,14 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
     change_label(unrelated.entity_id(), "other-changed");
     let after = world.selected_product();
     prepared.apply(after.product().selected_commit());
+    assert_ne!(
+        original_snapshot.selected_commit(),
+        after.product().selected_commit()
+    );
+    assert_eq!(
+        original_snapshot.get(&key).err(),
+        Some(WorthQueryManagedDerivedViewDenial::StaleSource)
+    );
     let retained = world
         .application
         .observe_managed_derived_view(&view)

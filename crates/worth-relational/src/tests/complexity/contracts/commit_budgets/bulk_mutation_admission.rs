@@ -31,6 +31,7 @@ fn complexity_budget_bulk_mutation_planning_reports_identity_scope_and_batch_evi
                 ],
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
     txn.push_batch(
@@ -46,6 +47,7 @@ fn complexity_budget_bulk_mutation_planning_reports_identity_scope_and_batch_evi
                 field_patches: vec![crate::transactions::data::AspectFieldPatch::default()],
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
 
@@ -88,6 +90,7 @@ fn complexity_budget_bulk_mutation_admission_remains_side_effect_free_until_comm
                 field_patches: vec![crate::transactions::data::AspectFieldPatch::default()],
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
 
@@ -120,9 +123,15 @@ fn complexity_budget_bulk_mutation_admission_remains_side_effect_free_until_comm
                     field_patches: vec![crate::transactions::data::AspectFieldPatch::default()],
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    let _ = commit_txn.commit(&runtime).expect("commit should succeed");
+    let _ = commit_txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .expect("commit should succeed");
     let committed_counters = runtime.performance_access().counters();
 
     assert_eq!(committed_counters.bulk_mutation_batch_count, 1);

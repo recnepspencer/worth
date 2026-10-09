@@ -1,20 +1,19 @@
 use super::super::application_contribution::WorthQueryProducerDemandResources;
 
-pub(super) fn encode_profile(
-    output: &mut Vec<u8>,
-    resources: Option<WorthQueryProducerDemandResources>,
-) {
-    output.push(u8::from(resources.is_some()));
-    output.extend_from_slice(
+pub(super) fn encode_profile(resources: Option<WorthQueryProducerDemandResources>) -> [u8; 17] {
+    let mut output = [0; 17];
+    output[0] = u8::from(resources.is_some());
+    output[1..9].copy_from_slice(
         &u64::try_from(resources.map_or(0, |r| r.work()))
             .expect("producer work fits the checkpoint format")
             .to_be_bytes(),
     );
-    output.extend_from_slice(
+    output[9..17].copy_from_slice(
         &u64::try_from(resources.map_or(0, |r| r.retained_bytes()))
             .expect("producer retained bytes fit the checkpoint format")
             .to_be_bytes(),
     );
+    output
 }
 
 pub(super) fn decode_profile(

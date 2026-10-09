@@ -6,6 +6,8 @@ const BINDING_DOMAIN: &[u8] = b"store.physical.mutation-attempt-binding.v1";
 
 #[path = "independent_wal_oracle/canonical_redo.rs"]
 mod canonical_redo;
+#[path = "independent_wal_oracle/copy_intent.rs"]
+mod copy_intent;
 #[path = "independent_wal_oracle/retirement_redo.rs"]
 mod retirement_redo;
 #[path = "independent_wal_oracle/rewrite_redo.rs"]
@@ -15,6 +17,7 @@ mod segment_inventory;
 #[path = "independent_wal_oracle/target_claim.rs"]
 mod target_claim;
 
+pub(crate) use copy_intent::produced_copy_intents;
 pub(crate) use retirement_redo::{
     file_retirement_payloads, produced_retirement_payloads, IndependentRetiredKind,
     IndependentRetirementAction,
@@ -22,6 +25,28 @@ pub(crate) use retirement_redo::{
 pub(crate) use rewrite_redo::produced_rewrite_payloads;
 pub(super) use segment_inventory::inspect_wal_inventory;
 pub(super) use target_claim::{independent_target_claim, IndependentRedoTargetClaim};
+
+// Record journeys read the full census; blob journeys share only the core.
+impl segment_inventory::IndependentWalInventory {
+    pub(super) fn segments(&self) -> &[(u64, u64)] {
+        &self.segments
+    }
+    pub(super) const fn frame_count(&self) -> u64 {
+        self.frame_count
+    }
+    pub(super) const fn byte_count(&self) -> u64 {
+        self.byte_count
+    }
+    pub(super) const fn peak_segment_bytes(&self) -> u64 {
+        self.peak_segment_bytes
+    }
+}
+
+impl segment_inventory::IndependentWalSegment {
+    pub(super) const fn byte_count(self) -> u64 {
+        self.byte_count
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct ExpectedAttemptBinding {

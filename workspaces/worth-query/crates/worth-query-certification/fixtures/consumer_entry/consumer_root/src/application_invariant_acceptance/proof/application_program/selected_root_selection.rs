@@ -37,7 +37,10 @@ macro_rules! selected {
             })
             .expect_source(source)
             .idempotency(&$key)
-            .execute_performed::<ConsumerProgram, $root>($application)
+            .execute_performed::<ConsumerProgram, $root>(
+                $application,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
     }};
 }
 

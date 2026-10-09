@@ -22,8 +22,7 @@ pub enum BackupBundleArtifactFormat {
     WalSegmentV1,
     PhysicalDataPageV1,
     PhysicalExtentRecordV1,
-    LayoutBTreeLeafV1,
-    LayoutBTreeRootV1,
+    BTreeNodeV1,
     BlobChunkV1,
     PhysicalSecondaryRootManifestV1,
 }
@@ -174,10 +173,7 @@ impl BackupBundleArtifactFormat {
                     Self::PhysicalExtentRecordV1,
                     BackupBundleArtifactFamily::Extent
                 )
-                | (
-                    Self::LayoutBTreeLeafV1 | Self::LayoutBTreeRootV1,
-                    BackupBundleArtifactFamily::Index
-                )
+                | (Self::BTreeNodeV1, BackupBundleArtifactFamily::Index)
                 | (Self::BlobChunkV1, BackupBundleArtifactFamily::BlobChunk)
                 | (
                     Self::PhysicalSecondaryRootManifestV1,

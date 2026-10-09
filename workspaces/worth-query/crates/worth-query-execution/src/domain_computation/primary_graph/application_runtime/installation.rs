@@ -314,7 +314,6 @@ where
         fault_port,
         maximum_concurrent_graph_work,
         resource_support,
-        runtime.completed_evidence_resource_profile(),
         runtime.branch_coordination_resource_profile(),
     );
     let primary_graph_authority =

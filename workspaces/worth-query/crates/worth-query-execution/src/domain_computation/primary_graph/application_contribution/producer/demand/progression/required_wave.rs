@@ -30,17 +30,20 @@ use super::super::super::{
 use super::super::RequiredFreshProgress;
 use super::{WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind};
 
-/// The caller's exact Ready cell anchors the wave. `shared` and `positioned`
-/// retain one admitted Product/native basis for every dependency proof.
+/// A caller's Ready or an exactly requested upstream Ready anchors the wave.
+/// `shared` and `positioned` retain its admitted Product/native proof basis.
 pub(super) struct RequiredWaveSelection<'runtime, Schema> {
     pub(super) shared: SharedSelectedProductOperation<'runtime, Schema>,
     pub(super) positioned: PositionedRelationalSnapshot,
-    pub(super) caller_ready: SelectedReadyReadmission,
+    pub(super) anchor_ready: SelectedReadyReadmission,
     pub(super) branch: WorthQueryProductBranch,
+    pub(super) target: RequiredWaveTarget,
 }
 
 mod caller;
-mod caller_settlement;
+mod requested;
+pub(super) use requested::advance_requested_output;
+mod cycles;
 mod drive;
 mod frame;
 use frame::{FrameRole, RequiredWaveFrame};
@@ -54,6 +57,13 @@ pub(in crate::domain_computation::primary_graph) use resolved::{
 use selection::{reselect_required_wave, select_required_wave};
 
 pub(super) use caller::advance_required_before_caller;
+
+/// A requested upstream certifies only itself, never its initial consumer.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) enum RequiredWaveTarget {
+    Caller,
+    Requested,
+}
 
 /// A cue is only scheduling custody. A Current result comes from the exact
 /// accepted row, its installed producer, and the selected Product/native proof.
@@ -75,6 +85,27 @@ struct RequiredWaveStack {
 impl RequiredWaveStack {
     fn new() -> Self {
         Self { frames: Vec::new() }
+    }
+
+    /// Preserve role and contact attribution while a prerequisite runs.
+    fn suspend_current(
+        &mut self,
+        current: &mut Option<SelectedReadyReadmission>,
+        role: FrameRole,
+        contacts: usize,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<bool, WorthQueryOutputDemandDenial> {
+        match current.take() {
+            Some(ready) => self.push(
+                RequiredWaveFrame {
+                    ready,
+                    role,
+                    contacts,
+                },
+                admission,
+            ),
+            None => Ok(true),
+        }
     }
 
     /// A repeated live registry member is a pending cycle, not authority to
@@ -230,7 +261,7 @@ where
     admission
         .charge_external_work(1)
         .map_err(admission_denial)?;
-    // Only the caller's exact Interest→Ready join may reuse the installed
+    // Only the caller's exact InterestÃ¢â€ â€™Ready join may reuse the installed
     // entry retained when that same demand was admitted. Other cues still
     // resolve their own producer through the installed table.
     let installed = match caller_installed {
@@ -258,8 +289,8 @@ where
         .map_err(|stop| match stop {
             ProducerExecutionStop::RequestAdmissionDenied(rejection) => rejection.into_denial(),
             ProducerExecutionStop::ExecutionStopped(denial) => denial,
-            ProducerExecutionStop::LiveOutputNotReused => {
-                ProducerExecutionStop::live_output_not_reused()
+            ProducerExecutionStop::LiveOutputNotReused { producer, reason } => {
+                ProducerExecutionStop::live_output_not_reused(producer, reason)
             }
         })?;
     match result {
@@ -273,7 +304,7 @@ where
             Ok(match upstream {
                 PendingUpstream::Ready(ready) => RequiredWaveStep::Upstream(ready),
                 PendingUpstream::Held(head) => RequiredWaveStep::Held(head),
-                PendingUpstream::Unavailable => RequiredWaveStep::Pending,
+                PendingUpstream::Unavailable(_) => RequiredWaveStep::Pending,
             })
         }
         RequiredCueProgress::PendingUnresolved => Ok(RequiredWaveStep::Pending),

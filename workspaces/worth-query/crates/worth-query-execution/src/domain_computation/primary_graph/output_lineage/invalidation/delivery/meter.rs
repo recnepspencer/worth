@@ -6,7 +6,7 @@ use worth_relational::facade::mvcc::{
     CompanionPreflightBudget, CompanionPreflightStop, PublicationCompanionPreflight,
 };
 
-use super::super::admission::IndexAdmission;
+use super::super::admission::{IndexAdmission, RetainedIndexAdmission};
 
 /// Matching, propagation and the hints they select are charged here. Its
 /// preparation bytes are transferred to the publication only when the marked
@@ -16,6 +16,7 @@ pub(super) struct MarkingMeter<'a, 'b> {
     budget: CompanionPreflightBudget,
     work: u64,
     bytes: u64,
+    index_bytes: u64,
 }
 
 impl<'a, 'b> MarkingMeter<'a, 'b> {
@@ -28,6 +29,7 @@ impl<'a, 'b> MarkingMeter<'a, 'b> {
             budget,
             work: 0,
             bytes: 0,
+            index_bytes: 0,
         }
     }
 
@@ -39,6 +41,20 @@ impl<'a, 'b> MarkingMeter<'a, 'b> {
 
     pub(super) const fn charged_bytes(&self) -> u64 {
         self.bytes
+    }
+
+    pub(super) const fn charged_index_bytes(&self) -> u64 {
+        self.index_bytes
+    }
+}
+
+impl RetainedIndexAdmission for MarkingMeter<'_, '_> {
+    fn record_index_bytes(&mut self, bytes: u64) -> Result<(), CompanionPreflightStop> {
+        self.index_bytes = self
+            .index_bytes
+            .checked_add(bytes)
+            .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
+        Ok(())
     }
 }
 

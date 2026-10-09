@@ -1,4 +1,6 @@
-use super::{changes::ChangedRecords, entry_edits::edit, reads, work::MaintenanceWork};
+use super::{
+    change_routing::ChangeRouting, entry_edits::edit, reads, record_metadata, work::MaintenanceWork,
+};
 use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::indexes::data::{
     DerivedIndexEntryMap, DerivedIndexMaintenanceDenialKind as Denial, RelatedEntityEndpoint,
@@ -25,7 +27,7 @@ pub(super) fn refresh(
         KindId,
         &[RelatedEntityOrderingField],
     ),
-    changes: &ChangedRecords,
+    changes: &ChangeRouting,
     before: Option<&VisibilityProjectionView<'_>>,
     after: &VisibilityProjectionView<'_>,
     work: &mut MaintenanceWork,
@@ -36,19 +38,26 @@ pub(super) fn refresh(
         child_kind: contract.2,
         ordering: contract.3,
     };
-    work.charge(changes.relations.len())?;
-    let mut affected = changes.relations.clone();
-    for child in &changes.entities {
-        let old = child_values(before, *child, &contract, work)?;
-        let new = child_values(Some(after), *child, &contract, work)?;
+    let mut affected = std::collections::BTreeSet::new();
+    for relation in changes.relations(contract.relation_kind, work)? {
+        work.charge(1)?;
+        work.ordered::<RelationId, ()>(affected.len(), 1, 0)?;
+        affected.insert(relation.id);
+    }
+    for child in changes.entities(contract.child_kind, work)? {
+        work.charge(1)?;
+        let old = child_values(before, child.id, &contract, work)?;
+        let new = child_values(Some(after), child.id, &contract, work)?;
         if old == new {
             continue;
         }
         for view in before.into_iter().chain(std::iter::once(after)) {
             let outgoing = contract.parent_endpoint == RelatedEntityEndpoint::TargetParent;
-            for relation in reads::adjacency(view, *child, contract.relation_kind, outgoing, work)?
+            for relation in
+                reads::adjacency(view, child.id, contract.relation_kind, outgoing, work)?
             {
                 work.charge(1)?;
+                work.ordered::<RelationId, ()>(affected.len(), 1, 0)?;
                 affected.insert(relation.relation_id);
             }
         }
@@ -105,10 +114,10 @@ fn row(
     contract: &OrderingContract<'_>,
     work: &mut MaintenanceWork,
 ) -> Result<Option<(EntityId, RelatedEntityOrderingEntry)>, Denial> {
-    let Some(relation) = reads::relation(view, id, work)? else {
+    let Some(relation) = record_metadata::relation(view, id, work)? else {
         return Ok(None);
     };
-    if relation.kind.kind_id != contract.relation_kind {
+    if relation.kind != contract.relation_kind {
         return Ok(None);
     }
     let (parent, child) = match contract.parent_endpoint {
@@ -118,7 +127,7 @@ fn row(
     Ok(child_values(view, child, contract, work)?.map(|values| {
         (
             parent,
-            RelatedEntityOrderingEntry::new(values, child, relation.relation_id),
+            RelatedEntityOrderingEntry::new(values, child, relation.id),
         )
     }))
 }

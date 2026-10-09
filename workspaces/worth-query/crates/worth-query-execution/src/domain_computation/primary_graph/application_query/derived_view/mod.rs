@@ -16,7 +16,8 @@ pub(in crate::domain_computation::primary_graph) use registry::{
     ManagedDerivedViewRegistry, PreparedManagedViewPublication,
 };
 pub use retention::{
-    WorthQueryManagedDerivedMemberToken, WorthQueryManagedDerivedValue,
+    WorthQueryManagedDerivedCollectionBatchRefreshDenial, WorthQueryManagedDerivedMemberToken,
+    WorthQueryManagedDerivedStorageQuote, WorthQueryManagedDerivedValue,
     WorthQueryManagedDerivedViewDenial,
 };
 

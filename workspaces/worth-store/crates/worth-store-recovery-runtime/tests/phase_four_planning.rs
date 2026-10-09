@@ -163,6 +163,7 @@ fn selected_checkpoint_becomes_one_effect_free_immutable_plan() {
     let store = initialize_store(&root);
     publish_synthetic_genesis(&root, store);
     publish_secured_synthetic_checkpoint(&root, store);
+    publish_synthetic_covered_wal(&root);
 
     let selected = admitted_recovery(&root)
         .discover()
@@ -194,6 +195,7 @@ fn an_unsecured_checkpoint_cannot_cross_the_phase_four_boundary() {
     let store = initialize_store(&root);
     publish_synthetic_genesis(&root, store);
     publish_synthetic_checkpoint(&root, store);
+    publish_synthetic_covered_wal(&root);
 
     let selected = admitted_recovery(&root)
         .discover()
@@ -205,8 +207,8 @@ fn an_unsecured_checkpoint_cannot_cross_the_phase_four_boundary() {
         Err(outcome) => expect_blocked(outcome),
     };
     assert_eq!(
-        blocked.kind,
-        worth_store_recovery_runtime::PhysicalRecoveryBlockKind::BindingFreshness
+        blocked.cause().damage(),
+        Some(worth_store_recovery_runtime::PhysicalRecoveryBlockKind::BindingFreshness)
     );
     assert_eq!(
         blocked.evidence().planning_denial,
@@ -257,12 +259,12 @@ fn ordinary_store_mutation_reopens_as_a_nonempty_effect_free_plan() {
     );
     let cost = planned.plan_cost();
     assert_eq!(cost.redo_targets(), 2);
-    assert_eq!(cost.redo_bytes(), 34_258);
+    assert_eq!(cost.redo_bytes(), 34_315);
     assert_eq!(cost.distinct_targets(), 2);
     assert_eq!(cost.operation_bindings(), 3);
     assert_eq!(cost.observation_reads(), 7);
     // Includes the 368-byte source-root manifest the checkpoint binds.
-    assert_eq!(cost.observation_bytes(), 73_606);
+    assert_eq!(cost.observation_bytes(), 73_993);
     assert_eq!(cost.staging_bytes(), 3_276_800);
     assert_eq!(cost.dirty_frames(), 1);
     let counters = planned.planning_counters();

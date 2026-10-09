@@ -16,20 +16,16 @@ pub enum WorthQueryWorkspaceErrorKind {
     RetentionCapacityExhausted,
     RetentionIdentityExhausted,
     SnapshotIdentityExhausted,
-    TransactionOverlayCapacityExhausted {
-        maximum_bytes: u64,
-        required_bytes: u64,
+    TransactionAllocationDenied {
+        kind: worth_execution::ExecutionAllocationDenialKind,
+        requested_payload_bytes: Option<u64>,
     },
-    TransactionFootprintCapacityExhausted {
-        maximum_loci: usize,
-        required_loci: usize,
+    TransactionStagingCardinalityOverflow,
+    TransactionInputDirectoryAllocationDenied {
+        requested_batches: usize,
     },
     SavepointCapacityExhausted {
         maximum_savepoints: usize,
-    },
-    SavepointFootprintCapacityExhausted {
-        maximum_loci: usize,
-        required_loci: usize,
     },
     SavepointIdentityExhausted,
     TransactionMaterializationAuthorityRequired,

@@ -1,6 +1,8 @@
 use std::collections::BTreeMap;
 
-use worth_signal::facade::{CompletionDenialClass, RawCompletionEnvelope};
+use worth_signal::facade::{
+    CompletionDenialClass, RawCompletionEnvelope, ResourceRetentionCompactionBudget,
+};
 
 use super::PhysicalSignalGraph;
 use crate::physical_runtime::PhysicalSignalSettlementOutcome;
@@ -35,6 +37,9 @@ impl PhysicalSignalGraph {
         if outcome != PhysicalSignalSettlementOutcome::DerivedStateUnavailable {
             self.release_envelope(&retained_envelope);
         }
+        if outcome == PhysicalSignalSettlementOutcome::Committed {
+            self.compact_settled_history(1);
+        }
         outcome
     }
 
@@ -62,6 +67,7 @@ impl PhysicalSignalGraph {
                 },
             );
         }
+        let mut committed = 0_u32;
         for completion in admitted {
             let key = (
                 completion.handle().request_id(),
@@ -82,6 +88,9 @@ impl PhysicalSignalGraph {
                     PhysicalSignalSettlementOutcome::DerivedStateUnavailable,
                     |_| PhysicalSignalSettlementOutcome::Committed,
                 );
+            if outcome == PhysicalSignalSettlementOutcome::Committed {
+                committed = committed.saturating_add(1);
+            }
             outcomes.insert(key, outcome);
         }
         let outcomes = envelopes
@@ -104,7 +113,28 @@ impl PhysicalSignalGraph {
                 self.release_envelope(envelope);
             }
         }
+        self.compact_settled_history(committed);
         outcomes
+    }
+
+    fn compact_settled_history(&mut self, committed: u32) {
+        const COMPACTION_INTERVAL: u32 = 128;
+        const DIAGNOSTIC_TAIL: u32 = 1_024;
+        self.settled_since_compaction = self.settled_since_compaction.saturating_add(committed);
+        while self.settled_since_compaction >= COMPACTION_INTERVAL {
+            self.settled_since_compaction -= COMPACTION_INTERVAL;
+            // Only terminal requests without pending retry or managed-queue
+            // work are eligible. Signal reports exact retained tails and
+            // separately commits omission evidence for expired diagnostics.
+            let budget = ResourceRetentionCompactionBudget::unbounded()
+                .with_pruned_availability_limits(DIAGNOSTIC_TAIL, DIAGNOSTIC_TAIL, DIAGNOSTIC_TAIL);
+            let _resource = self
+                .runtime
+                .compact_resource_lifecycle_history_with_budget(COMPACTION_INTERVAL, budget);
+            let _temporal = self
+                .runtime
+                .compact_retired_temporal_wake_tail(DIAGNOSTIC_TAIL, COMPACTION_INTERVAL);
+        }
     }
 }
 

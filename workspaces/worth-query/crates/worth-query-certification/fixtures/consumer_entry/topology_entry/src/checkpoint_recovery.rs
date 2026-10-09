@@ -8,6 +8,7 @@ use worth_query_decl::facade::application_program::{
 };
 use worth_query_decl::facade::application_schema::ApplicationSchemaComposition;
 use worth_query_decl::facade::worth_query_application;
+use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 use worth_query_host::facade::{
     admission::authenticated_principal as authentication,
     application_entry::{
@@ -21,9 +22,11 @@ use worth_query_host::facade::{
 use super::*;
 #[cfg(feature = "test-query-execution-observer")]
 mod advancement_currentness;
+mod cached_locator_checkpoint;
 #[cfg(feature = "test-query-execution-observer")]
 mod clean_reuse;
 pub(crate) mod computation_partition;
+mod current_family_output;
 mod current_output;
 mod demand_contact;
 mod demand_policy;
@@ -31,9 +34,12 @@ mod generated_restoration;
 mod input_cutoff;
 #[cfg(all(feature = "test-world-operation-control", not(target_arch = "wasm32")))]
 mod late_cancellation;
+pub(crate) mod mixed_retirement;
 #[cfg(feature = "test-query-execution-observer")]
 mod parallel_history;
+mod producer_domain_denial;
 pub(crate) mod required_chain;
+mod reuse_opt_out;
 mod stable_refresh;
 mod support;
 use support::{authenticate, install, length};
@@ -124,7 +130,7 @@ fn checkpoint_reopens_ready_output_without_producer_contact_and_recomputes_after
     drop(scope);
 
     let checkpoint = application
-        .capture_application_checkpoint()
+        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
         .expect("the ready output is checkpointable");
     drop(application);
 
@@ -166,7 +172,10 @@ fn checkpoint_reopens_ready_output_without_producer_contact_and_recomputes_after
         })
         .expect_source(observed.observed_sources()[0].clone())
         .idempotency(&77_u64)
-        .execute_performed::<CheckpointProgram, CheckpointRoot>(&restored)
+        .execute_performed::<CheckpointProgram, CheckpointRoot>(
+            &restored,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the recovered source accepts a fresh edit");
     let current = request
         .retain_read()
@@ -197,7 +206,7 @@ fn recovered_output_survives_an_unrelated_settled_edit_without_producer_contact(
     drop(principal);
     drop(scope);
     let checkpoint = application
-        .capture_application_checkpoint()
+        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
         .expect("the ready output is checkpointable");
     drop(application);
 
@@ -218,7 +227,10 @@ fn recovered_output_survives_an_unrelated_settled_edit_without_producer_contact(
         })
         .expect_source(unrelated.observed_sources()[0].clone())
         .idempotency(&88_u64)
-        .execute_performed::<CheckpointProgram, CheckpointRoot>(&restored)
+        .execute_performed::<CheckpointProgram, CheckpointRoot>(
+            &restored,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the unrelated edit settles");
 
     super::producer::reset_provider_contacts();
@@ -237,7 +249,7 @@ fn unadopted_recovered_output_survives_an_unrelated_edit_before_first_demand() {
     drop(principal);
     drop(scope);
     let checkpoint = application
-        .capture_application_checkpoint()
+        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
         .expect("the ready output is checkpointable");
     drop(application);
 
@@ -257,7 +269,10 @@ fn unadopted_recovered_output_survives_an_unrelated_edit_before_first_demand() {
         })
         .expect_source(unrelated.observed_sources()[0].clone())
         .idempotency(&89_u64)
-        .execute_performed::<CheckpointProgram, CheckpointRoot>(&restored)
+        .execute_performed::<CheckpointProgram, CheckpointRoot>(
+            &restored,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the unrelated edit settles before adoption");
 
     super::producer::reset_provider_contacts();
@@ -277,7 +292,7 @@ fn checkpoint_reopens_sibling_parameter_partitions_without_contact_or_panic() {
     drop(principal);
     drop(scope);
     let checkpoint = application
-        .capture_application_checkpoint()
+        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
         .expect("both parameter partitions are checkpointable");
     drop(application);
 

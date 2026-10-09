@@ -22,11 +22,13 @@ mod held;
 mod prepared;
 mod progress;
 mod promotion;
+mod slot_preparation;
 use crate::domain_computation::primary_graph::{
     application_contribution::producer::registry::InstalledProducerProvider,
     application_output_demand::{
-        RequiredOutputCustodyCapacity, SelectedReadyReadmission, SelectedRequiredRefreshClaim,
-        WorthQueryOutputDemandInterest, WorthQueryOutputDemandRegistry,
+        RequestedOutputReadClaims, RequiredOutputCustodyCapacity, SelectedReadyReadmission,
+        SelectedRequiredRefreshClaim, WorthQueryOutputDemandInterest,
+        WorthQueryOutputDemandRegistry,
     },
     output_lineage::invalidation::InvalidationEditAdmission,
     WorthQueryApplicationProjection, WorthQueryPrimaryGraphApplicationRuntime,
@@ -52,9 +54,14 @@ trait ErasedRequiredSuccessor<Schema: ApplicationSchema>: Send + Sync {
     fn family_type(&self) -> TypeId;
     fn concrete_type(&self) -> TypeId;
     fn progression(&self) -> &RequiredSuccessorProvenance;
+    fn validate_for_current_handoff(
+        &self,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<(), WorthQueryOutputDemandDenial>;
     fn predecessor(&self) -> &SelectedReadyReadmission;
     fn producer_contacts(&self) -> usize;
     fn continuations_empty(&self) -> bool;
+    fn retain_requested(&mut self, claims: &mut RequestedOutputReadClaims);
     /// Move to the newest row of the occurrence once this one is superseded.
     fn follow_refresh(
         &mut self,
@@ -140,6 +147,21 @@ where
             .expect("installed required successor retains its exact predecessor Ready")
     }
 
+    fn validate_for_current_handoff(
+        &self,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<(), WorthQueryOutputDemandDenial> {
+        let demand = self
+            .demand
+            .as_ref()
+            .expect("installed successor owns its demand");
+        self.progression().validate_for_execution(
+            self.progression().commit_authority(),
+            &demand.installed_entry.edition,
+            admission,
+        )
+    }
+
     fn producer_contacts(&self) -> usize {
         self.demand
             .as_ref()
@@ -151,7 +173,17 @@ where
         self.demand.as_ref().is_some_and(|demand| {
             demand.required_continuations.entries.is_empty()
                 && demand.required_continuations.capacity.is_none()
+                && demand.required_continuations.requested.is_empty()
         })
+    }
+
+    fn retain_requested(&mut self, claims: &mut RequestedOutputReadClaims) {
+        self.demand
+            .as_mut()
+            .expect("installed successor owns its demand")
+            .required_continuations
+            .requested
+            .absorb(claims);
     }
 
     fn follow_refresh(
@@ -253,6 +285,7 @@ where
     Schema: ApplicationSchema,
 {
     entries: Vec<RequiredFreshProgress<Schema>>,
+    pub(super) requested: RequestedOutputReadClaims,
     capacity: Option<RequiredOutputCustodyCapacity>,
 }
 
@@ -263,6 +296,7 @@ where
     fn default() -> Self {
         Self {
             entries: Vec::new(),
+            requested: Default::default(),
             capacity: None,
         }
     }
@@ -293,67 +327,6 @@ where
 
     pub(super) fn last_mut(&mut self) -> Option<&mut RequiredFreshProgress<Schema>> {
         self.entries.last_mut()
-    }
-
-    pub(super) fn prepare_slot(
-        &mut self,
-        registry: &WorthQueryOutputDemandRegistry,
-        admission: &mut InvalidationEditAdmission,
-    ) -> Result<PreparedRequiredContinuationSlot<'_, Schema>, WorthQueryOutputDemandDenial> {
-        // Ended refreshes free their custody before this slot reserves any.
-        self.end_restored(registry, admission)?;
-        let old_len = self.entries.len();
-        // Installation compares the new successor with each held entry.
-        admission
-            .charge_external_work(u64::try_from(old_len).map_err(|_| work_denial())? + 3)
-            .map_err(|_| work_denial())?;
-        let item_bytes = std::mem::size_of::<RequiredFreshProgress<Schema>>();
-        let next_len = old_len.checked_add(1).ok_or_else(capacity_denial)?;
-        let relocation_work = if old_len < self.entries.capacity() {
-            0
-        } else {
-            old_len.checked_mul(item_bytes).ok_or_else(work_denial)?
-        };
-        let installation_work = u64::try_from(
-            relocation_work
-                .checked_add(item_bytes)
-                .ok_or_else(work_denial)?,
-        )
-        .map_err(|_| work_denial())?;
-        if old_len < self.entries.capacity() {
-            return Ok(PreparedRequiredContinuationSlot {
-                caller: self,
-                replacement: None,
-                capacity: None,
-                installation_work,
-            });
-        }
-        let old_bytes = self
-            .entries
-            .capacity()
-            .checked_mul(item_bytes)
-            .ok_or_else(capacity_denial)?;
-        let new_bytes = next_len
-            .checked_mul(item_bytes)
-            .ok_or_else(capacity_denial)?;
-        let peak_bytes = old_bytes
-            .checked_add(new_bytes)
-            .ok_or_else(capacity_denial)?;
-        let capacity =
-            registry.reserve_required_continuation_capacity(new_bytes, peak_bytes, admission)?;
-        let mut replacement = Vec::new();
-        replacement
-            .try_reserve_exact(next_len)
-            .map_err(|_| capacity_denial())?;
-        if replacement.capacity() != next_len {
-            return Err(capacity_denial());
-        }
-        Ok(PreparedRequiredContinuationSlot {
-            caller: self,
-            replacement: Some(replacement),
-            capacity: Some(capacity),
-            installation_work,
-        })
     }
 
     pub(super) fn take_all(&mut self) -> Self {

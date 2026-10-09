@@ -117,8 +117,6 @@ fn publication_handle_retention_is_bounded_by_policy() {
             max_patch_records_per_commit: 4096,
             max_published_snapshot_handles: 2,
             max_active_snapshot_handles: 4_096,
-            max_transaction_overlay_bytes: 1_048_576,
-            max_transaction_footprint_loci: 1_024,
             max_transaction_savepoints: 8,
             max_prepared_candidates: 8,
             candidate_max_lifetime_millis: 30_000,
@@ -129,9 +127,17 @@ fn publication_handle_retention_is_bounded_by_policy() {
     let second = create_entity_outcome(&runtime, "second");
     let before = crate::tests::support::test_owner_main_basis(&runtime).unwrap();
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
-    transaction.push_batch(batch_create("third")).unwrap();
+    transaction
+        .push_batch(
+            batch_create("third"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
     assert!(matches!(
-        transaction.commit(&runtime),
+        transaction.commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        ),
         Err(
             crate::transactions::data::TransactionCommitError::PublicationDeferred {
                 deferred:
@@ -171,8 +177,6 @@ fn published_handle_and_admitted_observation_remain_exact_until_release() {
             max_patch_records_per_commit: 4096,
             max_published_snapshot_handles: 4,
             max_active_snapshot_handles: 4_096,
-            max_transaction_overlay_bytes: 1_048_576,
-            max_transaction_footprint_loci: 1_024,
             max_transaction_savepoints: 8,
             max_prepared_candidates: 8,
             candidate_max_lifetime_millis: 30_000,
@@ -209,8 +213,6 @@ fn leased_commit_preparation_preserves_publication_surfaces() {
             max_patch_records_per_commit: 4096,
             max_published_snapshot_handles: 3,
             max_active_snapshot_handles: 4_096,
-            max_transaction_overlay_bytes: 1_048_576,
-            max_transaction_footprint_loci: 1_024,
             max_transaction_savepoints: 8,
             max_prepared_candidates: 8,
             candidate_max_lifetime_millis: 30_000,
@@ -224,8 +226,6 @@ fn leased_commit_preparation_preserves_publication_surfaces() {
             max_patch_records_per_commit: 4096,
             max_published_snapshot_handles: 3,
             max_active_snapshot_handles: 4_096,
-            max_transaction_overlay_bytes: 1_048_576,
-            max_transaction_footprint_loci: 1_024,
             max_transaction_savepoints: 8,
             max_prepared_candidates: 8,
             candidate_max_lifetime_millis: 30_000,

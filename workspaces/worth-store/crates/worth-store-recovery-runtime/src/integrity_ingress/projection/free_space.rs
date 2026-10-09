@@ -51,7 +51,7 @@ pub(crate) fn free_space_header(
         unreachable!("free-space-header admission preserves its family")
     };
     let projection = admitted.project(trace.counters_mut());
-    DurableFreeSpaceManifestHeader::new(
+    DurableFreeSpaceManifestHeader::new_with_tier_epoch(
         projection.identity.generation().get(),
         projection.identity.tree().get(),
         projection.node_capacity,
@@ -60,6 +60,10 @@ pub(crate) fn free_space_header(
         projection.next_segment,
         projection.next_page,
         projection.next_extent,
+        projection.next_arena,
+        projection.tier_epoch_start,
+        projection.arena_capacity,
+        projection.arena_alignment,
         projection.next_block,
         projection.root,
     )

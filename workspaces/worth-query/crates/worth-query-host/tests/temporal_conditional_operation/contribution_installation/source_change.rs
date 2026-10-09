@@ -48,30 +48,40 @@ pub(super) fn change_input(
         )
         .unwrap();
     let (_, projection, _) = invariant
-        .project_admitted_operation(&admission, |reader, scope| {
-            reader
-                .decision_field(scope, IntentRevisionField::reference())
-                .unwrap();
-            reader
-                .decision_field(scope, IntentLifecycleField::reference())
-                .unwrap();
-            reader
-                .decision_field(scope, IntentGateField::reference())
-                .unwrap();
-            reader
-                .decision_field(scope, IntentDueField::reference())
-                .unwrap();
-            reader
-                .decision_field(scope, IntentInputField::reference())
-                .unwrap();
-        })
+        .project_admitted_operation(
+            &admission,
+            |reader, scope| {
+                reader
+                    .decision_field(scope, IntentRevisionField::reference())
+                    .unwrap();
+                reader
+                    .decision_field(scope, IntentLifecycleField::reference())
+                    .unwrap();
+                reader
+                    .decision_field(scope, IntentGateField::reference())
+                    .unwrap();
+                reader
+                    .decision_field(scope, IntentDueField::reference())
+                    .unwrap();
+                reader
+                    .decision_field(scope, IntentInputField::reference())
+                    .unwrap();
+            },
+            worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .into_parts();
     let reads = application
-        .begin_projected_application_read_attempt(admission, projection)
+        .begin_projected_application_read_attempt(
+            admission,
+            projection,
+            worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let mut effects = reads
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .begin_effect_program();
     let intent = effects.existing_entity(&intent).unwrap();

@@ -1,8 +1,9 @@
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, sync::Arc};
 
 mod admission;
 mod binding_state;
 mod closeout;
+mod recovered_release;
 
 pub(super) use binding_state::{
     PhysicalMutationBindingBasis, PhysicalMutationIdempotencyBindingState,
@@ -13,11 +14,10 @@ pub(in crate::physical_runtime) use binding_state::{
 };
 
 use crate::physical_runtime::{
-    CompletedPhysicalMutationFact, IndeterminatePhysicalMutation, PendingUnresolvedMutationLimit,
-    PhysicalDurabilityPolicyIdentity, PhysicalIdempotencyPolicy,
+    CompletedPhysicalMutationFact, IdempotencyRetentionGenerations, IndeterminatePhysicalMutation,
+    PendingUnresolvedMutationLimit, PhysicalDurabilityPolicyIdentity, PhysicalIdempotencyPolicy,
     PhysicalMutationProvenNoEffectCause, ProvenNoEffectPhysicalMutation, RuntimeIdentity,
 };
-use std::sync::Arc;
 use worth_store_physical_format::store_namespace::StableStoreIdentity;
 
 use super::super::{PhysicalMutationIdentity, PhysicalMutationRequestFingerprint};
@@ -33,10 +33,12 @@ pub(in crate::physical_runtime::durability) struct PhysicalMutationIdempotencyRe
     store: StableStoreIdentity,
     runtime: RuntimeIdentity,
     policy: PhysicalDurabilityPolicyIdentity,
-    retention: crate::physical_runtime::IdempotencyRetentionGenerations,
+    retention: IdempotencyRetentionGenerations,
     pending_limit: PendingUnresolvedMutationLimit,
     live_limit: crate::physical_runtime::LiveIdempotencyBindingLimit,
     pub(super) generation: PhysicalNamespaceDurableCheckpointGeneration,
+    /// Only checkpoint/WAL reconciliation makes live absence proof.
+    pub(super) recovered_complete: bool,
     pub(super) bindings:
         BTreeMap<PhysicalMutationIdempotencyKeyIdentity, PhysicalMutationIdempotencyBindingState>,
 }
@@ -116,6 +118,22 @@ pub(in crate::physical_runtime) enum PhysicalMutationTerminalizationDenial {
 }
 
 impl PhysicalMutationIdempotencyRegistry {
+    pub(super) const fn store_identity(&self) -> StableStoreIdentity {
+        self.store
+    }
+
+    pub(super) const fn policy_identity(&self) -> PhysicalDurabilityPolicyIdentity {
+        self.policy
+    }
+
+    pub(super) const fn retention(&self) -> IdempotencyRetentionGenerations {
+        self.retention
+    }
+
+    pub(super) const fn runtime_identity(&self) -> RuntimeIdentity {
+        self.runtime
+    }
+
     pub(super) fn generation_zero(
         store: StableStoreIdentity,
         runtime: RuntimeIdentity,
@@ -130,6 +148,7 @@ impl PhysicalMutationIdempotencyRegistry {
             pending_limit: idempotency.pending_unresolved_limit(),
             live_limit: idempotency.live_binding_limit(),
             generation: PhysicalNamespaceDurableCheckpointGeneration::INITIAL,
+            recovered_complete: false,
             bindings: BTreeMap::new(),
         }
     }
@@ -167,12 +186,13 @@ impl PhysicalMutationIdempotencyRegistry {
                 );
                 *state = PhysicalMutationIdempotencyBindingState::Terminal {
                     basis: basis.clone(),
-                    fate: PersistedPhysicalMutationFate::proven_no_effect(terminal),
+                    fate: PersistedPhysicalMutationFate::proven_no_effect(terminal.clone()),
                     last_compacted: None,
                 };
                 Ok(terminal)
             }
             PhysicalMutationIdempotencyBindingState::GroupSealed { basis, .. }
+            | PhysicalMutationIdempotencyBindingState::WalBound { basis, .. }
                 if basis.observation() == expected =>
             {
                 Err(PhysicalMutationPreSealCancellationDenial::GroupSealed)
@@ -181,11 +201,6 @@ impl PhysicalMutationIdempotencyRegistry {
                 if basis.observation() == expected =>
             {
                 Err(PhysicalMutationPreSealCancellationDenial::ReopenedUnresolved)
-            }
-            PhysicalMutationIdempotencyBindingState::WalBound { basis, .. }
-                if basis.observation() == expected =>
-            {
-                Err(PhysicalMutationPreSealCancellationDenial::GroupSealed)
             }
             PhysicalMutationIdempotencyBindingState::Terminal { basis, fate, .. }
                 if basis.observation() == expected =>
@@ -335,7 +350,7 @@ impl PhysicalMutationIdempotencyRegistry {
         };
         let (basis, indeterminate_basis) = match state {
             PhysicalMutationIdempotencyBindingState::Unsealed(basis)
-                if basis.matches_terminal(terminal) =>
+                if basis.matches_terminal(&terminal) =>
             {
                 (
                     basis.clone(),
@@ -343,7 +358,7 @@ impl PhysicalMutationIdempotencyRegistry {
                 )
             }
             PhysicalMutationIdempotencyBindingState::GroupSealed { basis, group }
-                if basis.matches_terminal(terminal) =>
+                if basis.matches_terminal(&terminal) =>
             {
                 (
                     basis.clone(),
@@ -351,7 +366,7 @@ impl PhysicalMutationIdempotencyRegistry {
                 )
             }
             PhysicalMutationIdempotencyBindingState::WalBound { basis, persisted }
-                if basis.matches_terminal(terminal) =>
+                if basis.matches_terminal(&terminal) =>
             {
                 (
                     basis.clone(),

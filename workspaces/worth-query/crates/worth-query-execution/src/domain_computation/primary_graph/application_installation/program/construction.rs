@@ -52,6 +52,7 @@ where
         initial_state,
         None,
         None,
+        None,
     )
 }
 
@@ -84,6 +85,7 @@ where
         limits,
         initial_state,
         Some(Box::new(source)),
+        None,
         None,
     )
 }
@@ -124,6 +126,7 @@ where
         initial_state,
         None,
         None,
+        None,
     )
 }
 
@@ -158,6 +161,7 @@ where
         initial_state,
         Some(Box::new(source)),
         None,
+        None,
     )
 }
 
@@ -176,6 +180,7 @@ pub(super) fn in_memory_program_with_optional_authorization_time_source<Schema, 
         Box<dyn crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSource>,
     >,
     checkpoint: Option<crate::domain_computation::primary_graph::WorthQueryApplicationCheckpoint>,
+    checkpoint_transition: Option<crate::domain_computation::primary_graph::bootstrap::checkpoint_transition::CheckpointTransition<'_, '_, Schema>>,
 ) -> Result<WorthQueryProgramApplicationRuntime<Schema, Program>, WorthQueryInMemoryApplicationDenial>
 where
     Schema: ApplicationSchemaComposition,
@@ -201,6 +206,7 @@ where
             Ok(support)
         })),
         checkpoint,
+        checkpoint_transition,
     )?;
     let (installed, supported) =
         admitted.ok_or(WorthQueryInMemoryApplicationDenial::ProgramAdmissionIncomplete)?;

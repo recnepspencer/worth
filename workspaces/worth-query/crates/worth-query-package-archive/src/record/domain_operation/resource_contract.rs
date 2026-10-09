@@ -1,5 +1,5 @@
 use worth_query_declaration::facade::domain_computation::{
-    WorthQueryCancellationSafePointFamily as SafePoint,
+    WorthQueryCancellationSafePointFamily as SafePoint, WorthQueryExecutionBoundary as Boundary,
     WorthQueryExecutionDegradation as Degradation, WorthQueryExecutionMode as Mode,
     WorthQueryPartialEffectPosture as PartialEffect,
     WorthQueryResourceDimension as ResourceDimension,
@@ -26,6 +26,9 @@ use crate::denial::{
 use crate::record::decode_budget::RecordDecodeAttempt;
 use crate::record::sequence::{decode_sequence, write_sequence};
 
+mod postures;
+mod sparse;
+
 pub(super) fn write_resource_contract(
     output: &mut dyn BinaryEncodingSink,
     contract: &ResourceContract,
@@ -33,8 +36,23 @@ pub(super) fn write_resource_contract(
     match contract {
         ResourceContract::Undeclared => output.u16(1),
         ResourceContract::Declared { strategies } => {
-            output.u16(2)?;
-            write_sequence(output, strategies, write_strategy)
+            if strategies
+                .iter()
+                .any(|strategy| strategy.envelope().boundary() == Boundary::Atomic)
+            {
+                output.u16(4)?;
+                return write_sequence(output, strategies, sparse::write_strategy);
+            }
+            let optional_work = strategies.iter().any(|strategy| {
+                strategy
+                    .envelope()
+                    .optional_scale_ceiling(ScaleAxis::WorkItems)
+                    .is_none()
+            });
+            output.u16(if optional_work { 3 } else { 2 })?;
+            write_sequence(output, strategies, |output, strategy| {
+                write_strategy_variant(output, strategy, optional_work)
+            })
         }
     }
 }
@@ -45,8 +63,25 @@ pub(super) fn decode_resource_contract(
 ) -> Result<ResourceContract, Denial> {
     match input.u16()? {
         1 => Ok(ResourceContract::Undeclared),
-        2 => {
-            let strategies = decode_sequence(input, budget, 90, |input, _| decode_strategy(input))?;
+        4 => sparse::decode_contract(input, budget),
+        tag @ (2 | 3) => {
+            let optional_work = tag == 3;
+            let strategies = decode_sequence(
+                input,
+                budget,
+                if optional_work { 84 } else { 90 },
+                |input, _| decode_strategy_variant(input, optional_work),
+            )?;
+            if optional_work
+                && strategies.iter().all(|strategy| {
+                    strategy
+                        .envelope()
+                        .optional_scale_ceiling(ScaleAxis::WorkItems)
+                        .is_some()
+                })
+            {
+                return Err(Denial::new(Kind::NonCanonicalRecordSequence));
+            }
             if strategies
                 .windows(2)
                 .any(|pair| pair[0].name() >= pair[1].name())
@@ -60,19 +95,26 @@ pub(super) fn decode_resource_contract(
     }
 }
 
-fn write_strategy(output: &mut dyn BinaryEncodingSink, strategy: &Strategy) -> Result<(), Denial> {
+fn write_strategy_variant(
+    output: &mut dyn BinaryEncodingSink,
+    strategy: &Strategy,
+    optional_work: bool,
+) -> Result<(), Denial> {
     output.text(strategy.name().as_str())?;
-    write_envelope(output, strategy.envelope())?;
+    write_envelope(output, strategy.envelope(), optional_work)?;
     let providers = strategy.provider_requirements();
     output.text(providers.provider().as_str())?;
     output.text(providers.access_product().as_str())?;
     output.text(providers.allocator().as_str())
 }
 
-fn decode_strategy(input: &mut BinaryInput<'_>) -> Result<Strategy, Denial> {
+fn decode_strategy_variant(
+    input: &mut BinaryInput<'_>,
+    optional_work: bool,
+) -> Result<Strategy, Denial> {
     let name = StrategyName::new(input.text()?.to_owned())
         .map_err(|_| Denial::new(Kind::InvalidRecordShape))?;
-    let envelope = decode_envelope(input)?;
+    let envelope = decode_envelope(input, optional_work)?;
     let providers = ProviderRequirements::new(
         Provider::new(input.text()?.to_owned())
             .map_err(|_| Denial::new(Kind::InvalidRecordShape))?,
@@ -84,76 +126,53 @@ fn decode_strategy(input: &mut BinaryInput<'_>) -> Result<Strategy, Denial> {
     Ok(Strategy::new(name, envelope, providers))
 }
 
-fn write_envelope(output: &mut dyn BinaryEncodingSink, envelope: &Envelope) -> Result<(), Denial> {
+fn write_envelope(
+    output: &mut dyn BinaryEncodingSink,
+    envelope: &Envelope,
+    optional_work: bool,
+) -> Result<(), Denial> {
+    let work_present = envelope
+        .optional_scale_ceiling(ScaleAxis::WorkItems)
+        .is_some();
+    if optional_work {
+        output.u16(if work_present { 2 } else { 1 })?;
+    }
     for axis in ScaleAxis::ALL {
-        output.u64(envelope.scale_ceiling(axis))?;
+        if axis != ScaleAxis::WorkItems || work_present {
+            output.u64(envelope.scale_ceiling(axis))?;
+        }
     }
     for dimension in ResourceDimension::ALL {
         output.u64(envelope.resource_ceiling(dimension))?;
     }
-    output.u16(match envelope.mode() {
-        Mode::Synchronous => 1,
-        Mode::Asynchronous => 2,
-    })?;
-    output.u16(match envelope.degradation() {
-        None => 1,
-        Some(Degradation::PartialResult) => 2,
-    })?;
-    output.u16(match envelope.partial_effect_posture() {
-        PartialEffect::EffectFree => 1,
-        PartialEffect::PartialEffectsMayRemain => 2,
-    })?;
-    output.u16(match envelope.yielded_state_posture() {
-        YieldedState::NotYieldable => 1,
-        YieldedState::ProviderCheckpoint => 2,
-    })?;
-    output.u16(match envelope.retained_progress_posture() {
-        RetainedProgress::ReleaseAfterAttempt => 1,
-        RetainedProgress::RetainAttemptCapacity => 2,
-    })?;
-    output.text(envelope.cancellation_safe_point().as_str())
+    postures::write(output, envelope)
 }
 
-fn decode_envelope(input: &mut BinaryInput<'_>) -> Result<Envelope, Denial> {
+fn decode_envelope(input: &mut BinaryInput<'_>, optional_work: bool) -> Result<Envelope, Denial> {
+    let work_present = if optional_work {
+        match input.u16()? {
+            1 => false,
+            2 => true,
+            _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
+        }
+    } else {
+        true
+    };
     let mut scale = ScaleLimits::bounded(input.u64()?);
     for axis in ScaleAxis::ALL.into_iter().skip(1) {
-        scale = scale.with(axis, input.u64()?);
+        if axis != ScaleAxis::WorkItems || work_present {
+            scale = scale.with(axis, input.u64()?);
+        }
+    }
+    if !work_present {
+        scale = scale.without_work_budget();
     }
     let mut resources = ResourceLimits::bounded(input.u64()?);
     for dimension in ResourceDimension::ALL.into_iter().skip(1) {
         resources = resources.with(dimension, input.u64()?);
     }
-    let mode = match input.u16()? {
-        1 => Mode::Synchronous,
-        2 => Mode::Asynchronous,
-        _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
-    };
-    let degradation = match input.u16()? {
-        1 => None,
-        2 => Some(Degradation::PartialResult),
-        _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
-    };
-    let partial_effect = match input.u16()? {
-        1 => PartialEffect::EffectFree,
-        2 => PartialEffect::PartialEffectsMayRemain,
-        _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
-    };
-    let yielded_state = match input.u16()? {
-        1 => YieldedState::NotYieldable,
-        2 => YieldedState::ProviderCheckpoint,
-        _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
-    };
-    let retained_progress = match input.u16()? {
-        1 => RetainedProgress::ReleaseAfterAttempt,
-        2 => RetainedProgress::RetainAttemptCapacity,
-        _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
-    };
-    let safe_point = SafePoint::new(input.text()?.to_owned())
-        .map_err(|_| Denial::new(Kind::InvalidRecordShape))?;
-    Ok(
-        Envelope::new(scale, resources, mode, degradation, safe_point)
-            .with_partial_effect_posture(partial_effect)
-            .with_yielded_state_posture(yielded_state)
-            .with_retained_progress_posture(retained_progress),
-    )
+    postures::decode(input, scale, resources, Boundary::BoundedStep)
 }
+
+#[cfg(test)]
+mod tests;

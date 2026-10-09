@@ -44,7 +44,7 @@ fn resealed_metadata_page_lsn_is_denied_before_complete_child_admission() {
 fn absent_root_requires_its_entire_reference_region_to_remain_zero() {
     let mut empty = HEADER_LITERAL.to_vec();
     empty[72..80].fill(0);
-    empty[112..176].fill(0);
+    empty[112..192].fill(0);
     reseal(&mut empty);
     let scope_for = |bytes: &[u8]| {
         PhysicalArtifactScope::free_space_header(
@@ -56,7 +56,7 @@ fn absent_root_requires_its_entire_reference_region_to_remain_zero() {
                 None,
                 DurableArtifactCrc32c::new(independent_crc32c(&[bytes])),
             ),
-            PhysicalByteRange::new(HEADER_OFFSET, 176).unwrap(),
+            PhysicalByteRange::new(HEADER_OFFSET, HEADER_LITERAL.len() as u64).unwrap(),
         )
     };
     assert!(DurableFreeSpaceManifestHeader::decode(&empty, 2).is_ok());
@@ -68,7 +68,7 @@ fn absent_root_requires_its_entire_reference_region_to_remain_zero() {
         .0,
         FreeSpaceHeaderIntegrityValidation::Intact(_)
     ));
-    for offset in 120..176 {
+    for offset in 120..192 {
         let mut bytes = empty.clone();
         bytes[offset] = 1;
         reseal(&mut bytes);
@@ -76,8 +76,49 @@ fn absent_root_requires_its_entire_reference_region_to_remain_zero() {
             DurableFreeSpaceManifestHeader::decode(&bytes, 2),
             Err(FreeSpaceRoutingDenial::Malformed)
         ));
-        assert_canonicality_damage(&bytes, scope_for(&bytes), 120, 56);
+        assert_canonicality_damage(&bytes, scope_for(&bytes), 120, 72);
     }
+}
+
+#[test]
+fn arena_frontier_and_geometry_fail_at_their_exact_fields() {
+    let mut missing_frontier = HEADER_LITERAL.to_vec();
+    missing_frontier[192..200].fill(0);
+    reseal(&mut missing_frontier);
+    let scope = header_scope(store(7), independent_crc32c(&[&missing_frontier]));
+    let (FreeSpaceHeaderIntegrityValidation::Rejected(rejection), _) = validate_free_space_header(
+        UntrustedPhysicalArtifact::from_bounded_bytes(&missing_frontier),
+        scope,
+    ) else {
+        panic!("zero arena frontier admitted");
+    };
+    assert_damage(
+        rejection,
+        scope,
+        PhysicalDamageCause::MalformedStructure,
+        range(scope, 192, 8),
+        Some(PhysicalFormatField::AllocationFrontier),
+        PhysicalBlastRadius::CompleteArtifact,
+    );
+
+    let mut invalid_alignment = HEADER_LITERAL.to_vec();
+    invalid_alignment[208..216].copy_from_slice(&3_u64.to_le_bytes());
+    reseal(&mut invalid_alignment);
+    let scope = header_scope(store(7), independent_crc32c(&[&invalid_alignment]));
+    let (FreeSpaceHeaderIntegrityValidation::Rejected(rejection), _) = validate_free_space_header(
+        UntrustedPhysicalArtifact::from_bounded_bytes(&invalid_alignment),
+        scope,
+    ) else {
+        panic!("non-power-of-two arena alignment admitted");
+    };
+    assert_damage(
+        rejection,
+        scope,
+        PhysicalDamageCause::MalformedStructure,
+        range(scope, 208, 8),
+        Some(PhysicalFormatField::Payload),
+        PhysicalBlastRadius::CompleteArtifact,
+    );
 }
 
 fn assert_canonicality_damage(
@@ -101,5 +142,6 @@ fn assert_canonicality_damage(
     );
     assert_rejected_counters(counters,
         worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily::FreeSpaceHeader,
-        176, PhysicalIntegrityRejectionClass::Damaged(PhysicalDamageCause::MalformedStructure));
+        HEADER_LITERAL.len() as u64,
+        PhysicalIntegrityRejectionClass::Damaged(PhysicalDamageCause::MalformedStructure));
 }

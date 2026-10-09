@@ -86,7 +86,7 @@ impl ApplicationMutationBinding<BankSchema> for RetransmitEstateDeathNoticeMutat
     const CANDIDATES: ApplicationCandidateRequirements =
         ApplicationCandidateRequirements::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 0, 1),
-            ApplicationCandidateResourceCeiling::bounded(32768, 0),
+            ApplicationCandidateResourceCeiling::representation_bytes(32768),
         );
 
     fn scope_field() -> ApplicationFieldRef<

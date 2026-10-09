@@ -118,6 +118,16 @@ impl<'media> SegmentMembershipReader<'media> {
         reference: SegmentManifestBlockReference,
         counters: &mut ManifestDiscoveryCounterSnapshot,
     ) -> Result<PhysicalSegmentMembershipBlock, ManifestLookupFailure> {
+        self.read_block_with_len(allocation, reference, counters)
+            .map(|(block, _)| block)
+    }
+
+    pub(in crate::physical_runtime::record_serving) fn read_block_with_len(
+        &self,
+        allocation: &worth_store_buffer_pool::OperationAllocationGrant,
+        reference: SegmentManifestBlockReference,
+        counters: &mut ManifestDiscoveryCounterSnapshot,
+    ) -> Result<(PhysicalSegmentMembershipBlock, u64), ManifestLookupFailure> {
         let limit = self
             .access
             .transfer_limit()
@@ -163,7 +173,7 @@ impl<'media> SegmentMembershipReader<'media> {
             })
         });
         match decoded {
-            Ok(Ok(block)) => Ok(block),
+            Ok(Ok(block)) => Ok((block, bytes.len() as u64)),
             Ok(Err(_)) => {
                 bytes.reject_projection_failure();
                 Err(ManifestLookupFailure::Damaged)

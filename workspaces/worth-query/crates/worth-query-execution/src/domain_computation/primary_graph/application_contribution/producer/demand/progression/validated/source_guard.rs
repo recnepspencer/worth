@@ -105,7 +105,9 @@ where
                 return Err(denial)
             }
             OutputRowStage::Ready(completion) => Some(completion),
-            OutputRowStage::Stopped(_) | OutputRowStage::BeforeReady => None,
+            OutputRowStage::Stopped(_)
+            | OutputRowStage::BeforeReady
+            | OutputRowStage::Published => None,
         };
         let held = ready.as_ref().map(|completion| &completion.authority);
         // A changed source at the Ready's own publication is born stale:

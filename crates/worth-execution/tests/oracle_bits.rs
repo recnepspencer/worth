@@ -63,7 +63,7 @@ fn canonical_encoding_preserves_floating_point_bits_and_field_boundaries() {
 fn oracle_certifies_identical_nan_bits_and_rejects_different_value_bits() {
     let authority = ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
         max_workers: NonZeroUsize::new(2).unwrap(),
-        charged_memory_bytes: 1024,
+        charged_memory_bytes: Some(1024),
     })
     .unwrap();
     let lease = authority

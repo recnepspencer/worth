@@ -125,6 +125,7 @@ where
             observed_source,
             input.input(),
             request_admission,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .map_err(|error| input_cutoff::source_preparation_denial(Binding::IDENTITY, error))?;
     required_output.retain_actual_resources(resources);
@@ -195,8 +196,10 @@ where
                         contact_root,
                     );
                 },
+                crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
             .map_err(|error| execution_failed(Binding::IDENTITY, error))?,
+        |domain_denial| provider.domain_denial_reason(domain_denial),
     )?;
     let (mut program, _) = completed.into_parts(); // Retries bind the complete typed dependency set.
     let (key_identity, dependency_identity) = program
@@ -235,9 +238,13 @@ where
         .with_output_demand_observation()
         .with_producer_required_invariants(Binding::REQUIRED_INVARIANTS);
     let outcome = match commit_authority {
-        WorthQueryProducerCommitAuthority::Ordinary => {
-            runtime.compare_and_commit_application_in_advancement(phase, program, idempotency)
-        }
+        WorthQueryProducerCommitAuthority::Ordinary => runtime
+            .compare_and_commit_application_in_advancement(
+                phase,
+                program,
+                idempotency,
+                crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            ),
         WorthQueryProducerCommitAuthority::ProgramOutput => runtime
             .compare_and_commit_application_for_program_output_producer(
                 phase,

@@ -17,9 +17,12 @@ fn owner_terminal_evidence_resolves_the_direct_provider_commit() {
         &request,
         "typed-terminal-evidence",
     );
-    let WorthQueryApplicationCommitOutcome::Committed(receipt) = world
-        .application
-        .compare_and_commit_application(program, idempotency(93, 94))
+    let WorthQueryApplicationCommitOutcome::Committed(receipt) =
+        world.application.compare_and_commit_application(
+            program,
+            idempotency(93, 94),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("typed terminal fixture commits");
     };

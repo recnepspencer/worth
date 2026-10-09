@@ -12,9 +12,12 @@ use super::{
 use worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 mod branch_set;
+mod output_currentness;
 mod program_outputs;
 pub use branch_set::WorthQueryApplicationBranchSetRequest;
-pub use program_outputs::WorthQueryProgramOutputCurrentnessDenial;
+pub use output_currentness::{
+    WorthQueryOutputCurrentnessDenial, WorthQueryProgramOutputCurrentnessDenial,
+};
 
 /// Borrowed ordinary-request context. Construction selects no World state and
 /// resolves no application principal.
@@ -243,6 +246,31 @@ impl<'application, 'principal, 'scope, Schema>
 where
     Schema: ApplicationSchema,
 {
+    /// Reads independently scoped intents at this same observation, publishing
+    /// only a complete ordered batch. Duplicate scopes are independently billed.
+    pub fn query_batch<Intent>(
+        &self,
+        intents: Vec<Intent>,
+    ) -> super::WorthQueryApplicationQueryBatchRequest<
+        'application,
+        'principal,
+        'scope,
+        Schema,
+        Intent,
+    >
+    where
+        Intent: ApplicationQueryIntent<Schema>,
+    {
+        super::WorthQueryApplicationQueryBatchRequest::new(
+            self.application,
+            self.principal,
+            self.scope,
+            self.branch,
+            std::sync::Arc::clone(&self.observation),
+            intents,
+        )
+    }
+
     pub fn query<Intent>(
         &self,
         intent: Intent,

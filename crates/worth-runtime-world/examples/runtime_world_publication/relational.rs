@@ -67,16 +67,24 @@ impl CargoRecords {
         let mut tx = runtime
             .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
             .unwrap();
-        tx.push_batch(WorkerIntentBatch::new("grain").push(MutationIntent::Create(
-            CreateIntent::Entity(EntitySpec {
-                partition_id: PartitionId::main(),
-                kind_id: KindId(1),
-                client_key: ClientKey::raw("grain"),
-                fields: patch("4"),
-            }),
-        )))
+        tx.push_batch(
+            WorkerIntentBatch::new("grain").push(MutationIntent::Create(CreateIntent::Entity(
+                EntitySpec {
+                    partition_id: PartitionId::main(),
+                    kind_id: KindId(1),
+                    client_key: ClientKey::raw("grain"),
+                    fields: patch("4"),
+                },
+            ))),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
-        let result = tx.commit(&runtime).unwrap();
+        let result = tx
+            .commit(
+                &runtime,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .unwrap();
         let grain = result
             .changed_records
             .iter()
@@ -103,11 +111,15 @@ impl CargoRecords {
                     fields: patch(value),
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
         self.runtime
             .preparation_port()
-            .prepare_branch_transaction(tx)
+            .prepare_branch_transaction(
+                tx,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .unwrap()
     }
 }

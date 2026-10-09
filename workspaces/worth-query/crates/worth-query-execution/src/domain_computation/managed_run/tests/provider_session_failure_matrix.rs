@@ -84,7 +84,8 @@ fn commit_failures_leave_recovery_required_and_drop_aborts_once() {
                 let prepared = staged_session(execution, running, graph)
                     .prepare_for_commit()
                     .expect("staged preparation should succeed");
-                let outcome = prepared.commit();
+                let outcome = prepared
+                    .commit(crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation);
                 assert_failure(
                     outcome.failure().expect("commit should fail"),
                     WorthQueryProviderSessionProtocolStage::Commit,

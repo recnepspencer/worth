@@ -66,9 +66,15 @@ fn rename_on_branch(
                     ),
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    transaction.commit(runtime).unwrap();
+    transaction
+        .commit(
+            runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
 }
 
 fn read_name(

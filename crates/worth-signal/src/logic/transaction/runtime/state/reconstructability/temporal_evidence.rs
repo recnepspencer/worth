@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use super::super::super::transaction::TemporalTransactionEvidence;
 use super::super::merge::canonical_digest;
+use super::super::retention_omission::RetentionOmission;
 use super::super::temporal::TemporalRuntimeState;
 use crate::data::temporal::{RuntimeClockBasis, TemporalWakeSummary};
 
@@ -13,6 +14,12 @@ pub struct TemporalReconstructabilityArtifact {
     pub scheduled_wake_count: u64,
     pub ready_wake_count: u64,
     pub retired_wake_count: u64,
+    #[serde(default, skip_serializing_if = "is_zero_u64")]
+    pub expired_retired_wake_count: u64,
+    #[serde(default, skip_serializing_if = "is_zero_u64")]
+    pub expired_retired_wake_high_water: u64,
+    #[serde(default, skip_serializing_if = "is_zero_digest")]
+    pub expired_retired_wake_digest: [u8; 32],
     pub rescheduled_wake_count: u64,
     pub reused_wake_count: u64,
     pub interval_regeneration_count: u64,
@@ -56,6 +63,16 @@ pub struct TemporalReplayParityReport {
 }
 
 pub const TEMPORAL_REPLAY_PARITY_SCHEMA_VERSION: &str = "worth-signal-temporal-replay-parity-v1";
+const TEMPORAL_REPLAY_PARITY_WITH_OMISSION_SCHEMA_VERSION: &str =
+    "worth-signal-temporal-replay-parity-v2";
+
+fn is_zero_u64(value: &u64) -> bool {
+    *value == 0
+}
+
+fn is_zero_digest(value: &[u8; 32]) -> bool {
+    *value == [0; 32]
+}
 
 impl Default for TemporalReconstructabilityArtifact {
     fn default() -> Self {
@@ -80,7 +97,11 @@ pub fn temporal_replay_parity_report(
     if expected.ready_wake_digest != replayed.ready_wake_digest {
         mismatch_classes.push(TemporalReplayMismatchClass::ReadyWakeDigestMismatch);
     }
-    if expected.retired_wake_digest != replayed.retired_wake_digest {
+    if expected.retired_wake_digest != replayed.retired_wake_digest
+        || expected.expired_retired_wake_count != replayed.expired_retired_wake_count
+        || expected.expired_retired_wake_high_water != replayed.expired_retired_wake_high_water
+        || expected.expired_retired_wake_digest != replayed.expired_retired_wake_digest
+    {
         mismatch_classes.push(TemporalReplayMismatchClass::RetiredWakeDigestMismatch);
     }
     if expected.rescheduled_wake_digest != replayed.rescheduled_wake_digest {
@@ -105,7 +126,14 @@ pub fn temporal_replay_parity_report(
         mismatch_classes.push(TemporalReplayMismatchClass::WakeSummaryMismatch);
     }
     TemporalReplayParityReport {
-        proof_schema_version: TEMPORAL_REPLAY_PARITY_SCHEMA_VERSION.to_owned(),
+        proof_schema_version: if expected.expired_retired_wake_count == 0
+            && replayed.expired_retired_wake_count == 0
+        {
+            TEMPORAL_REPLAY_PARITY_SCHEMA_VERSION
+        } else {
+            TEMPORAL_REPLAY_PARITY_WITH_OMISSION_SCHEMA_VERSION
+        }
+        .to_owned(),
         expected: expected.clone(),
         replayed: replayed.clone(),
         parity: mismatch_classes.is_empty(),
@@ -117,6 +145,14 @@ impl TemporalReconstructabilityArtifact {
     pub fn from_evidence(
         wake_summary: TemporalWakeSummary,
         evidence: &TemporalTransactionEvidence,
+    ) -> Self {
+        Self::from_evidence_with_omission(wake_summary, evidence, RetentionOmission::default())
+    }
+
+    fn from_evidence_with_omission(
+        wake_summary: TemporalWakeSummary,
+        evidence: &TemporalTransactionEvidence,
+        omitted: RetentionOmission,
     ) -> Self {
         let clock_checkpoint_digest = canonical_digest(&evidence.clock_basis);
         let scheduled_wake_digest = canonical_digest(&evidence.scheduled_wakes);
@@ -132,6 +168,8 @@ impl TemporalReconstructabilityArtifact {
             scheduled_wake_digest: &scheduled_wake_digest,
             ready_wake_digest: &ready_wake_digest,
             retired_wake_digest: &retired_wake_digest,
+            expired_retired_wake_count: omitted.count(),
+            expired_retired_wake_digest: omitted.digest(),
             rescheduled_wake_digest: &rescheduled_wake_digest,
             reused_wake_digest: &reused_wake_digest,
             interval_regeneration_digest: &interval_regeneration_digest,
@@ -145,6 +183,9 @@ impl TemporalReconstructabilityArtifact {
             scheduled_wake_count: evidence.scheduled_wakes.len() as u64,
             ready_wake_count: evidence.ready_wakes.len() as u64,
             retired_wake_count: evidence.retired_wakes.len() as u64,
+            expired_retired_wake_count: omitted.count(),
+            expired_retired_wake_high_water: omitted.high_water(),
+            expired_retired_wake_digest: omitted.digest(),
             rescheduled_wake_count: evidence.rescheduled_wakes.len() as u64,
             reused_wake_count: evidence.reused_wakes.len() as u64,
             interval_regeneration_count: evidence.interval_regenerations.len() as u64,
@@ -176,7 +217,11 @@ impl TemporalReconstructabilityArtifact {
             interval_regenerations: Vec::new(),
             previous_value_references: Vec::new(),
         };
-        Self::from_evidence(temporal.wake_summary(), &evidence)
+        Self::from_evidence_with_omission(
+            temporal.wake_summary(),
+            &evidence,
+            temporal.expired_retired_wakes,
+        )
     }
 }
 
@@ -186,9 +231,70 @@ struct TemporalCertificationDigestBasis<'a> {
     scheduled_wake_digest: &'a str,
     ready_wake_digest: &'a str,
     retired_wake_digest: &'a str,
+    #[serde(skip_serializing_if = "is_zero_u64")]
+    expired_retired_wake_count: u64,
+    #[serde(skip_serializing_if = "is_zero_digest")]
+    expired_retired_wake_digest: [u8; 32],
     rescheduled_wake_digest: &'a str,
     reused_wake_digest: &'a str,
     interval_regeneration_digest: &'a str,
     temporal_eligibility_digest: &'a str,
     previous_value_reference_digest: &'a str,
+}
+
+#[cfg(test)]
+mod compatibility_tests {
+    use serde::Serialize;
+
+    use super::{
+        canonical_digest, temporal_replay_parity_report, TemporalReconstructabilityArtifact,
+        TEMPORAL_REPLAY_PARITY_SCHEMA_VERSION,
+    };
+
+    #[derive(Serialize)]
+    struct LegacyCertificationBasis<'a> {
+        clock_checkpoint_digest: &'a str,
+        scheduled_wake_digest: &'a str,
+        ready_wake_digest: &'a str,
+        retired_wake_digest: &'a str,
+        rescheduled_wake_digest: &'a str,
+        reused_wake_digest: &'a str,
+        interval_regeneration_digest: &'a str,
+        temporal_eligibility_digest: &'a str,
+        previous_value_reference_digest: &'a str,
+    }
+
+    #[test]
+    fn no_omission_temporal_artifact_keeps_v1_serialization_and_certification_digest() {
+        let artifact = TemporalReconstructabilityArtifact::default();
+        let legacy_digest = canonical_digest(&LegacyCertificationBasis {
+            clock_checkpoint_digest: &artifact.clock_checkpoint_digest,
+            scheduled_wake_digest: &artifact.scheduled_wake_digest,
+            ready_wake_digest: &artifact.ready_wake_digest,
+            retired_wake_digest: &artifact.retired_wake_digest,
+            rescheduled_wake_digest: &artifact.rescheduled_wake_digest,
+            reused_wake_digest: &artifact.reused_wake_digest,
+            interval_regeneration_digest: &artifact.interval_regeneration_digest,
+            temporal_eligibility_digest: &artifact.temporal_eligibility_digest,
+            previous_value_reference_digest: &artifact.previous_value_reference_digest,
+        });
+        assert_eq!(artifact.certification_digest, legacy_digest);
+        let serialized = serde_json::to_value(&artifact).unwrap();
+        for field in [
+            "expired_retired_wake_count",
+            "expired_retired_wake_high_water",
+            "expired_retired_wake_digest",
+        ] {
+            assert!(serialized.get(field).is_none(), "v1 omitted {field}");
+        }
+        let decoded: TemporalReconstructabilityArtifact =
+            serde_json::from_value(serialized).unwrap();
+        assert_eq!(decoded, artifact);
+        let parity = temporal_replay_parity_report(&artifact, &decoded);
+        assert!(parity.parity);
+        assert_eq!(
+            parity.proof_schema_version,
+            TEMPORAL_REPLAY_PARITY_SCHEMA_VERSION
+        );
+    }
 }

@@ -39,7 +39,7 @@ fn canonical_world_reopens_into_the_cold_extent_interleave() {
     append(&serving, policy, ordinal, &[0x5A; 20_000]);
     ordinal += 1;
     assert!(root
-        .join("families/records/extents")
+        .join("families/records/arenas")
         .read_dir()
         .unwrap()
         .next()

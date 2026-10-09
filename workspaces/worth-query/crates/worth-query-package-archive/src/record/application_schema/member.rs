@@ -57,7 +57,6 @@ pub(super) fn write(
         | ApplicationSchemaMember::OperationProgram { .. }
         | ApplicationSchemaMember::OperationDecisionRead { .. }
         | ApplicationSchemaMember::OperationMutationPrecondition { .. }
-        | ApplicationSchemaMember::OperationDecisionFactBudget { .. }
         | ApplicationSchemaMember::OperationProjectionWorkBudget { .. }
         | ApplicationSchemaMember::OperationExternalEffect { .. }
         | ApplicationSchemaMember::OperationInboundOccurrence { .. }
@@ -79,7 +78,7 @@ pub(super) fn decode(
     match input.u16()? {
         tag @ 1..=5 | tag @ 25..=26 => schema::decode(tag, input),
         tag @ 6..=10 => capability::decode(tag, input, budget),
-        tag @ 11..=18 | tag @ (29 | 30) => operation::decode(tag, input, budget),
+        tag @ 11..=14 | tag @ 16..=18 | tag @ (29 | 30) => operation::decode(tag, input, budget),
         tag @ 19..=22 => authorization::decode(tag, input, budget),
         tag @ 23..=24 => vocabulary::decode(tag, input),
         27 => invariant::decode(input, budget),
@@ -113,7 +112,6 @@ pub(super) fn member_tag(member: &ApplicationSchemaMember) -> u16 {
         ApplicationSchemaMember::OperationProgram { .. } => 12,
         ApplicationSchemaMember::OperationDecisionRead { .. } => 13,
         ApplicationSchemaMember::OperationMutationPrecondition { .. } => 14,
-        ApplicationSchemaMember::OperationDecisionFactBudget { .. } => 15,
         ApplicationSchemaMember::OperationProjectionWorkBudget { .. } => 16,
         ApplicationSchemaMember::OperationExternalEffect { .. } => 17,
         ApplicationSchemaMember::OperationInboundOccurrence { .. } => 30,

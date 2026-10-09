@@ -129,7 +129,6 @@ fn mutation_host_calls_own_the_request_and_prepared_products_hold_only_facts() {
                     output_key: "anchor-a".into(),
                 },
             ]),
-            validator_work: 4_096,
         })
     };
     let observed = request
@@ -143,7 +142,10 @@ fn mutation_host_calls_own_the_request_and_prepared_products_hold_only_facts() {
         .mutate(input())
         .expect_source(observed.observed_sources()[0].clone())
         .idempotency(&9_761_u64)
-        .execute_in_program(&application)
+        .execute_in_program(
+            &application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     assert!(matches!(outcome, Outcome::Committed { .. }));
     assert_eq!(
@@ -163,7 +165,10 @@ fn mutation_host_calls_own_the_request_and_prepared_products_hold_only_facts() {
         .mutate(input())
         .expect_source(observed.observed_sources()[0].clone())
         .idempotency(&9_765_u64)
-        .execute_retained_in_program(&application)
+        .execute_retained_in_program(
+            &application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     assert!(matches!(retained,
         worth_query_host::facade::application_entry::WorthQueryApplicationRetainedMutationOutcome::Committed { .. }
@@ -186,7 +191,13 @@ fn mutation_host_calls_own_the_request_and_prepared_products_hold_only_facts() {
         .expect_source(observed.observed_sources()[0].clone())
         .idempotency(&9_762_u64);
     reports();
-    let Preparation::Prepared(prepared) = mutation.prepare_in_program(&application).unwrap() else {
+    let Preparation::Prepared(prepared) = mutation
+        .prepare_in_program(
+            &application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap()
+    else {
         panic!("a fresh mutation produces an unpublished candidate");
     };
     assert_eq!(
@@ -194,7 +205,11 @@ fn mutation_host_calls_own_the_request_and_prepared_products_hold_only_facts() {
         1,
         "preparation closes before delivering the product"
     );
-    assert!(matches!(prepared.commit(), Outcome::Committed { .. }));
+    assert!(matches!(
+        prepared
+            .commit(worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation),
+        Outcome::Committed { .. }
+    ));
     assert_eq!(
         reports().len(),
         1,
@@ -212,7 +227,12 @@ fn mutation_host_calls_own_the_request_and_prepared_products_hold_only_facts() {
         .expect_source(observed.observed_sources()[0].clone())
         .idempotency(&9_763_u64);
     reports();
-    let prepared = mutation.prepare_in_program(&application).unwrap();
+    let prepared = mutation
+        .prepare_in_program(
+            &application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
     drop(prepared);
     assert_eq!(reports().len(), 1, "dropping data opens no commit request");
 }

@@ -6,8 +6,13 @@ use worth_query_installation::facade::ApplicationSchema;
 pub use super::super::handler::{CandidateWriter, DecisionReader, HandlerInterruption};
 mod completed_candidate;
 mod execution;
+mod execution_report;
 pub use completed_candidate::WorthQueryCompletedMutationCandidate;
 pub use execution::MutationHandlerExecutionDenial;
+pub use execution_report::{
+    WorthQueryMutationHandlerExecutionReport, WorthQueryMutationHandlerProjectionWork,
+    WorthQueryMutationHandlerWork,
+};
 
 /// Execution failure reported by handler-owned decision or candidate work.
 #[derive(Debug)]

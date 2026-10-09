@@ -1,7 +1,7 @@
 use super::*;
 
 #[path = "supersession/fixture.rs"]
-mod fixture;
+pub(super) mod fixture;
 use fixture::image;
 
 #[test]

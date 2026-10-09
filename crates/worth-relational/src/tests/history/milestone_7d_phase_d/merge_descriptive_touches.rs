@@ -47,9 +47,15 @@ fn native_merge_touches_only_changed_revision_and_both_index_membership_keys() {
                     ),
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    source.commit(&runtime).expect("source status commit");
+    source
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .expect("source status commit");
 
     let prepared = runtime
         .prepare_merge_execution(MergeExecutionRequest {

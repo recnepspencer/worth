@@ -37,9 +37,15 @@ impl<'media> IntegrityAdmittedRootManifest<'media> {
         .record_count(self.validated.record_count())
         .next_block(self.validated.next_block())
         .next_segment_block(self.validated.next_segment_block())
+        .release_custody_head_root(self.validated.release_custody_head_root())
+        .next_release_custody_head_block(self.validated.next_release_custody_head_block())
         .routing_root(self.validated.routing_root())
         .segment_root(self.validated.segment_root())
         .free_space_root(self.validated.free_space_root())
+        .latest_blob_publication(self.validated.latest_blob_publication())
+        .latest_blob_quarantine(self.validated.latest_blob_quarantine())
+        .tier_epoch_anchor(self.validated.tier_epoch_anchor())
+        .derived_family_directory(self.validated.derived_family_directory())
         .last_inline_record(self.validated.last_inline_record())
         .last_inline_segment(self.validated.last_inline_segment())
         .admit()
@@ -59,7 +65,7 @@ impl<'media> IntegrityAdmittedRootManifest<'media> {
     pub(crate) fn bind_checkpoint_base(
         &self,
         selected: &worth_store_recovery_physics::SelectedPhysicalRoot,
-        checkpoint: worth_store_physical_integrity::VerifiedCheckpointStream,
+        checkpoint: &worth_store_physical_integrity::VerifiedCheckpointStream,
         counters: &mut RecoveryIntegrityIngressCounters,
     ) -> Result<
         worth_store_recovery_physics::PhysicalCheckpointBase,

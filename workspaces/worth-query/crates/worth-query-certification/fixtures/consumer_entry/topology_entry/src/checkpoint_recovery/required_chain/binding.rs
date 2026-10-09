@@ -73,7 +73,7 @@ worth_query_structured_value_binding!(pub(super) ChainInputBinding for ChainInpu
     identity: "worth.query.certification.consumed-chain-input.v1"
 });
 worth_query_operation!(pub(super) PublishChain for Schema: TopologySchemaBinding, input ChainInputBinding);
-worth_query_operation_reads!(PublishChain => [Body, BodyKey, Length]);
+worth_query_operation_reads!(PublishChain => [Body, BodyKey, Length, PositionY]);
 worth_query_operation_writes!(PublishChain => [Length]);
 
 pub(super) struct ChainBinding<Schema>(PhantomData<fn() -> Schema>);
@@ -108,7 +108,7 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema> for Chain
     const HANDLER_IDENTITY: &'static str = "worth.query.certification.consumed-chain-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.consumed-chain-command.v1";
-    const CANDIDATES: ApplicationCandidateRequirements = requirements(0, 0, 0, 1, 8_192, 4_096);
+    const CANDIDATES: ApplicationCandidateRequirements = requirements(0, 0, 0, 1, 8_192);
     fn scope_field() -> ApplicationFieldRef<
         Schema,
         Body,
@@ -153,8 +153,21 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, ChainBinding<Schema
             Ok(_) => return HandlerResult::DomainDenied(PlanarMutationDenial::MissingCoordinate),
             Err(error) => return HandlerResult::ExecutionDenied(error),
         }
+        // A real decision fact, absent from the source projection and prepared
+        // input key, can remove the previously consumed diamond edges.
+        let drop_upstreams = if input.scope_key == "diamond-join" {
+            match reader.field(&target, PositionY::reference()) {
+                Ok(Some(value)) => value == length(105),
+                Ok(None) => {
+                    return HandlerResult::DomainDenied(PlanarMutationDenial::MissingCoordinate)
+                }
+                Err(error) => return HandlerResult::ExecutionDenied(error),
+            }
+        } else {
+            false
+        };
         let mut consumed = Vec::with_capacity(input.upstreams.len());
-        for upstream in &input.upstreams {
+        for upstream in input.upstreams.iter().filter(|_| !drop_upstreams) {
             match consumed_length(upstream, reader) {
                 HandlerResult::Completed(value) => consumed.push(PositiveLength::get(&value)),
                 HandlerResult::DomainDenied(denial) => return HandlerResult::DomainDenied(denial),
@@ -255,13 +268,13 @@ pub(super) fn declare<Schema: TopologySchemaBinding>(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_decision_fact_budget(operation, 32)
         // The actual consumed-output lookup verifies upstream lineage/native
         // currentness inside the handler's projection allowance.
         .operation_projection_work_budget(operation, 4_096)
         .operation_read_entity(operation, Body::reference())
         .operation_read_field(operation, BodyKey::reference())
         .operation_read_field(operation, Length::reference())
+        .operation_read_field(operation, PositionY::reference())
         .operation_write(operation, Length::reference())
         .application_mutation_binding::<ChainBinding<Schema>>()
 }

@@ -8,6 +8,7 @@ use crate::facade::transactions::{
     UpdateEntityFieldsIntent, UpdateRelationEndpointsIntent, WorkerIntentBatch,
 };
 use crate::tests::support::*;
+use worth_execution::ExecutionAllocationPolicy as Allocation;
 use worth_foundational::facade::{AspectKey, AspectValue, FieldKey};
 
 const GENEROUS: Budget = Budget {
@@ -31,9 +32,12 @@ fn prepared_summary_reads_exact_whole_scalar_scope_without_publishing() {
                     },
                 ),
             )),
+            Allocation::SystemAllocation,
         )
         .unwrap();
-    let candidate = runtime.prepare_branch_transaction(transaction).unwrap();
+    let candidate = runtime
+        .prepare_branch_transaction(transaction, Allocation::SystemAllocation)
+        .unwrap();
     let summary = runtime
         .preparation_port()
         .summarize_prepared_candidate(&candidate, GENEROUS)
@@ -87,18 +91,21 @@ fn unchanged_entity_update_has_empty_scope_and_preserves_native_field_revision()
     let entity = create_entity(&runtime, "summary-unchanged");
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
-        .push_batch(WorkerIntentBatch::new("summary-unchanged-update").push(
-            MutationIntent::Entity(
+        .push_batch(
+            WorkerIntentBatch::new("summary-unchanged-update").push(MutationIntent::Entity(
                 crate::facade::transactions::EntityMutationIntent::UpdateFields(
                     UpdateEntityFieldsIntent {
                         entity_id: entity,
                         fields: name_field_patch("summary-unchanged"),
                     },
                 ),
-            ),
-        ))
+            )),
+            Allocation::SystemAllocation,
+        )
         .unwrap();
-    let candidate = runtime.prepare_branch_transaction(transaction).unwrap();
+    let candidate = runtime
+        .prepare_branch_transaction(transaction, Allocation::SystemAllocation)
+        .unwrap();
     let summary = runtime
         .preparation_port()
         .summarize_prepared_candidate(&candidate, GENEROUS)
@@ -173,9 +180,12 @@ fn prepared_summary_preserves_exact_struct_field_scope() {
                     },
                 ),
             )),
+            Allocation::SystemAllocation,
         )
         .unwrap();
-    let candidate = runtime.prepare_branch_transaction(transaction).unwrap();
+    let candidate = runtime
+        .prepare_branch_transaction(transaction, Allocation::SystemAllocation)
+        .unwrap();
     let summary = runtime
         .preparation_port()
         .summarize_prepared_candidate(&candidate, GENEROUS)
@@ -217,9 +227,12 @@ fn prepared_summary_uses_before_and_after_relation_roots_for_rewire() {
                     target: EntityReference::Existing(new_target),
                 }),
             )),
+            Allocation::SystemAllocation,
         )
         .unwrap();
-    let candidate = runtime.prepare_branch_transaction(transaction).unwrap();
+    let candidate = runtime
+        .prepare_branch_transaction(transaction, Allocation::SystemAllocation)
+        .unwrap();
     let summary = runtime
         .preparation_port()
         .summarize_prepared_candidate(&candidate, GENEROUS)
@@ -262,9 +275,12 @@ fn prepared_relation_delete_has_only_before_live_endpoints() {
                     relation_id: relation,
                 }),
             )),
+            Allocation::SystemAllocation,
         )
         .unwrap();
-    let candidate = runtime.prepare_branch_transaction(transaction).unwrap();
+    let candidate = runtime
+        .prepare_branch_transaction(transaction, Allocation::SystemAllocation)
+        .unwrap();
     let summary = runtime
         .preparation_port()
         .summarize_prepared_candidate(&candidate, GENEROUS)
@@ -293,9 +309,11 @@ fn summary_budget_and_foreign_owner_deny_without_consuming_candidate() {
     let foreign = runtime_with_test_schema();
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
-        .push_batch(batch_create("summary-denial"))
+        .push_batch(batch_create("summary-denial"), Allocation::SystemAllocation)
         .unwrap();
-    let candidate = runtime.prepare_branch_transaction(transaction).unwrap();
+    let candidate = runtime
+        .prepare_branch_transaction(transaction, Allocation::SystemAllocation)
+        .unwrap();
     assert_eq!(
         foreign
             .preparation_port()
@@ -341,8 +359,6 @@ fn expired_candidate_summary_is_typed_and_cannot_retain_stale_scope() {
             max_patch_records_per_commit: 4_096,
             max_published_snapshot_handles: 1,
             max_active_snapshot_handles: 8,
-            max_transaction_overlay_bytes: 1_048_576,
-            max_transaction_footprint_loci: 1_024,
             max_transaction_savepoints: 8,
             max_prepared_candidates: 1,
             candidate_max_lifetime_millis: 0,
@@ -351,9 +367,14 @@ fn expired_candidate_summary_is_typed_and_cannot_retain_stale_scope() {
         .build();
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
-        .push_batch(batch_create("expired-summary"))
+        .push_batch(
+            batch_create("expired-summary"),
+            Allocation::SystemAllocation,
+        )
         .unwrap();
-    let candidate = runtime.prepare_branch_transaction(transaction).unwrap();
+    let candidate = runtime
+        .prepare_branch_transaction(transaction, Allocation::SystemAllocation)
+        .unwrap();
     assert_eq!(
         runtime
             .preparation_port()

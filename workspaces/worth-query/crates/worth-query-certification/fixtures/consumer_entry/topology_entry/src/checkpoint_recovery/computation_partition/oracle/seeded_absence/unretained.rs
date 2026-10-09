@@ -34,7 +34,10 @@ pub(super) fn unretained<
             })
             .expect_source(observed.observed_sources()[0].clone())
             .idempotency(command)
-            .execute_in_program::<OracleProgram<REUSE, WORK, RUNS, MODE>>(application)
+            .execute_in_program::<OracleProgram<REUSE, WORK, RUNS, MODE>>(
+                application,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .unwrap();
         assert!(
             matches!(

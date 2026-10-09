@@ -16,7 +16,12 @@ use super::{
     ResourceAdmittedPhysicalWork,
 };
 
+mod blob_ingest;
+mod blob_movement;
+mod blob_reclaim;
+mod compaction;
 mod locality;
+mod rebuild;
 mod residency;
 mod scrub;
 
@@ -36,6 +41,16 @@ pub enum PhysicalSchedulerDenial {
     EffectConflict,
     EffectSlotsExhausted,
     OwedBackgroundTurn,
+    BackgroundCapacity(
+        worth_store_io_scheduler::foreground_reservation::PhysicalInstanceForegroundAdmissionDenial,
+    ),
+    BackgroundPacing(worth_store_io_scheduler::BackgroundPacingDenial),
+    BackgroundPacingDeferred,
+    CompactionAdmissionMismatch,
+    BlobIngestAdmissionMismatch,
+    BlobMovementAdmissionMismatch,
+    BlobReclaimAdmissionMismatch,
+    RebuildAdmissionMismatch,
 }
 
 pub struct PhysicalSchedulerDemand {

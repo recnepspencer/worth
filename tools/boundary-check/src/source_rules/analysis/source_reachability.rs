@@ -33,7 +33,7 @@ pub(super) fn enforce_source_reachability(
     library: &ModuleGraph,
     additional_targets: &[ModuleNode],
 ) -> Result<Vec<Diagnostic>, String> {
-    let reachable = reachable_sources(library, additional_targets);
+    let reachable = reachable_sources(&governed.crate_root, library, additional_targets)?;
     let exemptions = load_exemptions(root)?;
     let mut sources = Vec::new();
     collect_rust_sources(&governed.crate_root.join("src"), &mut sources)?;
@@ -41,9 +41,10 @@ pub(super) fn enforce_source_reachability(
 
     let mut diagnostics = Vec::new();
     for source in sources {
-        let relative_to_crate = relative_source(&governed.crate_root, &source)?;
         let relative_to_workspace = relative_source(root, &source)?;
-        if reachable.contains(&relative_to_crate) || exemptions.contains(&relative_to_workspace) {
+        if reachable.contains(&source_identity(&source)?)
+            || exemptions.contains(&relative_to_workspace)
+        {
             continue;
         }
         diagnostics.push(Diagnostic::new(
@@ -58,14 +59,25 @@ library, feature/platform module, bin, example, bench, and explicit Cargo target
     Ok(diagnostics)
 }
 
-fn reachable_sources(library: &ModuleGraph, additional_targets: &[ModuleNode]) -> BTreeSet<String> {
+fn reachable_sources(
+    crate_root: &Path,
+    library: &ModuleGraph,
+    additional_targets: &[ModuleNode],
+) -> Result<BTreeSet<PathBuf>, String> {
     library
         .modules
         .values()
         .chain(additional_targets)
         .flat_map(|node| node.relative_source.split(';'))
-        .map(str::to_owned)
+        .map(|relative| source_identity(&crate_root.join(relative)))
         .collect()
+}
+
+fn source_identity(source: &Path) -> Result<PathBuf, String> {
+    // Rustc resolves the selected file on disk, including parent components
+    // and symlinks. Compare that identity without changing diagnostic paths.
+    fs::canonicalize(source)
+        .map_err(|error| format!("resolve source identity {}: {error}", source.display()))
 }
 
 fn load_exemptions(root: &Path) -> Result<BTreeSet<String>, String> {
@@ -128,7 +140,7 @@ mod tests {
         let root =
             std::env::temp_dir().join(format!("worth-source-reachability-{}", std::process::id()));
         let crate_root = root.join("workspaces/worth-ui/crates/worth-test");
-        fs::create_dir_all(crate_root.join("src")).unwrap();
+        fs::create_dir_all(crate_root.join("src/group")).unwrap();
         fs::write(
             crate_root.join("Cargo.toml"),
             "[package]\nname='worth-test'\nversion='0.1.0'\nedition='2021'\n",
@@ -136,10 +148,15 @@ mod tests {
         .unwrap();
         fs::write(
             crate_root.join("src/lib.rs"),
-            "#[cfg(target_os = \"windows\")] mod platform;\n#[path = \"selected.rs\"] mod custom;\n",
+            "#[cfg(target_os = \"windows\")] mod platform;\nmod group;\n",
         )
         .unwrap();
         fs::write(crate_root.join("src/platform.rs"), "pub fn platform() {}\n").unwrap();
+        fs::write(
+            crate_root.join("src/group/mod.rs"),
+            "#[path = \"../selected.rs\"] mod custom;\n",
+        )
+        .unwrap();
         fs::write(crate_root.join("src/selected.rs"), "pub fn selected() {}\n").unwrap();
         fs::write(crate_root.join("src/orphan.rs"), "pub fn orphan() {}\n").unwrap();
         let governed = GovernedCrate {

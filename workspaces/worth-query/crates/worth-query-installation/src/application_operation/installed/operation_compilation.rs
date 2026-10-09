@@ -3,6 +3,7 @@
 mod capability_demand;
 mod external_effect_contract;
 mod invariant_selection;
+mod program_width;
 use capability_demand::{operation_capability_count, progression_support_fact_count};
 use external_effect_contract::install_portable_external_effect;
 
@@ -28,9 +29,8 @@ use crate::package::{
 };
 
 use super::super::contract_resolution::{
-    ability_requirement_meaning_matches, operation_aftermath, operation_decision_fact_budget,
-    operation_execution_posture, operation_mutation_preconditions,
-    operation_projection_work_budget,
+    ability_requirement_meaning_matches, operation_aftermath, operation_execution_posture,
+    operation_mutation_preconditions, operation_projection_work_budget,
 };
 use super::super::installed_contract_support::{operation_authorization, operation_denial};
 use super::super::{
@@ -52,7 +52,7 @@ pub(super) struct WorthQueryApplicationOperationCompilation<'a> {
     operation: String,
     input_type: String,
     decision_reads: Vec<ApplicationOperationDecisionReadTarget>,
-    decision_fact_budget: usize,
+    authored_program_width: usize,
     projection_work_budget: usize,
     execution_posture: WorthQueryInstalledApplicationOperationExecutionPosture,
     external_effect: InstalledExternalEffectContract,
@@ -67,7 +67,6 @@ pub(in crate::application_operation) struct WorthQuerySealedOperationContractCom
     authorization: WorthQueryInstalledApplicationOperationAuthorization,
     ability_requirements: Vec<WorthQueryInstalledAbilityRequirement>,
     authored_program_width: usize,
-    decision_fact_budget: usize,
     projection_work_budget: usize,
     additional_authorization_fact_count: usize,
     mutation_preconditions: Vec<WorthQueryInstalledMutationPrecondition>,
@@ -105,13 +104,6 @@ impl<'a> WorthQueryApplicationOperationCompilation<'a> {
                 operation,
             ));
         }
-        let decision_fact_budget =
-            operation_decision_fact_budget(members, operation).ok_or_else(|| {
-                operation_denial(
-                    WorthQueryApplicationOperationInstallationDenialKind::MissingDecisionFactBudget,
-                    operation,
-                )
-            })?;
         let projection_work_budget = operation_projection_work_budget(members, operation)
             .ok_or_else(|| {
                 operation_denial(
@@ -133,7 +125,8 @@ impl<'a> WorthQueryApplicationOperationCompilation<'a> {
                 operation,
             )
         })?;
-        if portable_contract.authored_program_width() == 0 && decision_reads.is_empty() {
+        let authored_program_width = program_width::resolve(portable_contract, operation)?;
+        if authored_program_width == 0 && decision_reads.is_empty() {
             return Err(operation_denial(
                 WorthQueryApplicationOperationInstallationDenialKind::MissingProgram,
                 operation,
@@ -157,7 +150,7 @@ impl<'a> WorthQueryApplicationOperationCompilation<'a> {
             operation: operation.to_owned(),
             input_type: input_type.to_owned(),
             decision_reads,
-            decision_fact_budget,
+            authored_program_width,
             projection_work_budget,
             execution_posture: operation_execution_posture(members, operation, input_type),
             external_effect,
@@ -266,8 +259,7 @@ impl<'a> WorthQueryApplicationOperationCompilation<'a> {
         let sealed = WorthQuerySealedOperationContractCompilation {
             authorization,
             ability_requirements,
-            authored_program_width: self.portable_contract.authored_program_width(),
-            decision_fact_budget: self.decision_fact_budget,
+            authored_program_width: self.authored_program_width,
             projection_work_budget: self.projection_work_budget,
             additional_authorization_fact_count,
             mutation_preconditions,
@@ -282,7 +274,10 @@ impl<'a> WorthQueryApplicationOperationCompilation<'a> {
                 self.mutation_bindings,
                 &self.operation,
                 &self.input_type,
-            ),
+            ).map_err(|()| operation_denial(
+                WorthQueryApplicationOperationInstallationDenialKind::InvalidGraphObligationContract,
+                &self.operation,
+            ))?,
             invariant_invocations,
         };
         WorthQueryCompiledApplicationOperationContracts::compile(sealed).map_err(|()| {
@@ -359,7 +354,6 @@ impl WorthQuerySealedOperationContractCompilation {
         usize,
         usize,
         usize,
-        usize,
         Vec<WorthQueryInstalledMutationPrecondition>,
         WorthQueryInstalledApplicationOperationExecutionPosture,
         InstalledExternalEffectContract,
@@ -375,7 +369,6 @@ impl WorthQuerySealedOperationContractCompilation {
             self.authorization,
             self.ability_requirements,
             self.authored_program_width,
-            self.decision_fact_budget,
             self.projection_work_budget,
             self.additional_authorization_fact_count,
             self.mutation_preconditions,

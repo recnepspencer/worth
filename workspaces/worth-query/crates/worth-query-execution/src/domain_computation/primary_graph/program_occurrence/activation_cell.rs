@@ -12,12 +12,14 @@ use worth_relational::facade::identity::EntityId;
 #[derive(Clone, Debug)]
 pub(in crate::domain_computation::primary_graph) struct WorthQueryProgramActivationCell {
     identity: Arc<OnceLock<EntityId>>,
+    candidate: Arc<OnceLock<EntityId>>,
 }
 
 impl WorthQueryProgramActivationCell {
     pub(in crate::domain_computation::primary_graph) fn unpublished() -> Self {
         Self {
             identity: Arc::new(OnceLock::new()),
+            candidate: Arc::new(OnceLock::new()),
         }
     }
 
@@ -35,6 +37,35 @@ impl WorthQueryProgramActivationCell {
 
     pub(in crate::domain_computation::primary_graph) fn published(&self) -> Option<EntityId> {
         self.identity.get().copied()
+    }
+
+    // Only invariant evaluation may consult this pre-publication binding.
+    // Installation never exposes a World until native settlement confirms it.
+    pub(in crate::domain_computation::primary_graph) fn candidate_identity(
+        &self,
+    ) -> Option<EntityId> {
+        self.published().or_else(|| self.candidate.get().copied())
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn bind_checkpoint_candidate(
+        &self,
+        identity: EntityId,
+    ) -> Result<(), EntityId> {
+        if let Some(published) = self.published() {
+            return Err(published);
+        }
+        self.candidate.set(identity)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn confirm_checkpoint_candidate(
+        &self,
+    ) -> Result<(), EntityId> {
+        let identity = self
+            .candidate
+            .get()
+            .copied()
+            .expect("checkpoint candidate was bound before native preparation");
+        self.publish(identity)
     }
 }
 

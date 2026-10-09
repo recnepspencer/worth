@@ -129,12 +129,15 @@ fn held_mutation_commit_refuses_zero_budgets_before_revalidation() {
                             },
                         ],
                     ),
-                    validator_work: 4_096,
                 }))
                 .expect_source(observed.observed_sources()[0].clone())
                 .idempotency(&9_764_u64);
-            let Preparation::Prepared(prepared) =
-                mutation.prepare_in_program(&application).unwrap()
+            let Preparation::Prepared(prepared) = mutation
+                .prepare_in_program(
+                    &application,
+                    worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap()
             else {
                 panic!("the fresh mutation prepares its unpublished candidate");
             };
@@ -157,7 +160,9 @@ fn held_mutation_commit_refuses_zero_budgets_before_revalidation() {
             );
             let reads_before = reads();
             reports();
-            let Outcome::Commit(Uncommitted::Denied(denial)) = prepared.commit() else {
+            let Outcome::Commit(Uncommitted::Denied(denial)) = prepared.commit(
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            ) else {
                 panic!("the commit's own request refuses before publishing");
             };
             let CommitKind::ExecutionResource {
@@ -208,17 +213,22 @@ fn held_mutation_commit_refuses_zero_budgets_before_revalidation() {
                             },
                         ],
                     ),
-                    validator_work: 4_096,
                 }))
                 .expect_source(observed.observed_sources()[0].clone())
                 .idempotency(&9_765_u64);
-            let Preparation::Prepared(prepared) =
-                mutation.prepare_in_program(&application).unwrap()
+            let Preparation::Prepared(prepared) = mutation
+                .prepare_in_program(
+                    &application,
+                    worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap()
             else {
                 panic!("the fresh mutation prepares its unpublished candidate");
             };
             let before = reads();
-            let _ = prepared.commit();
+            let _ = prepared.commit(
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            );
             assert!(
                 reads() > before,
                 "admitted commit contacts its revalidation reader"
@@ -266,11 +276,13 @@ fn mutation_handler_and_inline_commit_remain_in_one_request() {
                     replacement_y: super::length(3),
                 },
             ]),
-            validator_work: 4_096,
         }))
         .expect_source(observed.observed_sources()[0].clone())
         .idempotency(&9_766_u64)
-        .execute_in_program(&application)
+        .execute_in_program(
+            &application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     assert_eq!(crate::handler::handler_contacts(), contacts + 1);
     assert!(matches!(outcome, Outcome::Committed { .. }));

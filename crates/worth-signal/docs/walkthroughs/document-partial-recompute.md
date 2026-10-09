@@ -71,7 +71,13 @@ section edit reaches every index. The partitioned read keeps the scope.
 
 ```rust
 let basis = runtime.observe_signal_branch_basis(runtime.current_branch())?;
-let _next_basis = runtime.advance_signal_branch(&mut state, &basis, |tx| {
+let serial_request = worth_execution::SerialRequest::from_memory(
+    worth_execution::SerialMemoryBudget::new(runtime.runtime_policy().serial_memory_bytes),
+    worth_execution::CancellationToken::new(),
+    None,
+);
+let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+let _next_basis = runtime.advance_signal_branch(execution, &mut state, &basis, |tx| {
     tx.mark_changed_with_regions(document, DOCUMENT, &[ChangedRegion::new("summary")])?;
     tx.read_many(&[document, summary_index, appendix_index], &evaluate)?;
     Ok(())

@@ -29,10 +29,6 @@ pub(super) fn append_operation_member(
         ApplicationSchemaMember::OperationMutationPrecondition { operation, target } => {
             append_mutation_precondition(basis, prefix, operation, target)
         }
-        ApplicationSchemaMember::OperationDecisionFactBudget {
-            operation,
-            maximum_fact_count,
-        } => append_decision_fact_budget(basis, prefix, operation, *maximum_fact_count),
         ApplicationSchemaMember::OperationProjectionWorkBudget {
             operation,
             maximum_work_units,
@@ -144,16 +140,6 @@ fn append_mutation_precondition(
     basis.text(format!("{prefix}.entity"), target.entity());
     basis.text(format!("{prefix}.aspect"), target.aspect());
     basis.text(format!("{prefix}.field"), target.field_name());
-}
-
-fn append_decision_fact_budget(
-    basis: &mut ApplicationSchemaCanonicalBasis,
-    prefix: &str,
-    operation: &str,
-    maximum_fact_count: usize,
-) {
-    append_operation_header(basis, prefix, "operation-decision-fact-budget", operation);
-    basis.usize(format!("{prefix}.maximum-fact-count"), maximum_fact_count);
 }
 
 fn append_projection_work_budget(

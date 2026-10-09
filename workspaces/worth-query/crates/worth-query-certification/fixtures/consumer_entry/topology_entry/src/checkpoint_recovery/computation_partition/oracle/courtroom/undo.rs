@@ -51,6 +51,7 @@ fn directly_undone<const REUSE: bool, const MODE: u8>() -> OracleRun {
         program,
         &identities,
         std::convert::identity,
+        worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
     ));
     let handle = application
         .runtime()

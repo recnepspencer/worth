@@ -31,9 +31,15 @@ fn invariant_failure_artifact_preserves_specific_code_localization_and_proof_bou
                 fields: crate::transactions::data::AspectFieldPatch::default(),
             },
         ))),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let error = txn.commit(&runtime).unwrap_err();
+    let error = txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap_err();
     let diagnostics = runtime.publication().diagnostics();
     let artifact = diagnostics
         .by_scope(DiagnosticsScope::Invariant)
@@ -132,6 +138,7 @@ fn invariant_diagnostics_trace_proof_boundary_for_relation_integrity_execution()
                 fields: crate::transactions::data::AspectFieldPatch::default(),
             },
         ))),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
     txn.push_batch(
@@ -145,9 +152,14 @@ fn invariant_diagnostics_trace_proof_boundary_for_relation_integrity_execution()
                 fields: crate::transactions::data::AspectFieldPatch::default(),
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    txn.commit(&runtime).unwrap();
+    txn.commit(
+        &runtime,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .unwrap();
 
     let diagnostics = runtime.publication().diagnostics();
     let entry = diagnostics
@@ -230,9 +242,15 @@ fn collect_all_invariant_failures_emits_multiple_relation_integrity_entries_for_
                 fields: crate::transactions::data::AspectFieldPatch::default(),
             },
         ))),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let _error = txn.commit(&runtime).unwrap_err();
+    let _error = txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap_err();
 
     let diagnostics = runtime.publication().diagnostics();
     let failure_artifact = diagnostics

@@ -89,10 +89,16 @@ fn prepare_relational_mutation_with_before<
             )
             .expect("selected product basis admits the fixture transaction");
         transaction
-            .push_batch(batch)
+            .push_batch(
+                batch,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .expect("fixture mutation stays within configured resource budgets");
         runtime
-            .prepare_branch_transaction(transaction)
+            .prepare_branch_transaction(
+                transaction,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .expect("fixture mutation prepares a real Relational candidate")
     });
 

@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_attempt::check_request_live;
 use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityMarkerIdentity,
     application_program::ApplicationWorkflowSpec,
@@ -90,18 +91,14 @@ where
                 &expected_predecessor,
             )
         })?;
-        if self.facts.len().saturating_add(lineage.facts.len())
-            > self
-                .admission
-                .allowed_graph_contract()
-                .decision_fact_budget()
-        {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
-                self.admission.operation(),
-            ));
-        }
-        self.facts.extend(lineage.facts);
+        check_request_live(
+            self.admission.publication_request(),
+            self.admission.operation(),
+        )?;
+        self.append_completed_facts(
+            lineage.facts,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )?;
 
         let program_revision = *bound.contract.program_revision();
         let WorthQueryInstalledWorkflowDefinitionParts {
@@ -154,7 +151,7 @@ where
                 Ok::<(), WorthQueryApplicationAttemptDenial>(())
             },
         )?;
-        let validator_work_admission = reservation.materialize(&effects)?;
+        reservation.materialize(&effects)?;
         let program = WorthQueryApplicationEffectProgram {
             read_set: self,
             effects,
@@ -162,7 +159,6 @@ where
             emission_retained_bytes_ceiling: 0,
             conditional_definition: None,
             effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Platform,
-            validator_work_admission,
             output_correspondence: Default::default(),
             retain_output_demand_observation: false,
             retain_client_observation: false,

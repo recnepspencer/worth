@@ -15,10 +15,12 @@ mod diamond;
     feature = "test-invalidation-equivalence"
 ))]
 mod exact_invalidation;
+mod mixed_mode;
 mod performed_head_movement;
 mod producer;
 mod program;
 mod readiness;
+mod reopened_consumer;
 #[cfg(feature = "test-query-execution-observer")]
 mod required_queue;
 mod restored_currentness;
@@ -29,7 +31,11 @@ use binding::*;
 use producer::*;
 
 pub(super) fn output_feature_spec() -> ApplicationFeatureSpec {
-    ApplicationFeatureSpec::root::<CheckpointSchema, PlanarOutputFeature>()
+    output_feature_spec_for::<CheckpointSchema>()
+}
+
+pub(super) fn output_feature_spec_for<Schema: TopologySchemaBinding>() -> ApplicationFeatureSpec {
+    ApplicationFeatureSpec::root::<Schema, PlanarOutputFeature>()
         .provides::<PlanarDerivedBodyOutput>()
         .conditional_operation::<MutatePlanar>()
         .conditional_operation::<PublishChain>()
@@ -128,7 +134,10 @@ fn one_advance_discharge_follows_real_consumed_output_edges_after_upstream_stabl
         })
         .expect_source(selected.observed_sources()[0].clone())
         .idempotency(&0x9176_3001_u64)
-        .execute_performed::<program::ChainProgram, program::ChainRoot>(&application)
+        .execute_performed::<program::ChainProgram, program::ChainRoot>(
+            &application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     drop(selected);
     let changed = request

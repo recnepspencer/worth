@@ -6,9 +6,8 @@ use worth_store_physical_format::{
     DurablePhysicalRootManifest, DurableRootSelector, FreeSpaceBlockReference, FreeSpaceKey,
     ManifestBlockReference, PersistedRecordIdentity, PhysicalGeneration,
     PhysicalGenerationAuthority, PhysicalPageId, PhysicalPageSizeClass,
-    PhysicalRecordFormatDeclaration, PhysicalSegmentId, RecordAllocationClass,
-    RootSelectorIdentity, RootSelectorRole, SegmentManifestBlockReference, SegmentPageKey,
-    ROOT_SELECTOR_BYTES,
+    PhysicalRecordFormatDeclaration, PhysicalSegmentId, RootSelectorIdentity, RootSelectorRole,
+    SegmentManifestBlockReference, SegmentPageKey, ROOT_SELECTOR_BYTES,
 };
 use worth_store_physical_integrity::{
     validate_current_root_selector, validate_previous_root_selector,
@@ -21,7 +20,7 @@ use worth_store_physical_integrity::{
 
 pub const SELECTOR_OFFSET: u64 = 4_096;
 pub const MANIFEST_OFFSET: u64 = 16_384;
-pub const MANIFEST_BYTES: u64 = 368;
+pub const MANIFEST_BYTES: u64 = 384;
 
 #[derive(Debug, Clone, Copy)]
 pub enum SelectorKind {
@@ -143,7 +142,7 @@ pub fn manifest_bytes_with_capacity(
     format: PhysicalRecordFormatDeclaration,
     node_capacity: u16,
 ) -> Vec<u8> {
-    let key = FreeSpaceKey::new(RecordAllocationClass::InlinePage, 1).unwrap();
+    let key = FreeSpaceKey::inline(1).unwrap();
     let free_space_root = FreeSpaceBlockReference::new(generation, 1, 0, 41, key, key).unwrap();
     DurablePhysicalRootManifest::builder(generation, 71, node_capacity, 43)
         .free_space_root(Some(free_space_root))
@@ -165,7 +164,7 @@ pub fn populated_manifest_bytes(
     let segment_cell = PhysicalGenerationAuthority::for_canonical_physical_format()
         .segment_cell(segment)
         .with_segment_generation(PhysicalGeneration::from_raw(generation).unwrap());
-    let free_key = FreeSpaceKey::new(RecordAllocationClass::InlinePage, 1).unwrap();
+    let free_key = FreeSpaceKey::inline(1).unwrap();
     let free_space_root =
         FreeSpaceBlockReference::new(generation, 1, 0, 41, free_key, free_key).unwrap();
     DurablePhysicalRootManifest::builder(generation, 71, 2, 43)

@@ -51,9 +51,15 @@ fn mixed_struct_patch_revises_only_the_field_with_a_new_value() {
                 ]),
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .unwrap();
-    let updated = txn.commit(&runtime).unwrap();
+    let updated = txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
     let after_view = runtime
         .read_truth()
         .project_snapshot(&updated.snapshot)
@@ -137,9 +143,14 @@ fn relation_equal_value_patch_preserves_native_field_revision() {
                     aspect_patch: patch(value),
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-        txn.commit(&runtime).unwrap()
+        txn.commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap()
     };
     let equal = commit("original");
     let equal_revision = runtime

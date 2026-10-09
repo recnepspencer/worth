@@ -237,8 +237,12 @@ fn primary_graph_application(
             8_000_000,
         ),
     );
+    worth_query_host::facade::application_contribution::with_bootstrap_advancement(
+        execution_policy,
+        |phase| {
     let mut graph = authority
         .prepare_primary_graph(
+            &phase,
             &runtime,
             &schema,
             worth_query_host::facade::runtime::WorthQueryProductWorldResources::install(
@@ -282,12 +286,15 @@ fn primary_graph_application(
         .expect("test principal must bind");
     graph
         .publish_application_runtime(
+            &phase,
             runtime,
             authority,
             schema,
             primary_graph::SignalConditionalEvaluationBudget::development(),
         )
         .expect("test application must publish")
+        },
+    ).expect("the declared server fixture policy admits installation")
 }
 
 fn build_broken_registration_server(

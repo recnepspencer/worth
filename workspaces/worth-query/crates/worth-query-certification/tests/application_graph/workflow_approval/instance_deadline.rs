@@ -236,7 +236,10 @@ fn overdue_operation(
         .idempotency(&(key + 12))
         .for_workflow_operation(&application, &operation)
         .expect("the request matches the requirement it was issued")
-        .execute_in_program(application.program_runtime());
+        .execute_in_program(
+            application.program_runtime(),
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        );
     assert_eq!(read_retention(runtime, instance.branch()), SEED_RETENTION);
     match effect {
         Ok(WorthQueryApplicationMutationOutcome::Commit(

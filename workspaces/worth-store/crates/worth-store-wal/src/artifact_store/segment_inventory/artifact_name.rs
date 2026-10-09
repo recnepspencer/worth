@@ -33,11 +33,10 @@ impl WalSegmentArtifactIdentity {
     pub fn parse(file_name: &str) -> Option<Self> {
         let body = file_name.strip_prefix("segment-")?.strip_suffix(".wal")?;
         let (segment, generation) = body.split_once("-generation-")?;
-        let identity = Self::new(
-            WalSegmentId::new(segment.parse().ok()?).ok()?,
-            WalSegmentGeneration::new(generation.parse().ok()?).ok()?,
-        );
-        (identity.file_name() == file_name).then_some(identity)
+        Some(Self::new(
+            WalSegmentId::new(canonical_positive_decimal(segment)?).ok()?,
+            WalSegmentGeneration::new(canonical_positive_decimal(generation)?).ok()?,
+        ))
     }
 
     pub fn file_name(self) -> String {
@@ -65,4 +64,19 @@ impl WalSegmentArtifactIdentity {
     pub const fn format_identity(self) -> WalSegmentIdentity {
         self.format_identity
     }
+}
+
+/// An artifact name is its identity only when both numbers have their unique
+/// ASCII spelling; parsing must not allocate a rendered name for comparison.
+fn canonical_positive_decimal(value: &str) -> Option<u64> {
+    let bytes = value.as_bytes();
+    if bytes.is_empty() || bytes[0] == b'0' {
+        return None;
+    }
+    bytes.iter().try_fold(0_u64, |number, byte| {
+        if !byte.is_ascii_digit() {
+            return None;
+        }
+        number.checked_mul(10)?.checked_add(u64::from(byte - b'0'))
+    })
 }

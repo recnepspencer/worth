@@ -416,10 +416,11 @@ and How WORTH Works
   authority mints the target with its runtime, schema binding, and exact
   operation admission. A target from another runtime, binding, or admission, or
   absent from this attempt's completed read set, is rejected.
-- Candidate cardinality, retained representation bytes, and validator work are
-  separate finite bounds. `representation_bytes(n)` leaves validator allowance
-  to the installed invariant closure; optional binding/handler caps only restrict
-  that allowance, while host capacity and exact closure checks remain enforced.
+- Candidate cardinality and retained representation bytes are separate bounds.
+  `representation_bytes(n)` declares the retained candidate representation; host
+  capacity and exact closure checks remain enforced. Candidate validation has no
+  aggregate work quota or predicted descriptor-max allowance. Each installed
+  invariant retains its own algorithm controls and actual execution work evidence.
   Relation integrity and installed invariants inspect
   the actual candidate and its affected untouched neighbors before atomic
   publication. Domain prechecks or handler success cannot substitute for
@@ -554,6 +555,13 @@ typed action intent + exact installed program
 - `request.demand(demand).controls(controls).start()` settles one producer
   family. It is not a substitute for the program-output handle when the program
   declares transitive required outputs. Source drift returns `Superseded`.
+
+An installed producer whose handler rejects its input returns
+`ProducerDomainDenied`, with terminal posture for that demand. Its provider can
+implement `domain_denial_reason(&typed_denial)` to supply static domain-owned
+words; `denial.domain_reason()` returns those diagnostic words. Missing producers
+and execution failures remain distinct. Match the typed kind for control flow;
+never parse the Debug subject or treat a reason as execution authority.
 
 ### Source expectations, exact reads, and live reads
 

@@ -38,17 +38,25 @@ fn a_stale_preflight_after_an_unindexed_fork_winner_cannot_poison_later_writes()
             let mut tx = runtime
                 .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
                 .unwrap();
-            tx.push_batch(WorkerIntentBatch::new(value).push(MutationIntent::Entity(
-                EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
-                    entity_id: entity,
-                    fields: AspectFieldPatch::from(BTreeMap::from([(
-                        locator.clone(),
-                        AspectValue::String(InternedString::Raw(value.to_owned())),
-                    )])),
-                }),
-            )))
+            tx.push_batch(
+                WorkerIntentBatch::new(value).push(MutationIntent::Entity(
+                    EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
+                        entity_id: entity,
+                        fields: AspectFieldPatch::from(BTreeMap::from([(
+                            locator.clone(),
+                            AspectValue::String(InternedString::Raw(value.to_owned())),
+                        )])),
+                    }),
+                )),
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .unwrap();
-            runtime.prepare_branch_transaction(tx).unwrap()
+            runtime
+                .prepare_branch_transaction(
+                    tx,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap()
         };
         let w1 = prepare(runtime, "winner");
         let w2 = prepare(runtime, "stale-loser");

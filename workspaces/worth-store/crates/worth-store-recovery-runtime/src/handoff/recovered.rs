@@ -31,14 +31,30 @@ impl RecoveredPhysicalRuntimeHandoff {
     pub const fn core(&self) -> &RecoveredPhysicalRuntimeCore {
         &self.core
     }
+
+    /// Consumes the recovery handoff so the recovered Store core can close
+    /// its discovery media before a separate Serving open consumes custody.
+    pub fn into_core(self) -> RecoveredPhysicalRuntimeCore {
+        self.core
+    }
     pub fn recovered_session_identity(&self) -> crate::entry::PhysicalRecoverySessionIdentity {
         self.evidence.session.identity()
+    }
+    /// Measured live backing carried into Store construction, excluding the
+    /// Store's subsequent independent media observations.
+    pub const fn store_rejoin_retained_bytes(&self) -> Option<u64> {
+        self.evidence.store_rejoin_retained_bytes
     }
     pub const fn operation_fates(&self) -> &RecoveryOperationFateSet {
         &self.evidence.fates
     }
     pub const fn selected_sources(&self) -> &PhysicalSourceSelection {
-        &self.evidence.selection
+        self.evidence.selection.facts()
+    }
+
+    /// Native backing retained by the WAL selection through this handoff.
+    pub fn wal_selection_charged_bytes(&self) -> u64 {
+        self.evidence.selection.charged_bytes()
     }
     pub const fn discovery_counters(&self) -> PhysicalRecoveryDiscoveryCounters {
         self.evidence.discovery
@@ -50,6 +66,14 @@ impl RecoveredPhysicalRuntimeHandoff {
         &self,
     ) -> &[crate::entry::PhysicalRecoveryWalIntegrityObservation] {
         self.evidence.integrity_observations.wal()
+    }
+
+    /// Immutable WAL diagnostics and their live native backing. Cloning this
+    /// observation owner shares storage; it grants no recovery authority.
+    pub fn wal_integrity_observation_storage(
+        &self,
+    ) -> &crate::entry::PhysicalRecoveryIntegrityObservations {
+        &self.evidence.integrity_observations
     }
     pub const fn freshness_sample(
         &self,

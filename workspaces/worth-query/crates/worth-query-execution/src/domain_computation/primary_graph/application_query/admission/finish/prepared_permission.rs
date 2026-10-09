@@ -119,6 +119,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let mut graph_work = graph_work;
         graph_work.set_retained_decision_facts(authorization.exact_fact_count());
         Ok(WorthQueryAdmittedApplicationQueryPlan {
+            planned_batch_item: None,
             runtime_authority: self.runtime.authority_identity(),
             graph_authority_identity: self
                 .primary_graph_authority

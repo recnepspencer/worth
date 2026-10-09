@@ -81,6 +81,7 @@ where
                 program,
                 idempotency,
                 currentness,
+                crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             ),
             binding,
         )
@@ -158,6 +159,7 @@ where
                 program,
                 idempotency,
                 currentness,
+                crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             ),
             binding,
         )
@@ -233,6 +235,7 @@ where
                 program,
                 idempotency,
                 currentness,
+                crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             ),
             binding,
         )
@@ -298,7 +301,12 @@ where
             return WorthQueryMandatoryReviewOutcome::Indeterminate;
         };
         reviewed_outcome(
-            self.compare_and_commit_application_inner(phase, program, idempotency),
+            self.compare_and_commit_application_inner(
+                phase,
+                program,
+                idempotency,
+                crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            ),
             binding,
         )
     }

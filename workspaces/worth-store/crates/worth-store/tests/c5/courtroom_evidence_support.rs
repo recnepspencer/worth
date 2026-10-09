@@ -26,6 +26,22 @@ pub(super) fn writer_completion(stdout: &str) -> WriterCompletion {
     }
 }
 
+/// Catalog replacements, non-journal directory barriers, and recovery-journal
+/// directory barriers of each publication, in workload order.
+pub(super) fn publication_barriers(stdout: &str) -> Vec<(u64, u64, u64)> {
+    stdout
+        .lines()
+        .filter_map(|line| line.strip_prefix("C5_COURTROOM_PUBLICATION "))
+        .map(|fields| {
+            let mut fields = fields
+                .split_whitespace()
+                .map(|field| field.parse().unwrap());
+            let mut next = || fields.next().unwrap();
+            (next(), next(), next())
+        })
+        .collect()
+}
+
 pub(super) struct ReopenerCompletion {
     pub(super) records: usize,
     pub(super) deferred_records: usize,

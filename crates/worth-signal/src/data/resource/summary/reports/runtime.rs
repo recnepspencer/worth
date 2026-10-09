@@ -42,8 +42,28 @@ pub struct ResourceLifecycleRetentionCompactionReport {
     compacted_superseded_count: u32,
     compacted_cancelled_count: u32,
     compacted_timed_out_count: u32,
+    #[serde(default, skip_serializing_if = "is_zero_u32")]
+    expired_lifecycle_availability_count: u32,
+    #[serde(default, skip_serializing_if = "is_zero_u32")]
+    expired_denied_availability_count: u32,
+    #[serde(default, skip_serializing_if = "is_zero_u32")]
+    expired_retry_availability_count: u32,
+    #[serde(default, skip_serializing_if = "is_zero_u64")]
+    total_expired_lifecycle_availability: u64,
+    #[serde(default, skip_serializing_if = "is_zero_u64")]
+    total_expired_denied_availability: u64,
+    #[serde(default, skip_serializing_if = "is_zero_u64")]
+    total_expired_retry_availability: u64,
     policy_provenance_digest: String,
     performance: ResourceBoundaryPerformanceEnvelope,
+}
+
+fn is_zero_u32(value: &u32) -> bool {
+    *value == 0
+}
+
+fn is_zero_u64(value: &u64) -> bool {
+    *value == 0
 }
 
 impl ResourceLifecycleRetentionCompactionReport {
@@ -63,6 +83,12 @@ impl ResourceLifecycleRetentionCompactionReport {
         compacted_superseded_count: u32,
         compacted_cancelled_count: u32,
         compacted_timed_out_count: u32,
+        expired_lifecycle_availability_count: u32,
+        expired_denied_availability_count: u32,
+        expired_retry_availability_count: u32,
+        total_expired_lifecycle_availability: u64,
+        total_expired_denied_availability: u64,
+        total_expired_retry_availability: u64,
         policy_provenance_digest: String,
         performance: ResourceBoundaryPerformanceEnvelope,
     ) -> Self {
@@ -82,6 +108,12 @@ impl ResourceLifecycleRetentionCompactionReport {
             compacted_superseded_count,
             compacted_cancelled_count,
             compacted_timed_out_count,
+            expired_lifecycle_availability_count,
+            expired_denied_availability_count,
+            expired_retry_availability_count,
+            total_expired_lifecycle_availability,
+            total_expired_denied_availability,
+            total_expired_retry_availability,
             policy_provenance_digest,
             performance,
         }
@@ -145,6 +177,30 @@ impl ResourceLifecycleRetentionCompactionReport {
 
     pub fn compacted_timed_out_count(&self) -> u32 {
         self.compacted_timed_out_count
+    }
+
+    pub fn expired_lifecycle_availability_count(&self) -> u32 {
+        self.expired_lifecycle_availability_count
+    }
+
+    pub fn expired_denied_availability_count(&self) -> u32 {
+        self.expired_denied_availability_count
+    }
+
+    pub fn expired_retry_availability_count(&self) -> u32 {
+        self.expired_retry_availability_count
+    }
+
+    pub fn total_expired_lifecycle_availability(&self) -> u64 {
+        self.total_expired_lifecycle_availability
+    }
+
+    pub fn total_expired_denied_availability(&self) -> u64 {
+        self.total_expired_denied_availability
+    }
+
+    pub fn total_expired_retry_availability(&self) -> u64 {
+        self.total_expired_retry_availability
     }
 
     pub fn policy_provenance_digest(&self) -> &str {

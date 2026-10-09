@@ -1,4 +1,8 @@
-use std::{collections::BTreeMap, num::NonZeroUsize, sync::OnceLock};
+use std::{
+    collections::BTreeMap,
+    num::NonZeroUsize,
+    sync::{Mutex, OnceLock},
+};
 
 use worth_execution::{
     CancellationToken, ExecutionAuthority, ExecutionAuthorityConfig, ExecutionMap,
@@ -14,12 +18,16 @@ use worth_foundational::{
 const PROCESS_BYTES: u64 = 1 << 30;
 
 static AUTHORITY: OnceLock<ExecutionAuthority> = OnceLock::new();
+static SERIAL: Mutex<()> = Mutex::new(());
+
+#[path = "memory_reservation/payload_custody.rs"]
+mod payload_custody;
 
 fn authority() -> &'static ExecutionAuthority {
     AUTHORITY.get_or_init(|| {
         ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
             max_workers: NonZeroUsize::new(2).unwrap(),
-            charged_memory_bytes: PROCESS_BYTES,
+            charged_memory_bytes: Some(PROCESS_BYTES),
         })
         .unwrap()
     })
@@ -43,13 +51,6 @@ fn request(bytes: u64) -> LeaseRequest {
 
 fn lease(bytes: u64) -> ExecutionResourceLease<'static> {
     authority().request_lease(request(bytes)).unwrap()
-}
-
-#[test]
-fn the_authority_reports_its_configuration() {
-    let config = authority().config();
-    assert_eq!(config.max_workers.get(), 2);
-    assert_eq!(config.charged_memory_bytes, PROCESS_BYTES);
 }
 
 #[test]
@@ -81,6 +82,7 @@ fn a_serial_budget_holds_the_policy_bytes_and_names_what_it_admits() {
 
 #[test]
 fn a_lease_reservation_is_bounded_by_its_lineage_and_released_on_drop() {
+    let _serial = SERIAL.lock().unwrap();
     let parent = lease(1_000);
     let child = parent.child(request(300)).unwrap();
     let held = parent.reserve_memory(800).unwrap();
@@ -213,6 +215,7 @@ fn a_serial_run_with_a_policy_refuses_at_its_own_memory_boundary() {
 
 #[test]
 fn a_keyless_map_admits_what_the_declared_form_admits() {
+    let _serial = SERIAL.lock().unwrap();
     let identities = [3, 1, 2].map(PartitionIdentity::new);
     let keyless: BTreeMap<_, _> = identities
         .iter()
@@ -312,6 +315,7 @@ fn leased_run(budget: u64, hold: u64, take: bool) -> Result<(), MemoryLimitDenia
 /// the hold, and a refusal counts the hold as the run's own.
 #[test]
 fn a_leased_run_takes_over_the_hold_on_its_inputs() {
+    let _serial = SERIAL.lock().unwrap();
     let run = least_admitted(|budget| leased_run(budget, 0, false).is_ok());
     let hold = run / 2;
     assert!(hold > 0);
@@ -354,6 +358,7 @@ fn a_serial_run_takes_over_the_hold_on_its_inputs() {
 /// releases it.
 #[test]
 fn a_reduced_tree_stays_held_on_the_callers_reservation() {
+    let _serial = SERIAL.lock().unwrap();
     let budget = 1 << 20;
     let parent = lease(budget);
     let child = parent.child(request(budget)).unwrap();

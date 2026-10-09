@@ -2,6 +2,7 @@
 //! is reached, nothing decides again, and every output agrees with the model.
 
 use super::*;
+use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 
 /// Three rings settle, and the world is captured.
 fn settled_checkpoint(
@@ -15,7 +16,9 @@ fn settled_checkpoint(
         court.demand_ring(rings, index, "before the checkpoint");
     }
     drop((principal, scope));
-    application.capture_application_checkpoint().unwrap()
+    application
+        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
+        .unwrap()
 }
 
 #[test]

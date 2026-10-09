@@ -4,7 +4,9 @@ use worth_store_physical_format::{
     CurrentPhysicalRecordPlacement, ManifestBlockReference, PhysicalRootRoutingBlock,
 };
 
-use super::PhysicalRootSourceCandidate;
+use super::{ExceededPhysicsBound, PhysicalRootSourceCandidate, PhysicsAllowance};
+
+mod retained_storage;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PhysicalManifestBlockProjection {
@@ -27,12 +29,15 @@ pub enum PhysicalPageFactDenial {
     DuplicateManifestBlock,
     MissingManifestBlock,
     UnexpectedManifestBlock,
-    ManifestEntryLimit,
     ManifestReferenceIdentityMismatch,
     TreeIdentityMismatch,
     DuplicateRecord,
     RecordCountMismatch,
-    DistinctPageOrExtentLimit,
+    /// The facts needed more manifest entries, or more distinct pages and
+    /// extents, than the caller admitted.
+    Limit(ExceededPhysicsBound),
+    /// A count past every count: no limit can state it.
+    CountOverflow,
 }
 
 impl PhysicalManifestBlockProjection {
@@ -115,18 +120,23 @@ pub fn admit_physical_page_facts(
                 let next_entry_count = placements
                     .len()
                     .checked_add(entries.len())
-                    .ok_or(PhysicalPageFactDenial::ManifestEntryLimit)?;
-                if next_entry_count as u64 > maximum_manifest_entries {
-                    return Err(PhysicalPageFactDenial::ManifestEntryLimit);
-                }
+                    .and_then(|count| u64::try_from(count).ok())
+                    .ok_or(PhysicalPageFactDenial::CountOverflow)?;
+                PhysicsAllowance::manifest_entries(maximum_manifest_entries)
+                    .admit(next_entry_count)
+                    .map_err(PhysicalPageFactDenial::Limit)?;
                 for placement in &entries {
                     let key = page_or_extent_key(placement);
                     if !distinct_pages_and_extents.contains(&key) {
-                        if distinct_pages_and_extents.len() as u64
-                            == maximum_distinct_pages_and_extents
-                        {
-                            return Err(PhysicalPageFactDenial::DistinctPageOrExtentLimit);
-                        }
+                        let next_distinct = u64::try_from(distinct_pages_and_extents.len())
+                            .ok()
+                            .and_then(|count| count.checked_add(1))
+                            .ok_or(PhysicalPageFactDenial::CountOverflow)?;
+                        PhysicsAllowance::distinct_pages_and_extents(
+                            maximum_distinct_pages_and_extents,
+                        )
+                        .admit(next_distinct)
+                        .map_err(PhysicalPageFactDenial::Limit)?;
                         distinct_pages_and_extents.insert(key);
                     }
                 }
@@ -188,7 +198,7 @@ mod tests {
         DurableExtentRecordPlacement, DurablePhysicalRootManifest, DurableRootSelector,
         FreeSpaceBlockReference, FreeSpaceKey, PersistedRecordIdentity, PhysicalExtentId,
         PhysicalGeneration, PhysicalGenerationAuthority, PhysicalRecordFormatDeclaration,
-        RecordAllocationClass, RootSelectorIdentity, RootSelectorRole,
+        RootSelectorIdentity, RootSelectorRole,
     };
 
     use super::*;
@@ -215,10 +225,14 @@ mod tests {
             admit_physical_page_facts(&root, vec![block.clone(), block.clone()], 2, 1),
             Err(PhysicalPageFactDenial::DuplicateManifestBlock)
         );
-        assert_eq!(
-            admit_physical_page_facts(&root, vec![block], 0, 1),
-            Err(PhysicalPageFactDenial::ManifestEntryLimit)
-        );
+    }
+
+    /// The limit the facts named, with its bound and both counts.
+    fn limit(denial: PhysicalPageFactDenial) -> (crate::PhysicsBound, u64, u64) {
+        let PhysicalPageFactDenial::Limit(past) = denial else {
+            panic!("expected a limit, found {denial:?}")
+        };
+        (past.dimension(), past.observed(), past.admitted())
     }
 
     #[test]
@@ -228,10 +242,11 @@ mod tests {
             admit_physical_page_facts(&overstated_root, vec![block], 1, 1),
             Err(PhysicalPageFactDenial::RecordCountMismatch)
         );
-        let (root, block) = root_and_block(1);
+        // Three entries fit, and the third distinct page is one past two.
+        let (root, blocks) = branched_root_and_blocks();
         assert_eq!(
-            admit_physical_page_facts(&root, vec![block], 1, 0),
-            Err(PhysicalPageFactDenial::DistinctPageOrExtentLimit)
+            limit(admit_physical_page_facts(&root, blocks, 3, 2).unwrap_err()),
+            (crate::PhysicsBound::DistinctPagesAndExtents, 3, 2)
         );
     }
 
@@ -250,9 +265,10 @@ mod tests {
     #[test]
     fn aggregate_entries_across_multiple_leaf_blocks_are_bounded() {
         let (root, blocks) = branched_root_and_blocks();
+        // One leaf of one entry, then one of two: three past two.
         assert_eq!(
-            admit_physical_page_facts(&root, blocks.clone(), 2, 3),
-            Err(PhysicalPageFactDenial::ManifestEntryLimit)
+            limit(admit_physical_page_facts(&root, blocks.clone(), 2, 3).unwrap_err()),
+            (crate::PhysicsBound::ManifestEntries, 3, 2)
         );
         let facts = admit_physical_page_facts(&root, blocks, 3, 3).unwrap();
         assert_eq!(facts.manifest_block_count(), 3);
@@ -268,7 +284,10 @@ mod tests {
         let block = PhysicalRootRoutingBlock::leaf(7, 1, 1, vec![placement], 4).unwrap();
         let bytes = block.encode(format);
         let reference = block.reference(durable_artifact_checksum(&bytes));
-        let free_key = FreeSpaceKey::new(RecordAllocationClass::Extent, 1).unwrap();
+        let free_key = FreeSpaceKey::arena(
+            worth_store_physical_format::ExtentArenaId::new(1).unwrap(),
+            0,
+        );
         let free = FreeSpaceBlockReference::new(1, 1, 0, 17, free_key, free_key).unwrap();
         let manifest = DurablePhysicalRootManifest::builder(1, 7, 4, 19)
             .record_count(record_count)
@@ -314,7 +333,10 @@ mod tests {
                 .unwrap();
         let branch_bytes = branch.encode(format);
         let branch_reference = branch.reference(durable_artifact_checksum(&branch_bytes));
-        let free_key = FreeSpaceKey::new(RecordAllocationClass::Extent, 1).unwrap();
+        let free_key = FreeSpaceKey::arena(
+            worth_store_physical_format::ExtentArenaId::new(1).unwrap(),
+            0,
+        );
         let free = FreeSpaceBlockReference::new(1, 1, 0, 17, free_key, free_key).unwrap();
         let manifest = DurablePhysicalRootManifest::builder(1, 7, 2, 19)
             .record_count(3)
@@ -353,7 +375,18 @@ mod tests {
             .record_extent_cell(PhysicalExtentId::from_raw(ordinal).unwrap())
             .with_extent_generation(PhysicalGeneration::from_raw(1).unwrap());
         CurrentPhysicalRecordPlacement::Extent(
-            DurableExtentRecordPlacement::new(record, extent, 23).unwrap(),
+            DurableExtentRecordPlacement::legacy_unknown(
+                record,
+                extent,
+                23,
+                worth_store_physical_format::ExtentArenaRange::new(
+                    worth_store_physical_format::ExtentArenaId::new(1).unwrap(),
+                    4096,
+                    20480,
+                )
+                .unwrap(),
+            )
+            .unwrap(),
         )
     }
 

@@ -29,6 +29,12 @@ pub(super) fn admission(
         Denial::RetentionIdentityExhausted => {
             WorthQueryWorkspaceErrorKind::RetentionIdentityExhausted
         }
+        Denial::Cancelled => {
+            control_kind(worth_relational::facade::mvcc::RelationalOperationInterruption::Cancelled)
+        }
+        Denial::TimedOut => {
+            control_kind(worth_relational::facade::mvcc::RelationalOperationInterruption::TimedOut)
+        }
         _ => WorthQueryWorkspaceErrorKind::RelationalBasisUnavailable,
     };
     WorthQueryWorkspaceError::with_kind(
@@ -42,30 +48,18 @@ pub(super) fn staging(
 ) -> WorthQueryWorkspaceError {
     use worth_relational::facade::mvcc::RelationalTransactionStagingDenial as Denial;
     let kind = match denial {
-        Denial::OverlayCapacityExhausted {
-            maximum_bytes,
-            required_bytes,
-        } => WorthQueryWorkspaceErrorKind::TransactionOverlayCapacityExhausted {
-            maximum_bytes,
-            required_bytes,
-        },
-        Denial::FootprintCapacityExhausted {
-            maximum_loci,
-            required_loci,
-        } => WorthQueryWorkspaceErrorKind::TransactionFootprintCapacityExhausted {
-            maximum_loci,
-            required_loci,
-        },
+        Denial::AllocationDenied(ref denial) => allocation_kind(denial),
+        Denial::CardinalityOverflow => {
+            WorthQueryWorkspaceErrorKind::TransactionStagingCardinalityOverflow
+        }
+        Denial::InputDirectoryAllocationDenied { requested_batches } => {
+            WorthQueryWorkspaceErrorKind::TransactionInputDirectoryAllocationDenied {
+                requested_batches,
+            }
+        }
         Denial::SavepointCapacityExhausted { maximum_savepoints } => {
             WorthQueryWorkspaceErrorKind::SavepointCapacityExhausted { maximum_savepoints }
         }
-        Denial::SavepointFootprintCapacityExhausted {
-            maximum_loci,
-            required_loci,
-        } => WorthQueryWorkspaceErrorKind::SavepointFootprintCapacityExhausted {
-            maximum_loci,
-            required_loci,
-        },
         Denial::SavepointIdentityExhausted => {
             WorthQueryWorkspaceErrorKind::SavepointIdentityExhausted
         }
@@ -157,10 +151,15 @@ pub(super) fn commit(
         {
             WorthQueryWorkspaceErrorKind::ProposalIdentityExhausted
         }
+        Error::Conflict { error, .. } => match &error.class {
+            worth_relational::facade::transactions::ConflictClass::ExecutionAllocationDenied { denial } => allocation_kind(denial),
+            worth_relational::facade::transactions::ConflictClass::TransactionStagingCardinalityOverflow => WorthQueryWorkspaceErrorKind::TransactionStagingCardinalityOverflow,
+            worth_relational::facade::transactions::ConflictClass::TransactionInputDirectoryAllocationDenied { requested_batches } => WorthQueryWorkspaceErrorKind::TransactionInputDirectoryAllocationDenied { requested_batches: *requested_batches },
+            _ => WorthQueryWorkspaceErrorKind::Unclassified,
+        },
+        Error::Interrupted { interruption, .. } => control_kind(interruption.interruption()),
         Error::Preparation { .. }
-        | Error::Conflict { .. }
         | Error::Publication { .. }
-        | Error::Interrupted { .. }
         | Error::PublicationDenied { .. }
         | Error::PerformedButDurabilityDeferred { .. } => {
             WorthQueryWorkspaceErrorKind::Unclassified
@@ -170,6 +169,40 @@ pub(super) fn commit(
         kind,
         format!("workspace commit denied: {}", error.detail()),
     )
+}
+
+fn allocation_kind(
+    denial: &worth_execution::ExecutionAllocationDenial,
+) -> WorthQueryWorkspaceErrorKind {
+    use worth_execution::ExecutionAllocationDenialKind as Kind;
+    match denial.kind() {
+        Kind::Cancelled => {
+            control_kind(worth_relational::facade::mvcc::RelationalOperationInterruption::Cancelled)
+        }
+        Kind::DeadlineElapsed => {
+            control_kind(worth_relational::facade::mvcc::RelationalOperationInterruption::TimedOut)
+        }
+        Kind::Layout
+        | Kind::Lease(_)
+        | Kind::Allocator
+        | Kind::CapacityMismatch
+        | Kind::WriteBeyondReserved
+        | Kind::IncompleteSeal => WorthQueryWorkspaceErrorKind::TransactionAllocationDenied {
+            kind: denial.kind(),
+            requested_payload_bytes: denial.requested_payload_bytes(),
+        },
+    }
+}
+fn control_kind(
+    stop: worth_relational::facade::mvcc::RelationalOperationInterruption,
+) -> WorthQueryWorkspaceErrorKind {
+    use worth_query_execution::facade::primary_graph::WorthQueryProviderSessionControlStopKind as Kind;
+    WorthQueryWorkspaceErrorKind::ExecutionControlStopped(match stop {
+        worth_relational::facade::mvcc::RelationalOperationInterruption::Cancelled => {
+            Kind::Cancelled
+        }
+        worth_relational::facade::mvcc::RelationalOperationInterruption::TimedOut => Kind::TimedOut,
+    })
 }
 
 #[cfg(test)]

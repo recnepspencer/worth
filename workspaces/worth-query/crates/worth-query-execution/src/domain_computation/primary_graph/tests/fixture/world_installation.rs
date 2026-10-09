@@ -183,18 +183,6 @@ pub(in crate::domain_computation::primary_graph) fn installed_authorization_worl
     })
 }
 
-pub(in crate::domain_computation::primary_graph) fn installed_authorization_world_with_completed_evidence_capacity(
-    maximum: std::num::NonZeroUsize,
-) -> AuthorizationWorld {
-    super::authorization_world_installation::install_authorization_world_with_completed_evidence_resources(
-        AuthorizationWorldSpec {
-            owner_bindings: PRINCIPAL_ZERO_ACCOUNTS,
-            ..standard_spec()
-        },
-        crate::domain_computation::execution_runtime::WorthQueryCompletedEvidenceResourceProfile::bounded(maximum),
-    )
-}
-
 pub(in crate::domain_computation::primary_graph) fn installed_two_principal_authorization_world(
     include_owner_relation: bool,
 ) -> AuthorizationWorld {

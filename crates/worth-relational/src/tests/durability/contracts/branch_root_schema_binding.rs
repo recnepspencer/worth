@@ -79,10 +79,16 @@ fn recovery_rejects_a_schema_carrier_swapped_between_exact_roots() {
             .expect("owner-admitted transaction context")
     };
     transaction
-        .push_batch(batch_create("schema-v2"))
+        .push_batch(
+            batch_create("schema-v2"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     transaction
-        .commit(&runtime)
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("schema transition commits");
     runtime
         .durability_authority()
@@ -180,10 +186,16 @@ fn recovered_exact_roots_interpret_records_with_their_own_schema_contracts() {
             .expect("owner-admitted transaction context")
     };
     transaction
-        .push_batch(batch_create("new-contract"))
+        .push_batch(
+            batch_create("new-contract"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     let new = transaction
-        .commit(&runtime)
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("v2 schema transition commits");
     let new_entity = changed_entities(&new)[0];
     let _legacy_before_recovery = update_entity_on_branch(
@@ -314,10 +326,14 @@ fn recovered_exact_roots_interpret_records_with_their_own_schema_contracts() {
                     ),
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
     let denial = v2_meaning_on_v1_root
-        .commit(&recovered)
+        .commit(
+            &recovered,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect_err("a retained v1 root must deny v2-only meaning");
     assert!(matches!(
         denial,

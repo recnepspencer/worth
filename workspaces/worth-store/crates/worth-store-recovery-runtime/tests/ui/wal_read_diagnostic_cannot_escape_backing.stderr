@@ -1,0 +1,5 @@
+error[E0599]: no method named `into_error` found for struct `FundedRecoveryWalReadFailure` in the current scope
+ --> tests/ui/wal_read_diagnostic_cannot_escape_backing.rs:9:13
+  |
+9 |     failure.into_error()
+  |             ^^^^^^^^^^ method not found in `FundedRecoveryWalReadFailure`

@@ -2,6 +2,8 @@
 mod c10_crash_evidence;
 #[allow(dead_code)]
 mod c10_phase_five_read;
+#[path = "c10_historical_rewrite/support.rs"]
+mod historical_rewrite_support;
 #[allow(dead_code)]
 mod phase_three_support;
 
@@ -76,6 +78,34 @@ fn sealed_spans_recover_one_generation() {
 }
 
 #[test]
+fn partial_span_rewrite_result_remains_exact_after_later_roots() {
+    let (parent, root) = kill_span(8, 4, "after-wal");
+    let (expected_payload, _) = release(parent.path(), &root, 8, "after-wal", 4, "result");
+    assert_eq!(expected_payload.len(), 8);
+    for (index, bytes) in expected_payload.iter().enumerate() {
+        assert_eq!(bytes.len(), 7_500);
+        assert_eq!(bytes[0], index as u8);
+    }
+    let result_root = historical_rewrite_support::selected_catalog_generation(&root);
+    historical_rewrite_support::advance_with_ordinary_appends(&root, true);
+    let selected_before = historical_rewrite_support::selected_catalog_generation(&root);
+    assert!(
+        selected_before >= result_root + 2,
+        "the partial-span result root must be neither selected nor retained-previous"
+    );
+    let segments_before = segment_snapshot(&root);
+    let (payload, selected_after) = release(parent.path(), &root, 8, "after-wal", 4, "historical");
+    assert_eq!(payload, expected_payload);
+    assert_eq!(selected_after, selected_before);
+    assert_eq!(
+        historical_rewrite_support::selected_catalog_generation(&root),
+        selected_before,
+        "fresh recovery must not republish an already historical span"
+    );
+    assert_eq!(segment_snapshot(&root), segments_before);
+}
+
+#[test]
 #[ignore = "launched by the phase 6 span parent"]
 fn c10_span_child_parks() {
     let marker = PathBuf::from(std::env::var_os(MARKER).expect("span marker"));
@@ -131,10 +161,29 @@ fn checkpoint_source(world: &PhysicalResidencyStoreWorld) {
     }
 }
 
+/// Completing a span rewrite reads the whole source span, and the successor
+/// span too once the root publishes it.
+#[test]
+fn every_observation_limit_under_the_need_of_a_killed_span_rewrite_is_that_limit() {
+    for (seam, reads) in [("after-wal", 1), ("after-replace", 2)] {
+        let (parent, root) = kill_span(4, 4, seam);
+        let blocks =
+            c10_crash_evidence::observation_sweep::completion_blocks_under_every_observation_limit(
+                seam, &root,
+            );
+        assert!(
+            blocks >= reads,
+            "{seam}: completing the rewrite ran its reader out {blocks} times",
+        );
+        drop(parent);
+    }
+}
+
 fn rewrite_checkpoint(name: &str) -> CertificationPhysicalMutationCheckpoint {
     match name {
         "after-wal" => CertificationPhysicalMutationCheckpoint::AfterWalDurability,
         "after-data" => CertificationPhysicalMutationCheckpoint::AfterDataSettlement,
+        "after-replace" => CertificationPhysicalMutationCheckpoint::AfterRootReplacement,
         other => panic!("unknown span checkpoint {other}"),
     }
 }

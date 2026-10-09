@@ -1,13 +1,22 @@
-use worth_store_physical_format::RecordArtifactFile;
+use worth_store_physical_format::{ExtentArenaRange, RecordArtifactFile};
 
-/// One displaced payload generation that retirement may delete.
-///
-/// A segment generation is one file. An extent generation is its chunk file
-/// and its manifest, and retirement deletes both or neither completes.
+/// A displaced segment file or exact arena allocation. Arena range retirement
+/// changes published free-space authority; it never removes the shared file.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub(in crate::physical_runtime) enum RetiredArtifact {
-    Segment { segment: u64, generation: u64 },
-    Extent { extent: u64, generation: u64 },
+    Segment {
+        segment: u64,
+        generation: u64,
+    },
+    Extent {
+        extent: u64,
+        generation: u64,
+        range: ExtentArenaRange,
+    },
+    Arena {
+        arena: u64,
+        generation: u64,
+    },
 }
 
 impl RetiredArtifact {
@@ -15,16 +24,23 @@ impl RetiredArtifact {
         match self {
             Self::Segment { segment, .. } => segment,
             Self::Extent { extent, .. } => extent,
+            Self::Arena { arena, .. } => arena,
         }
     }
-
     pub(in crate::physical_runtime) const fn generation(self) -> u64 {
         match self {
-            Self::Segment { generation, .. } | Self::Extent { generation, .. } => generation,
+            Self::Segment { generation, .. }
+            | Self::Extent { generation, .. }
+            | Self::Arena { generation, .. } => generation,
         }
     }
-
-    /// Every file this generation owns, in deletion order.
+    pub(in crate::physical_runtime) const fn arena_range(self) -> Option<ExtentArenaRange> {
+        match self {
+            Self::Extent { range, .. } => Some(range),
+            Self::Segment { .. } | Self::Arena { .. } => None,
+        }
+    }
+    /// Only a segment generation owns an independently removable file.
     pub(in crate::physical_runtime) fn files(self) -> Vec<RecordArtifactFile> {
         match self {
             Self::Segment {
@@ -34,51 +50,54 @@ impl RetiredArtifact {
                 segment,
                 generation,
             }],
-            Self::Extent { extent, generation } => vec![
-                RecordArtifactFile::Extent { extent, generation },
-                RecordArtifactFile::ExtentManifest { extent, generation },
-            ],
+            Self::Extent { .. } => Vec::new(),
+            Self::Arena { arena, .. } => vec![RecordArtifactFile::ExtentArena { arena }],
         }
     }
-
-    /// Whether `artifact` is one of the files this exact generation owns.
     pub(in crate::physical_runtime) fn admits_removal(self, artifact: RecordArtifactFile) -> bool {
         self.files().contains(&artifact)
     }
-
-    /// Retirement WAL action codes: 1 and 2 name a segment, 3 and 4 an extent.
     pub(in crate::physical_runtime) const fn action_code(self, completion: bool) -> u8 {
         match (self, completion) {
             (Self::Segment { .. }, false) => super::retirement::RETIREMENT_INTENT,
             (Self::Segment { .. }, true) => super::retirement::RETIREMENT_COMPLETION,
             (Self::Extent { .. }, false) => super::retirement::RETIREMENT_EXTENT_INTENT,
             (Self::Extent { .. }, true) => super::retirement::RETIREMENT_EXTENT_COMPLETION,
+            (Self::Arena { .. }, false) => 5,
+            (Self::Arena { .. }, true) => 6,
         }
     }
-
-    /// Decodes an action code into the artifact kind and whether it completes.
-    pub(in crate::physical_runtime) const fn from_action(
+    pub(in crate::physical_runtime) fn from_action(
         action: u8,
         id: u64,
         generation: u64,
+        range: Option<ExtentArenaRange>,
     ) -> Option<(Self, bool)> {
+        if id == 0 || generation == 0 {
+            return None;
+        }
         match action {
-            super::retirement::RETIREMENT_INTENT | super::retirement::RETIREMENT_COMPLETION => {
-                Some((
-                    Self::Segment {
-                        segment: id,
-                        generation,
-                    },
-                    action == super::retirement::RETIREMENT_COMPLETION,
-                ))
-            }
-            super::retirement::RETIREMENT_EXTENT_INTENT
-            | super::retirement::RETIREMENT_EXTENT_COMPLETION => Some((
+            1 | 2 if range.is_none() => Some((
+                Self::Segment {
+                    segment: id,
+                    generation,
+                },
+                action == 2,
+            )),
+            3 | 4 => Some((
                 Self::Extent {
                     extent: id,
                     generation,
+                    range: range?,
                 },
-                action == super::retirement::RETIREMENT_EXTENT_COMPLETION,
+                action == 4,
+            )),
+            5 | 6 if range.is_none() => Some((
+                Self::Arena {
+                    arena: id,
+                    generation,
+                },
+                action == 6,
             )),
             _ => None,
         }
@@ -88,58 +107,28 @@ impl RetiredArtifact {
 #[cfg(test)]
 mod tests {
     use super::*;
-
     #[test]
-    fn an_extent_generation_owns_its_chunks_and_manifest_only() {
+    fn an_extent_allocation_never_authorizes_removing_its_shared_arena() {
+        let range = ExtentArenaRange::new(
+            worth_store_physical_format::ExtentArenaId::new(4).unwrap(),
+            4096,
+            8192,
+        )
+        .unwrap();
         let extent = RetiredArtifact::Extent {
             extent: 4,
             generation: 2,
+            range,
         };
-        assert!(extent.admits_removal(RecordArtifactFile::Extent {
-            extent: 4,
-            generation: 2
-        }));
-        assert!(extent.admits_removal(RecordArtifactFile::ExtentManifest {
-            extent: 4,
-            generation: 2
-        }));
-        assert!(!extent.admits_removal(RecordArtifactFile::Extent {
-            extent: 4,
-            generation: 3
-        }));
-        assert!(!extent.admits_removal(RecordArtifactFile::Segment {
-            segment: 4,
-            generation: 2
-        }));
-        let segment = RetiredArtifact::Segment {
-            segment: 4,
-            generation: 2,
-        };
-        assert_eq!(segment.files().len(), 1);
-        assert_ne!(segment, extent, "equal ids and generations stay distinct");
-    }
-
-    #[test]
-    fn action_codes_round_trip_the_artifact_kind() {
-        for artifact in [
-            RetiredArtifact::Segment {
-                segment: 1,
-                generation: 2,
-            },
-            RetiredArtifact::Extent {
-                extent: 1,
-                generation: 2,
-            },
-        ] {
-            for completion in [false, true] {
-                let code = artifact.action_code(completion);
-                assert_eq!(
-                    RetiredArtifact::from_action(code, 1, 2),
-                    Some((artifact, completion))
-                );
-            }
+        assert!(extent.files().is_empty());
+        assert!(!extent.admits_removal(RecordArtifactFile::ExtentArena { arena: 4 }));
+        for completion in [false, true] {
+            assert_eq!(
+                RetiredArtifact::from_action(extent.action_code(completion), 4, 2, Some(range)),
+                Some((extent, completion))
+            );
         }
-        assert_eq!(RetiredArtifact::from_action(5, 1, 2), None);
-        assert_eq!(RetiredArtifact::from_action(0, 1, 2), None);
+        assert!(RetiredArtifact::from_action(3, 4, 2, None).is_none());
+        assert!(RetiredArtifact::from_action(1, 4, 2, Some(range)).is_none());
     }
 }

@@ -4,4 +4,9 @@ error: cannot construct `AdmittedPhysicalRecordResidencyPolicy` with struct lite
 4 |     AdmittedPhysicalRecordResidencyPolicy {}
   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   |
-  = note: private field `limits` that was not provided
+  = note: private fields `limits` and `record_format` that were not provided
+help: you might have meant to use the `canonical` associated function
+  |
+4 -     AdmittedPhysicalRecordResidencyPolicy {}
+4 +     AdmittedPhysicalRecordResidencyPolicy::canonical(_)
+  |

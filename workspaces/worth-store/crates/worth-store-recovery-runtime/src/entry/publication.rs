@@ -30,6 +30,19 @@ pub enum PhysicalRecoveryPublicationDenial {
 }
 
 impl PhysicalRecoveryPublicationSettlementLedger {
+    /// Retained settlement effects; completed candidate bytes were released
+    /// before this boundary and are not inferred from historical byte counts.
+    pub(crate) fn owned_heap_bytes(&self) -> Option<u64> {
+        match &self.settlement {
+            PhysicalRecoveryPublicationSettlement::PreexistingNamespaceDurable => Some(0),
+            PhysicalRecoveryPublicationSettlement::Completed(value) => value.owned_heap_bytes(),
+            PhysicalRecoveryPublicationSettlement::DeniedBeforeEffect(value) => {
+                value.owned_heap_bytes()
+            }
+            PhysicalRecoveryPublicationSettlement::Indeterminate(value) => value.owned_heap_bytes(),
+        }
+    }
+
     pub(crate) const fn new(settlement: PhysicalRecoveryPublicationSettlement) -> Self {
         Self { settlement }
     }

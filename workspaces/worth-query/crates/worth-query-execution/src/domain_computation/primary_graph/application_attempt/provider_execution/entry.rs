@@ -34,36 +34,12 @@ where
         if self.operation_requires_workflow_authority::<Operation>() {
             Some(WorthQueryApplicationCommitDenial::workflow_authority_required())
         } else if self.operation_requires_application_program::<Operation>() {
-            Some(WorthQueryApplicationCommitDenial::application_program_required())
+            Some(WorthQueryApplicationCommitDenial::program_lane_required::<
+                Operation,
+            >())
         } else {
             None
         }
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn compare_and_commit_application_for_required_output_source<
-        Operation,
-        Input,
-        Scope,
-    >(
-        &self,
-        phase: &WorthQueryAdvancementPhase<'_>,
-
-        presented: &WorthQueryPresentedProgram<'_>,
-        program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
-        idempotency: WorthQueryApplicationIdempotencyBinding,
-    ) -> WorthQueryApplicationCommitOutcome
-    where
-        Input: Clone + Send + Sync + 'static,
-    {
-        if let Err(outcome) = self.require_occurrence_owns_output_source(presented, &program) {
-            return outcome;
-        }
-        self.compare_and_commit_application_with_output_observation(
-            phase,
-            program,
-            idempotency,
-            true,
-        )
     }
 
     /// Requires that the program presented for this output source is the one
@@ -93,46 +69,6 @@ where
         Ok(())
     }
 
-    pub(in crate::domain_computation::primary_graph) fn compare_and_commit_application_for_program_output_producer<
-        Operation,
-        Input,
-        Scope,
-    >(
-        &self,
-        phase: &WorthQueryAdvancementPhase<'_>,
-
-        program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
-        idempotency: WorthQueryApplicationIdempotencyBinding,
-        selected_program: Option<(
-            &worth_query_declaration::facade::application_program::ApplicationProgramIdentity,
-            &worth_query_declaration::facade::application_program::ApplicationProgramRevision,
-        )>,
-    ) -> WorthQueryApplicationCommitOutcome
-    where
-        Operation: 'static,
-        Input: Clone + Send + Sync + 'static,
-    {
-        if !self
-            .installed_conditionals
-            .contains_operation::<Operation>()
-        {
-            return WorthQueryApplicationCommitOutcome::Denied(
-                WorthQueryApplicationCommitDenial::application_program_required(),
-            );
-        }
-        if let Err(outcome) =
-            self.require_occurrence_program_commit_binding(&program, selected_program)
-        {
-            return outcome;
-        }
-        self.compare_and_commit_application_with_output_observation(
-            phase,
-            program,
-            idempotency,
-            true,
-        )
-    }
-
     /// Resolves the active occurrence, then checks selection and operation authority.
     fn require_occurrence_program_commit_binding<Operation, Input, Scope>(
         &self,
@@ -159,59 +95,6 @@ where
         Ok(())
     }
 
-    pub(in crate::domain_computation::primary_graph) fn compare_and_commit_application_for_program_action<
-        Operation,
-        Input,
-        Scope,
-    >(
-        &self,
-        phase: &WorthQueryAdvancementPhase<'_>,
-
-        presented: &WorthQueryPresentedProgram,
-        program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
-        idempotency: WorthQueryApplicationIdempotencyBinding,
-        causality: ApplicationCommitCausality<'_>,
-    ) -> WorthQueryApplicationCommitOutcome
-    where
-        Operation: 'static,
-        Input: Clone + Send + Sync + 'static,
-    {
-        if self
-            .installed_conditionals
-            .contains_operation::<Operation>()
-            || !presented.acts_through_operation(std::any::TypeId::of::<Operation>())
-        {
-            return WorthQueryApplicationCommitOutcome::Denied(
-                WorthQueryApplicationCommitDenial::application_program_required(),
-            );
-        }
-        let Some(support) = self.program_support.as_ref() else {
-            return WorthQueryApplicationCommitOutcome::Denied(
-                WorthQueryApplicationCommitDenial::application_program_required(),
-            );
-        };
-        let occurrence = match resolve_occurrence_program(support, &program) {
-            Ok(occurrence) => occurrence,
-            Err(denial) => return WorthQueryApplicationCommitOutcome::Denied(denial),
-        };
-        if occurrence.rendering() != presented.rendering() {
-            return WorthQueryApplicationCommitOutcome::Denied(
-                WorthQueryApplicationCommitDenial::program_not_active_on_occurrence(
-                    presented.identity(),
-                    occurrence.entry().identity(),
-                    occurrence.entry().revision(),
-                ),
-            );
-        }
-        self.compare_and_commit_application_with_causality(
-            phase,
-            program,
-            idempotency,
-            false,
-            causality,
-        )
-    }
-
     pub(in crate::domain_computation::primary_graph) fn compare_and_commit_conditional_operation<
         Operation,
         Input,
@@ -228,7 +111,12 @@ where
         Input: Clone + Send + Sync + 'static,
     {
         if !self.has_installed_application_program() {
-            return self.compare_and_commit_application_in_advancement(phase, program, idempotency);
+            return self.compare_and_commit_application_in_advancement(
+                phase,
+                program,
+                idempotency,
+                crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            );
         }
         if !self
             .installed_conditionals
@@ -246,6 +134,7 @@ where
             program,
             idempotency,
             false,
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
     }
 
@@ -256,6 +145,7 @@ where
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
         retain_output_observation: bool,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> WorthQueryApplicationCommitOutcome
     where
         Input: Clone + Send + Sync + 'static,
@@ -266,6 +156,7 @@ where
             idempotency,
             retain_output_observation,
             ApplicationCommitCausality::Ordinary,
+            allocation_policy,
         )
     }
 
@@ -276,6 +167,7 @@ where
         idempotency: WorthQueryApplicationIdempotencyBinding,
         retain_output_observation: bool,
         causality: ApplicationCommitCausality<'_>,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> WorthQueryApplicationCommitOutcome
     where
         Input: Clone + Send + Sync + 'static,
@@ -298,6 +190,7 @@ where
             idempotency,
             None,
             pending,
+            allocation_policy,
         )
     }
 
@@ -311,6 +204,7 @@ where
 
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> WorthQueryApplicationCommitOutcome
     where
         Input: Clone + Send + Sync + 'static,
@@ -320,6 +214,7 @@ where
             program,
             idempotency,
             None,
+            allocation_policy,
         )
     }
 
@@ -330,6 +225,7 @@ where
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
         elevation_currentness: Option<WorthQueryElevationCommitCurrentness>,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> WorthQueryApplicationCommitOutcome
     where
         Input: Clone + Send + Sync + 'static,
@@ -340,6 +236,7 @@ where
             idempotency,
             elevation_currentness,
             None,
+            allocation_policy,
         )
     }
 
@@ -351,6 +248,7 @@ where
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
         aftermath_causality: WorthQueryPendingAftermathCausality,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> WorthQueryApplicationCommitOutcome
     where
         Input: Clone + Send + Sync + 'static,
@@ -364,6 +262,7 @@ where
             idempotency,
             None,
             Some(aftermath_causality),
+            allocation_policy,
         )
     }
 }
@@ -398,3 +297,5 @@ fn plain_publication_posture<Schema, Operation, Input, Scope>(
 
 mod application_commit;
 mod commit_progression;
+
+mod output_source;

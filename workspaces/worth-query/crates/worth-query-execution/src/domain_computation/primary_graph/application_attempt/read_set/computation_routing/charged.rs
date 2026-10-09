@@ -48,7 +48,7 @@ impl ChargedBytes for WorthQueryApplicationObservedFact {
             Self::SourceFieldRevision { locator, .. } | Self::AbsentField { locator, .. } => {
                 bytes(locator.owned_allocation_capacity_bytes())
             }
-            Self::SourceAdjacencyRevision { endpoints, .. } => list(endpoints),
+            Self::SourceAdjacencyRevision { endpoints, .. } => endpoints.additional_charged_bytes(),
             Self::Field { locator, value, .. } => bytes(locator.owned_allocation_capacity_bytes())
                 .saturating_add(bytes(value.owned_allocation_capacity_bytes())),
             Self::Relation {

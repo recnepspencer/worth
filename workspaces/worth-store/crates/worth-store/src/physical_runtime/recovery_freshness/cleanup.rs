@@ -1,12 +1,10 @@
-use std::sync::Arc;
-
+use crate::physical_runtime::SharedRecoveryCheckpoint;
 use worth_store_physical_backend::AdmittedRecoveryFilesystemMedia;
 use worth_store_physical_backend::PhysicalRecoveryMediaGeneration;
 use worth_store_physical_format::{
     store_namespace::StableStoreIdentity, PhysicalCheckpointIdentity,
     PhysicalRecordFormatDeclaration,
 };
-use worth_store_physical_integrity::VerifiedCheckpointStream;
 use worth_store_wal::{LogSequenceNumber, WalLsnRange, WalSegmentArtifactIdentity};
 
 use crate::physical_runtime::recovery_coordination::PhysicalRecoveryCleanupRemovalCommand;
@@ -88,7 +86,7 @@ pub(in crate::physical_runtime) struct StoreRecoveryCleanupRemovalBasis {
 struct PendingCleanupSample {
     cleanup_plan_identity: [u8; 32],
     policy_identity: [u8; 32],
-    checkpoint: Arc<VerifiedCheckpointStream>,
+    checkpoint: SharedRecoveryCheckpoint,
     eligibility: StoreRecoveryCleanupEligibility,
 }
 

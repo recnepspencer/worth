@@ -140,3 +140,61 @@ Query makes no island claim. Deferred:
 
 Bring it back when a Query declaration needs connectivity-shaped partitions,
 such as islands of a topology.
+
+## Worth Store
+
+Deferred on 2026-10-05 so that runtime integration (Part II Milestone 1) can
+start on the C.13 facade handoff. Until each item lands, its capability
+reports `Absent` and no facade port reaches it.
+
+### C.11 remainder
+
+Spec: [physical-reconstruction-fast-track-to-runtime-integration.md](worth-store/physical-reconstruction-fast-track-to-runtime-integration.md),
+"Deferred Work". Deferred on 2026-10-06. C.13 takes only the C.11 items that
+Part II Milestones 1 to 3 need:
+
+- recovery before the first checkpoint;
+- truthful capability rows;
+- honest observer coverage;
+- the record-path crash seams.
+
+Deferred:
+
+- facade ports for blob ingest and read, maintenance, relocation and layout
+  rebuild;
+- the linear ordered-history walk and the release rejoin rework;
+- the rest of Phase 6, which is release, retirement and tier movement;
+- Phase 7;
+- the Phase 8 matrix and heavy lane.
+
+Each returns before the Part II milestone named in the spec's table. The
+earliest is Milestone 4, for the linear ordered-history walk.
+
+### S.10, S.11 and S.12
+
+Spec: [physical-database-roadmap.md](worth-store/physical-database-roadmap.md),
+its position section and the Runtime Integration Entry Gate.
+
+- S.10 (backup, PITR, repair, disaster recovery, forensics) is resequenced
+  before Runtime Integration Milestone 8.
+- S.11 (security, encryption, tenancy, audit) is resequenced before Milestone
+  10.
+- S.12 (physical qualification) is resequenced before Milestone 14.
+
+Each returns when its consuming milestone is next.
+
+### C.12 formal protocol rebinding
+
+Spec: [physical-foundation-reconstruction-roadmap.md](worth-store/physical-foundation-reconstruction-roadmap.md),
+C.12. It grants no runtime authority and changes no facade or format. Until
+it closes, no claim cites an S.9 model as evidence about the executable owners.
+It returns before Runtime Integration Milestone 19.
+
+### C.13 joined hostile campaign
+
+Spec: [physical-foundation-reconstruction-roadmap.md](worth-store/physical-foundation-reconstruction-roadmap.md),
+C.13 "Deferred To S.12". The store is at least eight times the memory budget,
+with concurrent maintenance, crash and corruption injection, and offline
+verification. C.13 keeps the facade tests, the facade concurrency test, the
+focused owner regressions and a crash-and-reopen journey. Returns with S.12,
+before Runtime Integration Milestone 14.

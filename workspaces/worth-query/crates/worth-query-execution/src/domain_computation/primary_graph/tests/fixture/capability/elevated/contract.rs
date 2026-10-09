@@ -182,7 +182,6 @@ pub(in crate::domain_computation::primary_graph::tests::fixture::capability) fn 
         .operation(without_external_effect_or_aftermath(
             CompleteCapabilityReviewOperation::reference(),
         ))
-        .operation_decision_fact_budget(ElevatedCapabilityTouchOperation::reference(), 1)
         .operation_projection_work_budget(ElevatedCapabilityTouchOperation::reference(), 32)
         .operation_read_field(
             ElevatedCapabilityTouchOperation::reference(),

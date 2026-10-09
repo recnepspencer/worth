@@ -47,13 +47,12 @@ impl PhysicalRecordArtifactTree<'_> {
         Ok(true)
     }
 
-    fn family_directories(&self) -> [&ArtifactTreeDirectory; 6] {
+    fn family_directories(&self) -> [&ArtifactTreeDirectory; 5] {
         [
             &self.root_manifests,
             &self.page_segments,
             &self.segment_manifests,
-            &self.extents,
-            &self.extent_manifests,
+            &self.arenas,
             &self.free_space_manifests,
         ]
     }

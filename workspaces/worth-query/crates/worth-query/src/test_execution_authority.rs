@@ -29,7 +29,7 @@ pub(crate) fn authority() -> AuthorityGuard {
         Arc::new(
             ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
                 max_workers: NonZeroUsize::new(4).unwrap(),
-                charged_memory_bytes: 64 * 1024 * 1024,
+                charged_memory_bytes: Some(64 * 1024 * 1024),
             })
             .expect("one Query test composition root"),
         )

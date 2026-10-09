@@ -144,6 +144,7 @@ impl DispatchedPhysicalWork {
             && physical.owner() == self.admitted.authority().media_owner_observation().owner()
             && Some(coordinate) == self.coordinate()
             && physical.range().byte_count() == u64::from(coordinate.length())
+            && physical.range().offset() == coordinate.offset()
             && physical.completed_bytes() == u64::from(coordinate.length())
             && self.payload_digest == Some(physical.payload_digest())
             && physical.create_operation() != physical.write_operation()
@@ -287,6 +288,7 @@ impl DispatchedPhysicalWork {
             && physical.owner() == self.admitted.authority().media_owner_observation().owner()
             && Some(coordinate) == self.coordinate()
             && physical.range().byte_count() == u64::from(coordinate.length())
+            && physical.range().offset() == coordinate.offset()
             && physical.completed_bytes() <= u64::from(coordinate.length())
             && self.payload_digest == Some(physical.payload_digest())
     }

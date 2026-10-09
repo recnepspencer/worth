@@ -1,4 +1,5 @@
 mod admission_plan_digest;
+mod capacity_diagnostics;
 mod capacity_reservation;
 mod decision;
 mod evidence;

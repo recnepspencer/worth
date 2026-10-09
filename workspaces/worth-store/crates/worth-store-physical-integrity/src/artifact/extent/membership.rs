@@ -35,6 +35,19 @@ pub(super) fn validate_manifest_membership(
             PhysicalBlastRadius::CompleteArtifact,
         ));
     }
+    let expected_offset = manifest
+        .frame_layout()
+        .chunk_offset(coordinate.ordinal())
+        .and_then(|offset| manifest.arena_range().offset().checked_add(offset));
+    if scope.extent_arena_range() != Some(manifest.arena_range())
+        || expected_offset != Some(scope.byte_range().offset())
+    {
+        return Some(membership_damage(
+            scope,
+            EXTENT_IDENTITY_FIELD,
+            PhysicalFormatField::ChildReference,
+        ));
+    }
     if record_format != manifest.record_format() {
         return Some(field_damage(
             scope,

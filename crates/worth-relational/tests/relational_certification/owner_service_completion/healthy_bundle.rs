@@ -128,11 +128,17 @@ fn discarded_candidate_leaves_truth_unchanged_and_releases_its_obligation() {
         .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
         .expect("the exact storm predecessor opens a transaction");
     transaction
-        .push_batch(batch)
+        .push_batch(
+            batch,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the semantic reroute remains inside its declared budget");
     let candidate = services
         .preparation_port()
-        .prepare_branch_transaction(transaction)
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the preparation port installs the canonical candidate");
     let discarded = services
         .preparation_port()

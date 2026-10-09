@@ -50,6 +50,8 @@ use worth_relational::facade::{
     transactions::WorkerIntentBatch,
 };
 
+use worth_execution::ExecutionAllocationPolicy as Allocation;
+
 let runtime = RelationalRuntimeApi::builder()
     .schema_registry(RelationalSchemaRegistry::new())
     .build();
@@ -60,14 +62,31 @@ let mut tx = runtime.begin_branch_transaction(
     &basis,
     RelationalTransactionIntent::ordinary(),
 )?;
-tx.push_batch(WorkerIntentBatch::new("example"))?;
-let _outcome = tx.commit(&runtime)?;
+tx.push_batch(WorkerIntentBatch::new("example"), Allocation::SystemAllocation)?;
+let _outcome = tx.commit(&runtime, Allocation::SystemAllocation)?;
 
 let _truth = runtime.read_truth();
 let _snapshots = runtime.snapshots();
 let _history = runtime.history();
 let _inspection = runtime.inspect_what_happened();
 ```
+
+Staging and commitment require an explicit allocation policy selecting System
+allocation or an actual process lease. Native branch, schema, materialization,
+savepoint-count and physical allocation checks remain. Transaction overlay and
+footprint quotas do not add another admission gate. Query forwards the caller's
+actual allocation policy and live request control through native validation.
+
+Repeated equality selections can prepare an installed entity-field index with
+`index_access().prepare_entity_field_lookup(&view, index, kind, &locator)`.
+The opaque owner retains the exact admitted view's root and index generation;
+both preparation and execution reject another runtime's authority.
+`execute_prepared_entity_field_lookup` borrows that retained root for each value,
+preserves complete finite selection and corruption checks, and polls the supplied
+live callback. Certification still compares against authoritative storage at
+that same root. This callback controls interruption, not temporary buffer
+allocation admission. The separate admitted lookup retains its existing
+64-candidate work/storage contract.
 
 ## Mental model
 
@@ -88,6 +107,47 @@ surface.
 The owner catalog, branch cells, roots, and retention accounting are currently
 memory-resident. Restart durability for this branch-owner model is deferred to
 Worth Store integration.
+
+## Validated transitions before recovered installation
+
+`native_checkpoint(policy)` captures one immutable image and counts its actual
+MessagePack wire before allocating the final fixed byte backing. The same wire
+writer emits into that backing and seals it without a payload copy. The caller
+explicitly chooses System allocation or an Execution lease; allocation and live
+control refusals preserve the original typed cause and payload quote through
+`RelationalNativeCheckpointCaptureDenial`. Captured image, partition-alias and
+serializer metadata heaps are separate from this payload admission. Imported
+bytes do not acquire a charge or recovery authority.
+
+`RelationalNativeCheckpoint` retains immutable byte backing. Clones share that
+backing and preserve the selected byte region and any runtime capture-section
+metadata. `from_untrusted_bytes_region` accepts `ExecutionImmutableBytes` so an enclosing
+checkpoint can pass the same backing without copying its payload. Wrapping a
+moved external box allocates an Arc header, not another payload buffer. Imported
+native bytes remain uncharged; an admitted enclosing backing retains its whole
+payload reservation through region clones until the last shared owner drops. Equality compares
+selected byte values. Byte custody does not confer recovery authority; each
+restore still authenticates and readmits the native checkpoint.
+
+`restore_native_checkpoint_with_authority` issues linear recovery authority
+for the verified runtime's exact branch images. Applications that must change
+that image before installing their recovered world can prepare a normal native
+commit and pass it, with that authority, to
+`durability_recovery().commit_checkpoint_transition(...)`.
+
+The recovery owner checks the candidate's exact recovered predecessor and uses
+native publication and settlement. An acknowledged result yields the commit
+receipt and recovery authority for the performed successor. Ordinary commits
+do not refresh recovery authority. Relational attests native lineage; the
+application still owns predecessor selection and target migration validation.
+
+Refusal returns the original authority. A durable append failure returns a
+linear deferred transition, which grants no successor authority. Pass it to
+`repair_checkpoint_transition(...)` to repair the existing native settlement
+route without publishing another commit. Failed repair returns the same custody
+for retry; successful repair carries the performed successor, even if current
+branch state has moved since that performance. These types are available through
+`worth_relational::facade::durability`.
 
 ## Aspect-Precise Publication
 

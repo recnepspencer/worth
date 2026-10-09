@@ -1,5 +1,3 @@
-use std::num::NonZeroU32;
-
 use worth_query_installation::facade::*;
 
 use crate::binary_encoding::BinaryEncodingSink;
@@ -8,7 +6,7 @@ use crate::denial::{
     WorthQueryPackageArchiveDenial as Denial, WorthQueryPackageArchiveDenialKind as Kind,
 };
 use crate::record::decode_budget::RecordDecodeAttempt;
-use crate::record::sequence::{decode_sequence, require_canonical_sequence, write_sequence};
+use crate::record::sequence::{decode_sequence, write_sequence};
 
 use super::artifact_reference::{decode_reference, write_reference};
 use super::input_contracts::{decode_native_projection, write_native_projection};
@@ -19,7 +17,13 @@ pub(super) use lifecycle::{
     decode_lifecycle, decode_replay, decode_support_lowering, decode_terminal_cost,
     write_lifecycle, write_replay, write_support_lowering, write_terminal_cost,
 };
-use vocabulary::{decision_kind, decision_kind_tag, effect, effect_tag};
+use vocabulary::{effect, effect_tag};
+mod decision_facts;
+mod invariant_execution;
+#[cfg(test)]
+mod optional_tests;
+pub(super) use decision_facts::{decode_decision_facts, write_decision_facts};
+pub(super) use invariant_execution::{decode_invariant_execution, write_invariant_execution};
 
 pub(super) fn write_evidence(
     output: &mut dyn BinaryEncodingSink,
@@ -88,61 +92,6 @@ pub(super) fn decode_graph_reads(
                 })
             })?,
         }),
-        _ => unsupported(),
-    }
-}
-
-pub(super) fn write_decision_facts(
-    output: &mut dyn BinaryEncodingSink,
-    value: &WorthQueryOperationDecisionFactContract,
-) -> Result<(), Denial> {
-    match value {
-        WorthQueryOperationDecisionFactContract::NotRequired => output.u16(1),
-        WorthQueryOperationDecisionFactContract::Declared { required_families } => {
-            output.u16(2)?;
-            write_sequence(output, required_families, |output, family| {
-                output.text(family.identity())?;
-                output.u16(decision_kind_tag(family.kind()))?;
-                match family.cardinality() {
-                    WorthQueryDecisionFactCardinality::Exact(count) => {
-                        output.u16(1)?;
-                        write_usize(output, count)
-                    }
-                    WorthQueryDecisionFactCardinality::Bounded { maximum } => {
-                        output.u16(2)?;
-                        write_usize(output, maximum)
-                    }
-                }
-            })
-        }
-    }
-}
-
-pub(super) fn decode_decision_facts(
-    input: &mut BinaryInput<'_>,
-    budget: &mut RecordDecodeAttempt,
-) -> Result<WorthQueryOperationDecisionFactContract, Denial> {
-    match input.u16()? {
-        1 => Ok(WorthQueryOperationDecisionFactContract::NotRequired),
-        2 => {
-            let families = decode_sequence(input, budget, 16, |input, _| {
-                let identity = input.text()?.to_owned();
-                let kind = decision_kind(input.u16()?)?;
-                let tag = input.u16()?;
-                let count = read_usize(input)?;
-                let family = WorthQueryDecisionFactFamily::new(identity, kind)
-                    .map_err(|_| Denial::new(Kind::InvalidRecordShape))?;
-                match tag {
-                    1 => family.with_exact_fact_count(count),
-                    2 => family.with_bounded_fact_count(count),
-                    _ => return unsupported(),
-                }
-                .map_err(|_| Denial::new(Kind::InvalidRecordShape))
-            })?;
-            require_canonical_sequence(&families)?;
-            WorthQueryOperationDecisionFactContract::declared(families)
-                .map_err(|_| Denial::new(Kind::InvalidRecordShape))
-        }
         _ => unsupported(),
     }
 }
@@ -247,81 +196,6 @@ pub(super) fn decode_invariants(
                 Ok(input.text()?.to_owned())
             })?,
         }),
-        _ => unsupported(),
-    }
-}
-
-pub(super) fn write_invariant_execution(
-    output: &mut dyn BinaryEncodingSink,
-    value: &WorthQueryInvariantExecutionContract,
-) -> Result<(), Denial> {
-    match value {
-        WorthQueryInvariantExecutionContract::NotRequired => output.u16(1),
-        WorthQueryInvariantExecutionContract::Declared { requirements } => {
-            output.u16(2)?;
-            write_sequence(output, requirements, |output, requirement| {
-                output.text(requirement.slot())?;
-                output.text(requirement.family())?;
-                output.u32(requirement.version().get())?;
-                output.u16(match requirement.enforcement() {
-                    WorthQueryInvariantEnforcement::Blocking => 1,
-                    WorthQueryInvariantEnforcement::Advisory => 2,
-                })?;
-                output.text(requirement.executor_role())?;
-                write_sequence(
-                    output,
-                    requirement.state_load_families(),
-                    |output, family| output.text(family),
-                )?;
-                write_usize(output, requirement.max_state_facts())?;
-                output.u64(requirement.max_work_units())
-            })
-        }
-    }
-}
-
-pub(super) fn decode_invariant_execution(
-    input: &mut BinaryInput<'_>,
-    budget: &mut RecordDecodeAttempt,
-) -> Result<WorthQueryInvariantExecutionContract, Denial> {
-    match input.u16()? {
-        1 => Ok(WorthQueryInvariantExecutionContract::NotRequired),
-        2 => {
-            let requirements = decode_sequence(input, budget, 36, |input, budget| {
-                let slot = input.text()?.to_owned();
-                let family = input.text()?.to_owned();
-                let version = NonZeroU32::new(input.u32()?)
-                    .ok_or_else(|| Denial::new(Kind::InvalidRecordShape))?;
-                let enforcement = match input.u16()? {
-                    1 => WorthQueryInvariantEnforcement::Blocking,
-                    2 => WorthQueryInvariantEnforcement::Advisory,
-                    _ => return unsupported(),
-                };
-                let executor = input.text()?.to_owned();
-                let loads =
-                    decode_sequence(input, budget, 4, |input, _| Ok(input.text()?.to_owned()))?;
-                require_canonical_sequence(&loads)?;
-                WorthQueryInstalledInvariantExecutionRequirement::new(
-                    slot,
-                    family,
-                    version,
-                    enforcement,
-                    executor,
-                    loads,
-                    read_usize(input)?,
-                    input.u64()?,
-                )
-                .map_err(|_| Denial::new(Kind::InvalidRecordShape))
-            })?;
-            if requirements
-                .windows(2)
-                .any(|pair| pair[0].slot() >= pair[1].slot())
-            {
-                return Err(Denial::new(Kind::NonCanonicalRecordSequence));
-            }
-            WorthQueryInvariantExecutionContract::declared(requirements)
-                .map_err(|_| Denial::new(Kind::InvalidRecordShape))
-        }
         _ => unsupported(),
     }
 }

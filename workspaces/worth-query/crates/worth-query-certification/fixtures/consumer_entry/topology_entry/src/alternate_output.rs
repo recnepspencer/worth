@@ -75,7 +75,7 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
         "worth.query.certification.alternate-planar-output-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.alternate-planar-output-command.v1";
-    const CANDIDATES: ApplicationCandidateRequirements = requirements(0, 0, 0, 2, 1024, 4096);
+    const CANDIDATES: ApplicationCandidateRequirements = requirements(0, 0, 0, 2, 1024);
 
     fn scope_field() -> ApplicationFieldRef<
         Schema,
@@ -270,7 +270,6 @@ pub(crate) fn declare_alternate_output<Schema: TopologySchemaBinding>(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_decision_fact_budget(operation, 16)
         .operation_projection_work_budget(operation, 8)
         .operation_read_entity(operation, Body::reference())
         .operation_read_field(operation, BodyKey::reference())

@@ -231,18 +231,25 @@ fn create_entity_with_aspect_fields_on_branch(
 ) -> crate::facade::identity::EntityId {
     let mut txn =
         crate::tests::support::test_owner_begin_transaction_for_branch(runtime, branch_id);
-    txn.push_batch(WorkerIntentBatch::new(format!("create-{client_key}")).push(
-        MutationIntent::Create(CreateIntent::Entity(
-            crate::transactions::data::EntitySpec {
+    txn.push_batch(
+        WorkerIntentBatch::new(format!("create-{client_key}")).push(MutationIntent::Create(
+            CreateIntent::Entity(crate::transactions::data::EntitySpec {
                 partition_id: crate::facade::identity::PartitionId::main(),
                 kind_id: KindId(1),
                 client_key: crate::symbols::data::ClientKey::raw(client_key),
                 fields: aspect_fields_with_identity_name(client_key, fields),
-            },
+            }),
         )),
-    ))
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
     .expect("test staging stays within configured resource budgets");
-    changed_entities(&txn.commit(runtime).unwrap())[0]
+    changed_entities(
+        &txn.commit(
+            runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap(),
+    )[0]
 }
 
 fn update_entity_aspect_fields_on_branch(
@@ -268,9 +275,14 @@ fn update_entity_aspect_fields_on_branch(
                 fields: aspect_fields_with_identity_name(&stable_name, fields),
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    txn.commit(runtime).unwrap();
+    txn.commit(
+        runtime,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .unwrap();
 }
 
 fn aspect_fields_with_identity_name(

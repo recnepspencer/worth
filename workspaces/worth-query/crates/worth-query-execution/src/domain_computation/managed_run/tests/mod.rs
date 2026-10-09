@@ -395,3 +395,4 @@ fn graph_material_rows(row_count: usize) -> WorthQueryGraphReadMaterial {
 
 #[cfg(feature = "test-query-execution-observer")]
 mod readmission_custody;
+mod request_control;

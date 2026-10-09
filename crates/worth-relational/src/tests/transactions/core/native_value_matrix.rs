@@ -56,10 +56,16 @@ fn ordinary_native_mutation_roundtrips_every_foundational_scalar_family() {
                     aspect_patch: patch,
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
 
-    let committed = transaction.commit(&runtime).unwrap();
+    let committed = transaction
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
     let entity = changed_entities(&committed)[0];
     {
         let read = runtime

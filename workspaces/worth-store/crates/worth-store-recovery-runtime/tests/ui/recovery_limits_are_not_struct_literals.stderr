@@ -1,0 +1,9 @@
+error[E0451]: fields `dimension` and `counts` of struct `ExhaustedLimit` are private
+ --> tests/ui/recovery_limits_are_not_struct_literals.rs:8:9
+  |
+7 |     let _: ExhaustedLimit<FilesystemObservationBound> = ExhaustedLimit {
+  |                                                         -------------- in this type
+8 |         dimension: FilesystemObservationBound::Entries,
+  |         ^^^^^^^^^ private field
+9 |         counts: LimitCounts::new(1, 0),
+  |         ^^^^^^ private field

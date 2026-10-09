@@ -25,7 +25,7 @@ fn bootstrap_opens_once_before_its_registry_reader_and_seeding() {
     );
     let checkpoint = application
         .runtime()
-        .capture_application_checkpoint()
+        .capture_application_checkpoint( worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy::SystemAllocation)
         .unwrap();
     reports();
     let before = reads();
@@ -61,7 +61,7 @@ fn bootstrap_opens_once_before_its_registry_reader_and_seeding() {
             let checkpoint = restored.then(|| {
                 application
                     .runtime()
-                    .capture_application_checkpoint()
+                    .capture_application_checkpoint( worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy::SystemAllocation)
                     .unwrap()
             });
             let before = reads();

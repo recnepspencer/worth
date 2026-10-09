@@ -123,17 +123,25 @@ fn publish_on_fork(
         .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
         .unwrap();
     transaction
-        .push_batch(WorkerIntentBatch::new(value).push(MutationIntent::Entity(
-            EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
-                entity_id: entity,
-                fields: AspectFieldPatch::from(BTreeMap::from([(
-                    locator,
-                    AspectValue::String(InternedString::Raw(value.to_owned())),
-                )])),
-            }),
-        )))
+        .push_batch(
+            WorkerIntentBatch::new(value).push(MutationIntent::Entity(
+                EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
+                    entity_id: entity,
+                    fields: AspectFieldPatch::from(BTreeMap::from([(
+                        locator,
+                        AspectValue::String(InternedString::Raw(value.to_owned())),
+                    )])),
+                }),
+            )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
-    let candidate = runtime.prepare_branch_transaction(transaction).unwrap();
+    let candidate = runtime
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
     let outcome = runtime.publication_port().compare_and_publish(candidate);
     let RelationalPublicationOutcome::Performed(performed) = outcome else {
         panic!("{value} must publish, including the consumer and both later writes: {outcome:?}");

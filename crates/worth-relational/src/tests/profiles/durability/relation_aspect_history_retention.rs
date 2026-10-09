@@ -82,9 +82,15 @@ fn create_aspect_bearing_relation(
                 fields: relation_label_field_patch("r1"),
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let created = txn.commit(runtime).unwrap();
+    let created = txn
+        .commit(
+            runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
     let relation = changed_relations(&created)[0];
     assert_eq!(runtime.relation_history_len_for_test(relation), 1);
     release_test_commit_snapshot(runtime, &created);
@@ -104,9 +110,15 @@ fn delete_relation(
                     relation_id: relation,
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    let deleted = delete_txn.commit(runtime).unwrap();
+    let deleted = delete_txn
+        .commit(
+            runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
     DeletedAspectRelationEvidence {
         created_snapshot,
         deleted_snapshot: deleted.snapshot.clone(),

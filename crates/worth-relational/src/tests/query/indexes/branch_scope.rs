@@ -179,9 +179,15 @@ fn derived_index_contract_relation_field_equals_branch_scoped_generation_reports
                     fields: crate::transactions::data::AspectFieldPatch::default(),
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    let feature_relation = feature_txn.commit(&runtime).expect("feature relation");
+    let feature_relation = feature_txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .expect("feature relation");
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(1),
         name: "relation.label.branch".to_string(),

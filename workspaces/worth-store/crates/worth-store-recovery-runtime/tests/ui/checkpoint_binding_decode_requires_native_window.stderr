@@ -1,0 +1,15 @@
+error[E0061]: this method takes 3 arguments but 2 arguments were supplied
+  --> tests/ui/checkpoint_binding_decode_requires_native_window.rs:11:15
+   |
+11 |     rebuilder.consume(admitted, record);
+   |               ^^^^^^^------------------ argument #3 of type `&mut PhysicalRecoveryReadAllocation<'_>` is missing
+   |
+note: method defined here
+  --> $WORKSPACE/crates/worth-store/src/physical_runtime/recovery_freshness/binding/checkpoint_basis.rs
+   |
+   |     pub fn consume(
+   |            ^^^^^^^
+help: provide the argument
+   |
+11 |     rebuilder.consume(admitted, record, /* &mut PhysicalRecoveryReadAllocation<'_> */);
+   |                                       +++++++++++++++++++++++++++++++++++++++++++++++

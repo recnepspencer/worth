@@ -14,6 +14,7 @@ pub struct DurableExtentManifest {
     logical_bytes: u64,
     maximum_frame_bytes: u32,
     chunk_count: u32,
+    alignment: u64,
 }
 
 impl DurableExtentManifest {
@@ -24,9 +25,11 @@ impl DurableExtentManifest {
         logical_bytes: u64,
         maximum_frame_bytes: u32,
         chunk_count: u32,
+        alignment: u64,
     ) -> Option<Self> {
         let overhead = DURABLE_EXTENT_FRAME_HEADER_BYTES + EXTENT_CHUNK_METADATA_BYTES;
-        if logical_bytes == 0
+        if !alignment.is_power_of_two()
+            || logical_bytes == 0
             || maximum_frame_bytes as usize <= overhead
             || maximum_frame_bytes != format.page_size().bytes()
         {
@@ -43,6 +46,7 @@ impl DurableExtentManifest {
             logical_bytes,
             maximum_frame_bytes,
             chunk_count,
+            alignment,
         })
     }
 
@@ -71,6 +75,9 @@ impl DurableExtentManifest {
     pub const fn chunk_count(self) -> u32 {
         self.chunk_count
     }
+    pub const fn alignment(self) -> u64 {
+        self.alignment
+    }
 
     pub fn encode(self, format: PhysicalRecordFormatDeclaration) -> Vec<u8> {
         let mut payload = [0_u8; 56];
@@ -80,6 +87,7 @@ impl DurableExtentManifest {
         payload[32..40].copy_from_slice(&self.logical_bytes.to_le_bytes());
         payload[40..44].copy_from_slice(&self.maximum_frame_bytes.to_le_bytes());
         payload[44..48].copy_from_slice(&self.chunk_count.to_le_bytes());
+        payload[48..56].copy_from_slice(&self.alignment.to_le_bytes());
         encode_durable_frame(
             DurableFrameKind::ExtentManifest,
             format,
@@ -93,7 +101,7 @@ impl DurableExtentManifest {
     ) -> Result<(Self, PhysicalRecordFormatDeclaration), MembershipManifestDenial> {
         let (format, frame) = decode_durable_frame(bytes, DurableFrameKind::ExtentManifest)
             .map_err(MembershipManifestDenial::Frame)?;
-        if frame.payload.len() != 56 || frame.payload[48..56] != [0; 8] {
+        if frame.payload.len() != 56 {
             return Err(MembershipManifestDenial::Malformed);
         }
         let record = PersistedRecordIdentity::new(
@@ -116,6 +124,7 @@ impl DurableExtentManifest {
             u64::from_le_bytes(frame.payload[32..40].try_into().unwrap()),
             u32::from_le_bytes(frame.payload[40..44].try_into().unwrap()),
             u32::from_le_bytes(frame.payload[44..48].try_into().unwrap()),
+            u64::from_le_bytes(frame.payload[48..56].try_into().unwrap()),
         )
         .map(|value| (value, format))
         .ok_or(MembershipManifestDenial::Malformed)
@@ -144,6 +153,7 @@ mod tests {
             logical,
             format.page_size().bytes(),
             2,
+            4096,
         )
         .is_some());
         assert!(DurableExtentManifest::new(
@@ -153,6 +163,7 @@ mod tests {
             logical,
             format.page_size().bytes(),
             1,
+            4096,
         )
         .is_none());
         assert!(DurableExtentManifest::new(
@@ -162,6 +173,7 @@ mod tests {
             logical,
             format.page_size().bytes() / 2,
             3,
+            4096,
         )
         .is_none());
         assert!(DurableExtentManifest::new(
@@ -171,6 +183,7 @@ mod tests {
             logical,
             format.page_size().bytes() + 1,
             2,
+            4096,
         )
         .is_none());
     }

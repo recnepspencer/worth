@@ -31,6 +31,13 @@ use worth_query_host::facade::{
     worth_query_operation, worth_query_operation_reads, worth_query_structured_value_binding,
 };
 
+#[path = "assessment_output/ordinary.rs"]
+mod ordinary;
+pub use ordinary::{
+    OrdinaryRetentionAssessmentBinding, OrdinaryRetentionAssessmentHandler,
+    OrdinaryRetentionAssessmentIntent,
+};
+
 use super::{
     retention_entry::{DocumentRetentionQueryBinding, DocumentRetentionRead},
     schema::{
@@ -140,7 +147,7 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for RetentionAssessment
     const CANDIDATES: ApplicationCandidateRequirements =
         ApplicationCandidateRequirements::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 0, 0),
-            ApplicationCandidateResourceCeiling::bounded(512, 256),
+            ApplicationCandidateResourceCeiling::representation_bytes(512),
         );
 
     fn scope_field() -> ApplicationFieldRef<
@@ -336,7 +343,7 @@ impl WorthQueryApplicationProducerProvider<DocumentRetentionSchema, RetentionAss
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<DocumentRetentionSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<DocumentRetentionSchema> {
-    schema
+    let schema = schema
         .operation(
             PublishRetentionAssessment::reference()
                 .definition()
@@ -344,7 +351,6 @@ pub fn declare(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_decision_fact_budget(PublishRetentionAssessment::reference(), 8)
         .operation_projection_work_budget(PublishRetentionAssessment::reference(), 8)
         .operation_read_field(
             PublishRetentionAssessment::reference(),
@@ -354,5 +360,6 @@ pub fn declare(
             PublishRetentionAssessment::reference(),
             DocumentRetentionField::reference(),
         )
-        .application_mutation_binding::<RetentionAssessmentBinding>()
+        .application_mutation_binding::<RetentionAssessmentBinding>();
+    ordinary::declare(schema)
 }

@@ -14,7 +14,6 @@ fn release_installs_exact_reads_and_effect() {
     let release = bank
         .installed_operation(ReleaseEstateOperation::reference())
         .expect("release must install one exact executable program");
-    assert_eq!(release.contracts().decision_fact_budget(), 32);
     assert_eq!(release.contracts().projection_work_budget(), 96);
     assert_eq!(
         installed_read_targets(release.contracts()),

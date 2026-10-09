@@ -9,8 +9,8 @@ use worth_store_physical_backend::{
 use super::{recovery_obligation::scheduler_recovery, PhysicalWorkExecutor};
 use crate::physical_runtime::work::{
     CompletedPhysicalCheckpointAction, IndeterminatePhysicalCheckpointAction,
-    PhysicalCheckpointExecutorCommand, PhysicalCheckpointRecoveryAction,
-    PhysicalCheckpointWorkAction, PhysicalRetryPayload,
+    PhysicalCheckpointCommandPayload, PhysicalCheckpointExecutorCommand,
+    PhysicalCheckpointRecoveryAction, PhysicalCheckpointWorkAction, PhysicalRetryPayload,
 };
 use crate::physical_runtime::{
     PhysicalEffectRecoveryObligation, PhysicalExecutorDispatch, PhysicalExecutorOutcome,
@@ -86,7 +86,7 @@ fn create_candidate(
     plan: QueueExecutionReadyPlan,
     candidate: ArtifactTreeFile,
     byte_count: u64,
-    payload: Box<[u8]>,
+    payload: PhysicalCheckpointCommandPayload,
     action: PhysicalCheckpointRecoveryAction,
 ) -> (PhysicalExecutorOutcome, PhysicalEffectRecoveryObligation) {
     let range = ArtifactNewWriteRange::new(byte_count)
@@ -139,7 +139,7 @@ fn append_candidate(
     candidate: ArtifactTreeFile,
     offset: u64,
     byte_count: u64,
-    payload: Box<[u8]>,
+    payload: PhysicalCheckpointCommandPayload,
     action: PhysicalCheckpointRecoveryAction,
 ) -> (PhysicalExecutorOutcome, PhysicalEffectRecoveryObligation) {
     let range = ArtifactAppendRange::new(offset, byte_count)
@@ -294,7 +294,7 @@ fn completed_checkpoint(
 
 fn denied_checkpoint(
     failure: worth_store_physical_backend::ArtifactTreeFailure,
-    payload: Option<Box<[u8]>>,
+    payload: Option<PhysicalCheckpointCommandPayload>,
 ) -> (PhysicalExecutorOutcome, PhysicalEffectRecoveryObligation) {
     (
         PhysicalExecutorOutcome::DeniedBeforeEffect {

@@ -5,6 +5,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         &self,
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> WorthQueryApplicationCommitOutcome
     where
         Operation: 'static,
@@ -12,7 +13,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     {
         let request = program.read_set.admission.publication_request().clone();
         self.with_application_advancement(&request, |phase| {
-            self.compare_and_commit_application_in_advancement(&phase, program, idempotency)
+            self.compare_and_commit_application_in_advancement(
+                &phase,
+                program,
+                idempotency,
+                allocation_policy,
+            )
         })
         .unwrap_or_else(|denial| denial.into_commit_outcome())
     }
@@ -23,6 +29,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> WorthQueryApplicationCommitOutcome
     where
         Operation: 'static,
@@ -42,6 +49,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             program,
             idempotency,
             false,
+            allocation_policy,
         )
     }
 }

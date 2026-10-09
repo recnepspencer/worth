@@ -1,6 +1,6 @@
 use worth_store_physical_format::{
     DurableFreeSpaceManifestHeader, DurableInlineRecordPlacement, DurablePhysicalRootManifest,
-    FreeSpaceKey, PhysicalGeneration, PhysicalGenerationAuthority, RecordAllocationClass,
+    FreeSpaceKey, PhysicalGeneration, PhysicalGenerationAuthority,
 };
 
 use super::super::{
@@ -72,8 +72,8 @@ fn load_segment(
             RecordAppendDenial::PublishedLayoutDamaged,
         ));
     }
-    let key = FreeSpaceKey::new(RecordAllocationClass::InlinePage, last.segment().get())
-        .expect("published segment identity is nonzero");
+    let key =
+        FreeSpaceKey::inline(last.segment().get()).expect("published segment identity is nonzero");
     let mut free_discovery =
         super::super::access::manifest_routing::ManifestDiscoveryCounterSnapshot::default();
     let Some(free) = super::super::planning::free_space_routing::FreeSpaceReader::serving(
@@ -97,11 +97,16 @@ fn load_segment(
             free_discovery.bytes_read(),
         );
     };
+    let frontier = free
+        .inline_free_frontier()
+        .ok_or(RecordAppendError::Denied(
+            RecordAppendDenial::PublishedLayoutDamaged,
+        ))?;
     let used_pages =
         placement
             .segment_pages()
             .get()
-            .checked_sub(u32::try_from(free.unallocated_count()).map_err(|_| {
+            .checked_sub(u32::try_from(frontier.unallocated_count()).map_err(|_| {
                 RecordAppendError::Denied(RecordAppendDenial::PublishedLayoutDamaged)
             })?)
             .ok_or(RecordAppendError::Denied(

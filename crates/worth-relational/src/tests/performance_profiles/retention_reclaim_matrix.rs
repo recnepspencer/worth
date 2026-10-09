@@ -84,15 +84,20 @@ fn perf_retention_reclaim_matrix() {
             let deleted = {
                 let mut txn =
                     crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
-                txn.push_batch(WorkerIntentBatch::new("delete-relation").push(
-                    MutationIntent::Relation(RelationMutationIntent::Delete(
-                        DeleteRelationIntent {
+                txn.push_batch(
+                    WorkerIntentBatch::new("delete-relation").push(MutationIntent::Relation(
+                        RelationMutationIntent::Delete(DeleteRelationIntent {
                             relation_id: relation,
-                        },
+                        }),
                     )),
-                ))
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
                 .expect("test staging stays within configured resource budgets");
-                txn.commit(&runtime).expect("delete relation")
+                txn.commit(
+                    &runtime,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .expect("delete relation")
             };
 
             assert!(runtime

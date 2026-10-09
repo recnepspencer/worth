@@ -74,7 +74,10 @@ pub(super) fn observe(world: &World, posture: Posture) -> Observed {
         let outcome = request
             .mutate(input)
             .idempotency(&member.key)
-            .execute_in_program::<Program>(&application)
+            .execute_in_program::<Program>(
+                &application,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .unwrap();
         match outcome {
             Outcome::Committed { result, .. } => {

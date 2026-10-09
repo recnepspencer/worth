@@ -21,7 +21,16 @@ fn current_facts_roundtrip_older_formats_are_refused_and_hostile_lengths_fail_be
         decoded.accepted_outputs[0].producer_facts.as_deref(),
         Some(bytes.as_slice())
     );
-    assert_eq!(facts::decode(&bytes).unwrap().as_ref(), &[fact]);
+    assert_eq!(
+        facts::decode(
+            &bytes,
+            None,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation
+        )
+        .unwrap()
+        .as_ref(),
+        &[fact]
+    );
     for version in 3..=8_u16 {
         let mut older = checkpoint_body(1, accepted.clone());
         older[..2].copy_from_slice(&version.to_be_bytes());

@@ -27,7 +27,27 @@ impl<'a> ExecutionResourceLease<'a> {
         if budget.work_ceiling() > self.policy.budget().work_ceiling() {
             return Err(LeaseDenial::WorkLimitExceedsParent);
         }
-        Ok(Self {
+        Ok(self.child_from_validated_request(request))
+    }
+
+    /// Creates an independently controlled child with this lease's exact policy.
+    /// The parent remains unchanged; its cancellation and earlier deadline still
+    /// constrain the child, and memory reservations charge the same lineage.
+    pub fn controlled_child(
+        &self,
+        cancellation: CancellationToken,
+        deadline: Option<Instant>,
+    ) -> Self {
+        self.child_from_validated_request(LeaseRequest {
+            policy: self.policy,
+            deadline,
+            cancellation,
+        })
+    }
+
+    fn child_from_validated_request(&self, request: LeaseRequest) -> Self {
+        let budget = request.policy.budget();
+        Self {
             authority: self.authority,
             node: Arc::new(LeaseNode {
                 id: self.authority.next_id(),
@@ -43,7 +63,7 @@ impl<'a> ExecutionResourceLease<'a> {
                 cancellation: request.cancellation,
             }),
             policy: request.policy,
-        })
+        }
     }
 
     pub fn policy(&self) -> &ExecutionRequestPolicy {

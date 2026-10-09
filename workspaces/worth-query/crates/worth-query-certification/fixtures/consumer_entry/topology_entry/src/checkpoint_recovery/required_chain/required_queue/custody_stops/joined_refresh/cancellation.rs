@@ -28,6 +28,7 @@ fn cancellation_of_a_joined_stable_refresh_restores_its_ready_and_all_custody() 
             invalidation.retained_capacity_bytes(),
             application.output_lineage_retained_bytes_for_test(),
         );
+        let custody_before = invalidation.retained_custody_breakdown_for_test();
         let ready = application.stable_ready_sources_for_test();
         let claims = application.registry_successor_claims_for_test();
         let cancellation = authentication::WorthQueryCancellationSource::new();
@@ -85,6 +86,20 @@ fn cancellation_of_a_joined_stable_refresh_restores_its_ready_and_all_custody() 
             "cancel restores the original Ready source and publication"
         );
         if attempt == 1 {
+            let mut classes = std::collections::BTreeMap::<(&str, u32), (u64, u64)>::new();
+            for (_, file, line, bytes) in &custody_before {
+                classes.entry((*file, *line)).or_default().0 += bytes;
+            }
+            for (_, file, line, bytes) in invalidation.retained_custody_breakdown_for_test() {
+                classes.entry((file, line)).or_default().1 += bytes;
+            }
+            for ((file, line), (model, owner)) in classes {
+                eprintln!("JOINED_CUSTODY {file}:{line} model={model} owner={owner}");
+            }
+            eprintln!(
+                "JOINED_REQUIRED {:?}",
+                application.required_custody_breakdown_for_test()
+            );
             assert_eq!(
                 application.registry_successor_claims_for_test(),
                 claims,

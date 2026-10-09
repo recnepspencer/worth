@@ -168,7 +168,13 @@ fn commit<const N: usize>(
             intents
                 .into_iter()
                 .fold(WorkerIntentBatch::new(name), WorkerIntentBatch::push),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("the fixture batch stages");
-    transaction.commit(runtime).expect("the fixture commits")
+    transaction
+        .commit(
+            runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .expect("the fixture commits")
 }

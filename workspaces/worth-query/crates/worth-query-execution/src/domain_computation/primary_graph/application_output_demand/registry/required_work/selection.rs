@@ -179,7 +179,7 @@ impl WorthQueryOutputDemandRegistry {
                     false
                 };
                 if !live {
-                    // Activation uses this same registry → token order. A new
+                    // Activation uses this same registry â†’ token order. A new
                     // interest cannot reopen the row before deactivation.
                     selected.membership.set_required(false);
                 }

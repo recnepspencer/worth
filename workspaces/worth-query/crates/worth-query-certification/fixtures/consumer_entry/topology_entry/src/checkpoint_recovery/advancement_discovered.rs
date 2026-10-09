@@ -106,7 +106,10 @@ fn discovered_start_and_recovery_open_once_before_their_first_reader() {
                 })
                 .expect_source(read.observed_sources()[0].clone())
                 .idempotency(&8122_u64)
-                .execute_performed_discovered::<DiscoveredProgram, DiscoveredRoot>(&application)
+                .execute_performed_discovered::<DiscoveredProgram, DiscoveredRoot>(
+                    &application,
+                    worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                )
                 .err()
                 .unwrap();
             let worth_query_host::facade::application_entry::WorthQueryPerformedMutationExecutionDenial::Mutation(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause)) = cause else { panic!("discovered mutation opens before its handler") };
@@ -137,7 +140,10 @@ fn discovered_start_and_recovery_open_once_before_their_first_reader() {
                 })
                 .expect_source(read.observed_sources()[0].clone())
                 .idempotency(&8123_u64)
-                .execute_performed_discovered::<DiscoveredProgram, DiscoveredRoot>(&application)
+                .execute_performed_discovered::<DiscoveredProgram, DiscoveredRoot>(
+                    &application,
+                    worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                )
                 .unwrap()
             else {
                 panic!("source must land with discovered custody")

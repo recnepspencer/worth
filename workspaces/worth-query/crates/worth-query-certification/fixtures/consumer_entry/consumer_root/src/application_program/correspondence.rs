@@ -44,7 +44,6 @@ impl
                     .into_iter()
                     .collect(),
             ),
-            validator_work: 0,
         }
     }
 }

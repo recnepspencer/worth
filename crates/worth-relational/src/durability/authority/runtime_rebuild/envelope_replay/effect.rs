@@ -133,27 +133,35 @@ pub(super) fn replay_ordinary_commit(
                 format!("failed to admit durable transaction basis: {error:?}"),
             )
         })?;
-    txn.push_batch(WorkerIntentBatch {
-        name: format!("recovery-commit-{}", envelope.commit.commit_id.0),
-        partition_key: None,
-        worker_local_only: true,
-        intents: envelope.merged_plan.merged_intents.clone().to_vec(),
-    })
+    txn.push_batch(
+        WorkerIntentBatch {
+            name: format!("recovery-commit-{}", envelope.commit.commit_id.0),
+            partition_key: None,
+            worker_local_only: true,
+            intents: envelope.merged_plan.merged_intents.clone().to_vec(),
+        },
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
     .map_err(|denial| {
         DurabilityError::new(
             RecoveryFailureClass::ReplayFailure,
             format!("durable transaction staging denied: {denial:?}"),
         )
     })?;
-    let outcome = restored.commit_branch_transaction(txn).map_err(|error| {
-        DurabilityError::new(
-            RecoveryFailureClass::ReplayFailure,
-            format!(
-                "failed to replay durable commit {}: {error:?}",
-                envelope.commit.commit_id.0
-            ),
+    let outcome = restored
+        .commit_branch_transaction(
+            txn,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
-    })?;
+        .map_err(|error| {
+            DurabilityError::new(
+                RecoveryFailureClass::ReplayFailure,
+                format!(
+                    "failed to replay durable commit {}: {error:?}",
+                    envelope.commit.commit_id.0
+                ),
+            )
+        })?;
     let validation = if outcome.patch_position() != position {
         Err(DurabilityError::new(
             RecoveryFailureClass::ReplayFailure,

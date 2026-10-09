@@ -1,5 +1,8 @@
 use super::*;
 
+#[path = "dirty_generation_capture/allocation_window.rs"]
+mod allocation_window;
+
 fn capture_bytes(frame_count: u64) -> u64 {
     (std::mem::size_of::<PhysicalDirtyFrameBasis>() as u64)
         .checked_mul(frame_count)

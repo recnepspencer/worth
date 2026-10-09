@@ -10,6 +10,7 @@ use super::{
 };
 
 mod execution;
+mod resident_storage;
 
 mod candidate;
 pub use candidate::{

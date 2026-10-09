@@ -6,10 +6,16 @@ fn fork_resolves_a_port_performed_head_without_catalog_authority() {
     create_entity(&runtime, "fork-after-port-anchor");
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
-        .push_batch(batch_create("fork-after-port-write"))
+        .push_batch(
+            batch_create("fork-after-port-write"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     let candidate = runtime
-        .prepare_branch_transaction(transaction)
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("port candidate prepares");
     let performed = match runtime.publication_port().compare_and_publish(candidate) {
         crate::mvcc::RelationalPublicationOutcome::Performed(performed) => performed,

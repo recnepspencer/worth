@@ -7,11 +7,13 @@ use super::durable_root::RootManifestDenial;
 use super::durable_root_placement::{
     CurrentPhysicalRecordPlacement, DurableExtentRecordPlacement, DurableInlineRecordPlacement,
 };
+use super::selected_record_route::SelectedRecordRouteMetadata;
 
 pub(super) fn encode_entry(target: &mut [u8], entry: CurrentPhysicalRecordPlacement) {
     let record = entry.record();
     target[..16].copy_from_slice(&record.allocation_epoch());
     target[16..24].copy_from_slice(&record.ordinal().to_le_bytes());
+    target[25..32].copy_from_slice(&entry.route_metadata().encode());
     match entry {
         CurrentPhysicalRecordPlacement::Inline(value) => {
             target[24] = 1;
@@ -26,8 +28,11 @@ pub(super) fn encode_entry(target: &mut [u8], entry: CurrentPhysicalRecordPlacem
         }
         CurrentPhysicalRecordPlacement::Extent(value) => {
             target[24] = 2;
+            target[32..40].copy_from_slice(&value.arena_range().arena().get().to_le_bytes());
             target[40..48].copy_from_slice(&value.extent().get().to_le_bytes());
             target[48..56].copy_from_slice(&value.extent_generation().to_le_bytes());
+            target[56..64].copy_from_slice(&value.arena_range().offset().to_le_bytes());
+            target[64..72].copy_from_slice(&value.arena_range().length().to_le_bytes());
             target[72..80].copy_from_slice(&value.payload_bytes().to_le_bytes());
         }
     }
@@ -35,10 +40,17 @@ pub(super) fn encode_entry(target: &mut [u8], entry: CurrentPhysicalRecordPlacem
 
 pub(super) fn decode_entry(
     bytes: &[u8],
+    schema: u8,
 ) -> Result<CurrentPhysicalRecordPlacement, RootManifestDenial> {
-    if bytes[25..32] != [0; 7] || bytes[86..88] != [0; 2] {
+    if bytes[86..88] != [0; 2] {
         return Err(RootManifestDenial::ReservedFieldNonZero);
     }
+    let route_metadata = match schema {
+        2 if bytes[25..32] == [0; 7] => SelectedRecordRouteMetadata::legacy_primary(),
+        3 => SelectedRecordRouteMetadata::decode(bytes[25..32].try_into().unwrap())
+            .ok_or(RootManifestDenial::InvalidPlacement)?,
+        _ => return Err(RootManifestDenial::ReservedFieldNonZero),
+    };
     let record = PersistedRecordIdentity::new(
         bytes[..16].try_into().unwrap(),
         u64::from_le_bytes(bytes[16..24].try_into().unwrap()),
@@ -46,8 +58,8 @@ pub(super) fn decode_entry(
     .ok_or(RootManifestDenial::InvalidRecordIdentity)?;
     let authority = PhysicalGenerationAuthority::for_canonical_physical_format();
     match bytes[24] {
-        1 => decode_inline_entry(bytes, record, authority),
-        2 => decode_extent_entry(bytes, record, authority),
+        1 => decode_inline_entry(bytes, record, authority, route_metadata),
+        2 => decode_extent_entry(bytes, record, authority, route_metadata),
         _ => Err(RootManifestDenial::InvalidPlacement),
     }
 }
@@ -56,6 +68,7 @@ fn decode_inline_entry(
     bytes: &[u8],
     record: PersistedRecordIdentity,
     authority: PhysicalGenerationAuthority,
+    route_metadata: SelectedRecordRouteMetadata,
 ) -> Result<CurrentPhysicalRecordPlacement, RootManifestDenial> {
     let segment =
         PhysicalSegmentId::from_raw(u64::from_le_bytes(bytes[32..40].try_into().unwrap()))
@@ -67,7 +80,7 @@ fn decode_inline_entry(
     let slot_generation = generation(bytes, 64)?;
     let slot = PhysicalRecordSlot::from_raw(u16::from_le_bytes(bytes[84..86].try_into().unwrap()))
         .map_err(|_| RootManifestDenial::InvalidPlacement)?;
-    DurableInlineRecordPlacement::new(
+    DurableInlineRecordPlacement::new_selected(
         record,
         authority
             .segment_cell(segment)
@@ -80,6 +93,7 @@ fn decode_inline_entry(
             .with_slot_generation(slot_generation),
         u32::from_le_bytes(bytes[80..84].try_into().unwrap()),
         u64::from_le_bytes(bytes[72..80].try_into().unwrap()),
+        route_metadata,
     )
     .map(CurrentPhysicalRecordPlacement::Inline)
     .ok_or(RootManifestDenial::InvalidPlacement)
@@ -89,18 +103,27 @@ fn decode_extent_entry(
     bytes: &[u8],
     record: PersistedRecordIdentity,
     authority: PhysicalGenerationAuthority,
+    route_metadata: SelectedRecordRouteMetadata,
 ) -> Result<CurrentPhysicalRecordPlacement, RootManifestDenial> {
-    if bytes[32..40] != [0; 8] || bytes[56..72] != [0; 16] || bytes[80..86] != [0; 6] {
+    if bytes[80..86] != [0; 6] {
         return Err(RootManifestDenial::ReservedFieldNonZero);
     }
     let extent = PhysicalExtentId::from_raw(u64::from_le_bytes(bytes[40..48].try_into().unwrap()))
         .map_err(|_| RootManifestDenial::InvalidPlacement)?;
-    DurableExtentRecordPlacement::new(
+    DurableExtentRecordPlacement::new_selected(
         record,
         authority
             .record_extent_cell(extent)
             .with_extent_generation(generation(bytes, 48)?),
         u64::from_le_bytes(bytes[72..80].try_into().unwrap()),
+        crate::ExtentArenaRange::new(
+            crate::ExtentArenaId::new(u64::from_le_bytes(bytes[32..40].try_into().unwrap()))
+                .ok_or(RootManifestDenial::InvalidPlacement)?,
+            u64::from_le_bytes(bytes[56..64].try_into().unwrap()),
+            u64::from_le_bytes(bytes[64..72].try_into().unwrap()),
+        )
+        .ok_or(RootManifestDenial::InvalidPlacement)?,
+        route_metadata,
     )
     .map(CurrentPhysicalRecordPlacement::Extent)
     .ok_or(RootManifestDenial::InvalidPlacement)

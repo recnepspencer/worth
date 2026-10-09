@@ -67,6 +67,15 @@ pub enum WorthQueryExternalDispatchPreparationDenial {
         stage: Stage,
         kind: Control,
     },
+    CompletionAllocationDenied {
+        stage: Stage,
+        kind: worth_execution::ExecutionAllocationDenialKind,
+        requested_payload_bytes: Option<u64>,
+    },
+    CompletionStagingCardinalityOverflow,
+    CompletionInputDirectoryAllocationDenied {
+        requested_batches: usize,
+    },
     TerminalIndexUnavailable,
     CanonicalDerivationDenied,
     TimeObservationDenied,
@@ -107,6 +116,15 @@ pub enum WorthQueryExternalRedispatchDenial {
         stage: Stage,
         kind: Control,
     },
+    CompletionAllocationDenied {
+        stage: Stage,
+        kind: worth_execution::ExecutionAllocationDenialKind,
+        requested_payload_bytes: Option<u64>,
+    },
+    CompletionStagingCardinalityOverflow,
+    CompletionInputDirectoryAllocationDenied {
+        requested_batches: usize,
+    },
     TerminalIndexUnavailable,
     /// Canonical derivation for the dispatch event identity failed.
     CanonicalDerivationDenied,
@@ -138,6 +156,21 @@ impl From<WorthQueryExternalRedispatchDenial> for WorthQueryRecoveryHandleDenial
             }
             Redispatch::CompletionExecutionControlStopped { stage, kind } => {
                 Kind::CompletionExecutionControlStopped { stage, kind }
+            }
+            Redispatch::CompletionAllocationDenied {
+                stage,
+                kind,
+                requested_payload_bytes,
+            } => Kind::CompletionAllocationDenied {
+                stage,
+                kind,
+                requested_payload_bytes,
+            },
+            Redispatch::CompletionStagingCardinalityOverflow => {
+                Kind::CompletionStagingCardinalityOverflow
+            }
+            Redispatch::CompletionInputDirectoryAllocationDenied { requested_batches } => {
+                Kind::CompletionInputDirectoryAllocationDenied { requested_batches }
             }
             Redispatch::TerminalIndexUnavailable => Kind::TerminalIndexUnavailable,
             Redispatch::CanonicalDerivationDenied => Kind::CanonicalDerivationDenied,
@@ -216,6 +249,21 @@ pub(super) fn redispatch_preparation(
         Preparation::CompletionExecutionControlStopped { stage, kind } => {
             Redispatch::CompletionExecutionControlStopped { stage, kind }
         }
+        Preparation::CompletionAllocationDenied {
+            stage,
+            kind,
+            requested_payload_bytes,
+        } => Redispatch::CompletionAllocationDenied {
+            stage,
+            kind,
+            requested_payload_bytes,
+        },
+        Preparation::CompletionStagingCardinalityOverflow => {
+            Redispatch::CompletionStagingCardinalityOverflow
+        }
+        Preparation::CompletionInputDirectoryAllocationDenied { requested_batches } => {
+            Redispatch::CompletionInputDirectoryAllocationDenied { requested_batches }
+        }
         Preparation::TerminalIndexUnavailable => Redispatch::TerminalIndexUnavailable,
         Preparation::CanonicalDerivationDenied => Redispatch::CanonicalDerivationDenied,
         Preparation::TimeObservationDenied => Redispatch::TimeObservationDenied,
@@ -239,6 +287,21 @@ impl InstalledTransportPendingReason {
             }
             Pending::ExecutionControlStopped { stage, kind } => {
                 Preparation::CompletionExecutionControlStopped { stage, kind }
+            }
+            Pending::AllocationDenied {
+                stage,
+                kind,
+                requested_payload_bytes,
+            } => Preparation::CompletionAllocationDenied {
+                stage,
+                kind,
+                requested_payload_bytes,
+            },
+            Pending::StagingCardinalityOverflow => {
+                Preparation::CompletionStagingCardinalityOverflow
+            }
+            Pending::InputDirectoryAllocationDenied { requested_batches } => {
+                Preparation::CompletionInputDirectoryAllocationDenied { requested_batches }
             }
             Pending::UnknownCompletion
             | Pending::ConcurrentContinuation

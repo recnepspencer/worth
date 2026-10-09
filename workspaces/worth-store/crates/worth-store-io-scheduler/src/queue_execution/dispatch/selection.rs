@@ -206,6 +206,22 @@ mod tests {
     }
 
     #[test]
+    fn denied_attempt_cannot_cancel_another_ready_background_producer() {
+        let selection = PhysicalDispatchSelection::new();
+        let denied = selection.begin_background();
+        let surviving = selection.begin_background();
+        for _ in 0..3 {
+            selection.begin_foreground().unwrap().commit();
+        }
+        drop(denied);
+        assert!(selection.background_owed());
+        assert!(selection.begin_foreground().is_err());
+        surviving.commit();
+        assert!(!selection.background_owed());
+        selection.begin_foreground().unwrap().commit();
+    }
+
+    #[test]
     fn a_noted_background_head_survives_until_its_owner_releases_it() {
         let selection = PhysicalDispatchSelection::new();
         selection.note_ready_background();

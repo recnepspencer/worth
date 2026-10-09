@@ -19,8 +19,8 @@ pub(crate) fn transition_admit_movement_plan(
     if case != MovementEligibilityCase::Admit {
         return Err(assemble_movement_denial(case, &request, counters));
     }
-    let read_hold = request
-        .read_hold()
-        .expect("classifier ensures movement read hold is present");
-    Ok(construct_movement_plan(request, read_hold, counters))
+    let read_plan = request
+        .read_plan()
+        .expect("classifier ensures movement read plan is present");
+    Ok(construct_movement_plan(request, read_plan, counters))
 }

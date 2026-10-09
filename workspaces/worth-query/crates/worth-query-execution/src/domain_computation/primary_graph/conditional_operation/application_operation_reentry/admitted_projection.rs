@@ -97,8 +97,7 @@ where
                             .project(candidate.input(), reader, projected_scope)
                     });
                     (host_projection, current_intent)
-                },
-            )
+                }, worth_execution::ExecutionAllocationPolicy::SystemAllocation)
         })
         .map_err(|detail| format!("temporal operation projection failed: {detail}"))?
         .map_err(WorthQueryTemporalReentryDenial::from_projection)?;

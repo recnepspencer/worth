@@ -1,10 +1,11 @@
 error[E0308]: mismatched types
-  --> tests/ui/branch_reference/managed_reference_is_not_exact_basis.rs:17:52
+  --> tests/ui/branch_reference/managed_reference_is_not_exact_basis.rs:35:9
    |
-17 |     let _ = runtime.advance_signal_branch(&mut (), reference, |_| Ok(()));
-   |                     ---------------------          ^^^^^^^^^ expected `&AdmittedSignalBranchBasis`, found `&ManagedSignalBranchReference`
-   |                     |
-   |                     arguments to this method are incorrect
+32 |     let _ = runtime.advance_signal_branch(
+   |                     --------------------- arguments to this method are incorrect
+...
+35 |         reference,
+   |         ^^^^^^^^^ expected `&AdmittedSignalBranchBasis`, found `&ManagedSignalBranchReference`
    |
    = note: expected reference `&AdmittedSignalBranchBasis`
               found reference `&ManagedSignalBranchReference`

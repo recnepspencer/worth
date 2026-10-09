@@ -3,7 +3,7 @@ use super::{
     SelectedPhysicalPageFacts, SelectedPhysicalRoot, SelectedPhysicalWalTail,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct PhysicalSourceSelection {
     root: SelectedPhysicalRoot,
     page_facts: SelectedPhysicalPageFacts,
@@ -32,6 +32,7 @@ pub struct PhysicalSourceSelectionTrace {
 pub enum PhysicalSourceSelectionDenial {
     WalRequiresCheckpoint,
     CompactionRequiresCheckpoint,
+    WalCheckpointBasisMismatch,
 }
 
 pub fn select_physical_recovery_sources(
@@ -48,6 +49,20 @@ pub fn select_physical_recovery_sources(
     }
     if checkpoint.is_none() && compaction.is_some() {
         return Err(PhysicalSourceSelectionDenial::CompactionRequiresCheckpoint);
+    }
+    let expected_wal_basis = checkpoint.as_ref().map_or((0, None), |checkpoint| {
+        (
+            checkpoint.wal_tail_begin_lsn(),
+            Some(
+                checkpoint
+                    .checkpoint()
+                    .compaction_cutover()
+                    .wal_cutoff_lsn_exclusive(),
+            ),
+        )
+    });
+    if wal_tail.admitted_checkpoint_basis() != expected_wal_basis {
+        return Err(PhysicalSourceSelectionDenial::WalCheckpointBasisMismatch);
     }
     let trace = PhysicalSourceSelectionTrace {
         root_role: root.role(),
@@ -76,6 +91,24 @@ pub fn select_physical_recovery_sources(
 }
 
 impl PhysicalSourceSelection {
+    /// Heap owned by this selection; checkpoint facts retain no heap backing.
+    pub fn owned_heap_bytes(&self) -> Option<u64> {
+        let mut bytes = self
+            .page_facts
+            .owned_heap_bytes()?
+            .checked_add(self.wal_tail.owned_heap_bytes()?)?;
+        if let Some(previous) = &self.retained_previous_page_facts {
+            bytes = bytes.checked_add(previous.owned_heap_bytes()?)?;
+        }
+        bytes =
+            bytes.checked_add(u64::try_from(self.residue.capacity()).ok()?.checked_mul(
+                u64::try_from(std::mem::size_of::<PhysicalRecoveryResidue>()).ok()?,
+            )?)?;
+        self.residue
+            .iter()
+            .try_fold(bytes, |sum, item| sum.checked_add(item.owned_heap_bytes()?))
+    }
+
     pub const fn root(&self) -> &SelectedPhysicalRoot {
         &self.root
     }

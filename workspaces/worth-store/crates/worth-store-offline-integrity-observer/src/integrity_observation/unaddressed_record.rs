@@ -154,7 +154,7 @@ fn classify(path: &str) -> Option<DeclaredFile> {
                 Family::FreeSpaceHeader,
                 7,
                 free_space::FREE_SPACE_HEADER_INTEGRITY_DECLARATION,
-                Some(176),
+                Some(216),
                 false,
                 word(name.strip_suffix(".manifest")?)?,
             )

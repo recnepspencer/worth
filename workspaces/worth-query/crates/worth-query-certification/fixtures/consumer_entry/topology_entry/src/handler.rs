@@ -38,6 +38,15 @@ where
         .map(drop)
 }
 
+#[cfg(test)]
+static DECISION_ENTRIES: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+
+/// Counts actual handler entries; source-input preparation does not enter here.
+#[cfg(test)]
+pub(crate) fn take_decision_entries() -> usize {
+    DECISION_ENTRIES.swap(0, std::sync::atomic::Ordering::SeqCst)
+}
+
 pub struct PlanarHandler;
 trait PlanarHandlerBinding<Schema: TopologySchemaBinding>:
     worth_query_decl::facade::application_operation::ApplicationMutationBinding<
@@ -73,6 +82,8 @@ where
     ) -> HandlerResult<(), PlanarMutationDenial> {
         #[cfg(feature = "test-query-execution-observer")]
         HANDLER_CONTACTS.with(|contacts| contacts.set(contacts.get() + 1));
+        #[cfg(test)]
+        DECISION_ENTRIES.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
         if let Err(error) = reader.resolve_entity(BodyKey::reference(), input.scope_key.clone()) {
             return HandlerResult::ExecutionDenied(error);
         }
@@ -172,7 +183,8 @@ where
                     }
                 }
             }
-            PlanarOperation::VerifyCurrentOutputs(expectations) => {
+            PlanarOperation::VerifyCurrentOutputs(expectations)
+            | PlanarOperation::VerifyFinalCurrentOutputs(expectations) => {
                 for expectation in expectations {
                     let producer = match reader
                         .resolve_entity(BodyKey::reference(), expectation.producer_key.clone())
@@ -180,8 +192,13 @@ where
                         Ok(entity) => entity,
                         Err(error) => return HandlerResult::ExecutionDenied(error),
                     };
-                    let output = match reader.current_output::<PlanarOutputFamily, Body>(&producer)
-                    {
+                    let selected = match &input.operation {
+                        PlanarOperation::VerifyFinalCurrentOutputs(_) => {
+                            reader.current_output::<PlanarFinalOutputFamily, Body>(&producer)
+                        }
+                        _ => reader.current_output::<PlanarOutputFamily, Body>(&producer),
+                    };
+                    let output = match selected {
                         Ok(WorthQueryCurrentOutputSelection::Unique(output)) => output,
                         Ok(WorthQueryCurrentOutputSelection::Missing) => {
                             return HandlerResult::DomainDenied(
@@ -229,9 +246,10 @@ where
             PlanarOperation::Adjust(adjustments) => (0, 0, 0, adjustments.len()),
             PlanarOperation::PublishDerivedOutput(_) => (0, 0, 0, 1),
             PlanarOperation::RetargetSuccessor { .. } => (0, 1, 1, 0),
-            PlanarOperation::VerifyCurrentOutputs(_) => (0, 0, 0, 0),
+            PlanarOperation::VerifyCurrentOutputs(_)
+            | PlanarOperation::VerifyFinalCurrentOutputs(_) => (0, 0, 0, 0),
         };
-        requirements(creates, links, unlinks, writes, 8192, input.validator_work)
+        requirements(creates, links, unlinks, writes, 8192)
     }
     fn build_candidate(
         &self,
@@ -356,7 +374,8 @@ where
                 .map_err(HandlerExecutionDenial::new)?;
             Ok(0)
         }
-        PlanarOperation::VerifyCurrentOutputs(_) => Ok(0),
+        PlanarOperation::VerifyCurrentOutputs(_)
+        | PlanarOperation::VerifyFinalCurrentOutputs(_) => Ok(0),
     }
 }
 

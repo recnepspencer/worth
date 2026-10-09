@@ -358,3 +358,9 @@ fn historical_reader_from_live_head_survives_head_retirement() {
     assert!(runtime.indexes.generation(first_generation).is_none());
     assert!(runtime.indexes.generation(next_generation).is_some());
 }
+
+#[path = "derived_index_checkpoint/scoped_affinity.rs"]
+mod scoped_affinity;
+
+#[path = "derived_index_checkpoint/lagging_scoped.rs"]
+mod lagging_scoped;

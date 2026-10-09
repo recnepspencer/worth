@@ -111,7 +111,11 @@ fn admitted_operation_retains_expiry_and_cancellation_authority() {
     let expired_projection_ran = Cell::new(false);
     let expired_projection = world
         .invariant
-        .project_admitted_operation(&expiring, |_, _| expired_projection_ran.set(true))
+        .project_admitted_operation(
+            &expiring,
+            |_, _| expired_projection_ran.set(true),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .err()
         .expect("expired admission must deny before projection");
     assert_eq!(
@@ -157,7 +161,11 @@ fn admitted_operation_retains_expiry_and_cancellation_authority() {
     let cancelled_projection_ran = Cell::new(false);
     let cancelled_projection = world
         .invariant
-        .project_admitted_operation(&cancellable, |_, _| cancelled_projection_ran.set(true))
+        .project_admitted_operation(
+            &cancellable,
+            |_, _| cancelled_projection_ran.set(true),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .err()
         .expect("cancelled admission must deny before projection");
     assert_eq!(

@@ -34,12 +34,6 @@ pub(in crate::http::server) fn commit_denial(
                 BankHttpNextAction::CorrectRequest,
             ),
         ),
-        // The original request applied; only its answer left the window. A
-        // dedicated kind keeps clients from resubmitting it under a new key.
-        Denial::IdempotencyWindowExpired => (
-            BankHttpMutationFailureKind::IdempotencyWindowExpired,
-            BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh),
-        ),
         // The key's earlier commit took effect; reading current state shows it.
         Denial::IdempotencyReceiptNotRetained { .. } => (
             BankHttpMutationFailureKind::Stale,
@@ -53,7 +47,6 @@ pub(in crate::http::server) fn commit_denial(
             ),
         ),
         Denial::UniqueValueTaken
-        | Denial::CandidateValidatorWorkExceeded { .. }
         | Denial::WorkflowSettlementDenied { .. }
         | Denial::PreparedRootBudgetExhausted { .. }
         | Denial::ElevationTransitionRequired
@@ -104,8 +97,8 @@ pub(in crate::http::server) fn commit_denial(
     }
 }
 
-// Deliberate exception to HEAD's Unavailable/Retry projection: repeating an
-// unchanged request cannot repair its own limit or a host fault. Process
+// Repeating an unchanged request cannot repair its own limit or a host fault.
+// Process
 // pressure, busy ownership and control stops keep Retry; request-sized limits
 // ask for correction, while configuration and faults ask for the operator.
 pub(in crate::http::server) fn execution_resource(

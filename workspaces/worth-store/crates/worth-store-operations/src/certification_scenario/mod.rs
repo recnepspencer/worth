@@ -37,8 +37,8 @@ pub use recovery_staging::{
     execute_scenario_rollback_staging,
 };
 pub use repair::{
-    certify_scenario_repair_source_denials, execute_scenario_authority_affecting_repair,
-    execute_scenario_derived_repair, ScenarioRepairSourceDenialReceipt,
+    certify_scenario_repair_source_denials, deny_scenario_derived_repair,
+    execute_scenario_authority_affecting_repair, ScenarioRepairSourceDenialReceipt,
 };
 pub use repair_cancellation_recovery::{
     certify_scenario_repair_cancellation_recovery, ScenarioRepairCancellationRecoveryReceipt,

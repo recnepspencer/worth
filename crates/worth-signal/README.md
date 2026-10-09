@@ -246,7 +246,13 @@ let evaluate = |view: &mut EvaluationContext<'_, CheckoutState>| {
 let basis = runtime
     .observe_signal_branch_basis(runtime.current_branch())
     .expect("current branch should admit an owner basis");
-let _next_basis = runtime.advance_signal_branch(&mut state, &basis, |tx| {
+let serial_request = worth_execution::SerialRequest::from_memory(
+    worth_execution::SerialMemoryBudget::new(runtime.runtime_policy().serial_memory_bytes),
+    worth_execution::CancellationToken::new(),
+    None,
+);
+let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+let _next_basis = runtime.advance_signal_branch(execution, &mut state, &basis, |tx| {
     tx.mark_changed(price, PRICE)?;
     tx.target(total).read(&evaluate)?;
     Ok(())
@@ -288,7 +294,7 @@ If you are just getting started, stay in:
 - `SignalGraph`
 - `SignalRuntime`
 - `runtime.observe_signal_branch_basis(...)`
-- `runtime.advance_signal_branch(...)`
+- `runtime.advance_signal_branch(execution, ...)`
 - `runtime.diagnostics()`
 
 Or start in `easy` and move out only when you need more room.

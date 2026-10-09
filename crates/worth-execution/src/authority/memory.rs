@@ -48,6 +48,23 @@ struct SerialLedger {
 }
 
 /// Bytes held against a lease's ledger or a serial budget until dropped.
+///
+/// Tickets cannot be constructed without live execution admission.
+///
+/// ```compile_fail
+/// use worth_execution::ExecutionMemoryReservation;
+/// let ticket = ExecutionMemoryReservation {};
+/// ```
+///
+/// One charge cannot be cloned into independent owners.
+///
+/// ```compile_fail
+/// use worth_execution::ExecutionMemoryReservation;
+/// fn duplicate(ticket: &ExecutionMemoryReservation) -> ExecutionMemoryReservation {
+///     ticket.clone()
+/// }
+/// ```
+
 #[derive(Debug)]
 pub struct ExecutionMemoryReservation {
     held: Held,

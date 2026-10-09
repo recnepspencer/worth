@@ -183,9 +183,6 @@ pub(super) fn validate_member_identifiers(
                 validate_simple_identifier(target.aspect())?;
                 validate_simple_identifier(target.field_name())?;
             }
-            ApplicationSchemaMember::OperationDecisionFactBudget { operation, .. } => {
-                validate_simple_identifier(operation)?;
-            }
             ApplicationSchemaMember::OperationProjectionWorkBudget { operation, .. } => {
                 validate_simple_identifier(operation)?;
             }

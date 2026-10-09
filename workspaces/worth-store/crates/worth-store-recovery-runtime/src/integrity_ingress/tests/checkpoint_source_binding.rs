@@ -2,8 +2,8 @@ use std::num::NonZeroU64;
 
 use worth_proof::TransitionOutcome;
 use worth_store::physical_runtime::{
-    FilesystemAccessPosture, FilesystemMediaAdmission, PhysicalRuntimeAdmission, PhysicalStore,
-    QualifiedRecoveryFilesystemMedia,
+    ArtifactCeiling, FilesystemAccessPosture, FilesystemMediaAdmission, PhysicalRuntimeAdmission,
+    PhysicalStore, QualifiedRecoveryFilesystemMedia, ReadGrant, StreamArtifact, UnchargedRead,
 };
 use worth_store_physical_format::{
     CheckpointBindingCompactionHeader, CheckpointRootBasis, CheckpointStreamEncoder,
@@ -59,8 +59,15 @@ fn checkpoint_record_binds_a_borrowed_range_of_the_c4_observation() {
         .admit_persisted_store()
         .unwrap();
     let mut discovery = media.bounded_discovery(3, 4096).unwrap();
-    let observed_a = discovery.read_current_checkpoint(4096).unwrap();
-    let observed_b = discovery.read_current_checkpoint(4096).unwrap();
+    let checkpoint = || ArtifactCeiling::undeclared(StreamArtifact::CurrentCheckpoint);
+    let observed_a = discovery
+        .read(checkpoint(), ReadGrant::ceiling_only())
+        .observed()
+        .unwrap();
+    let observed_b = discovery
+        .read(checkpoint(), ReadGrant::ceiling_only())
+        .observed()
+        .unwrap();
     let header_range = PhysicalByteRange::new(0, header.len() as u64).unwrap();
     let scope = PhysicalArtifactScope::checkpoint_stream_header(
         CheckpointStreamHeaderScopeIdentity::staged(store),

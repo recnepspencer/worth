@@ -201,8 +201,6 @@ pub struct PublicationConfig {
     pub max_patch_records_per_commit: usize,
     pub max_published_snapshot_handles: usize,
     pub max_active_snapshot_handles: usize,
-    pub max_transaction_overlay_bytes: u64,
-    pub max_transaction_footprint_loci: usize,
     pub max_transaction_savepoints: usize,
     pub max_prepared_candidates: usize,
     pub candidate_max_lifetime_millis: u64,

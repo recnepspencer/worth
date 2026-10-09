@@ -84,7 +84,7 @@ impl ThreadingCalls {
             }
             if (*first == "ThreadPool" && matches!(names.get(1), Some(&"new")))
                 || (self.imports.rayon_modules.contains(*first)
-                    && names.iter().any(|name| *name == "ThreadPoolBuilder"))
+                    && names.contains(&"ThreadPoolBuilder"))
             {
                 return Some("thread-pool");
             }

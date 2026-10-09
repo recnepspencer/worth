@@ -44,9 +44,14 @@ pub(crate) fn emit_case_audit_record(
                 },
             )),
         ),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    txn.commit(&world.runtime).unwrap()
+    txn.commit(
+        &world.runtime,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .unwrap()
 }
 
 pub(crate) fn emit_trade_correction_audit_record(

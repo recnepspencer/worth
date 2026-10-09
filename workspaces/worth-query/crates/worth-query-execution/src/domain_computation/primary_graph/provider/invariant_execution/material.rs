@@ -6,6 +6,7 @@ use crate::domain_computation::{
 use super::super::application_attempt_state::WorthQueryStagedApplicationAttempt;
 
 pub(super) struct ApplicationInvariantCandidateMaterial {
+    pub(super) request: worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     pub(super) semantic: ApplicationInvariantSemanticMaterial,
     pub(super) requirements: Vec<worth_query_installation::facade::WorthQueryInstalledInvariantExecutionRequirement>,
     pub(super) producer_required_invariants:
@@ -16,7 +17,6 @@ pub(super) struct ApplicationInvariantCandidateMaterial {
         crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
     pub(super) decision_facts: usize,
     pub(super) expected_step_preparation_work: crate::domain_computation::primary_graph::application_attempt::WorthQueryExpectedEffectStepPreparationWork,
-    pub(super) validator_work_admission: crate::domain_computation::primary_graph::application_attempt::WorthQueryCandidateValidatorWorkAdmission,
     pub(super) aftermath_causality: Option<
         crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
     >,
@@ -38,6 +38,7 @@ impl ApplicationInvariantCandidateMaterial {
         staged: &WorthQueryStagedApplicationAttempt<'_>,
     ) -> Result<Self, WorthQueryInvariantExecutionFailure> {
         Ok(Self {
+            request: staged.validation_request().clone(),
             semantic: ApplicationInvariantSemanticMaterial::from_staged(staged)?,
             requirements: staged.invariant_requirements().to_vec(),
             producer_required_invariants: staged.producer_required_invariants(),
@@ -46,7 +47,6 @@ impl ApplicationInvariantCandidateMaterial {
             product: staged.product_publication().clone(),
             decision_facts: staged.decision_fact_count(),
             expected_step_preparation_work: staged.expected_step_preparation_work(),
-            validator_work_admission: staged.validator_work_admission(),
             aftermath_causality: staged.aftermath_causality().cloned(),
             application_graph_reads: staged
                 .application_graph_reads()

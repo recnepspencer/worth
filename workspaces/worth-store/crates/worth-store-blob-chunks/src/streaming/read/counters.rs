@@ -1,6 +1,4 @@
-use worth_store::physical_runtime::stability::StablePhysicalReadExecutionCounters;
 use worth_store_budgets::CounterEvidenceStrength;
-use worth_store_io_scheduler::BackgroundPacingCounterSnapshot;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BlobStreamingReadCounterSnapshot {
@@ -58,64 +56,6 @@ impl BlobStreamingReadCounterSnapshot {
         }
     }
 
-    pub(crate) const fn record_allocation(self) -> Self {
-        Self {
-            allocation_count: self.allocation_count + 1,
-            ..self
-        }
-    }
-
-    pub(crate) const fn record_stable_read(
-        self,
-        counters: StablePhysicalReadExecutionCounters,
-    ) -> Self {
-        Self {
-            scheduler_waits: self.scheduler_waits + counters.retry_decisions(),
-            protected_read_denials: self.protected_read_denials
-                + counters.hidden_latch_io_denials(),
-            ..self
-        }
-    }
-
-    pub(crate) const fn merge_pressure_counters(self, other: Self) -> Self {
-        Self {
-            scheduler_waits: self.scheduler_waits + other.scheduler_waits,
-            pressure_yield_denials: self.pressure_yield_denials + other.pressure_yield_denials,
-            pressure_deferred_denials: self.pressure_deferred_denials
-                + other.pressure_deferred_denials,
-            pressure_denied_denials: self.pressure_denied_denials + other.pressure_denied_denials,
-            pressure_throttles: self.pressure_throttles + other.pressure_throttles,
-            pressure_admitted_with_debt: self.pressure_admitted_with_debt
-                + other.pressure_admitted_with_debt,
-            pressure_violations: self.pressure_violations + other.pressure_violations,
-            ..self
-        }
-    }
-
-    pub(crate) const fn record_background_pressure(
-        self,
-        counters: BackgroundPacingCounterSnapshot,
-    ) -> Self {
-        Self {
-            scheduler_waits: self.scheduler_waits
-                + counters.yield_events()
-                + counters.deferred_events()
-                + counters.denied_events()
-                + counters.throttle_events()
-                + counters.admitted_with_debt_events()
-                + counters.violation_events()
-                + counters.foreground_pressure_events(),
-            pressure_yield_denials: self.pressure_yield_denials + counters.yield_events(),
-            pressure_deferred_denials: self.pressure_deferred_denials + counters.deferred_events(),
-            pressure_denied_denials: self.pressure_denied_denials + counters.denied_events(),
-            pressure_throttles: self.pressure_throttles + counters.throttle_events(),
-            pressure_admitted_with_debt: self.pressure_admitted_with_debt
-                + counters.admitted_with_debt_events(),
-            pressure_violations: self.pressure_violations + counters.violation_events(),
-            ..self
-        }
-    }
-
     pub(crate) const fn observe_read_window(self, bytes: u64) -> Self {
         let peak_resident_bytes = if bytes > self.peak_resident_bytes {
             bytes
@@ -165,13 +105,6 @@ impl BlobStreamingReadCounterSnapshot {
     pub(crate) const fn record_missing_chunk_denial(self) -> Self {
         Self {
             missing_chunk_denials: self.missing_chunk_denials + 1,
-            ..self
-        }
-    }
-
-    pub(crate) const fn record_stale_read_denial(self) -> Self {
-        Self {
-            stale_read_denials: self.stale_read_denials + 1,
             ..self
         }
     }

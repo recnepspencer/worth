@@ -53,8 +53,10 @@ pub(crate) fn assert_complete_frontier(kinds: &[u8]) {
         "published checkpoint omitted binding records"
     );
     assert_eq!(kinds.last().copied(), Some(5));
+    // Certified checkpoints carry TierEpoch (6) and release-custody (7)
+    // certificate records between the binding records and the footer.
     assert!(
-        kinds.iter().all(|kind| (1..=5).contains(kind)),
+        kinds.iter().all(|kind| (1..=7).contains(kind)),
         "published checkpoint contained an unknown record kind"
     );
 }
@@ -69,7 +71,11 @@ pub(crate) fn record_kinds(bytes: &[u8]) -> Vec<u8> {
     while offset < bytes.len() {
         assert!(bytes.len() - offset >= 20, "checkpoint record is truncated");
         assert_eq!(&bytes[offset..offset + 8], b"WCP7REC\0");
-        assert_eq!(bytes[offset + 8], 1);
+        assert_eq!(
+            bytes[offset + 8],
+            worth_store_physical_format::CHECKPOINT_CERTIFIED_SCHEMA,
+            "Store writes only the current certified checkpoint schema"
+        );
         let payload_bytes = u32::from_le_bytes(
             bytes[offset + 12..offset + 16]
                 .try_into()

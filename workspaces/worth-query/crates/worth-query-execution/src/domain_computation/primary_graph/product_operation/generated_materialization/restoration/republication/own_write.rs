@@ -267,12 +267,16 @@ fn suspend_restore_and_read(exhaust_registration: bool) {
         crate::domain_computation::primary_graph::output_lineage::own_write_fixture::evict_index_with_unrelated_write(world, &resources);
         let answer = world
             .invariant
-            .project_admitted_operation(&admitted, |reader, root| {
-                reader
-                    .current_output::<RetainedFamily, _>(root)
-                    .map(|_| ())
-                    .map_err(|denial| denial.kind())
-            })
+            .project_admitted_operation(
+                &admitted,
+                |reader, root| {
+                    reader
+                        .current_output::<RetainedFamily, _>(root)
+                        .map(|_| ())
+                        .map_err(|denial| denial.kind())
+                },
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .unwrap()
             .into_parts()
             .0;

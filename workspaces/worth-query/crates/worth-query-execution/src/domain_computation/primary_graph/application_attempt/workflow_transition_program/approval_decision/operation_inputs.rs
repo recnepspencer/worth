@@ -1,4 +1,6 @@
 use super::*;
+use crate::domain_computation::primary_graph::application_attempt::check_request_live;
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 
 #[allow(clippy::too_many_arguments)]
 pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn observe_operation_approval_inputs(
@@ -12,7 +14,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt::workflow_t
     target_operation: &str,
     handle: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    maximum_facts: usize,
+    observation_request: &WorthQueryRequestScope,
 ) -> Result<
     (
         Vec<crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact>,
@@ -31,7 +33,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt::workflow_t
         None,
         handle,
         snapshot,
-        maximum_facts,
+        observation_request,
     )?;
     let mut facts = observed.facts;
     facts.extend(observed.currentness);
@@ -56,11 +58,6 @@ pub(in crate::domain_computation::primary_graph::application_attempt::workflow_t
             &mut facts,
         )
     })?;
-    if facts.len() > maximum_facts {
-        return Err(WorthQueryApplicationAttemptDenial::new(
-            WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
-            "workflow operation approval input facts",
-        ));
-    }
+    check_request_live(observation_request, "workflow retained evidence")?;
     Ok((facts, authority))
 }

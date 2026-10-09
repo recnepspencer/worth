@@ -21,6 +21,8 @@ pub struct PhysicalIntegrityScrubCounters {
 pub enum PhysicalIntegrityScrubDeferral {
     AnotherWindowActive,
     Allocation,
+    SelectedRecordRead(crate::physical_runtime::record_serving::RecordReadDenial),
+    SelectedRecordStream(crate::physical_runtime::record_serving::RecordStreamFailureKind),
     SchedulerOrDependency(
         crate::physical_runtime::record_serving::PhysicalIntegrityScrubReadDeferral,
     ),
@@ -28,6 +30,7 @@ pub enum PhysicalIntegrityScrubDeferral {
 
 #[derive(Debug, Clone, Copy)]
 pub struct PhysicalIntegrityScrubWindowObservation {
+    pub scope: worth_store_physical_integrity::PhysicalArtifactScope,
     pub selector_identity: Option<worth_store_physical_format::RootSelectorIdentity>,
     pub ordinal: u64,
     pub outcome: PhysicalIntegrityObservationOutcome,

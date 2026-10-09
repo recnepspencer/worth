@@ -121,6 +121,7 @@ impl SourceInvalidationOwner {
         root.current = Arc::new(state);
         root.last_native_marking = Some(report);
         let left = left.as_ref().map(|left| &*left.state);
+        retention::admit_edited_history(&mut root, &self.resources, context)?;
         retention::admit_root(&mut root, left, &self.resources, context)?;
         // A same-position Query edit must retain its predecessor while it
         // prepares the replacement. Keep this cache only if a whole current

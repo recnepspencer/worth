@@ -1,13 +1,18 @@
-use std::io::Write;
+//! Each row reaches cleanup's own byte-exact revalidation (`window.rs`):
+//! checkpoint rows change the checkpoint after Store's residue gate, the WAL
+//! row changes the candidate before `finish`. Nothing is restored, so the
+//! candidate surviving proves cleanup did not delete it.
 
 use worth_store::physical_runtime::{
     PhysicalRecoveryCleanupRemovalDenialKind, RecoveryCleanupArtifactRevalidationDenial,
     RecoveryCleanupRemovalDenialCause,
 };
-use worth_store_recovery_runtime::{
-    PhysicalRecoveryOutcome, RecoveryCleanupDeferralEvidence, RecoveryCleanupPosture,
-};
+use worth_store_recovery_runtime::RecoveryCleanupDeferralEvidence;
 
+use super::window::{
+    append_byte, checkpoint_path, deferred_cleanup, finish_changed_before_revalidation,
+    flip_first_byte, rejoin_denied,
+};
 use super::{cleanup_world, current_checkpoint_bytes, empty_fault_schedule, reopen_with_schedule};
 
 #[test]
@@ -15,14 +20,11 @@ fn missing_checkpoint_retains_the_exact_failed_first_read() {
     let world = cleanup_world("cleanup-checkpoint-read-failure");
     let candidate = world.oldest_wal();
     let reopened = reopen_with_schedule(&world.root, empty_fault_schedule());
-    std::fs::remove_file(checkpoint_path(&world.root)).unwrap();
-
-    let PhysicalRecoveryOutcome::Recovered(handoff) = reopened.finish() else {
-        panic!("missing checkpoint remains deferred cleanup debt")
-    };
-    let RecoveryCleanupPosture::Deferred(evidence) = handoff.cleanup_posture() else {
-        panic!("missing checkpoint must defer cleanup")
-    };
+    let checkpoint = checkpoint_path(&world.root);
+    let indeterminate = rejoin_denied(finish_changed_before_revalidation(reopened, move || {
+        std::fs::remove_file(checkpoint).unwrap();
+    }));
+    let evidence = deferred_cleanup(&indeterminate);
     let [RecoveryCleanupDeferralEvidence::DeniedBeforeEffect { denial, .. }] = evidence.deferrals()
     else {
         panic!("one exact checkpoint read failure")
@@ -50,14 +52,11 @@ fn oversized_checkpoint_retains_the_exact_length_mismatch() {
     let candidate = world.oldest_wal();
     let reopened = reopen_with_schedule(&world.root, empty_fault_schedule());
     let expected = current_checkpoint_bytes(&world.root);
-    append_byte(&checkpoint_path(&world.root));
-
-    let PhysicalRecoveryOutcome::Recovered(handoff) = reopened.finish() else {
-        panic!("oversized checkpoint remains deferred cleanup debt")
-    };
-    let RecoveryCleanupPosture::Deferred(evidence) = handoff.cleanup_posture() else {
-        panic!("oversized checkpoint must defer cleanup")
-    };
+    let checkpoint = checkpoint_path(&world.root);
+    let indeterminate = rejoin_denied(finish_changed_before_revalidation(reopened, move || {
+        append_byte(&checkpoint)
+    }));
+    let evidence = deferred_cleanup(&indeterminate);
     let [RecoveryCleanupDeferralEvidence::DeniedBeforeEffect { denial, .. }] = evidence.deferrals()
     else {
         panic!("one exact checkpoint length mismatch")
@@ -87,18 +86,12 @@ fn malformed_checkpoint_retains_the_exact_digest_denial() {
     let world = cleanup_world("cleanup-checkpoint-decode-denial");
     let candidate = world.oldest_wal();
     let reopened = reopen_with_schedule(&world.root, empty_fault_schedule());
-    let path = checkpoint_path(&world.root);
-    let mut bytes = std::fs::read(&path).unwrap();
-    let expected = bytes.len() as u64;
-    bytes[0] ^= 0xff;
-    std::fs::write(path, bytes).unwrap();
-
-    let PhysicalRecoveryOutcome::Recovered(handoff) = reopened.finish() else {
-        panic!("malformed checkpoint remains deferred cleanup debt")
-    };
-    let RecoveryCleanupPosture::Deferred(evidence) = handoff.cleanup_posture() else {
-        panic!("malformed checkpoint must defer cleanup")
-    };
+    let expected = current_checkpoint_bytes(&world.root);
+    let checkpoint = checkpoint_path(&world.root);
+    let indeterminate = rejoin_denied(finish_changed_before_revalidation(reopened, move || {
+        flip_first_byte(&checkpoint)
+    }));
+    let evidence = deferred_cleanup(&indeterminate);
     let [RecoveryCleanupDeferralEvidence::DeniedBeforeEffect { denial, .. }] = evidence.deferrals()
     else {
         panic!("one exact checkpoint digest denial")
@@ -128,13 +121,8 @@ fn oversized_wal_retains_the_checkpoint_prefix_and_wal_length_mismatch() {
     let expected_checkpoint = current_checkpoint_bytes(&world.root);
     let reopened = reopen_with_schedule(&world.root, empty_fault_schedule());
     append_byte(&candidate);
-
-    let PhysicalRecoveryOutcome::Recovered(handoff) = reopened.finish() else {
-        panic!("oversized WAL remains deferred cleanup debt")
-    };
-    let RecoveryCleanupPosture::Deferred(evidence) = handoff.cleanup_posture() else {
-        panic!("oversized WAL must defer cleanup")
-    };
+    let indeterminate = rejoin_denied(reopened.finish());
+    let evidence = deferred_cleanup(&indeterminate);
     let [RecoveryCleanupDeferralEvidence::DeniedBeforeEffect { denial, .. }] = evidence.deferrals()
     else {
         panic!("one exact WAL length mismatch")
@@ -160,17 +148,4 @@ fn oversized_wal_retains_the_checkpoint_prefix_and_wal_length_mismatch() {
     assert_eq!(evidence.counters().artifact_revalidation_mismatches, 1);
     assert!(candidate.exists());
     assert!(evidence.performed_removals().is_empty());
-}
-
-fn checkpoint_path(root: &std::path::Path) -> std::path::PathBuf {
-    root.join("families").join("checkpoint.current")
-}
-
-fn append_byte(path: &std::path::Path) {
-    std::fs::OpenOptions::new()
-        .append(true)
-        .open(path)
-        .unwrap()
-        .write_all(&[0xff])
-        .unwrap();
 }

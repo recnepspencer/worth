@@ -8,6 +8,7 @@
 //! or not the store also holds a retired index definition. A World
 //! publication first, followed by a raw commit, gives the same answer.
 
+use crate::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 use worth_query_declaration::facade::authentication::WorthQueryPrincipalMappingStatus;
 use worth_relational::facade::history::RelationalCommitReceipt;
 use worth_relational::facade::indexes::DerivedIndexId;
@@ -72,7 +73,7 @@ fn captured_and_restored(with_retired_index: bool) -> (IdentityWorld, Option<Der
     assert!(captured.is_some(), "the captured ledger has commits");
     let checkpoint = world
         .application
-        .capture_application_checkpoint()
+        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
         .expect("the installed world captures");
     drop(world);
 

@@ -86,9 +86,14 @@ fn replay_and_recovery_preserve_aspect_bearing_truth_across_a_hostile_mixed_work
                     },
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-        txn.commit(&runtime).unwrap()
+        txn.commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap()
     };
     runtime.durability_authority().checkpoint().unwrap();
 
@@ -206,9 +211,17 @@ fn hostile_commit_replay_equivalence_test() {
             .expect("owner-admitted transaction context")
     };
     transition_txn
-        .push_batch(batch_create("after-boundary"))
+        .push_batch(
+            batch_create("after-boundary"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
-    let _transition_outcome = transition_txn.commit(&runtime).unwrap();
+    let _transition_outcome = transition_txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
 
     let merge = merge_commit_from_branches(
         &runtime,

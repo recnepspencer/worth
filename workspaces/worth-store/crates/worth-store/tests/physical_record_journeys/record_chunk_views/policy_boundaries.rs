@@ -19,6 +19,10 @@ fn caller_maximum_payload_denies_before_session_delivery_and_releases_allocation
         worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([171; 32]),
         RecordAppendBatch::try_from_iter([expected.as_slice()]).unwrap(),
     );
+    let operation_bytes_before_read = serving
+        .residency_observation()
+        .counters()
+        .active_operation_bytes();
     let record = publication.settled_members()[0].record_id(0).unwrap();
 
     let denial = match serving.records().expect("read protection admission").open(
@@ -39,7 +43,10 @@ fn caller_maximum_payload_denies_before_session_delivery_and_releases_allocation
     let residency = serving.residency_observation().counters();
     assert_eq!(residency.pin_leases(), 0);
     assert_eq!(residency.pinned_frames(), 0);
-    assert_eq!(residency.active_operation_bytes(), 0);
+    assert_eq!(
+        residency.active_operation_bytes(),
+        operation_bytes_before_read
+    );
 
     let mut admitted = serving
         .records()

@@ -12,9 +12,8 @@ use worth_query_decl::facade::{
 pub struct PlanarMutation {
     pub scope_key: String,
     pub operation: PlanarOperation,
-    pub validator_work: usize,
 }
-worth_query_structured_value_binding!(pub PlanarMutationInputBinding for PlanarMutation { identity: "worth.query.certification.planar-mutation-input.v1" });
+worth_query_structured_value_binding!(pub PlanarMutationInputBinding for PlanarMutation { identity: "worth.query.certification.planar-mutation-input.v2" });
 worth_query_structured_value_binding!(pub PlanarMutationResultBinding for PlanarAdjustmentResult { identity: "worth.query.certification.planar-mutation-result.v1" });
 worth_query_structured_value_binding!(pub PlanarMutationDenialBinding for PlanarMutationDenial { identity: "worth.query.certification.planar-mutation-denial.v1" });
 worth_query_operation!(pub MutatePlanar for Schema: TopologySchemaBinding, input PlanarMutationInputBinding);
@@ -58,7 +57,7 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     const IDENTITY: &'static str = "worth.query.certification.planar-mutation.v1";
     const HANDLER_IDENTITY: &'static str = "worth.query.certification.planar-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.certification.planar-command.v1";
-    const CANDIDATES: ApplicationCandidateRequirements = requirements(16, 16, 16, 64, 8192, 4096);
+    const CANDIDATES: ApplicationCandidateRequirements = requirements(16, 16, 16, 64, 8192);
     fn scope_field() -> ApplicationFieldRef<
         Schema,
         Body,
@@ -97,11 +96,10 @@ pub const fn requirements(
     unlinks: usize,
     writes: usize,
     bytes: usize,
-    work: usize,
 ) -> ApplicationCandidateRequirements {
     ApplicationCandidateRequirements::fixed_shape(
         ApplicationCandidateCardinalityCeiling::fixed(creates, 0, links, unlinks, writes, 0),
-        ApplicationCandidateResourceCeiling::bounded(bytes, work),
+        ApplicationCandidateResourceCeiling::representation_bytes(bytes),
     )
 }
 

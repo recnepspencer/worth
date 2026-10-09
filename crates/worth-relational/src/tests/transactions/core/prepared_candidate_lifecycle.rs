@@ -10,8 +10,6 @@ fn expired_candidate_is_typed_deferred_before_reference_movement() {
             max_patch_records_per_commit: 4_096,
             max_published_snapshot_handles: 1,
             max_active_snapshot_handles: 8,
-            max_transaction_overlay_bytes: 1_048_576,
-            max_transaction_footprint_loci: 1_024,
             max_transaction_savepoints: 8,
             max_prepared_candidates: 1,
             candidate_max_lifetime_millis: 0,
@@ -30,9 +28,17 @@ fn expired_candidate_is_typed_deferred_before_reference_movement() {
         )
         .unwrap();
     transaction
-        .push_batch(batch_create("expired-candidate"))
+        .push_batch(
+            batch_create("expired-candidate"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
-    let candidate = runtime.prepare_branch_transaction(transaction).unwrap();
+    let candidate = runtime
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
 
     assert_eq!(runtime.reap_expired_prepared_candidates(), 1);
     assert!(matches!(
@@ -74,8 +80,6 @@ fn candidate_that_expires_while_waiting_for_coordination_does_not_move_reference
             max_patch_records_per_commit: 4_096,
             max_published_snapshot_handles: 8,
             max_active_snapshot_handles: 8,
-            max_transaction_overlay_bytes: 1_048_576,
-            max_transaction_footprint_loci: 1_024,
             max_transaction_savepoints: 8,
             max_prepared_candidates: 1,
             candidate_max_lifetime_millis: 1_000,
@@ -134,10 +138,16 @@ fn foreign_publication_port_denies_before_reference_movement() {
         )
         .expect("source transaction binds");
     transaction
-        .push_batch(batch_create("foreign-port-write"))
+        .push_batch(
+            batch_create("foreign-port-write"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let candidate = source
-        .prepare_branch_transaction(transaction)
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("source candidate prepares");
     let foreign = runtime_with_test_schema();
 
@@ -175,8 +185,6 @@ fn candidate_population_exhaustion_is_typed_and_released_by_discard() {
             max_patch_records_per_commit: 4_096,
             max_published_snapshot_handles: 8,
             max_active_snapshot_handles: 8,
-            max_transaction_overlay_bytes: 1_048_576,
-            max_transaction_footprint_loci: 1_024,
             max_transaction_savepoints: 8,
             max_prepared_candidates: 1,
             candidate_max_lifetime_millis: 30_000,
@@ -213,6 +221,14 @@ fn prepared_write(
     let mut transaction = runtime
         .begin_branch_transaction(basis, crate::mvcc::RelationalTransactionIntent::ordinary())
         .unwrap();
-    transaction.push_batch(batch_create(key)).unwrap();
-    runtime.prepare_branch_transaction(transaction)
+    transaction
+        .push_batch(
+            batch_create(key),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
+    runtime.prepare_branch_transaction(
+        transaction,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
 }

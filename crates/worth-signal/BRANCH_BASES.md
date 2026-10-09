@@ -36,7 +36,7 @@ methods on `SignalRuntime`:
 - `release_signal_component_basis`
 - `readmit_retained_signal_branch_basis`
 - `signal_component_retention_terminal_counts`
-- `advance_signal_branch`
+- `advance_signal_branch(execution, context, expected, apply)`
 - `merge` for guided planning and `merge_branch` for the full-branch shortcut
 - `capture_signal_branch_snapshot`
 - `reconstruct_signal_branch_snapshot` for pristine-runtime construction only

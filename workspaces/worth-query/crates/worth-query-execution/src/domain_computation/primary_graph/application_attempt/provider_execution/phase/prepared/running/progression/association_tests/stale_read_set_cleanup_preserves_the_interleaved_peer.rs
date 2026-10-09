@@ -24,13 +24,13 @@ fn stale_read_set_cleanup_preserves_the_interleaved_peer() {
                     phase,
                     winner,
                     idempotency(151, 152)
-                ),
+                , crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation),
             WorthQueryApplicationCommitOutcome::Committed(_)
         ));
         let victim = finish_application_commit(
             phase,
             &world.application,
-            progress_application_commit(phase, &world.application, victim),
+            progress_application_commit(phase, &world.application, victim, crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation),
         );
         crate::domain_computation::primary_graph::tests::application_attempt::assert_product_basis_stale(
         victim,

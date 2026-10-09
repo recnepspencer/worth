@@ -1,5 +1,8 @@
 //! What a host's rostered programs mean before anything adopts a new one.
 
+#[path = "adoption/checkpoint_transition.rs"]
+mod checkpoint_transition;
+
 #[path = "adoption/branch_adoption.rs"]
 mod branch_adoption;
 #[path = "adoption/branch_adoption_recovery.rs"]

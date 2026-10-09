@@ -50,9 +50,18 @@ impl RuntimeCore {
 
         let branch = self.runtime.current_branch();
         let basis = self.native_branch_basis(branch)?;
-        let result = self
-            .runtime
-            .advance_signal_branch(&mut self.store, &basis, move |tx| {
+        let serial_request = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(
+                self.runtime.runtime_policy().serial_memory_bytes,
+            ),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        let result = self.runtime.advance_signal_branch(
+            worth_execution::ExecutionRequest::serial(&serial_request),
+            &mut self.store,
+            &basis,
+            move |tx| {
                 {
                     let mut locked = store
                         .lock()
@@ -69,7 +78,8 @@ impl RuntimeCore {
                 tx.evaluate_dirty(&evaluator)?;
                 tx.evaluate_demand(&evaluator, &standing_demand)?;
                 Ok(())
-            });
+            },
+        );
 
         match result {
             Ok(outcome) => {

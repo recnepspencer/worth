@@ -8,7 +8,6 @@
 
 use std::sync::Arc;
 
-use crate::facade::config::PublicationConfig;
 use crate::tests::support::*;
 use crate::validation::data::{
     CustomInvariantAccessContract, CustomInvariantDescriptor, CustomInvariantExecutionContext,
@@ -122,31 +121,6 @@ pub(super) fn strictness_runtime() -> RelationalRuntime {
             CascadeDeletePolicy::CascadeDeleteRelations,
         ))
         .custom_invariant(CustomInvariantRegistration::new(StrictnessRule).unwrap())
-        .build()
-}
-
-/// The same runtime with an explicit transaction footprint ceiling, so a court
-/// can exhaust it by staging demands rather than by staging a million writes.
-pub(super) fn strictness_runtime_with_footprint_ceiling(
-    maximum_footprint_loci: usize,
-) -> RelationalRuntime {
-    RelationalRuntimeApi::builder()
-        .schema_registry(declared_aspect_schema_registry(
-            CascadeDeletePolicy::CascadeDeleteRelations,
-        ))
-        .custom_invariant(CustomInvariantRegistration::new(StrictnessRule).unwrap())
-        .publication(PublicationConfig {
-            coherent_publication_required: true,
-            max_patch_records_per_commit: 4_096,
-            max_published_snapshot_handles: 8,
-            max_active_snapshot_handles: 8,
-            max_transaction_overlay_bytes: 1_048_576,
-            max_transaction_footprint_loci: maximum_footprint_loci,
-            max_transaction_savepoints: 8,
-            max_prepared_candidates: 8,
-            candidate_max_lifetime_millis: 30_000,
-            max_prepared_root_bytes: 268_435_456,
-        })
         .build()
 }
 

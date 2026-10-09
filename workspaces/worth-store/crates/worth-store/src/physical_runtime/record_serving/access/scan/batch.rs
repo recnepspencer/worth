@@ -1,4 +1,5 @@
 use std::ops::Range;
+use worth_store_physical_format::SelectedRecordRouteMetadata;
 
 use super::super::super::{
     CompletedRecordScan, ExternalRecordScanCursor, PhysicalRecordId, RecordScanCounterSnapshot,
@@ -9,6 +10,7 @@ pub struct ScannedPhysicalRecord {
     record: PhysicalRecordId,
     payload: Option<Range<usize>>,
     declared_payload_bytes: u64,
+    route_metadata: SelectedRecordRouteMetadata,
 }
 
 impl ScannedPhysicalRecord {
@@ -16,11 +18,13 @@ impl ScannedPhysicalRecord {
         record: PhysicalRecordId,
         payload: Option<Range<usize>>,
         declared_payload_bytes: u64,
+        route_metadata: SelectedRecordRouteMetadata,
     ) -> Self {
         Self {
             record,
             payload,
             declared_payload_bytes,
+            route_metadata,
         }
     }
 
@@ -30,6 +34,18 @@ impl ScannedPhysicalRecord {
 
     pub const fn declared_payload_bytes(&self) -> u64 {
         self.declared_payload_bytes
+    }
+
+    pub const fn route_metadata(&self) -> SelectedRecordRouteMetadata {
+        self.route_metadata
+    }
+
+    pub const fn content_class(&self) -> worth_store_physical_format::SelectedRecordContentClass {
+        self.route_metadata.content_class()
+    }
+
+    pub const fn tier_class(&self) -> worth_store_physical_format::PhysicalTierClass {
+        self.route_metadata.tier_class()
     }
 
     pub const fn payload_is_deferred(&self) -> bool {

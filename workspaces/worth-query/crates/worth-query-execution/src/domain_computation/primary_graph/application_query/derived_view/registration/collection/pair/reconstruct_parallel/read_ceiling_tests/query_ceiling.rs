@@ -62,18 +62,19 @@ fn query_local_read_ceiling_keeps_the_ordinary_denial_and_admitted_work() {
     let mut plans = WorthQueryDerivedPairReadPlans::new(admit(100000), admit(3));
     ExecutionRequest::serial(&serial)
         .in_scope(|lease| {
-            owner_stage::run(lease, 8192, |context| {
+            owner_stage::run(lease, |context| {
                 plans.admit(&world.application, root.entity_id(), context)
             })
         })
         .unwrap()
         .unwrap();
+    let capacity = plans.result_capacity().unwrap();
     let map = ExecutionMap::<_, ()>::from_keyless_partitions(BTreeMap::from([(
         PartitionIdentity::new(1),
         KeylessPartition {
             value: plans.worker(&world.application, root.entity_id()).unwrap(),
             kernel_scratch_bytes: 0,
-            max_result_bytes: plans.result_capacity().unwrap(),
+            max_result_bytes: capacity,
         },
     )]))
     .unwrap();

@@ -18,10 +18,6 @@ use worth_store_budgets::PreExecutionBudgetEnvelope;
 
 #[derive(Debug, PartialEq, Eq)]
 pub(super) enum PlanSelectionDecision {
-    BTreePointLookup(SelectedAccessPlanBasis, BTreeLookupSelectionGrant),
-    BTreeRangeLookup(SelectedAccessPlanBasis, BTreeLookupSelectionGrant),
-    BTreePrefixLookup(SelectedAccessPlanBasis, BTreeLookupSelectionGrant),
-    BTreeReplayRecovery(SelectedAccessPlanBasis, BTreeReplaySelectionGrant),
     LsmLookup(SelectedAccessPlanBasis, LsmLookupSelectionGrant),
     LsmRunPublication(SelectedAccessPlanBasis, LsmPublicationSelectionGrant),
     LsmReplayRecovery(SelectedAccessPlanBasis, LsmReplaySelectionGrant),
@@ -47,8 +43,6 @@ macro_rules! define_selection_grant {
     };
 }
 
-define_selection_grant!(BTreeLookupSelectionGrant);
-define_selection_grant!(BTreeReplaySelectionGrant);
 define_selection_grant!(LsmLookupSelectionGrant);
 define_selection_grant!(LsmPublicationSelectionGrant);
 define_selection_grant!(LsmReplaySelectionGrant);
@@ -57,10 +51,6 @@ define_selection_grant!(DegradedScanSelectionGrant);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum AccessPlanSelectionCaseId {
-    BTreePointLookup,
-    BTreeRangeLookup,
-    BTreePrefixLookup,
-    BTreeReplayRecovery,
     LsmLookup,
     LsmRunPublication,
     LsmReplayRecovery,
@@ -72,11 +62,7 @@ pub enum AccessPlanSelectionCaseId {
 }
 
 impl AccessPlanSelectionCaseId {
-    pub const ALL: [Self; 12] = [
-        Self::BTreePointLookup,
-        Self::BTreeRangeLookup,
-        Self::BTreePrefixLookup,
-        Self::BTreeReplayRecovery,
+    pub const ALL: [Self; 8] = [
         Self::LsmLookup,
         Self::LsmRunPublication,
         Self::LsmReplayRecovery,
@@ -89,10 +75,6 @@ impl AccessPlanSelectionCaseId {
 
     pub const fn as_str(self) -> &'static str {
         match self {
-            Self::BTreePointLookup => "layout.selection.btree.point",
-            Self::BTreeRangeLookup => "layout.selection.btree.range",
-            Self::BTreePrefixLookup => "layout.selection.btree.prefix",
-            Self::BTreeReplayRecovery => "layout.selection.btree.replay",
             Self::LsmLookup => "layout.selection.lsm.lookup",
             Self::LsmRunPublication => "layout.selection.lsm.publication",
             Self::LsmReplayRecovery => "layout.selection.lsm.replay",
@@ -145,18 +127,6 @@ fn classify_indexed_operation(plan: SelectedAccessPlanBasis) -> PlanSelectionDec
         .selected_operation()
         .expect("indexed candidate retains its owner-classified operation")
     {
-        EligibleStrategyOperation::BTreeLookup(super::BTreeLookupOperation::Point) => {
-            PlanSelectionDecision::BTreePointLookup(plan, BTreeLookupSelectionGrant::issue())
-        }
-        EligibleStrategyOperation::BTreeLookup(super::BTreeLookupOperation::Range) => {
-            PlanSelectionDecision::BTreeRangeLookup(plan, BTreeLookupSelectionGrant::issue())
-        }
-        EligibleStrategyOperation::BTreeLookup(super::BTreeLookupOperation::Prefix) => {
-            PlanSelectionDecision::BTreePrefixLookup(plan, BTreeLookupSelectionGrant::issue())
-        }
-        EligibleStrategyOperation::BTreeReplayRecovery => {
-            PlanSelectionDecision::BTreeReplayRecovery(plan, BTreeReplaySelectionGrant::issue())
-        }
         EligibleStrategyOperation::LsmLookup => {
             PlanSelectionDecision::LsmLookup(plan, LsmLookupSelectionGrant::issue())
         }

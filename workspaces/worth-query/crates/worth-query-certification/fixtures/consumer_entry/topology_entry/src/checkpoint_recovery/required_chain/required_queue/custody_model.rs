@@ -1,4 +1,7 @@
 //! Custody follows the declared chain's owners, never a measured byte total.
+//! registry/prerequisite_claims.rs:136-240 reserves one exact settlement slot
+//! and charges actual_settlement_growth. Its max(2c,4) projection admits growth
+//! only; a retained vector owns its exact grown capacity (one slot initially).
 use super::*;
 use primary_graph::{required_custody_layout_for_test, RequiredCustodyLayoutForTest};
 use worth_query_host::facade::application_contribution::WorthQueryApplicationProducerBinding;
@@ -22,9 +25,9 @@ impl ChainCustody {
         }
     }
     fn postings(&self, addresses: &[usize]) -> usize {
-        // The declared std B-tree reservation holds one spare root and one
-        // node per five entries. Each address owns one refundable posting.
-        let nodes = |n: usize| if n == 0 { 0 } else { 1 + n.div_ceil(5) };
+        // A nonempty std B-tree retains its root and at most one nonroot
+        // per five entries after the first. Each address owns one posting.
+        let nodes = |n: usize| if n == 0 { 0 } else { 1 + (n - 1) / 5 };
         nodes(addresses.len()) * self.layout.outer_posting_node
             + addresses
                 .iter()
@@ -34,9 +37,10 @@ impl ChainCustody {
     pub(super) fn closed_chain(&self) -> usize {
         // C is cached; its claims keep B and A required. Each settlement
         // retains its execution context key and actual-resource slot.
-        // C claims B, and B claims A, after all three callers close.
+        // C claims B, and B claims A, after all three callers close. The
+        // cached C Ready keeps its source. Three exact first settlement slots remain.
         3 * self.layout.ready
-            + 2 * self.layout.source
+            + 3 * self.layout.source
             + self.root_member
             + self.consumer_member
             + self.postings(&[1, 1, 1])
@@ -45,6 +49,29 @@ impl ChainCustody {
             + 2 * super::super::producer::ChainProducer::<CheckpointSchema>::IDENTITY.len()
             + 3 * self.layout.settlement_slot
             + 2 * self.layout.prerequisite_slot
+    }
+    /// The open C member joins the closed chain's A/B prerequisite members.
+    pub(super) fn open_chain(&self) -> usize {
+        self.closed_chain() + self.consumer_member
+    }
+    pub(super) fn continuation_slot(&self) -> usize {
+        primary_graph::WorthQueryPrimaryGraphApplicationRuntime::<CheckpointSchema>::required_continuation_slot_custody_bytes_for_test()
+    }
+    /// Leave room for dispatch and its real source query, but no typed successor.
+    pub(super) fn terminal_before_publication(&self) -> usize {
+        self.open_chain() + self.continuation_slot()
+    }
+    /// A's first publication coexists with the entire predecessor chain.
+    /// Its new address shares A's inner tree; no new semantic source is added.
+    pub(super) fn first_root_publication(&self) -> usize {
+        self.terminal_before_publication()
+            + primary_graph::WorthQueryPrimaryGraphApplicationRuntime::<CheckpointSchema>::required_successor_custody_bytes_for_test::<crate::producer::PlanarOutputFamily>()
+            + self.layout.source + self.root_member
+            + self.layout.context_without_producer
+            + crate::producer::InitialPlanarProducer::<CheckpointSchema>::IDENTITY.len()
+            + self.layout.ready
+            + self.postings(&[2, 1, 1]) - self.postings(&[1, 1, 1])
+            + 4 * self.layout.settlement_slot
     }
     pub(super) fn root_refresh_before_reclaim(&self) -> usize {
         // The cached chain coexists with A's newly admitted source and member,
@@ -58,6 +85,10 @@ impl ChainCustody {
             // A's advance also prepares B's typed required successor while
             // the cached C row still owns the old chain.
             + primary_graph::WorthQueryPrimaryGraphApplicationRuntime::<CheckpointSchema>::required_successor_custody_bytes_for_test::<super::super::producer::ChainFamily>()
+            + self.continuation_slot()
+            + primary_graph::required_handoff_custody_bytes_for_test(
+                super::super::producer::ChainProducer::<CheckpointSchema>::IDENTITY,
+            )
             // B's selected successor source/member/context and prepared Ready
             // coexist with the predecessor chain and A's new publication.
             + self.layout.source + self.consumer_member
@@ -65,8 +96,8 @@ impl ChainCustody {
             + super::super::producer::ChainProducer::<CheckpointSchema>::IDENTITY.len()
             + self.layout.ready
             // A and B each prepare a new address before old claims retire.
-            + self.postings(&[1,1,1,1,1]) - self.postings(&[1,1,1])
-            + 2 * self.layout.settlement_slot + self.layout.prerequisite_slot
+            + self.postings(&[2,2,1]) - self.postings(&[1,1,1])
+            + 8 * self.layout.settlement_slot + self.layout.prerequisite_slot
     }
     pub(super) fn middle_write_refresh_before_reclaim(&self) -> usize {
         // After the World writes B, the explicit ordinary B demand reads A's
@@ -84,9 +115,9 @@ impl ChainCustody {
             + self.layout.context_without_producer
             + super::super::producer::ChainProducer::<CheckpointSchema>::IDENTITY.len()
             + self.layout.ready
-            + self.postings(&[1, 1, 1, 1])
+            + self.postings(&[2, 1, 1])
             - self.postings(&[1, 1, 1])
-            + self.layout.settlement_slot
+            + 4 * self.layout.settlement_slot
             + self.layout.prerequisite_slot;
         root.max(middle)
     }

@@ -2,9 +2,9 @@ use super::integrity_classification::{
     IntegrityRepairArtifactFamily, IntegrityRepairOwnerBinding, IntegrityRepairRegion,
     IntegrityRepairRegionClass,
 };
+use super::DerivedIndexRepairRequest;
 use sha2::{Digest, Sha256};
 use worth_store_authority::StoreCurrentAuthorityIdentity;
-use worth_store_layout_indexes::DerivedIndexRepairRequest;
 use worth_store_offline_verifier::{
     OfflineIntegrityPosture, OperationalTruthRegion, OperationalTruthReport,
 };

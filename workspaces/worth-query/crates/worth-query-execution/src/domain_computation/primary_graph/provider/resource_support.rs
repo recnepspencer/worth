@@ -5,7 +5,7 @@ use worth_query_admission::facade::resource_admission::{
     WorthQueryExecutionResourceSupport, WorthQueryFixedExecutionCapacity,
 };
 use worth_query_declaration::facade::domain_computation::{
-    WorthQueryCancellationSafePointFamily, WorthQueryExecutionMode, WorthQueryResourceDimension,
+    WorthQueryCancellationSafePointFamily, WorthQueryResourceDimension,
     WorthQueryResourceLimitRequest, WorthQuerySemanticScaleAxis, WorthQuerySemanticScaleRequest,
 };
 use worth_query_installation::facade::{
@@ -82,6 +82,16 @@ fn component_support(
         )
         .expect("static primary provider capacity is valid"),
     );
+    let scale = WorthQuerySemanticScaleRequest::selective()
+        .with(
+            WorthQuerySemanticScaleAxis::CandidateItems,
+            candidate_resources.maximum_items(),
+        )
+        .with(
+            WorthQuerySemanticScaleAxis::BatchWidth,
+            candidate_resources.maximum_operation_width(),
+        );
+
     let support = WorthQueryExecutionResourceSupport::new(
         WorthQueryExecutionProviderFamily::new(APPLICATION_EXECUTION_PROVIDER_FAMILY)
             .expect("static provider family is canonical"),
@@ -89,24 +99,14 @@ fn component_support(
             .expect("static access-product family is canonical"),
         WorthQueryExecutionAllocatorFamily::new(APPLICATION_EXECUTION_ALLOCATOR_FAMILY)
             .expect("static allocator family is canonical"),
-        WorthQueryExecutionResourceEnvelope::new(
-            WorthQuerySemanticScaleRequest::bounded(candidate_resources.maximum_operation_width())
-                .with(
-                    WorthQuerySemanticScaleAxis::CandidateItems,
-                    candidate_resources.maximum_items(),
-                )
-                .with(
-                    WorthQuerySemanticScaleAxis::WorkItems,
-                    candidate_resources.maximum_validator_work(),
-                ),
-            WorthQueryResourceLimitRequest::bounded(candidate_resources.maximum_operation_width())
+        WorthQueryExecutionResourceEnvelope::atomic(
+            scale,
+            WorthQueryResourceLimitRequest::selective()
                 .with(
                     WorthQueryResourceDimension::CandidateRetainedRepresentationBytes,
                     candidate_resources.maximum_retained_representation_bytes(),
                 )
                 .with(WorthQueryResourceDimension::RetainedBytes, 262_144),
-            WorthQueryExecutionMode::Synchronous,
-            None,
             WorthQueryCancellationSafePointFamily::new(APPLICATION_EXECUTION_SAFE_POINT_FAMILY)
                 .expect("static safe-point family is canonical"),
         ),
@@ -114,3 +114,6 @@ fn component_support(
     );
     (support, capacity)
 }
+
+#[cfg(test)]
+mod atomic_tests;

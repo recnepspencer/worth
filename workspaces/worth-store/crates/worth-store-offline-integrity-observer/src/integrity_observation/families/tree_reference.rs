@@ -149,7 +149,20 @@ pub(crate) fn ordered(
             {
                 return false;
             }
-            (left[0], read_u64(left, 8)).cmp(&(right[0], read_u64(right, 8)))
+            (
+                left[0],
+                read_u64(left, 8),
+                if left[0] == 1 { 0 } else { read_u64(left, 16) },
+            )
+                .cmp(&(
+                    right[0],
+                    read_u64(right, 8),
+                    if right[0] == 1 {
+                        0
+                    } else {
+                        read_u64(right, 16)
+                    },
+                ))
         }
         _ => return false,
     };

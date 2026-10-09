@@ -158,10 +158,18 @@ fn entity_replacement_reconciliation_strategy_replacement_declaration_applies_to
         .iter()
         .cloned()
     {
-        txn.push_batch(batch)
-            .expect("test staging stays within configured resource budgets");
+        txn.push_batch(
+            batch,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .expect("test staging stays within configured resource budgets");
     }
-    let commit = txn.commit(&runtime).expect("replacement patch commit");
+    let commit = txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .expect("replacement patch commit");
     let replacement_id = crate::tests::support::changed_entities(&commit)
         .into_iter()
         .last()

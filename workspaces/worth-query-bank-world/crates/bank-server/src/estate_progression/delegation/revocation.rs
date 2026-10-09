@@ -154,21 +154,29 @@ impl BankIdentityRuntime {
     ) -> Result<CapabilityRevocationProgram, BankEstateProgressionDenial> {
         let projected = self
             .invariant_projection()
-            .project_admitted_operation(&admission, |reader, estate| {
-                project_active_estate_grant(reader, estate, expected_grant)
-            })
+            .project_admitted_operation(
+                &admission,
+                |reader, estate| project_active_estate_grant(reader, estate, expected_grant),
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .map_err(BankEstateProgressionDenial::from_projection)?;
         let (result, projection, _) = projected.into_parts();
         result.map_err(BankEstateProgressionDenial::CapabilityRevocationProjection)?;
         let reads = self
             .application_runtime()
-            .begin_projected_application_read_attempt(admission, projection)
+            .begin_projected_application_read_attempt(
+                admission,
+                projection,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .map_err(BankEstateProgressionDenial::from_attempt)?;
         let grant = reads
             .resolve_entity(CapabilityGrantIdentityField::reference(), expected_grant)
             .map_err(BankEstateProgressionDenial::from_attempt)?;
         reads
-            .complete_projected_dependencies()
+            .complete_projected_dependencies(
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .map_err(BankEstateProgressionDenial::from_attempt)?
             .materialize_capability_revocation_program(&grant)
             .map_err(BankEstateProgressionDenial::from_attempt)

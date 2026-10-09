@@ -7,11 +7,18 @@ use worth_store_physical_format::{
 use super::routing_block_rejection::{
     format_mismatch, recursive_checksum_mismatch, routing_denial, scope_mismatch,
 };
+
+#[path = "routing_block/borrowed.rs"]
+mod borrowed;
 use crate::artifact::durable_frame_rejection::{input_length, wrong_scope};
 use crate::observation::PhysicalIntegrityObservationCounters;
 use crate::validation::{
     IntegrityValidatedRootRoutingBlock, PhysicalArtifactScope, PhysicalIntegrityRejection,
     UntrustedPhysicalArtifact,
+};
+pub use borrowed::{
+    validate_root_routing_block_borrowed, BorrowedRootRoutingBlockIntegrityValidation,
+    RootRoutingCoordinateScratchDenial,
 };
 
 #[derive(Debug)]

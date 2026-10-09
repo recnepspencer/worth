@@ -2,17 +2,22 @@ use std::collections::BTreeMap;
 
 use worth_store_physical_format::{
     CurrentPhysicalRecordPlacement, DurableFreeSpaceManifestHeader, FreeSpaceKey,
-    PersistedRecordIdentity, RecordAllocationClass, RecordFreeSpaceManifestEntry,
+    PersistedRecordIdentity, RecordFreeSpaceManifestEntry,
 };
 
-use super::super::planning::free_space_routing::{
-    plan_free_space_successor, FreeSpacePublicationPlan, FreeSpaceSuccessorRequest, FreeSpaceUpdate,
+use super::super::planning::{
+    free_space_routing::{
+        plan_free_space_successor, FreeSpacePublicationPlan, FreeSpaceSuccessorRequest,
+        FreeSpaceUpdate,
+    },
+    inline_plan_failure::manifest_lookup_failure,
 };
 use super::super::{
     planning::inline_segment_plan::InlineSegmentAllocation, AdmittedPhysicalRecordFormat,
     AdmittedRecordAccessPolicy, RecordAppendDenial, RecordAppendError,
 };
 
+mod arena_updates;
 mod committed_frontier;
 use committed_frontier::CommittedAllocationFrontier;
 
@@ -26,6 +31,8 @@ pub(in crate::physical_runtime::record_serving) struct FreeSpaceProjectionContex
     pub(in crate::physical_runtime::record_serving) current: &'plan DurableFreeSpaceManifestHeader,
     pub(in crate::physical_runtime::record_serving) successor_generation: u64,
     pub(in crate::physical_runtime::record_serving) successor_capacity: u16,
+    pub(in crate::physical_runtime::record_serving) arena_capacity:
+        super::super::arena::ExtentArenaCapacity,
 }
 
 pub(in crate::physical_runtime::record_serving) fn project_successor_free_space(
@@ -41,6 +48,7 @@ pub(in crate::physical_runtime::record_serving) fn project_successor_free_space(
         current,
         successor_generation,
         successor_capacity,
+        arena_capacity,
     } = context;
     let frontier = CommittedAllocationFrontier::from_publication(
         current,
@@ -61,15 +69,10 @@ pub(in crate::physical_runtime::record_serving) fn project_successor_free_space(
     }
     let mut updates = BTreeMap::new();
     for segment in touched_segments {
-        let key = FreeSpaceKey::new(
-            RecordAllocationClass::InlinePage,
-            segment.segment().segment_id().get(),
-        )
-        .ok_or_else(damaged)?;
+        let key = FreeSpaceKey::inline(segment.segment().segment_id().get()).ok_or_else(damaged)?;
         let update = if segment.used_pages() < segment.page_capacity() {
             FreeSpaceUpdate::Available(
-                RecordFreeSpaceManifestEntry::new(
-                    RecordAllocationClass::InlinePage,
+                RecordFreeSpaceManifestEntry::inline_frontier(
                     segment.segment().segment_id().get(),
                     u64::from(segment.used_pages() + 1),
                     u64::from(segment.page_capacity() - segment.used_pages()),
@@ -82,23 +85,26 @@ pub(in crate::physical_runtime::record_serving) fn project_successor_free_space(
         };
         updates.insert(key, update);
     }
-    let extent_key = FreeSpaceKey::new(RecordAllocationClass::Extent, 1).expect("stable owner");
-    let extent_update = if frontier.next_extent < u64::MAX {
-        FreeSpaceUpdate::Available(
-            RecordFreeSpaceManifestEntry::new(
-                RecordAllocationClass::Extent,
-                1,
-                frontier.next_extent,
-                u64::MAX - frontier.next_extent,
-                1,
-            )
-            .ok_or_else(damaged)?,
-        )
-    } else {
-        FreeSpaceUpdate::Exhausted
-    };
-    updates.insert(extent_key, extent_update);
-    plan_free_space_successor(
+    let reader = super::free_space_routing::FreeSpaceReader::serving(
+        residency.clone(),
+        format,
+        access,
+        current,
+    );
+    let mut arena_discovery =
+        super::super::access::manifest_routing::ManifestDiscoveryCounterSnapshot::default();
+    arena_updates::subtract_allocations(
+        &reader,
+        allocation,
+        current,
+        arena_capacity,
+        successor_generation,
+        frontier.next_arena,
+        placements.values().copied(),
+        &mut updates,
+        &mut arena_discovery,
+    )?;
+    let mut projected = plan_free_space_successor(
         allocation,
         residency,
         format,
@@ -111,10 +117,13 @@ pub(in crate::physical_runtime::record_serving) fn project_successor_free_space(
             next_segment: frontier.next_segment,
             next_page: frontier.next_page,
             next_extent: frontier.next_extent,
+            next_arena: frontier.next_arena,
             updates,
         },
-    )
-    .map_err(|_| damaged())
+    )?;
+    arena_discovery.merge(projected.discovery);
+    projected.discovery = arena_discovery;
+    Ok(projected)
 }
 
 fn damaged() -> RecordAppendError {

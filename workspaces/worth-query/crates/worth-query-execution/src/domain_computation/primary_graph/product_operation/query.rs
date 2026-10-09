@@ -10,7 +10,9 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryControls,
 };
 
+mod batch;
 mod retained;
+pub use batch::WorthQueryRetainedBatchQueryAdmissionDenial;
 
 /// Work and request limits for an already selected product. These controls
 /// cannot select a second basis or change the operation's retained occurrence.

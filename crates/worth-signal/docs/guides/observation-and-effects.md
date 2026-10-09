@@ -114,7 +114,13 @@ let handle = runtime.observe_nodes(
 );
 
 let basis = runtime.observe_signal_branch_basis(runtime.current_branch())?;
-let _next_basis = runtime.advance_signal_branch(&mut (), &basis, |tx| {
+let serial_request = worth_execution::SerialRequest::from_memory(
+    worth_execution::SerialMemoryBudget::new(runtime.runtime_policy().serial_memory_bytes),
+    worth_execution::CancellationToken::new(),
+    None,
+);
+let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+let _next_basis = runtime.advance_signal_branch(execution, &mut (), &basis, |tx| {
     tx.mark_changed(source, ASPECT_A)?;
     tx.target(derived).run(&|view| {
         let version = view.read_aspect_version(source, ASPECT_A)?;

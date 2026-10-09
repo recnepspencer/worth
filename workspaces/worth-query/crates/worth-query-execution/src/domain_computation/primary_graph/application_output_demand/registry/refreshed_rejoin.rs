@@ -48,22 +48,12 @@ impl WorthQueryOutputDemandRegistry {
         let (occurrence, scope) = (record.product_occurrence, record.source_scope);
         // Only this occurrence is traversed; unrelated records affect the
         // ordered navigation report, never this request's declared work.
-        let mut newest = None;
-        for (key, _) in occurrence_rows_admitted(&state.records, &stale.key, admission)? {
-            admission
-                .charge_external_work(1)
-                .map_err(|_| work_denial())?;
-            if newest
-                .as_ref()
-                .is_none_or(|prior: &WorthQueryOutputDemandKey| {
-                    key.source.observation_generation() > prior.source.observation_generation()
-                })
-            {
-                newest = Some(key.clone());
-            }
-        }
         let Some(newest) =
-            newest.filter(|key| refresh_order(key, &stale.key) == Some(Ordering::Greater))
+            newest_matching_row_admitted(&state.records, &stale.key, admission, |key, record| {
+                refresh_order(key, &stale.key) == Some(Ordering::Greater)
+                    && record.product_occurrence == occurrence
+                    && record.source_scope == scope
+            })?
         else {
             return Ok(None);
         };
@@ -193,11 +183,57 @@ pub(super) fn newest_of_occurrence(
     records: &super::record_map::DemandRecords,
     key: &WorthQueryOutputDemandKey,
 ) -> Option<WorthQueryOutputDemandKey> {
-    occurrence_rows(records, key)
-        .map(|(other, _)| other)
-        .filter(|other| refresh_order(other, key) == Some(Ordering::Greater))
-        .max_by_key(|other| other.source.observation_generation())
-        .cloned()
+    newest_lawful_successor(occurrence_rows(records, key).map(|(other, _)| other), key).cloned()
+}
+
+/// Incomparable bindings never become a successor through iteration order.
+pub(super) fn newest_lawful_successor<'keys>(
+    keys: impl Iterator<Item = &'keys WorthQueryOutputDemandKey>,
+    predecessor: &WorthQueryOutputDemandKey,
+) -> Option<&'keys WorthQueryOutputDemandKey> {
+    let mut newest = None;
+    for candidate in
+        keys.filter(|candidate| refresh_order(candidate, predecessor) == Some(Ordering::Greater))
+    {
+        match newest {
+            None => newest = Some(candidate),
+            Some(current) => match refresh_order(candidate, current) {
+                Some(Ordering::Greater) => newest = Some(candidate),
+                Some(Ordering::Less) => {}
+                Some(Ordering::Equal) if candidate == current => {}
+                _ => return None,
+            },
+        }
+    }
+    newest
+}
+
+/// Select a lawful row after charging each inspected payload in the selected occurrence.
+pub(super) fn newest_matching_row_admitted(
+    records: &super::record_map::DemandRecords,
+    requested: &WorthQueryOutputDemandKey,
+    admission: &mut InvalidationEditAdmission,
+    accepts: impl Fn(&WorthQueryOutputDemandKey, &DemandRecord) -> bool,
+) -> Result<Option<WorthQueryOutputDemandKey>, WorthQueryOutputDemandDenial> {
+    let mut newest: Option<&WorthQueryOutputDemandKey> = None;
+    for (candidate, record) in occurrence_rows_admitted(records, requested, admission)? {
+        admission
+            .charge_external_work(1)
+            .map_err(|_| work_denial())?;
+        if !accepts(candidate, record) {
+            continue;
+        }
+        match newest {
+            None => newest = Some(candidate),
+            Some(current) => match refresh_order(candidate, current) {
+                Some(Ordering::Greater) => newest = Some(candidate),
+                Some(Ordering::Less) => {}
+                Some(Ordering::Equal) if candidate == current => {}
+                _ => return Ok(None),
+            },
+        }
+    }
+    Ok(newest.cloned())
 }
 
 /// How `row` orders against `other` among the rows of one occurrence. A
@@ -216,7 +252,7 @@ pub(super) fn refresh_order(
     })
 }
 
-/// The rows of `key`'s occurrence. Keys order by producer and occurrence
+/// The rows of `key`'s occurrence. Keys order by family and source occurrence
 /// before generation, so they are the contiguous run of rows around `key`.
 pub(super) fn occurrence_rows<'records>(
     records: &'records super::record_map::DemandRecords,

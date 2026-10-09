@@ -23,9 +23,10 @@ pub(crate) use checkpoint_stream::{
 pub use counters::RecoveryIntegrityIngressCounters;
 pub(crate) use families::checkpoint::OwnerCheckpointProjection;
 pub(crate) use families::extent::{
-    admit_extent_chunk_projection, admit_extent_manifest_projection,
+    admit_extent_chunk_projection, admit_extent_chunk_projection_for_selected_record,
+    admit_extent_manifest_projection,
 };
-pub(crate) use families::page::admit_page_projection;
+pub(crate) use families::page::{admit_inline_record_payload, admit_page_projection};
 use families::root::{
     admit_current_root_selector, admit_previous_root_selector, admit_root_manifest,
 };

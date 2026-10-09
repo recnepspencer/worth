@@ -320,7 +320,12 @@ fn normalize_intents_for_bulk_plan(
 
     let mut raw_values = BTreeSet::new();
     for intent in intents.iter() {
-        intent.collect_raw_client_keys(&mut raw_values);
+        intent
+            .collect_raw_client_keys(
+                &mut raw_values,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .expect("explicit System key scan cannot refuse physical admission");
     }
     for raw in raw_values {
         interner.intern(&raw);

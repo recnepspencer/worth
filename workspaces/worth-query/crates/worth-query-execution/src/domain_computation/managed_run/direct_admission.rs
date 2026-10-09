@@ -1,9 +1,10 @@
+use worth_query_declaration::facade::domain_computation::WorthQueryExecutionBoundary;
 use worth_runtime_bridge::facade::{RuntimeBridge, RuntimeBridgeRelationalSource};
 
 use super::admission::{validate_direct_run_head, validate_direct_run_lower};
 use super::lower_admission::{
-    admit_managed_lower_execution_basis, WorthQueryManagedLowerAdmissionFailureKind,
-    WorthQueryManagedLowerBinding,
+    admit_atomic_lower_execution_basis, admit_managed_lower_execution_basis,
+    WorthQueryManagedLowerAdmissionFailureKind, WorthQueryManagedLowerBinding,
 };
 use super::{
     WorthQueryAdmittedDirectRun, WorthQueryManagedDirectRunAdmissionFailure,
@@ -41,6 +42,36 @@ impl WorthQueryManagedRunAdmission<'_> {
         resource_attempt: WorthQueryDirectExecutionResourceAttempt,
         request: WorthQueryManagedTruthReadRequest,
     ) -> Result<WorthQueryAdmittedDirectRun, WorthQueryManagedDirectRunAdmissionFailure> {
+        self.admit_direct_for_boundary(
+            operation,
+            resource_attempt,
+            request,
+            WorthQueryExecutionBoundary::BoundedStep,
+        )
+    }
+
+    /// Admit one synchronous Atomic run without managed step or queue authority.
+    pub fn admit_atomic_direct(
+        &self,
+        operation: &WorthQueryExecutionBoundOperationAuthority,
+        resource_attempt: WorthQueryDirectExecutionResourceAttempt,
+        request: WorthQueryManagedTruthReadRequest,
+    ) -> Result<WorthQueryAdmittedDirectRun, WorthQueryManagedDirectRunAdmissionFailure> {
+        self.admit_direct_for_boundary(
+            operation,
+            resource_attempt,
+            request,
+            WorthQueryExecutionBoundary::Atomic,
+        )
+    }
+
+    fn admit_direct_for_boundary(
+        &self,
+        operation: &WorthQueryExecutionBoundOperationAuthority,
+        resource_attempt: WorthQueryDirectExecutionResourceAttempt,
+        request: WorthQueryManagedTruthReadRequest,
+        boundary: WorthQueryExecutionBoundary,
+    ) -> Result<WorthQueryAdmittedDirectRun, WorthQueryManagedDirectRunAdmissionFailure> {
         let counters = match validate_direct_run_head(self.query, operation, &resource_attempt) {
             Ok(counters) => counters,
             Err(denial) => {
@@ -58,7 +89,11 @@ impl WorthQueryManagedRunAdmission<'_> {
                 resource_attempt,
             ));
         }
-        let lower = match admit_managed_lower_execution_basis(
+        let admit_lower = match boundary {
+            WorthQueryExecutionBoundary::Atomic => admit_atomic_lower_execution_basis,
+            WorthQueryExecutionBoundary::BoundedStep => admit_managed_lower_execution_basis,
+        };
+        let lower = match admit_lower(
             self.bridge,
             self.relational,
             WorthQueryManagedLowerBinding::new(

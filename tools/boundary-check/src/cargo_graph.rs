@@ -1,7 +1,7 @@
-use crate::config::QueryAudienceContract;
 use crate::config::SubworkspaceConfig;
+use crate::config::{QueryAudienceContract, SnapshotDependencyPackagesConfig};
 use crate::manifest_types::{CargoMetadata, CargoMetadataPackage, Road1Package, WorkspaceManifest};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -122,6 +122,84 @@ pub(crate) fn discover_road1_packages(
     Ok(packages.into_values().collect())
 }
 
+/// Extra workspace-owned rows whose exact dependency direction is governed by
+/// the committed DAG snapshot without applying Road 1 naming rules to them.
+pub(crate) fn discover_snapshot_dependency_packages(
+    root: &Path,
+    groups: &[SnapshotDependencyPackagesConfig],
+) -> Result<Vec<Road1Package>, String> {
+    let mut selected = BTreeMap::<String, Road1Package>::new();
+    for group in groups {
+        let manifest = root.join(&group.workspace_manifest);
+        let workspace_root = manifest
+            .parent()
+            .ok_or_else(|| format!("snapshot manifest has no parent: {}", manifest.display()))?;
+        let expected = group.packages.iter().cloned().collect::<BTreeSet<_>>();
+        if expected.is_empty() || expected.len() != group.packages.len() {
+            return Err(format!(
+                "snapshot package list for {} is empty or duplicated",
+                group.workspace_manifest
+            ));
+        }
+        let metadata = cargo_metadata(root, &manifest)?;
+        let mut found = BTreeSet::new();
+        for package in metadata.packages {
+            if expected.contains(&package.name) && is_workspace_package(workspace_root, &package) {
+                let name = package.name.clone();
+                let dependencies = package
+                    .dependencies
+                    .into_iter()
+                    .map(|dependency| dependency.name)
+                    .collect();
+                found.insert(name.clone());
+                if selected
+                    .insert(
+                        name.clone(),
+                        Road1Package {
+                            name: package.name,
+                            dependencies,
+                            manifest_path: package.manifest_path,
+                        },
+                    )
+                    .is_some()
+                {
+                    return Err(format!("duplicate snapshot package {name}"));
+                }
+            }
+        }
+        if let Some(name) = expected.difference(&found).next() {
+            return Err(format!(
+                "snapshot package {name} is absent from {}",
+                group.workspace_manifest
+            ));
+        }
+        validate_required_snapshot_edges(group, &selected, &found)?;
+    }
+    Ok(selected.into_values().collect())
+}
+
+fn validate_required_snapshot_edges(
+    group: &SnapshotDependencyPackagesConfig,
+    selected: &BTreeMap<String, Road1Package>,
+    found: &BTreeSet<String>,
+) -> Result<(), String> {
+    for edge in &group.required_edges {
+        let Some(source) = selected.get(&edge.source) else {
+            return Err(format!(
+                "required snapshot edge has no source {}",
+                edge.source
+            ));
+        };
+        if !found.contains(&edge.source) || !source.dependencies.contains(&edge.target) {
+            return Err(format!(
+                "required snapshot edge {} -> {} is absent from {}",
+                edge.source, edge.target, group.workspace_manifest
+            ));
+        }
+    }
+    Ok(())
+}
+
 pub(crate) fn discover_query_audience_packages(
     root: &Path,
     contract: &QueryAudienceContract,
@@ -187,4 +265,32 @@ pub(crate) fn normalize_path(path: &Path) -> String {
 
 pub(crate) fn normalize_str(path: &str) -> String {
     path.replace('\\', "/")
+}
+
+#[cfg(test)]
+mod snapshot_dependency_tests {
+    use super::*;
+    use crate::config::SnapshotDependencyEdgeConfig;
+
+    #[test]
+    fn required_store_edge_cannot_be_removed_even_with_a_new_snapshot() {
+        let group = SnapshotDependencyPackagesConfig {
+            workspace_manifest: "workspaces/worth-store/Cargo.toml".into(),
+            packages: vec!["worth-store".into()],
+            required_edges: vec![SnapshotDependencyEdgeConfig {
+                source: "worth-store".into(),
+                target: "worth-store-blob-chunks".into(),
+            }],
+        };
+        let found = BTreeSet::from(["worth-store".into()]);
+        let selected = BTreeMap::from([(
+            "worth-store".into(),
+            Road1Package {
+                name: "worth-store".into(),
+                dependencies: vec![],
+                manifest_path: "unused/Cargo.toml".into(),
+            },
+        )]);
+        assert!(validate_required_snapshot_edges(&group, &selected, &found).is_err());
+    }
 }

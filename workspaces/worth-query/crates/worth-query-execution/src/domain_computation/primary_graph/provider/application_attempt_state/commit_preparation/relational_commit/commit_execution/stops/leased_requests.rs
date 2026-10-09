@@ -66,7 +66,7 @@ pub(super) fn authority() -> &'static ExecutionAuthority {
     AUTHORITY.get_or_init(|| {
         ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
             max_workers: NonZeroUsize::MIN,
-            charged_memory_bytes: 64 * 1024 * 1024,
+            charged_memory_bytes: Some(64 * 1024 * 1024),
         })
         .expect("one authority in this probe process")
     })
@@ -128,6 +128,7 @@ pub(super) fn transaction(
                     fields: AspectFieldPatch::default(),
                 },
             ))),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
     transaction
@@ -135,7 +136,7 @@ pub(super) fn transaction(
 
 fn check_requests(request: LeaseRequest, check: impl Fn(Outcome)) {
     let lease = authority().request_lease(request).unwrap();
-    check_lease(&lease, check);
+    check_lease(&lease, |outcome, _| check(outcome));
 }
 
 fn related_index(runtime: &RelationalRuntime) -> DerivedIndexDefinition {
@@ -152,11 +153,16 @@ fn related_index(runtime: &RelationalRuntime) -> DerivedIndexDefinition {
     })
 }
 
-fn check_lease(lease: &worth_execution::ExecutionResourceLease<'_>, check: impl Fn(Outcome)) {
+fn check_lease(lease: &worth_execution::ExecutionResourceLease<'_>, check: impl Fn(Outcome, u32)) {
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(schema())
         .build();
-    let created = transaction(&runtime, "source").commit(&runtime).unwrap();
+    let created = transaction(&runtime, "source")
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
     let index = related_index(&runtime);
     let index = runtime.index_authority().build_for_commit_with_lease(
         DerivedIndexBuildRequest {
@@ -169,15 +175,16 @@ fn check_lease(lease: &worth_execution::ExecutionResourceLease<'_>, check: impl 
     assert!(index.generations.is_empty());
     let denial = index.execution_denial.expect("index preparation refused");
     let DerivedIndexExecutionDenialKind::Cause(cause) = denial.kind;
-    // Candidate maintenance currently returns maintenance denials, not this
-    // build refusal. This direct build probe stands in for bootstrap's index
-    // build door: it exercises real leased owner work and the shared cause
-    // conversion. Bootstrap has its own installation seam test; 7.6 will
-    // provide production request carriage. This is not a maintenance route.
-    check(application_outcome(super::relational_execution_stop(
-        cause,
-        denial.partition_identity,
-    )));
+    // Direct index building exercises leased owner work and the same typed
+    // cause conversion as the bootstrap index-build boundary. RequestWorkBudget
+    // creates one child lease, so the full policy lease is ancestor 1.
+    check(
+        application_outcome(super::relational_execution_stop(
+            cause,
+            denial.partition_identity,
+        )),
+        1,
+    );
 
     let before = runtime
         .observe_branch(&runtime.main_branch_identity())
@@ -194,7 +201,9 @@ fn check_lease(lease: &worth_execution::ExecutionResourceLease<'_>, check: impl 
     crate::domain_computation::primary_graph::conditional_operation::assert_preparation_retry(
         denial,
     );
-    check(outcome);
+    // Footprint admission reserves directly on this full policy lease before
+    // creating a work child: no ancestors separate it from the policy (0).
+    check(outcome, 0);
     assert_eq!(
         runtime
             .observe_branch(&runtime.main_branch_identity())
@@ -322,7 +331,12 @@ fn healthy_fixture_completes_both_leased_preparations() {
             let runtime = RelationalRuntimeApi::builder()
                 .schema_registry(schema())
                 .build();
-            let created = transaction(&runtime, "source").commit(&runtime).unwrap();
+            let created = transaction(&runtime, "source")
+                .commit(
+                    &runtime,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap();
             let index = related_index(&runtime);
             let lease = authority()
                 .request_lease(request(32 * 1024 * 1024, 1_000_000))

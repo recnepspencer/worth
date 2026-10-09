@@ -340,7 +340,10 @@ fn apply_approved_retention(
         .idempotency(&(key + 1))
         .for_workflow_operation(application, &required)
         .expect("the effect matches the approved requirement")
-        .execute_in_program(application.program_runtime())
+        .execute_in_program(
+            application.program_runtime(),
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the approved effect executes");
     assert!(matches!(
         effect,

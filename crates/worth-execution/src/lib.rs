@@ -13,9 +13,12 @@ mod report;
 
 pub use authority::{
     CancellationSource, CancellationToken, ConstructionDenial, EquivalencePredicate,
-    ExecutionAuthority, ExecutionAuthorityConfig, ExecutionLeaseStatus, ExecutionMemoryReservation,
-    ExecutionPolicyDenial, ExecutionRequest, ExecutionResourceLease, LeaseDenial, LeaseRequest,
-    MemoryLimitDenial, MemoryLimitLevel, SerialMemoryBudget, SerialRequest,
+    ExecutionAllocationDenial, ExecutionAllocationDenialKind, ExecutionAllocationPolicy,
+    ExecutionArray, ExecutionArrayBuilder, ExecutionArrayIntoIter, ExecutionAuthority,
+    ExecutionAuthorityConfig, ExecutionByteBuffer, ExecutionImmutableBytes, ExecutionLeaseStatus,
+    ExecutionMemoryReservation, ExecutionPolicyDenial, ExecutionRequest, ExecutionResourceLease,
+    LeaseDenial, LeaseRequest, MemoryLimitDenial, MemoryLimitLevel, SerialMemoryBudget,
+    SerialRequest,
 };
 pub use oracle::{compare_canonical_values, CanonicalBits};
 

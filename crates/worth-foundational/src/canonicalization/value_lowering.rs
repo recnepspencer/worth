@@ -16,9 +16,9 @@ impl CanonicalAspectValueIdentityBasis {
 pub fn prepare_aspect_value_identity_basis(
     value: &AspectValue,
 ) -> CanonicalAspectValueIdentityBasis {
-    CanonicalAspectValueIdentityBasis(crate::canonicalization::digest_slots::value_material(
-        &canonical_basis_value_for_aspect_value(value),
-    ))
+    CanonicalAspectValueIdentityBasis(
+        crate::canonicalization::digest_slots::aspect_value_material(value),
+    )
 }
 
 pub fn prepare_struct_aspect_value_identity_basis(

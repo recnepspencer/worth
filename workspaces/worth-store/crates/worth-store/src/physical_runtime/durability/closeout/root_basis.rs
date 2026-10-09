@@ -22,6 +22,29 @@ pub enum PhysicalRootNamespaceDurabilityEvidence {
         replacement: PhysicalEffectIdentity,
         namespace_synchronization: PhysicalEffectIdentity,
     },
+    RetirementCurrentRoot {
+        operation: crate::physical_runtime::PhysicalMutationIdentity,
+        source_generation: u64,
+        current_generation: u64,
+        replacement: PhysicalEffectIdentity,
+        namespace_synchronization: PhysicalEffectIdentity,
+    },
+    ManifestResidueCurrentRoot {
+        operation: crate::physical_runtime::PhysicalMutationIdentity,
+        manifest: worth_store_physical_format::PersistedRecordIdentity,
+        source_generation: u64,
+        current_generation: u64,
+        replacement: PhysicalEffectIdentity,
+        namespace_synchronization: PhysicalEffectIdentity,
+    },
+    TierEpochCurrentRoot {
+        operation: crate::physical_runtime::PhysicalMutationIdentity,
+        epoch: u64,
+        source_generation: u64,
+        current_generation: u64,
+        replacement: PhysicalEffectIdentity,
+        namespace_synchronization: PhysicalEffectIdentity,
+    },
 }
 
 impl PhysicalRecoveryRootBasis {

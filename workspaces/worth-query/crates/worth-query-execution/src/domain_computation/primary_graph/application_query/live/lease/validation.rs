@@ -52,14 +52,15 @@ pub(super) fn validate_live_resource_controls(
     controls: &WorthQueryApplicationLiveControls,
     subject: &str,
 ) -> Result<(), WorthQueryApplicationLiveOpenDenial> {
-    if controls.buffer_capacity() as u64 > live.resource_envelope().queue_depth_ceiling() {
-        return Err(open_denial(
-            WorthQueryApplicationLiveOpenDenialKind::BufferCapacityExceedsInstalled,
-            subject,
-        ));
-    }
-    let installed_work = live
-        .resource_envelope()
+    validate_live_envelope_controls(live.resource_envelope(), controls, subject)
+}
+
+fn validate_live_envelope_controls(
+    envelope: &worth_query_installation::facade::WorthQueryExecutionResourceEnvelope,
+    controls: &WorthQueryApplicationLiveControls,
+    subject: &str,
+) -> Result<(), WorthQueryApplicationLiveOpenDenial> {
+    let installed_work = envelope
         .bounded_step_contract()
         .map_err(|detail| {
             open_denial(
@@ -68,6 +69,12 @@ pub(super) fn validate_live_resource_controls(
             )
         })?
         .max_work_units_per_step();
+    if controls.buffer_capacity() as u64 > envelope.queue_depth_ceiling() {
+        return Err(open_denial(
+            WorthQueryApplicationLiveOpenDenialKind::BufferCapacityExceedsInstalled,
+            subject,
+        ));
+    }
     if controls.maximum_work_per_delivery().get() as u64 > installed_work {
         return Err(open_denial(
             WorthQueryApplicationLiveOpenDenialKind::WorkLimitExceedsInstalled,
@@ -140,3 +147,6 @@ pub(super) fn open_denial(
 ) -> WorthQueryApplicationLiveOpenDenial {
     WorthQueryApplicationLiveOpenDenial::new(kind, subject)
 }
+
+#[cfg(test)]
+mod atomic_tests;

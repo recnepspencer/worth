@@ -1,4 +1,5 @@
 use worth_proof::TransitionOutcome;
+use worth_store::physical_runtime::{ArtifactCeiling, FixedArtifact, ReadGrant, UnchargedRead};
 use worth_store::physical_runtime::{
     FilesystemAccessPosture, FilesystemMediaAdmission, PhysicalRuntimeAdmission, PhysicalStore,
     QualifiedRecoveryFilesystemMedia,
@@ -117,7 +118,13 @@ fn observed_artifact() -> worth_store::physical_runtime::ObservedRecoveryArtifac
         .admit_persisted_store()
         .unwrap();
     let mut discovery = media.bounded_discovery(1, 256).unwrap();
-    let observed = discovery.read_bootstrap_catalog(256).unwrap();
+    let observed = discovery
+        .read(
+            ArtifactCeiling::fixed(FixedArtifact::BootstrapCatalog),
+            ReadGrant::ceiling_only(),
+        )
+        .observed()
+        .unwrap();
     drop(discovery.finish());
     observed
 }

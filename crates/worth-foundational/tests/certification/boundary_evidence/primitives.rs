@@ -34,6 +34,7 @@ fn boundary_evidence_responsibility_home_is_named_in_the_facade_topology() {
             "diagnostics",
             "boundary_evidence",
             "performance",
+            "budget_limits",
             "expressions",
         ]
     );

@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_attempt::check_request_live;
 use worth_query_declaration::facade::{
     application_program::ApplicationWorkflowSpec,
     application_schema::{ApplicationOperationMarkerIdentity, ApplicationStructuredValueBinding},
@@ -183,18 +184,11 @@ where
             *maximum_transitions = transition_count;
         }
         facts.extend(observed.facts);
-        if self.facts.len().saturating_add(facts.len())
-            > self
-                .admission
-                .allowed_graph_contract()
-                .decision_fact_budget()
-        {
-            return Err(WorthQueryApplicationAttemptDenial::new(
-                WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
-                Operation::IDENTIFIER,
-            ));
-        }
-        self.facts.extend(facts);
+        check_request_live(self.admission.publication_request(), Operation::IDENTIFIER)?;
+        self.append_completed_facts(
+            facts,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )?;
         let subject = self.admission.scope_entity_id();
         let admitted = admit_workflow_transition(
             self,
@@ -215,7 +209,7 @@ where
             effects.push(effect);
             Ok::<(), WorthQueryApplicationAttemptDenial>(())
         })?;
-        let validator_work_admission = reservation.materialize(&effects)?;
+        reservation.materialize(&effects)?;
         let progress_update = if replay {
             None
         } else {
@@ -232,7 +226,6 @@ where
                 emission_retained_bytes_ceiling: 0,
                 conditional_definition: None,
             effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Platform,
-                validator_work_admission,
                 output_correspondence: Default::default(),
                 retain_output_demand_observation: false,
                 retain_client_observation: false,
@@ -275,7 +268,13 @@ where
         let mut match_found = None;
         let mut latest_occurrence = None;
         let replays = observed.replays.materialize();
+        check_request_live(
+            self.admission.publication_request(),
+            "workflow proposal replay",
+        )?;
+        let observation_request = self.admission.publication_request();
         for transition in &observed.transitions {
+            check_request_live(observation_request, "workflow proposal replay")?;
             let Some(replay) = usize::try_from(transition.settlement.occurrence())
                 .ok()
                 .and_then(|index| replays.get(index))
@@ -307,8 +306,10 @@ where
                     layout,
                     transition.entity,
                     &proposal,
+                    observation_request,
                 )
             });
+            check_request_live(observation_request, "workflow proposal replay")?;
             match proposal_facts {
                 Ok(proposal_facts) => {
                     let replace = latest_occurrence

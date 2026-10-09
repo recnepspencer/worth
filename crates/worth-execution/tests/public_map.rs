@@ -13,7 +13,7 @@ use worth_foundational::{
 fn empty_public_map_uses_no_worker_and_uninstalled_equivalence_is_denied() {
     let authority = ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
         max_workers: NonZeroUsize::new(2).unwrap(),
-        charged_memory_bytes: 32,
+        charged_memory_bytes: Some(32),
     })
     .unwrap();
     let budget = ExecutionBudget::new(NonZeroUsize::new(2).unwrap(), 32, 10);

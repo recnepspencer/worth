@@ -2,35 +2,13 @@ use std::sync::Arc;
 
 use bank_domain::model::{AccountId, InstitutionId};
 
-use worth_query_host::facade::primary_graph::WorthQueryApplicationCommitDenialKind;
-
 use super::super::super::protocol::{
     BankHttpAccountActivityItem, BankHttpAccountActivityPageOutcome, BankHttpAccountSummaryOutcome,
     BankHttpCommitDescription, BankHttpCommitDisposition, BankHttpDenialKind,
-    BankHttpMutationFailureKind, BankHttpMutationOutcome, BankHttpMutationRequest,
-    BankHttpNextAction, BankHttpPostingPurpose,
+    BankHttpMutationOutcome, BankHttpMutationRequest, BankHttpPostingPurpose,
 };
-use super::super::mutation_application::commit_denial;
 use super::fixture::application;
 use super::{bind_application, controls_json, credential_json, BankHttpServerConfiguration};
-
-#[test]
-fn an_expired_idempotency_window_never_reads_as_an_aborted_request() {
-    let (failure, denial) =
-        commit_denial(WorthQueryApplicationCommitDenialKind::IdempotencyWindowExpired);
-    assert_eq!(
-        failure,
-        BankHttpMutationFailureKind::IdempotencyWindowExpired
-    );
-    assert_eq!(
-        (denial.kind, denial.next_action),
-        (BankHttpDenialKind::Stale, BankHttpNextAction::Refresh)
-    );
-    assert_eq!(
-        serde_json::to_value(failure).unwrap(),
-        "idempotency_window_expired"
-    );
-}
 
 #[tokio::test]
 async fn malformed_json_returns_a_typed_denial() {

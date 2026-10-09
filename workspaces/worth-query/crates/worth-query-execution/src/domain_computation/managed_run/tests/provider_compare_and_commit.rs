@@ -33,7 +33,9 @@ fn exact_invariant_progression_is_consumed_by_provider_commit() {
             Err(_) => panic!("progression must bind to its exact proposed state"),
         };
 
-        let outcome = candidate.compare_and_commit();
+        let outcome = candidate.compare_and_commit(
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        );
         let WorthQueryProviderCompareAndCommitOutcome::Committed(committed) = outcome else {
             panic!("fresh invariant-approved state must commit")
         };
@@ -85,7 +87,9 @@ fn relevant_drift_stales_before_provider_commit() {
         };
         state.lock().unwrap().decision_version = Some("base-v2".to_owned());
 
-        let outcome = candidate.compare_and_commit();
+        let outcome = candidate.compare_and_commit(
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        );
         let WorthQueryProviderCompareAndCommitOutcome::Stale(stale) = outcome else {
             panic!("changed decision evidence must stale")
         };
@@ -159,7 +163,7 @@ fn execute_installed_invariant(
     inspection
         .select_installed_invariant("closed-loop")
         .unwrap()
-        .admit_state_load_plan([locator("base")])
+        .admit_state_load_plan([locator("base")], None)
         .unwrap()
         .execute()
         .unwrap()
@@ -189,7 +193,7 @@ fn committed_provider_session(
         .bind_invariant_progression(progression)
         .unwrap_or_else(|_| panic!("exact progression must bind"));
     let WorthQueryProviderCompareAndCommitOutcome::Committed(committed) =
-        candidate.compare_and_commit()
+        candidate.compare_and_commit(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
     else {
         panic!("fresh invariant-approved state must commit")
     };

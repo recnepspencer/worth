@@ -3,8 +3,8 @@
 //! The disclosure stays intact for Schedule→Execute. A paid shallow source
 //! copy moves to the registry's retained readmission owner. This child is
 //! registered only with the selected execution continuation.
-
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
@@ -32,7 +32,6 @@ where
     >(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
-
         fresh: FreshOutputDisclosure<
             FamilySourceQuery<Schema, Family>,
             FamilySourceValue<Schema, Family>,
@@ -86,19 +85,29 @@ where
                 {
                     Some(()) => {
                         let mode = slot.claim().commit_authority().clone();
-                        self.advance_validated_required_fresh_on_selected(
-                            phase,
-                            &mut successor,
-                            principal,
-                            request_scope,
-                            delivery_branch,
-                            ValidatedOutputDisclosure::Fresh(fresh),
+                        let successor_entry = std::sync::Arc::clone(&successor.installed_entry);
+                        super::super::disclosure::bind_required_successor::<Schema, Family>(
+                            fresh,
+                            slot.claim(),
                             installed,
-                            mode,
-                            shared,
-                            matched_predecessors,
+                            &successor,
                             admission,
                         )
+                        .and_then(|fresh| {
+                            self.advance_validated_required_fresh_on_selected(
+                                phase,
+                                &mut successor,
+                                principal,
+                                request_scope,
+                                delivery_branch,
+                                ValidatedOutputDisclosure::Fresh(fresh),
+                                successor_entry.as_ref(),
+                                mode,
+                                shared,
+                                matched_predecessors,
+                                admission,
+                            )
+                        })
                     }
                     None => Err(work_denial()),
                 }

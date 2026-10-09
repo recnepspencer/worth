@@ -35,6 +35,57 @@ impl CanonicalFrameReadSource {
         self
     }
 
+    pub(in crate::physical_runtime::record_serving) fn for_rebuild(mut self) -> Self {
+        self.port = std::sync::Arc::new(
+            (*self.port)
+                .clone()
+                .for_rebuild(crate::physical_runtime::record_serving::RebuildReadShape::admit()),
+        );
+        self.context = CanonicalReadContext::Scan;
+        self
+    }
+
+    pub(in crate::physical_runtime::record_serving) fn for_diagnostic_scrub(mut self) -> Self {
+        self.port = std::sync::Arc::new((*self.port).clone().for_diagnostic_scrub());
+        self.context = CanonicalReadContext::Ordinary;
+        self
+    }
+
+    pub(in crate::physical_runtime::record_serving) fn for_ordinary(mut self) -> Self {
+        self.port = std::sync::Arc::new((*self.port).clone().for_ordinary());
+        self.context = CanonicalReadContext::Ordinary;
+        self
+    }
+
+    pub(in crate::physical_runtime::record_serving) fn allocation_scope(
+        &self,
+    ) -> worth_store_buffer_pool::PhysicalOperationAllocationScope {
+        self.port.read_allocation_scope()
+    }
+
+    /// A publication candidate must be read from media after its sync. Pool
+    /// hits cannot establish which bytes the new root would expose.
+    pub(in crate::physical_runtime::record_serving) fn read_fresh_exact(
+        &self,
+        coordinate: RecordFrameCoordinate,
+    ) -> Result<
+        (
+            Box<[u8]>,
+            crate::physical_runtime::instance::PhysicalProjectionFailureCapability,
+        ),
+        crate::physical_runtime::record_serving::read_work_port::CanonicalRecordReadFailureEvidence,
+    > {
+        let identity = self
+            .port
+            .prepare(coordinate, self.range_partition(coordinate.artifact()))?;
+        let work = identity.identity();
+        identity.execute().map_err(|failure| {
+            crate::physical_runtime::record_serving::read_work_port::CanonicalRecordReadFailureEvidence::during_work(
+                failure, work,
+            )
+        })
+    }
+
     #[cfg(feature = "certification-test-authority")]
     pub(in crate::physical_runtime::record_serving::residency::frame_loading) fn prepare_prefetch(
         &self,

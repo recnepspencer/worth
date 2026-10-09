@@ -3,11 +3,9 @@
 mod commit_execution;
 mod evidence_seal;
 pub(in crate::domain_computation::primary_graph::provider) use commit_execution::ManagedUnpublishedAttempt;
-pub(in crate::domain_computation::primary_graph) use commit_execution::RetainedTouchedRecords;
 
 pub(in crate::domain_computation::primary_graph) use commit_execution::WorthQueryPrimaryGraphCommittedApplication;
 
-pub(in crate::domain_computation::primary_graph::provider) use evidence_seal::PreparedSourceFactRebase;
 pub(in crate::domain_computation::primary_graph) use evidence_seal::{
     FactlessCurrentness, OwnEffectOnReads, RebaseVerificationReason,
     WorthQueryMutationWorkCommitSeal, WorthQueryPrimaryGraphCommitEvidence,
@@ -29,6 +27,7 @@ pub(super) fn commit_owner_validated(
     execution: worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,
     prepared: WorthQueryPreparedApplicationCommit,
+    allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<
     crate::domain_computation::WorthQueryProviderTerminalDescription,
     crate::domain_computation::WorthQueryProviderSessionCommitStop,
@@ -38,6 +37,7 @@ pub(super) fn commit_owner_validated(
         provider,
         prepared,
         WorthQueryCommitProgressionMint::witness(),
+        allocation_policy,
     )?;
     let evidence = evidence_seal::seal(provider, &mut committed);
     provider.graph.with_runtime_mut_unwind_isolated(|runtime| {
@@ -62,3 +62,7 @@ pub(in crate::domain_computation::primary_graph::provider) fn publish_recovered(
         committed.publish_and_encode(provider, runtime, evidence)
     })
 }
+
+pub(in crate::domain_computation::primary_graph) use evidence_seal::{
+    PreparedRebaseDenial, PreparedSourceFactRebase,
+};

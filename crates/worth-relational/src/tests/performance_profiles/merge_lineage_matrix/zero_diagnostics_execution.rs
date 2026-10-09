@@ -15,9 +15,9 @@ pub(super) fn certify_merge_execution_zero_diagnostics_budget(suite: &'static st
                 &runtime,
                 BranchId("feature".to_string()),
             );
-            txn.push_batch(WorkerIntentBatch::new("create-feature-only").push(
-                MutationIntent::Create(CreateIntent::Entity(
-                    crate::transactions::data::EntitySpec {
+            txn.push_batch(
+                WorkerIntentBatch::new("create-feature-only").push(MutationIntent::Create(
+                    CreateIntent::Entity(crate::transactions::data::EntitySpec {
                         partition_id: PartitionId::main(),
                         kind_id: KindId(1),
                         client_key: crate::symbols::data::ClientKey::raw("feature-only"),
@@ -26,11 +26,18 @@ pub(super) fn certify_merge_execution_zero_diagnostics_budget(suite: &'static st
                             crate::tests::support::field_key("name"),
                             "feature-only",
                         ),
-                    },
+                    }),
                 )),
-            ))
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .expect("test staging stays within configured resource budgets");
-            let _feature_only = changed_entities(&txn.commit(&runtime).expect("feature create"))[0];
+            let _feature_only = changed_entities(
+                &txn.commit(
+                    &runtime,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .expect("feature create"),
+            )[0];
 
             let prepared = runtime
                 .prepare_merge_execution(MergeExecutionRequest {

@@ -130,6 +130,7 @@ impl<'lane, 'selected> PreparedStableLineageAddress<'lane, 'selected> {
         let facts: Arc<[Fact]> = Arc::from(combined.into_boxed_slice());
         let performed_origin = origin_cell(candidate);
         let recorded = RecordedOutput {
+            native_prior_checkpoint: None,
             computation_source: selected_row.computation_source,
             _retained_capacity: None,
             performed_origin: Some(performed_origin),

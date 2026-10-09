@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use worth_query_declaration::facade::domain_computation::WorthQueryExecutionBoundary;
 use worth_query_installation::facade::WorthQueryExecutionResourceEnvelope;
 use worth_runtime_bridge::facade::{
     BridgeAsyncRequestTruthViewBasis, BridgeBoundExecutionBasis, BridgeManagedExecutionIntent,
@@ -60,6 +61,45 @@ pub(in crate::domain_computation) fn admit_managed_lower_execution_basis(
     binding: WorthQueryManagedLowerBinding<'_>,
     request: WorthQueryManagedTruthReadRequest,
 ) -> Result<WorthQueryManagedLowerExecutionBasis, WorthQueryManagedLowerAdmissionFailure> {
+    admit_lower_execution_basis(
+        bridge,
+        relational,
+        binding,
+        request,
+        WorthQueryExecutionBoundary::BoundedStep,
+    )
+}
+
+pub(in crate::domain_computation) fn admit_atomic_lower_execution_basis(
+    bridge: &RuntimeBridge,
+    relational: &RuntimeBridgeRelationalSource,
+    binding: WorthQueryManagedLowerBinding<'_>,
+    request: WorthQueryManagedTruthReadRequest,
+) -> Result<WorthQueryManagedLowerExecutionBasis, WorthQueryManagedLowerAdmissionFailure> {
+    admit_lower_execution_basis(
+        bridge,
+        relational,
+        binding,
+        request,
+        WorthQueryExecutionBoundary::Atomic,
+    )
+}
+
+fn admit_lower_execution_basis(
+    bridge: &RuntimeBridge,
+    relational: &RuntimeBridgeRelationalSource,
+    binding: WorthQueryManagedLowerBinding<'_>,
+    request: WorthQueryManagedTruthReadRequest,
+    boundary: WorthQueryExecutionBoundary,
+) -> Result<WorthQueryManagedLowerExecutionBasis, WorthQueryManagedLowerAdmissionFailure> {
+    if binding.resource_envelope.boundary() != boundary {
+        return Err(WorthQueryManagedLowerAdmissionFailure {
+            kind: WorthQueryManagedLowerAdmissionFailureKind::InstalledStepContract,
+            detail: Arc::from(
+                "installed execution boundary differs from the selected lower admission",
+            ),
+        });
+    }
     let expected_source = relational.authoritative_source_profile();
     if bridge.authoritative_source_profile() != Some(&expected_source) {
         return Err(WorthQueryManagedLowerAdmissionFailure {
@@ -102,21 +142,24 @@ pub(in crate::domain_computation) fn admit_managed_lower_execution_basis(
             kind: WorthQueryManagedLowerAdmissionFailureKind::BridgePlanning,
             detail: Arc::from(format!("{failure:?}")),
         })?;
-    let bridge_step = lower_installed_step_contract(binding.resource_envelope)?;
-    let bridge_basis = bridge
-        .admit_managed_execution_basis(
-            BridgeManagedExecutionIntent::new(
-                binding.operation_identity,
-                binding.resource_attempt_identity,
-            ),
-            bridge_step,
-            BridgeAsyncRequestTruthViewBasis::branch_head(branch, snapshot),
-            planned,
-        )
-        .map_err(|denial| WorthQueryManagedLowerAdmissionFailure {
-            kind: WorthQueryManagedLowerAdmissionFailureKind::BridgeExecutionBasis,
-            detail: Arc::from(denial.detail()),
-        })?;
+    let intent = BridgeManagedExecutionIntent::new(
+        binding.operation_identity,
+        binding.resource_attempt_identity,
+    );
+    let truth_basis = BridgeAsyncRequestTruthViewBasis::branch_head(branch, snapshot);
+    let bridge_basis = match boundary {
+        WorthQueryExecutionBoundary::Atomic => {
+            bridge.admit_atomic_execution_basis(intent, truth_basis, planned)
+        }
+        WorthQueryExecutionBoundary::BoundedStep => {
+            let bridge_step = lower_installed_step_contract(binding.resource_envelope)?;
+            bridge.admit_managed_execution_basis(intent, bridge_step, truth_basis, planned)
+        }
+    }
+    .map_err(|denial| WorthQueryManagedLowerAdmissionFailure {
+        kind: WorthQueryManagedLowerAdmissionFailureKind::BridgeExecutionBasis,
+        detail: Arc::from(denial.detail()),
+    })?;
     Ok(WorthQueryManagedLowerExecutionBasis {
         bridge: bridge_basis,
         relational: relational_basis,
@@ -179,3 +222,6 @@ fn lower_installed_step_contract(
         detail: Arc::from(detail),
     })
 }
+
+#[cfg(test)]
+mod atomic_tests;

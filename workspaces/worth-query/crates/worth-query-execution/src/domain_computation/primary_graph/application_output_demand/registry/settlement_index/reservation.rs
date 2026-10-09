@@ -10,6 +10,41 @@ struct AdmittedGrowth {
     required: usize,
 }
 
+/// Borrowed, charged forecast only. Reclamation can change both tree roots;
+/// the eventual insertion must perform its own search and admission.
+pub(super) fn quote(
+    state: &mut DemandRegistryState,
+    identity: &RecordedSettlementIdentity,
+    admission: &mut InvalidationEditAdmission,
+) -> Result<usize, WorthQueryOutputDemandDenial> {
+    state.drain_cancelled_settlement_vacancies(admission)?;
+    let sources = &state.settlement_keys.sources;
+    admission
+        .charge_ordered_operations(
+            1,
+            tree_lookup_work::<SemanticSource>(sources.len()).ok_or_else(work_denial)?,
+        )
+        .map_err(|_| work_denial())?;
+    let (addresses, new_source) = if let Some(source) = sources.get(identity.source()) {
+        admission
+            .charge_ordered_operations(
+                1,
+                tree_lookup_work::<Address>(source.len()).ok_or_else(work_denial)?,
+            )
+            .map_err(|_| work_denial())?;
+        if source.contains_key(&identity.address()) {
+            return Err(WorthQueryOutputDemandDenial::new(
+                Kind::SchedulingDeferred,
+                "another attempt owns the exact settlement address",
+            ));
+        }
+        (source.len(), false)
+    } else {
+        (0, true)
+    };
+    retained_growth(sources.len(), addresses, new_source)
+}
+
 pub(super) fn reserve(
     state: &mut DemandRegistryState,
     identity: &Arc<RecordedSettlementIdentity>,
@@ -96,26 +131,7 @@ fn admit_growth(
     budget: usize,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<AdmittedGrowth, WorthQueryOutputDemandDenial> {
-    let old_outer = tree_retained_bytes::<SemanticSource, SourcePostings>(source_count)
-        .ok_or_else(capacity_denial)?;
-    let new_outer = tree_retained_bytes::<SemanticSource, SourcePostings>(
-        source_count
-            .checked_add(usize::from(new_source))
-            .ok_or_else(capacity_denial)?,
-    )
-    .ok_or_else(capacity_denial)?;
-    let old_inner =
-        tree_retained_bytes::<Address, Posting>(address_count).ok_or_else(capacity_denial)?;
-    let new_inner = tree_retained_bytes::<Address, Posting>(
-        address_count.checked_add(1).ok_or_else(capacity_denial)?,
-    )
-    .ok_or_else(capacity_denial)?;
-    let retained = new_outer
-        .checked_sub(old_outer)
-        .and_then(|bytes| bytes.checked_add(new_inner.checked_sub(old_inner)?))
-        .and_then(|bytes| bytes.checked_add(posting_cell_bytes()))
-        .and_then(|bytes| bytes.checked_add(size_of::<PendingVacancyCleanup>()))
-        .ok_or_else(capacity_denial)?;
+    let retained = retained_growth(source_count, address_count, new_source)?;
     let required = reserved.checked_add(retained).ok_or_else(capacity_denial)?;
     if required
         .checked_add(shared_custody)
@@ -150,6 +166,33 @@ fn admit_growth(
     Ok(AdmittedGrowth { retained, required })
 }
 
+fn retained_growth(
+    source_count: usize,
+    address_count: usize,
+    new_source: bool,
+) -> Result<usize, WorthQueryOutputDemandDenial> {
+    let old_outer = tree_retained_bytes::<SemanticSource, SourcePostings>(source_count)
+        .ok_or_else(capacity_denial)?;
+    let new_outer = tree_retained_bytes::<SemanticSource, SourcePostings>(
+        source_count
+            .checked_add(usize::from(new_source))
+            .ok_or_else(capacity_denial)?,
+    )
+    .ok_or_else(capacity_denial)?;
+    let old_inner =
+        tree_retained_bytes::<Address, Posting>(address_count).ok_or_else(capacity_denial)?;
+    let new_inner = tree_retained_bytes::<Address, Posting>(
+        address_count.checked_add(1).ok_or_else(capacity_denial)?,
+    )
+    .ok_or_else(capacity_denial)?;
+    new_outer
+        .checked_sub(old_outer)
+        .and_then(|bytes| bytes.checked_add(new_inner.checked_sub(old_inner)?))
+        .and_then(|bytes| bytes.checked_add(posting_cell_bytes()))
+        .and_then(|bytes| bytes.checked_add(size_of::<PendingVacancyCleanup>()))
+        .ok_or_else(capacity_denial)
+}
+
 fn new_vacancy(
     identity: &Arc<RecordedSettlementIdentity>,
 ) -> (Posting, Box<PendingVacancyCleanup>) {
@@ -179,6 +222,37 @@ mod tests {
             .reserve_settlement_vacancy(identity, &mut admission(1_000_000, 8 * 1024 * 1024))
             .expect("the first actual lineage address is admitted");
         state
+    }
+
+    #[test]
+    fn quote_rechecks_a_retired_source_root_before_reserving_its_successor() {
+        let (_lineage, [first, second]) = crate::domain_computation::primary_graph::output_lineage::registry_fixture::recorded_settlement_pair();
+        let mut state = DemandRegistryState::default();
+        let mut work = admission(1_000_000, 8 * 1024 * 1024);
+        let (posting, cleanup) = state.reserve_settlement_vacancy(&first, &mut work).unwrap();
+        let prior = state.required_reserved_bytes;
+        let existing = quote(&mut state, &second, &mut work).unwrap();
+        assert_eq!(
+            state.required_reserved_bytes, prior,
+            "a quote reserves nothing"
+        );
+        assert_eq!(state.settlement_keys.sources[first.source()].len(), 1);
+        state.defer_cancelled_settlement_vacancy(cleanup);
+        drop(posting);
+        state
+            .drain_cancelled_settlement_vacancies(&mut work)
+            .unwrap();
+        assert_eq!(state.required_reserved_bytes, 0);
+        let absent = quote(&mut state, &second, &mut work).unwrap();
+        assert!(
+            absent > existing,
+            "retirement removed independently rooted trees"
+        );
+        let (_posting, _cleanup) = state
+            .reserve_settlement_vacancy(&second, &mut work)
+            .unwrap();
+        assert_eq!(state.required_reserved_bytes, absent);
+        assert_eq!(state.settlement_keys.sources[second.source()].len(), 1);
     }
 
     #[test]

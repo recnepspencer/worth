@@ -10,7 +10,7 @@ use capability::{application_capability, authorization_path};
 use operation::{aftermath_contract, external_effect, inverse_aftermath_contract};
 use query::application_query;
 
-pub(super) const EXPECTED_MEMBER_COUNT: usize = 25;
+pub(super) const EXPECTED_MEMBER_COUNT: usize = 24;
 
 pub(super) fn complete_untrusted_schema_record() -> WorthQueryPortableApplicationSchemaRecord {
     WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(
@@ -118,10 +118,6 @@ fn members() -> Vec<ApplicationSchemaMember> {
                 text("Aspect"),
                 text("field"),
             ),
-        },
-        ApplicationSchemaMember::OperationDecisionFactBudget {
-            operation: text("Apply"),
-            maximum_fact_count: 9,
         },
         ApplicationSchemaMember::OperationProjectionWorkBudget {
             operation: text("Apply"),

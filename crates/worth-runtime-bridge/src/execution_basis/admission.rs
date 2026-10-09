@@ -7,7 +7,8 @@ use crate::source::{
 };
 
 use super::authority::BridgeBoundExecutionBasisParts;
-use super::managed_declaration::managed_execution_declaration;
+use super::managed_declaration::{atomic_execution_declaration, managed_execution_declaration};
+use super::posture::{BridgeExecutionBasisPosture, BridgeManagedExecutionBasis};
 use super::reservation::BridgeExecutionBasisReservationKey;
 use super::{
     BridgeBoundExecutionBasis, BridgeExecutionBasisCounters, BridgeExecutionBasisDenial,
@@ -20,6 +21,25 @@ pub(crate) fn admit_managed_execution_basis(
     runtime: &RuntimeBridge,
     intent: BridgeManagedExecutionIntent,
     step_contract: BridgeManagedExecutionStepContract,
+    truth_basis: BridgeAsyncRequestTruthViewBasis,
+    planned: PlannedTruthViewPacket,
+) -> Result<BridgeBoundExecutionBasis, BridgeExecutionBasisDenial> {
+    admit_execution_basis(runtime, intent, Some(step_contract), truth_basis, planned)
+}
+
+pub(crate) fn admit_atomic_execution_basis(
+    runtime: &RuntimeBridge,
+    intent: BridgeManagedExecutionIntent,
+    truth_basis: BridgeAsyncRequestTruthViewBasis,
+    planned: PlannedTruthViewPacket,
+) -> Result<BridgeBoundExecutionBasis, BridgeExecutionBasisDenial> {
+    admit_execution_basis(runtime, intent, None, truth_basis, planned)
+}
+
+fn admit_execution_basis(
+    runtime: &RuntimeBridge,
+    intent: BridgeManagedExecutionIntent,
+    step_contract: Option<BridgeManagedExecutionStepContract>,
     truth_basis: BridgeAsyncRequestTruthViewBasis,
     planned: PlannedTruthViewPacket,
 ) -> Result<BridgeBoundExecutionBasis, BridgeExecutionBasisDenial> {
@@ -42,15 +62,19 @@ pub(crate) fn admit_managed_execution_basis(
             )
         })?;
 
-    let lowered =
-        managed_execution_declaration(intent.identity().as_str(), step_contract.deadline_nanos())
-            .map_err(|error| {
-            denial(
-                BridgeExecutionBasisDenialKind::SignalDeclarationUnavailable,
-                error.detail().to_owned(),
-                &counters,
-            )
-        })?;
+    let lowered = match &step_contract {
+        Some(contract) => {
+            managed_execution_declaration(intent.identity().as_str(), contract.deadline_nanos())
+        }
+        None => atomic_execution_declaration(intent.identity().as_str()),
+    }
+    .map_err(|error| {
+        denial(
+            BridgeExecutionBasisDenialKind::SignalDeclarationUnavailable,
+            error.detail().to_owned(),
+            &counters,
+        )
+    })?;
     let basis_binding = ValidatedBridgeAsyncRequestBasisBinding::bind(&lowered, truth_basis);
     let request = BridgeAsyncRequestAdmissionRequest::request_response(&lowered, &basis_binding)
         .map_err(|error| {
@@ -75,21 +99,30 @@ pub(crate) fn admit_managed_execution_basis(
         cancel_failed_signal_admission(runtime, &request);
         return Err(denial);
     }
-    let managed_queue = bind_signal_managed_queue(
-        runtime,
-        &request,
-        step_contract.queue_depth_ceiling(),
-        &counters,
-    )?;
-    counters.bound_signal_queue();
+    let posture = match step_contract {
+        Some(step_contract) => {
+            let queue = bind_signal_managed_queue(
+                runtime,
+                &request,
+                step_contract.queue_depth_ceiling(),
+                &counters,
+            )?;
+            counters.bound_signal_queue();
+            BridgeExecutionBasisPosture::Managed(BridgeManagedExecutionBasis {
+                step_contract,
+                queue,
+                occupancy_width: 0,
+            })
+        }
+        None => BridgeExecutionBasisPosture::Atomic,
+    };
 
     Ok(BridgeBoundExecutionBasis::new(
         BridgeBoundExecutionBasisParts {
             bridge_runtime_key: runtime.signal_runtime_key,
             managed_intent: intent,
-            step_contract,
+            posture,
             request,
-            managed_queue,
             observation,
             authoritative_source_profile: runtime.authoritative_source_profile.clone(),
             reservation,

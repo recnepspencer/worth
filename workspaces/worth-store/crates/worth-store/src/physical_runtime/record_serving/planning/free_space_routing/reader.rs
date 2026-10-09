@@ -1,4 +1,3 @@
-#[cfg(feature = "certification-test-authority")]
 use worth_store_physical_backend::QualifiedFilesystemMedia;
 use worth_store_physical_format::{
     DurableFreeSpaceManifestHeader, FreeSpaceBlockReference, FreeSpaceKey,
@@ -28,7 +27,79 @@ pub(in crate::physical_runtime::record_serving) struct FreeSpaceReader<'media> {
 }
 
 impl<'media> FreeSpaceReader<'media> {
-    #[cfg(feature = "certification-test-authority")]
+    /// Bootstrap-only walk. Steady-state allocation consults the resident index.
+    pub(in crate::physical_runtime::record_serving) fn visit_arena_ranges(
+        &self,
+        allocation: &worth_store_buffer_pool::OperationAllocationGrant,
+        counters: &mut ManifestDiscoveryCounterSnapshot,
+        mut visit: impl FnMut(RecordFreeSpaceManifestEntry) -> Result<(), ()>,
+    ) -> Result<(), ManifestLookupFailure> {
+        let minimum = FreeSpaceKey::arena(
+            worth_store_physical_format::ExtentArenaId::new(1).expect("nonzero"),
+            0,
+        );
+        let stack_limit = usize::try_from(
+            allocation.bytes() / 2 / std::mem::size_of::<FreeSpaceBlockReference>() as u64,
+        )
+        .unwrap_or(usize::MAX);
+        if stack_limit == 0 {
+            return Err(traversal_pressure());
+        }
+        let mut pending = self
+            .header
+            .root()
+            .into_iter()
+            .filter(|root| root.last() >= minimum)
+            .collect::<Vec<_>>();
+        let mut observed = 0_u64;
+        let mut visited_blocks = 0_u64;
+        let block_limit = self
+            .header
+            .entry_count()
+            .saturating_mul(64)
+            .saturating_add(1);
+        while let Some(reference) = pending.pop() {
+            visited_blocks = visited_blocks
+                .checked_add(1)
+                .ok_or(ManifestLookupFailure::Damaged)?;
+            if visited_blocks > block_limit {
+                return Err(ManifestLookupFailure::Damaged);
+            }
+            match self.read_block(allocation, reference, counters)? {
+                PhysicalFreeSpaceMembershipBlock::Leaf { entries, .. } => {
+                    for entry in entries {
+                        if entry.arena_free_range().is_none() {
+                            continue;
+                        }
+                        observed = observed
+                            .checked_add(1)
+                            .ok_or(ManifestLookupFailure::Damaged)?;
+                        if observed > self.header.entry_count() {
+                            return Err(ManifestLookupFailure::Damaged);
+                        }
+                        visit(entry).map_err(|_| ManifestLookupFailure::Damaged)?;
+                    }
+                }
+                PhysicalFreeSpaceMembershipBlock::Branch { children, .. } => {
+                    let children = children
+                        .into_iter()
+                        .rev()
+                        .filter(|child| child.last() >= minimum);
+                    for child in children {
+                        if pending.len() == stack_limit {
+                            return Err(traversal_pressure());
+                        }
+                        pending
+                            .try_reserve_exact(1)
+                            .map_err(|_| traversal_pressure())?;
+                        pending.push(child);
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
     pub(in crate::physical_runtime::record_serving) fn with_loader(
         media: &'media QualifiedFilesystemMedia,
         loader: &'media (dyn super::super::super::residency::frame_ports::FrameLoadPort
@@ -111,12 +182,60 @@ impl<'media> FreeSpaceReader<'media> {
         }
     }
 
+    pub(in crate::physical_runtime::record_serving) fn floor(
+        &self,
+        allocation: &worth_store_buffer_pool::OperationAllocationGrant,
+        key: FreeSpaceKey,
+        counters: &mut ManifestDiscoveryCounterSnapshot,
+    ) -> Result<Option<RecordFreeSpaceManifestEntry>, ManifestLookupFailure> {
+        let Some(mut reference) = self.header.root() else {
+            return Ok(None);
+        };
+        if reference.first() > key {
+            return Ok(None);
+        }
+        loop {
+            match self.read_block(allocation, reference, counters)? {
+                PhysicalFreeSpaceMembershipBlock::Leaf { entries, .. } => {
+                    let (index, comparisons) =
+                        super::super::super::access::counted_search::partition_point(
+                            &entries,
+                            |entry| FreeSpaceKey::from(*entry) <= key,
+                        );
+                    counters.observe_comparisons(comparisons);
+                    return Ok(index.checked_sub(1).map(|index| entries[index]));
+                }
+                PhysicalFreeSpaceMembershipBlock::Branch { children, .. } => {
+                    let (index, comparisons) =
+                        super::super::super::access::counted_search::partition_point(
+                            &children,
+                            |child| child.first() <= key,
+                        );
+                    counters.observe_comparisons(comparisons);
+                    reference = *children
+                        .get(index.checked_sub(1).ok_or(ManifestLookupFailure::Damaged)?)
+                        .ok_or(ManifestLookupFailure::Damaged)?;
+                }
+            }
+        }
+    }
+
     pub(in crate::physical_runtime::record_serving) fn read_block(
         &self,
         allocation: &worth_store_buffer_pool::OperationAllocationGrant,
         reference: FreeSpaceBlockReference,
         counters: &mut ManifestDiscoveryCounterSnapshot,
     ) -> Result<PhysicalFreeSpaceMembershipBlock, ManifestLookupFailure> {
+        self.read_block_with_len(allocation, reference, counters)
+            .map(|(block, _)| block)
+    }
+
+    pub(in crate::physical_runtime::record_serving) fn read_block_with_len(
+        &self,
+        allocation: &worth_store_buffer_pool::OperationAllocationGrant,
+        reference: FreeSpaceBlockReference,
+        counters: &mut ManifestDiscoveryCounterSnapshot,
+    ) -> Result<(PhysicalFreeSpaceMembershipBlock, u64), ManifestLookupFailure> {
         let bytes = self
             .artifacts
             .load_bounded(
@@ -160,7 +279,7 @@ impl<'media> FreeSpaceReader<'media> {
             })
         });
         match decoded {
-            Ok(Ok(block)) => Ok(block),
+            Ok(Ok(block)) => Ok((block, bytes.len() as u64)),
             Ok(Err(_)) => {
                 bytes.reject_projection_failure();
                 Err(ManifestLookupFailure::Damaged)
@@ -173,6 +292,12 @@ impl<'media> FreeSpaceReader<'media> {
             }
         }
     }
+}
+
+fn traversal_pressure() -> ManifestLookupFailure {
+    ManifestLookupFailure::Residency(
+        worth_store_buffer_pool::PhysicalResidencyDenial::MetadataBudgetExceeded,
+    )
 }
 
 fn frame_load_failure(

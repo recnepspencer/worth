@@ -73,6 +73,6 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationIntent<Schema> for PriorC
 pub(super) const fn requirements(writes: usize) -> ApplicationCandidateRequirements {
     ApplicationCandidateRequirements::fixed_shape(
         ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, writes, 0),
-        ApplicationCandidateResourceCeiling::bounded(4096, 4096),
+        ApplicationCandidateResourceCeiling::representation_bytes(4096),
     )
 }

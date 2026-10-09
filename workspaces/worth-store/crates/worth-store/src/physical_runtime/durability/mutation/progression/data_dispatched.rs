@@ -9,6 +9,32 @@ pub struct DataDispatchedPhysicalMutation {
 }
 
 impl DataDispatchedPhysicalMutation {
+    pub(in crate::physical_runtime) fn from_source_copy(
+        durable: WalDurablePhysicalMutation,
+    ) -> Self {
+        assert!(
+            durable.source_copy().is_some(),
+            "copy dispatch requires the sealed copy capability"
+        );
+        Self {
+            durable,
+            effects: Vec::new(),
+        }
+    }
+    /// A terminal head retired member writes no data frame: its root
+    /// publication is the whole effect.
+    pub(in crate::physical_runtime) fn from_terminal_head_retirement(
+        durable: WalDurablePhysicalMutation,
+    ) -> Self {
+        assert!(
+            durable.terminal_head_retirement().is_some(),
+            "record-less dispatch requires the typed terminal head retired lane"
+        );
+        Self {
+            durable,
+            effects: Vec::new(),
+        }
+    }
     pub(in crate::physical_runtime) fn new(
         durable: WalDurablePhysicalMutation,
         effects: Vec<PhysicalDataEffectSettlement>,
@@ -24,8 +50,20 @@ impl DataDispatchedPhysicalMutation {
         &self.durable
     }
 
+    /// Individual WAL-publication frame writes. A source-copy adoption retains
+    /// its separate, bounded copy evidence in the typed data plan instead.
     pub fn effects(&self) -> &[PhysicalDataEffectSettlement] {
         &self.effects
+    }
+
+    pub fn source_copy_evidence(
+        &self,
+    ) -> Option<crate::physical_runtime::PhysicalExtentCopySettlementObservation> {
+        self.durable.source_copy().map(|(copy, range)| {
+            crate::physical_runtime::PhysicalExtentCopySettlementObservation::from_capability(
+                copy, range,
+            )
+        })
     }
 
     pub fn settle_exact_effects(self) -> PhysicalDataSettlementOutcome {

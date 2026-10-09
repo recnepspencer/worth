@@ -1,7 +1,7 @@
 use super::{AdmittedLayoutStrategy, LayoutStrategyFamily, StrategyCounterProfile};
 use crate::access::budget::PlannedCounterEnvelope;
 use crate::access::execution::AccessPathCounterSnapshot;
-use crate::access::shape::{AccessShapeDetail, PrefixBasis, RangeBasis};
+use crate::access::shape::AccessShapeDetail;
 
 impl AdmittedLayoutStrategy {
     pub const fn declared_counter_profile(&self) -> StrategyCounterProfile {
@@ -36,17 +36,7 @@ pub(crate) const fn planned_counter_envelope_for(
     detail: AccessShapeDetail,
 ) -> Option<PlannedCounterEnvelope> {
     match family {
-        LayoutStrategyFamily::BaselineBTreeRange => match detail {
-            AccessShapeDetail::PointLookup => Some(baseline_btree_point_counter_envelope()),
-            AccessShapeDetail::RangeLookup(RangeBasis::CanonicalRangeBounds) => {
-                Some(baseline_btree_range_counter_envelope())
-            }
-            AccessShapeDetail::PrefixLookup(PrefixBasis::CanonicalPrefixBounds) => {
-                Some(baseline_btree_prefix_counter_envelope())
-            }
-            AccessShapeDetail::RebuildRead(_) => Some(baseline_btree_replay_counter_envelope()),
-            _ => None,
-        },
+        LayoutStrategyFamily::BTreeRange => None,
         LayoutStrategyFamily::BaselineLsmWriteOptimized => match detail {
             AccessShapeDetail::PointLookup
             | AccessShapeDetail::Append(_)
@@ -62,7 +52,7 @@ pub(super) const fn declared_strategy_counter_envelope(
     family: LayoutStrategyFamily,
 ) -> Option<PlannedCounterEnvelope> {
     match family {
-        LayoutStrategyFamily::BaselineBTreeRange => None,
+        LayoutStrategyFamily::BTreeRange => None,
         LayoutStrategyFamily::BaselineLsmWriteOptimized => Some(PlannedCounterEnvelope::new(
             AccessPathCounterSnapshot::exact(1, 0, 0, 0, 0, 0, 3, 3, 0, 0, 0, 0, 0, 0, 0, 3, 0)
                 .with_selected_plan_authority_allocation(),
@@ -79,7 +69,7 @@ pub(super) const fn planned_publication_counter_snapshot_for(
     family: LayoutStrategyFamily,
 ) -> AccessPathCounterSnapshot {
     match family {
-        LayoutStrategyFamily::BaselineBTreeRange => baseline_btree_publication_snapshot(),
+        LayoutStrategyFamily::BTreeRange => zero_counter_snapshot(),
         LayoutStrategyFamily::BaselineLsmWriteOptimized => {
             declared_strategy_counter_envelope(family)
                 .expect("LSM strategy declares planned counter envelope")
@@ -93,7 +83,7 @@ pub(super) const fn planned_recovery_counter_snapshot_for(
     family: LayoutStrategyFamily,
 ) -> AccessPathCounterSnapshot {
     match family {
-        LayoutStrategyFamily::BaselineBTreeRange => baseline_btree_recovery_snapshot(),
+        LayoutStrategyFamily::BTreeRange => zero_counter_snapshot(),
         LayoutStrategyFamily::BaselineLsmWriteOptimized => {
             declared_strategy_counter_envelope(family)
                 .expect("LSM strategy declares planned counter envelope")
@@ -106,53 +96,7 @@ pub(super) const fn planned_recovery_counter_snapshot_for(
 pub(super) const fn family_requires_shape_specific_lookup_envelope(
     family: LayoutStrategyFamily,
 ) -> bool {
-    matches!(family, LayoutStrategyFamily::BaselineBTreeRange)
-}
-
-const fn baseline_btree_point_counter_envelope() -> PlannedCounterEnvelope {
-    PlannedCounterEnvelope::new(
-        AccessPathCounterSnapshot::exact(1, 0, 0, 0, 0, 2, 2, 2, 0, 0, 0, 0, 8_192, 0, 0, 2, 0)
-            .with_allocation_events(3)
-            .with_selected_plan_authority_allocation(),
-        baseline_btree_publication_snapshot(),
-        baseline_btree_recovery_snapshot(),
-    )
-}
-
-const fn baseline_btree_replay_counter_envelope() -> PlannedCounterEnvelope {
-    PlannedCounterEnvelope::new(
-        zero_counter_snapshot(),
-        zero_counter_snapshot(),
-        baseline_btree_recovery_snapshot(),
-    )
-}
-
-const fn baseline_btree_range_counter_envelope() -> PlannedCounterEnvelope {
-    PlannedCounterEnvelope::new(
-        AccessPathCounterSnapshot::exact(0, 1, 0, 0, 0, 2, 2, 2, 1, 0, 0, 0, 8_192, 0, 0, 2, 0)
-            .with_allocation_events(3)
-            .with_selected_plan_authority_allocation(),
-        baseline_btree_publication_snapshot(),
-        baseline_btree_recovery_snapshot(),
-    )
-}
-
-const fn baseline_btree_prefix_counter_envelope() -> PlannedCounterEnvelope {
-    PlannedCounterEnvelope::new(
-        AccessPathCounterSnapshot::exact(0, 1, 0, 0, 0, 2, 2, 2, 0, 1, 0, 0, 8_192, 0, 0, 2, 0)
-            .with_allocation_events(3)
-            .with_selected_plan_authority_allocation(),
-        baseline_btree_publication_snapshot(),
-        baseline_btree_recovery_snapshot(),
-    )
-}
-
-pub(super) const fn baseline_btree_publication_snapshot() -> AccessPathCounterSnapshot {
-    AccessPathCounterSnapshot::exact(0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 4_096, 4_096, 1, 1, 1)
-}
-
-pub(super) const fn baseline_btree_recovery_snapshot() -> AccessPathCounterSnapshot {
-    AccessPathCounterSnapshot::exact(0, 0, 1, 0, 3, 3, 6, 6, 0, 0, 0, 1, 12_288, 0, 0, 3, 0)
+    matches!(family, LayoutStrategyFamily::BTreeRange)
 }
 
 const fn zero_counter_snapshot() -> AccessPathCounterSnapshot {

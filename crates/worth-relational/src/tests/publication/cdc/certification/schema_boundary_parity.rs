@@ -39,9 +39,16 @@ fn cdc_certification_schema_boundary_continuation_is_explained_and_counted() {
             )
             .expect("owner-admitted transaction context")
     };
-    txn.push_batch(batch_create("after-boundary"))
-        .expect("test staging stays within configured resource budgets");
-    txn.commit(&runtime).unwrap();
+    txn.push_batch(
+        batch_create("after-boundary"),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .expect("test staging stays within configured resource budgets");
+    txn.commit(
+        &runtime,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .unwrap();
 
     runtime.performance_access().reset_counters();
     let batch = runtime
@@ -103,9 +110,17 @@ fn diff_cdc_truth_parity_test() {
             .expect("owner-admitted transaction context")
     };
     txn_v2
-        .push_batch(batch_create("after-v2"))
+        .push_batch(
+            batch_create("after-v2"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
-    txn_v2.commit(&runtime).unwrap();
+    txn_v2
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
 
     runtime.set_schema_registry_for_test(
         AspectSchemaFixture {
@@ -134,9 +149,17 @@ fn diff_cdc_truth_parity_test() {
             .expect("owner-admitted transaction context")
     };
     txn_v3
-        .push_batch(batch_create("after-v3"))
+        .push_batch(
+            batch_create("after-v3"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
-    txn_v3.commit(&runtime).unwrap();
+    txn_v3
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
 
     runtime.performance_access().reset_counters();
     let live_batch = runtime

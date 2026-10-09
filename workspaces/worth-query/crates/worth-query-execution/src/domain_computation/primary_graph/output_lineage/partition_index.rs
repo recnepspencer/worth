@@ -5,6 +5,7 @@ use std::sync::{Arc, OnceLock};
 
 mod admitted_lookup;
 mod family_heads;
+pub(super) use family_heads::FamilyPublicationHead;
 mod history_retirement;
 mod newest;
 mod preparation;

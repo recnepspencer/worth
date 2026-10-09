@@ -1,4 +1,5 @@
 use super::*;
+use crate::domain_computation::primary_graph::application_attempt::check_request_live;
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryCompleteApplicationReadSet<
@@ -27,18 +28,14 @@ where
         PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
         WorthQueryApplicationAttemptDenial,
     > {
-        if self.facts.len().saturating_add(facts.len())
-            > self
-                .admission
-                .allowed_graph_contract()
-                .decision_fact_budget()
-        {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
-                self.admission.operation(),
-            ));
-        }
-        self.facts.extend(facts);
+        check_request_live(
+            self.admission.publication_request(),
+            self.admission.operation(),
+        )?;
+        self.append_completed_facts(
+            facts,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )?;
         let subject = self.admission.scope_entity_id();
         let admitted = admit_workflow_transition(
             self,
@@ -73,7 +70,7 @@ where
                 Ok::<(), WorthQueryApplicationAttemptDenial>(())
             },
         )?;
-        let validator_work_admission = reservation.materialize(&effects)?;
+        reservation.materialize(&effects)?;
         let progress_update = admitted.prepare_progress_update(
             worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome::Completed,
             None,
@@ -85,7 +82,6 @@ where
             emission_retained_bytes_ceiling: 0,
             conditional_definition: None,
             effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Platform,
-            validator_work_admission,
             output_correspondence: Default::default(),
             retain_output_demand_observation: false,
             retain_client_observation: false,

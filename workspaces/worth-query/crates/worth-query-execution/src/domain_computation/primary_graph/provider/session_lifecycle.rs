@@ -57,12 +57,13 @@ impl WorthQueryProviderSessionLifecycle for Arc<WorthQueryPrimaryGraphProvider> 
     fn commit_prepared_session(
         &self,
         session: &WorthQueryProviderSessionView<'_>,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         crate::domain_computation::WorthQueryProviderTerminalDescription,
         crate::domain_computation::WorthQueryProviderSessionCommitStop,
     > {
         self.application_attempt_work.observe_prepared_commit();
-        super::session_commit::commit_prepared_session(self, *session)
+        super::session_commit::commit_prepared_session(self, *session, allocation_policy)
     }
 
     fn abort_provider_session(

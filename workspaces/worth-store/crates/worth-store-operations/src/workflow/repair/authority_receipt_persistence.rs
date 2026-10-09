@@ -63,15 +63,15 @@ pub(super) fn recovery_receipt(value: RecoveredBackupFrontierReceipt) -> [u8; 32
     })
 }
 pub(super) fn layout_receipt(
-    value: worth_store_layout_indexes::LayoutRepairConsequenceReceipt,
+    value: worth_store_layout_indexes::operational_repair::LayoutRepairConsequenceReceipt,
 ) -> [u8; 32] {
     fingerprint(b"worth-store-layout-repair-receipt-v2", |d| {
         d.update(value.plan_fingerprint());
         d.update(value.verified_artifacts().to_be_bytes());
         d.update(value.verified_bytes().to_be_bytes());
         d.update([match value.consequence() {
-            worth_store_layout_indexes::LayoutRepairConsequence::RestoreDamagedArtifact => 1,
-            worth_store_layout_indexes::LayoutRepairConsequence::ReplaceQuarantinedArtifact => 2,
+            worth_store_layout_indexes::operational_repair::LayoutRepairConsequence::RestoreDamagedArtifact => 1,
+            worth_store_layout_indexes::operational_repair::LayoutRepairConsequence::ReplaceQuarantinedArtifact => 2,
         }]);
     })
 }

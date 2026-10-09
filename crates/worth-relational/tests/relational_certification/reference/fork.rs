@@ -320,10 +320,16 @@ fn stale_fork_source_denial_does_not_install_a_target_reference() {
         )
         .expect("owner-admitted transaction context");
     transaction
-        .push_batch(WorkerIntentBatch::new("advance-main-before-fork"))
+        .push_batch(
+            WorkerIntentBatch::new("advance-main-before-fork"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     transaction
-        .commit(&world.runtime)
+        .commit(
+            &world.runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("main truth advances");
     let catalog_after_advance = world.runtime.history().immutable_commit_count();
     let before = capture_reference_evidence(

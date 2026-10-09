@@ -16,6 +16,7 @@ where
         idempotency: WorthQueryApplicationIdempotencyBinding,
         elevation_currentness: Option<WorthQueryElevationCommitCurrentness>,
         aftermath_causality: Option<WorthQueryPendingAftermathCausality>,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> WorthQueryApplicationCommitOutcome
     where
         Input: Clone + Send + Sync + 'static,
@@ -40,7 +41,7 @@ where
         finish_application_commit(
             phase,
             self,
-            progress_application_commit(phase, self, running),
+            progress_application_commit(phase, self, running, allocation_policy),
         )
     }
 }

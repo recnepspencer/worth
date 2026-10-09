@@ -10,7 +10,7 @@ fn restoration_after_seeded_edits_rebuilds_fresh_state_and_the_same_work_boundar
     let seed = |graph: &mut Graph| differential::prefix::model().seed(graph);
     let original = install(seed);
     let (model, _, mut history) = differential::prefix::run_with_history(&original);
-    let checkpoint = original.capture_application_checkpoint().unwrap();
+    let checkpoint = original.capture_application_checkpoint(worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy::SystemAllocation).unwrap();
     drop(original);
     let application = installation::install_configured::<false, TOTALS_WORK, 1>(
         Some(checkpoint),

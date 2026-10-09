@@ -206,9 +206,15 @@ pub(super) fn create_entity(
                 fields: crate::transactions::data::AspectFieldPatch::default(),
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let outcome = txn.commit(runtime).unwrap();
+    let outcome = txn
+        .commit(
+            runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
     match outcome.changed_records[0] {
         crate::facade::transactions::RecordRef::Entity(entity_id) => entity_id,
         _ => panic!("expected entity"),

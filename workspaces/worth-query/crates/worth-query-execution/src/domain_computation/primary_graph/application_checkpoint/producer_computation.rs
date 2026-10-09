@@ -27,7 +27,11 @@ impl CheckpointProducerFacts {
 pub(in crate::domain_computation::primary_graph) fn decode(
     bytes: &[u8],
     wire_version: u16,
-) -> Result<CheckpointProducerFacts, String> {
-    facts::decode_for_wire_version(bytes, wire_version)
+    request: Option<
+        &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+    >,
+    allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+) -> Result<CheckpointProducerFacts, facts::FactDecodeDenial> {
+    facts::decode_for_wire_version(bytes, wire_version, request, allocation_policy)
         .map(|facts| CheckpointProducerFacts { facts })
 }

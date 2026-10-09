@@ -15,9 +15,9 @@ pub(super) fn certify_trade_correction_analysis_round_trip(suite: &'static str) 
                     &runtime,
                     BranchId("analysis".to_string()),
                 );
-                txn.push_batch(WorkerIntentBatch::new("correct-trade").push(
-                    MutationIntent::Create(CreateIntent::Entity(
-                        crate::transactions::data::EntitySpec {
+                txn.push_batch(
+                    WorkerIntentBatch::new("correct-trade").push(MutationIntent::Create(
+                        CreateIntent::Entity(crate::transactions::data::EntitySpec {
                             partition_id: PartitionId(10),
                             kind_id: KindId(1),
                             client_key: crate::symbols::data::ClientKey::raw(
@@ -45,13 +45,14 @@ pub(super) fn certify_trade_correction_analysis_round_trip(suite: &'static str) 
                                     "portfolio-account",
                                 ),
                             ]),
-                        },
+                        }),
                     )),
-                ))
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
                 .expect("test staging stays within configured resource budgets");
-                txn.push_batch(WorkerIntentBatch::new("refresh-risk").push(
-                    MutationIntent::Create(CreateIntent::Entity(
-                        crate::transactions::data::EntitySpec {
+                txn.push_batch(
+                    WorkerIntentBatch::new("refresh-risk").push(MutationIntent::Create(
+                        CreateIntent::Entity(crate::transactions::data::EntitySpec {
                             partition_id: PartitionId(30),
                             kind_id: KindId(1),
                             client_key: crate::symbols::data::ClientKey::raw(
@@ -79,9 +80,10 @@ pub(super) fn certify_trade_correction_analysis_round_trip(suite: &'static str) 
                                     "medium",
                                 ),
                             ]),
-                        },
+                        }),
                     )),
-                ))
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
                 .expect("test staging stays within configured resource budgets");
                 txn.push_batch(
                     WorkerIntentBatch::new("emit-audit").push(MutationIntent::Create(
@@ -110,10 +112,14 @@ pub(super) fn certify_trade_correction_analysis_round_trip(suite: &'static str) 
                             ]),
                         }),
                     )),
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )
                 .expect("test staging stays within configured resource budgets");
-                txn.commit(&runtime)
-                    .expect("analysis branch correction commit")
+                txn.commit(
+                    &runtime,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .expect("analysis branch correction commit")
             };
             let analysis_commit_micros = analysis_commit_started_at.elapsed().as_micros();
             let analysis_entities = changed_entities(&analysis_commit);

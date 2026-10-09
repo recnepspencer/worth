@@ -1,7 +1,9 @@
 use super::*;
 
+mod eviction_slots;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct FrameSlotId(u32);
+pub(in crate::physical_residency::pool) struct FrameSlotId(u32);
 
 #[derive(Debug)]
 enum FrameSlot {
@@ -29,12 +31,20 @@ pub(super) struct FrameTable {
 }
 
 impl FrameTable {
-    pub(super) fn minimum_metadata_bytes(frame_count: usize) -> Option<usize> {
+    pub(super) fn exact_coordinate_at(&self, slot: usize) -> Option<RecordFrameCoordinate> {
+        match self.slots.get(slot)?.as_ref()? {
+            FrameSlot::Exact { coordinate, .. } => Some(*coordinate),
+            FrameSlot::Bounded { .. } => None,
+        }
+    }
+
+    /// Requested slot capacity with conservative modeled index charges.
+    pub(super) fn minimum_accounted_metadata_bytes(frame_count: usize) -> Option<usize> {
         frame_count
-            .checked_mul(exact_index_bytes())
+            .checked_mul(modeled_exact_index_charge_bytes())
             .and_then(|exact| {
                 frame_count
-                    .checked_mul(bounded_index_bytes())
+                    .checked_mul(modeled_bounded_index_charge_bytes())
                     .and_then(|bounded| exact.checked_add(bounded))
             })
             .and_then(|bytes| {
@@ -80,14 +90,16 @@ impl FrameTable {
         })
     }
 
-    pub(super) fn allocated_metadata_bytes(&self) -> Option<usize> {
+    /// Actual vector capacities plus conservative modeled HashMap slot charges.
+    /// HashMap allocation geometry is intentionally not claimed to be exact.
+    pub(super) fn accounted_metadata_bytes(&self) -> Option<usize> {
         self.exact_index
             .capacity()
-            .checked_mul(exact_index_bytes())
+            .checked_mul(modeled_exact_index_charge_bytes())
             .and_then(|exact| {
                 self.bounded_index
                     .capacity()
-                    .checked_mul(bounded_index_bytes())
+                    .checked_mul(modeled_bounded_index_charge_bytes())
                     .and_then(|bounded| exact.checked_add(bounded))
             })
             .and_then(|bytes| {
@@ -336,6 +348,16 @@ impl FrameTable {
             .get_mut(id.0 as usize)
             .and_then(Option::take)
             .expect("an indexed frame slot is occupied");
+        let frame = match &slot {
+            FrameSlot::Exact { frame, .. } => Some(frame),
+            FrameSlot::Bounded { entry, .. } => entry.resident_frame(),
+        };
+        if let Some(frame) = frame {
+            assert!(
+                frame.older_evictable.is_none() && frame.newer_evictable.is_none(),
+                "an eviction entry is detached before its slot is reused"
+            );
+        }
         self.free_slots.push(id);
         slot
     }
@@ -353,13 +375,13 @@ impl FrameTable {
     }
 }
 
-fn exact_index_bytes() -> usize {
+fn modeled_exact_index_charge_bytes() -> usize {
     std::mem::size_of::<RecordFrameCoordinate>()
         .saturating_add(std::mem::size_of::<FrameSlotId>())
         .saturating_add(32)
 }
 
-fn bounded_index_bytes() -> usize {
+fn modeled_bounded_index_charge_bytes() -> usize {
     std::mem::size_of::<RecordArtifactFile>()
         .saturating_add(std::mem::size_of::<FrameSlotId>())
         .saturating_add(32)

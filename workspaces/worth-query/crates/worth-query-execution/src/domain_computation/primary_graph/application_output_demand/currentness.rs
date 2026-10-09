@@ -165,7 +165,28 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             read.native_output_witness.as_ref(),
             admission,
         )?;
-        require_current_facts(relational, snapshot, read, admission)?;
+        require_current_facts(relational, snapshot, read, admission).map_err(
+            |error| match read.verification_requirement {
+                Some(crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationReason::NativeFactRevisionUnavailable(ordinal)) => WorthQueryOutputDemandDenial::new(
+                    error.kind(),
+                    format!("{}; native revision unavailable for: {}", error.subject(),
+                        read.facts.get(ordinal).map_or_else(|| "unavailable retained fact".into(), |fact| fact.locator_identity())),
+                ),
+                Some(crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationReason::IndexedSelectionFactDenied(ordinal, denial)) => WorthQueryOutputDemandDenial::new(
+                    error.kind(),
+                    format!("{}; indexed selection reobservation denied: {denial:?}; fact: {}", error.subject(),
+                        read.facts.get(ordinal).map_or_else(|| "unavailable retained fact".into(), |fact| fact.locator_identity())),
+                ),
+                Some(reason) => WorthQueryOutputDemandDenial::new(
+                    error.kind(),
+                    format!(
+                        "{}; output requires full verification: {reason:?}",
+                        error.subject()
+                    ),
+                ),
+                None => error,
+            },
+        )?;
         if let Ok(selected) = relational.read_truth().positioned_snapshot(snapshot) {
             let witness = read.native_output_witness.as_ref();
             if let Some(witness) = witness

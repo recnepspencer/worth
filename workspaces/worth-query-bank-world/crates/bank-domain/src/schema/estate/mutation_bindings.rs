@@ -135,7 +135,7 @@ impl ApplicationMutationBinding<BankSchema> for NotifyEstateDeathMutationBinding
     const CANDIDATES: ApplicationCandidateRequirements =
         ApplicationCandidateRequirements::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 1, 1),
-            ApplicationCandidateResourceCeiling::bounded(32768, 8),
+            ApplicationCandidateResourceCeiling::representation_bytes(32768),
         );
 
     fn scope_field() -> ApplicationFieldRef<
@@ -199,7 +199,7 @@ impl ApplicationMutationBinding<BankSchema> for FreezeEstateAccountMutationBindi
     const CANDIDATES: ApplicationCandidateRequirements =
         ApplicationCandidateRequirements::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 1, 0),
-            ApplicationCandidateResourceCeiling::bounded(32768, 4),
+            ApplicationCandidateResourceCeiling::representation_bytes(32768),
         );
 
     fn scope_field() -> ApplicationFieldRef<

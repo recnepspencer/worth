@@ -86,6 +86,7 @@ where
                     &phase,
                     self.change.program,
                     self.change.idempotency,
+                    crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
                 ))
             })
             .unwrap_or_else(|cause| Ok(cause.into_commit_outcome()))
@@ -135,8 +136,9 @@ where
                 &presented,
                 self.change.program,
                 self.change.idempotency,
-            crate::domain_computation::application_aftermath::ApplicationCommitCausality::Ordinary,
-        ),
+                crate::domain_computation::application_aftermath::ApplicationCommitCausality::Ordinary,
+                crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            ),
         )
 
         }).unwrap_or_else(|cause| Ok(cause.into_commit_outcome()))

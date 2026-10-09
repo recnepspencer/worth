@@ -46,7 +46,7 @@ impl CanonicalRecordReadPort {
         // Reserve provisional background capacity before publishing work. A denial
         // must not leave a Ready command awaiting asynchronous Signal abandonment.
         let (lease, capacity, backend, policy) = self.scheduler.scrub_background(
-            self.record.scheduler_security(), range.length() as u64,
+            self.record.scheduler_security(), std::num::NonZeroU64::new(range.length() as u64),
         ).map_err(|failure| {
             use crate::physical_runtime::instance::PhysicalScrubSchedulerAdmissionDenial as Denial;
             match failure {

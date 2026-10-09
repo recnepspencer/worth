@@ -102,11 +102,12 @@ impl AuthorityAffectingStagedRepairPlan {
             ))
             .map_err(AuthorityAffectingRepairLoweringDenial::Recovery)?;
         let layout_regions = super::region_projection::layout_repair_regions(integrity.regions())?;
-        let layout = worth_store_layout_indexes::LayoutRepairConsequenceOwner::lower(
-            &layout_regions,
-            backend.binding(),
-        )
-        .map_err(AuthorityAffectingRepairLoweringDenial::Layout)?;
+        let layout =
+            worth_store_layout_indexes::operational_repair::LayoutRepairConsequenceOwner::lower(
+                &layout_regions,
+                backend.binding(),
+            )
+            .map_err(AuthorityAffectingRepairLoweringDenial::Layout)?;
         let blob_regions = super::region_projection::blob_repair_regions(integrity.regions())?;
         let blob = worth_store_blob_chunks::BlobRepairConsequenceOwner::lower(
             &blob_regions,
@@ -157,7 +158,7 @@ pub enum AuthorityAffectingRepairLoweringDenial {
     InvalidSourceArtifact { output_name: String },
     Backend(NonCurrentStagingLoweringDenial),
     Recovery(BackupRestoreReplayDenial),
-    Layout(worth_store_layout_indexes::LayoutRepairConsequenceDenial),
+    Layout(worth_store_layout_indexes::operational_repair::LayoutRepairConsequenceDenial),
     Blob(worth_store_blob_chunks::BlobRepairConsequenceDenial),
     OwnerDag(crate::OwnerPlanDagDenial),
     InvalidFootprint,
@@ -171,7 +172,7 @@ pub struct LoweredAuthorityAffectingRepairOwnerPlanDag {
     integrity: IntegrityRepairClassificationPlan,
     backend: LoweredNonCurrentStagingPlan,
     recovery: BackupRestoreReplayPlan,
-    layout: Option<worth_store_layout_indexes::LayoutRepairConsequencePlan>,
+    layout: Option<worth_store_layout_indexes::operational_repair::LayoutRepairConsequencePlan>,
     blob: Option<worth_store_blob_chunks::BlobRepairConsequencePlan>,
     nodes: RepairOwnerNodes,
     explanation: crate::CanonicalOwnerPlanDagExplanation,
@@ -184,7 +185,7 @@ pub struct AuthorizedAuthorityAffectingRepairPlan {
     integrity: IntegrityRepairClassificationPlan,
     backend: LoweredNonCurrentStagingPlan,
     recovery: BackupRestoreReplayPlan,
-    layout: Option<worth_store_layout_indexes::LayoutRepairConsequencePlan>,
+    layout: Option<worth_store_layout_indexes::operational_repair::LayoutRepairConsequencePlan>,
     blob: Option<worth_store_blob_chunks::BlobRepairConsequencePlan>,
     nodes: RepairOwnerNodes,
 }

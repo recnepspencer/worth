@@ -36,6 +36,7 @@ pub(in crate::physical_runtime::record_serving) enum CleanInlineAdmissionDenial 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(in crate::physical_runtime::record_serving) enum CleanExtentAdmissionDenial {
     ExtentMembership,
+    FrameChecksumDamaged,
     Format,
     Unavailable,
     RuntimeReleased,
@@ -175,6 +176,7 @@ pub(in crate::physical_runtime::record_serving) fn admit_extent_chunk(
         format,
         coordinate,
         coordinate_range(frame.coordinate()).map_err(|_| CleanExtentAdmissionDenial::Damaged)?,
+        membership.arena_range(),
     );
     let admitted = admit_resident_extent_chunk(frame.lease(), scope, membership, context.clone())
         .map_err(classify_extent_integrity)?;
@@ -280,6 +282,13 @@ fn classify_extent_integrity(
             value,
         )) if value.cause() == PhysicalDamageCause::FormatMismatch => {
             CleanExtentAdmissionDenial::Format
+        }
+        ResidentIntegrityAdmissionDenial::Validation(PhysicalIntegrityRejection::Damaged(
+            value,
+        )) if value.cause() == PhysicalDamageCause::ChecksumMismatch
+            && value.blast_radius() == PhysicalBlastRadius::CanonicalFrame =>
+        {
+            CleanExtentAdmissionDenial::FrameChecksumDamaged
         }
         ResidentIntegrityAdmissionDenial::Validation(PhysicalIntegrityRejection::Damaged(_)) => {
             CleanExtentAdmissionDenial::Damaged

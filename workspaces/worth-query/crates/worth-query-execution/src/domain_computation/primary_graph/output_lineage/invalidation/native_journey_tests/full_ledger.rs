@@ -192,6 +192,20 @@ fn empty_index_custody_bytes(owner: &SourceInvalidationOwner) -> u64 {
             .map(|cell| Arc::clone(cell.read_image().payload())),
     );
     for root in roots {
+        if let Some(history) = &root.history_capacity {
+            use super::super::index_capacity::{arc_bytes, retained_map_bytes};
+            use super::super::source_alignment::HistoricalMarkState;
+            use worth_relational::facade::publication::PatchStreamPosition;
+            // Each live history map owns its declared node bound and shared ticket.
+            // retention::admit_edited_history funds this before replacing the map.
+            let declared = retained_map_bytes::<Option<PatchStreamPosition>, HistoricalMarkState>(
+                root.past.len(),
+            )
+            .unwrap()
+                + arc_bytes::<RetainedInvalidationCapacity>().unwrap();
+            assert_eq!(history.bytes(), declared);
+            add(history);
+        }
         for ticket in [&root.retained_capacity, &root.inherited_capacity]
             .into_iter()
             .flatten()

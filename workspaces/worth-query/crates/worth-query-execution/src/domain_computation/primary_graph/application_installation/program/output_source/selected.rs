@@ -9,6 +9,8 @@
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use std::any::TypeId;
 
+use crate::facade::runtime::ExecutionAllocationPolicy;
+
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationScopeBinding,
 };
@@ -52,6 +54,7 @@ where
         owner: &WorthQuerySelectedProgramOwner<'_, Schema>,
         program: SourceProgram<Schema, Source>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> ProgramSourceCommit
     where
         Source: ApplicationMutationBinding<Schema>,
@@ -72,6 +75,7 @@ where
             idempotency,
             PreparedOutputRootKind::Required(root),
             None,
+            allocation_policy,
         )
     }
 
@@ -85,6 +89,7 @@ where
         program: SourceProgram<Schema, Source>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
         discovery: <RootConnection<Schema, Root> as WorthQueryApplicationDiscoveredOutputConnection<Schema>>::Discovery,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> ProgramSourceCommit
     where
         Source: ApplicationMutationBinding<Schema>,
@@ -105,6 +110,7 @@ where
             idempotency,
             PreparedOutputRootKind::Discovered(root),
             Some(std::sync::Arc::new(discovery)),
+            allocation_policy,
         )
     }
 

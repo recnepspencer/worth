@@ -229,7 +229,6 @@ pub(super) fn install_members(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_decision_fact_budget(WorkflowDefinitionAuthoringOperation::reference(), 512)
         .operation_projection_work_budget(WorkflowDefinitionAuthoringOperation::reference(), 512)
         .operation_read_field(
             WorkflowDefinitionAuthoringOperation::reference(),
@@ -242,7 +241,6 @@ pub(super) fn install_members(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_decision_fact_budget(WorkflowInstanceStartOperation::reference(), 256)
         .operation_projection_work_budget(WorkflowInstanceStartOperation::reference(), 512)
         .operation_read_field(
             WorkflowInstanceStartOperation::reference(),

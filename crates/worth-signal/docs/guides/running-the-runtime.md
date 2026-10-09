@@ -84,7 +84,7 @@ Transactions are the normal answer when an update should not land halfway.
 
 Main surfaces:
 
-- `runtime.advance_signal_branch(...)`
+- `runtime.advance_signal_branch(execution, ...)`
 - `tx.mark_changed(...)`
 - `tx.target(node).run(...)`
 - `tx.target(node).read(...)`

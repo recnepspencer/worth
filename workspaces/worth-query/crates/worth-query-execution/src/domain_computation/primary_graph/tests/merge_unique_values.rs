@@ -267,9 +267,17 @@ fn commit(
         )
         .expect("the fixture transaction begins");
     transaction
-        .push_batch(WorkerIntentBatch::new("unique-merge").push(intent))
+        .push_batch(
+            WorkerIntentBatch::new("unique-merge").push(intent),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the fixture batch stages");
-    transaction.commit(runtime).expect("the fixture commits")
+    transaction
+        .commit(
+            runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .expect("the fixture commits")
 }
 
 fn value(ordinal: u64) -> AspectValue {

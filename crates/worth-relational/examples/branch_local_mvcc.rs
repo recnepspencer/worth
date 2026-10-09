@@ -85,7 +85,7 @@ fn main() {
     }
 }
 
-/// Commit through `transaction.commit(&runtime)`.
+/// Commit through the ordinary convenience path with an explicit allocation policy.
 ///
 /// This is the ordinary path for callers that do not need the explicit
 /// linearization outcome. It is not a second authority: it delegates to the
@@ -96,7 +96,10 @@ fn ordinary_convenience_commit(
 ) -> CommitResult {
     let basis = observe(runtime, branch);
     fresh_transaction(runtime, &basis, "branch-local-mvcc-seed")
-        .commit(runtime)
+        .commit(
+            runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("an uncontended convenience commit settles through its owner")
 }
 
@@ -176,7 +179,10 @@ fn publish_one_branch(
         // rather than a claim that preparation always succeeds.
         let candidate = services
             .preparation
-            .prepare_branch_transaction(transaction)
+            .prepare_branch_transaction(
+                transaction,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .expect(concat!(
                 "preparation refused before producing a candidate; the branch ",
                 "did not move, and this example models neither a bounded ",
@@ -249,7 +255,10 @@ fn fresh_transaction(
         .begin_branch_transaction(basis, RelationalTransactionIntent::ordinary())
         .expect("an exact admitted basis admits a branch transaction");
     transaction
-        .push_batch(WorkerIntentBatch::new(batch_name))
+        .push_batch(
+            WorkerIntentBatch::new(batch_name),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("one empty batch stages within the declared transaction budget");
     transaction
 }

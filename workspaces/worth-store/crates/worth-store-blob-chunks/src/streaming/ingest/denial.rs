@@ -3,7 +3,6 @@ use worth_store_io_scheduler::{
     foreground_reservation::ForegroundIoLaneKind, BackgroundIoPressureClass, BackgroundPacingDenial,
 };
 
-use super::super::allocation::BlobStreamingAllocationDenial;
 use crate::{BlobChunkIntegrityDenial, BlobStreamingIngestCounterSnapshot};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -73,20 +72,6 @@ pub enum BlobStreamingIngestDenial {
 impl From<BlobChunkIntegrityDenial> for BlobStreamingIngestDenial {
     fn from(denial: BlobChunkIntegrityDenial) -> Self {
         Self::ChunkIntegrity(denial)
-    }
-}
-
-impl From<BlobStreamingAllocationDenial> for BlobStreamingIngestDenial {
-    fn from(denial: BlobStreamingAllocationDenial) -> Self {
-        match denial {
-            BlobStreamingAllocationDenial::WindowExceedsAllocation {
-                window_bytes,
-                allocation_bytes,
-            } => Self::AllocationWindowExceeded {
-                window_bytes,
-                allocation_bytes,
-            },
-        }
     }
 }
 

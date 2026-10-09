@@ -28,6 +28,7 @@ static AUTHORITY: OnceLock<ExecutionAuthority> = OnceLock::new();
 static TEST_LOCK: Mutex<()> = Mutex::new(());
 
 mod adversarial;
+mod controlled_child;
 mod memory_level;
 mod nesting;
 mod owned_map;
@@ -37,7 +38,7 @@ fn authority() -> &'static ExecutionAuthority {
     AUTHORITY.get_or_init(|| {
         ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
             max_workers: NonZeroUsize::new(4).unwrap(),
-            charged_memory_bytes: 2_000,
+            charged_memory_bytes: Some(2_000),
         })
         .expect("one process authority")
     })
@@ -78,7 +79,7 @@ fn authority_is_process_singleton() {
     assert_eq!(
         ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
             max_workers: NonZeroUsize::new(1).unwrap(),
-            charged_memory_bytes: 1,
+            charged_memory_bytes: Some(1),
         })
         .unwrap_err(),
         ConstructionDenial::AlreadyConstructed,

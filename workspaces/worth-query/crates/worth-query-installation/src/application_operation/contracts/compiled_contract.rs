@@ -31,9 +31,7 @@ pub struct WorthQueryCompiledApplicationOperationContracts {
     pub(super) invariants: WorthQueryOperationInvariantContract,
     pub(super) decision_facts: WorthQueryOperationDecisionFactContract,
     pub(super) invariant_execution: WorthQueryInvariantExecutionContract,
-    pub(super) candidate_validator_work: u64,
     pub(super) resources: WorthQueryExecutionResourceContract,
-    pub(super) decision_fact_budget: usize,
     pub(super) projection_work_budget: usize,
     pub(super) additional_authorization_fact_count: usize,
     pub(super) mutation_preconditions: Vec<WorthQueryInstalledMutationPrecondition>,
@@ -46,12 +44,6 @@ pub struct WorthQueryCompiledApplicationOperationContracts {
 }
 
 impl WorthQueryCompiledApplicationOperationContracts {
-    /// Finite owner-derived allowance for a handler candidate's invariant closure.
-    /// Query-owned workflow settlement is admitted separately.
-    pub const fn candidate_validator_work(&self) -> u64 {
-        self.candidate_validator_work
-    }
-
     /// The componentwise maximum declared by installed mutation bindings for
     /// this operation. Query-owned platform effects cannot exceed these kinds.
     pub const fn platform_candidate_ceiling(&self) -> Option<ApplicationCandidateRequirements> {
@@ -161,10 +153,6 @@ impl WorthQueryCompiledApplicationOperationContracts {
             return None;
         };
         Some(strategy)
-    }
-
-    pub const fn decision_fact_budget(&self) -> usize {
-        self.decision_fact_budget
     }
 
     pub const fn projection_work_budget(&self) -> usize {

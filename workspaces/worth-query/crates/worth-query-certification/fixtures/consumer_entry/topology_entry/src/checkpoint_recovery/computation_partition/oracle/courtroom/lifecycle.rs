@@ -123,7 +123,7 @@ fn seeded_edits_cross_restore_and_republication_with_model_counts() {
                     model.written(write);
                 }
             }
-            let checkpoint = app.capture_application_checkpoint().unwrap();
+            let checkpoint = app.capture_application_checkpoint(worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy::SystemAllocation).unwrap();
             drop(app);
             app = installation::install_variant::<false, TOTALS_WORK, 1, 2>(
                 Some(checkpoint),

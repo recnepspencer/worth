@@ -8,9 +8,9 @@ error[E0624]: method `transaction` is private
   |
   | /     pub(crate) fn transaction<F>(
   | |         &mut self,
+  | |         execution: worth_execution::ExecutionRequest<'_, '_>,
   | |         runtime_ctx: &mut Ctx,
-  | |         apply: F,
-  | |     ) -> Result<TransactionResult, SignalError>
+... |
   | |     where
   | |         F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
   | |__________________________________________________________________________________________- private method defined here

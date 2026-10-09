@@ -60,9 +60,9 @@ pub struct BackendRecoveryArtifactExpectation {
 }
 
 /// Pure C.4 request for revalidating and durably removing one exact recovery
-/// artifact. It is deliberately physical: Store policy, checkpoint coverage,
-/// last-copy safety, and cleanup eligibility are validated before this request
-/// exists and are not reimplemented in the backend.
+/// artifact. It is deliberately physical: the Store recovery owner validates
+/// whether the selected checkpoint permits removing this artifact before the
+/// request exists. The backend does not reimplement that admission decision.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BackendRecoveryCleanupRemovalRequest {
     store: StableStoreIdentity,
@@ -362,6 +362,19 @@ impl BackendRecoveryArtifactExpectation {
             byte_count,
             digest,
         })
+    }
+
+    /// Preserves the exact bounded checkpoint-residue observation, including
+    /// an interrupted zero-byte candidate. This does not grant unlink authority.
+    #[cfg(feature = "recovery-runtime-owner")]
+    pub fn from_checkpoint_observation(
+        observation: &super::ObservedRecoveryCheckpointArtifact,
+    ) -> Self {
+        Self {
+            artifact: observation.artifact().clone(),
+            byte_count: observation.byte_count(),
+            digest: observation.digest(),
+        }
     }
 
     pub const fn artifact(&self) -> &ArtifactTreeFile {

@@ -47,9 +47,15 @@ fn relational_error_wraps_authority_failures_with_context() {
                 ),
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let transaction_error = txn.commit(&runtime).unwrap_err();
+    let transaction_error = txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap_err();
     let wrapped: RelationalError = transaction_error.into();
     assert!(matches!(wrapped, RelationalError::Transaction(_)));
     assert_eq!(

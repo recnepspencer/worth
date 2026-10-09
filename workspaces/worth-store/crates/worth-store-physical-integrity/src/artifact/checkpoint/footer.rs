@@ -23,6 +23,10 @@ const COMPACTION_WAL_FIELD: CheckpointRecordFieldRange = CheckpointRecordFieldRa
 const BINDING_COUNT_FIELD: CheckpointRecordFieldRange = CheckpointRecordFieldRange::new(104, 8);
 const BINDING_BYTES_FIELD: CheckpointRecordFieldRange = CheckpointRecordFieldRange::new(112, 8);
 const BINDING_DIGEST_FIELD: CheckpointRecordFieldRange = CheckpointRecordFieldRange::new(120, 32);
+const CERTIFICATE_COUNT_FIELD: CheckpointRecordFieldRange = CheckpointRecordFieldRange::new(152, 8);
+const CERTIFICATE_BYTES_FIELD: CheckpointRecordFieldRange = CheckpointRecordFieldRange::new(160, 8);
+const CERTIFICATE_DIGEST_FIELD: CheckpointRecordFieldRange =
+    CheckpointRecordFieldRange::new(168, 32);
 
 #[derive(Debug)]
 pub enum CheckpointFooterIntegrityValidation<'media> {
@@ -137,6 +141,12 @@ fn binding_mismatch(
         Some(DIRTY_DIGEST_FIELD)
     } else if footer.binding_records_digest() != expected.bindings.digest() {
         Some(BINDING_DIGEST_FIELD)
+    } else if footer.certificate_record_count() != expected.certificates.record_count() {
+        Some(CERTIFICATE_COUNT_FIELD)
+    } else if footer.certificate_record_bytes() != expected.certificates.encoded_bytes() {
+        Some(CERTIFICATE_BYTES_FIELD)
+    } else if footer.certificate_records_digest() != expected.certificates.digest() {
+        Some(CERTIFICATE_DIGEST_FIELD)
     } else {
         None
     }?;

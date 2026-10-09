@@ -24,9 +24,6 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryCompletedCommi
     /// The World history hold each recorded commit's publication handed over,
     /// kept until that commit's own caller resolves its receipt and takes it.
     fresh_history: BTreeMap<CommitId, WorthQueryCommitHistoryHold>,
-    /// The newest commit whose evidence left the idempotency window. A replay
-    /// of a commit at or behind it answers that its window expired.
-    expired_through: Option<CommitId>,
 }
 
 /// The selectors one evidence entry is indexed under besides its commit.
@@ -75,34 +72,6 @@ impl WorthQueryCompletedCommitEvidenceStore {
         })?;
         let evidence = self.remove(commit)?;
         Some((commit, evidence))
-    }
-
-    /// The installed capacity is the declared idempotency window: admitting
-    /// new evidence past it evicts the oldest entry whose eviction frees its
-    /// bytes. An entry whose commit still holds a mandatory dispatch basis,
-    /// or that a caller still holds, stays: evicting it would free nothing.
-    /// The evicted commit's replay then answers that its window expired,
-    /// never drift or re-execution.
-    pub(in crate::domain_computation::primary_graph::provider) fn evict_oldest(
-        &mut self,
-        mandatory: &BTreeSet<CommitId>,
-    ) -> Option<(CommitId, WorthQueryPrimaryGraphCommittedApplication)> {
-        let commit = self.by_commit.iter().find_map(|(commit, evidence)| {
-            (!mandatory.contains(commit)
-                && evidence
-                    .mutation_work()
-                    .is_some_and(|work| work.holds_last_evidence_ticket()))
-            .then_some(*commit)
-        })?;
-        let evidence = self.remove(commit)?;
-        self.expired_through = self.expired_through.max(Some(commit));
-        Some((commit, evidence))
-    }
-
-    /// Whether `commit`'s evidence left the idempotency window.
-    pub(in crate::domain_computation::primary_graph) fn expired(&self, commit: CommitId) -> bool {
-        self.expired_through
-            .is_some_and(|through| commit <= through)
     }
 
     fn remove(&mut self, commit: CommitId) -> Option<WorthQueryPrimaryGraphCommittedApplication> {

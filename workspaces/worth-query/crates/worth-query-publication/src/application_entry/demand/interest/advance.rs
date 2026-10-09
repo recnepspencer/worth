@@ -109,6 +109,7 @@ where
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::MissingApplicableProducer
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::AmbiguousApplicableProducer
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::ProducerUnavailable
+                | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::ProducerDomainDenied
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::RequestAuthorization(_)
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::ProductSelection(_)
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::SchedulingRejected
@@ -136,6 +137,10 @@ where
                     WorthQueryApplicationOutputDemandSettlement::new(
                         receipt,
                         self.admitted.observed_source().clone(),
+                        self.admitted.checkpoint_readmission_work_units(),
+                        self.admitted.checkpoint_readmission_work_bound(),
+                        self.admitted
+                            .checkpoint_readmission_charged_preparation_bytes(),
                     ),
                 ))
             }

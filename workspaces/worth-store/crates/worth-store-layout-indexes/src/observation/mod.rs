@@ -4,13 +4,10 @@
 //! layout admission, planning, readiness, execution, or readmission APIs.
 
 mod access;
-mod evolution;
 mod integrity;
 mod maintenance;
 mod materialization;
 mod owner_case;
-mod performance;
 
 pub use crate::access::shape::AccessShape;
 pub use owner_case::{ObserveOwnerCase, OwnerCaseObservation};
-pub use performance::LayoutAccessPerformanceReceipt;

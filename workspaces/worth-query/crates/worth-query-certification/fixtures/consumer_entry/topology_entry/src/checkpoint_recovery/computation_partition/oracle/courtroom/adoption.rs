@@ -57,12 +57,12 @@ pub(super) fn install_rostered(model: &Model) -> Application {
         invariant_calls: Arc::new(AtomicUsize::new(0)),
         invariant_probe: Arc::new(AtomicUsize::new(0)),
         producer_authorization_denials: Arc::new(AtomicUsize::new(0)),
+        producer_domain_denial: Arc::new(std::sync::atomic::AtomicBool::new(false)),
     };
     let candidates =
-        worth_query_host::facade::runtime::WorthQueryApplicationCandidateResourceProfile::bounded(
+        worth_query_host::facade::runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(
             8192,
             1024 * 1024,
-            8192,
         )
         .unwrap();
     let limits = support::limits_with_room(
@@ -131,7 +131,7 @@ fn program_adoption_carries_retained_state_and_reuses_only_unchanged_partitions(
                     .mutate(change.commanded(0x612_ad0 + round as u64))
                     .without_source()
                     .idempotency(&(0x612_ad0_u64 + round as u64))
-                    .execute_in_program::<OracleProgram>(&app);
+                    .execute_in_program::<OracleProgram>(&app, worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation);
                 assert!(
                     matches!(
                         outcome,

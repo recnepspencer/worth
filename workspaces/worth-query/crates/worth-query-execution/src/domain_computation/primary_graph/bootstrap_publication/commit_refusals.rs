@@ -54,6 +54,7 @@ pub(in crate::domain_computation::primary_graph) fn refused_commit(
                     fields: AspectFieldPatch::default(),
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
     let lease = authority().request_lease(request).unwrap();

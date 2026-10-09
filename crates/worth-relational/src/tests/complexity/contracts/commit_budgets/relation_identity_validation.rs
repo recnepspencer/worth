@@ -25,9 +25,15 @@ fn complexity_budget_relation_identity_validation_avoids_partition_scan() {
                 fields: crate::transactions::data::AspectFieldPatch::default(),
             },
         ))),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let error = txn.commit(&runtime).unwrap_err();
+    let error = txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap_err();
     let counters = runtime.performance_access().counters();
 
     assert!(matches!(

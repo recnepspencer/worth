@@ -65,8 +65,9 @@ construction returns `WorthQueryProgramApplicationRuntime<Schema, Program>`.
 
 `WorthQueryInMemoryApplicationLimits::new` accepts World resources, an application
 candidate profile, an application query profile, and a conditional evaluation
-budget. Candidate cardinality, retained representation bytes, and validator work
-remain distinct bounds. Installed handlers implement `decide`,
+budget. Candidate cardinality and retained representation bytes remain distinct
+bounds; `WorthQueryApplicationCandidateResourceProfile::physical_resources(items,
+bytes)` configures those existing capacities. Installed handlers implement `decide`,
 `candidate_requirements`, and `build_candidate`: decision reads retain facts,
 reservation precedes candidate allocation, and the candidate is checked with its
 affected untouched neighbors before atomic publication. A request does not retain
@@ -81,12 +82,79 @@ controls and child artifact limits only narrow the relevant dimensions. A handle
 `settle(&request)` owns bounded progression and reports `Pending` when necessary;
 applications do not implement retry counts in query-work units.
 
+Before delivering stored output values, select one fresh retained observation.
+Its `require_current_output_demand` checks a direct root/dependent settlement;
+`require_current_program_output` checks the whole program settlement. Both require
+native source lineage at that same observation, including receipt-free checkpoint
+reuse. Read the descriptive fields through that retained request after admission.
+
+Checkpoint capture retains the selected native output's producer/source locator
+even when its cached Ready demand has been reclaimed. A locator without accepted
+source facts is prior-output custody only: after reopen the installed Preserve
+producer must read and revalidate its inputs before current delivery. Capturing a
+stored output does not establish that it is current. Family publication order
+selects the active output, so an older Initial row cannot displace its Preserve
+successor or a distinct output family.
+Capture keeps accepted payloads only for that selected native family head, across
+both newly accepted and recovered records. Canonical checkpoint row order is not
+publication order. After fresh installation, an ordinary `current_output` read
+can verify the retained head before any output demand. Its source facts and
+native output witness must still agree with the selected observation; changed
+tracked source facts or native output evidence deny the stale publication rather
+than reviving an older Initial row.
+Earlier checkpoints that retained competing bindings without their publication
+order do not acquire ordering proof from a new reader. This capture rule does not
+retrospectively reconstruct lost lineage or guarantee repair of those archives.
+Capture admits the required native prior locators before best-effort reuse facts.
+If those optional facts exhaust their remaining allowance, the checkpoint retains
+prior custody and the output starts fresh after reopening.
+
+Capture and transition installation require an explicit
+`application_installation::WorthQueryCheckpointCapturePolicy`. Choose
+`SystemAllocation` for fallible uncharged storage or `Execution(&lease)` for
+admitted final-frame payload backing. The same immutable bytes and their one
+charge survive Query clones and embedded native-region ownership. The last
+byte owner frees the backing before releasing its charge; imports and native
+codec temporaries remain uncharged. No exhausted or stopped lease falls back
+to system allocation. Typed capture denials retain native durability errors or
+the lower physical refusal and available checked payload quote.
+
+Every consuming `repair_to_checkpoint(policy)` attempt selects its policy anew.
+An early stopped policy preserves the unpublished native settlement phase.
+Capture refusal after acknowledgment retains the exact successor in its repair
+capsule, with the current cause available through `capture_denial()`. Repair
+never reruns authoring and returns no World; ordinary target admission still
+authenticates a successfully captured successor.
+
+Query frames a captured native checkpoint directly in its final byte buffer,
+preserving the format-8 wire layout and checksum. Capture reports
+`CheckpointSizeOverflow` when encoded lengths cannot fit this host or wire
+format, and `CheckpointAllocationUnavailable` when reserving that buffer fails.
+Both are write failures and do not suggest repairing the saved store. This
+removes the intermediate full Query body copy; native capture, accepted fact
+payloads, boxed-slice conversion and host compression have separate allocations.
+An internal difference between reserved and emitted frame size reports
+`CheckpointFrameSizeMismatch` before any checkpoint is returned.
+
+A family read rejects an older candidate when its own recorded facts or native
+output witness prove it changed, even if its upstream is pending. Unchanged own
+evidence still returns `PendingUpstream`; it never establishes upstream currentness.
+This lets a value-changing Preserve settlement remain selectable without an older,
+conclusively stale Initial candidate hiding it.
+
+A required refresh executes under the mode issued by its accepted predecessor.
+After its exact Current join, an existing caller can follow that completed
+refresh across selected-program and program-output modes. The caller retains
+its own advance authority; unfinished execution still requires the successor
+mode and installed producer edition to match.
+
 For ordinary candidate declarations, use
-`ApplicationCandidateResourceCeiling::representation_bytes(bytes)` (or omit
-`validator_work` in the mutation-binding macro). Installation derives validator
-allowance from the selected invariant contracts. Explicit validator caps can
-restrict that allowance; effect cardinality, bytes, actual closure checks, and
-host capacity remain enforced.
+`ApplicationCandidateResourceCeiling::representation_bytes(bytes)` and the mutation
+binding macro's `resources retained_representation_bytes bytes`. Effect cardinality,
+bytes, actual closure checks, and host capacity remain enforced. There is no
+aggregate candidate-validator-work quota or predicted descriptor-max allowance.
+Each installed invariant retains its own algorithm controls and actual execution
+work evidence.
 
 `application.discovery()` exposes declaration-derived `mutations()`, `queries()`,
 `query_requests()`, and `fields()`. These describe portable input/result and typed
@@ -295,6 +363,11 @@ source evidence call `.expect_source(observed_source)` before idempotent executi
 The source-local comparison rejects missing, foreign, retired, ABA-changed, or
 changed sources while allowing sibling edits outside the recorded footprint.
 Sibling membership and selector-field changes can still invalidate that footprint.
+When a handler reads a current output, Query merges its retained source facts
+with the admitted query facts. Adjacency reads at the same native structural
+revision combine their endpoint coverage and comparison limits; different
+revisions still deny the attempt. A producer's own relation writes are rebased
+at the committed snapshot before becoming reusable output evidence.
 Bindings with input-selected subjects implement `expected_source_parameters` so
 the same Query boundary rejects mismatched selectors for rows, result sets and
 framework producers. A source query's type alone does not bind its parameters to
@@ -309,6 +382,26 @@ role operations. Existing entities without a domain identity field cross the
 phase boundary through `DecisionReader::mutation_target` and
 `CandidateWriter::projected_entity`; Query checks the installed projection
 authority and completed attempt read set before returning a program-affine target.
+
+For a variable prior carrier, `DecisionReader::field_with_predecode_admission`
+admits owner work/storage on its original borrowed scalar before the declared
+decoder runs. Its callback also borrows the same request checkpoint. See
+[Tracked scalar predecode admission](docs/scalar-predecode-admission.md) for the
+typed outcomes, allocation responsibility and staging complexity contracts.
+
+For repeated equality predicates on one declared target, call
+`DecisionReader::prepare_entity_selection(field)` once, then
+`select_entities_prepared(&prepared, value, candidate_limit)` or
+`resolve_optional_entity_prepared(&prepared, value)`. The opaque token retains
+the selected native root and installed index generation. It belongs to that
+exact runtime, snapshot, schema binding and operation admission; it grants no
+latest-head authority. Every value still performs its exact native comparison
+and retains a complete membership or absence predicate for commit and recovery.
+Each call uses the current reader's cancellation, deadline, allocation policy
+and finite selection/work contract. Preparation changes no installed declaration
+or serialized source-fact meaning. Native temporary comparison-key and result
+buffers retain their existing allocation ownership; the token does not claim
+physical admission of those buffers.
 
 Invariant factories resolve installed typed field and relation bindings. Their
 proposed and committed views expose decoded fields and complete bounded relation

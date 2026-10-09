@@ -2,9 +2,10 @@ use std::path::PathBuf;
 
 use worth_proof::AuthorityWitness;
 use worth_store::physical_runtime::{
-    AdmittedRecoveryFilesystemMedia, PhysicalRecoveryFreshnessPort,
-    PhysicalRecoveryRegisteredSessionAuthority, QualifiedPhysicalBackendProfile,
-    QualifiedRecoveryFilesystemMedia, RecoveryFilesystemQualificationError,
+    AdmittedPhysicalRecordResidencyPolicy, AdmittedRecoveryFilesystemMedia,
+    PhysicalRecoveryFreshnessPort, PhysicalRecoveryRegisteredSessionAuthority,
+    QualifiedPhysicalBackendProfile, QualifiedRecoveryFilesystemMedia,
+    RecoveryFilesystemQualificationError,
 };
 use worth_store_physical_format::PhysicalRecordFormatDeclaration;
 
@@ -28,6 +29,7 @@ pub struct PhysicalRecoveryPlatformAuthority {
     binding: PhysicalRecoveryEntryBinding,
     limits: PhysicalRecoveryLimits,
     record_format: PhysicalRecordFormatDeclaration,
+    residency_policy: AdmittedPhysicalRecordResidencyPolicy,
 }
 
 #[cfg(test)]
@@ -255,6 +257,7 @@ impl PhysicalRecoveryPlatformAuthority {
             limits,
         );
         let record_format = configuration.record_format();
+        let residency_policy = configuration.residency_policy();
         Ok(Self {
             _witness: PhysicalRecoveryPlatformMarker::witness(),
             media,
@@ -263,6 +266,7 @@ impl PhysicalRecoveryPlatformAuthority {
             binding,
             limits,
             record_format,
+            residency_policy,
         })
     }
 
@@ -315,6 +319,7 @@ impl PhysicalRecoveryPlatformAuthority {
             limits,
             record_format,
             binding,
+            residency_policy,
             ..
         } = self;
         let recovery_effects = media.recovery_effect_count();
@@ -330,6 +335,7 @@ impl PhysicalRecoveryPlatformAuthority {
                         record_format,
                     },
                     registered_session,
+                    residency_policy,
                 })
             }
             Err(error) => {
@@ -360,6 +366,7 @@ pub(crate) struct AdmittedPlatformAuthority {
 pub(crate) struct AdmittedPlatformAdmission {
     pub(crate) authority: AdmittedPlatformAuthority,
     pub(crate) registered_session: PhysicalRecoveryRegisteredSessionAuthority,
+    pub(crate) residency_policy: AdmittedPhysicalRecordResidencyPolicy,
 }
 
 impl AdmittedPlatformAuthority {

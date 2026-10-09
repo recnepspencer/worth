@@ -8,6 +8,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationCommitOutcome,
     WorthQueryApplicationCommitTerminalKind, WorthQueryApplicationIdempotencyResolution,
 };
+use crate::facade::runtime::ExecutionAllocationPolicy;
 
 #[test]
 fn equivalent_retry_recovers_original_receipt_while_intent_drift_is_denied() {
@@ -17,9 +18,12 @@ fn equivalent_retry_recovers_original_receipt_while_intent_drift_is_denied() {
     let account = resolved_account(&world, "open", &request);
     let first = admitted_program(&world, &principal, &account, &request, "committed");
 
-    let WorthQueryApplicationCommitOutcome::Committed(mut original) = world
-        .application
-        .compare_and_commit_application(first, idempotency(9, 7))
+    let WorthQueryApplicationCommitOutcome::Committed(mut original) =
+        world.application.compare_and_commit_application(
+            first,
+            idempotency(9, 7),
+            ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("the first idempotent application attempt must commit");
     };
@@ -37,9 +41,12 @@ fn equivalent_retry_recovers_original_receipt_while_intent_drift_is_denied() {
     let principal = authenticated_principal(&world, &request);
     let account = resolved_account(&world, "committed", &request);
     let retry = admitted_program(&world, &principal, &account, &request, "committed");
-    let WorthQueryApplicationCommitOutcome::AlreadyCommitted(mut recovered) = world
-        .application
-        .compare_and_commit_application(retry, idempotency(9, 7))
+    let WorthQueryApplicationCommitOutcome::AlreadyCommitted(mut recovered) =
+        world.application.compare_and_commit_application(
+            retry,
+            idempotency(9, 7),
+            ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("an equivalent retry must recover the original commit");
     };
@@ -102,9 +109,12 @@ fn equivalent_retry_recovers_original_receipt_while_intent_drift_is_denied() {
     let principal = authenticated_principal(&world, &request);
     let account = resolved_account(&world, "committed", &request);
     let drift = admitted_program(&world, &principal, &account, &request, "different");
-    let WorthQueryApplicationCommitOutcome::Denied(denial) = world
-        .application
-        .compare_and_commit_application(drift, idempotency(9, 8))
+    let WorthQueryApplicationCommitOutcome::Denied(denial) =
+        world.application.compare_and_commit_application(
+            drift,
+            idempotency(9, 8),
+            ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("reusing a key for another intent must be denied");
     };
@@ -125,17 +135,22 @@ fn equivalent_retry_prepared_at_the_original_product_recovers_exact_owner_eviden
     let stale_retry = admitted_program(&world, &principal, &account, &request, "committed");
     let binding = idempotency(93, 93);
 
-    let WorthQueryApplicationCommitOutcome::Committed(committed) = world
-        .application
-        .compare_and_commit_application(first, binding)
+    let WorthQueryApplicationCommitOutcome::Committed(committed) =
+        world.application.compare_and_commit_application(
+            first,
+            binding,
+            ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("the first application must publish its exact owner evidence");
     };
     let current_commit = world.selected_product().product().selected_commit().clone();
 
-    let outcome = world
-        .application
-        .compare_and_commit_application(stale_retry, binding);
+    let outcome = world.application.compare_and_commit_application(
+        stale_retry,
+        binding,
+        ExecutionAllocationPolicy::SystemAllocation,
+    );
     let WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered) = outcome else {
         panic!("an equivalent retry must recover the exact completed owner evidence: {outcome:?}");
     };
@@ -155,9 +170,11 @@ fn same_caller_intent_cannot_cross_installed_operation_identity() {
     let account = resolved_account(&world, "open", &request);
     let first = admitted_program(&world, &principal, &account, &request, "committed");
     assert!(matches!(
-        world
-            .application
-            .compare_and_commit_application(first, idempotency(10, 10)),
+        world.application.compare_and_commit_application(
+            first,
+            idempotency(10, 10),
+            ExecutionAllocationPolicy::SystemAllocation
+        ),
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));
 
@@ -197,9 +214,11 @@ fn same_operation_intent_cannot_cross_an_admitted_scope() {
     let first = admitted_program(&world, &principal, &first_account, &request, "first-scope");
 
     assert!(matches!(
-        world
-            .application
-            .compare_and_commit_application(first, idempotency(11, 11)),
+        world.application.compare_and_commit_application(
+            first,
+            idempotency(11, 11),
+            ExecutionAllocationPolicy::SystemAllocation
+        ),
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));
     let principal = authenticated_principal(&world, &request);
@@ -211,9 +230,12 @@ fn same_operation_intent_cannot_cross_an_admitted_scope() {
         &request,
         "second-scope",
     );
-    let WorthQueryApplicationCommitOutcome::Denied(denial) = world
-        .application
-        .compare_and_commit_application(second, idempotency(11, 11))
+    let WorthQueryApplicationCommitOutcome::Denied(denial) =
+        world.application.compare_and_commit_application(
+            second,
+            idempotency(11, 11),
+            ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("reusing one operation intent across scopes must deny");
     };
@@ -231,9 +253,11 @@ fn lifecycle_replay_resolvers_have_no_replay_for_an_ordinary_admission() {
     let account = resolved_account(&world, "open", &request);
     let first = admitted_program(&world, &principal, &account, &request, "lifecycle");
     assert!(matches!(
-        world
-            .application
-            .compare_and_commit_application(first, idempotency(12, 12)),
+        world.application.compare_and_commit_application(
+            first,
+            idempotency(12, 12),
+            ExecutionAllocationPolicy::SystemAllocation
+        ),
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));
 
@@ -288,17 +312,25 @@ fn lifecycle_replay_resolvers_have_no_replay_for_an_ordinary_admission() {
             .unwrap();
         let (_, projection, _) = world
             .invariant
-            .project_admitted_operation(&admission, |reader, projected| {
-                reader
-                    .require_decision_field(projected, super::AccountStatus::reference())
-                    .unwrap();
-            })
+            .project_admitted_operation(
+                &admission,
+                |reader, projected| {
+                    reader
+                        .require_decision_field(projected, super::AccountStatus::reference())
+                        .unwrap();
+                },
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .unwrap()
             .into_parts();
         application
-            .begin_projected_application_read_attempt(admission, projection)
+            .begin_projected_application_read_attempt(
+                admission,
+                projection,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .unwrap()
-            .complete_projected_dependencies()
+            .complete_projected_dependencies(ExecutionAllocationPolicy::SystemAllocation)
             .unwrap()
     };
     let denials = [
@@ -321,5 +353,5 @@ fn lifecycle_replay_resolvers_have_no_replay_for_an_ordinary_admission() {
     }
 }
 
-#[path = "idempotency_behavior/a_causal_replay_after_its_history_retires_answers_with_its_sealed_causality.rs"]
-mod a_causal_replay_after_its_history_retires_answers_with_its_sealed_causality;
+#[path = "idempotency_behavior/history_retirement.rs"]
+mod history_retirement;

@@ -10,7 +10,6 @@ mod stops;
 mod touched_records;
 use stops::{failure, index_preparation_stop, native_output_witness_stop, transaction_commit_stop};
 pub(in crate::domain_computation::primary_graph::provider) use touched_records::PreparedTouchedRecords;
-pub(in crate::domain_computation::primary_graph) use touched_records::RetainedTouchedRecords;
 mod publication;
 pub(in crate::domain_computation::primary_graph) use publication::WorthQueryPrimaryGraphCommittedApplication;
 
@@ -63,6 +62,7 @@ pub(super) fn commit(
     provider: &WorthQueryPrimaryGraphProvider,
     prepared: WorthQueryPreparedApplicationCommit,
     mint: super::WorthQueryCommitProgressionMint,
+    allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<
     WorthQueryCommittedApplicationSession,
     crate::domain_computation::WorthQueryProviderSessionCommitStop,
@@ -107,9 +107,9 @@ pub(super) fn commit(
         .with_runtime_mut(|runtime| runtime.prepare_validated_proposal(candidate))
         .map_err(transaction_commit_stop)?;
     let prepared_touched_records = touched_records::PreparedTouchedRecords::prepare(
-        provider,
         &candidate,
         &mut publication_admission,
+        allocation_policy,
     )?;
     let ordinary_index_budget =
         crate::domain_computation::primary_graph::index_maintenance_budget::ordinary_index_maintenance_budget();

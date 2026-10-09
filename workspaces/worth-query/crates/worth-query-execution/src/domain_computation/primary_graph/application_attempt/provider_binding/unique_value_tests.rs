@@ -15,7 +15,6 @@ use worth_relational::facade::indexes::{DerivedIndexDefinition, DerivedIndexId, 
 use super::{prepare_provider_attempt, WorthQueryApplicationRealizedEffect as Effect};
 use crate::domain_computation::primary_graph::application_attempt::effect_program::{
     WorthQueryApplicationCreationPartition as Partition, WorthQueryApplicationOptionalFieldWrite,
-    WorthQueryCandidateValidatorWorkAdmission,
 };
 use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind as Kind,
@@ -216,15 +215,28 @@ fn lower(
         fixture.fields(),
         PartitionId::main(),
         effects.len(),
-        Vec::new(),
-        facts,
+        super::super::read_set::admit_array(
+            0,
+            [],
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            "read scopes",
+            || Ok(()),
+        )
+        .unwrap(),
+        super::super::read_set::admit_array(
+            facts.len(),
+            facts,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            "unique fixture",
+            || Ok(()),
+        )
+        .unwrap(),
         Vec::new(),
         effects,
         0,
         0,
         None,
         None,
-        WorthQueryCandidateValidatorWorkAdmission::unreserved_internal(),
         Default::default(),
         false,
         false,

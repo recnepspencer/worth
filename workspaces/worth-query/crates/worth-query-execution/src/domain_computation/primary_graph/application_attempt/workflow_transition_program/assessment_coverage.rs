@@ -1,4 +1,6 @@
+use crate::domain_computation::primary_graph::application_attempt::check_request_live;
 use std::collections::BTreeMap;
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 
 use worth_query_declaration::facade::application_program::ApplicationWorkflowSubjectSelector;
 use worth_relational::facade::identity::EntityId;
@@ -56,7 +58,7 @@ pub(super) fn observe_subject(
     admitted_resource: EntityId,
     handle: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    maximum_facts: usize,
+    observation_request: &WorthQueryRequestScope,
 ) -> Result<ObservedAssessmentSubject, WorthQueryApplicationAttemptDenial> {
     observe_subject_cached(
         compiled,
@@ -66,7 +68,7 @@ pub(super) fn observe_subject(
         admitted_resource,
         handle,
         snapshot,
-        maximum_facts,
+        observation_request,
         &mut AssessmentProposalObservations::default(),
     )
 }
@@ -80,7 +82,7 @@ pub(super) fn observe_subject_cached(
     admitted_resource: EntityId,
     handle: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    maximum_facts: usize,
+    observation_request: &WorthQueryRequestScope,
     observed_proposals: &mut AssessmentProposalObservations,
 ) -> Result<ObservedAssessmentSubject, WorthQueryApplicationAttemptDenial> {
     let CompiledWorkflowNodeKind::Assessment {
@@ -111,20 +113,17 @@ pub(super) fn observe_subject_cached(
                 snapshot,
                 layout,
                 source_transition,
-                maximum_facts,
+                observation_request,
             )
         })?;
         let (coverages, coverage_facts) = handle.with_runtime(|runtime| {
-            observe_workflow_proposal_coverages(
-                runtime,
-                snapshot,
-                layout,
-                proposal,
-                maximum_facts.saturating_sub(proposal_facts.len()),
-            )
+            observe_workflow_proposal_coverages(runtime, snapshot, layout, proposal, {
+                check_request_live(observation_request, "workflow retained evidence")?;
+                observation_request
+            })
         })?;
         proposal_facts.extend(coverage_facts);
-        enforce_budget(proposal_facts.len(), maximum_facts)?;
+        check_request_live(observation_request, "workflow retained evidence")?;
         entry.insert(ObservedProposalCoverage {
             identity,
             coverages,
@@ -163,7 +162,7 @@ pub(super) fn observe_subject_cached(
             ));
         }
     }
-    enforce_budget(facts.len(), maximum_facts)?;
+    check_request_live(observation_request, "workflow retained evidence")?;
     let related =
         matches!(subject, ApplicationWorkflowSubjectSelector::Related).then_some(coverage.subject);
     Ok(ObservedAssessmentSubject {
@@ -187,7 +186,7 @@ pub(super) fn observe(
     layout: &WorthQueryWorkflowLayout,
     handle: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    maximum_facts: usize,
+    observation_request: &WorthQueryRequestScope,
 ) -> Result<ObservedAssessmentCoverage, WorthQueryApplicationAttemptDenial> {
     let CompiledWorkflowNodeKind::Assessment {
         query,
@@ -222,8 +221,8 @@ pub(super) fn observe(
         });
     }
     let (dependencies, facts, current) =
-        observe_native_dependencies(evidence, layout, handle, snapshot, maximum_facts)?;
-    enforce_budget(facts.len(), maximum_facts)?;
+        observe_native_dependencies(evidence, layout, handle, snapshot, observation_request)?;
+    check_request_live(observation_request, "workflow retained evidence")?;
     if !current {
         return Ok(ObservedAssessmentCoverage {
             current: false,
@@ -243,7 +242,7 @@ pub(super) fn observe_native_dependencies(
     layout: &WorthQueryWorkflowLayout,
     handle: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    maximum_facts: usize,
+    observation_request: &WorthQueryRequestScope,
 ) -> Result<
     (
         Vec<WorthQueryApplicationObservedFact>,
@@ -259,7 +258,7 @@ pub(super) fn observe_native_dependencies(
             snapshot,
             layout,
             evidence.entity,
-            maximum_facts,
+            observation_request,
             &mut facts,
         )
     })?;
@@ -269,19 +268,6 @@ pub(super) fn observe_native_dependencies(
             .all(|fact| fact.remains_equal_in(runtime, snapshot))
     });
     Ok((dependencies, facts, current))
-}
-
-fn enforce_budget(
-    observed: usize,
-    maximum: usize,
-) -> Result<(), WorthQueryApplicationAttemptDenial> {
-    if observed > maximum {
-        return Err(WorthQueryApplicationAttemptDenial::new(
-            WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
-            "workflow assessment coverage fact budget",
-        ));
-    }
-    Ok(())
 }
 
 fn mismatch(subject: &'static str) -> WorthQueryApplicationAttemptDenial {

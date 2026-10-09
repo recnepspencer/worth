@@ -1,5 +1,8 @@
 use super::*;
 
+#[path = "operation_allocation/resize.rs"]
+mod resize;
+
 #[test]
 fn candidate_dirty_posture_and_operation_allocations_are_exact() {
     let identity = store(5);

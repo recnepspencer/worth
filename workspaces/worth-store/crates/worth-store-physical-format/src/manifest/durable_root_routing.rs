@@ -1,8 +1,9 @@
+mod borrowed;
 mod payload_projection;
+#[path = "durable_root_routing/preallocated_encode.rs"]
+mod preallocated_encode;
 
-use std::collections::BTreeSet;
-
-use crate::record_framing::{decode_durable_frame, encode_durable_frame};
+use crate::record_framing::decode_durable_frame;
 use crate::{
     DurableFrameDenial, DurableFrameKind, PersistedRecordIdentity, PhysicalRecordFormatDeclaration,
 };
@@ -15,6 +16,7 @@ use super::durable_root_placement::CurrentPhysicalRecordPlacement;
 mod bounded_decode_tests;
 mod decode_limits;
 
+pub use borrowed::{PhysicalRootRoutingBlockView, RootRoutingBlockPreflight};
 pub use decode_limits::{BoundedRootRoutingBlockDecodeDenial, RootRoutingBlockDecodeLimits};
 
 const ROUTING_BLOCK_PREFIX_BYTES: usize = 40;
@@ -29,6 +31,26 @@ pub struct ManifestBlockReference {
     checksum: u32,
     first: PersistedRecordIdentity,
     last: PersistedRecordIdentity,
+}
+
+/// Sealed physical-coordinate scratch used by leaf uniqueness admission.
+/// Its layout matches the compact coordinate retained by rooted observation.
+#[repr(transparent)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct RootRoutingCoordinateKey((u8, u64, u64, u64));
+
+impl RootRoutingCoordinateKey {
+    fn from_placement(placement: CurrentPhysicalRecordPlacement) -> Self {
+        Self(match placement {
+            CurrentPhysicalRecordPlacement::Inline(value) => (
+                1,
+                value.segment().get(),
+                value.page().get(),
+                u64::from(value.slot().get()),
+            ),
+            CurrentPhysicalRecordPlacement::Extent(value) => (2, 0, value.extent().get(), 0),
+        })
+    }
 }
 
 impl ManifestBlockReference {
@@ -92,6 +114,17 @@ pub enum PhysicalRootRoutingBlock {
 }
 
 impl PhysicalRootRoutingBlock {
+    pub fn owned_heap_bytes(&self) -> Option<u64> {
+        match self {
+            Self::Leaf { entries, .. } => u64::try_from(entries.capacity()).ok()?.checked_mul(
+                u64::try_from(std::mem::size_of::<CurrentPhysicalRecordPlacement>()).ok()?,
+            ),
+            Self::Branch { children, .. } => u64::try_from(children.capacity())
+                .ok()?
+                .checked_mul(u64::try_from(std::mem::size_of::<ManifestBlockReference>()).ok()?),
+        }
+    }
+
     pub fn leaf(
         tree_identity: u64,
         generation: u64,
@@ -99,15 +132,30 @@ impl PhysicalRootRoutingBlock {
         entries: Vec<CurrentPhysicalRecordPlacement>,
         capacity: u16,
     ) -> Option<Self> {
-        (tree_identity != 0
-            && generation != 0
-            && block != 0
-            && !entries.is_empty()
-            && entries.len() <= usize::from(capacity)
-            && entries
-                .windows(2)
-                .all(|pair| pair[0].record() < pair[1].record())
-            && placements_are_unique(&entries))
+        if !leaf_identity_and_order(tree_identity, generation, block, &entries, capacity) {
+            return None;
+        }
+        let mut scratch = Vec::<RootRoutingCoordinateKey>::with_capacity(entries.len());
+        Self::leaf_with_uniqueness_scratch(
+            tree_identity,
+            generation,
+            block,
+            entries,
+            capacity,
+            &mut scratch,
+        )
+    }
+
+    pub fn leaf_with_uniqueness_scratch(
+        tree_identity: u64,
+        generation: u64,
+        block: u64,
+        entries: Vec<CurrentPhysicalRecordPlacement>,
+        capacity: u16,
+        scratch: &mut Vec<RootRoutingCoordinateKey>,
+    ) -> Option<Self> {
+        (leaf_identity_and_order(tree_identity, generation, block, &entries, capacity)
+            && placements_are_unique(&entries, scratch))
         .then_some(Self::Leaf {
             tree_identity,
             generation,
@@ -202,39 +250,11 @@ impl PhysicalRootRoutingBlock {
     }
 
     pub fn encode(&self, format: PhysicalRecordFormatDeclaration) -> Vec<u8> {
-        let (kind, count, entry_bytes) = match self {
-            Self::Leaf { entries, .. } => (1_u8, entries.len(), ROUTING_LEAF_ENTRY_BYTES),
-            Self::Branch { children, .. } => (2_u8, children.len(), ROUTING_REFERENCE_BYTES),
-        };
-        let mut payload = vec![0_u8; ROUTING_BLOCK_PREFIX_BYTES + count * entry_bytes];
-        payload[..8].copy_from_slice(&self.tree_identity().to_le_bytes());
-        payload[8..16].copy_from_slice(&self.block().to_le_bytes());
-        payload[16..18].copy_from_slice(&self.level().to_le_bytes());
-        payload[18..20].copy_from_slice(&(count as u16).to_le_bytes());
-        payload[20] = kind;
-        payload[24..32].copy_from_slice(&self.generation().to_le_bytes());
-        match self {
-            Self::Leaf { entries, .. } => entries.iter().enumerate().for_each(|(index, entry)| {
-                encode_entry(
-                    &mut payload[ROUTING_BLOCK_PREFIX_BYTES + index * entry_bytes..],
-                    *entry,
-                );
-            }),
-            Self::Branch { children, .. } => {
-                children.iter().enumerate().for_each(|(index, child)| {
-                    encode_reference(
-                        &mut payload[ROUTING_BLOCK_PREFIX_BYTES + index * entry_bytes..],
-                        *child,
-                    );
-                })
-            }
-        }
-        encode_durable_frame(
-            DurableFrameKind::RootRoutingBlock,
-            format,
-            self.block(),
-            &payload,
-        )
+        let length = self
+            .encoded_frame_bytes()
+            .expect("admitted routing block length");
+        self.encode_in_reserved(format, Vec::with_capacity(length))
+            .expect("reserved routing block encoding")
     }
 
     pub fn decode(
@@ -253,7 +273,8 @@ impl PhysicalRootRoutingBlock {
             Err(BoundedRootRoutingBlockDecodeDenial::Format(denial)) => Err(denial),
             Err(
                 BoundedRootRoutingBlockDecodeDenial::LeafEntries { .. }
-                | BoundedRootRoutingBlockDecodeDenial::BranchChildren { .. },
+                | BoundedRootRoutingBlockDecodeDenial::BranchChildren { .. }
+                | BoundedRootRoutingBlockDecodeDenial::CoordinateScratchInsufficient { .. },
             ) => {
                 unreachable!("unbounded routing decode cannot exceed its cardinality")
             }
@@ -267,24 +288,52 @@ impl PhysicalRootRoutingBlock {
     ) -> Result<(Self, PhysicalRecordFormatDeclaration), BoundedRootRoutingBlockDecodeDenial> {
         let (format, frame) = decode_durable_frame(bytes, DurableFrameKind::RootRoutingBlock)
             .map_err(RootRoutingBlockDenial::Frame)?;
-        Self::project_payload(frame.payload, frame.identity, capacity, limits)
-            .map(|block| (block, format))
+        Self::project_payload(
+            frame.payload,
+            frame.identity,
+            capacity,
+            limits,
+            frame.schema,
+        )
+        .map(|block| (block, format))
     }
 }
 
-fn placements_are_unique(entries: &[CurrentPhysicalRecordPlacement]) -> bool {
-    let mut placements = BTreeSet::new();
-    entries.iter().all(|entry| {
-        placements.insert(match entry {
-            CurrentPhysicalRecordPlacement::Inline(value) => (
-                1,
-                value.segment().get(),
-                value.page().get(),
-                u64::from(value.slot().get()),
-            ),
-            CurrentPhysicalRecordPlacement::Extent(value) => (2, 0, value.extent().get(), 0),
-        })
-    })
+fn leaf_identity_and_order(
+    tree_identity: u64,
+    generation: u64,
+    block: u64,
+    entries: &[CurrentPhysicalRecordPlacement],
+    capacity: u16,
+) -> bool {
+    tree_identity != 0
+        && generation != 0
+        && block != 0
+        && !entries.is_empty()
+        && entries.len() <= usize::from(capacity)
+        && entries
+            .windows(2)
+            .all(|pair| pair[0].record() < pair[1].record())
+}
+
+fn placements_are_unique(
+    entries: &[CurrentPhysicalRecordPlacement],
+    scratch: &mut Vec<RootRoutingCoordinateKey>,
+) -> bool {
+    if scratch.capacity() < entries.len() {
+        return false;
+    }
+    scratch.clear();
+    scratch.extend(
+        entries
+            .iter()
+            .copied()
+            .map(RootRoutingCoordinateKey::from_placement),
+    );
+    scratch.sort_unstable();
+    let unique = scratch.windows(2).all(|pair| pair[0] != pair[1]);
+    scratch.clear();
+    unique
 }
 
 pub(super) fn encode_reference(target: &mut [u8], reference: ManifestBlockReference) {

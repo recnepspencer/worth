@@ -129,46 +129,56 @@ impl FinancialCourtroomWorld {
             .unwrap();
         let (_, projection, _) = self
             .invariant
-            .project_admitted_operation(&admission, |reader, scope| {
-                reader
-                    .decision_field(scope, MarketRevisionField::reference())
-                    .unwrap();
-                reader
-                    .decision_field(scope, MarketDueField::reference())
-                    .unwrap();
-                reader
-                    .decision_field(scope, MarketLifecycleField::reference())
-                    .unwrap();
-                reader
-                    .decision_field(scope, MarketInputField::reference())
-                    .unwrap();
-                reader
-                    .decision_field(scope, CurveZeroRateField::reference())
-                    .unwrap();
-                reader
-                    .decision_field(scope, QuoteMidField::reference())
-                    .unwrap();
-                reader
-                    .decision_field(scope, RiskValueField::reference())
-                    .unwrap();
-                reader
-                    .decision_field(scope, PortfolioValueField::reference())
-                    .unwrap();
-                reader
-                    .decision_field(scope, PortfolioDeskField::reference())
-                    .unwrap();
-                reader
-                    .decision_field(scope, PortfolioRankField::reference())
-                    .unwrap();
-            })
+            .project_admitted_operation(
+                &admission,
+                |reader, scope| {
+                    reader
+                        .decision_field(scope, MarketRevisionField::reference())
+                        .unwrap();
+                    reader
+                        .decision_field(scope, MarketDueField::reference())
+                        .unwrap();
+                    reader
+                        .decision_field(scope, MarketLifecycleField::reference())
+                        .unwrap();
+                    reader
+                        .decision_field(scope, MarketInputField::reference())
+                        .unwrap();
+                    reader
+                        .decision_field(scope, CurveZeroRateField::reference())
+                        .unwrap();
+                    reader
+                        .decision_field(scope, QuoteMidField::reference())
+                        .unwrap();
+                    reader
+                        .decision_field(scope, RiskValueField::reference())
+                        .unwrap();
+                    reader
+                        .decision_field(scope, PortfolioValueField::reference())
+                        .unwrap();
+                    reader
+                        .decision_field(scope, PortfolioDeskField::reference())
+                        .unwrap();
+                    reader
+                        .decision_field(scope, PortfolioRankField::reference())
+                        .unwrap();
+                },
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .unwrap()
             .into_parts();
         let reads = self
             .application
-            .begin_projected_application_read_attempt(admission, projection)
+            .begin_projected_application_read_attempt(
+                admission,
+                projection,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .unwrap();
         let mut effects = reads
-            .complete_projected_dependencies()
+            .complete_projected_dependencies(
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .unwrap()
             .begin_effect_program();
         let record = effects.existing_entity(&record).unwrap();
@@ -234,10 +244,11 @@ impl FinancialCourtroomWorld {
                 _,
             >(&self.amendment_ordinal, &self.amendment_ordinal)
             .unwrap();
-        match self
-            .application
-            .compare_and_commit_application(effects.finish().unwrap(), idempotency)
-        {
+        match self.application.compare_and_commit_application(
+            effects.finish().unwrap(),
+            idempotency,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        ) {
             primary_graph::WorthQueryApplicationCommitOutcome::Committed(_) => {}
             outcome => panic!("financial market amendment was not committed: {outcome:?}"),
         }

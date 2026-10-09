@@ -240,6 +240,7 @@ impl<'runtime, 'principal, 'scope> BankApprovedPaymentWorkflow<'runtime, 'princi
                 self.runtime
                     .approved_payment_workflow_runtime()
                     .program_runtime(),
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
             .map_err(BankApprovedPaymentWorkflowError::OperationMutation)?;
         Ok(match effect {

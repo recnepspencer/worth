@@ -15,6 +15,7 @@ pub(crate) fn checkpoint_derived_index_artifacts(
 
 pub(crate) fn restore_checkpoint_derived_index_artifacts(
     indexes: &mut crate::runtime::IndexingState,
+    history: &crate::runtime::HistorySubsystem,
     legacy: &DerivedIndexArtifacts,
     checkpoint: Option<&DerivedIndexCheckpointArtifacts>,
     envelopes: &[crate::history::data::PositionedCanonicalCommit],
@@ -61,6 +62,16 @@ pub(crate) fn restore_checkpoint_derived_index_artifacts(
                 return Err(corrupt(
                     "checkpoint index generation basis mismatches commit",
                 ));
+            }
+            if definition.branch_scoped {
+                history
+                    .validate_recovered_scoped_index_basis(
+                        &generation.source_branch_id,
+                        generation.source_commit_id,
+                        generation.applicability.version_id,
+                        generation.applicability.schema_version,
+                    )
+                    .map_err(|detail| corrupt(&detail))?;
             }
             indexes.restore_generation(generation);
             work.index_generations_readmitted += 1;

@@ -137,6 +137,12 @@ impl AcceptedCurrentCandidate {
         admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<SelectedPendingConsumedOutput<'selected>>, ConsumedOutputVerificationStop>
     {
+        if self.selected.recorded().consumed_outputs.is_empty() {
+            return Ok(None);
+        }
+        if !self.own_evidence_is_current(runtime, snapshot, admission)? {
+            return Ok(None);
+        }
         ConsumedOutputEvidence::select_exact_pending_dependency(
             &self.selected.recorded().consumed_outputs,
             owner,
@@ -145,6 +151,40 @@ impl AcceptedCurrentCandidate {
             selected,
             admission,
         )
+    }
+
+    fn own_evidence_is_current(
+        &self,
+        runtime: &RelationalRuntime,
+        snapshot: &SnapshotHandle,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<bool, ConsumedOutputVerificationStop> {
+        // An old dependency set cannot constrain a consumer whose own native
+        // evidence has changed. Missing evidence cannot reject the old edges.
+        // This only requests disclosure, never Current.
+        admission
+            .charge_external_work(3)
+            .map_err(|_| ConsumedOutputVerificationStop::WorkExhausted)?;
+        let facts = self
+            .selected
+            .recorded()
+            .observed_source_facts()
+            .and_then(|facts| facts.for_comparison());
+        let (Some(facts), Some(witness)) = (facts, self.selected.native_output_witness()) else {
+            return Ok(true);
+        };
+        match ConsumedOutputEvidence::own_evidence_is_current(
+            &facts,
+            &self.selected.recorded().consumed_outputs,
+            witness,
+            runtime,
+            snapshot,
+            admission,
+        ) {
+            Ok(false) => Ok(false),
+            Ok(true) | Err(ConsumedOutputVerificationStop::Unavailable) => Ok(true),
+            Err(stop) => Err(stop),
+        }
     }
 
     /// A complete actor posting set makes Clean a zero-fact-check proof. The
@@ -247,6 +287,12 @@ impl AcceptedCurrentCandidate {
         ) {
             Ok(ConsumedOutputVerification::Current) => {}
             Ok(_) => {
+                if !self
+                    .own_evidence_is_current(runtime, snapshot, admission)
+                    .map_err(CurrentAcceptedStop::Closure)?
+                {
+                    return Ok(CurrentAcceptedResult::NeedsDisclosure);
+                }
                 return ConsumedOutputEvidence::select_exact_pending_dependency(
                     &recorded.consumed_outputs,
                     owner,
@@ -262,6 +308,12 @@ impl AcceptedCurrentCandidate {
                 .map_err(CurrentAcceptedStop::Closure);
             }
             Err(ConsumedOutputVerificationStop::PendingUpstream) => {
+                if !self
+                    .own_evidence_is_current(runtime, snapshot, admission)
+                    .map_err(CurrentAcceptedStop::Closure)?
+                {
+                    return Ok(CurrentAcceptedResult::NeedsDisclosure);
+                }
                 return ConsumedOutputEvidence::select_exact_pending_dependency(
                     &recorded.consumed_outputs,
                     owner,

@@ -1,6 +1,8 @@
 mod payload_projection;
+#[path = "durable_segment_routing/preallocated_encode.rs"]
+mod preallocated_encode;
 
-use crate::record_framing::{decode_durable_frame, encode_durable_frame};
+use crate::record_framing::decode_durable_frame;
 use crate::{
     DurableFrameDenial, DurableFrameKind, PhysicalGeneration, PhysicalGenerationAuthority,
     PhysicalPageId, PhysicalRecordFormatDeclaration, PhysicalSegmentId,
@@ -139,6 +141,17 @@ impl From<SegmentMembershipBlockDenial> for BoundedSegmentMembershipBlockDecodeD
 }
 
 impl PhysicalSegmentMembershipBlock {
+    pub fn owned_heap_bytes(&self) -> Option<u64> {
+        match self {
+            Self::Leaf { entries, .. } => u64::try_from(entries.capacity()).ok()?.checked_mul(
+                u64::try_from(std::mem::size_of::<RecordSegmentPageManifestEntry>()).ok()?,
+            ),
+            Self::Branch { children, .. } => u64::try_from(children.capacity()).ok()?.checked_mul(
+                u64::try_from(std::mem::size_of::<SegmentManifestBlockReference>()).ok()?,
+            ),
+        }
+    }
+
     pub fn leaf(
         tree_identity: u64,
         generation: u64,
@@ -253,39 +266,11 @@ impl PhysicalSegmentMembershipBlock {
     }
 
     pub fn encode(&self, format: PhysicalRecordFormatDeclaration) -> Vec<u8> {
-        let (kind, count, entry_bytes) = match self {
-            Self::Leaf { entries, .. } => (1_u8, entries.len(), LEAF_ENTRY_BYTES),
-            Self::Branch { children, .. } => (2_u8, children.len(), REFERENCE_BYTES),
-        };
-        let mut payload = vec![0_u8; BLOCK_PREFIX_BYTES + count * entry_bytes];
-        payload[..8].copy_from_slice(&self.tree_identity().to_le_bytes());
-        payload[8..16].copy_from_slice(&self.block().to_le_bytes());
-        payload[16..18].copy_from_slice(&self.level().to_le_bytes());
-        payload[18..20].copy_from_slice(&(count as u16).to_le_bytes());
-        payload[20] = kind;
-        payload[24..32].copy_from_slice(&self.generation().to_le_bytes());
-        match self {
-            Self::Leaf { entries, .. } => entries.iter().enumerate().for_each(|(index, entry)| {
-                encode_entry(
-                    &mut payload[BLOCK_PREFIX_BYTES + index * entry_bytes..],
-                    *entry,
-                );
-            }),
-            Self::Branch { children, .. } => {
-                children.iter().enumerate().for_each(|(index, child)| {
-                    encode_reference(
-                        &mut payload[BLOCK_PREFIX_BYTES + index * entry_bytes..],
-                        *child,
-                    );
-                });
-            }
-        }
-        encode_durable_frame(
-            DurableFrameKind::SegmentMembershipBlock,
-            format,
-            self.block(),
-            &payload,
-        )
+        let length = self
+            .encoded_frame_bytes()
+            .expect("admitted segment block length");
+        self.encode_in_reserved(format, Vec::with_capacity(length))
+            .expect("reserved segment block encoding")
     }
 
     pub fn decode(

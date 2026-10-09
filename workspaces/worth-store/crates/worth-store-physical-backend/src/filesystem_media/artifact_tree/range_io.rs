@@ -53,6 +53,7 @@ impl ArtifactTreeNewFile<'_> {
 
     pub(super) fn write_exact_artifact_chunk(
         &mut self,
+        offset: u64,
         bytes: &[u8],
     ) -> ArtifactNewFileWriteOutcome {
         if self.completed_bytes != 0 || bytes.is_empty() {
@@ -61,6 +62,12 @@ impl ArtifactTreeNewFile<'_> {
             );
         }
         let _sequence = self.mutation_sequence.lock();
+        if let Err(error) = self.file.seek(SeekFrom::Start(offset)) {
+            return ArtifactNewFileWriteOutcome::DeniedBeforeEffect(ArtifactTreeFailure::io(
+                ArtifactTreeFailureKind::DeniedBeforeEffect,
+                &error,
+            ));
+        }
         match super::exact_write_effect::execute(self.owner, &mut self.file, bytes) {
             super::exact_write_effect::ExactWriteEffect::DeniedBeforeEffect(failure) => {
                 ArtifactNewFileWriteOutcome::DeniedBeforeEffect(failure)

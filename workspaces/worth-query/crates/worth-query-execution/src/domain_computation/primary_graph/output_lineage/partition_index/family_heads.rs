@@ -2,6 +2,12 @@
 
 use super::*;
 
+pub(in crate::domain_computation::primary_graph::output_lineage) struct FamilyPublicationHead<'a> {
+    pub(in crate::domain_computation::primary_graph::output_lineage) coordinate: ProductCoordinate,
+    pub(in crate::domain_computation::primary_graph::output_lineage) slot: usize,
+    pub(in crate::domain_computation::primary_graph::output_lineage) recorded: &'a RecordedOutput,
+}
+
 impl WorthQueryApplicationOutputLineage {
     /// The latest published output of every partition at or below
     /// `coordinate` in its own occurrence. A prepared vacancy is passed, and
@@ -13,7 +19,7 @@ impl WorthQueryApplicationOutputLineage {
         source: &SemanticSource,
         coordinate: ProductCoordinate,
         maximum_work: usize,
-    ) -> Result<(Vec<(Option<[u8; 32]>, &RecordedOutput)>, usize), ()> {
+    ) -> Result<(Vec<(Option<[u8; 32]>, FamilyPublicationHead<'_>)>, usize), ()> {
         if maximum_work == 0 {
             return Err(());
         }
@@ -37,13 +43,20 @@ impl WorthQueryApplicationOutputLineage {
                     let Some(slot) = slot.get() else { continue };
                     heads.push((
                         *partition,
-                        self.recorded_at_partition_slot(
-                            source,
-                            coordinate.occurrence,
-                            *generation,
-                            *partition,
-                            *slot,
-                        ),
+                        FamilyPublicationHead {
+                            coordinate: ProductCoordinate {
+                                occurrence: coordinate.occurrence,
+                                generation: *generation,
+                            },
+                            slot: *slot,
+                            recorded: self.recorded_at_partition_slot(
+                                source,
+                                coordinate.occurrence,
+                                *generation,
+                                *partition,
+                                *slot,
+                            ),
+                        },
                     ));
                     break;
                 }

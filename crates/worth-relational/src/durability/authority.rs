@@ -2,6 +2,7 @@ mod append_authority;
 mod authority_continuity;
 mod checkpoint_capture;
 mod checkpoint_image;
+mod checkpoint_transition;
 mod checkpointing;
 mod diagnostics;
 mod recovery;
@@ -12,6 +13,11 @@ use crate::history::data::BranchId;
 use crate::runtime::RelationalRuntime;
 
 pub(crate) use append_authority::DurableAppendAuthority;
+pub use checkpoint_transition::{
+    DeferredRecoveredCheckpointTransition, RecoveredCheckpointTransition,
+    RecoveredCheckpointTransitionDenial, RecoveredCheckpointTransitionError,
+    RecoveredCheckpointTransitionRepairError, RefusedRecoveredCheckpointTransition,
+};
 
 pub struct DurabilityAuthority<'runtime> {
     runtime: &'runtime RelationalRuntime,
@@ -55,18 +61,21 @@ impl RecoveredRelationalRuntimeAuthority {
         self,
         basis: AdmittedRelationalBranchBasis,
     ) -> Result<RecoveredRelationalBranchBasis, AdmittedRelationalBranchBasis> {
-        let descriptor = basis.descriptor();
+        if self.owns_image(basis.descriptor()) {
+            Ok(RecoveredRelationalBranchBasis { basis })
+        } else {
+            Err(basis)
+        }
+    }
+
+    fn owns_image(&self, descriptor: &crate::branch::RelationalBranchBasisDescriptor) -> bool {
         let matches_recovered_image = self
             .recovered_branch_images
             .get(descriptor.branch_id())
             .is_some_and(|(reference, truth_version)| {
                 reference == descriptor.reference() && *truth_version == descriptor.truth_version()
             });
-        if descriptor.runtime_instance_id() == self.runtime_instance_id && matches_recovered_image {
-            Ok(RecoveredRelationalBranchBasis { basis })
-        } else {
-            Err(basis)
-        }
+        descriptor.runtime_instance_id() == self.runtime_instance_id && matches_recovered_image
     }
 }
 

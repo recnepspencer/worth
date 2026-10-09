@@ -21,6 +21,27 @@ pub enum ArtifactTreePublicationEffect {
 }
 
 impl ArtifactTreePublicationEffect {
+    pub fn owned_heap_bytes(&self) -> Option<u64> {
+        match self {
+            Self::FileSynchronization(file) | Self::DurableRemoval(file) => file.owned_heap_bytes(),
+            Self::DirectorySynchronization(directory) => directory.owned_heap_bytes(),
+            Self::Replacement {
+                source,
+                destination,
+            } => source
+                .owned_heap_bytes()?
+                .checked_add(destination.owned_heap_bytes()?),
+            Self::RootProtocolReplacement {
+                previous_selector,
+                current_selector,
+                bootstrap_catalog,
+            } => previous_selector
+                .owned_heap_bytes()?
+                .checked_add(current_selector.owned_heap_bytes()?)?
+                .checked_add(bootstrap_catalog.owned_heap_bytes()?),
+        }
+    }
+
     pub const fn is_file_synchronization(&self) -> bool {
         matches!(self, Self::FileSynchronization(_))
     }
@@ -33,6 +54,12 @@ pub struct ArtifactTreeReplacement {
 }
 
 impl ArtifactTreeReplacement {
+    pub fn owned_heap_bytes(&self) -> Option<u64> {
+        self.source
+            .owned_heap_bytes()?
+            .checked_add(self.destination.owned_heap_bytes()?)
+    }
+
     pub fn new(source: ArtifactTreeFile, destination: ArtifactTreeFile) -> Self {
         Self {
             source,
@@ -87,6 +114,10 @@ pub enum ScheduledArtifactTreePublicationEffectOutcome {
 }
 
 impl CompletedArtifactTreePublicationEffect {
+    pub fn owned_heap_bytes(&self) -> Option<u64> {
+        self.effect.owned_heap_bytes()
+    }
+
     pub const fn owner(&self) -> MediaOwnerIdentity {
         self.owner
     }
@@ -105,6 +136,10 @@ impl CompletedArtifactTreePublicationEffect {
 }
 
 impl IndeterminateArtifactTreePublicationEffect {
+    pub fn owned_heap_bytes(&self) -> Option<u64> {
+        self.effect.owned_heap_bytes()
+    }
+
     pub const fn failure(&self) -> ArtifactTreeFailure {
         self.failure
     }

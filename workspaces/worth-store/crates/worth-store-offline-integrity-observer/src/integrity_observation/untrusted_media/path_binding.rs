@@ -1,7 +1,9 @@
 use std::path::{Component, Path};
 
 use super::{BoundedMediaWalk, PhysicalFileIdentity};
-use crate::integrity_observation::file_identity::{identity_from_path, open_directory_guard};
+#[cfg(not(windows))]
+use crate::integrity_observation::file_identity::identity_from_path;
+use crate::integrity_observation::file_identity::open_directory_guard;
 use crate::integrity_observation::{OfflineIndeterminatePhysicalReason, OfflineIntegrityOutcome};
 
 impl BoundedMediaWalk {
@@ -60,6 +62,26 @@ impl BoundedMediaWalk {
         if !contained || &observed_identity != expected_identity {
             return Err(self.source_changed());
         }
+        self.bind_path_identity(path, expected_identity)
+    }
+
+    fn bind_path_identity(
+        &mut self,
+        path: &Path,
+        identity: &PhysicalFileIdentity,
+    ) -> Result<(), OfflineIntegrityOutcome> {
+        if let Some(first_identity) = self.path_identities.get(path) {
+            return if first_identity == identity {
+                Ok(())
+            } else {
+                Err(self.source_changed())
+            };
+        }
+        if self.path_identities.len() as u64 >= self.limits.maximum_entries() {
+            return Err(self.entry_bound());
+        }
+        self.path_identities
+            .insert(path.to_path_buf(), identity.clone());
         Ok(())
     }
 
@@ -75,12 +97,51 @@ impl BoundedMediaWalk {
 
     fn identity_from_live_path(
         &mut self,
-        file: &std::fs::File,
+        _file: &std::fs::File,
         path: &Path,
     ) -> Result<PhysicalFileIdentity, OfflineIntegrityOutcome> {
-        let maximum_output_bytes = self.limits.maximum_bytes();
-        let maximum_elapsed = self.remaining_elapsed_budget();
-        identity_from_path(file, path, maximum_output_bytes, maximum_elapsed)
-            .map_err(|_| self.identity_unavailable())
+        #[cfg(windows)]
+        {
+            return self.identity_from_open_file(_file, path);
+        }
+        #[cfg(not(windows))]
+        {
+            let maximum_output_bytes = self.limits.maximum_bytes();
+            let maximum_elapsed = self.remaining_elapsed_budget();
+            identity_from_path(_file, path, maximum_output_bytes, maximum_elapsed)
+                .map_err(|_| self.identity_unavailable())
+        }
+    }
+
+    #[cfg(windows)]
+    pub(super) fn charge_path_identity_lookup(
+        &mut self,
+        path: &Path,
+    ) -> Result<(), OfflineIntegrityOutcome> {
+        if self.limits.maximum_bytes()
+            < crate::integrity_observation::file_identity::WINDOWS_HIGH_RES_IDENTITY_BYTES
+            || self.remaining_elapsed_budget().is_zero()
+        {
+            return Err(self.identity_unavailable());
+        }
+        let relative = path
+            .strip_prefix(&self.store_root)
+            .map_err(|_| self.source_changed())?;
+        // The path query opens one transient handle in addition to the held
+        // directory guards and read handle. Charge the attempted open because
+        // its safe API does not expose whether a failed query opened the file.
+        let held_handles = relative
+            .parent()
+            .map_or(1, |parent| parent.components().count().saturating_add(1))
+            .saturating_add(1);
+        if held_handles.saturating_add(1) > self.limits.maximum_open_files() as usize {
+            return Err(self.bound(OfflineIndeterminatePhysicalReason::OpenFileBoundExceeded));
+        }
+        self.counters.files_opened += 1;
+        self.counters.open_file_high_water = self
+            .counters
+            .open_file_high_water
+            .max(held_handles.saturating_add(1) as u32);
+        Ok(())
     }
 }

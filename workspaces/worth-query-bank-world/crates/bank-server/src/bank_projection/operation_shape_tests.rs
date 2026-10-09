@@ -11,6 +11,7 @@ use bank_domain::schema::{
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationEntitySeed, WorthQueryApplicationRelationSeed,
 };
+use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
 
 use super::tests::{binding, entity_key, id, key, ProjectionHarness};
 use super::{project_journal_reversal, project_payment_approval, BankProjectionDenial};
@@ -41,19 +42,22 @@ fn payment_projection_rejects_multiple_decision_entities() {
     });
     let completed = harness
         .projection
-        .project_operation::<ApprovePaymentOperation, _>(|reader| {
-            let payment_entity = reader
-                .resolve_entity(PaymentIdentityField::reference(), payment)
-                .unwrap();
-            project_payment_approval(
-                reader,
-                &payment_entity,
-                &ApprovePayment {
-                    payment,
-                    approver: id(BankPrincipalId::new, 3),
-                },
-            )
-        })
+        .project_operation::<ApprovePaymentOperation, _>(
+            |reader| {
+                let payment_entity = reader
+                    .resolve_entity(PaymentIdentityField::reference(), payment)
+                    .unwrap();
+                project_payment_approval(
+                    reader,
+                    &payment_entity,
+                    &ApprovePayment {
+                        payment,
+                        approver: id(BankPrincipalId::new, 3),
+                    },
+                )
+            },
+            ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     assert_eq!(
         completed.output().as_ref().err(),
@@ -85,19 +89,22 @@ fn payment_projection_preserves_the_source_account_balance() {
     });
     let projected = harness
         .projection
-        .project_operation::<ApprovePaymentOperation, _>(|reader| {
-            let payment_entity = reader
-                .resolve_entity(PaymentIdentityField::reference(), payment)
-                .unwrap();
-            project_payment_approval(
-                reader,
-                &payment_entity,
-                &ApprovePayment {
-                    payment,
-                    approver: id(BankPrincipalId::new, 3),
-                },
-            )
-        })
+        .project_operation::<ApprovePaymentOperation, _>(
+            |reader| {
+                let payment_entity = reader
+                    .resolve_entity(PaymentIdentityField::reference(), payment)
+                    .unwrap();
+                project_payment_approval(
+                    reader,
+                    &payment_entity,
+                    &ApprovePayment {
+                        payment,
+                        approver: id(BankPrincipalId::new, 3),
+                    },
+                )
+            },
+            ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .into_output()
         .unwrap();
@@ -124,19 +131,22 @@ fn payment_work(
     });
     harness
         .projection
-        .project_operation::<ApprovePaymentOperation, _>(|reader| {
-            let payment_entity = reader
-                .resolve_entity(PaymentIdentityField::reference(), payment)
-                .unwrap();
-            project_payment_approval(
-                reader,
-                &payment_entity,
-                &ApprovePayment {
-                    payment,
-                    approver: id(BankPrincipalId::new, 3),
-                },
-            )
-        })
+        .project_operation::<ApprovePaymentOperation, _>(
+            |reader| {
+                let payment_entity = reader
+                    .resolve_entity(PaymentIdentityField::reference(), payment)
+                    .unwrap();
+                project_payment_approval(
+                    reader,
+                    &payment_entity,
+                    &ApprovePayment {
+                        payment,
+                        approver: id(BankPrincipalId::new, 3),
+                    },
+                )
+            },
+            ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .work()
 }
@@ -150,22 +160,25 @@ fn reversal_work(
     });
     harness
         .projection
-        .project_operation::<ReverseJournalOperation, _>(|reader| {
-            let institution_id = id(InstitutionId::new, 1);
-            let institution = reader
-                .resolve_entity(InstitutionIdentityField::reference(), institution_id)
-                .unwrap();
-            project_journal_reversal(
-                reader,
-                &institution,
-                institution_id,
-                &ReverseJournal {
-                    institution: institution_id,
-                    journal,
-                    reason: ReversalReason::OperatorCorrection,
-                },
-            )
-        })
+        .project_operation::<ReverseJournalOperation, _>(
+            |reader| {
+                let institution_id = id(InstitutionId::new, 1);
+                let institution = reader
+                    .resolve_entity(InstitutionIdentityField::reference(), institution_id)
+                    .unwrap();
+                project_journal_reversal(
+                    reader,
+                    &institution,
+                    institution_id,
+                    &ReverseJournal {
+                        institution: institution_id,
+                        journal,
+                        reason: ReversalReason::OperatorCorrection,
+                    },
+                )
+            },
+            ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .work()
 }

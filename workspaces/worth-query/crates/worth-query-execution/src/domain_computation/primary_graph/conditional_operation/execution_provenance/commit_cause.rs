@@ -13,7 +13,6 @@ pub(super) fn application_commit_cause(
         }
         Kind::ProviderRejected
         | Kind::CustomInvariantDenied
-        | Kind::CandidateValidatorWorkExceeded { .. }
         | Kind::WorkflowSettlementDenied { .. }
         | Kind::ProductBasisStale
         | Kind::UniqueValueTaken
@@ -27,7 +26,6 @@ pub(super) fn application_commit_cause(
         | Kind::IndexMaintenanceBudgetExceeded
         | Kind::IndexGenerationIdentityExhausted
         | Kind::IdempotencyIntentDrift
-        | Kind::IdempotencyWindowExpired
         | Kind::IdempotencyReceiptNotRetained { .. }
         | Kind::IdempotencyIntentUnverifiable
         | Kind::MutationBindingMismatch

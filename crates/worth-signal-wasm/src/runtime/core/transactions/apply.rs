@@ -58,9 +58,18 @@ impl RuntimeCore {
 
         let branch = self.runtime.current_branch();
         let basis = self.native_branch_basis(branch)?;
-        let result = self
-            .runtime
-            .advance_signal_branch(&mut self.store, &basis, move |tx| {
+        let serial_request = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(
+                self.runtime.runtime_policy().serial_memory_bytes,
+            ),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        let result = self.runtime.advance_signal_branch(
+            worth_execution::ExecutionRequest::serial(&serial_request),
+            &mut self.store,
+            &basis,
+            move |tx| {
                 wasm_debug("[worth-signals-wasm] tx:apply-start");
                 apply_set_changes(tx, &store, &dense_grids, &changes)?;
 
@@ -77,7 +86,8 @@ impl RuntimeCore {
                     SignalError::internal("dependency patch receipt mutex poisoned")
                 })? = Some((pending, runtime_read_breadth));
                 Ok(())
-            });
+            },
+        );
 
         match result {
             Ok(outcome) => {

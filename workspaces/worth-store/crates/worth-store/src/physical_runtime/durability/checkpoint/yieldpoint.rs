@@ -9,6 +9,7 @@ pub enum PhysicalCheckpointStep {
     CandidateAppend,
     CandidateBindingCompactionHeader,
     CandidateBindingRecord,
+    CandidateCertificate,
     CandidateFooter,
     CandidateSynchronization,
     CandidatePublication,
@@ -22,10 +23,11 @@ impl PhysicalCheckpointStep {
             Self::CandidateAppend => 1,
             Self::CandidateBindingCompactionHeader => 2,
             Self::CandidateBindingRecord => 3,
-            Self::CandidateFooter => 4,
-            Self::CandidateSynchronization => 5,
-            Self::CandidatePublication => 6,
-            Self::NamespaceSynchronization => 7,
+            Self::CandidateCertificate => 4,
+            Self::CandidateFooter => 5,
+            Self::CandidateSynchronization => 6,
+            Self::CandidatePublication => 7,
+            Self::NamespaceSynchronization => 8,
         }
     }
 }
@@ -46,13 +48,14 @@ struct PauseProgress {
 }
 
 pub(crate) struct PhysicalCheckpointYieldpointOwner {
-    gates: [Mutex<Option<Weak<PauseState>>>; 8],
+    gates: [Mutex<Option<Weak<PauseState>>>; 9],
 }
 
 impl PhysicalCheckpointYieldpointOwner {
     pub(super) fn new() -> Arc<Self> {
         Arc::new(Self {
             gates: [
+                Mutex::new(None),
                 Mutex::new(None),
                 Mutex::new(None),
                 Mutex::new(None),

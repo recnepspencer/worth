@@ -1,5 +1,8 @@
 use sha2::{Digest, Sha256};
 
+mod payload;
+pub(in crate::physical_runtime) use payload::PhysicalCheckpointCommandPayload;
+
 use super::super::super::{
     PhysicalCheckpointWorkAction, PhysicalWorkOperationFamily, ResourceAdmittedPhysicalWork,
 };
@@ -11,7 +14,7 @@ use super::types::{
 impl PhysicalExecutorCommand {
     pub(in crate::physical_runtime) fn checkpoint(
         work: ResourceAdmittedPhysicalWork,
-        payload: Option<Box<[u8]>>,
+        payload: Option<PhysicalCheckpointCommandPayload>,
     ) -> Result<Self, PhysicalExecutorCommandDenial> {
         require_family(&work, PhysicalWorkOperationFamily::CheckpointCapture)?;
         let scope = work

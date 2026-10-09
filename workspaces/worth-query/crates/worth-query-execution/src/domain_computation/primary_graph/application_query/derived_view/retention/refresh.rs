@@ -4,8 +4,8 @@ use std::sync::Arc;
 use worth_runtime_world::facade::CompositeCommitIdentity;
 
 use super::{
-    verify_observation, DependencyIndex, ManagedDerivedViewState, ViewDependency,
-    WorthQueryManagedDerivedValue, WorthQueryManagedDerivedViewDenial,
+    verify_observation, ManagedDerivedViewState, ViewDependency, WorthQueryManagedDerivedValue,
+    WorthQueryManagedDerivedViewDenial,
 };
 
 impl<Key, Value> ManagedDerivedViewState<Key, Value>
@@ -56,29 +56,19 @@ where
         let Some(old) = retained.entries.get(key) else {
             return Err(WorthQueryManagedDerivedViewDenial::IncompleteDependencies);
         };
-        let old_dependencies = old.dependencies.clone();
-        let dependency_charge = |dependencies: &BTreeSet<ViewDependency>| {
-            dependencies.iter().fold(0usize, |bytes, dependency| {
-                bytes
-                    .saturating_add(dependency.retained_bytes())
-                    .saturating_add(DependencyIndex::<Key>::entry_insertion_bound(dependency))
-            })
-        };
-        let old_charge = old
-            .value
-            .retained_bytes()
-            .saturating_add(dependency_charge(&old_dependencies));
-        let new_charge = value
-            .retained_bytes()
-            .saturating_add(dependency_charge(&dependencies));
+        let old_charge =
+            super::storage_quote::entry_quote::<Key, Value>(old.value.as_ref(), &old.dependencies)?;
+        let new_charge = super::storage_quote::entry_quote::<Key, Value>(&value, &dependencies)?;
         let required = retained
             .charged_bytes
             .checked_sub(old_charge)
             .ok_or(WorthQueryManagedDerivedViewDenial::IncompleteDependencies)?
-            .saturating_add(new_charge);
-        if required > self.limits.maximum_retained_bytes() {
+            .checked_add(new_charge)
+            .ok_or(WorthQueryManagedDerivedViewDenial::RetainedBytesExceeded)?;
+        if self.limits.rejects_bytes(required) {
             return Err(WorthQueryManagedDerivedViewDenial::RetainedBytesExceeded);
         }
+        let old_dependencies = old.dependencies.clone();
         retained.index.remove_entry(key, &old_dependencies);
         for dependency in &dependencies {
             retained.index.insert_entry(dependency, key);

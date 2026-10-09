@@ -34,10 +34,33 @@ fn commit_denial(error: &Error, stage: Stage, ordinary: Denial) -> Denial {
                 Err(kind) => Denial::ExecutionControlStopped { stage, kind },
             }
         }
-        Error::Conflict { .. }
-        | Error::Publication { .. }
+        Error::Interrupted { interruption, .. } => Denial::ExecutionControlStopped {
+            stage,
+            kind: match interruption.interruption() {
+                worth_relational::facade::mvcc::RelationalOperationInterruption::Cancelled => {
+                    crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled
+                }
+                worth_relational::facade::mvcc::RelationalOperationInterruption::TimedOut => {
+                    crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut
+                }
+            },
+        },
+        Error::Conflict { error, .. } => {
+            if let Some(allocation) = error.allocation_denial() {
+                return Denial::AllocationDenied {
+                    stage,
+                    kind: allocation.kind(),
+                    requested_payload_bytes: allocation.requested_payload_bytes(),
+                };
+            }
+            match &error.class {
+                worth_relational::facade::transactions::ConflictClass::TransactionStagingCardinalityOverflow => Denial::StagingCardinalityOverflow,
+                worth_relational::facade::transactions::ConflictClass::TransactionInputDirectoryAllocationDenied { requested_batches } => Denial::StagingInputDirectoryAllocationDenied { requested_batches: *requested_batches },
+                _ => ordinary,
+            }
+        }
+        Error::Publication { .. }
         | Error::Preparation { .. }
-        | Error::Interrupted { .. }
         | Error::PublicationDenied { .. }
         | Error::PublicationDeferred { .. }
         | Error::PublicationFailed { .. }

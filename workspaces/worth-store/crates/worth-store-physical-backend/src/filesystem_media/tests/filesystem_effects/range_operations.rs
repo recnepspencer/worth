@@ -173,18 +173,10 @@ fn read_only_open_observes_a_file_without_requesting_write_access() {
 
 #[test]
 fn range_memory_shape_is_independent_of_large_logical_file_length() {
-    const PROBE_ROLE: &str = "WORTH_STORE_C4_RANGE_ALLOCATION_PROBE";
-    if std::env::var_os(PROBE_ROLE).is_none() {
-        let status = std::process::Command::new(std::env::current_exe().expect("test executable"))
-            .args([
-                "--exact",
-                "filesystem_media::tests::filesystem_effects::range_operations::range_memory_shape_is_independent_of_large_logical_file_length",
-                "--test-threads=1",
-            ])
-            .env(PROBE_ROLE, "1")
-            .status()
-            .expect("spawn isolated allocation probe");
-        assert!(status.success(), "isolated allocation probe failed");
+    if !super::super::allocation_probe::alone_in_its_process(
+        module_path!(),
+        "range_memory_shape_is_independent_of_large_logical_file_length",
+    ) {
         return;
     }
     let (_root, owner) = owner();

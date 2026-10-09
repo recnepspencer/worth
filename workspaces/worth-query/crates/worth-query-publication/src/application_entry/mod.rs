@@ -11,6 +11,7 @@ mod mandatory_review;
 mod mutation;
 mod programs;
 mod query;
+mod query_batch;
 mod request;
 mod retained_read;
 mod workflow;
@@ -48,8 +49,9 @@ pub use mandatory_review::{
     WorthQueryApplicationMandatoryReviewDenial, WorthQueryApplicationMandatoryReviewFailure,
 };
 pub use mutation::{
-    WorthQueryApplicationDiscoveredMutationOutcome, WorthQueryApplicationMutationOutcome,
-    WorthQueryApplicationMutationRequest, WorthQueryApplicationMutationRequestWithIdempotency,
+    WorthQueryApplicationDiscoveredMutationOutcome, WorthQueryApplicationMutationAttemptReport,
+    WorthQueryApplicationMutationOutcome, WorthQueryApplicationMutationRequest,
+    WorthQueryApplicationMutationRequestWithIdempotency,
     WorthQueryApplicationPerformedMutationOutcome,
     WorthQueryApplicationProgramMigrationPreparationDenial,
     WorthQueryApplicationProgramMigrationPreparationOutcome,
@@ -91,10 +93,15 @@ pub use programs::{
     WorthQueryWorkflowInstanceDisposition, WorthQueryWorkflowInstanceOccurrence,
 };
 pub use query::WorthQueryApplicationQueryRequest;
+pub use query_batch::{
+    WorthQueryApplicationBoundedQueryBatchRequest, WorthQueryApplicationQueryBatchDenial,
+    WorthQueryApplicationQueryBatchRequest,
+};
 pub use request::{
     WorthQueryApplicationBranchSetRequest, WorthQueryApplicationHistorySelectionDenial,
     WorthQueryApplicationRequest, WorthQueryApplicationRequestExt,
-    WorthQueryApplicationRetainedRequest, WorthQueryProgramOutputCurrentnessDenial,
+    WorthQueryApplicationRetainedRequest, WorthQueryOutputCurrentnessDenial,
+    WorthQueryProgramOutputCurrentnessDenial,
 };
 pub use retained_read::WorthQueryApplicationReadObservation;
 pub use workflow::{
@@ -141,4 +148,7 @@ pub use workflow::{
     WorthQueryWorkflowOperationRecoveryPreparationDenial,
     WorthQueryWorkflowProposalPreparationDenial, WorthQueryWorkflowProposalPreparationDenialKind,
     WorthQueryWorkflowProposalRequest,
+};
+pub use worth_query_execution::facade::primary_graph::{
+    WorthQueryApplicationQueryBatchLimits, WorthQueryApplicationQueryBatchResourceDenial,
 };

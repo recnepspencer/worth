@@ -57,6 +57,7 @@ pub(crate) fn repair_settlement_with_aspect_field_patches(
                 ]),
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
     txn.push_batch(
@@ -87,6 +88,7 @@ pub(crate) fn repair_settlement_with_aspect_field_patches(
                 ]),
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
     txn.push_batch(
@@ -112,7 +114,12 @@ pub(crate) fn repair_settlement_with_aspect_field_patches(
                 ]),
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    txn.commit(&world.runtime).unwrap()
+    txn.commit(
+        &world.runtime,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .unwrap()
 }

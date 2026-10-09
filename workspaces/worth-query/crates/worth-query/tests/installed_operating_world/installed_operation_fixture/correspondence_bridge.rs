@@ -78,20 +78,26 @@ pub(crate) fn correspondence_bridge(
     );
     let mut create = begin_main_transaction(&relational);
     create
-        .push_batch(WorkerIntentBatch::new("create-conditional-entity").push(
-            MutationIntent::Create(CreateIntent::Entity(EntitySpec {
-                partition_id: PartitionId::main(),
-                kind_id: KindId(1),
-                client_key: ClientKey::raw("conditional-entity"),
-                fields: AspectFieldPatch::new(BTreeMap::from([(
-                    locator.clone(),
-                    AspectValue::String("before".into()),
-                )])),
-            })),
-        ))
+        .push_batch(
+            WorkerIntentBatch::new("create-conditional-entity").push(MutationIntent::Create(
+                CreateIntent::Entity(EntitySpec {
+                    partition_id: PartitionId::main(),
+                    kind_id: KindId(1),
+                    client_key: ClientKey::raw("conditional-entity"),
+                    fields: AspectFieldPatch::new(BTreeMap::from([(
+                        locator.clone(),
+                        AspectValue::String("before".into()),
+                    )])),
+                }),
+            )),
+            worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     let created = create
-        .commit(&relational)
+        .commit(
+            &relational,
+            worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("conditional entity should commit");
     let entity = created
         .changed_records
@@ -105,20 +111,24 @@ pub(crate) fn correspondence_bridge(
 
     let mut update = begin_main_transaction(&relational);
     update
-        .push_batch(WorkerIntentBatch::new("update-conditional-identity").push(
-            MutationIntent::Entity(EntityMutationIntent::UpdateFields(
-                UpdateEntityFieldsIntent {
+        .push_batch(
+            WorkerIntentBatch::new("update-conditional-identity").push(MutationIntent::Entity(
+                EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
                     entity_id: entity,
                     fields: AspectFieldPatch::from_locator(
                         locator,
                         AspectValue::String("after".into()),
                     ),
-                },
+                }),
             )),
-        ))
+            worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     let updated = update
-        .commit(&relational)
+        .commit(
+            &relational,
+            worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("conditional identity field should commit");
     let branch_identity = relational
         .branch_identity(&updated.commit.branch_id)

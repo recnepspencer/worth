@@ -152,6 +152,15 @@ impl From<RebaseVerificationReason> for FullVerificationReason {
     fn from(reason: RebaseVerificationReason) -> Self {
         match reason {
             RebaseVerificationReason::NativeRevisionUnavailable => Self::NativeRevisionUnavailable,
+            RebaseVerificationReason::NativeFactRevisionUnavailable(ordinal) => {
+                Self::NativeFactRevisionUnavailable(ordinal)
+            }
+            RebaseVerificationReason::IndexedSelectionDenied(denial) => {
+                Self::IndexedSelectionDenied(denial)
+            }
+            RebaseVerificationReason::IndexedSelectionFactDenied(ordinal, denial) => {
+                Self::IndexedSelectionFactDenied(ordinal, denial)
+            }
             RebaseVerificationReason::UnsupportedDecisionFact => Self::UnsupportedFact,
             RebaseVerificationReason::AdmissionDenied(stop) => stopped(stop),
         }

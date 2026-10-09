@@ -9,8 +9,7 @@ use worth_store_physical_format::store_namespace::{
 };
 use worth_store_physical_format::{
     DurablePhysicalRootManifest, FreeSpaceBlockReference, FreeSpaceKey, PhysicalPageSizeClass,
-    PhysicalRecordFormatDeclaration, RecordAllocationClass, RecordArtifactFile,
-    RecordFrameCoordinate,
+    PhysicalRecordFormatDeclaration, RecordArtifactFile, RecordFrameCoordinate,
 };
 use worth_store_physical_integrity::{PhysicalArtifactScope, PhysicalByteRange};
 
@@ -116,7 +115,7 @@ pub(super) fn format() -> PhysicalRecordFormatDeclaration {
 }
 
 pub(super) fn manifest_bytes(generation: u64, format: PhysicalRecordFormatDeclaration) -> Vec<u8> {
-    let key = FreeSpaceKey::new(RecordAllocationClass::InlinePage, 1).unwrap();
+    let key = FreeSpaceKey::inline(1).unwrap();
     let free_space_root = FreeSpaceBlockReference::new(generation, 1, 0, 41, key, key).unwrap();
     DurablePhysicalRootManifest::builder(generation, 71, 2, 43)
         .free_space_root(Some(free_space_root))

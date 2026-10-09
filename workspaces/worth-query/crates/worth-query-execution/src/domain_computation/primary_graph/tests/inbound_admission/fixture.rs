@@ -1,8 +1,10 @@
+use crate::facade::runtime::ExecutionAllocationPolicy;
 use std::future::Future;
 use std::pin::pin;
 use std::sync::Arc;
 use std::task::{Context, Poll, Waker};
 use std::time::{Duration, SystemTime};
+use worth_execution::ExecutionAllocationPolicy as AllocationPolicy;
 
 use worth_query_admission::facade::authenticated_principal::*;
 use worth_query_declaration::facade::application_schema::{
@@ -122,15 +124,19 @@ impl InboundWorld {
             .unwrap();
         let (_, projection, _) = self
             .invariant
-            .project_admitted_operation(&admission, |_, _| {})
+            .project_admitted_operation(&admission, |_, _| {}, AllocationPolicy::SystemAllocation)
             .unwrap()
             .into_parts();
         let reads = self
             .application
-            .begin_projected_application_read_attempt(admission, projection)
+            .begin_projected_application_read_attempt(
+                admission,
+                projection,
+                AllocationPolicy::SystemAllocation,
+            )
             .unwrap();
         let mut effects = reads
-            .complete_projected_dependencies()
+            .complete_projected_dependencies(ExecutionAllocationPolicy::SystemAllocation)
             .unwrap()
             .begin_effect_program();
         effects
@@ -145,6 +151,7 @@ impl InboundWorld {
         match self.application.compare_and_commit_application(
             program,
             WorthQueryApplicationIdempotencyBinding::new(key, fingerprint),
+            ExecutionAllocationPolicy::SystemAllocation,
         ) {
             WorthQueryApplicationCommitOutcome::Committed(receipt) => receipt,
             other => panic!("other operation {seed} must issue a genuine dispatch: {other:?}"),
@@ -246,15 +253,19 @@ impl InboundWorld {
             .unwrap();
         let (_, projection, _) = self
             .invariant
-            .project_admitted_operation(&admission, |_, _| {})
+            .project_admitted_operation(&admission, |_, _| {}, AllocationPolicy::SystemAllocation)
             .unwrap()
             .into_parts();
         let reads = self
             .application
-            .begin_projected_application_read_attempt(admission, projection)
+            .begin_projected_application_read_attempt(
+                admission,
+                projection,
+                AllocationPolicy::SystemAllocation,
+            )
             .unwrap();
         let mut effects = reads
-            .complete_projected_dependencies()
+            .complete_projected_dependencies(ExecutionAllocationPolicy::SystemAllocation)
             .unwrap()
             .begin_effect_program();
         if emit_external {
@@ -266,70 +277,11 @@ impl InboundWorld {
         self.application.compare_and_commit_application(
             program,
             WorthQueryApplicationIdempotencyBinding::new([seed; 32], [seed.wrapping_add(1); 32]),
+            ExecutionAllocationPolicy::SystemAllocation,
         )
     }
 }
 
-fn external_identity() -> WorthQueryExternalPrincipalIdentity {
-    WorthQueryExternalPrincipalIdentity::new("https://inbound-test.example", "alice").unwrap()
-}
-
-fn authenticate(
-    schema: &worth_query_installation::facade::WorthQueryInstalledApplicationSchema<
-        InboundTestSchema,
-    >,
-    request: &WorthQueryRequestScope,
-) -> WorthQueryAuthenticatedExternalPrincipal<InboundTestSchema> {
-    let adapter = admit_authentication_adapter(
-        schema,
-        WorthQueryAuthenticationAdapterAdmission::new(
-            WorthQueryAuthenticationAudience::new("inbound-test").unwrap(),
-            WorthQueryAuthenticationMethod::new("test-identity").unwrap(),
-        ),
-        TestIdentityAdapter,
-    )
-    .unwrap();
-    block_on(adapter.authenticate((), request)).unwrap()
-}
-
-struct TestIdentityAdapter;
-impl WorthQueryAuthenticationAdapter for TestIdentityAdapter {
-    type Credential = ();
-    fn configuration_identity(&self) -> &str {
-        "inbound-test-identity-adapter"
-    }
-    fn validate<'a>(
-        &'a self,
-        _: (),
-        _: &'a WorthQueryRequestScope,
-    ) -> WorthQueryAuthenticationFuture<'a> {
-        Box::pin(async move {
-            let now = SystemTime::now();
-            WorthQueryValidatedExternalPrincipal::new(
-                external_identity(),
-                WorthQueryAuthenticationAudience::new("inbound-test").unwrap(),
-                WorthQueryAuthenticationMethod::new("test-identity").unwrap(),
-                now,
-                now + Duration::from_secs(60),
-                vec![],
-            )
-            .map_err(|_| {
-                WorthQueryAuthenticationAdapterFailure::new(
-                    WorthQueryAuthenticationAdapterFailureKind::ProtocolViolation,
-                )
-            })
-        })
-    }
-}
-
-fn block_on<F: Future>(future: F) -> F::Output {
-    let mut future = pin!(future);
-    let waker = Waker::noop();
-    let mut context = Context::from_waker(waker);
-    loop {
-        match future.as_mut().poll(&mut context) {
-            Poll::Ready(output) => return output,
-            Poll::Pending => std::thread::yield_now(),
-        }
-    }
-}
+#[path = "fixture/authentication.rs"]
+mod authentication;
+use authentication::{authenticate, external_identity};

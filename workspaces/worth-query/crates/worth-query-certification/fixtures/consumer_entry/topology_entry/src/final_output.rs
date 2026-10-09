@@ -70,8 +70,7 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     const IDENTITY: &'static str = "worth.query.certification.final-planar-mutation.v2";
     const HANDLER_IDENTITY: &'static str = "worth.query.certification.final-planar-handler.v2";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.certification.final-planar-command.v1";
-    const CANDIDATES: ApplicationCandidateRequirements =
-        super::requirements(3, 3, 0, 12, 4096, 4096);
+    const CANDIDATES: ApplicationCandidateRequirements = super::requirements(3, 3, 0, 12, 4096);
 
     fn scope_field() -> ApplicationFieldRef<
         Schema,
@@ -311,6 +310,19 @@ impl PlanarFinalOutputProvider {
     }
 }
 
+#[cfg(test)]
+static PROVIDER_CONTACTS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+
+#[cfg(test)]
+pub(super) fn reset_provider_contacts() {
+    PROVIDER_CONTACTS.store(0, std::sync::atomic::Ordering::SeqCst);
+}
+
+#[cfg(test)]
+pub(super) fn provider_contacts() -> usize {
+    PROVIDER_CONTACTS.load(std::sync::atomic::Ordering::SeqCst)
+}
+
 impl<Schema: TopologySchemaBinding>
     WorthQueryApplicationProducerProvider<Schema, PlanarFinalOutputProducer<Schema>>
     for PlanarFinalOutputProvider
@@ -319,6 +331,8 @@ impl<Schema: TopologySchemaBinding>
         "worth.query.certification.planar-final-output-provider.v2";
 
     fn operation_input(&self, source: &PlanarReadResult) -> FinalPlanarMutation {
+        #[cfg(test)]
+        PROVIDER_CONTACTS.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
         FinalPlanarMutation {
             scope_key: source.body_key.clone(),
             output_key: format!("final:{}", source.body_key),
@@ -330,10 +344,14 @@ impl<Schema: TopologySchemaBinding>
     }
 
     fn idempotency_key(&self, _: &PlanarReadResult, source_identity: &[u8; 32]) -> u64 {
+        #[cfg(test)]
+        PROVIDER_CONTACTS.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
         (super::planar_source_key(source_identity) ^ 0x9174_f1a1_0000_0001) | self.key_mask
     }
 
     fn demand_resources(&self, _: &PlanarReadResult) -> WorthQueryProducerDemandResources {
+        #[cfg(test)]
+        PROVIDER_CONTACTS.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
         super::planar_producer_resources()
     }
 }
@@ -360,10 +378,7 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationProducerBinding<Schema>
         )];
     const RESOURCE_POLICY: &'static str = "bounded-synchronous";
     const REUSE_POLICY: &'static str = "exact-source";
-    const INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> =
-        Some(WorthQueryProducerInputReuseContract::canonical_bitwise(
-            WorthQueryDecisionContextDependencies::NONE,
-        ));
+    const INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> = Schema::FINAL_INPUT_REUSE;
 }
 
 mod preservation;

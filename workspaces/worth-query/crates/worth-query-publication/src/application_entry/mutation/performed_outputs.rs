@@ -323,9 +323,15 @@ where
                     (
                         root.application_commit_receipt(),
                         root.readiness_delivery(),
+                        root.checkpoint_readmission_work_units(),
+                        root.checkpoint_readmission_work_bound(),
+                        root.checkpoint_readmission_charged_preparation_bytes(),
                     ),
                     outputs.iter().map(|output| {
-                        (output.receipt(), output.readiness_delivery())
+                        (output.receipt(), output.readiness_delivery(),
+                            output.checkpoint_readmission_work_units(),
+                            output.checkpoint_readmission_work_bound(),
+                            output.checkpoint_readmission_charged_preparation_bytes())
                     }),
                 );
                 Ok(WorthQueryApplicationProgramOutputProgress::Settled(

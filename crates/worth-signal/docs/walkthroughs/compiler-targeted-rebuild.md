@@ -139,7 +139,13 @@ let evaluate = |view: &mut EvaluationContext<'_, BuildState>| {
 };
 
 let basis = runtime.observe_signal_branch_basis(runtime.current_branch())?;
-let basis = runtime.advance_signal_branch(&mut state, &basis, |tx| {
+let serial_request = worth_execution::SerialRequest::from_memory(
+    worth_execution::SerialMemoryBudget::new(runtime.runtime_policy().serial_memory_bytes),
+    worth_execution::CancellationToken::new(),
+    None,
+);
+let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+let basis = runtime.advance_signal_branch(execution, &mut state, &basis, |tx| {
     tx.read_many(
         &[source_file, symbol_index, diagnostics_panel, app_bundle],
         &evaluate,
@@ -169,7 +175,7 @@ state.symbols_version += 1;
 state.diagnostics_version += 1;
 state.bundle_version += 1;
 
-let _basis = runtime.advance_signal_branch(&mut state, &basis, |tx| {
+let _basis = runtime.advance_signal_branch(execution, &mut state, &basis, |tx| {
     tx.mark_changed(source_file, SOURCE_TEXT)?;
     tx.read_many(&[diagnostics_panel, app_bundle], &evaluate)?;
     Ok(())

@@ -17,6 +17,8 @@ pub struct WorthQueryProviderSessionCommitDeferred {
     stage: WorthQueryProviderSessionProtocolStage,
     detail: String,
     counters: WorthQueryProviderSessionProtocolCounters,
+    prerequisite_denial:
+        Option<crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial>,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -88,10 +90,29 @@ impl WorthQueryProviderSessionCommitDeferred {
     ) -> Self {
         Self {
             kind,
+            prerequisite_denial: None,
             stage: WorthQueryProviderSessionProtocolStage::Commit,
             detail: detail.into(),
             counters: WorthQueryProviderSessionProtocolCounters::default(),
         }
+    }
+
+    pub(in crate::domain_computation) fn required_prerequisite(
+        denial: crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial,
+        detail: impl Into<String>,
+    ) -> Self {
+        let mut deferred = Self::new(
+            WorthQueryProviderSessionCommitDeferredKind::RequiredPrerequisitePending(denial.kind()),
+            detail,
+        );
+        deferred.prerequisite_denial = Some(denial);
+        deferred
+    }
+
+    pub(in crate::domain_computation) fn into_prerequisite_denial(
+        self,
+    ) -> Option<crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial> {
+        self.prerequisite_denial
     }
 
     pub const fn kind(&self) -> WorthQueryProviderSessionCommitDeferredKind {

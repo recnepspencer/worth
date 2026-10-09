@@ -29,6 +29,14 @@ The Bridge owns:
 
 The Bridge depends on Relational and Signal. Neither depends on the Bridge.
 
+Execution basis admission distinguishes atomic attempts from managed steps.
+`admit_atomic_execution_basis` binds the same intent, truth observation and
+Signal request lifecycle without minting a step contract or queue authority.
+Atomic bases may complete, cancel, reject or be abandoned; managed safe points,
+queue mutations and yielding return typed refusals. `step_contract()` therefore
+returns an optional managed capability. Yielded bases retain a concrete contract
+because only managed bases can enter that lifecycle.
+
 It does not own:
 
 - Relational truth or schema interpretation. The adapter lowers a

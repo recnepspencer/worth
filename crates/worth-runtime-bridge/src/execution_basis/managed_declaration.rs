@@ -14,6 +14,31 @@ pub(super) fn managed_execution_declaration(
     instance_identity: &str,
     deadline_nanos: Option<u64>,
 ) -> Result<LoweredBridgeAsyncSourceDeclaration, BridgeAsyncSourceDeclarationRejection> {
+    execution_declaration(
+        instance_identity,
+        deadline_nanos,
+        "bridge-managed-domain-execution-v1",
+        "bridge-managed-domain-execution-legacy-v1",
+    )
+}
+
+pub(super) fn atomic_execution_declaration(
+    instance_identity: &str,
+) -> Result<LoweredBridgeAsyncSourceDeclaration, BridgeAsyncSourceDeclarationRejection> {
+    execution_declaration(
+        instance_identity,
+        None,
+        "bridge-atomic-domain-execution-v1",
+        "bridge-atomic-domain-execution-legacy-v1",
+    )
+}
+
+fn execution_declaration(
+    instance_identity: &str,
+    deadline_nanos: Option<u64>,
+    declaration_identity: &str,
+    legacy_identity: &str,
+) -> Result<LoweredBridgeAsyncSourceDeclaration, BridgeAsyncSourceDeclarationRejection> {
     let node = ResourceNodeDeclaration::new(
         ResourceNodeId::from_node(NodeId::new(0, 0)),
         ResourcePayloadContract::new(ResourcePayloadContractId::new(915_601))
@@ -30,12 +55,8 @@ pub(super) fn managed_execution_declaration(
         None => node,
     };
     let draft = BridgeAsyncSourceDeclarationDraft::request_response(
-        BridgeAsyncSourceDeclarationIdentity::from_stable_name(
-            "bridge-managed-domain-execution-v1",
-        ),
-        BridgeAsyncSourceLegacyDeclarationIdentity::admit_bridge_owned(
-            "bridge-managed-domain-execution-legacy-v1",
-        ),
+        BridgeAsyncSourceDeclarationIdentity::from_stable_name(declaration_identity),
+        BridgeAsyncSourceLegacyDeclarationIdentity::admit_bridge_owned(legacy_identity),
         node,
     );
     let validated = ValidatedBridgeAsyncSourceDeclaration::validate(draft)?;

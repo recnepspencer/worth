@@ -1,6 +1,12 @@
 use super::{WorthQueryProposedFact, WorthQueryStagedApplicationAttempt};
 
 impl WorthQueryStagedApplicationAttempt<'_> {
+    pub(in crate::domain_computation::primary_graph::provider) fn validation_request(
+        &self,
+    ) -> &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope {
+        self.attempt.affinity().publication_request()
+    }
+
     pub(in crate::domain_computation::primary_graph::provider) fn overlay_identity(&self) -> &str {
         self.overlay.identity()
     }
@@ -63,12 +69,6 @@ impl WorthQueryStagedApplicationAttempt<'_> {
     ) -> &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement]
     {
         self.attempt.producer_required_invariants()
-    }
-
-    pub(in crate::domain_computation::primary_graph::provider) const fn validator_work_admission(
-        &self,
-    ) -> crate::domain_computation::primary_graph::application_attempt::WorthQueryCandidateValidatorWorkAdmission{
-        self.attempt.validator_work_admission()
     }
 
     pub(in crate::domain_computation::primary_graph::provider) fn aftermath_causality(

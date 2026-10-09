@@ -47,6 +47,8 @@ pub(crate) use history_preparation_binding::RelationalPreparationHistory;
 mod history_publication;
 #[path = "history_recovery.rs"]
 mod history_recovery;
+#[path = "history_recovery_index_basis.rs"]
+mod history_recovery_index_basis;
 #[path = "history_recovery_lineage.rs"]
 mod history_recovery_lineage;
 #[path = "history_recovery_validation.rs"]

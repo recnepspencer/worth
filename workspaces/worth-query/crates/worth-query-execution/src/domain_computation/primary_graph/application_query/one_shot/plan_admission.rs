@@ -77,18 +77,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn reserve_o
 where
     Schema: ApplicationSchema,
 {
-    application.runtime.primary_graph().ok_or_else(|| {
-        denial(
-            WorthQueryApplicationOneShotDenialKind::StaleInstalledQuery,
-            plan.query.name(),
-            plan.query.name(),
-        )
-    })?;
-    Ok(application.result_buffers.reserve(
-        plan.graph_read_plan()
-            .budget_check()
-            .max_inline_result_bytes(),
-    ))
+    reserve_one_shot_result_buffer_in_batch(application, plan, None)
 }
 
 pub(in crate::domain_computation::primary_graph::application_query) fn validate_authentication_lifetime<
@@ -193,4 +182,51 @@ pub(in crate::domain_computation::primary_graph::application_query) fn admit_req
         )),
         None => Ok(()),
     }
+}
+
+pub(in crate::domain_computation::primary_graph::application_query) fn reserve_one_shot_result_buffer_in_batch<
+    Schema,
+    Query,
+    Parameters,
+    QueryResult,
+    Principal,
+    PrincipalIdentity,
+    Scope,
+>(
+    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    plan: &WorthQueryAdmittedApplicationQueryPlan<
+        '_,
+        Schema,
+        Query,
+        Parameters,
+        QueryResult,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+    >,
+    batch: Option<&super::super::WorthQueryApplicationQueryBatchAdmission>,
+) -> Result<
+    super::super::resource_lifecycle::WorthQueryApplicationResultBufferReservation,
+    WorthQueryApplicationOneShotDenial,
+>
+where
+    Schema: ApplicationSchema,
+{
+    application.runtime.primary_graph().ok_or_else(|| {
+        denial(
+            WorthQueryApplicationOneShotDenialKind::StaleInstalledQuery,
+            plan.query.name(),
+            plan.query.name(),
+        )
+    })?;
+    let bytes = plan
+        .graph_read_plan()
+        .budget_check()
+        .max_inline_result_bytes();
+    Ok(match batch {
+        Some(batch) => application
+            .result_buffers
+            .reserve_in_batch(batch.inline_result_bytes(bytes), batch),
+        None => application.result_buffers.reserve(bytes),
+    })
 }

@@ -38,6 +38,38 @@ pub(crate) fn lease_denial(denial: LeaseDenial) -> Cause {
     }
 }
 
+/// A leased preparation reports request causes even when native staging
+/// refuses before packet execution. Physical layout and allocator refusals
+/// retain the allocation owner's conflict and checked quote.
+pub(crate) fn allocation_commit_error(
+    error: crate::transactions::data::TransactionCommitError,
+) -> crate::transactions::data::TransactionCommitError {
+    use crate::transactions::data::{
+        CommitExecutionDenial, CommitExecutionDenialKind, TransactionCommitError,
+    };
+    use worth_execution::ExecutionAllocationDenialKind as Kind;
+
+    match error {
+        TransactionCommitError::Conflict { error, commit_log } => {
+            let cause = match error.allocation_denial().map(|denial| denial.kind()) {
+                Some(Kind::Lease(denial)) => lease_denial(denial),
+                Some(Kind::Cancelled) => Cause::Cancelled,
+                Some(Kind::DeadlineElapsed) => Cause::DeadlineElapsed,
+                _ => return TransactionCommitError::Conflict { error, commit_log },
+            };
+            TransactionCommitError::Execution {
+                denial: CommitExecutionDenial {
+                    kind: CommitExecutionDenialKind::Cause(cause),
+                    partition_identity: None,
+                },
+                context: error.context,
+                commit_log,
+            }
+        }
+        error => error,
+    }
+}
+
 /// WorkCeiling and WorkExhausted deliberately share WorkExhausted, mirroring
 /// the authority's one work budget whether a checkpoint or map admission stops.
 pub(crate) fn kernel_failure(failure: MapKernelFailure<PacketBudgetDenial>) -> Cause {

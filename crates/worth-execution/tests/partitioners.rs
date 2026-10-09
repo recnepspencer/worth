@@ -197,7 +197,7 @@ fn keyed_keeps_a_copy_of_the_named_items_at_their_own_bound() {
 fn candidate_partition_work_is_charged_by_enclosing_map_lease() {
     let authority = ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
         max_workers: NonZeroUsize::new(1).unwrap(),
-        charged_memory_bytes: 8_192,
+        charged_memory_bytes: Some(8_192),
     })
     .unwrap();
     let map = ExecutionMap::try_from_declared_partitions(

@@ -5,7 +5,7 @@ mod program;
 use program::{validated_denial_program, DenialProgram};
 
 use std::sync::{
-    atomic::{AtomicUsize, Ordering},
+    atomic::{AtomicBool, AtomicUsize, Ordering},
     Arc,
 };
 
@@ -280,13 +280,15 @@ fn topology_configuration(calls: &Arc<AtomicUsize>) -> TopologyConfiguration {
         invariant_calls: Arc::new(AtomicUsize::new(0)),
         invariant_probe: Arc::new(AtomicUsize::new(0)),
         producer_authorization_denials: Arc::new(AtomicUsize::new(0)),
+        producer_domain_denial: Arc::new(AtomicBool::new(false)),
     }
 }
 
 fn limits() -> WorthQueryInMemoryApplicationLimits {
     WorthQueryInMemoryApplicationLimits::new(
         super::resources::world_resources(),
-        runtime::WorthQueryApplicationCandidateResourceProfile::bounded(4096, 8192, 4096).unwrap(),
+        runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(4096, 8192)
+            .unwrap(),
         runtime::WorthQueryApplicationQueryResourceProfile::bounded(4096, 4096, 4096, 32).unwrap(),
         primary_graph::SignalConditionalEvaluationBudget::development(),
     )

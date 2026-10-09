@@ -182,10 +182,9 @@ fn application<const FRESH: bool>(
 ) -> application_installation::WorthQueryProgramApplicationRuntime<CheckpointSchema, Program<FRESH>>
 {
     let candidates =
-        worth_query_host::facade::runtime::WorthQueryApplicationCandidateResourceProfile::bounded(
+        worth_query_host::facade::runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(
             8192,
             1024 * 1024,
-            8192,
         )
         .unwrap();
     let limits = support::limits_with_room(
@@ -269,7 +268,10 @@ fn ten_thousand_neutral_partitions_isolate_a_real_one_entry_edit() {
         .mutate(edited)
         .without_source()
         .idempotency(&0x612_10000_u64)
-        .execute_in_program::<Program<false>>(&kept);
+        .execute_in_program::<Program<false>>(
+            &kept,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        );
     assert!(
         matches!(
             outcome,

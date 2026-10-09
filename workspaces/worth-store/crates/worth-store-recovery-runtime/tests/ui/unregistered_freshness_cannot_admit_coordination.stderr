@@ -1,5 +1,5 @@
 error[E0599]: no method named `admit_coordination` found for struct `PhysicalRecoveryFreshnessAuthority` in the current scope
-  --> tests/ui/unregistered_freshness_cannot_admit_coordination.rs:11:23
+  --> tests/ui/unregistered_freshness_cannot_admit_coordination.rs:12:23
    |
-11 |     let _ = freshness.admit_coordination(media, capacity);
+12 |     let _ = freshness.admit_coordination(media, capacity, policy, None);
    |                       ^^^^^^^^^^^^^^^^^^ method not found in `PhysicalRecoveryFreshnessAuthority`

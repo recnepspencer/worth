@@ -47,9 +47,14 @@ impl RecordPublicationDirector {
             RecordAppendDenial::PublicationAuthorityReleased,
         ))?;
         let batch = prepared.duplicate_prepared_batch();
-        let allocation_bytes =
-            append_operation_allocation_bytes(self.format, prepared.placement(), &batch)
-                .max(source_bytes);
+        let allocation_bytes = append_operation_allocation_bytes(
+            self.format,
+            prepared.placement(),
+            &batch,
+            None,
+            false,
+        )
+        .max(source_bytes);
         let allocation = self
             .residency
             .begin_foreground_write_operation(
@@ -119,6 +124,9 @@ impl RecordPublicationDirector {
         };
         let mut frames = Vec::with_capacity(selected.len());
         let mut placements = BTreeMap::new();
+        let selected_routes = crate::physical_runtime::record_serving::access::manifest_routing::ManifestReader::serving(
+            self.residency.clone(), self.format, self.access, current_root.clone(),
+        );
         let mut records = Vec::new();
         let mut logical_bytes = 0_u64;
         let mut membership = Vec::with_capacity(selected.len());
@@ -151,6 +159,24 @@ impl RecordPublicationDirector {
                 .map_err(|_| damaged())?,
             );
             for descriptor in &page.records {
+                let source_page = PhysicalGenerationAuthority::for_canonical_physical_format()
+                    .page_cell(segment.segment.segment_id(), page.page.page_id())
+                    .with_page_generation(
+                        worth_store_physical_format::PhysicalGeneration::from_raw(
+                            page.source_generation,
+                        )
+                        .map_err(|_| damaged())?,
+                    );
+                let route_metadata = selected_routes
+                    .require_selected_inline_metadata(
+                        &allocation,
+                        descriptor.record,
+                        source_page,
+                        descriptor.slot,
+                        descriptor.slot_generation,
+                        u64::from(descriptor.payload_bytes),
+                    )
+                    .map_err(|_| damaged())?;
                 let slot = authority
                     .slot_cell(
                         segment.segment.segment_id(),
@@ -158,13 +184,14 @@ impl RecordPublicationDirector {
                         descriptor.slot,
                     )
                     .with_slot_generation(admitted_generation(Some(descriptor.slot_generation))?);
-                let placement = DurableInlineRecordPlacement::new(
+                let placement = DurableInlineRecordPlacement::new_selected(
                     descriptor.record,
                     segment.segment,
                     page.page,
                     slot,
                     segment.page_capacity,
                     u64::from(descriptor.payload_bytes),
+                    route_metadata,
                 )
                 .ok_or_else(damaged)?;
                 placements.insert(
@@ -204,6 +231,7 @@ impl RecordPublicationDirector {
         .ok_or_else(damaged)?;
         self.root_owner
             .hold_rewrite_candidate(
+                prepared.mutation_identity(),
                 RecordArtifactFile::Segment {
                     segment: segment.segment.segment_id().get(),
                     generation: segment.segment.generation().get(),
@@ -215,6 +243,7 @@ impl RecordPublicationDirector {
         // span covered every frame the root still reads from it.
         if displaces_source {
             self.root_owner.note_displaced(
+                prepared.mutation_identity(),
                 current_root.generation(),
                 RetiredArtifact::Segment {
                     segment: segment.segment.segment_id().get(),
@@ -234,14 +263,20 @@ impl RecordPublicationDirector {
             data_pages: Vec::new(),
         };
         let root = PreparedPhysicalRootProjection {
+            derived_updates: Default::default(),
+            release_head_effect: None,
+            arena_reservations: Vec::new(),
             root_publication_allocation_bytes: NonZeroU64::new(source_bytes).ok_or_else(damaged)?,
             source_root: current_root,
+            blob_reuse_source_fence: false,
             manifest_capacity_transition: prepared.manifest_capacity_transition(),
             placement: prepared.placement(),
             records,
+            drop_records: Default::default(),
             inserted_records: 0,
             payload_manifests: Vec::new(),
             placements,
+            retired_inline_witnesses: BTreeMap::new(),
             segment_updates,
             inline_allocations: vec![working.allocation()],
             last_inline_record: Some(tail),

@@ -54,7 +54,7 @@ fn literal_envelope(kind: DurableFrameKind) -> Vec<u8> {
     bytes[..8].copy_from_slice(b"WRC5FRM\0");
     bytes[8] = kind as u8;
     bytes[9] = 2;
-    bytes[10..20].copy_from_slice(&[1, 0, 0, 64, 0, 0, 1, 1, 1, 24]);
+    bytes[10..20].copy_from_slice(&[2, 0, 0, 64, 0, 0, 1, 1, 1, 24]);
     bytes[20] = 48;
     bytes[24] = 8;
     bytes[28] = 1;

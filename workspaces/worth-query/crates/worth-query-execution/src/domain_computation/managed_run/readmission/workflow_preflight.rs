@@ -74,7 +74,7 @@ pub(super) fn validate_workflow_resume_preflight(
         .owner_resolve()?;
     let contract = match admit_managed_step_contract(
         association.execution_contract(),
-        association.step_contract(),
+        Some(association.step_contract()),
     ) {
         Ok(contract) => contract,
         Err(denial) => {

@@ -21,7 +21,10 @@ use crate::physical_runtime::{
 
 mod group;
 mod maintenance;
+mod maintenance_receipt;
+mod retained_maintenance;
 pub(in crate::physical_runtime) use maintenance::ScheduledMaintenanceDenial;
+pub(in crate::physical_runtime) use maintenance_receipt::DurableMaintenanceReceipt;
 
 pub use group::{
     IndeterminatePhysicalWalGroupAppend, PhysicalWalGroupAppendContinuation,
@@ -147,10 +150,6 @@ impl PhysicalWalAppendPort {
         self.owner.observation()
     }
 
-    pub(in crate::physical_runtime) fn reopened_publications(&self) -> u64 {
-        self.owner.reopened_publications()
-    }
-
     pub(in crate::physical_runtime) fn plan_maintenance_frame(
         &self,
         payload: &[u8],
@@ -234,9 +233,13 @@ impl PhysicalWalAppendPort {
         let expected_binding = command
             .wal_frame_completion_binding()
             .expect("the WAL port can execute only a typed WAL frame command");
+        reserved
+            .root_projection()
+            .expose_arena_reservations_to_wal();
         let outcome = match self.execution.execute_physical_work(command) {
             Ok(outcome) => outcome,
             Err(cause) => {
+                reserved.root_projection().arena_wal_proven_no_effect();
                 return PhysicalWalGroupMemberAppendOutcome::NotStarted {
                     member: WalBarrierMember::new(binding, reserved),
                     cause: PhysicalWalAppendFailureCause::PreEffect(cause),
@@ -312,6 +315,7 @@ impl PhysicalWalAppendPort {
                 completed_bytes,
                 &self.idempotency,
                 persisted,
+                reserved.redo().encoded(),
             )
             .is_err()
         {

@@ -15,7 +15,7 @@ pub(super) fn prepare_for_checkpoint(
     invocation: &Invocation,
 ) -> Result<impl Sized, String> {
     let gate = serving.pause_physical_mutation_at(
-        PhysicalMutationCheckpoint::AfterWritebackAdmissionBeforeEffect,
+        PhysicalMutationCheckpoint::AfterArenaWriteAdmissionBeforeEffect,
     );
     let mutation = start_dirty_checkpoint(
         serving,
@@ -26,7 +26,7 @@ pub(super) fn prepare_for_checkpoint(
     if !gate.await_arrival() {
         gate.release();
         return Err(
-            "ordinary C8 dirty mutation did not reach after-writeback-admission-before-effect"
+            "ordinary C8 dirty mutation did not reach after-arena-write-admission-before-effect"
                 .to_owned(),
         );
     }

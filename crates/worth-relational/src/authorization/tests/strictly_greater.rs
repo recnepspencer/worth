@@ -179,10 +179,14 @@ fn write_comparison_fields(
                     fields: aspect_field_patch_from_values(values),
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
     transaction
-        .commit(runtime)
+        .commit(
+            runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("comparison fields must be valid for the declared fixture schema");
 }
 

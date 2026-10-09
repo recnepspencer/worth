@@ -13,10 +13,16 @@ fn a_demand_reports_no_invalidation_and_keeps_flat_entity_topology() {
 
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
-        .push_batch(revalidation_batch("account-demand", [target]))
+        .push_batch(
+            revalidation_batch("account-demand", [target]),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("staging stays within configured resource budgets");
     let outcome = transaction
-        .commit(&runtime)
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the compliant record remains valid");
 
     assert_eq!(
@@ -52,10 +58,16 @@ fn demand_only_rejection_survives_the_narrow_effect_claim() {
 
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
-        .push_batch(revalidation_batch("strict-demand", [mode, offending]))
+        .push_batch(
+            revalidation_batch("strict-demand", [mode, offending]),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("staging stays within configured resource budgets");
     let error = transaction
-        .commit(&runtime)
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect_err("selection must still run the strictness rule");
 
     let TransactionCommitError::Conflict { error, .. } = error else {
@@ -85,10 +97,16 @@ fn demand_clone_cost(bystanders: usize) -> (usize, usize) {
 
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
-        .push_batch(revalidation_batch("bounded-clone", [target]))
+        .push_batch(
+            revalidation_batch("bounded-clone", [target]),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("staging stays within configured resource budgets");
     let outcome = transaction
-        .commit(&runtime)
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the compliant record remains valid");
     let cost = (
         outcome.complexity_delta().partitions_cloned,

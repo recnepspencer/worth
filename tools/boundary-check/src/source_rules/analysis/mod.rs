@@ -42,6 +42,7 @@ mod public_reachability;
 mod query_fence;
 mod raw_geometry;
 mod source_reachability;
+mod store_current_projection;
 mod store_integrity_routes;
 mod threading;
 mod truth_types;
@@ -101,6 +102,7 @@ pub(super) fn validate(
             &module_graph,
         ));
         diagnostics.extend(store_integrity_routes::enforce(&governed, &module_graph));
+        diagnostics.extend(store_current_projection::enforce(&governed, &module_graph));
         let reachable = match public_reachability::externally_reachable_items(
             &module_graph,
             &governed.crate_root,

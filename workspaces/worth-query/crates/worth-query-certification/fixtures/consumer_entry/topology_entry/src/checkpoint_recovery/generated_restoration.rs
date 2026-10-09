@@ -4,6 +4,7 @@
 use super::*;
 use worth_query_consumer_values::PositiveLength;
 use worth_query_host::facade::application_entry::WorthQueryOutputSettlementPosture as Posture;
+use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 use worth_query_host::facade::primary_graph::{
     WorthQueryGeneratedEntity, WorthQueryReconstructedOutputEntity,
 };
@@ -54,7 +55,7 @@ fn an_output_restored_after_a_checkpoint_is_never_created_a_second_time() {
     drop(principal);
     drop(scope);
     let checkpoint = application
-        .capture_application_checkpoint()
+        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
         .expect("the ready outputs are checkpointable");
     drop(application);
 
@@ -80,7 +81,7 @@ fn an_output_readmitted_after_a_checkpoint_then_restored_is_never_created_a_seco
     drop(principal);
     drop(scope);
     let checkpoint = application
-        .capture_application_checkpoint()
+        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
         .expect("the ready outputs are checkpointable");
     drop(application);
 

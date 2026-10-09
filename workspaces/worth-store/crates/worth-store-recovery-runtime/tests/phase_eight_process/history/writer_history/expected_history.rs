@@ -45,10 +45,6 @@ impl ExpectedWriterHistory {
         &self.payloads
     }
 
-    pub(crate) fn in_flight_identity(&self) -> [u8; 32] {
-        self.in_flight.material()
-    }
-
     pub(crate) fn in_flight_payload(&self) -> &[u8] {
         self.in_flight.payload()
     }

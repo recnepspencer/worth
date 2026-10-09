@@ -1,13 +1,17 @@
+use super::{
+    durable_publication::publish_single, media, scenario_configuration::dense_configuration,
+    success,
+};
 use worth_store::physical_runtime::{
     ExternalRecordScanCursor, PhysicalRecordAccessPolicy, PhysicalRecordInitialization,
     RecordAppendBatch, RecordByteLimit, RecordCountLimit, RecordReadLimits,
     RecordScanCounterSnapshot, RecordScanDenial, RecordScanOutcome, RecordScanRequest,
 };
 
-use super::{
-    durable_publication::publish_single, media, scenario_configuration::dense_configuration,
-    success,
-};
+#[path = "scan_journeys/capped_payload.rs"]
+mod capped_payload;
+#[path = "scan_journeys/route_reopen.rs"]
+mod route_reopen;
 
 #[test]
 fn scan_batch_widths_converge_to_one_physical_sequence() {

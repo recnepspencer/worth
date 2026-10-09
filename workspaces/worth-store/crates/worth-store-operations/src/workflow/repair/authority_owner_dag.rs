@@ -67,7 +67,7 @@ pub(super) fn repair_dag(
     integrity: &IntegrityRepairClassificationPlan,
     backend: &LoweredNonCurrentStagingPlan,
     recovery: &BackupRestoreReplayPlan,
-    layout: Option<&worth_store_layout_indexes::LayoutRepairConsequencePlan>,
+    layout: Option<&worth_store_layout_indexes::operational_repair::LayoutRepairConsequencePlan>,
     blob: Option<&worth_store_blob_chunks::BlobRepairConsequencePlan>,
 ) -> Result<(CanonicalOwnerPlanDag, RepairOwnerNodes), AuthorityAffectingRepairLoweringDenial> {
     let footprint = OwnerPlanFootprint::bounded(0, backend.binding().expected_bytes())
@@ -104,10 +104,10 @@ pub(super) fn repair_dag(
     );
     let layout_node = layout.map(|plan| {
         let effect = match plan.consequence() {
-            worth_store_layout_indexes::LayoutRepairConsequence::RestoreDamagedArtifact => {
+            worth_store_layout_indexes::operational_repair::LayoutRepairConsequence::RestoreDamagedArtifact => {
                 OwnerPlanEffect::RebuildDerivedLayout
             }
-            worth_store_layout_indexes::LayoutRepairConsequence::ReplaceQuarantinedArtifact => {
+            worth_store_layout_indexes::operational_repair::LayoutRepairConsequence::ReplaceQuarantinedArtifact => {
                 OwnerPlanEffect::ReplaceQuarantinedLayout
             }
         };

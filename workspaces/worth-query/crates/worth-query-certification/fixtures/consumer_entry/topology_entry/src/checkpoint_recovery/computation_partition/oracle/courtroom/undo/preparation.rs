@@ -96,6 +96,7 @@ pub(super) fn prepare<const REUSE: bool, const MODE: u8, const WORKFLOW: bool>(
                     identities,
                     resolved.principal_identity(),
                     admission,
+                    worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
                 )
                 .unwrap()
             else {

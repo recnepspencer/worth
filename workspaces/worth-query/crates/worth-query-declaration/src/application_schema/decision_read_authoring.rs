@@ -7,17 +7,6 @@ use super::{
 };
 
 impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
-    pub fn operation_decision_fact_budget<Operation, Input>(
-        self,
-        operation: ApplicationOperationRef<Schema, Operation, Input>,
-        maximum_fact_count: usize,
-    ) -> Self {
-        self.push_member(ApplicationSchemaMember::OperationDecisionFactBudget {
-            operation: operation.name().to_string(),
-            maximum_fact_count,
-        })
-    }
-
     pub fn operation_projection_work_budget<Operation, Input>(
         self,
         operation: ApplicationOperationRef<Schema, Operation, Input>,

@@ -58,7 +58,7 @@ pub(crate) fn test_execution_lease(
     let authority = AUTHORITY.get_or_init(|| {
         ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
             max_workers: NonZeroUsize::new(2).unwrap(),
-            charged_memory_bytes: 4096,
+            charged_memory_bytes: Some(4096),
         })
         .unwrap()
     });

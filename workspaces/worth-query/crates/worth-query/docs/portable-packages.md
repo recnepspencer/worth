@@ -219,6 +219,17 @@ a release as latest.
 
 ## Inspection And Debugging
 
+Package canonicalization rule `worth-query-portable-domain-package-v4` commits
+each application schema through a digest freshly derived from its complete
+canonical meaning, including the schema domain and rule version. The package
+retains and exports the full schema source. Fresh reconstruction readmits that
+source and derives the child and package identities again; a carried digest
+does not confer validation authority. Child derivations and the parent package
+derivation share the installation's existing aggregate canonical byte and entry
+allowances. Canonical work evidence includes all of those derivations.
+Previously derived v3 package identities differ from v4 identities and fail the
+fresh identity comparison; consumers must select the newly validated identity.
+
 Inspect `records.manifest()` for semantic identity, family counts, canonical
 source bytes, and logical export bytes. Inspect a decoded envelope for its
 claimed provenance, requirements, signer description, checksum, and embedded

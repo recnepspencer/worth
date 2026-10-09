@@ -99,6 +99,7 @@ impl CheckpointInspectionAggregate {
         Ok(CheckpointFooterExpectedBindings {
             dirty: self.dirty.summary(),
             bindings: self.bindings.summary(),
+            certificates: CheckpointSelectiveRecordAggregate::new().summary(),
             compaction_offset,
             compaction_generation,
             wal_cutoff_lsn_exclusive,

@@ -1,20 +1,13 @@
-error[E0061]: this function takes 6 arguments but 2 arguments were supplied
- --> tests/ui/freshness_sample_rejects_caller_generation.rs:4:13
-  |
-4 |     let _ = PhysicalRecoveryFreshnessPort::sample_binding(7_u64, [0_u8; 32]);
-  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^-------------------
-  |                                                          |       |
-  |                                                          |       expected `u64`, found `[u8; 32]`
-  |                                                          three arguments of type `&PhysicalRecoveryCoordination`, `&AdmittedRecoveryFilesystemMedia`, and `&worth_store_physical_integrity::artifact::checkpoint::verified_stream::VerifiedCheckpointStream` are missing
-  |                                                          argument #5 of type `u64` is missing
-  |
+error[E0308]: mismatched types
+  --> tests/ui/freshness_sample_rejects_caller_generation.rs:10:9
+   |
+ 9 |     let _ = PhysicalRecoveryFreshnessPort::sample_binding(
+   |             --------------------------------------------- arguments to this function are incorrect
+10 |         7_u64,
+   |         ^^^^^ expected `&PhysicalRecoveryCoordination`, found `u64`
+   |
 note: associated function defined here
- --> $WORKSPACE/crates/worth-store/src/physical_runtime/recovery_freshness/port.rs
-  |
-  |     pub fn sample_binding<'frame>(
-  |            ^^^^^^^^^^^^^^
-help: provide the arguments
-  |
-4 -     let _ = PhysicalRecoveryFreshnessPort::sample_binding(7_u64, [0_u8; 32]);
-4 +     let _ = PhysicalRecoveryFreshnessPort::sample_binding(/* &PhysicalRecoveryCoordination */, /* &AdmittedRecoveryFilesystemMedia */, /* &worth_store_physical_integrity::artifact::checkpoint::verified_stream::VerifiedCheckpointStream */, 7_u64, /* u64 */, /* u64 */);
-  |
+  --> $WORKSPACE/crates/worth-store/src/physical_runtime/recovery_freshness/port.rs
+   |
+   |     pub fn sample_binding<'frame>(
+   |            ^^^^^^^^^^^^^^

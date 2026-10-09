@@ -21,9 +21,16 @@ fn subscriber_stream_composes_prior_and_new_boundaries_into_normalized_proof() {
             )
             .expect("owner-admitted transaction context")
     };
-    txn.push_batch(batch_create("b"))
-        .expect("test staging stays within configured resource budgets");
-    txn.commit(&runtime).unwrap();
+    txn.push_batch(
+        batch_create("b"),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .expect("test staging stays within configured resource budgets");
+    txn.commit(
+        &runtime,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .unwrap();
 
     let first_batch = runtime
         .publication()
@@ -52,9 +59,17 @@ fn subscriber_stream_composes_prior_and_new_boundaries_into_normalized_proof() {
             .expect("owner-admitted transaction context")
     };
     second_txn
-        .push_batch(batch_create("c"))
+        .push_batch(
+            batch_create("c"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
-    second_txn.commit(&runtime).unwrap();
+    second_txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
 
     let resumed = runtime
         .publication()
@@ -103,9 +118,17 @@ fn resumed_subscriber_stream_preserves_prior_boundary_and_adds_new_boundary_trac
             .expect("owner-admitted transaction context")
     };
     first_transition
-        .push_batch(batch_create("b"))
+        .push_batch(
+            batch_create("b"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
-    first_transition.commit(&runtime).unwrap();
+    first_transition
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
 
     let first_batch = runtime
         .publication()
@@ -134,9 +157,17 @@ fn resumed_subscriber_stream_preserves_prior_boundary_and_adds_new_boundary_trac
             .expect("owner-admitted transaction context")
     };
     second_transition
-        .push_batch(batch_create("c"))
+        .push_batch(
+            batch_create("c"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
-    second_transition.commit(&runtime).unwrap();
+    second_transition
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
 
     let resumed = runtime
         .publication()

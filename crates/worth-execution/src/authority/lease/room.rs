@@ -11,7 +11,7 @@ use crate::authority::{MemoryLimitDenial, MemoryLimitLevel};
 /// room. The first limit short of room refuses, naming itself and its room.
 pub(super) fn check<'a>(
     ledger: &Ledger,
-    process_limit: u64,
+    process_limit: Option<u64>,
     released: u64,
     lineage: impl IntoIterator<Item = (&'a LeaseNode, u64)>,
     requested: u64,
@@ -38,7 +38,10 @@ pub(super) fn check<'a>(
         )?;
     }
     refuse(
-        process_limit.saturating_sub(ledger.charged_memory_bytes - released),
+        // With no installed ceiling, charges still fit the shared u64 counter.
+        process_limit
+            .unwrap_or(u64::MAX)
+            .saturating_sub(ledger.charged_memory_bytes - released),
         MemoryLimitLevel::Process,
     )
 }

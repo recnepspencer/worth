@@ -3,21 +3,11 @@ use std::path::Path;
 
 use sha2::{Digest, Sha256};
 
-use crate::{decode_baseline_btree_leaf_record, decode_baseline_btree_root_record};
+use worth_store_physical_format::BTreeNodeV1;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LayoutIndexBackupFormat {
-    BaselineBTreeLeafV1,
-    BaselineBTreeRootV1,
-}
-
-impl LayoutIndexBackupFormat {
-    const fn encoded_bytes(self) -> usize {
-        match self {
-            Self::BaselineBTreeLeafV1 => 6,
-            Self::BaselineBTreeRootV1 => 56,
-        }
-    }
+    BTreeNodeV1,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -87,17 +77,23 @@ pub fn verify_bounded_layout_index_artifact_from_reader(
     actual: u64,
     request: BoundedLayoutIndexVerificationRequest<'_>,
 ) -> Result<BoundedLayoutIndexObservation, BoundedLayoutIndexDenial> {
-    let required = request.format.encoded_bytes();
+    const MAXIMUM_BTREE_NODE_BYTES: usize = 65_424;
+    let required = usize::try_from(request.expected_bytes).map_err(|_| {
+        BoundedLayoutIndexDenial::LengthMismatch {
+            expected: MAXIMUM_BTREE_NODE_BYTES as u64,
+            actual: request.expected_bytes,
+        }
+    })?;
+    if !(104..=MAXIMUM_BTREE_NODE_BYTES).contains(&required) {
+        return Err(BoundedLayoutIndexDenial::LengthMismatch {
+            expected: MAXIMUM_BTREE_NODE_BYTES as u64,
+            actual: request.expected_bytes,
+        });
+    }
     if request.max_buffer_bytes < required {
         return Err(BoundedLayoutIndexDenial::BufferTooSmall {
             required,
             actual: request.max_buffer_bytes,
-        });
-    }
-    if request.expected_bytes != required as u64 {
-        return Err(BoundedLayoutIndexDenial::LengthMismatch {
-            expected: required as u64,
-            actual: request.expected_bytes,
         });
     }
     if actual != request.expected_bytes {
@@ -106,11 +102,11 @@ pub fn verify_bounded_layout_index_artifact_from_reader(
             actual,
         });
     }
-    let mut bytes = [0_u8; 56];
+    let mut bytes = vec![0_u8; required];
     reader
-        .read_exact(&mut bytes[..required])
+        .read_exact(&mut bytes)
         .map_err(BoundedLayoutIndexDenial::Io)?;
-    let observed_digest: [u8; 32] = Sha256::digest(&bytes[..required]).into();
+    let observed_digest: [u8; 32] = Sha256::digest(&bytes).into();
     if observed_digest != request.expected_digest {
         return Err(BoundedLayoutIndexDenial::DigestMismatch);
     }
@@ -118,12 +114,7 @@ pub fn verify_bounded_layout_index_artifact_from_reader(
         return Err(BoundedLayoutIndexDenial::IdentityMismatch);
     }
     let valid = match request.format {
-        LayoutIndexBackupFormat::BaselineBTreeLeafV1 => {
-            decode_baseline_btree_leaf_record(&bytes[..required]).is_some()
-        }
-        LayoutIndexBackupFormat::BaselineBTreeRootV1 => {
-            decode_baseline_btree_root_record(&bytes[..required]).is_some()
-        }
+        LayoutIndexBackupFormat::BTreeNodeV1 => BTreeNodeV1::decode(&bytes).is_ok(),
     };
     if !valid {
         return Err(BoundedLayoutIndexDenial::MalformedIndex);
@@ -150,63 +141,51 @@ fn identity_names_digest(identity: &str, digest: [u8; 32]) -> bool {
 #[cfg(test)]
 mod tests {
     use sha2::{Digest, Sha256};
-    use worth_store_physical_format::PhysicalRecordSlot;
+    use worth_store_physical_format::{BTreeNodeCellV1, BTreeNodeV1};
 
     use super::*;
 
     #[test]
-    fn bounded_layout_owner_decode_rejects_reserved_leaf_flags() {
-        let slots = [
-            PhysicalRecordSlot::from_raw(1).expect("slot"),
-            PhysicalRecordSlot::from_raw(2).expect("slot"),
-        ];
-        let mut bytes = crate::encode_baseline_btree_leaf_record(slots, true, false);
-        bytes[1] |= 0b1000_0000;
-        let identity = format!("index:sha256:{}", hex(&Sha256::digest(bytes)));
+    fn bounded_layout_owner_decode_rejects_wrong_node_version() {
+        let mut bytes = node_bytes(1);
+        bytes[8] = 2;
+        let identity = format!("index:sha256:{}", hex(&Sha256::digest(&bytes)));
         let file = temporary_index_file();
         let path = file.path();
-        std::fs::write(path, bytes).expect("index bytes");
+        std::fs::write(path, &bytes).expect("index bytes");
         let denial = verify_bounded_layout_index_artifact(
             path,
             BoundedLayoutIndexVerificationRequest::new(
-                LayoutIndexBackupFormat::BaselineBTreeLeafV1,
+                LayoutIndexBackupFormat::BTreeNodeV1,
                 &identity,
                 bytes.len() as u64,
-                Sha256::digest(bytes).into(),
-                64,
+                Sha256::digest(&bytes).into(),
+                4096,
             ),
         )
-        .expect_err("outer digest cannot legalize reserved owner-format bits");
+        .expect_err("outer digest cannot legalize an unsupported node version");
 
         assert!(matches!(denial, BoundedLayoutIndexDenial::MalformedIndex));
     }
 
     #[test]
     fn transport_rehash_cannot_rename_a_substituted_index() {
-        let original_slots = [
-            PhysicalRecordSlot::from_raw(1).expect("slot"),
-            PhysicalRecordSlot::from_raw(2).expect("slot"),
-        ];
-        let original = crate::encode_baseline_btree_leaf_record(original_slots, true, false);
-        let original_identity = format!("index:sha256:{}", hex(&Sha256::digest(original)));
-        let substituted_slots = [
-            PhysicalRecordSlot::from_raw(220).expect("slot"),
-            PhysicalRecordSlot::from_raw(221).expect("slot"),
-        ];
-        let substituted = crate::encode_baseline_btree_leaf_record(substituted_slots, true, false);
-        let substituted_digest: [u8; 32] = Sha256::digest(substituted).into();
+        let original = node_bytes(1);
+        let original_identity = format!("index:sha256:{}", hex(&Sha256::digest(&original)));
+        let substituted = node_bytes(2);
+        let substituted_digest: [u8; 32] = Sha256::digest(&substituted).into();
         let file = temporary_index_file();
         let path = file.path();
-        std::fs::write(path, substituted).expect("substituted index bytes");
+        std::fs::write(path, &substituted).expect("substituted index bytes");
 
         let denial = verify_bounded_layout_index_artifact(
             path,
             BoundedLayoutIndexVerificationRequest::new(
-                LayoutIndexBackupFormat::BaselineBTreeLeafV1,
+                LayoutIndexBackupFormat::BTreeNodeV1,
                 &original_identity,
                 substituted.len() as u64,
                 substituted_digest,
-                64,
+                4096,
             ),
         )
         .expect_err("a valid substitute must not inherit another index identity");
@@ -216,6 +195,18 @@ mod tests {
 
     fn hex(bytes: &[u8]) -> String {
         bytes.iter().map(|byte| format!("{byte:02x}")).collect()
+    }
+
+    fn node_bytes(value: u8) -> Vec<u8> {
+        BTreeNodeV1::leaf(
+            1,
+            vec![BTreeNodeCellV1::leaf(b"catalog-key".to_vec(), vec![value])],
+            None,
+            None,
+        )
+        .expect("node")
+        .encode(4096)
+        .expect("encoded node")
     }
 
     fn temporary_index_file() -> tempfile::NamedTempFile {

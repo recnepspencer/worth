@@ -31,6 +31,7 @@ fn undo_after_an_output_publication_refuses_without_losing_the_retained_prior() 
         program,
         &identities,
         std::convert::identity,
+        worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
     ));
     let handle = application
         .runtime()
@@ -98,6 +99,7 @@ fn undo_after_an_output_publication_refuses_without_losing_the_retained_prior() 
         program,
         &next,
         std::convert::identity,
+        worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
     ));
     let (contacts, runs) = demand(&request, &application);
     assert_eq!((contacts, runs.len()), (1, 1));

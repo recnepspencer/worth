@@ -45,7 +45,10 @@ fn approved_effect_denies_stale_evidence_before_handler_work() {
         .idempotency(&943_u64)
         .for_workflow_operation(&application, &required)
         .expect("the old requirement still names this exact binding")
-        .execute_in_program(application.program_runtime());
+        .execute_in_program(
+            application.program_runtime(),
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        );
     assert!(matches!(
         effect,
         Err(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::WorkflowTransitionCurrentness(_))
@@ -63,7 +66,10 @@ fn approved_effect_denies_stale_evidence_before_handler_work() {
         .idempotency(&943_u64)
         .for_workflow_operation(&application, &required)
         .expect("the same requirement still names the operation")
-        .execute_in_program(application.program_runtime());
+        .execute_in_program(
+            application.program_runtime(),
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        );
     assert!(matches!(
         spent,
         Err(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::WorkflowAuthoritySpent)

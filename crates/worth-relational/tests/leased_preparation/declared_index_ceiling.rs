@@ -32,10 +32,11 @@ fn one_large_index_packet_stops_at_its_declared_ceiling_without_publication() {
                     field_patches,
                 }),
             )),
+            AllocationPolicy::SystemAllocation,
         )
         .expect("bulk source stages");
     let committed = runtime
-        .commit_branch_transaction(transaction)
+        .commit_branch_transaction(transaction, AllocationPolicy::SystemAllocation)
         .expect("source commits");
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(0),

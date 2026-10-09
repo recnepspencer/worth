@@ -61,7 +61,7 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.planar-source-adjustment-command.v1";
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
-    const CANDIDATES: ApplicationCandidateRequirements = requirements(0, 0, 0, 1, 1024, 4096);
+    const CANDIDATES: ApplicationCandidateRequirements = requirements(0, 0, 0, 1, 1024);
 
     fn scope_field() -> ApplicationFieldRef<
         Schema,
@@ -132,7 +132,7 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, PlanarSourceAdjustm
         _: &PlanarSourceAdjustment,
         _: &WorthQueryInvariantMutationTarget<Schema, Body>,
     ) -> ApplicationCandidateRequirements {
-        requirements(0, 0, 0, 1, 1024, 4096)
+        requirements(0, 0, 0, 1, 1024)
     }
 
     fn build_candidate(
@@ -168,7 +168,6 @@ pub(crate) fn declare_planar_source_adjustment<Schema: TopologySchemaBinding>(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_decision_fact_budget(operation, 16)
         .operation_projection_work_budget(operation, 16)
         .operation_read_entity(operation, Body::reference())
         .operation_read_field(operation, BodyKey::reference())

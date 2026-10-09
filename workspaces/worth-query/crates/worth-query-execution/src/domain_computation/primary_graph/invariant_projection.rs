@@ -2,6 +2,8 @@ mod admission_denial;
 mod aggregate;
 mod consumed_output;
 mod identity_encoding;
+mod pending_output_read;
+pub(in crate::domain_computation::primary_graph) use pending_output_read::RequestedOutputRead;
 mod inventory;
 mod locked_reader;
 mod operation_projection_denial;
@@ -60,7 +62,8 @@ pub use operation_reader::{
     WorthQueryCompletedOperationInvariantProjection, WorthQueryCurrentOutputDenial,
     WorthQueryCurrentOutputDenialKind, WorthQueryCurrentOutputSelection,
     WorthQueryInspectedOperationInvariantProjection, WorthQueryInvariantDecisionPlanDenial,
-    WorthQueryInvariantDecisionPlanDenialKind, WorthQueryPriorOutputFamilyMember,
+    WorthQueryInvariantDecisionPlanDenialKind, WorthQueryPreparedEntitySelection,
+    WorthQueryPriorOutputFamilyMember,
 };
 pub(in crate::domain_computation::primary_graph) use realized_scope::WorthQueryRealizedProjectionScope;
 pub use work::WorthQueryInvariantProjectionWork;
@@ -99,10 +102,8 @@ pub struct WorthQueryApplicationInvariantProjectionSnapshot<Schema> {
     realized_scope: WorthQueryRealizedProjectionScope,
     consumed_outputs:
         BTreeMap<Arc<super::output_lineage::RecordedSettlementIdentity>, ConsumedOutputEvidence>,
-    dependent_source_facts: BTreeMap<
-        super::application_attempt::WorthQueryApplicationFactStorageKey,
-        super::application_attempt::WorthQueryApplicationObservedFact,
-    >,
+    dependent_source_facts:
+        Option<super::application_attempt::retained_decision_facts::RetainedSourceFacts>,
     _schema: PhantomData<fn() -> Schema>,
 }
 
@@ -209,7 +210,7 @@ where
             authority_identity: self.authority_identity,
             realized_scope: WorthQueryRealizedProjectionScope::default(),
             consumed_outputs: BTreeMap::new(),
-            dependent_source_facts: BTreeMap::new(),
+            dependent_source_facts: None,
             _schema: PhantomData,
         })
     }
@@ -291,13 +292,11 @@ where
     ) -> (
         super::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease,
         WorthQueryRealizedProjectionScope,
-        Vec<super::application_attempt::WorthQueryApplicationObservedFact>,
+        Option<super::application_attempt::retained_decision_facts::RetainedSourceFacts>,
         Vec<ConsumedOutputEvidence>,
     ) {
         let realized_scope = std::mem::take(&mut self.realized_scope);
-        let dependent_source_facts = std::mem::take(&mut self.dependent_source_facts)
-            .into_values()
-            .collect();
+        let dependent_source_facts = self.dependent_source_facts.take();
         let consumed_outputs = std::mem::take(&mut self.consumed_outputs)
             .into_values()
             .collect();

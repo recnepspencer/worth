@@ -22,7 +22,7 @@ type Preconditions = TypedMutationPreconditions<Schema, TouchAccountOperation, A
 pub(super) type Program =
     WorthQueryApplicationEffectProgram<Schema, TouchAccountOperation, Input, Account>;
 
-pub(in crate::domain_computation::primary_graph::tests) fn admitted_operation(
+pub(in crate::domain_computation::primary_graph) fn admitted_operation(
     world: &World,
     principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, u64>,
     account: &WorthQueryApplicationEntityIdentity<Schema, Account>,
@@ -83,19 +83,29 @@ pub(super) fn admitted_program_required_program(
         .unwrap();
     let (_, projection, _) = world
         .invariant
-        .project_admitted_operation(&admission, |reader, projected| {
-            reader
-                .require_decision_field(projected, AccountStatus::reference())
-                .unwrap();
-        })
+        .project_admitted_operation(
+            &admission,
+            |reader, projected| {
+                reader
+                    .require_decision_field(projected, AccountStatus::reference())
+                    .unwrap();
+            },
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .into_parts();
     let reads = world
         .application
-        .begin_projected_application_read_attempt(admission, projection)
+        .begin_projected_application_read_attempt(
+            admission,
+            projection,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let mut effects = reads
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .begin_effect_program();
     let account = effects.existing_entity(account).unwrap();
@@ -133,15 +143,25 @@ pub(super) fn admitted_mutation_free_program(
         .unwrap();
     let (_, projection, _) = world
         .invariant
-        .project_admitted_operation(&admission, |_, _| {})
+        .project_admitted_operation(
+            &admission,
+            |_, _| {},
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .into_parts();
     let reads = world
         .application
-        .begin_projected_application_read_attempt(admission, projection)
+        .begin_projected_application_read_attempt(
+            admission,
+            projection,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let mut effects = reads
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .begin_effect_program();
     effects
@@ -284,19 +304,29 @@ fn admitted_program_from_selected(
         .unwrap();
     let (_, projection, _) = world
         .invariant
-        .project_admitted_operation(&admission, |reader, projected| {
-            reader
-                .require_decision_field(projected, AccountStatus::reference())
-                .unwrap();
-        })
+        .project_admitted_operation(
+            &admission,
+            |reader, projected| {
+                reader
+                    .require_decision_field(projected, AccountStatus::reference())
+                    .unwrap();
+            },
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .into_parts();
     let reads = world
         .application
-        .begin_projected_application_read_attempt(admission, projection)
+        .begin_projected_application_read_attempt(
+            admission,
+            projection,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let mut effects = reads
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .begin_effect_program();
     let account = effects.existing_entity(account).unwrap();

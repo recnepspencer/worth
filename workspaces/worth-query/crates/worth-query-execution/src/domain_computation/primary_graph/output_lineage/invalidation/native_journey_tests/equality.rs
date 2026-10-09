@@ -2,11 +2,12 @@
 //! The test-only relation mint exercises the actor, not producer authorization.
 
 use super::*;
-#[cfg(not(feature = "certification-invalidation-equivalence"))]
 use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerification;
+#[cfg(feature = "certification-invalidation-equivalence")]
+use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop;
 use crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts;
 use crate::domain_computation::primary_graph::{
-    invariant_projection::{ConsumedOutputEvidence, ConsumedOutputVerificationStop},
+    invariant_projection::ConsumedOutputEvidence,
     output_lineage::{
         input_cutoff::StableEqualityConsequence,
         invalidation::{
@@ -107,7 +108,7 @@ fn certified_alias_chain_discharge_is_exact_and_later_native_change_repends() {
         assert!(matches!(currentness(owner, &next, &b), SourceSettlementCurrentness::Clean));
         assert_source_only_alias_verification(owner, runtime, &next_handle, &next, &before, &a0, &old_a_fact);
 
-        write_field(runtime, entity, status, "changed-output");
+        write_field(runtime, entity, status.clone(), "changed-output");
         let (later_handle, later) = snapshot(runtime);
         assert_pending(owner, &later, &b, &a0);
         assert!(matches!(
@@ -127,9 +128,77 @@ fn certified_alias_chain_discharge_is_exact_and_later_native_change_repends() {
                 &later,
                 &mut owner.edit_admission(),
             ),
-            Err(ConsumedOutputVerificationStop::PendingUpstream),
+            Ok(ConsumedOutputVerification::ChangedDirectFact(0)),
         );
         for handle in [before_handle, changed_handle, next_handle, later_handle] {
+            runtime.snapshots().release_snapshot(&handle).unwrap();
+        }
+    });
+}
+
+#[test]
+fn unchanged_own_evidence_waits_for_a_pending_equal_successor() {
+    let world = installed_authorization_world(true);
+    let selected = world.selected_product();
+    let entity = selected
+        .resolve_entity(
+            AccountStatus::reference(),
+            "open".to_owned(),
+            &live_scope(),
+            WorthQueryPrincipalResolutionMode::Ordinary,
+        )
+        .unwrap()
+        .entity_id();
+    let (_, product, _) = selected.into_parts();
+    let coordinate = ProductCoordinate {
+        occurrence: product.observation().lifecycle_incarnation(),
+        generation: product.observation().reference_generation().get(),
+    };
+    let graph = world.application.runtime.primary_graph().unwrap();
+    let handle = graph.integration_handle();
+    let owner = &handle.source_owner.invalidation_owner;
+    let status_ref = AccountStatus::reference();
+    let label_ref = AccountLabel::reference();
+    let status = graph
+        .layout()
+        .field_locator(status_ref.entity(), status_ref.aspect(), status_ref.field())
+        .unwrap()
+        .clone();
+    let label = graph
+        .layout()
+        .field_locator(label_ref.entity(), label_ref.aspect(), label_ref.field())
+        .unwrap()
+        .clone();
+    let source = |output_binding| {
+        SemanticSource {
+        runtime_authority: world.application.runtime.authority_identity().as_u64(),
+        schema: world.application.installed_schema.binding_identity().clone(),
+        scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(entity),
+        output_binding,
+    }
+    };
+    let a_source = source(TypeId::of::<StatusOutput>());
+    let a0 = RecordedSettlementIdentity::retain(&a_source, coordinate, 0);
+    let a1 = RecordedSettlementIdentity::retain(&a_source, coordinate, 1);
+    handle.with_runtime_mut(|runtime| {
+        let (before_handle, before) = snapshot(runtime);
+        let unchanged_fact = field_fact(runtime, &before_handle, entity, label);
+        register(owner, Arc::clone(&a0), Arc::from([unchanged_fact.clone()]), &before, OrdSet::new());
+        write_field(runtime, entity, status.clone(), "closed");
+        let (alias_handle, alias) = snapshot(runtime);
+        register_alias(owner, runtime, &alias_handle, &alias, entity, status.clone(), &a0, &a1);
+        // The successor's status changes; the predecessor's label never changes.
+        write_field(runtime, entity, status, "changed-output");
+        let (later_handle, later) = snapshot(runtime);
+        assert!(matches!(owner.consumed_output_currentness(&later, &a0, &mut owner.edit_admission()).unwrap(),
+            crate::domain_computation::primary_graph::output_lineage::invalidation::ConsumedOutputCurrentness::PendingEqualSuccessor));
+        assert_eq!(ConsumedOutputEvidence::verify_candidate_with_admission(
+            &a0,
+            &RetainedSourceFacts::for_test(false, Arc::from([unchanged_fact])).for_comparison().unwrap(),
+            &[], None, &before, owner, runtime, &later_handle, &later,
+            &mut owner.edit_admission(),
+        ), Err(crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop::PendingUpstream));
+        for handle in [before_handle, alias_handle, later_handle] {
             runtime.snapshots().release_snapshot(&handle).unwrap();
         }
     });

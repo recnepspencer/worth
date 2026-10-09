@@ -103,7 +103,10 @@ fn publish_initial_output(
         })
         .expect_source(observed)
         .idempotency(&10_699_u64)
-        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(application)
+        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
+            application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the initial source reaches the program entry");
     let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = outcome else {
         panic!("the initial source must retain performed delivery")
@@ -167,6 +170,9 @@ fn adjust(
         })
         .expect_source(observed)
         .idempotency(&command)
-        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(application)
+        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
+            application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the independent source adjustment commits");
 }

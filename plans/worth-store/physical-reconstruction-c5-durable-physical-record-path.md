@@ -7,6 +7,33 @@ and bootstrap files reached through the C.4 media owner. A successful
 publication must survive loss of the writer process, and a fresh process must
 discover and read it from the Store root without caller-supplied heap state.
 
+## C.11 Arena-Layout Amendment
+
+C.11 replaces C.5's original per-extent data and manifest files with packed
+`families/records/arenas/arena-<id>.data` files for every extent-backed record.
+The extent manifest and its payload frames occupy one aligned arena range.
+Only the published root's routing names that range's arena, offset, length,
+and generation; neither an arena directory listing nor surviving frame bytes
+can establish a current record placement. Stable `PhysicalRecordId` identity
+and bounded record streaming are unchanged.
+
+The arena grammar uses physical record format version `2`. Version `1` is
+denied as `UnsupportedVersion`, not reinterpreted as an arena world or opened
+through a parallel per-extent compatibility path. The original C.5 phase plan
+below remains historical; this amendment supersedes its physical placement
+and current-format requirements. Current caller APIs are documented in
+[`bounded-physical-record-access.md`](bounded-physical-record-access.md) and
+[`physical-durability-and-checkpoints.md`](physical-durability-and-checkpoints.md).
+
+The published free-space map carries sorted, coalesced arena ranges. A range
+is not reusable while a current or C.10-protected root routes it, an in-flight
+submission reserves it, or a durable WAL/recovery claim still owns its effect.
+Extent retirement durably releases a range; only an arena empty in every
+protected root may be retired as a whole file. Publication absence does not
+prove a range free. C.11's arena allocation, recovery, integrity, scale, and
+evacuation acceptance requirements remain the gates for this cutover; this
+amendment is not evidence that those gates have passed.
+
 ## Why This Milestone Exists
 
 C.4 made filesystem effects real but intentionally exposed no record store.
@@ -242,7 +269,8 @@ must follow it in this direction:
 3. the current root manifest tree names the complete reachable artifact
    closure and routes each `PhysicalRecordId` to its current placement
 4. segment manifests establish page membership and page generation
-5. extent manifests establish extent membership and extent generation
+5. root-routed extent manifest frames establish extent membership and extent
+   generation within the named arena range; their data chunks share that arena
 6. the free-space manifest establishes allocatable ranges for the successor
    root
 7. admitted page or extent frames establish the immutable record bytes
@@ -276,6 +304,10 @@ this milestone.
   anti-substitution gates.
 
 ## Intentional DX Target
+
+This is the original C.5 design target, not a current compiling API example.
+Its `V1` declaration predates the C.11 format-v2 cutover; use the continuing
+caller documents linked above for the current workflow.
 
 The common path must read as physical intent while keeping I/O and bounded-work
 boundaries visible:
@@ -777,6 +809,10 @@ whole-store materialization.
   limits, and framing can be admitted. Length drift during streaming is a typed
   partial-effect failure.
 - Extent data must synchronize before any manifest that makes it reachable.
+- Under the C.11 amendment, manifest and data frames pack into the same
+  aligned arena range rather than separate per-extent files. Publication
+  retains the same data-before-reachability ordering, and reads remain bounded
+  independently of the arena's other extents.
 - Extent threshold is append placement policy, not Store-wide format identity.
   Zero-length records are legal real page frames and never become extents merely
   because a policy threshold is zero.
@@ -1547,12 +1583,13 @@ materialization, and alternate writer substitution mechanically visible.
   families/records/roots/root-<generation>.manifest
   families/records/segments/segment-<id>-<generation>.pages
   families/records/segments/segment-<id>-<generation>.manifest
-  families/records/extents/extent-<id>-<generation>.data
-  families/records/extents/extent-<id>-<generation>.manifest
+  families/records/arenas/arena-<id>.data
   families/records/free-space/free-space-<generation>.manifest
   staging/records/<publication-identity>/...
   ```
 
+  The arena entry incorporates the C.11 amendment; no per-extent data or
+  manifest file remains in the ordinary path.
   Phase 1 may refine separators and fixed-width encodings, but these semantic
   roles, authority distinctions, and typed namespace ownership are locked.
   Staging paths are absent after a clean control run and appear only as exactly
@@ -1562,7 +1599,8 @@ materialization, and alternate writer substitution mechanically visible.
 
 - Start from an absent real temporary Store root on the host filesystem and
   initialize explicitly. Every reopen uses only the open path.
-- Use persisted format version `1`, `PhysicalPageSizeClass::KiB16`, atomic-
+- Use persisted format version `2` under the C.11 amendment (the original C.5
+  world used version `1`), `PhysicalPageSizeClass::KiB16`, atomic-
   replace catalog protocol, and mandatory checksum integrity. Separately use a
   placement policy with a 32-page segment target, an 8 KiB extent threshold,
   and manifest node capacity small enough

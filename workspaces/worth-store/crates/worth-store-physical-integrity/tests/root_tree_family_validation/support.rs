@@ -3,12 +3,12 @@ use worth_store_physical_format::store_namespace::{
 };
 use worth_store_physical_format::{
     BootstrapCatalog, CurrentPhysicalRecordPlacement, CurrentRootCatalogEntry,
-    CurrentRootCatalogGeneration, DurableExtentRecordPlacement, ManifestBlockReference,
-    PersistedRecordIdentity, PhysicalExtentId, PhysicalGeneration, PhysicalGenerationAuthority,
-    PhysicalPageId, PhysicalRecordFormatDeclaration, PhysicalRootRoutingBlock, PhysicalSegmentId,
-    PhysicalSegmentMembershipBlock, PhysicalTreeIdentity, RecordSegmentPageManifestEntry,
-    RootRoutingBlockScopeIdentity, SegmentManifestBlockReference,
-    SegmentMembershipBlockScopeIdentity,
+    CurrentRootCatalogGeneration, DurableExtentRecordPlacement, ExtentArenaId, ExtentArenaRange,
+    ManifestBlockReference, PersistedRecordIdentity, PhysicalExtentId, PhysicalGeneration,
+    PhysicalGenerationAuthority, PhysicalPageId, PhysicalRecordFormatDeclaration,
+    PhysicalRootRoutingBlock, PhysicalSegmentId, PhysicalSegmentMembershipBlock,
+    PhysicalTreeIdentity, RecordSegmentPageManifestEntry, RootRoutingBlockScopeIdentity,
+    SegmentManifestBlockReference, SegmentMembershipBlockScopeIdentity,
 };
 use worth_store_physical_integrity::{
     validate_root_routing_block, validate_segment_membership_block,
@@ -61,9 +61,14 @@ pub fn root_leaf() -> PhysicalRootRoutingBlock {
     let cell = PhysicalGenerationAuthority::for_canonical_physical_format()
         .record_extent_cell(extent)
         .with_extent_generation(generation);
-    let placement = DurableExtentRecordPlacement::new(record, cell, 23)
-        .map(CurrentPhysicalRecordPlacement::Extent)
-        .unwrap();
+    let placement = DurableExtentRecordPlacement::legacy_unknown(
+        record,
+        cell,
+        23,
+        ExtentArenaRange::new(ExtentArenaId::new(1).unwrap(), 0, 32_768).unwrap(),
+    )
+    .map(CurrentPhysicalRecordPlacement::Extent)
+    .unwrap();
     PhysicalRootRoutingBlock::leaf(71, 11, 3, vec![placement], 8).unwrap()
 }
 

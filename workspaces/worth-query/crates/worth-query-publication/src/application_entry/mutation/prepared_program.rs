@@ -1,13 +1,14 @@
 //! A program-gated candidate retained between preparation and publication.
+use worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase as AdvancementPhase;
 
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationIntent, ApplicationMutationScopeResolution,
 };
 use worth_query_declaration::facade::application_program::ApplicationProgramDefinition;
-use worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase as AdvancementPhase;
 use worth_query_execution::facade::application_installation::{
     WorthQueryProgramApplicationRuntime, WorthQueryProgramOwner, WorthQuerySelectedProgramOwner,
 };
+use worth_query_execution::facade::runtime::ExecutionAllocationPolicy;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{
@@ -62,11 +63,13 @@ pub enum WorthQueryApplicationProgramMutationPreparation<
 /// use worth_query_declaration::facade::{application_operation::ApplicationMutationBinding,
 ///     application_program::ApplicationProgramDefinition};
 /// use worth_query_installation::facade::ApplicationSchema;
+/// use worth_query_execution::facade::runtime::ExecutionAllocationPolicy;
 /// fn publish<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>,
 ///     Program: ApplicationProgramDefinition<Schema>>(
 ///     candidate: WorthQueryPreparedProgramMutation<'_, '_, Schema, Binding, Program>,
+///     allocation_policy: ExecutionAllocationPolicy<'_, '_>,
 /// ) -> WorthQueryApplicationMutationOutcome<Binding::Denial, Binding::Result>
-/// where Binding::Input: Clone + Send + Sync { candidate.commit() }
+/// where Binding::Input: Clone + Send + Sync { candidate.commit(allocation_policy) }
 /// ```
 pub struct WorthQueryPreparedProgramMutation<
     'request,
@@ -89,30 +92,53 @@ where
 {
     /// Consumes this candidate through the authoritative program commit path.
     /// Denial, cancellation and duplicate replay never release the candidate result.
-    pub fn commit(self) -> WorthQueryApplicationMutationOutcome<Binding::Denial, Binding::Result> {
-        let request = self.candidate.program.request_scope().clone();
+    pub fn commit(
+        self,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
+    ) -> WorthQueryApplicationMutationOutcome<Binding::Denial, Binding::Result> {
+        self.commit_report(allocation_policy).into_outcome()
+    }
+
+    /// Publishes once, retaining the original preparation's work even on duplicate commit.
+    pub fn commit_report(
+        self,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
+    ) -> super::WorthQueryApplicationMutationAttemptReport<
+        WorthQueryApplicationMutationOutcome<Binding::Denial, Binding::Result>,
+    > {
+        let scope = self.candidate.program.request_scope().clone();
         let runtime = self.application.runtime();
+        let work = self.candidate.decision_work;
         runtime
-            .with_application_advancement(&request, |phase| self.commit_in_advancement(&phase))
+            .with_application_advancement(&scope, |phase| {
+                self.commit_report_in_advancement(&phase, allocation_policy)
+            })
             .unwrap_or_else(|cause| {
-                WorthQueryApplicationMutationOutcome::Commit(
-                    cause
-                        .into_commit_outcome()
-                        .landed()
-                        .expect_err("request admission cannot commit"),
+                super::WorthQueryApplicationMutationAttemptReport::new(
+                    WorthQueryApplicationMutationOutcome::Commit(
+                        cause
+                            .into_commit_outcome()
+                            .landed()
+                            .expect_err("request admission cannot commit"),
+                    ),
+                    work,
                 )
             })
     }
 
-    pub(super) fn commit_in_advancement(
+    pub(super) fn commit_report_in_advancement(
         self,
         phase: &AdvancementPhase<'_>,
-    ) -> WorthQueryApplicationMutationOutcome<Binding::Denial, Binding::Result> {
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
+    ) -> super::WorthQueryApplicationMutationAttemptReport<
+        WorthQueryApplicationMutationOutcome<Binding::Denial, Binding::Result>,
+    > {
         let PreparedCandidate {
             program,
             result,
             identities,
             extension,
+            decision_work,
         } = self.candidate;
         let binding = WorthQueryMutationCommitBinding::new(&identities, extension);
         let outcome = match self.selected_owner {
@@ -121,21 +147,24 @@ where
                 program,
                 binding.identities(),
                 |idempotency| binding.extension().apply(idempotency),
+                allocation_policy,
             ),
             None => self.application.commit_program_action_in_advancement(
                 phase,
                 program,
                 binding.identities(),
                 |idempotency| binding.extension().apply(idempotency),
+                allocation_policy,
             ),
         };
-        match outcome.landed() {
+        let outcome = match outcome.landed() {
             Ok((receipt, false)) => {
                 WorthQueryApplicationMutationOutcome::Committed { receipt, result }
             }
             Ok((receipt, true)) => WorthQueryApplicationMutationOutcome::AlreadyCommitted(receipt),
             Err(uncommitted) => WorthQueryApplicationMutationOutcome::Commit(uncommitted),
-        }
+        };
+        super::WorthQueryApplicationMutationAttemptReport::new(outcome, decision_work)
     }
 }
 
@@ -164,6 +193,7 @@ where
     pub fn prepare_in_program<'request, Program>(
         &'request mut self,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         WorthQueryApplicationProgramMutationPreparation<
             'request,
@@ -177,19 +207,58 @@ where
     where
         Program: ApplicationProgramDefinition<Schema>,
     {
-        let request = self.request_scope().clone();
-        let runtime = self.request.application;
-        runtime
-            .with_application_advancement(&request, |phase| {
-                self.prepare_in_program_in_advancement(&phase, application)
-            })
-            .map_err(WorthQueryApplicationRequestMutationDenial::ExecutionRequest)?
+        self.prepare_in_program_report(application, allocation_policy)
+            .into_outcome()
     }
 
-    pub(super) fn prepare_in_program_in_advancement<'request, Program>(
+    /// Reports decision work without releasing the candidate's unpublished result.
+    pub fn prepare_in_program_report<'request, Program>(
+        &'request mut self,
+        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
+    ) -> super::WorthQueryApplicationMutationAttemptReport<
+        Result<
+            WorthQueryApplicationProgramMutationPreparation<
+                'request,
+                'application,
+                Schema,
+                Intent::Binding,
+                Program,
+            >,
+            WorthQueryApplicationRequestMutationDenial,
+        >,
+    >
+    where
+        Program: ApplicationProgramDefinition<Schema>,
+    {
+        let scope = self.request_scope().clone();
+        let runtime = self.request.application;
+        runtime
+            .with_application_advancement(&scope, |phase| {
+                let mut decision_work =
+            worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork::NotStarted;
+                let outcome = self.prepare_in_program_with_work(
+                    &phase,
+                    application,
+                    &mut decision_work,
+                    allocation_policy,
+                );
+                super::WorthQueryApplicationMutationAttemptReport::new(outcome, decision_work)
+            })
+            .unwrap_or_else(|cause| {
+                super::WorthQueryApplicationMutationAttemptReport::new(
+            Err(WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause)),
+            worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork::NotStarted,
+        )
+            })
+    }
+
+    pub(super) fn prepare_in_program_with_work<'request, Program>(
         &'request mut self,
         phase: &AdvancementPhase<'_>,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+        decision_work: &mut worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         WorthQueryApplicationProgramMutationPreparation<
             'request,
@@ -219,9 +288,14 @@ where
         if !selected_owns_action && !application.contains_action::<Intent::Binding>() {
             return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired);
         }
-        match self.prepare_candidate(phase, move |request, identities, staged| {
-            super::authorization::prepare_selected(request, identities, staged, &selected)
-        })? {
+        match self.prepare_candidate(
+            phase,
+            move |request, identities, staged| {
+                super::authorization::prepare_selected(request, identities, staged, &selected)
+            },
+            decision_work,
+            allocation_policy,
+        )? {
             CandidatePreparation::Prepared(candidate) => {
                 Ok(WorthQueryApplicationProgramMutationPreparation::Prepared(
                     WorthQueryPreparedProgramMutation {

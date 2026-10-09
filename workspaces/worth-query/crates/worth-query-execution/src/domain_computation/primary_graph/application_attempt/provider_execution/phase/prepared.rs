@@ -1,7 +1,8 @@
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use worth_execution::ExecutionArray;
 use worth_query_installation::facade::ApplicationSchema;
 
-use super::super::super::provider_binding::{installed_preimage_demand, prepare_provider_attempt};
+use super::super::super::provider_binding::installed_preimage_demand;
 use super::super::super::{
     provider_recomparison::recover_equivalent_commit_evidence,
     WorthQueryApplicationCommitAuthorityBinding, WorthQueryApplicationCommitDenial,
@@ -111,8 +112,8 @@ impl<Schema, Operation, Input, Scope>
 
 struct WorthQueryProviderAttemptPreparation {
     required_output_demand: Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,
-    installed_read_scopes: Vec<worth_query_installation::facade::WorthQueryOperationGraphReadScope>,
-    facts: Vec<WorthQueryApplicationObservedFact>,
+    installed_read_scopes: ExecutionArray<worth_query_installation::facade::WorthQueryOperationGraphReadScope>,
+    facts: ExecutionArray<WorthQueryApplicationObservedFact>,
     consumed_outputs: Vec<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence>,
     effects: Vec<WorthQueryApplicationRealizedEffect>,
     application_effect_count: usize,
@@ -122,7 +123,6 @@ struct WorthQueryProviderAttemptPreparation {
     conditional_definition:
         Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
     effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture,
-    validator_work_admission: crate::domain_computation::primary_graph::application_attempt::effect_program::WorthQueryCandidateValidatorWorkAdmission,
     output_correspondence: super::super::super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
     retain_output_demand_observation: bool,
     retain_client_observation: bool,
@@ -204,35 +204,8 @@ fn prepare_authorized_application_commit<Schema, Operation, Input, Scope>(
     })
 }
 
-fn prepare_application_provider_attempt(
-    lease: &WorthQueryApplicationSnapshotLease,
-    preparation: WorthQueryProviderAttemptPreparation,
-    mutation_partition: worth_relational::facade::identity::PartitionId,
-) -> Result<
-    WorthQueryPreparedApplicationProviderAttempt,
-    crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial,
->{
-    prepare_provider_attempt(
-        lease.layout.unique_fields(),
-        mutation_partition,
-        preparation.application_effect_count,
-        preparation.installed_read_scopes,
-        preparation.facts,
-        preparation.consumed_outputs,
-        preparation.effects,
-        preparation.emission_retained_bytes,
-        preparation.emission_retained_bytes_ceiling,
-        preparation.preimage_demand,
-        preparation.conditional_definition,
-        preparation.validator_work_admission,
-        preparation.output_correspondence,
-        preparation.retain_output_demand_observation,
-        preparation.retain_client_observation,
-        preparation.producer_required_invariants,
-        preparation.output_currentness_facts,
-    )
-    .map(|prepared| prepared.with_required_output_demand(preparation.required_output_demand))
-}
+mod provider_attempt;
+use provider_attempt::prepare_application_provider_attempt;
 
 fn take_commit_authorization<Schema, Operation, Input, Scope>(
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,

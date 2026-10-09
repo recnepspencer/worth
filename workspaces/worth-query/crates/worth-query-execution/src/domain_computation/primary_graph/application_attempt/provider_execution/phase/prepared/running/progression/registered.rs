@@ -130,27 +130,34 @@ impl<'run> WorthQueryRegisteredProviderAttempt<'run> {
             Input,
             Scope,
         >,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> WorthQueryProviderProgressionOutcome
     where
         Schema: worth_query_installation::facade::ApplicationSchema,
         Input: Clone + Send + Sync + 'static,
     {
-        let read_set =
-            super::fresh::compare_provider_read_set(self.staged, self.requests, authority);
+        let read_set = super::fresh::compare_provider_read_set(
+            self.staged,
+            self.requests,
+            authority,
+            allocation_policy,
+        );
         let fresh = match read_set {
             super::fresh::WorthQueryProviderReadSetProgression::Fresh(fresh) => fresh,
             super::fresh::WorthQueryProviderReadSetProgression::Terminal(outcome) => {
                 return outcome
             }
         };
-        let candidate = match fresh.progress_invariant(self.steps, authority.provider()) {
-            Ok(candidate) => candidate,
-            Err(outcome) => return outcome,
-        };
+        let candidate =
+            match fresh.progress_invariant(self.steps, authority.provider(), allocation_policy) {
+                Ok(candidate) => candidate,
+                Err(outcome) => return outcome,
+            };
         super::authorized::authorize_and_resolve_provider_commit(
             candidate,
             authority,
             self.dispatch_outbox,
+            allocation_policy,
         )
     }
 }
@@ -161,3 +168,7 @@ mod overlay_conflict_tests;
 
 #[cfg(test)]
 pub(super) use overlay_conflict_tests::assert_second_real_overlay_is_rejected;
+
+#[cfg(test)]
+#[path = "registered/comparison_tests.rs"]
+mod comparison_tests;

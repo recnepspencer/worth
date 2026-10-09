@@ -63,7 +63,7 @@ impl
     const CANDIDATES: worth_query_host::facade::declaration::application_operation::ApplicationCandidateRequirements =
         worth_query_host::facade::declaration::application_operation::ApplicationCandidateRequirements::fixed_shape(
             worth_query_host::facade::declaration::application_operation::ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 0, 0),
-            worth_query_host::facade::declaration::application_operation::ApplicationCandidateResourceCeiling::bounded(0, 0),
+            worth_query_host::facade::declaration::application_operation::ApplicationCandidateResourceCeiling::representation_bytes(0),
         );
 
     fn scope_field(
@@ -128,19 +128,27 @@ fn target_program_must_own_the_exact_migration_binding() {
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let denial = host
         .runtime()
-        .request(&principal, &scope)
-        .on_branch(branch)
-        .mutate(UnownedMigrationIntent {
-            input: SetRetentionInput {
-                identity: DOCUMENT_IDENTITY.to_owned(),
-                retention_days: 15,
-            },
+        .with_application_advancement(&scope, |phase| {
+            host.runtime()
+                .request(&principal, &scope)
+                .on_branch(branch)
+                .mutate(UnownedMigrationIntent {
+                    input: SetRetentionInput {
+                        identity: DOCUMENT_IDENTITY.to_owned(),
+                        retention_days: 15,
+                    },
+                })
+                .without_source()
+                .idempotency(&0x9175_2100)
+                .prepare_program_migration(
+                    &phase,
+                    &target,
+                    worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .err()
+                .expect("operation identity cannot substitute for exact binding ownership")
         })
-        .without_source()
-        .idempotency(&0x9175_2100)
-        .prepare_program_migration(&target)
-        .err()
-        .expect("operation identity cannot substitute for exact binding ownership");
+        .expect("the installed host admits migration preparation");
     assert!(matches!(
         denial,
         WorthQueryApplicationProgramMigrationPreparationDenial::Migration(

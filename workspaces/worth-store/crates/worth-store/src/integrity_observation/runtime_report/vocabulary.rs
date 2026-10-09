@@ -14,8 +14,16 @@ pub(super) fn family(
         RootRoutingBlock => "root_routing_block",
         SegmentMembership => "segment_membership_block",
         PageFrame => "page_frame",
+        BTreeNode => "btree_node",
         ExtentManifest => "extent_manifest",
         ExtentChunk => "extent_chunk_frame",
+        ExtentArenaFrame => "extent_arena_frame",
+        BlobResumeSession => "blob_resume_session",
+        BlobChunkFrame => "blob_chunk_frame",
+        BlobTreeNode => "blob_tree_node",
+        BlobGenerationPublication => "blob_generation_publication",
+        BlobDropSetManifest => "blob_drop_set_manifest",
+        BlobReclaimDescriptor => "blob_reclaim_descriptor",
         FreeSpaceHeader => "free_space_header",
         FreeSpaceMembershipBlock => "free_space_membership_block",
         WalFrame => "wal_frame",
@@ -115,6 +123,8 @@ pub(super) fn axis(value: PhysicalIntegrityVersionAxis) -> &'static str {
         PhysicalWorkObligation => "physical_work_obligation",
         WalFrame => "wal_frame",
         CheckpointRecordSchema => "checkpoint_record_schema",
+        BlobRecord => "blob_record",
+        BTreeNode => "btree_node",
     }
 }
 

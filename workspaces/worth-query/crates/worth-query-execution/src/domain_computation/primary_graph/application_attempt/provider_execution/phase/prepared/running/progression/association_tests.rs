@@ -18,6 +18,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitTerminalKind, WorthQueryApplicationEffectProgram,
     WorthQueryApplicationIdempotencyBinding, WorthQueryPrimaryGraphApplicationRuntime,
 };
+use crate::facade::runtime::ExecutionAllocationPolicy;
 use std::time::{Duration, Instant};
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
@@ -29,80 +30,6 @@ type RetainedProgram = WorthQueryApplicationEffectProgram<
     ExactStatusRetentionInput,
     Account,
 >;
-
-#[test]
-fn genuinely_interleaved_equivalent_sessions_validate_retry_cleanup_separately() {
-    let world =
-        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
-            true,
-        );
-    world
-        .application
-        .with_host_advancement(|active_phase| {
-            let phase = &active_phase;
-
-            let snapshot_baseline = world.invariant.active_snapshot_count();
-            let (left, right) = equivalent_programs(&world, "racing-equivalent");
-            let binding = idempotency(139, 140);
-            let left = start(phase, &world.application, left, binding);
-            let right = start(phase, &world.application, right, binding);
-            let left = progress_application_commit(phase, &world.application, left);
-            let right = progress_application_commit(phase, &world.application, right);
-            assert_eq!(
-                world.invariant.active_snapshot_count(),
-                snapshot_baseline + 2
-            );
-            let left = finish_application_commit(phase, &world.application, left);
-            assert_eq!(
-                world.invariant.active_snapshot_count(),
-                snapshot_baseline + 1,
-                "finishing one attempt must preserve its interleaved peer's snapshot lease"
-            );
-            let right = finish_application_commit(phase, &world.application, right);
-            assert_eq!(world.invariant.active_snapshot_count(), snapshot_baseline);
-            assert_eq!(world.application.provider_session_resource_count(), 0);
-
-            let (executed, recovered) = match (left, right) {
-                (
-                    WorthQueryApplicationCommitOutcome::Committed(executed),
-                    WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered),
-                )
-                | (
-                    WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered),
-                    WorthQueryApplicationCommitOutcome::Committed(executed),
-                ) => (executed, recovered),
-                unexpected => {
-                    panic!("expected one executed and one recovered commit: {unexpected:?}")
-                }
-            };
-            assert!(executed.is_same_authoritative_commit(&recovered));
-            assert_eq!(executed.retained_preimage(), recovered.retained_preimage());
-            assert_eq!(executed.dispatch_outbox(), recovered.dispatch_outbox());
-            let executed_output = executed
-                .outputs_of::<RetentionOutputs>()
-                .and_then(|outputs| outputs.entity::<RetainedAccount>())
-                .expect("fresh receipt must retain the bound output role");
-            let recovered_output = recovered
-                .outputs_of::<RetentionOutputs>()
-                .and_then(|outputs| outputs.entity::<RetainedAccount>())
-                .expect("idempotent receipt must recover the same output role");
-            assert_eq!(executed_output.entity_id(), recovered_output.entity_id());
-            assert_eq!(executed.terminal().attempt_resources_released(), Some(true));
-            assert_eq!(
-                recovered.terminal().attempt_resources_released(),
-                Some(true)
-            );
-            assert_eq!(
-                executed.terminal().kind(),
-                WorthQueryApplicationCommitTerminalKind::Executed
-            );
-            assert_eq!(
-                recovered.terminal().kind(),
-                WorthQueryApplicationCommitTerminalKind::Recovered
-            );
-        })
-        .expect("fixture owner admits its advancement");
-}
 
 #[test]
 fn preparation_denial_cleanup_preserves_the_interleaved_peer() {
@@ -206,7 +133,12 @@ fn assert_interleaved_terminal(
             let victim = finish_application_commit(
                 phase,
                 &world.application,
-                progress_application_commit(phase, &world.application, victim),
+                progress_application_commit(
+                    phase,
+                    &world.application,
+                    victim,
+                    crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                ),
             );
             assert_victim(&victim);
             assert_only_peer_remains(&world, baseline, both_attempts);
@@ -256,7 +188,12 @@ fn finish_peer(
     let peer = finish_application_commit(
         phase,
         &world.application,
-        progress_application_commit(phase, &world.application, peer),
+        progress_application_commit(
+            phase,
+            &world.application,
+            peer,
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        ),
     );
     match (expectation, peer) {
         (PeerExpectation::Committed, WorthQueryApplicationCommitOutcome::Committed(receipt)) => {
@@ -350,5 +287,7 @@ mod abandoned_running_attempt_preserves_the_interleaved_peer;
 #[path = "association_tests/cancelled_cleanup_preserves_the_interleaved_peer.rs"]
 mod cancelled_cleanup_preserves_the_interleaved_peer;
 
+#[path = "association_tests/equivalent_retry.rs"]
+mod equivalent_retry;
 #[path = "association_tests/stale_read_set_cleanup_preserves_the_interleaved_peer.rs"]
 mod stale_read_set_cleanup_preserves_the_interleaved_peer;

@@ -41,6 +41,57 @@ where
                     "refreshed output source belongs to another query",
                 )
             })?;
+        let entry = std::sync::Arc::clone(readmission.producer.get().ok_or_else(|| {
+            denial(
+                WorthQueryOutputDemandDenialKind::ProducerUnavailable,
+                "refreshed output lacks its installed producer",
+            )
+        })?)
+        .downcast::<super::super::super::registry::InstalledProducerProvider<Schema>>()
+        .map_err(|_| {
+            denial(
+                WorthQueryOutputDemandDenialKind::ProducerUnavailable,
+                "refreshed producer belongs to another schema",
+            )
+        })?;
+        let key = rejoined.key();
+        if key.family_type() != std::any::TypeId::of::<Family>()
+            || entry.declaration.output_family_type != std::any::TypeId::of::<Family>()
+            || entry.declaration.identity != key.producer_identity()
+            || !entry
+                .declaration
+                .applicability
+                .contains(&key.applicability())
+        {
+            return Err(denial(
+                WorthQueryOutputDemandDenialKind::ForeignDemand,
+                "refreshed producer differs from its typed output family",
+            ));
+        }
+        if demand.selected.identity != entry.declaration.identity {
+            demand.selected = super::super::WorthQuerySelectedApplicationProducer {
+                identity: entry.declaration.identity.clone(),
+                applicability: key.applicability(),
+                exact_retained_output: false,
+                retained_resources: None,
+                retained_idempotency_key: None,
+                retained_output_binding: None,
+                reuses_live_output_only: false,
+            };
+            demand.resources = None;
+            demand.resources_validated = false;
+        } else {
+            // One executor serving both postures keeps its admitted resource
+            // and exact-output proof; only the actual row's posture changes.
+            demand.selected.applicability = key.applicability();
+        }
+        if let super::super::required_provenance::DemandProgressionProvenance::RequiredSuccessor(
+            provenance,
+        ) = &mut demand.progression_provenance
+        {
+            provenance.bind_successor(entry.edition);
+        }
+        demand.installed_entry = entry;
         demand.observed_source = source;
         demand.retained_program_basis = readmission.retained_program_basis.clone();
         // Rejoining does not initiate another producer execution; the

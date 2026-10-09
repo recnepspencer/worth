@@ -67,7 +67,7 @@ fn mutated_projection_bytes(mutation: ProjectionMutation) -> Vec<u8> {
     let segment_cell = authority
         .segment_cell(segment)
         .with_segment_generation(PhysicalGeneration::from_raw(2).unwrap());
-    let mut frames = base.frames().to_vec();
+    let mut frames = base.frames().expect("ordinary frame fixture").to_vec();
     let mut records = base.record_identities().to_vec();
     let mut placements = base.placements().to_vec();
     let mut updates = base.segment_updates().to_vec();
@@ -114,7 +114,15 @@ fn mutated_projection_bytes(mutation: ProjectionMutation) -> Vec<u8> {
                 )
                 .with_slot_generation(PhysicalGeneration::from_raw(1).unwrap());
             placements.push(CurrentPhysicalRecordPlacement::Inline(
-                DurableInlineRecordPlacement::new(record, segment_cell, page, slot, 2, 1).unwrap(),
+                DurableInlineRecordPlacement::legacy_unknown(
+                    record,
+                    segment_cell,
+                    page,
+                    slot,
+                    2,
+                    1,
+                )
+                .unwrap(),
             ));
         }
         ProjectionMutation::ExtraSegmentUpdate => {
@@ -125,10 +133,8 @@ fn mutated_projection_bytes(mutation: ProjectionMutation) -> Vec<u8> {
         }
         ProjectionMutation::ExtraManifest => manifests.push(
             PersistedPhysicalRecoveryManifest::new(
-                RecordArtifactFile::ExtentManifest {
-                    extent: 7,
-                    generation: 2,
-                },
+                RecordFrameCoordinate::new(RecordArtifactFile::ExtentArena { arena: 7 }, 4096, 16)
+                    .unwrap(),
                 b"foreign-manifest",
             )
             .unwrap(),
@@ -205,7 +211,11 @@ fn first_frame_start(bytes: &[u8]) -> usize {
     for _ in 0..record_count {
         offset = encoded_field_end(bytes, offset);
     }
-    offset + 8
+    assert_eq!(
+        bytes[offset], 0,
+        "fixture carries the explicit frame payload tag"
+    );
+    offset + 1 + 8
 }
 
 fn encoded_field_end(bytes: &[u8], offset: usize) -> usize {

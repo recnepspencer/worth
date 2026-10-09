@@ -12,7 +12,7 @@ error: cannot construct `WalDurablePhysicalMutation` with struct literal syntax 
 9 |     let _ = WalDurablePhysicalMutation {};
   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^
   |
-  = note: private fields `appended`, `group_binding` and `settlement` that were not provided
+  = note: private fields `appended`, `group_binding`, `settlement` and `completed_data_prefix` that were not provided
 help: you might have meant to use the `new` associated function
   |
 9 -     let _ = WalDurablePhysicalMutation {};

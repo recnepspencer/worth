@@ -17,7 +17,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
 
 use super::super::RecordedSettlementIdentity;
 use super::{
-    admission::IndexAdmission,
+    admission::{IndexAdmission, RetainedIndexAdmission},
     index_capacity,
     mark_state::{SettlementCurrentness, SettlementMarks},
     retention,
@@ -174,8 +174,8 @@ impl SourceInvalidationOwner {
         if runtime_instance_id != self.runtime_instance_id {
             return Err(SettlementVerificationStop::Alignment);
         }
-        let before = admission.charged_bytes();
-        admission.bytes(
+        let before = admission.index_checkpoint();
+        admission.index_bytes(
             index_capacity::arc_bytes::<SettlementMarks>()
                 .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
         )?;
@@ -187,7 +187,7 @@ impl SourceInvalidationOwner {
         replacement.dirty_ordinals = im::OrdSet::new();
         let mut state = (*image.payload().current).clone();
         state.dirty_ordinal_count -= row.dirty_ordinals.len();
-        admission.ordered_edit::<Arc<RecordedSettlementIdentity>, Arc<SettlementMarks>>(
+        admission.index_edit::<Arc<RecordedSettlementIdentity>, Arc<SettlementMarks>>(
             state.settlements.len(),
         )?;
         state.settlements.insert(identity, Arc::new(replacement));

@@ -3,10 +3,13 @@ pub use crate::domain_computation::primary_graph::application_installation::{
     in_memory, in_memory_program, in_memory_program_from_checkpoint,
     in_memory_program_with_authorization_time_source, in_memory_rostered_program,
     in_memory_rostered_program_from_checkpoint,
+    in_memory_rostered_program_from_checkpoint_with_transition,
     in_memory_rostered_program_with_authorization_time_source, WorthQueryAdmittedProgramOperation,
     WorthQueryAdmittedProgramOutput, WorthQueryApplicationPreviewReadmissionDenial,
     WorthQueryApplicationPreviewRequest, WorthQueryApplicationPreviewSession,
     WorthQueryApplicationProgramRoots, WorthQueryApplicationProgramRoster,
+    WorthQueryCheckpointMigrationWriter, WorthQueryCheckpointProgramPredecessor,
+    WorthQueryCheckpointTransitionRecovery, WorthQueryCheckpointTransitionResources,
     WorthQueryInMemoryApplicationDenial, WorthQueryInMemoryApplicationLimits,
     WorthQueryInMemoryApplicationProfile, WorthQueryProgramApplicationRuntime,
     WorthQueryProgramOutputAdvance, WorthQueryProgramOwner, WorthQueryProgramRootDemand,
@@ -18,5 +21,6 @@ pub use crate::domain_computation::primary_graph::application_installation::{
 };
 pub use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCheckpoint, WorthQueryApplicationCheckpointSectionBytes,
+    WorthQueryCheckpointCaptureDenial, WorthQueryCheckpointCapturePolicy,
     WorthQueryNativeCheckpointSectionBytes,
 };

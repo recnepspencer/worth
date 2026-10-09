@@ -15,7 +15,7 @@ pub struct PhysicalScopedAllocationFailure {
 }
 
 impl PhysicalScopedAllocationFailure {
-    pub(super) fn from_denial(
+    pub(in crate::physical_runtime) fn from_denial(
         denial: worth_store_buffer_pool::PhysicalResidencyDenial,
         generation: LifecycleGeneration,
     ) -> Self {

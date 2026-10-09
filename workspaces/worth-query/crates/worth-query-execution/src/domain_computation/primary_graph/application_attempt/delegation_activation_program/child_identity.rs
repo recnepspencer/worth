@@ -41,21 +41,17 @@ impl<Schema, Operation, Input, Scope>
         WorthQueryProjectedApplicationMutation,
     >
 {
-    /// Appends the selection of every unique value `effects` create, within
-    /// the operation's decision fact budget. Each selection's place in that
-    /// budget is admitted before it reads.
+    /// Appends one indexed selection for each distinct created unique value.
+    /// Replacement fact backing is admitted before copying retained facts.
     pub(super) fn observe_created_unique_values(
         &mut self,
         effects: &[WorthQueryApplicationRealizedEffect],
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         let appended = observe_created_values(
             &self.facts,
             self.lease.layout.unique_fields(),
             effects,
-            self.admission
-                .allowed_graph_contract()
-                .decision_fact_budget(),
-            self.admission.operation(),
             |index, kind, locator, value| {
                 self.lease.handle().with_runtime(|runtime| {
                     observe_indexed_entity_selection(
@@ -70,7 +66,26 @@ impl<Schema, Operation, Input, Scope>
                 })
             },
         )?;
-        self.facts.extend(appended);
+        let operation = self.admission.operation();
+        let count = self
+            .facts
+            .len()
+            .checked_add(appended.len())
+            .ok_or_else(|| {
+                super::super::retained_decision_facts::StoreDenial::Representability
+                    .into_attempt_denial(operation)
+            })?;
+        self.facts = super::super::read_set::admit_array(
+            count,
+            self.facts.iter().cloned().chain(appended),
+            allocation_policy,
+            operation,
+            || {
+                self.admission
+                    .validate_current_authority()
+                    .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)
+            },
+        )?;
         Ok(())
     }
 }
@@ -79,8 +94,6 @@ fn observe_created_values(
     facts: &[WorthQueryApplicationObservedFact],
     unique: crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields<'_>,
     effects: &[WorthQueryApplicationRealizedEffect],
-    budget: usize,
-    operation: &str,
     mut observe: impl FnMut(
         DerivedIndexId,
         KindId,
@@ -114,12 +127,6 @@ fn observe_created_values(
             );
             if !observed.insert(key) {
                 continue;
-            }
-            if facts.len().saturating_add(appended.len()) >= budget {
-                return Err(denial(
-                    WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
-                    operation,
-                ));
             }
             let selection = observe(index_id, *kind, locator.clone(), value.clone());
             appended.push(selection.map_err(|refusal| match refusal {

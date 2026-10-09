@@ -42,6 +42,7 @@ pub(in crate::physical_runtime::record_serving) struct CanonicalPlacement {
     pub(in crate::physical_runtime::record_serving) slot_generation: u64,
     pub(in crate::physical_runtime::record_serving) capacity: u64,
     pub(in crate::physical_runtime::record_serving) payload_bytes: u64,
+    pub(in crate::physical_runtime::record_serving) arena_route: Option<[u64; 3]>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -110,6 +111,13 @@ fn lower_normalized(
             unsigned(format!("{prefix}.capacity"), placement.capacity),
             unsigned(format!("{prefix}.payload_bytes"), placement.payload_bytes),
         ]);
+        if let Some([arena, offset, length]) = placement.arena_route {
+            entries.extend([
+                unsigned(format!("{prefix}.arena"), arena),
+                unsigned(format!("{prefix}.arena_offset"), offset),
+                unsigned(format!("{prefix}.arena_length"), length),
+            ]);
+        }
     }
     for page in &summary.segment_pages {
         let prefix = format!("segment.{}.page.{}", page.segment, page.page);
@@ -121,7 +129,10 @@ fn lower_normalized(
         ]);
     }
     for free in &summary.free_space {
-        let prefix = format!("free.{}.{}", free.class, free.owner);
+        let prefix = format!(
+            "free.{}.{}.{}",
+            free.class, free.owner, free.first_unallocated
+        );
         entries.extend([
             unsigned(
                 format!("{prefix}.first_unallocated"),
@@ -135,7 +146,7 @@ fn lower_normalized(
         ]);
     }
     prepare_canonical_basis_sequence(
-        CanonicalizationRuleVersion::new("store.physical.record-topology.v1").unwrap(),
+        CanonicalizationRuleVersion::new("store.physical.record-topology.v2").unwrap(),
         DOMAIN,
         entries,
     )
@@ -156,6 +167,7 @@ pub(in crate::physical_runtime::record_serving) fn runtime_placement(
             slot_generation: value.slot_generation(),
             capacity: u64::from(value.segment_page_capacity()),
             payload_bytes: value.payload_bytes(),
+            arena_route: None,
         },
         CurrentPhysicalRecordPlacement::Extent(value) => CanonicalPlacement {
             epoch: value.record().allocation_epoch(),
@@ -168,6 +180,11 @@ pub(in crate::physical_runtime::record_serving) fn runtime_placement(
             slot_generation: 0,
             capacity: 0,
             payload_bytes: value.payload_bytes(),
+            arena_route: Some([
+                value.arena_range().arena().get(),
+                value.arena_range().offset(),
+                value.arena_range().length(),
+            ]),
         },
     }
 }

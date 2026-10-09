@@ -13,16 +13,19 @@ semantic milestone, or compatibility lane as an architectural premise.
 
 Part II is the fresh
 [Worth Store Runtime And Query Integration Roadmap](runtime-integration-roadmap.md).
-Part II begins only after this roadmap closes its physical foundation gate. The
+Part II Milestone 1 begins when the Runtime Integration Entry Gate holds;
+Part II platform readiness requires the Platform Readiness Gate. The
 former semantic roadmap and its implementation order are not predecessors,
 compatibility requirements, or earned milestone credit for either roadmap.
 
 The mandatory
 [Physical Foundation Reconstruction Roadmap](physical-foundation-reconstruction-roadmap.md)
-now sits inside Part I after the current S.9 implementation state and before
-S.10 continues. It reopens S.1 through S.9 closure, repairs the proof loop,
-and joins the existing physical mechanisms into one real sealed database
-runtime. Historical green runs do not bypass that reconstruction gate.
+now sits inside Part I after the current S.9 implementation state. It reopens
+S.1 through S.9 closure, repairs the proof loop, and joins the existing
+physical mechanisms into one real sealed database runtime. Historical green
+runs do not bypass that reconstruction gate. Its C.13 handoff opens Runtime
+Integration Milestone 1; S.10 through S.12 follow later, each before the
+Part II milestone that consumes it.
 
 ## Roadmap Position
 
@@ -30,14 +33,23 @@ The Worth Store critical path begins here:
 
 `Aspect-Native Workspace Gate` -> `S.0` -> `S.1`
 -> `S.2` -> `S.3` -> `S.4` -> `S.4.5` -> `S.5` -> `S.5.1`
--> `S.6` -> `S.7` -> `S.7.1` -> `S.8` -> `S.9` -> `S.10`
--> `S.11` -> `S.12` -> `Runtime And Query Integration Milestone 1`
-
-The active correction path expands the `S.9 -> S.10` edge as:
-
-`S.9 implementation state reopened`
+-> `S.6` -> `S.7` -> `S.7.1` -> `S.8` -> `S.9`
 -> `Physical Foundation Reconstruction C.1 through C.13`
--> `S.10 re-entry`
+-> `Runtime And Query Integration Milestone 1`
+
+S.10, S.11 and S.12 are not on the path to Runtime Integration entry.
+Each runs immediately before the first Part II milestone that consumes it:
+
+| Sequence | Runs before | Consumer |
+| --- | --- | --- |
+| `S.10` | Runtime Integration Milestone 8 | bounded bootstrap, recovery, PITR and readmission |
+| `S.11` | Runtime Integration Milestone 10 | security-scope and key-lifecycle contracts for Milestones 10 through 12, then capsules (16) and trust integration (18) |
+| `S.12` | Runtime Integration Milestone 14 | bulk ingest envelopes, then joined certification (19) |
+
+The physical facade that Part II binds to is the C.13 handoff. S.10 through
+S.12 extend it behind that facade; a Part II milestone never builds a
+substitute for a sequence that has not run yet. Until a sequence runs, its
+capabilities report `Absent` through capability negotiation.
 
 The `S.*` numbers are storage-foundation sequence numbers, not ordinary feature
 milestones. They express dependency order for the physical database substrate.
@@ -156,7 +168,7 @@ then the store has not earned the database claim.
   platform claims.
 - `test-requirements.md`
   remains the certification baseline. Physical certification suites must close
-  before the Store can claim platform-grade readiness or enter Part II.
+  before the Store can claim platform-grade readiness.
 
 ## Aspect-Native Workspace Gate
 
@@ -1060,9 +1072,9 @@ recovery and independent offline truth, binds isolation/layout/blob/model
 mechanisms to the production path, and recertifies the joined foundation.
 
 S.10 work already present may remain as unadmitted substrate, but S.10 cannot
-close or promote Part I readiness until it consumes the sealed reconstruction
-handoff. Query, Relational, Signal, and Runtime Bridge integration remains Part
-II and is explicitly outside this correction gate.
+close until it binds to the facade ports the C.13 handoff exposes. Query,
+Relational, Signal, and Runtime Bridge integration remains Part II and is
+outside this correction gate; Part II Milestone 1 consumes that handoff.
 
 ## S.10: Operational Safety, Backup, PITR, Disaster Recovery, And Forensics
 
@@ -1237,6 +1249,11 @@ assumptions.
   proof lane, and residual-risk fields
 - reproducible commands and declared environment assumptions for each expensive
   release-qualification lane
+- the joined hostile campaign deferred from reconstruction C.13: a store at
+  least eight times the memory budget under concurrent foreground work,
+  checkpoint, scrub, rewrite, reclaim, index rebuild and blob streaming, with
+  crash and corruption injection, fresh-process recovery and offline
+  verification
 
 ### Must Preserve
 
@@ -1262,21 +1279,42 @@ blob scale, cross-backend parity, and hazard-analysis residual risk. Results
 may be retained by CI, but no generated certification bundle or source
 fingerprint is required to make them valid.
 
-## Platform Readiness Gate
+## Runtime Integration Entry Gate
 
-Part II may begin only when:
+Part II Milestone 1 may begin only when:
 
 - the Aspect-Native Workspace Gate is closed, proving JSON is confined to
   terminal projection or hostile/readmission boundaries
-- the Physical Foundation Reconstruction Roadmap is closed and its sealed S.10
-  readiness handoff was consumed by the resumed S.10 implementation
-- `S.0` through `S.12`, including `S.4.5`, `S.5.1`, and `S.7.1`, are
+- C.13 is closed on the
+  [fast track](physical-reconstruction-fast-track-to-runtime-integration.md)
+  and its sealed handoff names the physical facade ports Milestone 1 consumes.
+  C.11 and C.12 stay open; each remaining item is named debt with an owner and
+  the Part II milestone it returns before
+- `S.0` through `S.9`, including `S.4.5`, `S.5.1`, and `S.7.1`, are
   implemented or explicitly scoped with named, non-platform-grade debt
+- every deferred physical capability reports `Absent` through capability
+  negotiation and is listed with its owner and the milestone that brings it
+  back
+- a fresh store reopens after every crash point declared by the C.7 and C.8
+  crash matrices and the C.11 seams named in
+  [fast track](physical-reconstruction-fast-track-to-runtime-integration.md)
+  slice 6, and the C.13 journey reproduces this through the facade, including
+  before the first checkpoint. The blob-ingest, publication, drop, rebuild and
+  LSM seams return with their capabilities
+- the Physical Database Roadmap workspace crates expose the typed source,
+  claim, handoff, and certification contracts required by Milestone 1
+
+## Platform Readiness Gate
+
+Part II may claim platform readiness, and Milestone 19 may close, only when:
+
+- the Runtime Integration Entry Gate holds
+- `S.10`, `S.11` and `S.12` are implemented or explicitly scoped with named,
+  non-platform-grade debt, and C.12 has rebound the S.9 models to their
+  executable owners
 - [test-requirements-2.md](test-requirements-2.md)
   adversarial harness requirements are satisfied for every closed `S.*`
   sequence
-- the Physical Database Roadmap workspace crates expose the typed source,
-  claim, handoff, and certification contracts required for Part II entry
 - new Store work lives in the dedicated workspace/crate family and does not
   inherit undeclared module topology as precedent
 - Worth Foundational and Worth Proof vocabulary have been reviewed and adopted
@@ -1298,11 +1336,13 @@ Part II may begin only when:
 ## Relationship To Runtime And Query Integration
 
 - Runtime Integration Milestones 1 through 3 must consume `S.4`, `S.5`, `S.6`,
-  `S.8`, and `S.9` rather than manufacturing durability, stable-read,
-  concurrency, or access-path guarantees above the physical layer.
-- Runtime Integration Milestone 5 must consume `S.10` recovery and operational
+  and `S.8` through the C.13 facade rather than manufacturing durability,
+  stable-read, concurrency, or access-path guarantees above the physical layer.
+  They rely on the executable owners that `S.9` models; until C.12 rebinds those
+  models, no Milestone 1 to 3 claim cites an `S.9` model as evidence.
+- Runtime Integration Milestone 8 must consume `S.10` recovery and operational
   evidence for bootstrap, PITR, rollback, and readmission.
-- Runtime Integration Milestone 6 must lower persistent Query access
+- Runtime Integration Milestones 4 and 9 must lower persistent Query access
   requirements onto `S.2`, `S.5`, `S.6`, and `S.8` bounded physical plans.
 - Runtime Integration Milestones 10 through 12 must consume the physical blob,
   maintenance, compatibility, security-scope, key-lifecycle, and operational
@@ -1310,6 +1350,9 @@ Part II may begin only when:
 - Runtime Integration Milestone 14 must run the relevant current `S.12` lanes
   before promoting semantic parity. Semantic parity cannot promote a backend
   whose required physical qualification is failing or unrun.
+- Before its consuming sequence runs, a Part II milestone may use only the
+  capabilities the C.13 handoff reports `Present`. It may not manufacture a
+  missing physical guarantee above the facade.
 
 ## Completion Standard
 

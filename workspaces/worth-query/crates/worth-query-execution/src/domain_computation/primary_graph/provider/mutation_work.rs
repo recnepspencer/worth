@@ -104,14 +104,15 @@ pub struct WorthQueryPrimaryMutationWorkEvidence {
     performed_application_touches_admitted: usize,
     installed_touch_scopes_compared: usize,
     installed_read_touch_overlaps_observed: usize,
-    touched_records: std::sync::Arc<super::RetainedTouchedRecords>,
+    touched_records:
+        std::sync::Arc<worth_execution::ExecutionArray<WorthQueryTouchedRecordIdentity>>,
 }
 
 impl WorthQueryPrimaryMutationWorkEvidence {
     /// Complete mutation work from invariant counters and the commit's records.
     ///
-    /// The prepared touched identities were filled from the exact native
-    /// changed-record slice after this commit performed.
+    /// The identities were sealed from the exact native prepared records before
+    /// effects and checked against the performed commit without allocation.
     pub(in crate::domain_computation::primary_graph) fn from_commit_seal(
         seal: super::session_commit::WorthQueryMutationWorkCommitSeal,
     ) -> Self {
@@ -236,16 +237,10 @@ impl WorthQueryPrimaryMutationWorkEvidence {
 
     /// Records this mutation touched, derived from the commit (C2).
     pub fn touched_records(&self) -> &[WorthQueryTouchedRecordIdentity] {
-        self.touched_records.as_slice()
+        self.touched_records.elements()
     }
 
     pub fn touched_record_count(&self) -> usize {
-        self.touched_records.as_slice().len()
-    }
-
-    /// Whether this copy is the last holder of its commit's completed-evidence
-    /// ticket, so dropping it refunds the idempotency window.
-    pub(super) fn holds_last_evidence_ticket(&self) -> bool {
-        std::sync::Arc::strong_count(&self.touched_records) == 1
+        self.touched_records.elements().len()
     }
 }

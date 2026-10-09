@@ -1,6 +1,6 @@
 mod denial;
 mod denial_cause;
-pub(crate) use denial::kernel_failure;
+pub(crate) use denial::{allocation_commit_error, kernel_failure};
 mod ordered_scan;
 pub use denial_cause::RelationalExecutionDenialCause;
 pub(crate) use ordered_scan::admit_ordered_scan;

@@ -29,6 +29,9 @@ pub(in crate::domain_computation::primary_graph) trait WorthQueryPrimaryGraphFau
 {
     fn take(&self, fault: WorthQueryPrimaryGraphFault) -> bool;
 
+    #[cfg(test)]
+    fn candidate_staged_for_validation(&self) {}
+
     #[cfg(feature = "test-primary-graph-faults")]
     fn schedule_for_test(&self, _fault: WorthQueryPrimaryGraphFault) -> bool {
         false

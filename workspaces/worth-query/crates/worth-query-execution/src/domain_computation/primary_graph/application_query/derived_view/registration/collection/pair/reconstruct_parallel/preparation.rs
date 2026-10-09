@@ -11,10 +11,10 @@ use crate::domain_computation::primary_graph::application_query::{
     one_shot::{
         map_authorized_read_denial,
         pair_plans::WorthQueryDerivedPairReadPlans,
-        plan_admission::{reserve_one_shot_result_buffer, validate_one_shot_plan},
+        plan_admission::{reserve_one_shot_result_buffer_in_batch, validate_one_shot_plan},
     },
     read_execution::{
-        prepared_pair::{PreparedPair, PreparedRead},
+        prepared_pair::{batch::PreparedBatchRead, PreparedPair, PreparedRead},
         read_plan::ReadPlan,
     },
     WorthQueryApplicationAuthorizationWorkEvidence,
@@ -40,6 +40,7 @@ impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C>
         ),
         Denial,
     > {
+        self.admit_batch_reads(root)?;
         if self.first.scope.entity_id() != root
             || self.second.scope.entity_id() != root
             || (self.first.basis.identity().descriptor()
@@ -102,10 +103,12 @@ impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C>
     }
 
     pub(super) fn worker(
-        &self,
+        &mut self,
         application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
         root: EntityId,
     ) -> Result<PreparedPair<'_>, Denial> {
+        let first_batch = self.first_batch.take();
+        let second_batch = self.second_batch.take();
         let locator = self.second.scope.identity_locator();
         let slot = self
             .first
@@ -123,10 +126,12 @@ impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C>
                         )
             })
             .ok_or(Denial::IncompleteDependencies)?;
-        let first_buffer = reserve_one_shot_result_buffer(application, &self.first)
-            .map_err(|denial| Denial::ReadDenied { root, denial })?;
-        let second_buffer = reserve_one_shot_result_buffer(application, &self.second)
-            .map_err(|denial| Denial::ReadDenied { root, denial })?;
+        let first_buffer =
+            reserve_one_shot_result_buffer_in_batch(application, &self.first, self.batch.as_ref())
+                .map_err(|denial| Denial::ReadDenied { root, denial })?;
+        let second_buffer =
+            reserve_one_shot_result_buffer_in_batch(application, &self.second, self.batch.as_ref())
+                .map_err(|denial| Denial::ReadDenied { root, denial })?;
         Ok(PreparedPair {
             root,
             #[cfg(test)]
@@ -139,6 +144,7 @@ impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C>
                     .prepare_query_read(self.first.basis.identity())
                     .map_err(super::denial::session)?,
                 buffer: first_buffer,
+                batch: first_batch,
             },
             second: PreparedRead {
                 plan: ReadPlan::public_worker(&self.second),
@@ -148,6 +154,7 @@ impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C>
                     .prepare_query_read(self.second.basis.identity())
                     .map_err(super::denial::session)?,
                 buffer: second_buffer,
+                batch: second_batch,
             },
             binding_slot: slot.slot_type(),
             binding_value: self.second.scope.identity_value(),
@@ -216,17 +223,44 @@ impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C>
     }
 
     pub(super) fn result_capacity(&self) -> Result<u64, Denial> {
-        self.first
+        let first = self
+            .first
             .graph_read_plan()
             .budget_check()
-            .max_inline_result_bytes()
-            .checked_add(
-                self.second
-                    .graph_read_plan()
-                    .budget_check()
-                    .max_inline_result_bytes(),
+            .max_inline_result_bytes();
+        let second = self
+            .second
+            .graph_read_plan()
+            .budget_check()
+            .max_inline_result_bytes();
+        let (first, second) = self.batch.as_ref().map_or((first, second), |batch| {
+            (
+                batch.inline_result_bytes(first),
+                batch.inline_result_bytes(second),
             )
+        });
+        first
+            .checked_add(second)
             .and_then(|bytes| u64::try_from(bytes).ok())
             .ok_or(Denial::CapacityOverflow)
+    }
+
+    fn admit_batch_reads(&mut self, root: EntityId) -> Result<(), Denial> {
+        use crate::domain_computation::primary_graph::application_query::WorthQueryApplicationQueryBatchResourceDenial as Resource;
+        let denied = |denial| Denial::BatchResource { root, denial };
+        if self.first_batch.is_some() || self.second_batch.is_some() {
+            return Err(denied(Resource::ForeignPlan));
+        }
+        if let Some(batch) = &self.batch {
+            self.first_batch =
+                Some(PreparedBatchRead::admit(&mut self.first, batch).map_err(denied)?);
+            self.second_batch =
+                Some(PreparedBatchRead::admit(&mut self.second, batch).map_err(denied)?);
+        } else if self.first.planned_batch_item.is_some()
+            || self.second.planned_batch_item.is_some()
+        {
+            return Err(denied(Resource::ForeignPlan));
+        }
+        Ok(())
     }
 }

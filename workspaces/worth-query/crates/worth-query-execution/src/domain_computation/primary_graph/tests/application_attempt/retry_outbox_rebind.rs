@@ -63,9 +63,12 @@ fn commit_response_lost(
     );
     world.faults.lose_next_commit_response();
     let before_commit = world.application.application_attempt_work();
-    let WorthQueryApplicationCommitOutcome::Committed(original) = world
-        .application
-        .compare_and_commit_application(original, idempotency(201, 202))
+    let WorthQueryApplicationCommitOutcome::Committed(original) =
+        world.application.compare_and_commit_application(
+            original,
+            idempotency(201, 202),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("response-loss recovery must return the authoritative commit");
     };
@@ -103,9 +106,12 @@ fn retry_without_managed_work(
     world.faults.reject_next_session_prepare();
     world.faults.skip_next_invariant_owner_execution();
     let before_retry = world.application.application_attempt_work();
-    let WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered) = world
-        .application
-        .compare_and_commit_application(retry, idempotency(201, 202))
+    let WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered) =
+        world.application.compare_and_commit_application(
+            retry,
+            idempotency(201, 202),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("equivalent retry must resolve the response-lost commit");
     };
@@ -133,9 +139,12 @@ fn consume_armed_session_and_invariant_sentinels(world: &AuthorizationWorld) {
         &request,
         "session-sentinel",
     );
-    let WorthQueryApplicationCommitOutcome::Denied(session_denial) = world
-        .application
-        .compare_and_commit_application(rejected_session, idempotency(203, 204))
+    let WorthQueryApplicationCommitOutcome::Denied(session_denial) =
+        world.application.compare_and_commit_application(
+            rejected_session,
+            idempotency(203, 204),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("the retry must leave the provider-session sentinel armed");
     };
@@ -153,9 +162,12 @@ fn consume_armed_session_and_invariant_sentinels(world: &AuthorizationWorld) {
         &request,
         "invariant-sentinel",
     );
-    let WorthQueryApplicationCommitOutcome::Denied(invariant_denial) = world
-        .application
-        .compare_and_commit_application(rejected_invariant, idempotency(205, 206))
+    let WorthQueryApplicationCommitOutcome::Denied(invariant_denial) =
+        world.application.compare_and_commit_application(
+            rejected_invariant,
+            idempotency(205, 206),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("the retry must leave the invariant-owner sentinel armed");
     };
@@ -178,9 +190,11 @@ fn assert_unseen_commit_uses_the_managed_path(world: &AuthorizationWorld) {
     );
     let before_control = world.application.application_attempt_work();
     assert!(matches!(
-        world
-            .application
-            .compare_and_commit_application(positive_control, idempotency(207, 208)),
+        world.application.compare_and_commit_application(
+            positive_control,
+            idempotency(207, 208),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
+        ),
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));
     let control = world

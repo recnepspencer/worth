@@ -6,10 +6,12 @@ type Services = SignalOwnerServicePorts<(), (), (), (), ()>;
 fn invalid_consumed_outcome(
     services: &Services,
     basis: &worth_signal::facade::branch::AdmittedSignalBranchBasis,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) {
     let outcome = services
         .mutation_port()
         .advance_exact(
+            execution,
             basis,
             &mut (),
             &SignalOwnerCancellationSource::new().token(),
@@ -23,10 +25,12 @@ fn invalid_consumed_outcome(
 fn valid_borrow_before_consume(
     services: &Services,
     basis: &worth_signal::facade::branch::AdmittedSignalBranchBasis,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) {
     let outcome = services
         .mutation_port()
         .advance_exact(
+            execution,
             basis,
             &mut (),
             &SignalOwnerCancellationSource::new().token(),
@@ -43,6 +47,15 @@ fn main() {
         .observe_signal_branch_basis(runtime.current_branch())
         .expect("the root basis is owner-issued");
     let services: Services = runtime.owner_component_services().expect("issuance");
-    invalid_consumed_outcome(&services, &basis);
-    valid_borrow_before_consume(&services, &basis);
+    // This standalone compile contract uses the declared operational memory policy.
+    let serial = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            worth_signal::facade::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&serial);
+    invalid_consumed_outcome(&services, &basis, execution);
+    valid_borrow_before_consume(&services, &basis, execution);
 }

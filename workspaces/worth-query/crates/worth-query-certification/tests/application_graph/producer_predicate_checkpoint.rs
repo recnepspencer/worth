@@ -1,8 +1,12 @@
 //! A real producer's handler predicate survives captured output readmission.
+use std::num::NonZeroUsize;
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationOutputDemandProgress, WorthQueryApplicationRequestExt,
+    WorthQueryOutputCurrentnessDenial,
 };
 use worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster;
+use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
+use worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind;
 use worth_relational::facade::identity::EntityId;
 
 use super::document_retention_model::{
@@ -15,13 +19,17 @@ use super::document_retention_model::{
     settled_verdict::{settle, RetentionVerdict},
 };
 
+#[path = "producer_predicate_checkpoint/ordinary_source.rs"]
+mod ordinary_source;
 #[path = "producer_predicate_checkpoint/program.rs"]
 mod program;
+#[path = "producer_predicate_checkpoint/transition.rs"]
+mod transition;
 use program::{validated_program, AssessmentRoot};
 
 #[test]
 fn captured_producer_predicate_reuses_after_reopen_and_refreshes_after_source_change() {
-    let (checkpoint, subject) = {
+    let (checkpoint, subject, foreign_settlement) = {
         let host = publish(
             validated_program(),
             WorthQueryApplicationProgramRoster::new().support(validated_second_program()),
@@ -41,6 +49,12 @@ fn captured_producer_predicate_reuses_after_reopen_and_refreshes_after_source_ch
             panic!("the bounded producer must settle");
         };
         assert_eq!(settled.producer_contacts_in_this_demand(), 1);
+        assert_eq!(settled.checkpoint_readmission_work_units(), 0);
+        assert_eq!(settled.checkpoint_readmission_work_bound(), 0);
+        assert_eq!(
+            settled.checkpoint_readmission_charged_preparation_bytes(),
+            0
+        );
         assert!(settled.application_commit_receipt().is_some());
         let subject = settled
             .outputs_of::<RetentionAssessmentOutputs>()
@@ -49,7 +63,7 @@ fn captured_producer_predicate_reuses_after_reopen_and_refreshes_after_source_ch
             .unwrap()
             .entity_id();
         let (checkpoint, sections) = runtime
-            .capture_application_checkpoint_with_sections()
+            .capture_application_checkpoint_with_sections(CapturePolicy::SystemAllocation)
             .unwrap();
         assert_eq!(
             sections.accepted_output_count(),
@@ -61,7 +75,7 @@ fn captured_producer_predicate_reuses_after_reopen_and_refreshes_after_source_ch
             sections.accepted_output_bytes(),
             subject,
         );
-        (checkpoint, subject)
+        (checkpoint, subject, settled)
     };
     let restored = restore(
         validated_program(),
@@ -71,7 +85,7 @@ fn captured_producer_predicate_reuses_after_reopen_and_refreshes_after_source_ch
     .expect("the producer and output are readmitted by their installed owners");
     let runtime = restored.runtime();
     let (recaptured, sections) = runtime
-        .capture_application_checkpoint_with_sections()
+        .capture_application_checkpoint_with_sections(CapturePolicy::SystemAllocation)
         .unwrap();
     assert_eq!(sections.accepted_output_count(), 1);
     assert_captured_document_predicate(
@@ -100,6 +114,18 @@ fn captured_producer_predicate_reuses_after_reopen_and_refreshes_after_source_ch
         settled.application_commit_receipt().is_none(),
         "this authority came from the checkpoint"
     );
+    assert!(
+        settled.checkpoint_readmission_work_units() > 0,
+        "the public settlement must carry the real checkpoint comparison's charged work"
+    );
+    assert!(
+        settled.checkpoint_readmission_work_units() <= settled.checkpoint_readmission_work_bound(),
+        "accepted readmission work must remain within its owner-computed ceiling"
+    );
+    assert!(
+        settled.checkpoint_readmission_charged_preparation_bytes() > 0,
+        "the public settlement must carry the real readmission owner's admitted scratch"
+    );
     assert_eq!(
         settled
             .outputs_of::<RetentionAssessmentOutputs>()
@@ -109,13 +135,29 @@ fn captured_producer_predicate_reuses_after_reopen_and_refreshes_after_source_ch
             .entity_id(),
         subject
     );
-    drop(settled);
+    let unchanged = request.retain_read().unwrap();
+    assert!(matches!(request.at(&unchanged)
+        .require_current_output_demand(&foreign_settlement, NonZeroUsize::new(4096).unwrap()),
+        Err(WorthQueryOutputCurrentnessDenial::Output(e)) if e.kind()==WorthQueryOutputDemandDenialKind::ForeignSettlement));
+    drop(foreign_settlement);
+    request
+        .at(&unchanged)
+        .require_current_output_demand(&settled, NonZeroUsize::new(4096).unwrap())
+        .expect("receipt-free restored output has current native lineage");
+    assert!(matches!(request.at(&unchanged)
+        .require_current_output_demand(&settled, NonZeroUsize::new(1).unwrap()),
+        Err(WorthQueryOutputCurrentnessDenial::Output(e)) if e.kind()==WorthQueryOutputDemandDenialKind::WorkBudgetExceeded));
     drop(handle);
 
     assert_eq!(
         settle(set_retention(&restored, restored.current_world(), 6, 871)),
         RetentionVerdict::Performed(6)
     );
+    let current = request.retain_read().unwrap();
+    assert!(matches!(request.at(&current)
+        .require_current_output_demand(&settled, NonZeroUsize::new(4096).unwrap()),
+        Err(WorthQueryOutputCurrentnessDenial::Output(e)) if e.kind()==WorthQueryOutputDemandDenialKind::Superseded));
+    drop(settled);
     let mut changed = request
         .demand(RetentionAssessmentDemand::new(DOCUMENT_IDENTITY))
         .start_in_program::<_, AssessmentRoot>(&restored)
@@ -126,14 +168,25 @@ fn captured_producer_predicate_reuses_after_reopen_and_refreshes_after_source_ch
         panic!("changed source must produce a fresh assessment");
     };
     assert_eq!(refreshed.producer_contacts_in_this_demand(), 1);
+    assert_eq!(refreshed.checkpoint_readmission_work_units(), 0);
+    assert_eq!(refreshed.checkpoint_readmission_work_bound(), 0);
+    assert_eq!(
+        refreshed.checkpoint_readmission_charged_preparation_bytes(),
+        0
+    );
     assert!(refreshed.application_commit_receipt().is_some());
+    let current = request.retain_read().unwrap();
+    request
+        .at(&current)
+        .require_current_output_demand(&refreshed, NonZeroUsize::new(4096).unwrap())
+        .expect("fresh producer settlement is current");
 }
 
 fn assert_captured_document_predicate(bytes: &[u8], accepted_bytes: usize, subject: EntityId) {
     // Inspect only Query's accepted-output section. The native payload remains opaque.
-    // This independent v8 wire expectation fails if capture or readmission drops
+    // This independent v9 wire expectation fails if capture or readmission drops
     // the predicate while retaining the document's ordinary field observations.
-    assert_eq!(&bytes[40..42], &8_u16.to_be_bytes());
+    assert_eq!(&bytes[40..42], &9_u16.to_be_bytes());
     assert_eq!(DOCUMENT_IDENTITY, "document-1");
     let value = br#"{"String":{"Raw":"document-1"}}"#;
     let mut expected = Vec::new();

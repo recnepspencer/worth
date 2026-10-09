@@ -78,7 +78,7 @@ impl ApplicationMutationBinding<BankSchema> for OpenEstateCaseMutationBinding {
     const CANDIDATES: ApplicationCandidateRequirements =
         ApplicationCandidateRequirements::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 1, 0),
-            ApplicationCandidateResourceCeiling::bounded(32768, 6),
+            ApplicationCandidateResourceCeiling::representation_bytes(32768),
         );
 
     fn scope_field() -> ApplicationFieldRef<

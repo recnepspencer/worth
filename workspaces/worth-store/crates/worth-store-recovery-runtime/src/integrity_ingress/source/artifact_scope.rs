@@ -60,19 +60,13 @@ pub(super) fn matches_artifact(
                     .page_identity()
                     .is_some_and(|page| page.segment_id().get() == segment)
         }
-        Artifact::ExtentManifest { extent, generation } => {
-            family == Family::ExtentManifest
-                && scope.extent_manifest_placement().is_some_and(|placement| {
-                    placement.extent().get() == extent
-                        && placement.extent_generation() == generation
-                })
-        }
-        Artifact::Extent { extent, generation } => {
-            family == Family::ExtentChunk
-                && scope.extent_chunk_coordinate().is_some_and(|coordinate| {
-                    coordinate.extent_cell().extent_id().get() == extent
-                        && coordinate.extent_cell().generation().get() == generation
-                })
+        Artifact::ExtentArena { arena } => {
+            matches!(
+                family,
+                Family::ExtentManifest | Family::ExtentChunk | Family::ExtentArenaFrame
+            ) && scope
+                .extent_arena_range()
+                .is_some_and(|range| range.arena().get() == arena)
         }
         Artifact::FreeSpaceManifest { generation } => {
             family == Family::FreeSpaceHeader
@@ -89,6 +83,8 @@ pub(super) fn matches_artifact(
                             && identity.reference().block() == block
                     })
         }
-        Artifact::SegmentManifest { .. } => false,
+        // Custody blocks are admitted by the SHA-rooted head walker, not a
+        // record-routing scope. Never let a routing witness alias this family.
+        Artifact::ReleaseCustodyHeadBlock { .. } | Artifact::SegmentManifest { .. } => false,
     }
 }

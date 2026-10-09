@@ -1,9 +1,18 @@
 use super::WorthQueryApplicationObservedFact;
 
 pub(super) fn encode(fact: &WorthQueryApplicationObservedFact) -> String {
+    let mut output = String::new();
+    write(fact, &mut output).expect("a String destination accepts locator formatting");
+    output
+}
+
+pub(super) fn write(
+    fact: &WorthQueryApplicationObservedFact,
+    output: &mut dyn std::fmt::Write,
+) -> std::fmt::Result {
     match fact {
-        WorthQueryApplicationObservedFact::RetiredOutputEntity { read_locator, .. } => read_locator.clone(),
-        WorthQueryApplicationObservedFact::SourceEntity { entity_id } => format!(
+        WorthQueryApplicationObservedFact::RetiredOutputEntity { read_locator, .. } => output.write_str(read_locator),
+        WorthQueryApplicationObservedFact::SourceEntity { entity_id } => write!(output,
             "application-source-entity:{}:{}:{}",
             entity_id.partition_value(),
             entity_id.local_slot_value(),
@@ -11,14 +20,14 @@ pub(super) fn encode(fact: &WorthQueryApplicationObservedFact) -> String {
         ),
         WorthQueryApplicationObservedFact::SourceAspectRevision {
             entity_id, aspect, ..
-        } => format!(
+        } => write!(output,
             "application-source-aspect:{}:{}:{}:{}",
             entity_id.partition_value(),
             entity_id.local_slot_value(),
             entity_id.generation_value(),
             aspect.as_str()
         ),
-        WorthQueryApplicationObservedFact::SourceFieldRevision { entity_id, locator, .. } => format!(
+        WorthQueryApplicationObservedFact::SourceFieldRevision { entity_id, locator, .. } => write!(output,
             "application-source-field:{}:{}:{}:{}/{}",
             entity_id.partition_value(),
             entity_id.local_slot_value(),
@@ -31,7 +40,7 @@ pub(super) fn encode(fact: &WorthQueryApplicationObservedFact) -> String {
             anchor,
             direction,
             ..
-        } => format!(
+        } => write!(output,
             "application-source-adjacency:{direction:?}:{}:{}:{}:kind:{}",
             anchor.partition_value(),
             anchor.local_slot_value(),
@@ -40,7 +49,7 @@ pub(super) fn encode(fact: &WorthQueryApplicationObservedFact) -> String {
         ),
         WorthQueryApplicationObservedFact::Entity {
             entity_id, kind, ..
-        } => format!(
+        } => write!(output,
             "application-entity:{}:{}:{}:kind:{}",
             entity_id.partition_value(),
             entity_id.local_slot_value(),
@@ -52,7 +61,7 @@ pub(super) fn encode(fact: &WorthQueryApplicationObservedFact) -> String {
         }
         | WorthQueryApplicationObservedFact::AbsentField {
             entity_id, locator, ..
-        } => format!(
+        } => write!(output,
             "application-field:{}:{}:{}:{}/{}",
             entity_id.partition_value(),
             entity_id.local_slot_value(),
@@ -70,7 +79,7 @@ pub(super) fn encode(fact: &WorthQueryApplicationObservedFact) -> String {
             from,
             to,
             ..
-        } => format!(
+        } => write!(output,
             "application-relation:{}:{}:{}->{}:{}:{}:kind:{}",
             from.partition_value(),
             from.local_slot_value(),
@@ -85,7 +94,7 @@ pub(super) fn encode(fact: &WorthQueryApplicationObservedFact) -> String {
             anchor,
             direction,
             ..
-        } => format!(
+        } => write!(output,
             "application-adjacency:{direction:?}:{}:{}:{}:kind:{}",
             anchor.partition_value(),
             anchor.local_slot_value(),
@@ -93,14 +102,14 @@ pub(super) fn encode(fact: &WorthQueryApplicationObservedFact) -> String {
             relation_kind.as_u32()
         ),
         WorthQueryApplicationObservedFact::IndexedEntitySelection { index_id, .. } => {
-            format!("application-indexed-entity-selection:{}", index_id.0)
+            write!(output, "application-indexed-entity-selection:{}", index_id.0)
         }
         WorthQueryApplicationObservedFact::WorkflowDefinitionPredecessor {
             relation_kind,
             lineage,
             expected_definition,
             ..
-        } => format!(
+        } => write!(output,
             "workflow-definition-predecessor:kind:{}:lineage:{lineage:?}:definition:{expected_definition:?}",
             relation_kind.as_u32()
         ),
@@ -109,7 +118,7 @@ pub(super) fn encode(fact: &WorthQueryApplicationObservedFact) -> String {
             lineage,
             expected_definition,
             ..
-        } => format!(
+        } => write!(output,
             "workflow-definition-current:kind:{}:lineage:{lineage:?}:definition:{expected_definition:?}",
             relation_kind.as_u32()
         ),
@@ -117,11 +126,11 @@ pub(super) fn encode(fact: &WorthQueryApplicationObservedFact) -> String {
             relation_kind,
             lineage,
             ..
-        } => format!(
+        } => write!(output,
             "workflow-instance-capacity:kind:{}:lineage:{lineage:?}",
             relation_kind.as_u32()
         ),
         WorthQueryApplicationObservedFact::WorkflowHistoryBasis { instance, .. } =>
-            format!("workflow-history-basis:instance:{instance:?}"),
+            write!(output, "workflow-history-basis:instance:{instance:?}"),
     }
 }

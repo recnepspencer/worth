@@ -20,9 +20,15 @@ fn entity_patch_aspects_follow_declared_contract_targets() {
                 )]),
             },
         ))),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let created = txn.commit(&runtime).unwrap();
+    let created = txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
     let entity = changed_entities(&created)[0];
     let created_patch = &created.patch()[0];
     let created_aspect_summary = created.aspect_summary().unwrap();
@@ -57,9 +63,14 @@ fn entity_patch_aspects_follow_declared_contract_targets() {
                     )]),
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-        txn.commit(&runtime).unwrap()
+        txn.commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap()
     };
     let updated_patch = &updated.patch()[0];
     let updated_aspect_summary = updated.aspect_summary().unwrap();
@@ -95,20 +106,25 @@ fn entity_patch_aspects_follow_declared_contract_targets() {
 
     let idempotent_declared_update = {
         let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
-        txn.push_batch(WorkerIntentBatch::new("idempotent-declared-update").push(
-            MutationIntent::Entity(EntityMutationIntent::UpdateFields(
-                UpdateEntityFieldsIntent {
+        txn.push_batch(
+            WorkerIntentBatch::new("idempotent-declared-update").push(MutationIntent::Entity(
+                EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
                     entity_id: entity,
                     fields: crate::tests::support::single_string_aspect_field_patch(
                         crate::tests::support::aspect_key("name"),
                         crate::tests::support::field_key("name"),
                         "after",
                     ),
-                },
+                }),
             )),
-        ))
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
-        txn.commit(&runtime).unwrap()
+        txn.commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap()
     };
     assert_eq!(
         idempotent_declared_update.patch()[0].authoritative_changed_aspects(),

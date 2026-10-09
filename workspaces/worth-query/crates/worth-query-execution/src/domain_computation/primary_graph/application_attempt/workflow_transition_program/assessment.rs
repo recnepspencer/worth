@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_attempt::check_request_live;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{
@@ -58,20 +59,10 @@ where
         durable_currentness_facts.extend(self.applicability_dependencies.iter().cloned());
         let durable_currentness_facts: std::sync::Arc<[_]> = durable_currentness_facts.into();
         let read_set = self.admitted.read_set();
-        if read_set.facts.len().saturating_add(
-            crate::domain_computation::primary_graph::workflow::evidence_dependency::evidence_dependency_observation_facts(
-                durable_currentness_facts.len(),
-            ),
-        ) > read_set
-            .admission
-            .allowed_graph_contract()
-            .decision_fact_budget()
-        {
-            return Err(WorthQueryApplicationAttemptDenial::new(
-                WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
-                self.required.node_path(),
-            ));
-        }
+        check_request_live(
+            read_set.admission.publication_request(),
+            self.required.node_path(),
+        )?;
         let mut meaning = evidence_meaning(
             &self.required,
             self.admitted.subject(),
@@ -111,7 +102,7 @@ where
             effects.push(effect);
             Ok::<(), WorthQueryApplicationAttemptDenial>(())
         })?;
-        let validator_work_admission = reservation.materialize(&effects)?;
+        reservation.materialize(&effects)?;
         let progress_update = if self.admitted.is_assessment_collection() {
             self.admitted.prepare_assessment_collection_update()?
         } else {
@@ -130,7 +121,6 @@ where
             emission_retained_bytes_ceiling: 0,
             conditional_definition: None,
             effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Platform,
-            validator_work_admission,
             output_correspondence: Default::default(),
             retain_output_demand_observation: false,
             retain_client_observation: false,
@@ -172,19 +162,25 @@ pub(super) fn bind_currentness_facts<Schema, Operation, Input, Scope>(
     currentness_facts: &[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact],
     subject: &str,
 ) -> Result<(), WorthQueryApplicationAttemptDenial> {
-    let fact_budget = read_set
-        .admission
-        .allowed_graph_contract()
-        .decision_fact_budget();
-    if read_set.facts.len().saturating_add(currentness_facts.len()) > fact_budget {
-        return Err(WorthQueryApplicationAttemptDenial::new(
-            WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
-            subject,
-        ));
-    }
+    check_request_live(read_set.admission.publication_request(), subject)?;
     ensure_current(read_set, currentness_facts, subject)?;
     let mut merged = std::collections::BTreeMap::new();
-    for fact in std::mem::take(&mut read_set.facts) {
+    // This unchanged workflow seam selects explicit system allocation. The
+    // empty replacement is sealed custody, never a mutable/default extraction.
+    let empty = super::super::read_set::admit_array(
+        0,
+        std::iter::empty(),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        subject,
+        || {
+            read_set
+                .admission
+                .validate_current_authority()
+                .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)
+        },
+    )?;
+    let original = std::mem::replace(&mut read_set.facts, empty);
+    for fact in original {
         let locator = fact.dependency_key();
         match merged.entry(locator) {
             std::collections::btree_map::Entry::Vacant(entry) => {
@@ -211,7 +207,20 @@ pub(super) fn bind_currentness_facts<Schema, Operation, Input, Scope>(
             ));
         }
     }
-    read_set.facts = merged.into_values().collect();
+    // Temporary keyed merge backing/nested values remain uncharged. Its exact
+    // canonical value order moves into the final admitted inline array.
+    read_set.facts = super::super::read_set::admit_array(
+        merged.len(),
+        merged.into_values(),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        subject,
+        || {
+            read_set
+                .admission
+                .validate_current_authority()
+                .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)
+        },
+    )?;
     Ok(())
 }
 
@@ -229,10 +238,14 @@ pub(super) fn ensure_current<Schema, Operation, Input, Scope>(
     subject: &str,
 ) -> Result<(), WorthQueryApplicationAttemptDenial> {
     let current = read_set.lease.handle().with_runtime(|runtime| {
-        currentness_facts
-            .iter()
-            .all(|fact| fact.remains_equal_in(runtime, read_set.lease.snapshot()))
-    });
+        for fact in currentness_facts {
+            check_request_live(read_set.admission.publication_request(), subject)?;
+            if !fact.remains_equal_in(runtime, read_set.lease.snapshot()) {
+                return Ok::<bool, WorthQueryApplicationAttemptDenial>(false);
+            }
+        }
+        Ok(true)
+    })?;
     if current {
         Ok(())
     } else {

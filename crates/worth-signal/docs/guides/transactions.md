@@ -12,7 +12,7 @@ That usually means:
 ## Main Surfaces
 
 - `runtime.observe_signal_branch_basis(...)`
-- `runtime.advance_signal_branch(ctx, expected, |tx| ...)`
+- `runtime.advance_signal_branch(execution, ctx, expected, |tx| ...)`
 - `tx.mark_changed(...)`
 - `tx.mark_changed_with_regions(...)`
 - `tx.target(node).run(...)`
@@ -43,7 +43,13 @@ graph.set_dependencies(total, [DependencyEdge::new(source, PRICE)])?;
 let mut runtime = SignalRuntime::build_for::<()>(graph);
 
 let basis = runtime.observe_signal_branch_basis(runtime.current_branch())?;
-let _next_basis = runtime.advance_signal_branch(&mut (), &basis, |tx| {
+let serial_request = worth_execution::SerialRequest::from_memory(
+    worth_execution::SerialMemoryBudget::new(runtime.runtime_policy().serial_memory_bytes),
+    worth_execution::CancellationToken::new(),
+    None,
+);
+let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+let _next_basis = runtime.advance_signal_branch(execution, &mut (), &basis, |tx| {
     tx.batch_changes()
         .mark(source, PRICE)
         .apply()?;

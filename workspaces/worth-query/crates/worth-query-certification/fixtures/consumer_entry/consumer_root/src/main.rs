@@ -56,7 +56,7 @@ fn installed_schema() -> WorthQueryInstalledApplicationSchema<ConsumerSchema> {
         .expect("the root-owned contributions form one closed schema declaration");
 
     assert_eq!(declaration.contributions().len(), 2);
-    assert_eq!(declaration.erased().members().len(), 130);
+    assert_eq!(declaration.erased().members().len(), 122);
     assert_ne!(
         TopologyLengthBinding::IDENTITY,
         ParameterCountBinding::IDENTITY

@@ -15,14 +15,9 @@ mod import_admission;
 mod lsm_admission;
 
 pub use btree_admission::{
-    btree_lookup_materialization_admission_cases,
     btree_publication_materialization_admission_cases,
-    btree_replay_materialization_admission_cases, BTreeLookupMaterializationAdmissionCaseId,
-    BTreeLookupMaterializationAdmissionOutcome, BTreeLookupMaterializationAdmissionView,
     BTreePublicationMaterializationAdmissionCaseId,
     BTreePublicationMaterializationAdmissionOutcome, BTreePublicationMaterializationAdmissionView,
-    BTreeReplayMaterializationAdmissionCaseId, BTreeReplayMaterializationAdmissionOutcome,
-    BTreeReplayMaterializationAdmissionView,
 };
 pub use catalog_root_admission::{
     catalog_root_materialization_admission_cases, CatalogRootMaterializationAdmissionCaseId,
@@ -106,47 +101,6 @@ impl AdmittedLayoutMaterialization {
             family,
             catalog,
             source,
-            PhysicalCoverageBasis::root_epoch(epoch),
-        )
-    }
-
-    fn admit_btree_lookup_exact(
-        family: AdmittedPhysicalArtifactFamily,
-        catalog: &BootstrapCatalogReadAdmission,
-        source: &crate::BaselineBTreeReadSource,
-    ) -> Result<Self, MaterializationDenial> {
-        if source.store_authority_identity() != family.authority_identity() {
-            return Err(MaterializationDenial::BTreeSourceStoreAuthorityMismatch);
-        }
-        let identity =
-            LayoutMaterializationSourceIdentity::from_btree_lookup_source(catalog, source);
-        let epoch = worth_store_physical_format::PhysicalEpoch::from_raw(
-            source.root_reference().generation().get(),
-        )
-        .expect("admitted physical root generation is nonzero");
-        Self::admit_exact_from_source(
-            family,
-            catalog,
-            identity,
-            PhysicalCoverageBasis::root_epoch(epoch),
-        )
-    }
-
-    fn admit_btree_replay_exact(
-        family: AdmittedPhysicalArtifactFamily,
-        catalog: &BootstrapCatalogReadAdmission,
-        source: &crate::AdmittedBTreeReplayPhysicalSource,
-    ) -> Result<Self, MaterializationDenial> {
-        let identity =
-            LayoutMaterializationSourceIdentity::from_btree_replay_source(catalog, source);
-        let epoch = worth_store_physical_format::PhysicalEpoch::from_raw(
-            source.root_reference().generation().get(),
-        )
-        .expect("admitted replay root generation is nonzero");
-        Self::admit_exact_from_source(
-            family,
-            catalog,
-            identity,
             PhysicalCoverageBasis::root_epoch(epoch),
         )
     }

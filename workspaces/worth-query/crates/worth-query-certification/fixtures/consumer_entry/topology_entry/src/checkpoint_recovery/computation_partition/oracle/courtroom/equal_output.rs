@@ -141,7 +141,10 @@ fn changed_input_equal_output_rebuilds_the_dependent_source_without_contacting_i
             })
             .expect_source(source.observed_sources()[0].clone())
             .idempotency(&(value + 100))
-            .execute_performed::<installation::Program, installation::Root>(&app)
+            .execute_performed::<installation::Program, installation::Root>(
+                &app,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .unwrap();
         assert!(matches!(
             changed,
@@ -200,7 +203,10 @@ fn changed_input_equal_output_rebuilds_the_dependent_source_without_contacting_i
             })
             .expect_source(source.observed_sources()[0].clone())
             .idempotency(&(value + 200))
-            .execute_performed::<installation::Program, installation::Root>(&app)
+            .execute_performed::<installation::Program, installation::Root>(
+                &app,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .unwrap();
         let mut root = request
             .demand(Demand(OUTPUT))

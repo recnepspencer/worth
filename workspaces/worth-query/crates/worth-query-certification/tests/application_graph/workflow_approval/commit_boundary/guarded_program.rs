@@ -60,6 +60,7 @@ fn guarded_action_cannot_commit_through_public_program_owner_without_workflow_au
                     &reviewed_identities(&key, &input),
                     principal.principal_identity(),
                     admission,
+                    worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
                 )
             })
             .expect("the fixture policy admits its handler advancement")
@@ -76,6 +77,7 @@ fn guarded_action_cannot_commit_through_public_program_owner_without_workflow_au
             candidate(key),
             &reviewed_identities(&key, &input),
             std::convert::identity,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         );
     assert!(matches!(
         outcome,

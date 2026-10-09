@@ -18,10 +18,13 @@ impl WorthQueryMemoryWorkspace {
                 )
                 .map_err(super::transaction_denial::admission)?;
             transaction
-                .push_batch(batch)
+                .push_batch(
+                    batch,
+                    worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                )
                 .map_err(super::transaction_denial::staging)?;
             let result = transaction
-                .commit(runtime)
+                .commit(runtime, worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,)
                 .map_err(super::transaction_denial::commit)?;
             let snapshot = super::runtime_identity::snapshot_identity_from_runtime(runtime);
             super::commit_snapshot_closeout::release_commit_snapshot(runtime, &result.snapshot);

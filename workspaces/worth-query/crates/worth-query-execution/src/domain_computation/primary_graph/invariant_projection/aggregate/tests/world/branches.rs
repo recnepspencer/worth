@@ -43,25 +43,34 @@ impl AggregateWorld {
                 .expect("the branch head observes")
         });
         self.authority
-            .project_bounded(10_000, basis, |reader| {
-                let result = reader.summarize_exclusive_incoming(
-                    AggregateContribution::reference(),
-                    SourceAmount::reference(),
-                    &self.target,
-                );
-                observed.set(Some(result.as_ref().map_or_else(
-                    |denial| Err(denial.kind()),
-                    |aggregate| Ok((*aggregate.value(), aggregate.source_count())),
-                )));
-                result
-            })
+            .project_bounded(
+                10_000,
+                basis,
+                |reader| {
+                    let result = reader.summarize_exclusive_incoming(
+                        AggregateContribution::reference(),
+                        SourceAmount::reference(),
+                        &self.target,
+                    );
+                    observed.set(Some(result.as_ref().map_or_else(
+                        |denial| Err(denial.kind()),
+                        |aggregate| Ok((*aggregate.value(), aggregate.source_count())),
+                    )));
+                    result
+                },
+                None,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .expect("the branch projection completes");
         observed.get().expect("the aggregate was observed")
     }
 
     pub(in super::super) fn source(&self, source: &str) -> EntityId {
         self.authority
-            .project(|reader| reader.resolve_entity(SourceIdentity::reference(), source.to_owned()))
+            .project(
+                |reader| reader.resolve_entity(SourceIdentity::reference(), source.to_owned()),
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .expect("source projection")
             .output()
             .as_ref()
@@ -72,7 +81,10 @@ impl AggregateWorld {
     /// The one contribution a source makes to the target.
     pub(in super::super) fn contribution(&self, source: EntityId) -> RelationId {
         self.authority
-            .project(|reader| reader.relations_to(AggregateContribution::reference(), &self.target))
+            .project(
+                |reader| reader.relations_to(AggregateContribution::reference(), &self.target),
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .expect("contribution projection")
             .output()
             .as_ref()
@@ -115,9 +127,17 @@ impl AggregateWorld {
                 )
                 .expect("owner-admitted transaction context");
             transaction
-                .push_batch(WorkerIntentBatch::new(label).push(intent))
+                .push_batch(
+                    WorkerIntentBatch::new(label).push(intent),
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
                 .expect("test staging stays within configured resource budgets");
-            let committed = transaction.commit(runtime).expect("the branch commits");
+            let committed = transaction
+                .commit(
+                    runtime,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .expect("the branch commits");
             crate::relational_snapshot_release::release_query_snapshot(
                 runtime,
                 &committed.snapshot,

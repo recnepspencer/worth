@@ -52,7 +52,7 @@ fn changed_consumed_witness_with_equal_input_contacts_once_for_one_and_several_o
                     })
                     .expect_source(observed.observed_sources()[0].clone())
                     .idempotency(&(0x61400 + index as u64))
-                    .execute_performed::<installation::Program, installation::Root>(&app)
+                    .execute_performed::<installation::Program, installation::Root>(&app, worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
                     .unwrap();
                 let mut root = request
                     .demand(Demand(OUTPUT))

@@ -77,7 +77,10 @@ fn execute_rejection(
         .mutate(input)
         .preconditions(preconditions)
         .idempotency(controls.idempotency_key())
-        .execute_in_program(runtime.application_program())
+        .execute_in_program(
+            runtime.application_program(),
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
 }
 
 fn execute_initiation(
@@ -97,6 +100,9 @@ fn execute_initiation(
             .mutate(input)
             .preconditions(preconditions)
             .idempotency(controls.idempotency_key())
-            .execute_in_program(runtime.application_program()),
+            .execute_in_program(
+                runtime.application_program(),
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            ),
     )
 }

@@ -1,13 +1,16 @@
 mod dispatch_outcome;
 mod frame_identity;
 mod page_wal_basis;
+mod prepared_frames;
 mod prepared_plan;
 mod prior_page_basis;
+mod source_copy_observation;
 mod writeback_join;
+pub use source_copy_observation::PhysicalExtentCopySettlementObservation;
 
 pub use dispatch_outcome::{
-    CleanedPhysicalDataDispatchRetry, IndeterminatePhysicalDataDispatch,
-    PhysicalDataDispatchFailureCause, PhysicalDataDispatchOutcome,
+    IndeterminatePhysicalDataDispatch, PhysicalDataDispatchFailureCause,
+    PhysicalDataDispatchOutcome, SuspendedPhysicalDataDispatch,
 };
 pub use frame_identity::{
     PhysicalDataFrameIdentity, PhysicalDataFrameKind, PhysicalDataFrameSubject,

@@ -13,4 +13,7 @@
 #   cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root . --update-snapshots
 
 schema_version = 1
-facades = []
+
+[[facades]]
+package = "worth-query-host::primary_graph"
+undocumented = ["WorthQueryApplicationSourceAdjacencyEndpoints"]

@@ -1,6 +1,7 @@
 use worth_signal::facade::ResourceManagedQueueBinding;
 
 use crate::execution_basis::authority::BridgeBoundExecutionBasisParts;
+use crate::execution_basis::posture::{BridgeExecutionBasisPosture, BridgeManagedExecutionBasis};
 use crate::execution_basis::{
     BridgeBoundExecutionBasis, BridgeExecutionBasisCounters,
     BridgeExecutionBasisReadmissionCommitted, BridgeExecutionBasisReadmissionYielded,
@@ -107,7 +108,7 @@ impl BridgeExecutionBasisReadmissionPending {
             .expect("readmission commit consumes yielded Bridge authority");
         let observation = yielded.take_observation();
         let authoritative_source_profile = yielded.basis.authoritative_source_profile.clone();
-        let step_contract = yielded.basis.step_contract.clone();
+        let step_contract = yielded.step_contract().clone();
         let (request, reservation) = self
             .provisional
             .take()
@@ -119,12 +120,15 @@ impl BridgeExecutionBasisReadmissionPending {
                 .fresh_intent
                 .take()
                 .expect("readmission commit consumes fresh managed intent"),
-            step_contract,
+            posture: BridgeExecutionBasisPosture::Managed(BridgeManagedExecutionBasis {
+                step_contract,
+                queue: self
+                    .managed_queue
+                    .take()
+                    .expect("readmission commit consumes managed queue binding"),
+                occupancy_width: 0,
+            }),
             request,
-            managed_queue: self
-                .managed_queue
-                .take()
-                .expect("readmission commit consumes managed queue binding"),
             observation,
             authoritative_source_profile,
             reservation,

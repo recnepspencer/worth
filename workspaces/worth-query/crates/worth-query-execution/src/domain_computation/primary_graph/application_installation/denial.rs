@@ -13,6 +13,22 @@ pub enum WorthQueryInMemoryApplicationDenial {
     Schema(WorthQueryInstalledApplicationSchemaDenial),
     Contributions(WorthQueryPrimaryGraphInstallationDenial),
     Graph(WorthQueryPrimaryGraphInstallationDenial),
+    /// Native target publication settled; a later installation phase refused.
+    /// The checkpoint preserves that actual successor for ordinary target restore.
+    CheckpointTransitionAcknowledged {
+        checkpoint: super::super::WorthQueryApplicationCheckpoint,
+        cause: Box<WorthQueryInMemoryApplicationDenial>,
+    },
+    /// Native publication performed, but settlement stopped without repair custody.
+    /// No World or acknowledged successor was issued.
+    CheckpointTransitionSettlementFailed(
+        Box<worth_relational::facade::transactions::TransactionCommitError>,
+    ),
+    CheckpointTransitionDeferred(Box<super::WorthQueryCheckpointTransitionRecovery>),
+    /// Native target settlement acknowledged, but checkpoint capture stopped.
+    CheckpointTransitionCaptureStopped(Box<super::WorthQueryCheckpointTransitionRecovery>),
+    /// Caller stop policy refused before native transition performance.
+    CheckpointTransitionPolicyStopped(super::super::WorthQueryCheckpointCaptureDenial),
     InitialState(WorthQueryPrimaryGraphInstallationDenial),
     Publication(WorthQueryPrimaryGraphInstallationDenial),
     ConditionalPublication(
@@ -46,6 +62,11 @@ impl std::error::Error for WorthQueryInMemoryApplicationDenial {
             | Self::ProgramAdmissionIncomplete
             | Self::RequiredOutputSourceAction(_) => None,
             Self::WorkflowAuthorityRequiresProgram => None,
+            Self::CheckpointTransitionDeferred(_)
+            | Self::CheckpointTransitionCaptureStopped(_)
+            | Self::CheckpointTransitionSettlementFailed(_) => None,
+            Self::CheckpointTransitionAcknowledged { cause, .. } => Some(cause.as_ref()),
+            Self::CheckpointTransitionPolicyStopped(error) => Some(error),
             Self::Schema(error) => Some(error),
             Self::Contributions(error)
             | Self::Graph(error)

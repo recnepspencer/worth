@@ -39,7 +39,7 @@ pub(super) struct RecoveryCleanupArtifactRevalidationFailure {
     progress: BackendRecoveryCleanupArtifactRevalidationProgress,
 }
 
-pub(super) struct RevalidatedRecoveryCleanupWal {
+pub(super) struct RevalidatedRecoveryCleanupArtifact {
     artifact: ArtifactTreeFile,
     progress: BackendRecoveryCleanupArtifactRevalidationProgress,
 }
@@ -47,7 +47,7 @@ pub(super) struct RevalidatedRecoveryCleanupWal {
 pub(super) fn verify(
     media: &AdmittedRecoveryFilesystemMedia,
     request: &BackendRecoveryCleanupRemovalRequest,
-) -> Result<RevalidatedRecoveryCleanupWal, RecoveryCleanupArtifactRevalidationFailure> {
+) -> Result<RevalidatedRecoveryCleanupArtifact, RecoveryCleanupArtifactRevalidationFailure> {
     let checkpoint_progress = verify_checkpoint(media, request)?;
     let progress = verify_artifact(
         media,
@@ -56,7 +56,7 @@ pub(super) fn verify(
         request.artifact_digest(),
         checkpoint_progress,
     )?;
-    Ok(RevalidatedRecoveryCleanupWal {
+    Ok(RevalidatedRecoveryCleanupArtifact {
         artifact: request.artifact().clone(),
         progress,
     })
@@ -142,7 +142,7 @@ fn verify_artifact(
     Ok(progress)
 }
 
-impl RevalidatedRecoveryCleanupWal {
+impl RevalidatedRecoveryCleanupArtifact {
     pub(super) const fn artifact(&self) -> &ArtifactTreeFile {
         &self.artifact
     }

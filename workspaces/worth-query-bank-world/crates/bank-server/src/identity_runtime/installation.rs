@@ -190,7 +190,7 @@ pub(crate) fn bank_application_limits() -> WorthQueryInMemoryApplicationLimits {
         .expect("bank application-query resource profile is statically non-zero");
     WorthQueryInMemoryApplicationLimits::new(
         super::product_world_resources::bank_product_world_resources(),
-        WorthQueryApplicationCandidateResourceProfile::bounded(4_096, 2 * 1_024 * 1_024, 1_048_576)
+        WorthQueryApplicationCandidateResourceProfile::physical_resources(4_096, 2 * 1_024 * 1_024)
             .expect("bank application candidate limits are statically non-zero"),
         queries,
         SignalConditionalEvaluationBudget::development(),

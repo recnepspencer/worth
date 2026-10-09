@@ -27,11 +27,17 @@ pub(super) fn commit_through_services(
         .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
         .expect("the admitted basis opens the canonical transaction path");
     transaction
-        .push_batch(WorkerIntentBatch::new(label))
+        .push_batch(
+            WorkerIntentBatch::new(label),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the empty batch remains within its declared budget");
     let candidate = services
         .preparation_port()
-        .prepare_branch_transaction(transaction)
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("preparation service produces the canonical candidate");
     let performed = match services.publication_port().compare_and_publish(candidate) {
         RelationalPublicationOutcome::Performed(performed) => performed,
@@ -52,10 +58,16 @@ pub(super) fn commit_direct(runtime: &RelationalRuntime, label: &str) -> CommitR
         .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
         .expect("direct admitted basis opens a transaction");
     transaction
-        .push_batch(WorkerIntentBatch::new(label))
+        .push_batch(
+            WorkerIntentBatch::new(label),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the direct empty batch remains within budget");
     transaction
-        .commit(runtime)
+        .commit(
+            runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the compatibility path commits canonically")
 }
 

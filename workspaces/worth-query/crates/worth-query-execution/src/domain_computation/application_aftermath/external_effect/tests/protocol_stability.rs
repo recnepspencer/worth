@@ -82,7 +82,7 @@ macro_rules! moved_payload_module {
                                 .no_aftermath()
                                 .finish(),
                         )
-                        .operation_decision_fact_budget(operation, 1)
+
                         .operation_projection_work_budget(operation, 1)
                         .operation_emit(operation, Notice::reference())
                         .build()

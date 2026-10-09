@@ -93,6 +93,7 @@ fn one_approval_transition_cannot_commit_twice_under_different_client_keys() {
                     &reviewed_identities(&key, &input),
                     principal.principal_identity(),
                     admission,
+                    worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
                 )
             })
             .expect("the fixture policy admits its handler advancement")
@@ -134,6 +135,7 @@ fn one_approval_transition_cannot_commit_twice_under_different_client_keys() {
             .unwrap(),
             principal.principal_identity(),
             sibling_admission,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         })
         .expect("the fixture policy admits its handler advancement")
@@ -144,7 +146,10 @@ fn one_approval_transition_cannot_commit_twice_under_different_client_keys() {
     let sibling_program = sibling
         .into_parts()
         .0
-        .bind_workflow_operation_authority(&authority)
+        .bind_workflow_operation_authority(
+            &authority,
+            worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let relabeled = application
         .program_runtime()
@@ -152,6 +157,7 @@ fn one_approval_transition_cannot_commit_twice_under_different_client_keys() {
             sibling_program,
             &reviewed_identities(&sibling_key, &input),
             extend,
+            worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         );
     assert!(matches!(
         relabeled,
@@ -160,10 +166,16 @@ fn one_approval_transition_cannot_commit_twice_under_different_client_keys() {
     ));
     assert_eq!(read_retention(runtime, instance.branch()), SEED_RETENTION);
     let first_program = candidate(972)
-        .bind_workflow_operation_authority(&authority)
+        .bind_workflow_operation_authority(
+            &authority,
+            worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let second_program = candidate(973)
-        .bind_workflow_operation_authority(&authority)
+        .bind_workflow_operation_authority(
+            &authority,
+            worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let first = application
         .program_runtime()
@@ -171,6 +183,7 @@ fn one_approval_transition_cannot_commit_twice_under_different_client_keys() {
             first_program,
             &reviewed_identities(&972, &input),
             extend,
+            worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         );
     assert!(matches!(
         first,
@@ -182,6 +195,7 @@ fn one_approval_transition_cannot_commit_twice_under_different_client_keys() {
             second_program,
             &reviewed_identities(&973, &input),
             extend,
+            worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         );
     assert!(matches!(
         second,

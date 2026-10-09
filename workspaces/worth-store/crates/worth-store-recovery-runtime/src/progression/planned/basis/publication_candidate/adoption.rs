@@ -9,12 +9,14 @@ use crate::entry::{
 use crate::progression::planned::basis::{
     RecoveryBaseImagePlan, RecoveryObservedSuccessorCandidate, RecoverySelectedSourceInventory,
 };
+use crate::progression::planned::PlanningResidentAllowance;
 
 pub(super) fn admit_observed(
     base: &RecoveryBaseImagePlan,
     source: &RecoverySelectedSourceInventory,
     final_inventory: &inventory::FinalInventory,
     observed: &RecoveryObservedSuccessorCandidate,
+    allowance: &mut PlanningResidentAllowance,
 ) -> Result<(), CandidateBuildDenial> {
     let root = &observed.root;
     let selected = base.selected_root();
@@ -61,7 +63,7 @@ pub(super) fn admit_observed(
             observed: root.record_count(),
         },
     )?;
-    admit_frontiers(observed, selected, source, root, free)?;
+    admit_frontiers(observed, selected, source, root, free, allowance)?;
     admit(
         root.generation(),
         root.last_inline_record() == last_inline_record,
@@ -210,19 +212,17 @@ fn admit_frontiers(
     source: &RecoverySelectedSourceInventory,
     root: &DurablePhysicalRootManifest,
     free: &DurableFreeSpaceManifestHeader,
+    allowance: &mut PlanningResidentAllowance,
 ) -> Result<(), CandidateBuildDenial> {
     let generation = root.generation();
-    let frontiers = exact_successor_frontiers(
+    exact_successor_frontiers(
         observed,
         generation,
         (selected.next_block(), root.next_block()),
         (selected.next_segment_block(), root.next_segment_block()),
         (source.free_space.next_block(), free.next_block()),
-    );
-    match frontiers {
-        Ok(()) => Ok(()),
-        Err(mismatch) => Err(conflict(generation, mismatch)),
-    }
+        allowance,
+    )
 }
 
 fn exact_successor_frontiers(
@@ -231,40 +231,77 @@ fn exact_successor_frontiers(
     root: (u64, u64),
     segment: (u64, u64),
     free: (u64, u64),
-) -> Result<(), PhysicalRecoverySuccessorCandidateMismatch> {
-    let mut root_blocks = Vec::new();
-    let mut segment_blocks = Vec::new();
-    let mut free_blocks = Vec::new();
+    allowance: &mut PlanningResidentAllowance,
+) -> Result<(), CandidateBuildDenial> {
+    let mut counts = [0usize; 3];
     for candidate in &observed.artifacts {
-        match candidate.artifact {
-            RecordArtifactFile::RootRoutingBlock {
-                generation: found,
-                block,
-            } if found == generation => root_blocks.push(block),
-            RecordArtifactFile::SegmentMembershipBlock {
-                generation: found,
-                block,
-            } if found == generation => segment_blocks.push(block),
-            RecordArtifactFile::FreeSpaceMembershipBlock {
-                generation: found,
-                block,
-            } if found == generation => free_blocks.push(block),
-            RecordArtifactFile::RootRoutingBlock { .. }
-            | RecordArtifactFile::SegmentMembershipBlock { .. }
-            | RecordArtifactFile::FreeSpaceMembershipBlock { .. } => {
-                return Err(PhysicalRecoverySuccessorCandidateMismatch::RootRoutingFrontier)
-            }
-            _ => {}
+        let family = match candidate.artifact {
+            RecordArtifactFile::RootRoutingBlock { .. } => Some(0),
+            RecordArtifactFile::SegmentMembershipBlock { .. } => Some(1),
+            RecordArtifactFile::FreeSpaceMembershipBlock { .. } => Some(2),
+            _ => None,
+        };
+        if let Some(family) = family {
+            counts[family] = counts[family]
+                .checked_add(1)
+                .ok_or(CandidateBuildDenial::Invalid)?;
         }
     }
-    if !frontier::exact_contiguous_blocks(&mut root_blocks, root.0, root.1) {
-        return Err(PhysicalRecoverySuccessorCandidateMismatch::RootRoutingFrontier);
-    }
-    if !frontier::exact_contiguous_blocks(&mut segment_blocks, segment.0, segment.1) {
-        return Err(PhysicalRecoverySuccessorCandidateMismatch::SegmentMembershipFrontier);
-    }
-    if !frontier::exact_contiguous_blocks(&mut free_blocks, free.0, free.1) {
-        return Err(PhysicalRecoverySuccessorCandidateMismatch::FreeSpaceMembershipFrontier);
-    }
-    Ok(())
+    let mut root_blocks = allowance.reserve::<u64>(counts[0])?;
+    let mut segment_blocks = allowance.reserve::<u64>(counts[1])?;
+    let mut free_blocks = allowance.reserve::<u64>(counts[2])?;
+    let admission = (|| {
+        for candidate in &observed.artifacts {
+            match candidate.artifact {
+                RecordArtifactFile::RootRoutingBlock {
+                    generation: found,
+                    block,
+                } if found == generation => root_blocks.push(block),
+                RecordArtifactFile::SegmentMembershipBlock {
+                    generation: found,
+                    block,
+                } if found == generation => segment_blocks.push(block),
+                RecordArtifactFile::FreeSpaceMembershipBlock {
+                    generation: found,
+                    block,
+                } if found == generation => free_blocks.push(block),
+                RecordArtifactFile::RootRoutingBlock { .. }
+                | RecordArtifactFile::SegmentMembershipBlock { .. }
+                | RecordArtifactFile::FreeSpaceMembershipBlock { .. } => {
+                    return Err(conflict(
+                        generation,
+                        PhysicalRecoverySuccessorCandidateMismatch::RootRoutingFrontier,
+                    ))
+                }
+                _ => {}
+            }
+        }
+        if !frontier::exact_contiguous_blocks(&mut root_blocks, root.0, root.1) {
+            return Err(conflict(
+                generation,
+                PhysicalRecoverySuccessorCandidateMismatch::RootRoutingFrontier,
+            ));
+        }
+        if !frontier::exact_contiguous_blocks(&mut segment_blocks, segment.0, segment.1) {
+            return Err(conflict(
+                generation,
+                PhysicalRecoverySuccessorCandidateMismatch::SegmentMembershipFrontier,
+            ));
+        }
+        if !frontier::exact_contiguous_blocks(&mut free_blocks, free.0, free.1) {
+            return Err(conflict(
+                generation,
+                PhysicalRecoverySuccessorCandidateMismatch::FreeSpaceMembershipFrontier,
+            ));
+        }
+        Ok(())
+    })();
+    let root_bytes = PlanningResidentAllowance::vector_bytes(&root_blocks)?;
+    let segment_bytes = PlanningResidentAllowance::vector_bytes(&segment_blocks)?;
+    let free_bytes = PlanningResidentAllowance::vector_bytes(&free_blocks)?;
+    drop((root_blocks, segment_blocks, free_blocks));
+    allowance.release(root_bytes);
+    allowance.release(segment_bytes);
+    allowance.release(free_bytes);
+    admission
 }

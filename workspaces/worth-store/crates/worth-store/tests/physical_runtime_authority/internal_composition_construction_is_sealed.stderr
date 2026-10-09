@@ -14,11 +14,11 @@ error[E0451]: field `core` of struct `AdmittedPhysicalRuntime` is private
 13 |         core: unavailable(),
    |         ^^^^ private field
 
-error[E0451]: field `_private` of struct `InstalledCapabilityStatus` is private
+error[E0451]: field `serving` of struct `InstalledCapabilityStatus` is private
   --> tests/physical_runtime_authority/internal_composition_construction_is_sealed.rs:18:47
    |
-18 |     let _status = InstalledCapabilityStatus { _private: () };
-   |                                               ^^^^^^^^ private field
+18 |     let _status = InstalledCapabilityStatus { serving: false };
+   |                                               ^^^^^^^ private field
 
 error: type `physical_runtime::runtime::PhysicalRuntimeCore` is private
   --> tests/physical_runtime_authority/internal_composition_construction_is_sealed.rs:13:15

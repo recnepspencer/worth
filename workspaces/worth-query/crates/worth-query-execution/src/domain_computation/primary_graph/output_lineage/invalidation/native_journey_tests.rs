@@ -33,6 +33,9 @@ mod scope_hierarchy;
 // Fixture evidence carries no performed output projection, so the
 // equivalence oracle correctly refuses it; this proof is about metering.
 #[cfg(not(feature = "certification-invalidation-equivalence"))]
+#[path = "native_journey_tests/pending_own_evidence.rs"]
+mod pending_own_evidence;
+#[cfg(not(feature = "certification-invalidation-equivalence"))]
 #[path = "native_journey_tests/precommit_chain.rs"]
 mod precommit_chain;
 #[path = "native_journey_tests/replay_propagation.rs"]
@@ -41,8 +44,12 @@ mod replay_propagation;
 mod request_recording;
 #[path = "native_journey_tests/required_hints.rs"]
 mod required_hints;
+#[path = "native_journey_tests/retained_categories.rs"]
+mod retained_categories;
 #[path = "native_journey_tests/shared_versions.rs"]
 mod shared_versions;
+#[path = "native_journey_tests/unchanged_history.rs"]
+mod unchanged_history;
 #[path = "native_journey_tests/undeclared_change.rs"]
 mod undeclared_change;
 #[path = "native_journey_tests/verified_current.rs"]
@@ -127,8 +134,18 @@ fn write_batch(
     let mut transaction = runtime
         .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
         .unwrap();
-    transaction.push_batch(batch).unwrap();
-    let candidate = runtime.prepare_branch_transaction(transaction).unwrap();
+    transaction
+        .push_batch(
+            batch,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
+    let candidate = runtime
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
     let RelationalPublicationOutcome::Performed(performed) =
         runtime.publication_port().compare_and_publish(candidate)
     else {

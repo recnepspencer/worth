@@ -65,7 +65,7 @@ fn assert_public_creation(display_name: &str) {
     let omitted_program = request
         .mutate(input.clone())
         .idempotency(&key)
-        .execute()
+        .execute(worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
         .expect_err("a program-owned action must not publish through the ordinary path");
     assert_eq!(
         omitted_program.kind(),

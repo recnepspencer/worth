@@ -300,7 +300,7 @@ fn artifact_rows_bind_family_and_generation_to_the_physical_owner() {
     let page_owner = owner(BackupBundleArtifactFamily::Page);
     assert!(BackupBundleArtifactManifestRow::new(
         BackupBundleArtifactFamily::Index,
-        BackupBundleArtifactFormat::LayoutBTreeLeafV1,
+        BackupBundleArtifactFormat::BTreeNodeV1,
         "index",
         "index.bin",
         1,
@@ -324,6 +324,16 @@ fn artifact_rows_bind_family_and_generation_to_the_physical_owner() {
     .is_none());
 }
 
+#[test]
+fn retired_baseline_index_format_tags_are_not_reinterpreted_as_btree_nodes() {
+    assert_eq!(super::super::manifest_binary_tags::format_from_tag(6), None);
+    assert_eq!(super::super::manifest_binary_tags::format_from_tag(7), None);
+    assert_eq!(
+        super::super::manifest_binary_tags::format_from_tag(10),
+        Some(BackupBundleArtifactFormat::BTreeNodeV1)
+    );
+}
+
 const fn format(family: BackupBundleArtifactFamily) -> BackupBundleArtifactFormat {
     match family {
         BackupBundleArtifactFamily::RootManifest => {
@@ -335,7 +345,7 @@ const fn format(family: BackupBundleArtifactFamily) -> BackupBundleArtifactForma
         BackupBundleArtifactFamily::WalSegment => BackupBundleArtifactFormat::WalSegmentV1,
         BackupBundleArtifactFamily::Page => BackupBundleArtifactFormat::PhysicalDataPageV1,
         BackupBundleArtifactFamily::Extent => BackupBundleArtifactFormat::PhysicalExtentRecordV1,
-        BackupBundleArtifactFamily::Index => BackupBundleArtifactFormat::LayoutBTreeLeafV1,
+        BackupBundleArtifactFamily::Index => BackupBundleArtifactFormat::BTreeNodeV1,
         BackupBundleArtifactFamily::BlobChunk => BackupBundleArtifactFormat::BlobChunkV1,
         BackupBundleArtifactFamily::SecondaryRoot => {
             BackupBundleArtifactFormat::PhysicalSecondaryRootManifestV1

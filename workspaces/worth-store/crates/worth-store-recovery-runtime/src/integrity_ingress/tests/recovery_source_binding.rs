@@ -1,4 +1,5 @@
 use worth_proof::TransitionOutcome;
+use worth_store::physical_runtime::{ArtifactCeiling, FixedArtifact, ReadGrant, UnchargedRead};
 use worth_store::physical_runtime::{
     FilesystemAccessPosture, FilesystemMediaAdmission, PhysicalRuntimeAdmission, PhysicalStore,
     QualifiedRecoveryFilesystemMedia,
@@ -61,13 +62,33 @@ fn exact_c4_incarnation_and_scope_gate_typed_projection() {
         .unwrap();
     let mut discovery = media.bounded_discovery(4, 4096).unwrap();
     let source_a = discovery
-        .read_current_selector(ROOT_SELECTOR_BYTES as u64)
+        .read(
+            ArtifactCeiling::fixed(FixedArtifact::CurrentRootSelector),
+            ReadGrant::ceiling_only(),
+        )
+        .observed()
         .unwrap();
     let source_b = discovery
-        .read_current_selector(ROOT_SELECTOR_BYTES as u64)
+        .read(
+            ArtifactCeiling::fixed(FixedArtifact::CurrentRootSelector),
+            ReadGrant::ceiling_only(),
+        )
+        .observed()
         .unwrap();
-    let bootstrap_source = discovery.read_bootstrap_catalog(256).unwrap();
-    let bootstrap_source_b = discovery.read_bootstrap_catalog(256).unwrap();
+    let bootstrap_source = discovery
+        .read(
+            ArtifactCeiling::fixed(FixedArtifact::BootstrapCatalog),
+            ReadGrant::ceiling_only(),
+        )
+        .observed()
+        .unwrap();
+    let bootstrap_source_b = discovery
+        .read(
+            ArtifactCeiling::fixed(FixedArtifact::BootstrapCatalog),
+            ReadGrant::ceiling_only(),
+        )
+        .observed()
+        .unwrap();
     let selector_scope = PhysicalArtifactScope::current_root_selector(
         store,
         format,
