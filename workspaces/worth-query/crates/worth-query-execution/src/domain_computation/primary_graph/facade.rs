@@ -59,6 +59,7 @@ pub use super::application_checkpoint::{
 #[cfg(feature = "test-query-execution-observer")]
 pub use super::application_contribution::{
     discarded_computation_retention_on_this_thread_for_test,
+    full_partitioned_computation_preparations_on_this_thread_for_test,
     partitioned_computation_runs_on_this_thread_for_test,
     partitioned_computation_tree_work_on_this_thread_for_test,
     place_managed_computations_on_this_thread_for_test,
@@ -104,7 +105,10 @@ pub use super::application_entry::mutation::{
     MutationHandlerExecutionDenial, OperationHandler, WorthQueryCompletedMutationCandidate,
 };
 #[cfg(feature = "test-query-execution-observer")]
-pub use super::application_output_demand::required_ready_custody_bytes_for_test;
+pub use super::application_output_demand::{
+    required_custody_layout_for_test, required_handoff_custody_bytes_for_test,
+    required_ready_custody_bytes_for_test, RequiredCustodyLayoutForTest,
+};
 pub use super::application_output_demand::{
     WorthQueryOutputDemandNotifications, WorthQueryOutputDemandSettlement,
     WorthQueryOutputReadinessDeliveryEvidence, WorthQueryOutputSettlementPosture,
@@ -116,7 +120,10 @@ pub use super::application_program::{
     WorthQueryRequiredOutputConnectionDenial, WorthQueryRequiredOutputSourcePreparationFailure,
 };
 #[cfg(feature = "test-query-execution-observer")]
-pub use super::application_query::query_read_kernel_entries_on_this_thread_for_test;
+pub use super::application_query::{
+    query_read_kernel_entries_by_root_on_this_thread_for_test,
+    query_read_kernel_entries_on_this_thread_for_test,
+};
 pub use super::application_query::{
     WorthQueryAdmittedApplicationQueryControls, WorthQueryAdmittedApplicationQueryPlan,
     WorthQueryAdmittedDisclosedApplicationResult, WorthQueryApplicationAuthorizationWorkEvidence,

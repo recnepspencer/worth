@@ -27,8 +27,33 @@ impl super::WorthQueryOutputDemandRegistry {
         super::WorthQueryOutputDemandInterest,
         Arc<RequiredWorkMembership>,
     ) {
-        let output = key("native-work-member", 1, 1);
-        let scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(super::root(1));
+        self.fixture_work_membership_at(occurrence, super::root(1), key("native-work-member", 1, 1))
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn fixture_scope_work_membership(
+        &self,
+        occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
+        root: worth_relational::facade::identity::EntityId,
+    ) -> (
+        super::WorthQueryOutputDemandInterest,
+        Arc<RequiredWorkMembership>,
+    ) {
+        let output = super::WorthQueryOutputDemandKey::new("native-work-member".to_owned(),
+            crate::domain_computation::primary_graph::application_query::WorthQueryObservedSourceEpoch::new(
+                [1; 32], [2; 32], root, occurrence, 1, [0; 32]));
+        self.fixture_work_membership_at(occurrence, root, output)
+    }
+
+    fn fixture_work_membership_at(
+        &self,
+        occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
+        root: worth_relational::facade::identity::EntityId,
+        output: super::WorthQueryOutputDemandKey,
+    ) -> (
+        super::WorthQueryOutputDemandInterest,
+        Arc<RequiredWorkMembership>,
+    ) {
+        let scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(root);
         let interest = self
             .admit(
                 output.clone(),

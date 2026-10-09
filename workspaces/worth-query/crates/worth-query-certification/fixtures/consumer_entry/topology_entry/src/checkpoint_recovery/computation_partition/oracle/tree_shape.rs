@@ -23,6 +23,20 @@ impl Shape {
         }))
     }
 
+    pub(super) fn build_charge(root: &Option<Box<Self>>) -> u64 {
+        fn nodes(root: &Option<Box<Shape>>) -> u64 {
+            root.as_ref()
+                .map_or(0, |n| 1 + nodes(&n.left) + nodes(&n.right))
+        }
+        fn spine(root: &Option<Box<Shape>>, left: bool) -> u64 {
+            root.as_ref().map_or(0, |n| {
+                1 + spine(if left { &n.left } else { &n.right }, left)
+            })
+        }
+        // Declared full-tree charge: nine visits per node, minus both spines.
+        9 * nodes(root) - spine(root, true) - spine(root, false)
+    }
+
     pub(super) fn update_path(root: &Option<Box<Self>>, key: Id) -> Vec<Id> {
         let mut path = Vec::new();
         let mut current = root.as_deref();

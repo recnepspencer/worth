@@ -71,7 +71,6 @@ fn another_owner_with_the_same_types_runs_in_full() {
     let world = installed_authorization_world(true);
     let installed = installed(StatusRead::Gather(1), sum);
     let first = first_run(&world, &installed);
-    let total = first.outcome.as_ref().unwrap().0;
     let doubling = WorthQueryInstalledPartitionedComputation::new(
         Doubling(Owner {
             modulus: 2,
@@ -80,6 +79,7 @@ fn another_owner_with_the_same_types_runs_in_full() {
             bump: Mutex::new(0),
             work: Mutex::new([1, 1]),
             gathered: Mutex::default(),
+            calls: Mutex::default(),
         }),
         ComputationRetention::ProducerOperation,
     );
@@ -90,14 +90,18 @@ fn another_owner_with_the_same_types_runs_in_full() {
         [(Run::Full(Cause::OtherInstallation), Some(_))]
     ));
     assert_eq!(next.gathered, [0, 1], "every partition is gathered");
-    assert_eq!(next.outcome.unwrap().0, total * 2, "its own total");
+    assert_eq!(
+        next.outcome.unwrap().0,
+        (1..=4).sum::<u64>() * 2,
+        "its own total"
+    );
+    assert_eq!(*doubling.owner.0.calls.lock().unwrap(), full_call_law());
 }
 
 #[test]
 fn a_reinstalled_owner_runs_in_full() {
     let world = installed_authorization_world(true);
     let first = first_run(&world, &installed(StatusRead::Gather(1), sum));
-    let total = first.outcome.as_ref().unwrap().0;
     let reinstalled = installed(StatusRead::Gather(1), sum);
 
     let next = attempt(&world, &reinstalled, Some(prior_of(first, false)));
@@ -106,7 +110,8 @@ fn a_reinstalled_owner_runs_in_full() {
         [(Run::Full(Cause::OtherInstallation), Some(_))]
     ));
     assert_eq!(next.gathered, [0, 1], "every partition is gathered");
-    assert_eq!(next.outcome.unwrap().0, total);
+    assert_eq!(next.outcome.unwrap().0, (1..=4).sum::<u64>());
+    assert_eq!(*reinstalled.owner.calls.lock().unwrap(), full_call_law());
 }
 
 #[test]
@@ -115,7 +120,39 @@ fn a_clone_of_the_installation_reuses_its_state() {
     let installed = installed(StatusRead::Gather(1), sum);
     let first = first_run(&world, &installed);
 
+    *installed.owner.calls.lock().unwrap() = [0; 4];
     let next = attempt(&world, &installed.clone(), Some(prior_of(first, false)));
     assert!(matches!(next.runs.as_slice(), [(Run::Incremental, None)]));
     assert!(next.gathered.is_empty(), "nothing is gathered again");
+    assert_eq!(*installed.owner.calls.lock().unwrap(), [0; 4]);
+}
+
+#[test]
+fn a_reinstalled_reducer_runs_in_full_with_its_own_reduction() {
+    let world = installed_authorization_world(true);
+    let first = first_run(&world, &installed(StatusRead::Gather(1), sum));
+    let expected = (0..2)
+        .map(|parity| (1..=4).filter(|item| item % 2 == parity).sum::<u64>())
+        .max()
+        .unwrap();
+    let reinstalled = installed(StatusRead::Gather(1), |left, right| (*left).max(*right));
+    let next = attempt(&world, &reinstalled, Some(prior_of(first, false)));
+    assert!(matches!(
+        next.runs.as_slice(),
+        [(Run::Full(Cause::OtherInstallation), Some(_))]
+    ));
+    assert_eq!(next.gathered, [0, 1]);
+    assert_eq!(next.outcome.unwrap().0, expected);
+    assert_eq!(*reinstalled.owner.calls.lock().unwrap(), full_call_law());
+}
+
+/// A new installation meets each item and computes every distinct model key.
+fn full_call_law() -> [usize; 4] {
+    let items = (1..=4).collect::<Vec<_>>();
+    let partitions = items
+        .iter()
+        .map(|item| item % 2)
+        .collect::<std::collections::BTreeSet<_>>()
+        .len();
+    [1, items.len(), partitions, partitions]
 }

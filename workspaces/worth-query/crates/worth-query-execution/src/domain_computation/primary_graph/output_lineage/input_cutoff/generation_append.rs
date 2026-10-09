@@ -28,20 +28,20 @@ impl WorthQueryApplicationOutputLineage {
     ) -> Result<PreparedGenerationAppend, WorthQueryOutputDemandDenial> {
         let outer = tree_work::<SemanticSource>(self.by_source.len()).ok_or_else(work_denial)?;
         admission
-            .charge_external_work(outer)
+            .charge_ordered_operations(1, outer)
             .map_err(|_| work_denial())?;
         let occurrences = self.by_source.get(source);
         let middle =
             tree_work::<ProductBranchIncarnation>(occurrences.map_or(0, |rows| rows.len()))
                 .ok_or_else(work_denial)?;
         admission
-            .charge_external_work(middle)
+            .charge_ordered_operations(1, middle)
             .map_err(|_| work_denial())?;
         let history = occurrences.and_then(|rows| rows.get(&coordinate.occurrence));
         let inner =
             tree_work::<u64>(history.map_or(0, |rows| rows.len())).ok_or_else(work_denial)?;
         admission
-            .charge_external_work(inner)
+            .charge_ordered_operations(1, inner)
             .map_err(|_| work_denial())?;
         let generation = history.and_then(|rows| rows.get(&coordinate.generation));
         if generation.map_or(0, Vec::len) != expected_count {
@@ -119,21 +119,21 @@ impl WorthQueryApplicationOutputLineage {
                         .checked_mul(2)?,
                 )
             })
-            .and_then(|n| {
-                n.checked_add(if grow {
-                    u64::try_from(expected_count).ok()?
-                } else {
-                    0
-                })
-            })
-            .and_then(|n| n.checked_add(2))
             .ok_or_else(work_denial)?;
         admission
-            .charge_external_work(work)
+            .charge_ordered_operations(9, work)
             .map_err(|_| work_denial())?;
         admission
             .admit_read_scratch(bytes)
             .map_err(|_| capacity_denial())?;
+        let payload_work = if grow {
+            u64::try_from(expected_count).map_err(|_| work_denial())?
+        } else {
+            0
+        };
+        admission
+            .charge_external_work(payload_work.checked_add(2).ok_or_else(work_denial)?)
+            .map_err(|_| work_denial())?;
         retained.reserve_additional(bytes)?;
         let mut replacement = if grow {
             let mut rows = Vec::new();

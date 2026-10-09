@@ -29,6 +29,14 @@ pub(in crate::domain_computation::primary_graph) struct SelectedPendingConsumedO
 }
 
 impl<'selected> SelectedPendingConsumedOutput<'selected> {
+    pub(in crate::domain_computation::primary_graph) fn matches_output_witness(
+        &self,
+        witness: &crate::domain_computation::primary_graph::output_lineage::SealedNativeOutputWitness,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<bool, worth_relational::facade::mvcc::CompanionPreflightStop> {
+        self.roots[self.index].matches_output_witness(witness, admission)
+    }
+
     pub(in crate::domain_computation::primary_graph) fn identity(
         &self,
     ) -> &RecordedSettlementIdentity {

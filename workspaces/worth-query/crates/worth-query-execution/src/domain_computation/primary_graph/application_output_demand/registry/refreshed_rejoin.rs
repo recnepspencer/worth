@@ -6,7 +6,6 @@
 //! a refresh, or a refresh that itself stopped, stays terminal.
 
 use std::cmp::Ordering;
-use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use super::admission::{accepts_semantic_join, interest};
@@ -47,16 +46,22 @@ impl WorthQueryOutputDemandRegistry {
             return Ok(None);
         }
         let (occurrence, scope) = (record.product_occurrence, record.source_scope);
-        // One pass over the rows compares each key's occurrence once.
-        admission
-            .charge_external_work(u64::try_from(state.records.len()).map_err(|_| work_denial())?)
-            .map_err(|_| work_denial())?;
-        let newest = state
-            .records
-            .iter()
-            .filter(|(key, _)| key.same_occurrence(&stale.key))
-            .max_by_key(|(key, _)| key.source.observation_generation())
-            .map(|(key, _)| key.clone());
+        // Only this occurrence is traversed; unrelated records affect the
+        // ordered navigation report, never this request's declared work.
+        let mut newest = None;
+        for (key, _) in occurrence_rows_admitted(&state.records, &stale.key, admission)? {
+            admission
+                .charge_external_work(1)
+                .map_err(|_| work_denial())?;
+            if newest
+                .as_ref()
+                .is_none_or(|prior: &WorthQueryOutputDemandKey| {
+                    key.source.observation_generation() > prior.source.observation_generation()
+                })
+            {
+                newest = Some(key.clone());
+            }
+        }
         let Some(newest) =
             newest.filter(|key| refresh_order(key, &stale.key) == Some(Ordering::Greater))
         else {
@@ -104,7 +109,7 @@ pub(super) fn superseded(record: &DemandRecord) -> bool {
 /// or releases. A newer row takes the occurrence over once it publishes:
 /// one that ends first gives the occurrence back to this row.
 pub(super) fn awaited_by_stale_owner(
-    records: &BTreeMap<WorthQueryOutputDemandKey, DemandRecord>,
+    records: &super::record_map::DemandRecords,
     key: &WorthQueryOutputDemandKey,
 ) -> bool {
     let mut awaited = false;
@@ -124,11 +129,38 @@ pub(super) fn awaited_by_stale_owner(
     awaited
 }
 
+/// Charge only the occurrence-local rows actually inspected. A row that is
+/// already required does not need this traversal at all.
+pub(super) fn awaited_by_stale_owner_admitted(
+    records: &super::record_map::DemandRecords,
+    key: &WorthQueryOutputDemandKey,
+    admission: &mut InvalidationEditAdmission,
+) -> Result<bool, WorthQueryOutputDemandDenial> {
+    let mut awaited = false;
+    for (other, record) in occurrence_rows_admitted(records, key, admission)? {
+        admission
+            .charge_external_work(1)
+            .map_err(|_| work_denial())?;
+        if other == key {
+            continue;
+        }
+        match refresh_order(other, key) {
+            Some(Ordering::Greater) if !record.unpublished_new_key() => return Ok(false),
+            Some(Ordering::Less) => {
+                awaited |= (record.interests != 0 || record.framework_required_count != 0)
+                    && superseded(record);
+            }
+            _ => {}
+        }
+    }
+    Ok(awaited)
+}
+
 /// Whether the Ready of `key`'s row, replaced by a refresh that has yet to
 /// publish, still answers for a stale owner. A refresh that ends unpublished
 /// gives the occurrence back to the Ready it replaced, never to an older one.
 pub(super) fn replaced_under_refresh(
-    records: &BTreeMap<WorthQueryOutputDemandKey, DemandRecord>,
+    records: &super::record_map::DemandRecords,
     key: &WorthQueryOutputDemandKey,
 ) -> bool {
     occurrence_rows(records, key)
@@ -139,7 +171,7 @@ pub(super) fn replaced_under_refresh(
 /// The closed superseded rows the published row at `key` replaced. Kept
 /// while it refreshed, they answer for nothing once it has published.
 pub(super) fn replaced_by_published(
-    records: &BTreeMap<WorthQueryOutputDemandKey, DemandRecord>,
+    records: &super::record_map::DemandRecords,
     key: &WorthQueryOutputDemandKey,
 ) -> Vec<WorthQueryOutputDemandKey> {
     if !matches!(records.get(key), Some(record) if matches!(record.state, DemandState::Output(_))) {
@@ -158,7 +190,7 @@ pub(super) fn replaced_by_published(
 /// The newest row of `key`'s occurrence. A closing stale owner of `key` may
 /// have been the last one awaiting it.
 pub(super) fn newest_of_occurrence(
-    records: &BTreeMap<WorthQueryOutputDemandKey, DemandRecord>,
+    records: &super::record_map::DemandRecords,
     key: &WorthQueryOutputDemandKey,
 ) -> Option<WorthQueryOutputDemandKey> {
     occurrence_rows(records, key)
@@ -187,21 +219,31 @@ pub(super) fn refresh_order(
 /// The rows of `key`'s occurrence. Keys order by producer and occurrence
 /// before generation, so they are the contiguous run of rows around `key`.
 pub(super) fn occurrence_rows<'records>(
-    records: &'records BTreeMap<WorthQueryOutputDemandKey, DemandRecord>,
+    records: &'records super::record_map::DemandRecords,
     key: &'records WorthQueryOutputDemandKey,
 ) -> impl Iterator<Item = (&'records WorthQueryOutputDemandKey, &'records DemandRecord)> {
-    use std::ops::Bound::{Excluded, Included, Unbounded};
-    let before = records
-        .range::<WorthQueryOutputDemandKey, _>((Unbounded, Excluded(key)))
-        .rev()
-        .take_while(move |(other, _)| other.same_occurrence(key));
-    let from = records
-        .range::<WorthQueryOutputDemandKey, _>((Included(key), Unbounded))
-        .take_while(move |(other, _)| other.same_occurrence(key));
-    before.chain(from)
+    records.occurrence_rows(key)
 }
 
-fn work_denial() -> WorthQueryOutputDemandDenial {
+pub(super) fn occurrence_rows_admitted<'a>(
+    records: &'a super::record_map::DemandRecords,
+    key: &'a WorthQueryOutputDemandKey,
+    admission: &mut InvalidationEditAdmission,
+) -> Result<
+    impl Iterator<Item = (&'a WorthQueryOutputDemandKey, &'a DemandRecord)>,
+    WorthQueryOutputDemandDenial,
+> {
+    let path = u64::from(usize::BITS - records.len().leading_zeros())
+        .checked_mul(11)
+        .and_then(|n| n.checked_add(1))
+        .ok_or_else(work_denial)?;
+    admission
+        .charge_ordered_operations(2, path.checked_mul(2).ok_or_else(work_denial)?)
+        .map_err(|_| work_denial())?;
+    Ok(occurrence_rows(records, key))
+}
+
+pub(super) fn work_denial() -> WorthQueryOutputDemandDenial {
     WorthQueryOutputDemandDenial::new(
         WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
         "refreshed output rejoin exceeds request work",

@@ -235,6 +235,14 @@ fn work_denial() -> WorthQueryOutputDemandDenial {
     )
 }
 
+#[cfg(feature = "test-query-execution-observer")]
+pub(super) fn custody_layout() -> (usize, usize, usize) {
+    (
+        node_bytes::<SemanticSource, SourcePostings>().unwrap(),
+        node_bytes::<Address, Posting>().unwrap(),
+        posting_cell_bytes() + size_of::<PendingVacancyCleanup>(),
+    )
+}
 fn capacity_denial() -> WorthQueryOutputDemandDenial {
     WorthQueryOutputDemandDenial::new(
         Kind::RetentionBudgetExceeded,

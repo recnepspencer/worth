@@ -13,7 +13,7 @@ mod index_refresh;
 mod invariant_projection;
 pub(in crate::domain_computation::primary_graph) mod live_delivery_support;
 mod merge_unique_updates;
-mod merge_unique_values;
+pub(in crate::domain_computation::primary_graph) mod merge_unique_values;
 mod product_branch_creation_recovery;
 mod product_managed_admission_affinity;
 mod product_publication_cancellation;

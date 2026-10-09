@@ -28,6 +28,8 @@ mod logical_work_scale;
 mod marking_ceiling;
 #[path = "native_journey_tests/reestablishment.rs"]
 mod reestablishment;
+#[path = "native_journey_tests/scope_hierarchy.rs"]
+mod scope_hierarchy;
 // Fixture evidence carries no performed output projection, so the
 // equivalence oracle correctly refuses it; this proof is about metering.
 #[cfg(not(feature = "certification-invalidation-equivalence"))]
@@ -45,6 +47,9 @@ mod shared_versions;
 mod undeclared_change;
 #[path = "native_journey_tests/verified_current.rs"]
 mod verified_current;
+
+#[path = "native_journey_tests/consumed_custody.rs"]
+mod consumed_custody;
 
 use std::{any::TypeId, collections::BTreeMap, sync::Arc};
 

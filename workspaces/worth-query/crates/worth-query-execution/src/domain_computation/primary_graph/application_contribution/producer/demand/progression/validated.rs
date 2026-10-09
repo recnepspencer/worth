@@ -5,7 +5,8 @@ mod entry;
 mod ready;
 mod schedule_progression;
 mod source_guard;
-use schedule_progression::{OwnStages, ScheduleProgression};
+pub(super) use schedule_progression::OwnPublication;
+use schedule_progression::{CheckpointProgress, OwnStages, ScheduleProgression};
 use source_guard::SourceGuard;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
@@ -26,13 +27,16 @@ where
         commit_authority: WorthQueryProducerCommitAuthority,
         mut schedule_progression: ScheduleProgression<'_, '_, Schema>,
         request_admission: &mut InvalidationEditAdmission,
-    ) -> Result<OwnStages, WorthQueryOutputDemandDenial>
+    ) -> Result<
+        OwnStages<FamilySourceQuery<Schema, Family>, FamilySourceValue<Schema, Family>>,
+        WorthQueryOutputDemandDenial,
+    >
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
         FamilySourceValue<Schema, Family>: 'static,
         FamilySourceQuery<Schema, Family>: 'static,
     {
-        const WAITING: OwnStages = OwnStages::Answer(WorthQueryOutputDemandAdvance::Pending);
+        let waiting = || OwnStages::Answer(WorthQueryOutputDemandAdvance::Pending);
         let disclosed_value = disclosure.value();
         let disclosed_source = disclosure.source();
         if let SourceGuard::Replaced = self.prepare_progression_entry(
@@ -66,17 +70,17 @@ where
             .interest
             .as_ref()
             .expect("progression entry checked live Interest");
+        // The receipt carrier is admitted before Running can commit. Nothing
+        // chargeable may strand a performed publication without its checkpoint.
+        request_admission
+            .charge_external_work(std::mem::size_of::<OwnPublication>() as u64 + 1)
+            .map_err(|_| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, ""))?;
         // One selected finish is prepaid before either initial begin or the
         // subsequent Scheduled begin can enter Running. The actual outcome
         // consumes it; dropping an unused token never releases a peer's row.
-        let mut selected_execution_finish = if schedule_progression.is_selected() {
-            Some(
-                self.output_demands
-                    .prepare_selected_execution_finish(interest, request_admission)?,
-            )
-        } else {
-            None
-        };
+        let selected_execution_finish = self
+            .output_demands
+            .prepare_selected_execution_finish(interest, request_admission)?;
         let mut selected_published_mode = if schedule_progression.is_selected() {
             // Execute moves the invocation-local matched identity out of its
             // selected schedule slot after Running. Admit both the vacant
@@ -145,13 +149,13 @@ where
                         continue;
                     }
                     Ok(crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputSchedulingResult::Deferred) => {
-                        return Ok(WAITING);
+                        return Ok(waiting());
                     }
                     Ok(crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputSchedulingResult::NoEffect(denial))
                     | Err(denial) => return Err(denial),
                 }
                 }
-                Admission::Pending => return Ok(WAITING),
+                Admission::Pending => return Ok(waiting()),
                 Admission::AdvanceCheckpoint { claim, checkpoint } => {
                     return Ok(
                         if self.advance_output_checkpoint(
@@ -160,9 +164,9 @@ where
                             claim,
                             checkpoint,
                         )? {
-                            OwnStages::Checkpoint
+                            OwnStages::Checkpoint(CheckpointProgress::Advanced)
                         } else {
-                            WAITING
+                            waiting()
                         },
                     );
                 }
@@ -186,11 +190,7 @@ where
         ) {
             Ok(context) => context,
             Err(denial) => {
-                if let Some(finish) = selected_execution_finish.take() {
-                    finish.relinquish();
-                } else {
-                    self.output_demands.relinquish_execution(interest);
-                }
+                selected_execution_finish.relinquish();
                 return Err(denial);
             }
         };
@@ -273,33 +273,20 @@ where
                     },
                 );
                 let checkpoint = crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputCheckpoint::Ready(completion);
-                if let Some(finish) = selected_execution_finish.take() {
-                    if let Err((denial, checkpoint)) = finish.publish(checkpoint) {
-                        demand.unpublished_selected_checkpoint = Some(checkpoint);
-                        return Err(denial);
-                    }
-                } else {
-                    self.output_demands
-                        .publish_checkpoint(interest, checkpoint)?;
+                if let Err((denial, checkpoint)) = selected_execution_finish.publish(checkpoint) {
+                    demand.unpublished_selected_checkpoint = Some(checkpoint);
+                    return Err(denial);
                 }
-                return Ok(OwnStages::Checkpoint);
+                return Ok(OwnStages::Checkpoint(CheckpointProgress::Advanced));
             }
             Err(super::super::super::execution::ProducerExecutionStop::RequestAdmissionDenied(
                 denial,
             )) => {
-                if let Some(finish) = selected_execution_finish.take() {
-                    finish.relinquish();
-                } else {
-                    self.output_demands.relinquish_execution(interest);
-                }
+                selected_execution_finish.relinquish();
                 return Err(denial.into_denial());
             }
             Err(super::super::super::execution::ProducerExecutionStop::LiveOutputNotReused) => {
-                if let Some(finish) = selected_execution_finish.take() {
-                    finish.relinquish();
-                } else {
-                    self.output_demands.relinquish_execution(interest);
-                }
+                selected_execution_finish.relinquish();
                 return Err(
                     super::super::super::execution::ProducerExecutionStop::live_output_not_reused(),
                 );
@@ -307,15 +294,13 @@ where
             Err(super::super::super::execution::ProducerExecutionStop::ExecutionStopped(
                 mut denial,
             )) => {
-                if let Some(finish) = selected_execution_finish.take() {
-                    finish.failure(&mut denial);
-                } else {
-                    self.output_demands
-                        .finish_execution_failure(interest, &mut denial);
-                }
+                selected_execution_finish.failure(&mut denial);
                 return Err(denial);
             }
         };
+        let publication = OwnPublication(receipt.0.committed_product_publication().clone());
+        #[cfg(feature = "test-query-execution-observer")]
+        super::caller_pass_observation::exhaust_after_commit(request_admission);
         let delivery = receipt.0
             .take_performed_relational_product_change()
             .map_or(
@@ -327,15 +312,12 @@ where
             delivery,
             ready_backing: receipt.1,
         };
-        if let Some(finish) = selected_execution_finish.take() {
-            if let Err((denial, checkpoint)) = finish.publish(checkpoint) {
-                demand.unpublished_selected_checkpoint = Some(checkpoint);
-                return Err(denial);
-            }
-        } else {
-            self.output_demands
-                .publish_checkpoint(interest, checkpoint)?;
+        if let Err((denial, checkpoint)) = selected_execution_finish.publish(checkpoint) {
+            demand.unpublished_selected_checkpoint = Some(checkpoint);
+            return Err(denial);
         }
-        Ok(OwnStages::Checkpoint)
+        Ok(OwnStages::Checkpoint(CheckpointProgress::Published(
+            publication,
+        )))
     }
 }

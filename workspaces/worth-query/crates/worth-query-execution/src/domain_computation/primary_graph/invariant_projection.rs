@@ -50,8 +50,10 @@ pub use locked_reader::{
 pub use operation_projection_denial::{
     WorthQueryOperationProjectionDenial, WorthQueryOperationProjectionDenialKind,
 };
-pub(in crate::domain_computation::primary_graph) use operation_reader::ComputationCallCharge;
 pub(in crate::domain_computation::primary_graph) use operation_reader::WorthQueryPriorOutputRead;
+pub(in crate::domain_computation::primary_graph) use operation_reader::{
+    ComputationCallCharge, ObservedComputationInputs,
+};
 pub use operation_reader::{
     WorthQueryApplicationOperationInvariantProjectionReader,
     WorthQueryApplicationOperationInvariantProjectionSnapshot,

@@ -61,10 +61,26 @@ impl WorthQueryOutputDemandRegistry {
 pub(super) fn supersede_predecessors(
     state: &mut DemandRegistryState,
     successor: &WorthQueryOutputDemandKey,
+    admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
 ) -> Result<(), WorthQueryOutputDemandDenial> {
-    reject_older_successor(state, successor)?;
-    for (key, record) in &mut state.records {
+    // Admit the occurrence walk before changing any predecessor. Keyed mutation
+    // and removal then use only this closed set, never unrelated registry rows.
+    let mut keys = Vec::new();
+    for (key, _) in
+        super::refreshed_rejoin::occurrence_rows_admitted(&state.records, successor, admission)?
+    {
+        admission
+            .charge_external_work(6)
+            .map_err(|_| super::refreshed_rejoin::work_denial())?;
+        if key != successor && key.replacement_order(successor) == Some(std::cmp::Ordering::Greater)
+        {
+            return Err(superseded_denial(&successor.producer));
+        }
+        keys.push(key.clone());
+    }
+    for key in &keys {
         if key != successor && key.replacement_order(successor) == Some(std::cmp::Ordering::Less) {
+            let record = state.records.get_mut(key).expect("occurrence key exists");
             let denial = superseded_denial(&key.producer);
             match &mut record.state {
                 DemandState::Output(output) => output.stop(denial),
@@ -72,17 +88,12 @@ pub(super) fn supersede_predecessors(
             }
             record.performed_source = None;
             record.wake.notify();
+            state.release_record_prerequisites(key);
         }
     }
-    state.release_matching_prerequisites(|key, _| {
-        key != successor && key.replacement_order(successor) == Some(std::cmp::Ordering::Less)
-    });
-    let mut released_bytes = 0;
-    let required_keys = &mut state.required_keys;
-    let required_reserved_bytes = &mut state.required_reserved_bytes;
-    state.records.retain(|key, record| {
-        let keep = key == successor
-            || !key.same_occurrence(successor)
+    for key in keys {
+        let record = state.records.get(&key).expect("occurrence key exists");
+        let keep = &key == successor
             || record.interests != 0
             || record.framework_required_count != 0
             || record.prepared_prerequisite_claims != 0
@@ -91,19 +102,18 @@ pub(super) fn supersede_predecessors(
                 && !matches!(&record.state, DemandState::Output(output)
                     if matches!(output.advancement, super::WorthQueryOutputAdvancement::Stopped { .. }));
         if !keep {
-            released_bytes += record.obligation_reserved_bytes();
-            if let Some(member) = required_keys.take(key) {
-                *required_reserved_bytes = required_reserved_bytes.saturating_sub(
+            let record = state.records.remove(&key).expect("selected row exists");
+            state.obligation_reserved_bytes = state
+                .obligation_reserved_bytes
+                .saturating_sub(record.obligation_reserved_bytes());
+            if let Some(member) = state.required_keys.take(&key) {
+                state.required_reserved_bytes = state.required_reserved_bytes.saturating_sub(
                     super::required_members::member_bytes(member.as_ref())
                         .expect("admitted key charge fits"),
                 );
             }
         }
-        keep
-    });
-    state.obligation_reserved_bytes = state
-        .obligation_reserved_bytes
-        .saturating_sub(released_bytes);
+    }
     Ok(())
 }
 
@@ -113,7 +123,7 @@ pub(super) fn reject_older_successor(
 ) -> Result<(), WorthQueryOutputDemandDenial> {
     // Another producer may still compute from this source until currentness
     // rejects its work; only a newer revision of this producer blocks it.
-    if state.records.keys().any(|key| {
+    if super::refreshed_rejoin::occurrence_rows(&state.records, successor).any(|(key, _)| {
         key != successor && key.replacement_order(successor) == Some(std::cmp::Ordering::Greater)
     }) {
         return Err(superseded_denial(&successor.producer));

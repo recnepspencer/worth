@@ -332,9 +332,9 @@ fn install_topology_behavior<Schema: TopologySchemaBinding>(
         worth_query_topology_entry::AlternatePlanarOutputProvider,
     )?;
     setup.producer::<worth_query_topology_entry::PlanarFinalOutputProducer<Schema>>(
-        worth_query_topology_entry::PlanarFinalOutputProvider,
+        worth_query_topology_entry::PlanarFinalOutputProvider::default(),
     )?;
     setup.producer::<worth_query_topology_entry::PlanarFinalPreserveProducer<Schema>>(
-        worth_query_topology_entry::PlanarFinalOutputProvider,
+        worth_query_topology_entry::PlanarFinalOutputProvider::default(),
     )
 }

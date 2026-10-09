@@ -6,6 +6,12 @@
 //! value it writes, and nothing else.
 
 use std::collections::BTreeSet;
+#[cfg(test)]
+thread_local! { static LOOKUPS: std::cell::RefCell<Vec<usize>> = const { std::cell::RefCell::new(Vec::new()) }; }
+#[cfg(test)]
+pub(super) fn take_lookup_limits() -> Vec<usize> {
+    LOOKUPS.with(|calls| std::mem::take(&mut *calls.borrow_mut()))
+}
 
 use worth_foundational::facade::{
     prepare_aspect_value_identity_basis, AspectFieldLocator, CanonicalAspectValueIdentityBasis,
@@ -168,6 +174,8 @@ fn admit_fields(
         }
         let runtime = head.runtime;
         let snapshot = head.snapshot()?;
+        #[cfg(test)]
+        LOOKUPS.with(|calls| calls.borrow_mut().push(MERGE_UNIQUE_CANDIDATE_LIMIT));
         let selection = observe_indexed_candidates(
             runtime,
             snapshot,

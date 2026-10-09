@@ -34,6 +34,7 @@ impl WorthQueryApplicationContribution<CheckpointSchema> for HistoryContribution
         let installed = setup
             .partitioned_computation::<PlanarFinalOutputFeature, OracleTotals, _>(HistoryOwner)?;
         let handler = RegionOutputHandler::running(move |reader, set| {
+            worth_query_host::facade::primary_graph::full_partitioned_computation_preparations_on_this_thread_for_test();
             take_calls();
             COMBINES.store(0, Ordering::Relaxed);
             tree_count::reset();
@@ -56,7 +57,7 @@ impl WorthQueryApplicationContribution<CheckpointSchema> for HistoryContribution
             let runs = observations.into_iter().map(|(run, _)| run);
             let value = outcome.as_ref().ok().map(|(bits, _)| *bits);
             room().push(OracleRun {
-                published: Vec::new(),
+                published: Vec::new(), full_preparations: worth_query_host::facade::primary_graph::full_partitioned_computation_preparations_on_this_thread_for_test(),
                 outcome,
                 runs: runs.collect(),
                 calls: take_calls(),
@@ -72,6 +73,7 @@ impl WorthQueryApplicationContribution<CheckpointSchema> for HistoryContribution
             super::super::super::demand::RegionTotalsHandler::idle(),
         )?;
         setup.handler::<EntryEditBinding<CheckpointSchema>, _>(EntryEditHandler)?;
+        super::super::super::entry_correction::configure(setup)?;
         setup.producer::<RegionOutputProducer<CheckpointSchema>>(RegionOutputProvider)?;
         setup.conditional::<RegionOutputReadiness<CheckpointSchema>>(())?;
         TopologyContribution::configure_topology(configuration, setup)

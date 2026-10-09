@@ -3,8 +3,9 @@ use super::*;
 use crate::domain_computation::primary_graph::application_attempt::{
     ComputationFactReaders, WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact,
 };
+use std::collections::BTreeSet;
 use std::mem::{align_of, size_of};
-use worth_execution::KeyedPartitioner;
+use worth_execution::KeyedItem;
 use worth_relational::facade::identity::EntityId;
 
 impl RetainedComputation {
@@ -32,7 +33,9 @@ impl RetainedComputation {
         items
             + keys
             + partitions
-            + KeyedPartitioner::<[u8; 32]>::retained_bytes(4, 2, 0).unwrap()
+            // Four item entries and memberships; two key groups and identities.
+            + 4 * size(size_of::<(PartitionItemId, KeyedItem<[u8; 32]>)>() + size_of::<PartitionItemId>())
+            + 2 * size(size_of::<([u8; 32], (PartitionIdentity, BTreeSet<PartitionItemId>))>() + size_of::<(PartitionIdentity, [u8; 32])>())
             + 2 * node
             + facts
             + size(capsule)

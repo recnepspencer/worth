@@ -14,7 +14,8 @@
 //! what its record consumed: an evicted head that consumed upstream outputs is
 //! never replayed, and the next start of its producer succeeds it. One that
 //! consumed none is replayed while its dependencies match, and its row posts
-//! it again.
+//! it again. A wave handoff keeps the actual consumer row in custody while
+//! its own refresh supersedes the posting; a released row carries no handoff.
 //!
 //! Every publication also retires the settlement of the generation its record
 //! displaced. A row of this occurrence usually posts it, and the supersession

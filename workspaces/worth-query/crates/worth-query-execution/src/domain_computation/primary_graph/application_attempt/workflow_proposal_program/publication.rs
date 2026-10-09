@@ -224,6 +224,7 @@ where
             &presented,
             program,
             idempotency.bind_workflow_proposal_context(&proposal_context_identity),
+            crate::domain_computation::application_aftermath::ApplicationCommitCausality::Ordinary,
         );
         let context = ProjectionContext {
             transition_identity_locator,

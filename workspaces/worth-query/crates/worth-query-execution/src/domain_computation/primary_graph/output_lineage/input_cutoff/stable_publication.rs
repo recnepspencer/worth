@@ -138,14 +138,16 @@ pub(in crate::domain_computation::primary_graph) fn prepare_stable_address<
         return Err(denial(Kind::PublicationStale));
     }
     admission
-        .charge_external_work(
+        .charge_ordered_operations(
+            1,
             tree_work::<SemanticSource>(lineage.by_source.len())
                 .ok_or_else(|| denial(Kind::WorkBudgetExceeded))?,
         )
         .map_err(|_| denial(Kind::WorkBudgetExceeded))?;
     let occurrences = lineage.by_source.get(&source);
     admission
-        .charge_external_work(
+        .charge_ordered_operations(
+            1,
             tree_work::<worth_runtime_world::facade::ProductBranchIncarnation>(
                 occurrences.map_or(0, |rows| rows.len()),
             )
@@ -154,7 +156,8 @@ pub(in crate::domain_computation::primary_graph) fn prepare_stable_address<
         .map_err(|_| denial(Kind::WorkBudgetExceeded))?;
     let history = occurrences.and_then(|rows| rows.get(&coordinate.occurrence));
     admission
-        .charge_external_work(
+        .charge_ordered_operations(
+            1,
             tree_work::<u64>(history.map_or(0, |rows| rows.len()))
                 .ok_or_else(|| denial(Kind::WorkBudgetExceeded))?,
         )

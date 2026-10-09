@@ -31,7 +31,7 @@ pub(super) fn read_retained_source<Schema, Family>(
     request: &WorthQueryRequestScope,
     branch: crate::basis::WorthQueryProductBranch,
     limits: crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits,
-    _request_admission: &mut InvalidationEditAdmission,
+    request_admission: &mut InvalidationEditAdmission,
 ) -> Result<
     WorthQueryApplicationOutputDemandSource<
         FamilySourceQuery<Schema, Family>,
@@ -46,31 +46,17 @@ where
         WorthQueryApplicationProjection<Schema, FamilySourceQuery<Schema, Family>> + 'static,
     FamilySourceQuery<Schema, Family>: 'static,
 {
-    // This is reached only after the carried currentness pass found no Ready
-    // to certify. Ordinary Query preparation uses the installed Query resource
-    // class; it does not refill the caller's spent currentness allowance.
-    let mut query_admission = runtime
-        .primary_provider
-        .graph
-        .source_owner
-        .invalidation_owner
-        .edit_admission_within(
-            runtime
-                .runtime
-                .application_query_resource_profile()
-                .maximum_work(),
-        );
     // Schema and installed-query getters, limit headers, the three bounded
     // minimum operands, and the callback's retained-source argument precede
     // the Query owner's one-shot execution allowance.
-    query_admission
+    request_admission
         .charge_external_work(12)
         .map_err(|_| work_denial())?;
     let installed = runtime
         .installed_schema()
         .installed_query_binding_admitted::<Family::Source, _>(&mut |work, bytes| {
-            query_admission.charge_external_work(work)?;
-            query_admission.admit_read_scratch(bytes)
+            request_admission.charge_external_work(work)?;
+            request_admission.admit_read_scratch(bytes)
         })
         .map_err(|stop| match stop {
             WorthQueryInstalledQueryBindingAdmissionStop::Installation(error) => denial(
@@ -85,18 +71,19 @@ where
         .select()
         .map_err(|stop| WorthQueryOutputDemandDenial::product_selection(stop, ""))?;
     let shared = selected
-        .prepare_shared_query_basis(&mut query_admission)
+        .prepare_shared_query_basis(request_admission)
         .map_err(|(_, stop)| resource_denial(stop))?;
     let installed_limits = runtime.resolve_application_query_limits(installed.limits());
     let maximum_work = NonZeroUsize::new(
         installed_limits
             .maximum_work()
             .get()
-            .min(limits.producer_work()),
+            .min(limits.producer_work())
+            .min(request_admission.remaining_work()),
     )
     .ok_or_else(work_denial)?;
     let (product, basis) = runtime
-        .retain_selected_query_basis_admitted(&shared, &mut query_admission)
+        .retain_selected_query_basis_admitted(&shared, request_admission)
         .map_err(|stop| match stop {
             SelectedQueryBasisRetentionStop::Basis => denial(
                 WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
@@ -104,13 +91,15 @@ where
             ),
             SelectedQueryBasisRetentionStop::Admission(stop) => resource_denial(stop),
         })?;
+    #[cfg(feature = "test-query-execution-observer")]
+    let read_commit = product.selected_commit().clone();
     let controls = WorthQueryApplicationQueryControls::selected_read_one_shot(
         product,
         basis,
         installed_limits.maximum_results(),
         maximum_work,
         request,
-        &mut query_admission,
+        request_admission,
     )
     .map_err(resource_denial)?;
     runtime
@@ -121,14 +110,32 @@ where
             retained,
             shared.selected(),
             controls,
-            &mut query_admission,
+            request_admission,
             |permission, admission| {
                 let plan = runtime
                     .finish_prepared_application_query_permission(permission, admission)
                     .map_err(query_admission_denial)?;
+                #[cfg(feature = "test-query-execution-observer")]
+                let before = admission.charged_work();
                 let read = runtime
-                    .execute_application_query_one_shot(plan)
-                    .map_err(query_execution_denial)?;
+                    .execute_application_query_one_shot_admitted(plan, admission)
+                    .map_err(|stop| {
+                        use crate::domain_computation::primary_graph::application_query::WorthQueryAdmittedOneShotStop as Stop;
+                        match stop {
+                            Stop::Admission(stop) => resource_denial(stop),
+                            Stop::Execution(stop) => query_execution_denial(stop),
+                            Stop::WorkUnavailable | Stop::WorkCounterOverflow
+                            | Stop::WorkAccountingMismatch => work_denial(),
+                        }
+                    })?;
+                #[cfg(feature = "test-query-execution-observer")]
+                super::caller_pass_observation::observe_read_debit(
+                    read.receipt().work().total_work_units() as u64, admission.charged_work() - before,
+                );
+                #[cfg(feature="test-query-execution-observer")]
+                crate::domain_computation::primary_graph::application_output_demand::observe_retained_source_selection(
+                    retained.source_root(), retained.selected_product_commit().expect("retained Product source").clone(),
+                    read_commit.clone());
                 Ok(read.into_admitted_disclosed().into_output_demand_source())
             },
         )

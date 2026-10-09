@@ -915,6 +915,13 @@ intent, and the key is scoped to the operation and the requesting principal,
 so the same key from another principal or under another operation never
 replays the request.
 
+For governed correction, `compare_and_commit_program_undo::<Binding>` and
+`compare_and_commit_program_redo::<Binding>` take the effect program, the same
+mutation identities and idempotency extension, and the sealed progression
+handoff. Both entries preserve the program membership, selected occurrence,
+workflow authority, conditionals and operation posture checks of an action
+commit. A handoff authorizes only the admission to which it is bound.
+
 The identity is exactly the serialized value, so keep that value complete and
 ordered:
 

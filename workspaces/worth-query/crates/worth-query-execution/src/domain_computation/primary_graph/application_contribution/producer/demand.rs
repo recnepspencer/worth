@@ -18,7 +18,7 @@ mod denial_posture;
 pub(super) mod disclosure;
 mod progression;
 pub(in crate::domain_computation::primary_graph) use progression::{
-    MatchedRequiredPredecessors, ResolvedRequiredPredecessors,
+    MatchedRequiredPredecessors, ReboundConsumedOutput, ResolvedRequiredPredecessors,
 };
 mod readiness;
 mod required_continuations;

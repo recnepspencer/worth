@@ -31,8 +31,7 @@ fn restoration_after_seeded_edits_rebuilds_fresh_state_and_the_same_work_boundar
     let reference = demand(&fresh_request, &fresh).1;
     assert_eq!(kept[0].runs, [Run::Full(Cause::Restored)]);
     assert_eq!(reference[0].runs, [Run::Full(Cause::FirstRun)]);
-    assert_eq!(kept[0].calls.plans, 1);
-    assert_eq!(kept[0].calls.keys, model.len());
+    assert_eq!(kept[0].calls, model.expected_calls(None));
     assert_eq!(kept[0].calls, reference[0].calls);
     assert_eq!(kept[0].outcome, reference[0].outcome);
     assert_published_state(&kept, &reference);

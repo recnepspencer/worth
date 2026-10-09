@@ -121,8 +121,10 @@ where
     // Eviction degrades to Fresh. Only a row holds the claims on what its
     // record consumed and answers its pending edges. A candidate of this
     // occurrence that consumed upstream outputs and that no row posts lost its
-    // row to custody: it is neither reused nor waited on, and the execution
-    // commits as its successor.
+    // row to custody. Without exact predecessor matching it executes fresh.
+    // A wave handoff retains the actual consumer row before its own refresh
+    // supersedes the posting. That closed custody proof survives this handoff;
+    // Released has no interest or evidence and always executes fresh.
     let settlement = candidate.settlement_identity();
     if !candidate.consumed_outputs().is_empty()
         && settlement.address().0 == observation.lifecycle_incarnation()
@@ -130,7 +132,15 @@ where
             .registry()
             .posts_settlement(settlement, admission)?
     {
-        return fresh(required_output, source, Some(key), Some(context), prior);
+        let handed_off = match matched_predecessors.as_ref() {
+            Some(matched) => matched
+                .matches_consumer(settlement, admission)
+                .map_err(cutoff_admission_denial)?,
+            None => false,
+        };
+        if !handed_off {
+            return fresh(required_output, source, Some(key), Some(context), prior);
+        }
     }
     // The Native owner authenticates and funds the exact issued handle once.
     // Verification consumes this paired proof instead of resolving it again.

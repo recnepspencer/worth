@@ -278,6 +278,24 @@ pub(super) fn limits_with_room(
     invalidation: worth_query_host::facade::runtime::WorthQueryInvalidationResources,
     candidates: WorthQueryApplicationCandidateResourceProfile,
 ) -> WorthQueryInMemoryApplicationLimits {
+    limits_with_history_room(
+        retained_composite_commits,
+        active_observations,
+        unique_exact_component_pins,
+        invalidation,
+        candidates,
+        524_288,
+    )
+}
+
+pub(super) fn limits_with_history_room(
+    retained_composite_commits: u64,
+    active_observations: u64,
+    unique_exact_component_pins: u64,
+    invalidation: worth_query_host::facade::runtime::WorthQueryInvalidationResources,
+    candidates: WorthQueryApplicationCandidateResourceProfile,
+    history_metadata_bytes: u64,
+) -> WorthQueryInMemoryApplicationLimits {
     WorthQueryInMemoryApplicationLimits::new(
         WorthQueryProductWorldResources::install(
             RuntimeWorldBudgetInstallation {
@@ -286,7 +304,7 @@ pub(super) fn limits_with_room(
                 },
                 history: RuntimeWorldHistoryBudgetInstallation {
                     retained_composite_commits,
-                    history_metadata_bytes: 524_288,
+                    history_metadata_bytes,
                 },
                 observations: RuntimeWorldObservationBudgetInstallation {
                     active_observations,

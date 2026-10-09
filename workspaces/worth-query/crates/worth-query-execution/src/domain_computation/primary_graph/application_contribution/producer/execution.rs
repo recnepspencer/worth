@@ -1,3 +1,5 @@
+#[cfg(feature = "test-query-execution-observer")]
+mod contact_observation;
 use std::{any::Any, sync::Arc};
 
 use worth_query_admission::facade::authenticated_principal::{

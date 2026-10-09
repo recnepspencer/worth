@@ -105,6 +105,52 @@ impl CompanionDerivedRootAdmission for InvalidationEditAdmission {
 }
 
 impl SourceInvalidationOwner {
+    /// Retention refusal ends this edit, but must not strand the optional live
+    /// index. Attempt its paid empty image at the same exact Native position.
+    /// The caller still returns the original typed refusal; no output is certified.
+    pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) fn evict_after_refused_edit(
+        &self,
+        selected: &worth_relational::facade::runtime::PositionedRelationalSnapshot,
+        stop: &SettlementRegistrationStop,
+        admission: &mut InvalidationEditAdmission,
+    ) {
+        if !matches!(
+            stop,
+            SettlementRegistrationStop::Admission(
+                CompanionPreflightStop::RetainedCompanionCapacityExhausted { .. }
+            )
+        ) {
+            return;
+        }
+        let Ok(Some(cell)) = self.cell_for_read(selected, admission) else {
+            return;
+        };
+        let image = cell.read_image();
+        if image.root_id() != selected.root_id()
+            || image.commit_id() != selected.commit_id()
+            || image.position() != selected.position()
+        {
+            return;
+        }
+        let vacant = self
+            .branches
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .vacant
+            .as_ref()
+            .cloned();
+        let Some(vacant) = vacant else {
+            return;
+        };
+        // The original retention refusal remains the answer if eviction stops.
+        if let Ok(prepared) = self.prepare_root_replacement(cell, image, vacant, admission) {
+            match prepared.install() {
+                Ok(cleanup) => drop(cleanup),
+                Err(stopped) => drop(stopped),
+            }
+        }
+    }
+
     pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) fn prepare_root_replacement(
         &self,
         cell: CompanionBranchCell<BranchMarkRoot>,

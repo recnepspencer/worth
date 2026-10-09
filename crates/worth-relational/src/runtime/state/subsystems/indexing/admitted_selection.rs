@@ -1,3 +1,4 @@
+use crate::indexes::data::SelectedIndexReadWork;
 use crate::indexes::data::{DerivedIndexId, SelectedIndexGenerationAdmissionStop};
 use crate::mvcc::RelationalBranchObservation;
 
@@ -21,12 +22,13 @@ impl IndexingSubsystem {
         branch: &crate::history::data::BranchId,
         version: crate::identity::data::VersionId,
         schema: crate::schema::data::SchemaVersionId,
-        mut prepare: impl FnMut(u64, u64) -> Result<(), Stop>,
+        mut prepare: impl FnMut(SelectedIndexReadWork, u64) -> Result<(), Stop>,
     ) -> Result<ExactLookupInputs, SelectedIndexGenerationAdmissionStop<Stop>> {
         let state = self.state.read();
         let work = navigation_work(state.definitions.len(), 1)
             .ok_or(SelectedIndexGenerationAdmissionStop::AccountingOverflow)?;
-        prepare(work, 0).map_err(SelectedIndexGenerationAdmissionStop::Admission)?;
+        prepare(SelectedIndexReadWork::OrderedNavigation(work), 0)
+            .map_err(SelectedIndexGenerationAdmissionStop::Admission)?;
         let Some(definition) = state.definitions.get(&index) else {
             return Ok(ExactLookupInputs::MissingDefinition);
         };
@@ -42,7 +44,8 @@ impl IndexingSubsystem {
             .checked_add(field_locator.field_path().fields().len())
             .and_then(|visits| u64::try_from(visits).ok())
             .ok_or(SelectedIndexGenerationAdmissionStop::AccountingOverflow)?;
-        prepare(path_visits, 0).map_err(SelectedIndexGenerationAdmissionStop::Admission)?;
+        prepare(SelectedIndexReadWork::Operation(path_visits), 0)
+            .map_err(SelectedIndexGenerationAdmissionStop::Admission)?;
         let left = locator.aspect().aspect_key().as_str().len();
         let right = field_locator.aspect().aspect_key().as_str().len();
         let path = locator
@@ -69,7 +72,8 @@ impl IndexingSubsystem {
             .and_then(|work| work.checked_add(2))
             .and_then(|work| u64::try_from(work).ok())
             .ok_or(SelectedIndexGenerationAdmissionStop::AccountingOverflow)?;
-        prepare(work, 0).map_err(SelectedIndexGenerationAdmissionStop::Admission)?;
+        prepare(SelectedIndexReadWork::Operation(work), 0)
+            .map_err(SelectedIndexGenerationAdmissionStop::Admission)?;
         if field_locator != locator {
             return Ok(ExactLookupInputs::WrongKind);
         }
@@ -136,7 +140,7 @@ impl IndexingSubsystem {
         &self,
         index: DerivedIndexId,
         observation: &RelationalBranchObservation,
-        mut prepare: impl FnMut(u64, u64) -> Result<(), Stop>,
+        mut prepare: impl FnMut(SelectedIndexReadWork, u64) -> Result<(), Stop>,
     ) -> Result<bool, SelectedIndexGenerationAdmissionStop<Stop>> {
         let Some(commit) = observation.commit_id() else {
             return Ok(false);
@@ -144,7 +148,8 @@ impl IndexingSubsystem {
         let state = self.state.read();
         let definition_work = navigation_work(state.definitions.len(), 1)
             .ok_or(SelectedIndexGenerationAdmissionStop::AccountingOverflow)?;
-        prepare(definition_work, 0).map_err(SelectedIndexGenerationAdmissionStop::Admission)?;
+        prepare(SelectedIndexReadWork::OrderedNavigation(definition_work), 0)
+            .map_err(SelectedIndexGenerationAdmissionStop::Admission)?;
         let Some(definition) = state.definitions.get(&index) else {
             return Ok(false);
         };

@@ -113,7 +113,11 @@ impl RequiredOutputDemandContext {
         predecessors.dedup();
         let lookup_work = predecessor_lookup_work(&state, &predecessors, maximum_key_work)?;
         admission
-            .charge_ordered_operations(1, lookup_work as u64)
+            .charge_external_work(
+                (lookup_work as u64)
+                    .checked_add(1)
+                    .ok_or_else(work_denial)?,
+            )
             .map_err(|_| work_denial())?;
         let predecessor_slots_bytes = predecessors
             .capacity()
@@ -169,7 +173,11 @@ impl RequiredOutputDemandContext {
             prior_key_work,
         )?;
         admission
-            .charge_ordered_operations(1, release_work as u64)
+            .charge_external_work(
+                (release_work as u64)
+                    .checked_add(1)
+                    .ok_or_else(work_denial)?,
+            )
             .map_err(|_| work_denial())?;
         // Dropping this ticket can remove the newly selected memberships
         // after other interests have grown the tree. Reserve that exact
@@ -180,7 +188,11 @@ impl RequiredOutputDemandContext {
             maximum_key_work,
         )?;
         admission
-            .charge_ordered_operations(1, rollback_work as u64)
+            .charge_external_work(
+                (rollback_work as u64)
+                    .checked_add(1)
+                    .ok_or_else(work_denial)?,
+            )
             .map_err(|_| work_denial())?;
         admission
             .charge_external_work(1)

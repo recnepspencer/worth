@@ -46,6 +46,7 @@ pub(in crate::domain_computation::primary_graph) struct VerifiedInputCutoff<'sel
     pub(super) fresh_key: Option<PreparedInputReuseKey>,
     /// The same alias-local facts whose completed prefix passed verification.
     pub(super) verified_facts: super::super::ComparableSourceFacts,
+    pub(super) verified_consumed: Option<std::sync::Arc<[ConsumedOutputEvidence]>>,
 }
 
 pub(in crate::domain_computation::primary_graph) enum InputCutoffDecision<'selected> {
@@ -73,6 +74,11 @@ impl From<CompanionPreflightStop> for InputCutoffVerificationStop {
     }
 }
 
+struct VerifiedDependencies {
+    facts: super::super::ComparableSourceFacts,
+    consumed: Option<std::sync::Arc<[ConsumedOutputEvidence]>>,
+}
+
 impl RetainedInputCutoffCandidate {
     /// A fresh selected input replaces the obsolete source-query suffix. The
     /// performed handler prefix and actually consumed upstream outputs still
@@ -89,7 +95,7 @@ impl RetainedInputCutoffCandidate {
         currentness: &mut InvalidationEditAdmission,
     ) -> Result<InputCutoffDecision<'selected>, InputCutoffVerificationStop> {
         let (snapshot, selected) = basis.in_runtime(runtime, admission)?;
-        let verified_facts = self.eligible_for_reuse(
+        let verified = self.eligible_for_reuse(
             &fresh_key,
             &fresh_context,
             matched_predecessors,
@@ -100,21 +106,28 @@ impl RetainedInputCutoffCandidate {
             admission,
             currentness,
         )?;
-        Ok(if let Some(verified_facts) = verified_facts {
-            let computation = verified_facts.computation();
-            InputCutoffDecision::Reuse(VerifiedInputCutoff {
-                _computation: computation,
-                candidate: self,
-                selected,
-                fresh_key: Some(fresh_key),
-                verified_facts,
-            })
-        } else {
-            InputCutoffDecision::Fresh {
-                key: fresh_key,
-                context: fresh_context,
-            }
-        })
+        Ok(
+            if let Some(VerifiedDependencies {
+                facts: verified_facts,
+                consumed: verified_consumed,
+            }) = verified
+            {
+                let computation = verified_facts.computation();
+                InputCutoffDecision::Reuse(VerifiedInputCutoff {
+                    _computation: computation,
+                    candidate: self,
+                    selected,
+                    fresh_key: Some(fresh_key),
+                    verified_facts,
+                    verified_consumed,
+                })
+            } else {
+                InputCutoffDecision::Fresh {
+                    key: fresh_key,
+                    context: fresh_context,
+                }
+            },
+        )
     }
 
     fn eligible_for_reuse(
@@ -128,7 +141,7 @@ impl RetainedInputCutoffCandidate {
         owner: &SourceInvalidationOwner,
         admission: &mut InvalidationEditAdmission,
         currentness: &mut InvalidationEditAdmission,
-    ) -> Result<Option<super::super::ComparableSourceFacts>, InputCutoffVerificationStop> {
+    ) -> Result<Option<VerifiedDependencies>, InputCutoffVerificationStop> {
         admission.charge_external_work(1)?;
         let Some(prior_key) = self.prepared_input_key() else {
             return Ok(None);
@@ -165,6 +178,24 @@ impl RetainedInputCutoffCandidate {
         if cutoff_declines(requirement, Some(&settlement)) {
             return Ok(None);
         }
+        let verified_consumed = if let Some(matched) = &matched_predecessors {
+            if !matched.matches_consumer(self.settlement_identity(), admission)? {
+                return Ok(None);
+            }
+            let Some(rebound) = matched_roots::rebound(
+                self.consumed_outputs(),
+                matched,
+                selected,
+                owner,
+                admission,
+            )?
+            else {
+                return Ok(None);
+            };
+            Some(rebound)
+        } else {
+            None
+        };
         let mut verify_full_prefix = requirement.is_some();
         let mut dirty_prefix = None;
         match settlement {
@@ -172,20 +203,16 @@ impl RetainedInputCutoffCandidate {
             SourceSettlementCurrentness::Dirty(ordinals) => dirty_prefix = Some(ordinals),
             SourceSettlementCurrentness::PendingUpstream(edges) => {
                 if let Some(matched) = &matched_predecessors {
-                    if matched_roots::consumed_roots(
-                        self.consumed_outputs(),
-                        matched,
-                        selected,
-                        admission,
-                    )? && matched_roots::names_every_edge(&edges, matched, admission)?
-                    {
-                        // Certified successors replaced exactly these old consumed
-                        // outputs. Their pending marks cannot authorize reuse, but
-                        // the retained key and completed context may enter Fresh.
-                        return Ok(None);
+                    if matched_roots::names_every_edge(&edges, matched, admission)? {
+                        // The new consumed evidence is current, but an upstream
+                        // mark names no subset of the handler prefix. Check it all.
+                        verify_full_prefix = true;
+                    } else {
+                        return Err(InputCutoffVerificationStop::PendingUpstream);
                     }
+                } else {
+                    return Err(InputCutoffVerificationStop::PendingUpstream);
                 }
-                return Err(InputCutoffVerificationStop::PendingUpstream);
             }
             SourceSettlementCurrentness::FullVerificationRequired(_) => verify_full_prefix = true,
             // `cutoff_declines` declined it above.
@@ -210,7 +237,9 @@ impl RetainedInputCutoffCandidate {
             return Ok(None);
         }
         match ConsumedOutputEvidence::verify_many_with_admission(
-            self.consumed_outputs(),
+            verified_consumed
+                .as_deref()
+                .unwrap_or_else(|| self.consumed_outputs()),
             owner,
             runtime,
             snapshot,
@@ -229,24 +258,6 @@ impl RetainedInputCutoffCandidate {
                 return Err(InputCutoffVerificationStop::CapacityExhausted);
             }
             Err(ConsumedOutputVerificationStop::PendingUpstream) => {
-                if let Some(matched) = &matched_predecessors {
-                    if matched_roots::consumed_roots(
-                        self.consumed_outputs(),
-                        matched,
-                        selected,
-                        admission,
-                    )? && matched_roots::pending_equalities_replaced(
-                        self.consumed_outputs(),
-                        matched,
-                        owner,
-                        runtime,
-                        snapshot,
-                        selected,
-                        admission,
-                    )? {
-                        return Ok(None);
-                    }
-                }
                 return Err(InputCutoffVerificationStop::PendingUpstream);
             }
             Err(ConsumedOutputVerificationStop::RetryCurrentness(_)) => {
@@ -264,7 +275,10 @@ impl RetainedInputCutoffCandidate {
         if !witness.unchanged_in(runtime, snapshot, admission)? {
             return Ok(None);
         }
-        Ok(Some(facts))
+        Ok(Some(VerifiedDependencies {
+            facts,
+            consumed: verified_consumed,
+        }))
     }
 }
 

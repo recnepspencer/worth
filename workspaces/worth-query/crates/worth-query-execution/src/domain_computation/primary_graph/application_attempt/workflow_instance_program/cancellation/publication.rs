@@ -104,7 +104,8 @@ where
                 &presented,
                 program,
                 idempotency.bind_workflow_instance(&intent_identity),
-            )
+            crate::domain_computation::application_aftermath::ApplicationCommitCausality::Ordinary,
+        )
             .landed()
         {
             Ok(landed) => landed,

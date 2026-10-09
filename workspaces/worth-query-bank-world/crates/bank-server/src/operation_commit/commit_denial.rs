@@ -2,7 +2,7 @@
 
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationCommitDenialKind,
-    WorthQueryApplicationCommitDenialStage,
+    WorthQueryApplicationCommitDenialStage, WorthQueryRecoveryHandleDenialKind,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -42,6 +42,9 @@ pub enum BankCommitDenialKind {
     IdempotencyIntentUnverifiable,
     MutationBindingMismatch,
     MutationInputMismatch,
+    RecoveryHandoffMismatch {
+        kind: WorthQueryRecoveryHandleDenialKind,
+    },
     ElevationTransitionRequired,
     ElevationRequestProgramMismatch,
     ElevationApprovalProgramMismatch,
@@ -125,6 +128,9 @@ pub(crate) const fn denial_kind(
         Query::IdempotencyIntentUnverifiable => BankCommitDenialKind::IdempotencyIntentUnverifiable,
         Query::MutationBindingMismatch => BankCommitDenialKind::MutationBindingMismatch,
         Query::MutationInputMismatch => BankCommitDenialKind::MutationInputMismatch,
+        Query::RecoveryHandoffMismatch { kind } => {
+            BankCommitDenialKind::RecoveryHandoffMismatch { kind }
+        }
         Query::ElevationTransitionRequired => BankCommitDenialKind::ElevationTransitionRequired,
         Query::ElevationRequestProgramMismatch => {
             BankCommitDenialKind::ElevationRequestProgramMismatch
@@ -179,6 +185,15 @@ pub(crate) const fn denial_stage(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn recovery_handoff_mismatch_keeps_its_typed_cause() {
+        let kind = WorthQueryRecoveryHandleDenialKind::FreshAuthorityDenied;
+        assert_eq!(
+            denial_kind(WorthQueryApplicationCommitDenialKind::RecoveryHandoffMismatch { kind }),
+            BankCommitDenialKind::RecoveryHandoffMismatch { kind }
+        );
+    }
+
     #[test]
     fn packet_panic_is_panicked_before_effects() {
         let query = WorthQueryApplicationCommitDenialKind::ExecutionWorkerPanicked {

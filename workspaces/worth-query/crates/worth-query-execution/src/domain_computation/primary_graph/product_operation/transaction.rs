@@ -125,7 +125,8 @@ where
                 &presented,
                 self.change.program,
                 self.change.idempotency,
-            ),
+            crate::domain_computation::application_aftermath::ApplicationCommitCausality::Ordinary,
+        ),
         )
     }
 }

@@ -180,7 +180,8 @@ fn classify_kind(kind: Kind) -> Outcome {
         | Kind::WorkflowAuthorityRequired
         | Kind::ProgramNotActiveOnOccurrence { .. }
         | Kind::ProgramSupportRetired
-        | Kind::ProgramActivationUnresolved => {
+        | Kind::ProgramActivationUnresolved
+        | Kind::RecoveryHandoffMismatch { .. } => {
             Outcome::TerminalFailure(Terminal::ApplicationCommit(kind))
         }
     }

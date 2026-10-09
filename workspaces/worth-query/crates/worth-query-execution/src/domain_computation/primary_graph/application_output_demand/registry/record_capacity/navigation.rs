@@ -43,11 +43,15 @@ impl DemandRegistryState {
         // The producer text is the sole variable-width Ord member. The epoch
         // compares six fixed coordinates; each costs one structural visit.
         let comparison_work = key.producer.len().checked_add(7).ok_or_else(work_denial)?;
-        let work = comparisons
-            .checked_mul(comparison_work)
+        let payload_comparisons = ordered_levels(self.record_budget_bytes.max(1))?
+            .checked_mul(11)
+            .ok_or_else(work_denial)?;
+        let work = payload_comparisons
+            .checked_mul(comparison_work.saturating_sub(1))
             .ok_or_else(work_denial)?;
         admission
-            .charge_ordered_operations(1, u64::try_from(work).map_err(|_| work_denial())?)
+            .charge_external_work(u64::try_from(work).map_err(|_| work_denial())?)
+            .and_then(|()| admission.charge_ordered_operations(1, comparisons as u64))
             .map_err(admission_denial)
     }
 
@@ -66,7 +70,7 @@ impl DemandRegistryState {
             .and_then(|count| count.checked_mul(node))
             .ok_or_else(work_denial)?;
         admission
-            .charge_ordered_operations(1, u64::try_from(work).map_err(|_| work_denial())?)
+            .charge_external_work(u64::try_from(work).map_err(|_| work_denial())?)
             .map_err(admission_denial)
     }
 }

@@ -1,6 +1,7 @@
 //! Versioned equality of exact output identities after a stable publication.
 
 use std::sync::Arc;
+mod projection;
 
 use im::OrdSet;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
@@ -54,6 +55,7 @@ pub(super) fn certify(
         return Err(missing(FullVerificationReason::RetainedDeliveryGap));
     }
 
+    projection::carry(state, predecessor, successor, admission)?;
     let mut ancestor = Arc::clone(predecessor);
     let mut visited = OrdSet::new();
     loop {

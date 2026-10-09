@@ -12,7 +12,7 @@ use worth_query_declaration::facade::application_operation::{
 };
 use worth_query_installation::facade::ApplicationSchema;
 
-use super::{program_required, WorthQueryProgramOwner};
+use super::{program_required, ApplicationCommitCausality, WorthQueryProgramOwner};
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitOutcome,
     WorthQueryApplicationEffectProgram, WorthQueryApplicationIdempotencyBinding,
@@ -31,6 +31,7 @@ type ActionProgram<Schema, Binding> = WorthQueryApplicationEffectProgram<
 pub(super) fn commit_program_action<Schema, Binding, Owner>(
     owner: &Owner,
     program: ActionProgram<Schema, Binding>,
+    causality: ApplicationCommitCausality<'_>,
     idempotency: WorthQueryApplicationIdempotencyBinding,
 ) -> WorthQueryApplicationCommitOutcome
 where
@@ -56,7 +57,12 @@ where
         Ok(presented) => presented,
         Err(denial) => return WorthQueryApplicationCommitOutcome::Denied(denial),
     };
-    runtime.compare_and_commit_application_for_program_action(&presented, program, idempotency)
+    runtime.compare_and_commit_application_for_program_action(
+        &presented,
+        program,
+        idempotency,
+        causality,
+    )
 }
 
 pub(super) fn commit_program_action_retained<Schema, Binding, Owner>(
@@ -73,6 +79,7 @@ where
     let outcome = commit_program_action::<Schema, Binding, Owner>(
         owner,
         program.with_client_observation(),
+        ApplicationCommitCausality::Ordinary,
         idempotency,
     );
     owner.owned_runtime().retained_commit_outcome(outcome)

@@ -2,7 +2,6 @@
 use super::super::{entry_edit::EntryFact, facts::RegionFault};
 use super::*;
 use crate::checkpoint_recovery::parallel_history::reuse_cases::ReuseFacts;
-use worth_query_decl::facade::application_operation::application_computation_partition_identity;
 use worth_query_host::facade::application_contribution::{
     WorthQueryComputationPartitionStop, WorthQueryPartitionedComputationFullCause as Cause,
     WorthQueryPartitionedComputationRun as Run,
@@ -98,12 +97,7 @@ fn case(change: Change) {
     }
     if model.expected_value().is_none() {
         let item = model.members().find(|item| item.fault).unwrap();
-        let expected =
-            application_computation_partition_identity(&RegionKey(item.key), &mut |_| {
-                Ok::<_, ()>(())
-            })
-            .unwrap()
-            .partition();
+        let expected = super::tree_work::identity(item.key);
         assert!(
             matches!(&retained.outcome, Err(WorthQueryPartitionedComputationDenial::Partition {
             partition, cause: WorthQueryComputationPartitionStop::Owner(key)

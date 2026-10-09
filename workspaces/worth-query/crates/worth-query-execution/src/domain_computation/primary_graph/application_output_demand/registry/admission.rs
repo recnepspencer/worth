@@ -35,24 +35,38 @@ impl WorthQueryOutputDemandRegistry {
         let matching_delivery = if stable_refresh {
             None
         } else {
-            state
-                .records
-                .iter()
-                .find(|(key, record)| {
-                    let pending_commit = match &record.state {
-                        DemandState::Output(output) => output.published_commit.as_ref(),
-                        _ => None,
-                    };
-                    key.same_occurrence(&requested_key)
-                        && selected_commit.is_some_and(|selected| pending_commit == Some(selected))
-                })
-                .map(|(key, _)| key.clone())
+            let mut found = None;
+            for (key, record) in super::refreshed_rejoin::occurrence_rows_admitted(
+                &state.records,
+                &requested_key,
+                admission,
+            )? {
+                admission
+                    .charge_external_work(1)
+                    .map_err(|_| super::refreshed_rejoin::work_denial())?;
+                let pending_commit = match &record.state {
+                    DemandState::Output(output) => output.published_commit.as_ref(),
+                    _ => None,
+                };
+                if selected_commit.is_some_and(|selected| pending_commit == Some(selected)) {
+                    found = Some(key.clone());
+                    break;
+                }
+            }
+            found
         };
-        let matching_semantic_source = if stable_refresh {
-            None
-        } else {
-            newest_semantic_key(&state, &requested_key, accepts_semantic_join)
-        };
+        let matching_semantic_source = newest_semantic_key(
+            &state,
+            &requested_key,
+            admission,
+            |record| {
+                accepts_semantic_join(record)
+                    && (!stable_refresh
+                        || matches!(&record.state, DemandState::Output(output)
+                    if matches!(output.checkpoint.as_ref(), Some(super::WorthQueryOutputCheckpoint::Ready(completion))
+                        if matches!(completion.authority, super::WorthQueryAcceptedOutputAuthority::Stable(_)))))
+            },
+        )?;
         let requested_source = requested_key.source.clone();
         let mut retained_key = None;
         if admission_kind == DemandAdmissionKind::Recovery {
@@ -75,7 +89,7 @@ impl WorthQueryOutputDemandRegistry {
                 return Err(retired);
             }
             let same_occurrence = custody.occurrence == product_occurrence;
-            retained_key = newest_semantic_key(&state, &requested_key, |record| {
+            retained_key = newest_semantic_key(&state, &requested_key, admission, |record| {
                 (record.is_required()
                     || record.has_cached_ready()
                     || record.performed_source.as_ref().is_some_and(|source| {
@@ -85,7 +99,7 @@ impl WorthQueryOutputDemandRegistry {
                     && record.source_commits.contains(expected)
                     && record.product_occurrence == product_occurrence
                     && record.source_scope == Some(source_scope)
-            });
+            })?;
             if let Some(key) = retained_key.as_ref() {
                 state.charge_record_lookup(key, admission)?;
             }
@@ -106,15 +120,10 @@ impl WorthQueryOutputDemandRegistry {
             }
         }
         state.charge_record_lookup(&requested_key, admission)?;
-        let existing_key = if stable_refresh {
-            // A refreshed Stable alias is bound to the freshly selected
-            // source epoch. A semantic join with an older row would retain
-            // the predecessor's obsolete source address.
-            state
-                .records
-                .contains_key(&requested_key)
-                .then(|| requested_key.clone())
-        } else if retained_key.is_some() {
+        // A Stable refresh reopens the held semantic row. Its frozen source
+        // meaning stays installed; every retained read selects the current
+        // Product without releasing the row's settlements or upstream claims.
+        let existing_key = if retained_key.is_some() {
             retained_key
         } else if state.records.contains_key(&requested_key) {
             Some(requested_key.clone())
@@ -225,7 +234,7 @@ impl WorthQueryOutputDemandRegistry {
                 // replacement is admitted and its custody is prepared.
                 reject_older_successor(&state, &requested_key)?;
             } else {
-                supersede_predecessors(&mut state, &requested_key)?;
+                supersede_predecessors(&mut state, &requested_key, admission)?;
             }
         }
         let prepared_source = prepared_commit.and_then(|commit| {
@@ -256,6 +265,10 @@ impl WorthQueryOutputDemandRegistry {
                     })
             );
             if existing_record && reopens_exact_ready {
+                #[cfg(feature = "test-query-execution-observer")]
+                if stable_refresh {
+                    super::join_observation::joined(key.source.root_entity_for_test());
+                }
                 let DemandState::Output(reopened) =
                     std::mem::replace(&mut record.state, DemandState::Admitted)
                 else {
@@ -302,14 +315,28 @@ pub(super) fn accepts_semantic_join(record: &DemandRecord) -> bool {
 pub(super) fn newest_semantic_key(
     state: &super::DemandRegistryState,
     requested: &WorthQueryOutputDemandKey,
+    admission: &mut InvalidationEditAdmission,
     accepts: impl Fn(&DemandRecord) -> bool,
-) -> Option<WorthQueryOutputDemandKey> {
-    state
-        .records
-        .iter()
-        .filter(|(key, record)| key.same_semantic_source(requested) && accepts(record))
-        .max_by_key(|(key, _)| key.source.observation_generation())
-        .map(|(key, _)| key.clone())
+) -> Result<Option<WorthQueryOutputDemandKey>, WorthQueryOutputDemandDenial> {
+    let mut newest = None;
+    for (key, record) in
+        super::refreshed_rejoin::occurrence_rows_admitted(&state.records, requested, admission)?
+    {
+        admission
+            .charge_external_work(1)
+            .map_err(|_| super::refreshed_rejoin::work_denial())?;
+        if key.same_semantic_source(requested)
+            && accepts(record)
+            && newest
+                .as_ref()
+                .is_none_or(|prior: &WorthQueryOutputDemandKey| {
+                    key.source.observation_generation() > prior.source.observation_generation()
+                })
+        {
+            newest = Some(key.clone());
+        }
+    }
+    Ok(newest)
 }
 
 pub(super) fn interest(

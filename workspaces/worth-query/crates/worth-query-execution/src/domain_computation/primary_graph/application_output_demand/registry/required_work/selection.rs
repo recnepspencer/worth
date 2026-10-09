@@ -40,7 +40,13 @@ impl WorthQueryOutputDemandRegistry {
         let Some(record) = state.records.get(selected.key()) else {
             return Ok(None);
         };
-        if !record.is_required()
+        let required = record.is_required()
+            || super::super::refreshed_rejoin::awaited_by_stale_owner_admitted(
+                &state.records,
+                selected.key(),
+                admission,
+            )?;
+        if !required
             || !record
                 .work_membership
                 .as_ref()
@@ -157,13 +163,21 @@ impl WorthQueryOutputDemandRegistry {
                     .unwrap_or_else(std::sync::PoisonError::into_inner);
                 state.charge_record_lookup(selected.key(), admission)?;
                 charge_required_key_lookup(&state, selected.key(), admission)?;
-                let live = state.records.get(selected.key()).is_some_and(|record| {
-                    record.is_required()
+                let live = if let Some(record) = state.records.get(selected.key()) {
+                    (record.is_required()
+                        || super::super::refreshed_rejoin::awaited_by_stale_owner_admitted(
+                            &state.records,
+                            selected.key(),
+                            admission,
+                        )?)
                         && record
                             .work_membership
                             .as_ref()
                             .is_some_and(|member| Arc::ptr_eq(member, &selected.membership))
-                }) && state.required_keys.contains(selected.key());
+                        && state.required_keys.contains(selected.key())
+                } else {
+                    false
+                };
                 if !live {
                     // Activation uses this same registry → token order. A new
                     // interest cannot reopen the row before deactivation.
@@ -246,7 +260,12 @@ impl WorthQueryOutputDemandRegistry {
                     .map_err(|_| work_denial())?;
                 let occurrence = match state.records.get(work.key()) {
                     Some(record)
-                        if record.is_required()
+                        if (record.is_required()
+                            || super::super::refreshed_rejoin::awaited_by_stale_owner_admitted(
+                                &state.records,
+                                work.key(),
+                                admission,
+                            )?)
                             && record
                                 .work_membership
                                 .as_ref()
@@ -294,12 +313,16 @@ pub(in crate::domain_computation::primary_graph::application_output_demand::regi
     let count = state.required_keys.len();
     let levels = usize::BITS as usize - count.max(1).leading_zeros() as usize;
     let comparisons = count.min(11).checked_mul(levels).ok_or_else(work_denial)?;
-    let work = comparisons
-        .checked_mul(key.producer.len().checked_add(7).ok_or_else(work_denial)?)
+    let maximum_levels =
+        usize::BITS as usize - state.required_budget_bytes.max(1).leading_zeros() as usize;
+    let work = 11usize
+        .checked_mul(maximum_levels)
+        .and_then(|comparisons| comparisons.checked_mul(key.producer.len().checked_add(6)?))
         .and_then(|work| work.checked_add(1))
         .ok_or_else(work_denial)?;
     admission
-        .charge_ordered_operations(1, u64::try_from(work).map_err(|_| work_denial())?)
+        .charge_external_work(u64::try_from(work).map_err(|_| work_denial())?)
+        .and_then(|()| admission.charge_ordered_operations(1, comparisons as u64))
         .map_err(|_| work_denial())
 }
 
@@ -326,4 +349,21 @@ pub(super) fn work_denial() -> WorthQueryOutputDemandDenial {
         WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
         "selected required-work lookup exceeds request work",
     )
+}
+
+#[cfg(feature = "test-query-execution-observer")]
+impl<Schema>
+    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
+{
+    #[doc(hidden)]
+    pub fn queued_required_work_for_test(&self) -> usize {
+        let queue = self
+            .output_demands
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .required_work_queue
+            .clone();
+        queue.map_or(0, |queue| queue.queued_count())
+    }
 }

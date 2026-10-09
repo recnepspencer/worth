@@ -3,7 +3,6 @@
 
 use super::*;
 use worth_foundational::facade::PartitionIdentity as Id;
-use worth_query_decl::facade::application_operation::application_computation_partition_identity;
 use worth_query_host::facade::application_contribution::WorthQueryPartitionedTreeRun as TreeRun;
 
 #[path = "tree_shape.rs"]
@@ -106,9 +105,36 @@ pub(super) fn priority(key: Id) -> (u64, Id) {
 }
 
 pub(super) fn identity(region: u32) -> Id {
-    application_computation_partition_identity(&RegionKey(region), &mut |_| Ok::<(), ()>(()))
-        .unwrap()
-        .partition()
+    use sha2::{Digest, Sha256};
+    // Canonical contract: domain and identity have big-endian u64 lengths;
+    // newtype tag 14 precedes its LEB128 name length and name; unsigned tag 3
+    // precedes the integer's minimal unsigned LEB128 encoding.
+    let mut bytes = Vec::new();
+    for text in [
+        "worth-query.computation-partition-key.v1",
+        "checkpoint-region-key",
+    ] {
+        bytes.extend_from_slice(&(text.len() as u64).to_be_bytes());
+        bytes.extend_from_slice(text.as_bytes());
+    }
+    bytes.extend_from_slice(&[14, 9]);
+    bytes.extend_from_slice(b"RegionKey");
+    bytes.push(3);
+    let mut remaining = region;
+    loop {
+        let group = (remaining & 127) as u8;
+        remaining >>= 7;
+        bytes.push(group | if remaining == 0 { 0 } else { 128 });
+        if remaining == 0 {
+            break;
+        }
+    }
+    let digest = Sha256::digest(bytes);
+    Id::new(u64::from_be_bytes(digest[..8].try_into().unwrap()))
+}
+
+pub(super) fn build_charge(keys: &[Id]) -> u64 {
+    shape::Shape::build_charge(&shape::Shape::from_sorted(keys))
 }
 
 pub(super) fn keys(size: usize) -> Vec<Id> {
@@ -186,7 +212,15 @@ fn recomputed_partition_with_identical_bits_reports_zero_tree_work() {
         1,
     );
     let (_, next) = demand(&request, &application);
-    assert_eq!(next[0].calls.kernels, 1);
+    assert_eq!(
+        next[0].calls,
+        OwnerCalls {
+            plans: 0,
+            keys: 0,
+            gathers: 1,
+            kernels: 1
+        }
+    );
     assert_eq!(
         next[0].runs,
         [WorthQueryPartitionedComputationRun::Incremental]

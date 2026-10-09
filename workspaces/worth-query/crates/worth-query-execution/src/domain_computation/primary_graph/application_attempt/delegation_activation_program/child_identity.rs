@@ -48,71 +48,94 @@ impl<Schema, Operation, Input, Scope>
         &mut self,
         effects: &[WorthQueryApplicationRealizedEffect],
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
-        let mut observed = self
-            .facts
-            .iter()
-            .filter_map(selection_key)
-            .collect::<BTreeSet<_>>();
-        let unique = self.lease.layout.unique_fields();
-        let mut appended = Vec::new();
-        for effect in effects {
-            let WorthQueryApplicationRealizedEffect::CreateEntity { kind, fields, .. } = effect
-            else {
-                continue;
-            };
-            for (locator, value) in fields {
-                let index_id = match unique.index(*kind, locator) {
-                    None => continue,
-                    Some(WorthQueryUniqueFieldIndex::Unavailable) => {
-                        return Err(unavailable(locator))
-                    }
-                    Some(WorthQueryUniqueFieldIndex::Installed(index_id)) => index_id,
-                };
-                let key = (
-                    index_id,
-                    *kind,
-                    locator.clone(),
-                    prepare_aspect_value_identity_basis(value),
-                );
-                if !observed.insert(key) {
-                    continue;
-                }
-                if self.facts.len().saturating_add(appended.len())
-                    >= self
-                        .admission
-                        .allowed_graph_contract()
-                        .decision_fact_budget()
-                {
-                    return Err(denial(
-                        WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
-                        self.admission.operation(),
-                    ));
-                }
-                let selection = self.lease.handle().with_runtime(|runtime| {
+        let appended = observe_created_values(
+            &self.facts,
+            self.lease.layout.unique_fields(),
+            effects,
+            self.admission
+                .allowed_graph_contract()
+                .decision_fact_budget(),
+            self.admission.operation(),
+            |index, kind, locator, value| {
+                self.lease.handle().with_runtime(|runtime| {
                     observe_indexed_entity_selection(
                         runtime,
                         self.lease.snapshot(),
-                        index_id,
-                        *kind,
-                        locator.clone(),
-                        value.clone(),
+                        index,
+                        kind,
+                        locator,
+                        value,
                         CHILD_IDENTITY_CANDIDATE_LIMIT,
                     )
-                });
-                appended.push(selection.map_err(|refusal| match refusal {
-                    // More holders than the limit: the value is held.
-                    WorthQueryIndexedSelectionRefusal::Overflowed => denial(
-                        WorthQueryApplicationAttemptDenialKind::UniqueValueTaken,
-                        format!("{locator:?}"),
-                    ),
-                    WorthQueryIndexedSelectionRefusal::Unavailable => unavailable(locator),
-                })?);
-            }
-        }
+                })
+            },
+        )?;
         self.facts.extend(appended);
         Ok(())
     }
 }
+
+fn observe_created_values(
+    facts: &[WorthQueryApplicationObservedFact],
+    unique: crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields<'_>,
+    effects: &[WorthQueryApplicationRealizedEffect],
+    budget: usize,
+    operation: &str,
+    mut observe: impl FnMut(
+        DerivedIndexId,
+        KindId,
+        AspectFieldLocator,
+        worth_foundational::facade::AspectValue,
+    ) -> Result<
+        WorthQueryApplicationObservedFact,
+        WorthQueryIndexedSelectionRefusal,
+    >,
+) -> Result<Vec<WorthQueryApplicationObservedFact>, WorthQueryApplicationAttemptDenial> {
+    let mut observed = facts
+        .iter()
+        .filter_map(selection_key)
+        .collect::<BTreeSet<_>>();
+    let mut appended = Vec::new();
+    for effect in effects {
+        let WorthQueryApplicationRealizedEffect::CreateEntity { kind, fields, .. } = effect else {
+            continue;
+        };
+        for (locator, value) in fields {
+            let index_id = match unique.index(*kind, locator) {
+                None => continue,
+                Some(WorthQueryUniqueFieldIndex::Unavailable) => return Err(unavailable(locator)),
+                Some(WorthQueryUniqueFieldIndex::Installed(index_id)) => index_id,
+            };
+            let key = (
+                index_id,
+                *kind,
+                locator.clone(),
+                prepare_aspect_value_identity_basis(value),
+            );
+            if !observed.insert(key) {
+                continue;
+            }
+            if facts.len().saturating_add(appended.len()) >= budget {
+                return Err(denial(
+                    WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
+                    operation,
+                ));
+            }
+            let selection = observe(index_id, *kind, locator.clone(), value.clone());
+            appended.push(selection.map_err(|refusal| match refusal {
+                // More holders than the limit: the value is held.
+                WorthQueryIndexedSelectionRefusal::Overflowed => denial(
+                    WorthQueryApplicationAttemptDenialKind::UniqueValueTaken,
+                    format!("{locator:?}"),
+                ),
+                WorthQueryIndexedSelectionRefusal::Unavailable => unavailable(locator),
+            })?);
+        }
+    }
+    Ok(appended)
+}
+#[cfg(test)]
+mod tests;
 
 fn selection_key(fact: &WorthQueryApplicationObservedFact) -> Option<SelectionKey> {
     match fact {

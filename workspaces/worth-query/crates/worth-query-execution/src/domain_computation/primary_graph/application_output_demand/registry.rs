@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 use std::sync::{Arc, Condvar, Mutex};
 
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
@@ -172,8 +172,17 @@ mod progression;
 pub(in crate::domain_computation::primary_graph) use progression::{
     PreparedSelectedCheckpointFinish, SelectedCheckpointFinishStop,
 };
+#[cfg(feature = "test-query-execution-observer")]
+mod custody_layout_observation;
 mod ready_backing;
+#[cfg(feature = "test-query-execution-observer")]
+pub use custody_layout_observation::{
+    required_custody_layout_for_test, RequiredCustodyLayoutForTest,
+};
+#[cfg(feature = "test-query-execution-observer")]
+pub(in crate::domain_computation::primary_graph) mod join_observation;
 mod record_capacity;
+mod record_map;
 mod refresh_predecessor;
 mod refreshed_rejoin;
 mod required_context;
@@ -191,8 +200,10 @@ pub(in crate::domain_computation::primary_graph) use required_work::SelectedRequ
 pub(in crate::domain_computation::primary_graph) use required_work::SelectedRequiredWorkKind;
 mod restoration;
 pub(in crate::domain_computation::primary_graph) use restoration::WorthQueryRestoredAcceptedOutput;
+mod consumer_custody;
 mod settlement_index;
 mod settlement_progression;
+pub(in crate::domain_computation::primary_graph) use consumer_custody::ConsumerCustody;
 mod settlement_retirement;
 mod succession;
 use settlement_retirement::SupersededSettlements;
@@ -209,10 +220,12 @@ pub(in crate::domain_computation::primary_graph) use checkpoint::{
     WorthQueryOutputCheckpoint, WorthQueryOutputClaimIdentity, WorthQueryPendingOutputDelivery,
 };
 pub(in crate::domain_computation::primary_graph) use prerequisite_claims::PreparedPrerequisiteClaims;
-#[cfg(feature = "test-query-execution-observer")]
-pub use ready_backing::required_ready_custody_bytes_for_test;
 pub(in crate::domain_computation::primary_graph) use ready_backing::PreparedReadyBacking;
 pub(in crate::domain_computation::primary_graph) use ready_backing::ReadyCompletion;
+#[cfg(feature = "test-query-execution-observer")]
+pub use ready_backing::{
+    required_handoff_custody_bytes_for_test, required_ready_custody_bytes_for_test,
+};
 pub(in crate::domain_computation::primary_graph) use refresh_predecessor::OutputRefreshPredecessor;
 pub(in crate::domain_computation) use required_context::{
     RequiredOutputDemandContext, RequiredOutputExecution,
@@ -291,7 +304,7 @@ struct PerformedOutputObligation {
 }
 
 struct DemandRegistryState {
-    records: BTreeMap<WorthQueryOutputDemandKey, DemandRecord>,
+    records: record_map::DemandRecords,
     // May remain after the last row is removed until the map itself drops.
     _empty_root_capacity: Option<record_capacity::RecordCapacity>,
     record_budget_bytes: usize,
@@ -314,7 +327,7 @@ struct DemandRegistryState {
 impl Default for DemandRegistryState {
     fn default() -> Self {
         Self {
-            records: BTreeMap::new(),
+            records: record_map::DemandRecords::new(),
             _empty_root_capacity: None,
             record_budget_bytes: crate::domain_computation::execution_runtime::WorthQueryOutputDemandResourceProfile::standard().registry_record_retained_bytes(),
             record_retained_bytes: Arc::new(std::sync::atomic::AtomicUsize::new(0)),
@@ -340,24 +353,6 @@ use source_custody::SourcePreparationState;
 #[derive(Clone, Default)]
 pub(in crate::domain_computation::primary_graph) struct WorthQueryOutputDemandRegistry {
     state: Arc<Mutex<DemandRegistryState>>,
-}
-
-impl WorthQueryOutputDemandRegistry {
-    pub(in crate::domain_computation::primary_graph) fn with_budgets(
-        obligation_bytes: usize,
-        record_bytes: usize,
-        required_bytes: usize,
-    ) -> Self {
-        let state = DemandRegistryState {
-            obligation_budget_bytes: obligation_bytes,
-            record_budget_bytes: record_bytes,
-            required_budget_bytes: required_bytes,
-            ..DemandRegistryState::default()
-        };
-        Self {
-            state: Arc::new(Mutex::new(state)),
-        }
-    }
 }
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryOutputDemandInterest {

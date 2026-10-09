@@ -66,11 +66,14 @@ fn a_child_eviction_is_local_and_does_not_release_its_parents_state() {
         &mut commands[0],
     );
     apply(&fresh, full_child, changes, &mut commands[1]);
+    let child_runs = run(&kept, child);
+    assert_eq!(child_runs[0].calls, child_model.expected_calls(None));
     judge(
-        &run(&kept, child),
+        &child_runs,
         &run(&fresh, full_child),
         Some(Run::Full(Cause::Evicted)),
     );
+    let parent_prior = model.clone();
     let mut parent_model = model;
     let step = parent_model.step(Kind::Value, &mut rng);
     apply(
@@ -80,8 +83,13 @@ fn a_child_eviction_is_local_and_does_not_release_its_parents_state() {
         &mut commands[0],
     );
     apply(&fresh, full_parent, step.changes, &mut commands[1]);
+    let parent_runs = run(&kept, parent);
+    assert_eq!(
+        parent_runs[0].calls,
+        parent_model.expected_calls(Some(&parent_prior))
+    );
     judge(
-        &run(&kept, parent),
+        &parent_runs,
         &run(&fresh, full_parent),
         Some(Run::Incremental),
     );

@@ -176,37 +176,7 @@ impl WorthQueryOutputDemandRegistry {
         drop(released_prerequisites);
     }
 
-    pub(in crate::domain_computation::primary_graph) fn publish_checkpoint(
-        &self,
-        interest: &WorthQueryOutputDemandInterest,
-        checkpoint: WorthQueryOutputCheckpoint,
-    ) -> Result<(), WorthQueryOutputDemandDenial> {
-        let mut state = self
-            .state
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let record = state.records.get_mut(&interest.key).ok_or_else(|| {
-            WorthQueryOutputDemandDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::Closed,
-                "published demand record was released during execution",
-            )
-        })?;
-        if let DemandState::Failed(denial) = &record.state {
-            return Err(denial.clone());
-        }
-        if !matches!(record.state, DemandState::Running) {
-            return Err(WorthQueryOutputDemandDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::SchedulingRejected,
-                "published output did not retain its running demand claim",
-            ));
-        }
-        record.state = DemandState::Output(WorthQueryOutputProgress::new(checkpoint));
-        record.performed_source = None;
-        record.successor_of = None;
-        record.wake.notify();
-        Ok(())
-    }
-
+    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn finish_execution_failure(
         &self,
         interest: &WorthQueryOutputDemandInterest,

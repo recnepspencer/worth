@@ -113,6 +113,7 @@ fn program_activation_changed_after_preparation_cannot_readmit_the_old_program()
             &presented,
             program,
             idempotency(73, 73),
+            crate::domain_computation::application_aftermath::ApplicationCommitCausality::Ordinary,
         );
     assert_unresolved_activation(
         outcome,
@@ -151,6 +152,7 @@ fn a_program_action_on_an_unseeded_occurrence_names_the_unresolved_activation() 
             &presented,
             program,
             idempotency(71, 71),
+            crate::domain_computation::application_aftermath::ApplicationCommitCausality::Ordinary,
         );
 
     assert_unresolved_activation(outcome, "branch program activation was never published");

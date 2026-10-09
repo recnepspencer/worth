@@ -12,12 +12,7 @@ pub(super) fn predecessor_lookup_work(
     predecessors: &[Arc<WorthQueryOutputDemandKey>],
     maximum_key_work: usize,
 ) -> Result<usize, WorthQueryOutputDemandDenial> {
-    let prospective_members = state
-        .required_keys
-        .len()
-        .checked_add(predecessors.len())
-        .and_then(|count| count.checked_add(1))
-        .ok_or_else(work_denial)?;
+    let prospective_members = state.required_budget_bytes.max(1);
     let tree_levels = usize::BITS as usize - prospective_members.leading_zeros() as usize;
     // records.get, required_keys.contains, prepare, then install. A B-tree
     // node may compare every resident key on each prospective level.

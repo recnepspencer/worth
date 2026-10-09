@@ -27,7 +27,7 @@ const SEED: u64 = 0x9176_3c0b_5eed_0001;
 /// commit whose own write replaced a value its computation gathered is born
 /// stale, so the demand runs the producer again over the written value; that
 /// run writes the value it read, and the demand settles.
-fn full_run(
+pub(super) fn full_run(
     model: &Model,
     reference: &reference::Reference,
     own_write: Option<OwnWrite>,
@@ -36,11 +36,11 @@ fn full_run(
         .install::<false, TOTALS_WORK, 1, 0>(Default::default(), |graph, seed| seed.seed(graph));
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
+    let moved = own_write.is_some_and(|write| !model.holds(write));
+    let rerun = moved && model.completes_at(TOTALS_WORK);
     arm_own_write(own_write);
     let (contacts, runs) = demand(&request, &application);
     arm_own_write(None);
-    let moved = own_write.is_some_and(|write| !model.holds(write));
-    let rerun = moved && runs.first().is_some_and(|run| run.outcome.is_ok());
     // Contacts count producer executions initiated by this admitted demand:
     // one initial execution, plus the refresh after a born-stale commit.
     assert_eq!(
@@ -78,11 +78,11 @@ fn expected(kind: Kind) -> Option<Run> {
 /// before it, none for the first, whether that edit moved a fact, the value
 /// its decision writes, and what it ran.
 pub(super) struct Demanded<'model> {
-    model: &'model Model,
-    reference: Option<&'model reference::Reference>,
-    kind: Option<Kind>,
+    pub(super) model: &'model Model,
+    pub(super) reference: Option<&'model reference::Reference>,
+    pub(super) kind: Option<Kind>,
     moved: bool,
-    own_write: Option<OwnWrite>,
+    pub(super) own_write: Option<OwnWrite>,
     pub(super) contacts: usize,
     pub(super) runs: Vec<OracleRun>,
 }
@@ -90,13 +90,35 @@ pub(super) struct Demanded<'model> {
 /// Runs the seeded sequence of edits through one runtime that keeps its
 /// output, and hands `each` every demand in order. The caller holds the
 /// checkpoint recovery guard.
-pub(super) fn sequence(capture_reference: bool, mut each: impl FnMut(&str, Demanded<'_>)) {
-    let mut rng = Lcg(SEED);
+pub(super) fn sequence(capture_reference: bool, each: impl FnMut(&str, Demanded<'_>)) {
+    seeded_sequence(SEED, ROUNDS, capture_reference, each);
+}
+
+pub(super) fn seeded_sequence(
+    seed: u64,
+    rounds: usize,
+    capture_reference: bool,
+    each: impl FnMut(&str, Demanded<'_>),
+) {
+    seeded_sequence_with_stops(seed, rounds, capture_reference, false, each);
+}
+
+pub(super) fn seeded_sequence_with_stops(
+    seed: u64,
+    rounds: usize,
+    capture_reference: bool,
+    cancel_each: bool,
+    mut each: impl FnMut(&str, Demanded<'_>),
+) {
+    let mut rng = Lcg(seed);
     let mut model = Model::new(&mut rng);
     let application = install(|graph| model.seed(graph));
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let mut reference = reference::Reference::new(&model);
+    if cancel_each {
+        super::courtroom::cancellation::before_decision(&application);
+    }
     let (contacts, runs) = demand(&request, &application);
     let first = Demanded {
         model: &model,
@@ -109,7 +131,7 @@ pub(super) fn sequence(capture_reference: bool, mut each: impl FnMut(&str, Deman
     };
     each("the first demand", first);
     let mut command = 0_u64;
-    for round in 0..ROUNDS {
+    for round in 0..rounds {
         let mut kinds = KINDS;
         for place in (1..kinds.len()).rev() {
             kinds.swap(place, rng.below(place + 1));
@@ -129,6 +151,9 @@ pub(super) fn sequence(capture_reference: bool, mut each: impl FnMut(&str, Deman
                     Change::Entry(change) => edit(&request, &application, change, command),
                     Change::Ordinate(y) => adjust(&request, &application, y, command),
                 }
+            }
+            if cancel_each {
+                super::courtroom::cancellation::before_decision(&application);
             }
             arm_own_write(step.own_write);
             let (contacts, runs) = demand(&request, &application);

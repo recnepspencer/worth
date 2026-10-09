@@ -12,7 +12,6 @@ use super::ConsumedOutputEvidence;
 mod at_observation;
 mod equality_recovery;
 mod marked_walk;
-mod replaced;
 mod restored_root;
 mod work_budget;
 use crate::domain_computation::primary_graph::{

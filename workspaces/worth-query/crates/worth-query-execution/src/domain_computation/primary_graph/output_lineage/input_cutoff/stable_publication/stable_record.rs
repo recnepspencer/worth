@@ -46,9 +46,6 @@ impl<'lane, 'selected> PreparedStableLineageAddress<'lane, 'selected> {
             .originating_recorded()
             .ok_or_else(|| denial(Kind::IncompleteDependencyCoverage))?;
         let selected_row = candidate.recorded();
-        if !Arc::ptr_eq(&origin.consumed_outputs, &selected_row.consumed_outputs) {
-            return Err(denial(Kind::IncompleteDependencyCoverage));
-        }
         let prefix_count = candidate
             .completed_handler_fact_count()
             .ok_or_else(|| denial(Kind::IncompleteDependencyCoverage))?;
@@ -136,7 +133,11 @@ impl<'lane, 'selected> PreparedStableLineageAddress<'lane, 'selected> {
             computation_source: selected_row.computation_source,
             _retained_capacity: None,
             performed_origin: Some(performed_origin),
-            consumed_outputs: Arc::clone(&origin.consumed_outputs),
+            consumed_outputs: self
+                .verified
+                .verified_consumed
+                .take()
+                .unwrap_or_else(|| Arc::clone(&selected_row.consumed_outputs)),
             completed_handler_facts: None,
             completed_decision_reuse: None,
             prepared_input_reuse_key: Some(fresh_key),

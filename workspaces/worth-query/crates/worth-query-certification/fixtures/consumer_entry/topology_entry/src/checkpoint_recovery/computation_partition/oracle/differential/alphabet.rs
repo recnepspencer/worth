@@ -14,6 +14,7 @@ use super::*;
 const ENTRIES: usize = 32;
 const NUMBERS: usize = ENTRIES + 8;
 const REGIONS: u32 = 4;
+pub(in super::super) const OBSERVATION_SETS: usize = LARGEST_SET;
 /// The work of a heavy entry. One fits the declared work beside every other
 /// entry; a second does not, so the run stops at the work ceiling in the
 /// later of their regions.
@@ -24,6 +25,7 @@ pub(in super::super) const SETS: [&str; 2] = ["even", "odd"];
 pub(in super::super) enum Kind {
     /// One entry's value, which only its partition gathers.
     Value,
+    SignedZero,
     /// The weight of the input's set, which every even partition gathers.
     SharedWeight,
     /// One entry's region, which its item key reads: it moves between keys.
@@ -68,8 +70,9 @@ pub(in super::super) enum Kind {
 
 /// Every kind a round shuffles; `Relief` follows each `Ceiling`, and
 /// `Repair` each `Fault`.
-pub(in super::super) const KINDS: [Kind; 19] = [
+pub(in super::super) const KINDS: [Kind; 20] = [
     Kind::Value,
+    Kind::SignedZero,
     Kind::SharedWeight,
     Kind::ItemKey,
     Kind::OwnWrite,
@@ -91,36 +94,11 @@ pub(in super::super) const KINDS: [Kind; 19] = [
 ];
 
 pub(in super::super) struct Lcg(pub(in super::super) u64);
-impl Lcg {
-    pub(in super::super) fn below(&mut self, bound: usize) -> usize {
-        self.0 = self
-            .0
-            .wrapping_mul(6_364_136_223_846_793_005)
-            .wrapping_add(1_442_695_040_888_963_407);
-        usize::try_from((self.0 >> 33) % u64::try_from(bound).unwrap()).unwrap()
-    }
+mod values;
 
-    /// A float of either sign whose exponent lies in [-40, 40], so a sum of
-    /// such floats depends on its order.
-    fn value(&mut self) -> f64 {
-        let mantissa = 1.0 + f64::from(u32::try_from(self.below(1 << 20)).unwrap()) / 1_048_576.0;
-        let exponent = i32::try_from(self.below(81)).unwrap() - 40;
-        let sign = if self.below(2) == 0 { 1.0 } else { -1.0 };
-        sign * mantissa * 2_f64.powi(exponent)
-    }
-
-    /// One of the seeded regions.
-    fn region(&mut self) -> u32 {
-        u32::try_from(self.below(usize::try_from(REGIONS).unwrap())).unwrap()
-    }
-
-    fn pick<T: Copy>(&mut self, from: &[T]) -> T {
-        from[self.below(from.len())]
-    }
-}
-
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy)]
 struct ModelEntry {
+    binding: u64,
     region: u32,
     incoming: bool,
     value: f64,
@@ -129,9 +107,10 @@ struct ModelEntry {
 }
 
 /// The facts both runtimes hold: the entry each number names, if any.
-#[derive(Clone, PartialEq)]
+#[derive(Clone)]
 pub(in super::super) struct Model {
     entries: Vec<Option<ModelEntry>>,
+    next_binding: u64,
     heavy: u64,
     weights: [f64; 2],
     pub(in super::super) odd: bool,
@@ -191,6 +170,7 @@ impl Model {
         let entries = (0..numbers)
             .map(|place| {
                 (place < count).then(|| ModelEntry {
+                    binding: place as u64,
                     region: u32::try_from(place).unwrap() % REGIONS,
                     incoming: place == 0,
                     value: rng.value(),
@@ -201,6 +181,7 @@ impl Model {
             .collect();
         Self {
             entries,
+            next_binding: numbers as u64,
             heavy,
             weights: [rng.value(), rng.value()],
             odd: false,
@@ -220,11 +201,13 @@ impl Model {
         let units = if exhausted { work as u64 + 1 } else { 1 };
         let mut entry = self.entries[number].unwrap();
         entry.work = units;
+        self.next_binding += 1;
+        entry.binding = self.next_binding;
         changes.push(self.deleted(number));
         self.entries[number] = Some(entry);
         let mut sets = SETS.iter().map(|s| s.to_string()).collect::<Vec<_>>();
         if entry.incoming {
-            sets.extend((0..LARGEST_SET).map(|i| format!("incoming-{i}")));
+            sets.extend((0..OBSERVATION_SETS).map(|i| format!("incoming-{i}")));
         }
         let names = sets.iter().map(String::as_str).collect::<Vec<_>>();
         changes.push(Change::Entry(EntryEdit::create(
@@ -238,26 +221,6 @@ impl Model {
             changes,
             own_write: None,
         }
-    }
-
-    pub(in super::super) fn wide_entry(&mut self) -> EntryEdit {
-        let number = self.held(true)[0];
-        let entry = self.entries[number].as_mut().unwrap();
-        entry.incoming = true;
-        let mut sets = SETS
-            .to_vec()
-            .into_iter()
-            .map(str::to_owned)
-            .collect::<Vec<_>>();
-        sets.extend((0..LARGEST_SET).map(|i| format!("incoming-{i}")));
-        let names = sets.iter().map(String::as_str).collect::<Vec<_>>();
-        EntryEdit::create(
-            &names,
-            number as u64,
-            entry.region,
-            entry.value.to_bits(),
-            entry.work,
-        )
     }
 
     pub(in super::super) fn heavy_number(&self) -> usize {
@@ -328,7 +291,9 @@ impl Model {
     }
 
     fn created(&mut self, entry: usize, region: u32, value: f64, work: u64) -> Change {
+        self.next_binding += 1;
         self.entries[entry] = Some(ModelEntry {
+            binding: self.next_binding,
             region,
             incoming: false,
             value,
@@ -353,4 +318,8 @@ impl Model {
     }
 }
 
+mod basis;
+mod counts;
 mod edit;
+
+mod laws;

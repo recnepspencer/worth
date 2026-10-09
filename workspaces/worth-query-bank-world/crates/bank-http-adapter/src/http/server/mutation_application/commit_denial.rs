@@ -89,7 +89,8 @@ pub(in crate::http::server) fn commit_denial(
         | Denial::UniqueIndexUnavailable
         | Denial::ProgramSupportRetired
         | Denial::MutationBindingMismatch
-        | Denial::MutationInputMismatch => (
+        | Denial::MutationInputMismatch
+        | Denial::RecoveryHandoffMismatch { .. } => (
             BankHttpMutationFailureKind::Aborted,
             BankHttpDenial::new(
                 BankHttpDenialKind::Unavailable,

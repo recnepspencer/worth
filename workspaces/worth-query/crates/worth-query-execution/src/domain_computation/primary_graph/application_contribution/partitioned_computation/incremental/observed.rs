@@ -11,6 +11,26 @@ thread_local! {
         const { std::cell::RefCell::new(Vec::new()) };
     static TREES: std::cell::RefCell<Vec<WorthQueryPartitionedTreeRun>> =
         const { std::cell::RefCell::new(Vec::new()) };
+    #[cfg(feature = "test-query-execution-observer")]
+    static FULL_PREPARATIONS: std::cell::RefCell<Vec<super::retained::WorthQueryPartitionedComputationFullCause>> =
+        const { std::cell::RefCell::new(Vec::new()) };
+}
+
+/// Preparation chooses a cause before any owner call can stop the full run.
+pub(in super::super) fn observe_full_preparation(
+    cause: super::retained::WorthQueryPartitionedComputationFullCause,
+) {
+    #[cfg(feature = "test-query-execution-observer")]
+    FULL_PREPARATIONS.with(|runs| runs.borrow_mut().push(cause));
+    #[cfg(not(feature = "test-query-execution-observer"))]
+    let _ = cause;
+}
+
+/// Full preparations include failed runs, which have no completed-run report.
+#[cfg(feature = "test-query-execution-observer")]
+pub fn full_partitioned_computation_preparations_on_this_thread_for_test(
+) -> Vec<super::retained::WorthQueryPartitionedComputationFullCause> {
+    FULL_PREPARATIONS.with(|runs| std::mem::take(&mut *runs.borrow_mut()))
 }
 
 /// Shows a completed run to the test observer. The handler and the owner

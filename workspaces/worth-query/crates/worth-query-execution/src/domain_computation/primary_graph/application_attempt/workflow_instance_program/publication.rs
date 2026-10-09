@@ -170,6 +170,7 @@ where
             &presented,
             program,
             idempotency.bind_workflow_instance(&instance_intent_identity),
+            crate::domain_computation::application_aftermath::ApplicationCommitCausality::Ordinary,
         );
         match outcome.landed() {
             Ok((receipt, replayed)) => project(

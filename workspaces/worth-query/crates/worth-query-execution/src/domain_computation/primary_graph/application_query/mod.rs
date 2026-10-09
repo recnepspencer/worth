@@ -31,7 +31,10 @@ pub(in crate::domain_computation::primary_graph) use one_shot::WorthQueryAdmitte
 mod projection;
 mod read_execution;
 #[cfg(feature = "test-query-execution-observer")]
-pub use read_execution::query_read_kernel_entries_on_this_thread_for_test;
+pub use read_execution::{
+    query_read_kernel_entries_by_root_on_this_thread_for_test,
+    query_read_kernel_entries_on_this_thread_for_test,
+};
 mod readiness;
 pub(crate) mod resource_lifecycle;
 mod retained_read;

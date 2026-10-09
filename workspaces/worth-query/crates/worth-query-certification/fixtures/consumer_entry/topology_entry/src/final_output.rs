@@ -299,7 +299,17 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationOutputDemand<Schema>
     }
 }
 
-pub struct PlanarFinalOutputProvider;
+#[derive(Clone, Copy, Default)]
+pub struct PlanarFinalOutputProvider {
+    key_mask: u64,
+}
+impl PlanarFinalOutputProvider {
+    #[cfg(test)]
+    pub(crate) fn with_uniform_decimal_key_width(mut self) -> Self {
+        self.key_mask = 3 << 62;
+        self
+    }
+}
 
 impl<Schema: TopologySchemaBinding>
     WorthQueryApplicationProducerProvider<Schema, PlanarFinalOutputProducer<Schema>>
@@ -320,7 +330,7 @@ impl<Schema: TopologySchemaBinding>
     }
 
     fn idempotency_key(&self, _: &PlanarReadResult, source_identity: &[u8; 32]) -> u64 {
-        super::planar_source_key(source_identity) ^ 0x9174_f1a1_0000_0001
+        (super::planar_source_key(source_identity) ^ 0x9174_f1a1_0000_0001) | self.key_mask
     }
 
     fn demand_resources(&self, _: &PlanarReadResult) -> WorthQueryProducerDemandResources {

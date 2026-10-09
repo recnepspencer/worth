@@ -78,10 +78,7 @@ pub(super) fn resolve_unique_mapping_candidate<'view, 'basis, 'resolution, 'iden
             resolution.expected_identity,
             2,
             parity,
-            |work, bytes| {
-                admission.admit_read_scratch(bytes)?;
-                admission.charge_external_work(work)
-            },
+            |work, bytes| admission.charge_selected_index_read(work, bytes),
         )
         .map_err(|denial| match denial {
             BoundedEntityFieldLookupAdmissionStop::Lookup(denial) => Stop::Index(denial.kind()),

@@ -2,8 +2,8 @@
 //!
 //! Retained source positions keep their own immutable roots, so only the live
 //! root changes. A row is reachable while a live row consumes it, and an
-//! equality chain stays whole while any member is: its readers read the tail,
-//! and its aliases inherit the head's output projection.
+//! equality reader follows the tail. Each certified successor shares the output
+//! projection's custody, so an unread predecessor need not keep obsolete inputs.
 
 use std::sync::Arc;
 
@@ -239,9 +239,9 @@ enum Retirable {
 }
 
 /// A superseded row leaves once no live consumer reads it. Readers of any
-/// equality member read the chain's tail, and every alias inherits the head's
-/// output projection: a middle alias without output facts splices out alone,
-/// while the head and tail leave only with the whole chain.
+/// equality member read the chain's tail. A successor carrying the certified
+/// output projection lets an unread predecessor splice out; no output proof or
+/// its custody is lost. A chain without such a successor leaves together.
 fn retirable(
     state: &MarkState,
     identity: &Identity,
@@ -254,13 +254,12 @@ fn retirable(
     let Some(link) = state.equal_links.get(identity) else {
         return Ok(Retirable::Row);
     };
-    if link.prior.is_some()
-        && link.next.is_some()
-        && state
+    if link.next.as_ref().is_some_and(|next| {
+        state
             .settlements
-            .get(identity)
-            .is_some_and(|row| row.output_facts.is_none())
-    {
+            .get(next)
+            .is_some_and(|row| row.output_facts.is_some())
+    }) {
         return Ok(Retirable::Row);
     }
     let mut head = Arc::clone(identity);

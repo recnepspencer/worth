@@ -1,9 +1,13 @@
 //! Runtime absence edits share the seeded alphabet with ordinary edits.
 //! Policies are fixed per runtime; each boundary is exercised among every
-//! other edit kind. Lifecycle interleaving belongs to slice 6.12.
+//! other edit kind, with independently derived full-build counts.
 use super::super::region_output::arm_own_write;
-use super::differential::alphabet::{Change, Kind, Lcg, Model, KINDS};
+use super::differential::alphabet::{Change, Kind, Lcg, Model, KINDS, OBSERVATION_SETS};
 use super::*;
+mod boundary_observation;
+mod unretained;
+use boundary_observation::{compare_prime, release_observation};
+use unretained::unretained;
 use worth_query_host::facade::application_contribution::{
     discarded_computation_retention_on_this_thread_for_test as discarded_retention,
     WorthQueryPartitionedComputationFullCause as Cause, WorthQueryPartitionedComputationRun as Run,
@@ -17,38 +21,26 @@ enum Boundary {
     Several,
 }
 
-fn seed(graph: &mut Graph, model: &Model, boundary: Boundary) {
-    model.seed(graph);
-    match boundary {
-        Boundary::Evict => {}
-        Boundary::Observation => {
-            for number in 0..LARGEST_SET {
-                let name = format!("incoming-{number}");
-                facts::seed_set(graph, &name, -0.0);
-                facts::seed_member(
-                    graph,
-                    &name,
-                    &format!("oracle-entry-{}", model.heavy_number()),
-                );
-            }
-        }
-        Boundary::Several => {}
+struct OwnWriteReset;
+impl Drop for OwnWriteReset {
+    fn drop(&mut self) {
+        arm_own_write(None);
     }
 }
 
-fn profile(boundary: Boundary) -> WorthQueryOutputDemandResourceProfile {
-    match boundary {
-        Boundary::Evict => Default::default(),
-        Boundary::Observation => WorthQueryOutputDemandResourceProfile::standard()
-            .with_lineage_retained_bytes(NonZeroUsize::new(64 * 1024 * 1024).unwrap()),
-        Boundary::Several => Default::default(),
-    }
-}
+mod configuration;
+mod drivers;
+mod eligibility;
+use configuration::{profile, seed};
+use eligibility::Eligibility;
 
 fn run<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>(
     boundary: Boundary,
+    seed_number: u64,
 ) {
-    let mut rng = Lcg(0x69_ab5e_5eed);
+    arm_own_write(None);
+    let _own_write_reset = OwnWriteReset;
+    let mut rng = Lcg(seed_number);
     let mut model = if MODE == 1 {
         Model::observation(&mut rng, WORK)
     } else if matches!(boundary, Boundary::Evict) {
@@ -64,12 +56,28 @@ fn run<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>(
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let mut last = demand(&request, &application).1;
+    // The prime makes one decision without an own write. Later saved demands
+    // carry their edit-derived decision count, never an observed vector length.
+    let mut last_publications = 1;
+    let mut count_model = model.clone();
+    eligibility::assert_prime::<WORK, MODE>(&last, &count_model);
+    let mut eligibility = Eligibility::after::<WORK, RUNS, MODE>(&count_model);
+    let mut count_prior = count_model.completes_at(WORK).then(|| count_model.clone());
     let mut history = differential::reference::Reference::new(&model);
     history.demanded(None);
     let mut command = 0x69_0000;
+    if MODE == 1 {
+        release_observation(
+            &mut model,
+            &mut history,
+            &request,
+            &application,
+            &mut command,
+        );
+    }
     let mut checked = 0;
     let mut ceilings = 0;
-    for _ in 0..2 {
+    {
         let mut kinds = KINDS;
         for place in (1..kinds.len()).rev() {
             kinds.swap(place, rng.below(place + 1));
@@ -85,20 +93,38 @@ fn run<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>(
                 history.edit(&Change::Ordinate(EVEN_Y));
                 adjust(&request, &application, EVEN_Y, command);
             }
+            let mut observation_item = None;
             if kind == Kind::ObservationOverBudget && MODE == 1 {
-                let wide = model.wide_entry();
-                history.edit(&Change::Entry(EntryEdit::delete(wide.entry)));
-                history.edit(&Change::Entry(wide.clone()));
-                command += 1;
-                edit(
-                    &request,
-                    &application,
-                    EntryEdit::delete(wide.entry),
-                    command,
-                );
-                command += 1;
-                edit(&request, &application, wide, command);
+                // Two wide items fit preparation's admitted work while their
+                // shared adjacency bounds exceed comparison's ceiling.
+                for change in model.observation_trim().changes {
+                    history.edit(&change);
+                    if let Change::Entry(change) = change {
+                        command += 1;
+                        edit(&request, &application, change, command);
+                    }
+                }
+                for wide in model.wide_entries() {
+                    observation_item.get_or_insert(wide.entry);
+                    history.edit(&Change::Entry(EntryEdit::delete(wide.entry)));
+                    history.edit(&Change::Entry(wide.clone()));
+                    command += 1;
+                    edit(
+                        &request,
+                        &application,
+                        EntryEdit::delete(wide.entry),
+                        command,
+                    );
+                    command += 1;
+                    edit(&request, &application, wide, command);
+                }
+                let executes_prime = !model.same_decision_facts(&count_model, MODE == 1);
                 let prime = demand(&request, &application).1;
+                assert_eq!(
+                    prime.len(),
+                    usize::from(executes_prime),
+                    "observation prime decisions"
+                );
                 let fresh = history
                     .install::<REUSE, WORK, RUNS, MODE>(profile(boundary), |graph, model| {
                         seed(graph, model, boundary)
@@ -106,9 +132,29 @@ fn run<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>(
                 let (fs, fp) = authenticate(&fresh);
                 let fr = fresh.request(&fp, &fs);
                 let reference = demand(&fr, &fresh).1;
-                compare_prime(if prime.is_empty() { &last } else { &prime }, &reference);
-                if !prime.is_empty() {
+                compare_prime(
+                    if executes_prime { &prime } else { &last },
+                    &reference,
+                    if executes_prime { 1 } else { last_publications },
+                    1,
+                );
+                if executes_prime {
+                    count_model = model.clone();
+                    for (index, run) in prime.iter().enumerate() {
+                        eligibility::assert_report(
+                            run,
+                            eligibility.expected::<MODE, WORK>(&count_model, index),
+                        );
+                        assert_eq!(
+                            run.calls,
+                            count_model.expected_observation_calls_at(count_prior.as_ref(), WORK),
+                            "observation prime"
+                        );
+                    }
+                    eligibility = Eligibility::after::<WORK, RUNS, MODE>(&count_model);
+                    count_prior = None;
                     last = prime;
+                    last_publications = 1;
                 }
                 history.demanded(None);
             }
@@ -145,14 +191,31 @@ fn run<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>(
                 let reference = fresh
                     .with_available_lineage_bytes_for_test(256 * 1024, || demand(&fr, &fresh).1)
                     .unwrap();
-                compare_prime(&enlarged, &reference);
+                compare_prime(&enlarged, &reference, 1, 1);
                 history.demanded(None);
+                count_model = model.with_eviction_entries(extra);
+                for (index, run) in enlarged.iter().enumerate() {
+                    eligibility::assert_report(
+                        run,
+                        eligibility.expected::<MODE, WORK>(&count_model, index),
+                    );
+                    assert_eq!(
+                        run.calls,
+                        count_model.expected_calls_at(count_prior.as_ref(), WORK),
+                        "eviction prime"
+                    );
+                }
+                eligibility = Eligibility::Absent(Cause::Evicted);
+                count_prior = None;
                 last = enlarged;
+                last_publications = 1;
                 extra
             } else {
                 0
             };
-            let step = if (MODE == 1 || matches!(boundary, Boundary::Evict))
+            let step = if let Some(number) = observation_item {
+                model.edit_observation_item(number, &mut rng)
+            } else if (MODE == 1 || matches!(boundary, Boundary::Evict))
                 && matches!(kind, Kind::Ceiling | Kind::Relief)
             {
                 model.observation_ceiling(kind == Kind::Ceiling, WORK)
@@ -177,7 +240,33 @@ fn run<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>(
                 unretained(&application, &fresh, &model, &mut command);
             }
             arm_own_write(step.own_write);
+            let before_write = model.clone();
+            let demanded_facts = before_write.with_eviction_entries(enlarged);
+            let executes = !demanded_facts.same_decision_facts(&count_model, MODE == 1);
+            let completes = if MODE == 1 {
+                demanded_facts.observation_keys()
+            } else {
+                demanded_facts.clone()
+            }
+            .completes_at(WORK);
+            let writes = executes
+                && completes
+                && step
+                    .own_write
+                    .is_some_and(|write| !demanded_facts.holds(write));
+            let decisions = usize::from(executes) + usize::from(writes);
+            let fresh_decisions = 1 + usize::from(
+                completes
+                    && step
+                        .own_write
+                        .is_some_and(|write| !demanded_facts.holds(write)),
+            );
             let (contacts, kept) = demand(&request, &application);
+            assert_eq!(
+                (contacts, kept.len()),
+                (decisions, decisions * RUNS),
+                "{boundary:?}, {kind:?}: contacts and declared invocations"
+            );
             arm_own_write(step.own_write);
             let reference = demand(&fr, &fresh).1;
             arm_own_write(None);
@@ -200,7 +289,7 @@ fn run<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>(
                 Boundary::Observation => Kind::ObservationOverBudget,
                 Boundary::Several => Kind::Several,
             };
-            if kept.is_empty() {
+            if !executes {
                 assert_ne!(kind, target, "every boundary event must execute");
                 assert_eq!(contacts, 0, "a kept output initiated no execution");
                 assert_eq!(
@@ -208,7 +297,7 @@ fn run<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>(
                     reference.last().unwrap().outcome,
                     "{boundary:?}, {kind:?}: kept result equals fresh computation"
                 );
-                assert_published_state(&last, &reference);
+                compare_prime(&last, &reference, last_publications, fresh_decisions);
                 continue;
             }
             assert_eq!(
@@ -228,6 +317,32 @@ fn run<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>(
                 cause: worth_query_host::facade::application_contribution::WorthQueryComputationPartitionStop::Resource(
                     worth_query_host::facade::application_contribution::WorthQueryManagedComputationResourceDenial::WorkExhausted), ..
             })) { ceilings += 1; }
+            count_model = before_write.with_eviction_entries(enlarged);
+            for (decision, run) in kept.iter().enumerate() {
+                eligibility::assert_report(
+                    run,
+                    eligibility.expected::<MODE, WORK>(&count_model, decision % RUNS),
+                );
+                let eligible = RUNS == 1 && kind != target;
+                let prior = if eligible { count_prior.as_ref() } else { None };
+                let expected = if MODE == 1 {
+                    count_model.expected_observation_calls_at(prior, WORK)
+                } else {
+                    count_model.expected_calls_at(prior, WORK)
+                };
+                assert_eq!(
+                    run.calls, expected,
+                    "{boundary:?}, {kind:?}, decision {decision}: edit-derived calls"
+                );
+                eligibility = Eligibility::after::<WORK, RUNS, MODE>(&count_model);
+                count_prior =
+                    (RUNS == 1 && count_model.completes_at(WORK)).then(|| count_model.clone());
+                if decision == 0 {
+                    if let Some(write) = step.own_write {
+                        count_model.written(write);
+                    }
+                }
+            }
             if kind == target {
                 assert!(
                     kept[0].outcome.is_ok(),
@@ -239,105 +354,39 @@ fn run<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>(
                     Boundary::Several => Cause::SeveralComputations,
                 };
                 assert_eq!(kept[0].runs, [Run::Full(cause)], "{boundary:?}: {kept:?}");
+                let mut expected = if MODE == 1 {
+                    model.expected_observation_calls()
+                } else {
+                    model.expected_calls(None)
+                };
+                expected.keys += enlarged;
+                expected.gathers += enlarged;
+                expected.kernels += enlarged;
                 assert_eq!(
-                    kept[0].calls, reference[0].calls,
+                    kept[0].calls, expected,
                     "full fallback enters every owner call"
                 );
                 checked += 1;
             }
             last = kept;
+            last_publications = decisions;
+            if kind == target && MODE == 1 {
+                release_observation(
+                    &mut model,
+                    &mut history,
+                    &request,
+                    &application,
+                    &mut command,
+                );
+            }
         }
     }
     assert_eq!(
-        checked, 2,
-        "each round's boundary event asserted its exact cause"
+        checked, 1,
+        "the round's boundary event asserted its exact cause"
     );
     assert!(
         ceilings > 0,
         "{boundary:?} compared the named partition at a work stop"
     );
-}
-
-fn unretained<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>(
-    application: &Application<REUSE, WORK, RUNS, MODE>,
-    fresh: &Application<REUSE, WORK, RUNS, MODE>,
-    model: &Model,
-    command: &mut u64,
-) {
-    let mut outcomes = Vec::new();
-    for application in [application, fresh] {
-        let (scope, principal) = authenticate(application);
-        let request = application.request(&principal, &scope);
-        owner::take_outcomes();
-        published_states();
-        discarded_retention();
-        let observed = request
-            .query(PlanarRead {
-                body_key: SCOPE.to_owned(),
-            })
-            .execute()
-            .unwrap();
-        *command += 1;
-        let committed = request
-            .mutate(super::super::demand::RegionTotalsDemand {
-                scope_key: SCOPE.to_owned(),
-                entries: if model.odd { "odd" } else { "even" }.to_owned(),
-                replacement_y: length(if model.odd { ODD_Y } else { EVEN_Y }),
-            })
-            .expect_source(observed.observed_sources()[0].clone())
-            .idempotency(command)
-            .execute_in_program::<OracleProgram<REUSE, WORK, RUNS, MODE>>(application)
-            .unwrap();
-        assert!(
-            matches!(
-                committed,
-                WorthQueryApplicationMutationOutcome::Committed { .. }
-            ),
-            "unretained mutation must commit: {committed:?}"
-        );
-        let outcome = owner::take_outcomes();
-        assert_eq!(outcome.len(), 1);
-        outcomes.push(outcome);
-        // An ordinary mutation has no producer row. Its computed result is
-        // configured Unretained at installation: policy suppresses retention
-        // before prior delivery, and it publishes no state.
-        assert!(
-            published_states().is_empty(),
-            "no producer row is published"
-        );
-        assert_eq!(discarded_retention(), [Some(Cause::RetentionPolicy)]);
-    }
-    // Both runtimes publish no state and discard the exact typed result,
-    // while reporting the same work and named partition stop.
-    assert_eq!(
-        outcomes[0], outcomes[1],
-        "unretained outcome, work and named stop"
-    );
-}
-
-#[test]
-fn seeded_eviction_steps_equal_fresh_state_and_work_boundaries() {
-    let _guard = checkpoint_recovery_test_guard();
-    run::<true, TOTALS_WORK, 1, 0>(Boundary::Evict);
-}
-#[test]
-fn seeded_observation_steps_equal_fresh_state_and_work_boundaries() {
-    let _guard = checkpoint_recovery_test_guard();
-    run::<false, 1024, 1, 1>(Boundary::Observation);
-}
-#[test]
-fn seeded_several_steps_equal_fresh_state_and_work_boundaries() {
-    let _guard = checkpoint_recovery_test_guard();
-    run::<false, TOTALS_WORK, 2, 0>(Boundary::Several);
-}
-
-/// A prime that reused its previous output still proves its retained result
-/// and published state against a model-derived fresh computation.
-fn compare_prime(kept: &[OracleRun], reference: &[OracleRun]) {
-    assert_eq!(
-        kept.last().unwrap().outcome,
-        reference.last().unwrap().outcome,
-        "prime outcome"
-    );
-    assert_published_state(kept, reference);
 }

@@ -1,12 +1,99 @@
 //! Seeded transitions of the declared edit alphabet.
 use super::*;
 impl Model {
+    pub(in super::super::super) fn observation_release(&mut self) -> Step {
+        let mut changes = Vec::new();
+        for number in self.held(false) {
+            let entry = self.entries[number].unwrap();
+            if entry.incoming {
+                changes.push(self.deleted(number));
+                changes.push(self.created(number, entry.region, entry.value, entry.work));
+            }
+        }
+        Step {
+            changes,
+            own_write: None,
+        }
+    }
+
+    pub(in super::super::super) fn observation_trim(&mut self) -> Step {
+        let keep = self.held(true).into_iter().take(2).collect::<Vec<_>>();
+        let mut changes = self
+            .held(false)
+            .into_iter()
+            .filter(|number| !keep.contains(number))
+            .map(|number| self.deleted(number))
+            .collect::<Vec<_>>();
+        if keep.len() == 1 {
+            let region = self.entries[keep[0]].unwrap().region + 1;
+            changes.push(self.created(self.free()[0], region, 0.0, 1));
+        }
+        Step {
+            changes,
+            own_write: None,
+        }
+    }
+
+    pub(in super::super::super) fn wide_entries(&mut self) -> Vec<EntryEdit> {
+        let mut sets = SETS.iter().map(|set| set.to_string()).collect::<Vec<_>>();
+        sets.extend((0..OBSERVATION_SETS).map(|i| format!("incoming-{i}")));
+        let names = sets.iter().map(String::as_str).collect::<Vec<_>>();
+        self.held(false)
+            .into_iter()
+            .map(|number| {
+                self.next_binding += 1;
+                let entry = self.entries[number].as_mut().unwrap();
+                entry.binding = self.next_binding;
+                entry.incoming = true;
+                EntryEdit::create(
+                    &names,
+                    number as u64,
+                    entry.region,
+                    entry.value.to_bits(),
+                    entry.work,
+                )
+            })
+            .collect()
+    }
+
+    pub(in super::super::super) fn edit_observation_item(
+        &mut self,
+        number: u64,
+        rng: &mut Lcg,
+    ) -> Step {
+        let entry = self.entries[number as usize].as_mut().unwrap();
+        let mut value = rng.value();
+        while value.to_bits() == entry.value.to_bits() {
+            value = rng.value();
+        }
+        entry.value = value;
+        Step {
+            changes: vec![Change::Entry(EntryEdit::new(
+                self.set(),
+                number,
+                EntryFact::Value,
+                value.to_bits(),
+            ))],
+            own_write: None,
+        }
+    }
+
     pub(in super::super::super) fn step(&mut self, kind: Kind, rng: &mut Lcg) -> Step {
         let set = self.set();
         let entry = rng.pick(&self.held(false));
         let edit = move |fact, value| EntryEdit::new(set, number(entry), fact, value);
         let mut own_write = None;
         let changes = match kind {
+            Kind::SignedZero => {
+                let value = if self.entries[entry].unwrap().value.to_bits() == (-0.0_f64).to_bits()
+                {
+                    0.0_f64
+                } else {
+                    -0.0_f64
+                };
+                self.entries[entry].as_mut().unwrap().value = value;
+                vec![Change::Entry(edit(EntryFact::Value, value.to_bits()))]
+            }
             Kind::Value
             | Kind::OwnWrite
             | Kind::BlindWrite

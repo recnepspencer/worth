@@ -43,7 +43,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         let mut admission = self.demand_request_admission();
         self.refresh_output_demand(
             &mut demand,
-            value,
+            &value,
             source,
             Some(&completion.authority),
             &mut admission,

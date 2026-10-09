@@ -3,6 +3,8 @@
 //! redo intent with Relational-owned branch lineage (8.5).
 
 mod causal_commit;
+mod commit_causality;
+pub(crate) use commit_causality::ApplicationCommitCausality;
 mod causal_fact;
 pub mod derivation_failure;
 pub mod external_effect;

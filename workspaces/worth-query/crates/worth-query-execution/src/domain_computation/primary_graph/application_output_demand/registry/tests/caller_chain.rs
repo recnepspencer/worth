@@ -142,3 +142,39 @@ fn a_walk_the_request_cannot_pay_for_establishes_nothing() {
         Err(CompanionPreflightStop::WorkExhausted { .. })
     ));
 }
+
+#[test]
+fn closed_cached_population_does_not_make_a_lone_caller_retry_on_walk_exhaustion() {
+    for unrelated in [0, 1_000] {
+        let registry = WorthQueryOutputDemandRegistry::default();
+        let caller = key_with_identity("caller", 5, 2, 50);
+        {
+            let mut state = registry.state.lock().unwrap();
+            state
+                .records
+                .insert(caller.clone(), record(occurrence(), ready(), 1));
+            for number in 0..unrelated {
+                let cached =
+                    key_with_identity(&format!("cached-{number}"), 5, 3, number as u64 + 70);
+                state
+                    .records
+                    .insert(cached, record(occurrence(), ready(), 0));
+            }
+        }
+        assert_eq!(
+            registry.another_demand_holds_custody(&caller, &mut record_admission()),
+            Ok(false)
+        );
+        let mut exhausted = InvalidationEditAdmission::new(CompanionPreflightBudget {
+            maximum_work_visits: 0,
+            maximum_preparation_bytes: 0,
+        });
+        assert!(
+            matches!(
+                registry.another_demand_holds_custody(&caller, &mut exhausted),
+                Err(CompanionPreflightStop::WorkExhausted { .. })
+            ),
+            "a refused global question reports its own work stop"
+        );
+    }
+}

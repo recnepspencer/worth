@@ -24,6 +24,7 @@ use super::invalidation::{InvalidationEditAdmission, SourceInvalidationOwner};
 use crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact as Fact;
 
 mod checkpoint;
+mod equality;
 
 #[derive(Debug)]
 struct RoleProbe {

@@ -1,3 +1,4 @@
+use crate::domain_computation::application_aftermath::ApplicationCommitCausality;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::super::{
@@ -167,6 +168,7 @@ where
         presented: &WorthQueryPresentedProgram,
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
+        causality: ApplicationCommitCausality<'_>,
     ) -> WorthQueryApplicationCommitOutcome
     where
         Operation: 'static,
@@ -199,7 +201,7 @@ where
                 ),
             );
         }
-        self.compare_and_commit_application_with_output_observation(program, idempotency, false)
+        self.compare_and_commit_application_with_causality(program, idempotency, false, causality)
     }
 
     pub(in crate::domain_computation::primary_graph) fn compare_and_commit_conditional_operation<
@@ -241,39 +243,42 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
-        if program.read_set.admission.has_elevation_lifecycle_binding() {
-            return WorthQueryApplicationCommitOutcome::Denied(
-                WorthQueryApplicationCommitDenial::elevation_transition_required(),
-            );
-        }
-        if program
-            .read_set
-            .admission
-            .allowed_graph_contract()
-            .execution_posture()
-            .requires_delegation_activation()
-        {
-            return WorthQueryApplicationCommitOutcome::Denied(
-                WorthQueryApplicationCommitDenial::delegation_activation_required(),
-            );
-        }
-        if program
-            .read_set
-            .admission
-            .allowed_graph_contract()
-            .execution_posture()
-            .requires_capability_revocation()
-        {
-            return WorthQueryApplicationCommitOutcome::Denied(
-                WorthQueryApplicationCommitDenial::capability_revocation_required(),
-            );
+        self.compare_and_commit_application_with_causality(
+            program,
+            idempotency,
+            retain_output_observation,
+            ApplicationCommitCausality::Ordinary,
+        )
+    }
+
+    pub(crate) fn compare_and_commit_application_with_causality<Operation, Input, Scope>(
+        &self,
+        program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
+        idempotency: WorthQueryApplicationIdempotencyBinding,
+        retain_output_observation: bool,
+        causality: ApplicationCommitCausality<'_>,
+    ) -> WorthQueryApplicationCommitOutcome
+    where
+        Input: Clone + Send + Sync + 'static,
+    {
+        if let Some(denial) = plain_publication_posture(&program.read_set.admission) {
+            return WorthQueryApplicationCommitOutcome::Denied(denial);
         }
         let program = if retain_output_observation {
             program.with_output_demand_observation()
         } else {
             program
         };
-        self.compare_and_commit_application_inner(program, idempotency)
+        let pending = match causality.admit(&program.read_set.admission) {
+            Ok(pending) => pending,
+            Err(denial) => return WorthQueryApplicationCommitOutcome::Denied(denial),
+        };
+        self.compare_and_commit_application_inner_with_currentness_and_aftermath(
+            program,
+            idempotency,
+            None,
+            pending,
+        )
     }
 
     pub(in crate::domain_computation::primary_graph::application_attempt) fn compare_and_commit_application_inner<
@@ -308,6 +313,7 @@ where
         )
     }
 
+    #[cfg(test)]
     pub(crate) fn compare_and_commit_application_with_aftermath<Operation, Input, Scope>(
         &self,
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
@@ -317,6 +323,9 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
+        if let Some(denial) = plain_publication_posture(&program.read_set.admission) {
+            return WorthQueryApplicationCommitOutcome::Denied(denial);
+        }
         self.compare_and_commit_application_inner_with_currentness_and_aftermath(
             program,
             idempotency,
@@ -357,4 +366,32 @@ where
         };
         finish_application_commit(self, progress_application_commit(self, running))
     }
+}
+
+fn plain_publication_posture<Schema, Operation, Input, Scope>(
+    admission: &crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
+        Schema,
+        Operation,
+        Input,
+        Scope,
+    >,
+) -> Option<WorthQueryApplicationCommitDenial> {
+    if admission.has_elevation_lifecycle_binding() {
+        return Some(WorthQueryApplicationCommitDenial::elevation_transition_required());
+    }
+    if admission
+        .allowed_graph_contract()
+        .execution_posture()
+        .requires_delegation_activation()
+    {
+        return Some(WorthQueryApplicationCommitDenial::delegation_activation_required());
+    }
+    if admission
+        .allowed_graph_contract()
+        .execution_posture()
+        .requires_capability_revocation()
+    {
+        return Some(WorthQueryApplicationCommitDenial::capability_revocation_required());
+    }
+    None
 }

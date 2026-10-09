@@ -326,48 +326,54 @@ fn retire_stale_records(
 ) {
     // Custody retirement is source-wide: a changed query source invalidates
     // every producer record that was computed from its older epoch.
-    for (key, record) in &mut state.records {
-        if record.product_occurrence == occurrence
-            && record.source_scope == Some(scope)
-            && key.source.replacement_order(successor) == Some(Ordering::Less)
-        {
-            let cause = denial(
-                WorthQueryOutputDemandDenialKind::Superseded,
-                key.producer.clone(),
-            );
-            match &mut record.state {
-                DemandState::Output(output) => output.stop(cause),
-                _ => record.state = DemandState::Failed(cause),
-            }
-            record.performed_source = None;
-            record.wake.notify();
+    let keys = state
+        .records
+        .source_occurrence_rows(successor)
+        .filter(|(key, record)| {
+            record.product_occurrence == occurrence
+                && record.source_scope == Some(scope)
+                && key.source.replacement_order(successor) == Some(Ordering::Less)
+        })
+        .map(|(key, _)| key.clone())
+        .collect::<Vec<_>>();
+    for key in &keys {
+        let record = state
+            .records
+            .get_mut(key)
+            .expect("source occurrence key exists");
+        let cause = denial(
+            WorthQueryOutputDemandDenialKind::Superseded,
+            key.producer.clone(),
+        );
+        match &mut record.state {
+            DemandState::Output(output) => output.stop(cause),
+            _ => record.state = DemandState::Failed(cause),
         }
+        record.performed_source = None;
+        record.wake.notify();
+        state.release_record_prerequisites(key);
     }
-    state.release_matching_prerequisites(|key, record| {
-        record.product_occurrence == occurrence
-            && record.source_scope == Some(scope)
-            && key.source.replacement_order(successor) == Some(Ordering::Less)
-    });
-    let required_keys = &mut state.required_keys;
-    let required_reserved_bytes = &mut state.required_reserved_bytes;
-    state.records.retain(|key, record| {
-        let keep = record.product_occurrence != occurrence
-            || record.source_scope != Some(scope)
-            || key.source.replacement_order(successor) != Some(Ordering::Less)
-            || record.interests != 0
-            || record.framework_required_count != 0
-            || record.prepared_prerequisite_claims != 0
-            || record.pending_cleanup_queued;
-        if !keep {
-            if let Some(member) = required_keys.take(key) {
-                *required_reserved_bytes = required_reserved_bytes.saturating_sub(
+    // Remove only after every stale row has released its prerequisites: an
+    // upstream row that sorts before its consumer is held until then.
+    for key in keys {
+        let record = state
+            .records
+            .get(&key)
+            .expect("source occurrence key exists");
+        if record.interests == 0
+            && record.framework_required_count == 0
+            && record.prepared_prerequisite_claims == 0
+            && !record.pending_cleanup_queued
+        {
+            state.records.remove(&key);
+            if let Some(member) = state.required_keys.take(&key) {
+                state.required_reserved_bytes = state.required_reserved_bytes.saturating_sub(
                     super::required_members::member_bytes(member.as_ref())
                         .expect("admitted key charge fits"),
                 );
             }
         }
-        keep
-    });
+    }
 }
 
 fn denial(

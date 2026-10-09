@@ -15,6 +15,7 @@ use crate::domain_computation::primary_graph::{
     SourceInvalidationOwner,
 };
 
+mod consumption;
 #[cfg(test)]
 mod own_write_recovery;
 mod recovery;
@@ -96,6 +97,34 @@ pub(in crate::domain_computation::primary_graph) enum CurrentAcceptedStop {
 }
 
 impl AcceptedCurrentCandidate {
+    pub(in crate::domain_computation::primary_graph) fn retain_recorded_identity(
+        &self,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<
+        std::sync::Arc<super::super::RecordedSettlementIdentity>,
+        worth_relational::facade::mvcc::CompanionPreflightStop,
+    > {
+        admission.charge_external_work(
+            (std::mem::size_of::<std::sync::Arc<super::super::RecordedSettlementIdentity>>() + 1)
+                as u64,
+        )?;
+        Ok(std::sync::Arc::clone(self.selected.settlement_identity()))
+    }
+
+    /// A changed Native correspondence cannot support this consumer's cutoff.
+    /// Check it before retaining or re-verifying a successor that must run Fresh.
+    pub(in crate::domain_computation::primary_graph) fn matches_consumed_output(
+        &self,
+        pending: &SelectedPendingConsumedOutput<'_>,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<bool, worth_relational::facade::mvcc::CompanionPreflightStop> {
+        admission.charge_external_work(1)?;
+        match self.selected.native_output_witness() {
+            Some(witness) => pending.matches_output_witness(witness, admission),
+            None => Ok(false),
+        }
+    }
+
     /// A row verified in full executes again and reads the outputs it
     /// consumed. The first of them that changed refreshes before it does, so
     /// that execution reads every consumed output current.

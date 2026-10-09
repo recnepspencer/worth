@@ -541,8 +541,9 @@ Input cutoff and output cutoff are one mechanism.
   - the computation's implementation edition. Today that is its declared
     identity revision; an edition derived from code fills the same field without
     changing the key.
-- **Input cutoff.** Rebuilding the input value is cheap. If its digest is
-  unchanged, the output is reused without contacting the producer. A field that
+- **Input cutoff.** Rebuilding the input value is cheap. Equality of the
+  complete basis, including the input digest, decision facts and every consumed
+  output, reuses an output held in custody without contacting the producer. A field that
   enters the input but cannot affect the output is a defect, and the courtroom
   exposes it as an unexpected contact.
 - **Stamping.** Every Relational write path compares values before stamping,
@@ -1311,13 +1312,13 @@ executor and no second pool survives.
 | Clean demand | Zero fact checks and zero source-query re-runs |
 | Fixed edit at 1, 10 and 100 model copies | Equal logical marking operations, verification work, producer contacts and reverse-index capacity bytes per consumed fact; separately bounded and reported physical index navigation and selected copy-on-write paths |
 | Reverse index | Charged as derived retained bytes; entries reclaimed with their settlement |
-| Unchanged producer input or output encoding | Zero producer contacts downstream of it |
-| Charged work | Identical at every worker count and schedule for completed outcomes |
+| Unchanged producer input or output encoding, with complete-basis equality | Zero producer contacts downstream while the dependent row is held in custody; each marked dependent rebuilds its input once and uses its own complete-basis input cutoff |
+| Charged work | A full build's logical work, identical at every worker count and schedule for completed outcomes; actual owner calls are reported and equal to the Phase 6 courtroom laws |
 | Span | Reported per pattern and epoch; asserted against the declared structure |
 | Process authority | Active workers across all layers never exceed the authority's width |
 | Lease | Nested work draws from its parent's cap and never exceeds it |
 | Threads | No worker thread is created after authority construction; none without a lease |
-| One inserted, deleted or changed partition | Expected O(log P) nodes recombined, reported; charged work equals a full build's |
+| One inserted, deleted or changed partition | Actual recombined nodes equal the independent tree interpretation, including rotations and aggregate cutoff; charged work equals a full build's |
 | Unchanged recomputed encoding | Zero reduction nodes recombined above it |
 | Island merge or split | Only the islands involved recompute |
 | Unchanged coupling relation | Zero re-partitioning work |
@@ -2210,8 +2211,6 @@ before machinery for another lands.
       handler writes back the field its own source query reads. The
       courtroom varies what a consumer decides over by overwriting its
       upstream output.
-    - A consumer that executes and writes an equal value does not cut off
-      its dependents. Equality is certified by input cutoff only.
     - No public observation counts fact checks or fallback events. The
       courtroom reads source-query runs and producer contacts.
   - Stated limitations:
@@ -2660,15 +2659,62 @@ The next phase may trust that the touched graph alone decides what recomputes.
   - Two concurrent first writers of one branch cell both keep their
     publication's marks, and a poisoned registration lock recovers the same
     way at every acquisition.
-- **6.12** A neutral application proves the isolation and reuse courtroom. Every
-  step of a seeded sequence of edits and lifecycle events is judged twice:
-  for equivalence with reuse off (result bits, typed outcomes, charged work,
-  work boundary), and for exact call counts derived from the edit by code
-  that shares nothing with production.
-  The lifecycle events include schema and program adoption that carry
-  retained state, restoration, and eviction or refusal at the retained
-  ceiling; the reuse inventory of the 7.8 harness lists each as waiting on
-  this slice.
+- **6.12** A neutral application proves the isolation and reuse courtroom.
+  Every step of a seeded sequence of edits and lifecycle events is judged
+  twice: for equivalence with reuse off (result bits, typed outcomes,
+  reported full compute and tree charges, work boundary), and for exact call
+  counts derived from the edit by code that shares nothing with production.
+  The lifecycle events include program adoption that carries retained state,
+  restoration, and eviction or refusal at the retained ceiling; the reuse
+  inventory of the 7.8 harness names each courtroom row. *Completed.*
+
+  The courtroom uses two fixed seeds and one serial round of the edit
+  alphabet, with model-derived membership, key, gather, kernel and tree
+  counts. A full run gathers and invokes every partition before judging the
+  canonical result prefix; a stop preserves that prefix's charged work and
+  typed outcome. An incremental run invokes only the affected canonical
+  prefix through its stop. A stopped prior is ineligible: deleting the added
+  heavy item then calls membership once, keys for every item, and gather and
+  kernel for every surviving partition, with the exact `Stopped` absence
+  cause. A producer with changed input executes once. Equal canonical output
+  keeps its revision; the marked dependent rebuilds its source query once,
+  then equality of its input, complete handler facts and every consumed
+  output permits input cutoff with zero producer contacts while its row is
+  held in custody; a reclaimed row decides again. The chain's owner-contact
+  law is A +1, B +1, C +0; per-handle counters exclude upstream handlers
+  driven by another demand's advance. Performed publication supplies no
+  output equality consequence. A managed dependent instead gathers affected
+  facts and reuses every partition whose gathered encoding is byte-equal,
+  with zero kernel calls there. Schema adoption with retained computation
+  state is unreachable: the runtime keeps its installed schema fixed, and
+  restoration reconstructs lineage with an absent computation prior.
+  Governed undo and redo enter through the program owner's commit entries,
+  which consume sealed progression handoffs and preserve action ownership,
+  workflow authority, active program, conditionals and publication posture
+  checks. Undo directly on its target, before an output publication
+  intervenes, restores the retained gathered facts: all partitions reuse,
+  with zero kernel and tree recombination calls. The next step remains
+  unchanged; immediate redo restores the edited encoding with model-derived
+  counts. After an output publication moves the head, the direct-parent
+  aftermath law refuses undo with terminal ProviderRejected /
+  InvariantExecution, without publication or owner calls; the next edit
+  keeps the retained prior eligible. Request work is judged separately for
+  requests that fit their custody. Open, settled, current rows outside the
+  selected branch and scope, with nothing marked or queued, add no logical
+  charge or whole-map row visits. Pending rows charge only the work actually
+  progressed, regardless of other settled rows. Ordinary and performed first
+  admission, advance, settlement, release and synchronous refresh use keyed
+  access or the requested occurrence's contiguous run. Ordered navigation is
+  one keyed descent's height, with a per-call ceiling of ordered operations
+  times H = 18 * usize::BITS + 1; payload comparisons in the selected branch
+  and scope, validation and visited entries are logical work. A request that
+  must reclaim pays charged work proportional to cached rows examined.
+  Capacity reclamation and refusal handling, closed-claim retirement and
+  occurrence retirement lie outside the request-cost proof; refusal handling
+  preserves its own work stop. A leaf under six ancestor scopes has one
+  marked fact and five downstream edges, with identical logical counts at
+  eight and sixty-four sibling subtrees; disjoint siblings contribute zero
+  candidate and zero Ready work.
 
 The next phase may trust that partition-granular reuse is exact.
 

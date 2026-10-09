@@ -23,7 +23,7 @@ mod required_fresh;
 mod required_wave;
 mod retained_read;
 pub(in crate::domain_computation::primary_graph) use required_wave::{
-    MatchedRequiredPredecessors, ResolvedRequiredPredecessors,
+    MatchedRequiredPredecessors, ReboundConsumedOutput, ResolvedRequiredPredecessors,
 };
 pub(super) mod resources;
 mod selected_program;
@@ -201,11 +201,25 @@ where
         let stop = match advance(demand, &mut admission) {
             Ok(progress) => {
                 demand.settled |= matches!(progress, WorthQueryOutputDemandAdvance::Settled(_));
+                #[cfg(feature = "test-query-execution-observer")]
+                caller_pass_observation::observe_request_work(&admission);
                 return Ok(progress);
             }
             Err(stop) => stop,
         };
-        Err(self.caller_custody_stop(demand, stop, &mut admission))
+        // The request's exhausted meter is replaced by the next advance.
+        // A producer's declared-work refusal keeps its own terminal posture.
+        let stop = if admission.remaining_work() == 0
+            && stop.kind() == WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
+        {
+            stop.with_recovery_posture(super::WorthQueryOutputDemandRecoveryPosture::Retryable)
+        } else {
+            stop
+        };
+        let stop = self.caller_custody_stop(demand, stop, &mut admission);
+        #[cfg(feature = "test-query-execution-observer")]
+        caller_pass_observation::observe_request_work(&admission);
+        Err(stop)
     }
 
     pub(in crate::domain_computation::primary_graph) fn advance_output_demand_with_commit_authority<
@@ -247,3 +261,6 @@ pub(super) fn denial(
 ) -> WorthQueryOutputDemandDenial {
     WorthQueryOutputDemandDenial::new(kind, subject)
 }
+
+#[cfg(feature = "test-query-execution-observer")]
+mod caller_pass_observation;

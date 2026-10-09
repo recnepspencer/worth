@@ -43,6 +43,9 @@ pub(super) fn application_commit_cause(
         | Kind::WorkflowAuthorityRequired
         | Kind::ProgramNotActiveOnOccurrence { .. }
         | Kind::ProgramSupportRetired
-        | Kind::ProgramActivationUnresolved => WorthQueryConditionalExecutionCause::TerminalFailure,
+        | Kind::ProgramActivationUnresolved
+        | Kind::RecoveryHandoffMismatch { .. } => {
+            WorthQueryConditionalExecutionCause::TerminalFailure
+        }
     }
 }

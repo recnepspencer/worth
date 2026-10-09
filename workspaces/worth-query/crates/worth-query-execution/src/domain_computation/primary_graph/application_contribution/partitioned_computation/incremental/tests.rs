@@ -72,6 +72,7 @@ struct Owner {
     /// The work of each kernel, odd parity first.
     work: Mutex<[usize; 2]>,
     gathered: Mutex<Vec<u64>>,
+    calls: Mutex<[usize; 4]>,
 }
 
 impl WorthQueryPartitionedComputationOwner<Schema, Feature, Computation> for Owner {
@@ -88,6 +89,7 @@ impl WorthQueryPartitionedComputationOwner<Schema, Feature, Computation> for Own
         _: &Root,
     ) -> Result<WorthQueryComputationPartitionPlan<Number>, WorthQueryComputationInputDenial<u32>>
     {
+        self.calls.lock().unwrap()[0] += 1;
         Ok(WorthQueryComputationPartitionPlan::keyed(
             [1, 2, 3, 4].map(Number),
             |item| PartitionItemId(item.0),
@@ -100,6 +102,7 @@ impl WorthQueryPartitionedComputationOwner<Schema, Feature, Computation> for Own
         account: &Root,
         item: &Number,
     ) -> Result<Parity, WorthQueryComputationInputDenial<u32>> {
+        self.calls.lock().unwrap()[1] += 1;
         if matches!(self.status, StatusRead::ItemKeys) {
             reader.field(account, AccountStatus::reference())?;
         }
@@ -112,6 +115,7 @@ impl WorthQueryPartitionedComputationOwner<Schema, Feature, Computation> for Own
         account: &Root,
         partition: WorthQueryComputationPartitionMembers<'_, Parity, Number>,
     ) -> Result<u64, WorthQueryComputationInputDenial<u32>> {
+        self.calls.lock().unwrap()[2] += 1;
         reader.field(account, AccountLabel::reference())?;
         let parity = partition.key().0;
         let mut sum = partition.items().map(|(_, item)| item.0).sum::<u64>();
@@ -128,6 +132,7 @@ impl WorthQueryPartitionedComputationOwner<Schema, Feature, Computation> for Own
         partition: WorthQueryComputationPartitionView<'_, Parity, u64>,
         checkpoint: &mut WorthQueryManagedComputationCheckpoint<'_>,
     ) -> Result<u64, WorthQueryManagedComputationDenial<u32>> {
+        self.calls.lock().unwrap()[3] += 1;
         let work = self.work.lock().unwrap()[usize::from(partition.key().0 == 0)];
         checkpoint.advance(work)?;
         Ok(*partition.gathered())
@@ -154,6 +159,7 @@ fn installed_over(modulus: u64, status: StatusRead, reducer: fn(&u64, &u64) -> u
         bump: Mutex::new(0),
         work: Mutex::new([1, 1]),
         gathered: Mutex::default(),
+        calls: Mutex::default(),
     };
     Installed::new(owner, ComputationRetention::ProducerOperation)
 }
@@ -358,6 +364,7 @@ fn first_run(world: &AuthorizationWorld, installed: &Installed) -> Attempt {
 mod carrying;
 mod certified;
 mod collision;
+mod digests;
 mod installation;
 mod interruption;
 mod request_memory;

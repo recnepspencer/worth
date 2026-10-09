@@ -283,6 +283,15 @@ where
             )
             .into());
         };
+        // A disclosure affinity expires on interruption too. Preserve the
+        // request's typed cause before testing the selected proof's identity.
+        if let Some(interruption) = request_scope.interruption() {
+            return Err(super::denial::request_admission_rejected(denial(
+                match interruption {
+                    worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption::Cancelled => WorthQueryOutputDemandDenialKind::Cancelled,
+                    worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption::DeadlineExceeded => WorthQueryOutputDemandDenialKind::TimedOut,
+                }, Binding::IDENTITY)));
+        }
         let admits = proof
             .admits_selected_admitted(
                 principal,

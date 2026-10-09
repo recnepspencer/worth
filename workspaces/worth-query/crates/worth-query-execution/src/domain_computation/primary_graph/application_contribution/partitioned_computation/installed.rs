@@ -192,6 +192,7 @@ where
             }
             Begun::Full { basis, cause } => (basis, cause),
         };
+        incremental::observe_full_preparation(cause);
         let mut recording = basis.map(FullRecording::new);
         let (plan, membership) = reader.measured(ComputationRead::Membership, |reader| {
             owner.partitions(&mut WorthQueryComputationReader::lend(reader), input)

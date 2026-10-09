@@ -103,7 +103,12 @@ impl<Schema: TopologySchemaBinding, const REUSE: bool, const MODE: u8>
         }
     }
     fn idempotency_key(&self, _: &PlanarReadResult, identity: &[u8; 32]) -> u64 {
-        planar_source_key(identity) ^ 0x9176_3c0b
+        let key = planar_source_key(identity) ^ 0x9176_3c0b;
+        if MODE == 4 {
+            key | (3 << 62)
+        } else {
+            key
+        }
     }
     fn demand_resources(&self, _: &PlanarReadResult) -> WorthQueryProducerDemandResources {
         if MODE == 1 {

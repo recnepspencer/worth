@@ -46,7 +46,8 @@ impl WorthQueryOutputDemandRegistry {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         admission.charge_external_work(count(state.records.len())?)?;
-        Ok(state.records.values().any(holds_custody))
+        let held = state.records.values().any(holds_custody);
+        Ok(held)
     }
 }
 

@@ -106,7 +106,7 @@ fn navigate(
     work: u64,
 ) -> Result<(), WorthQueryOutputDemandDenial> {
     admission
-        .charge_ordered_operations(1, work)
+        .charge_external_work((work).checked_add(1).ok_or_else(empty_denial)?)
         .map_err(|_| empty_denial())
 }
 
