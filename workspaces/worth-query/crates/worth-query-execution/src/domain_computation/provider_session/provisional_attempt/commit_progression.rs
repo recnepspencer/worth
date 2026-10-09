@@ -123,7 +123,10 @@ impl WorthQueryInvariantApprovedProposedState<'_> {
         self.progression.receipt_identities()
     }
 
-    pub fn compare_and_commit(mut self) -> WorthQueryProviderCompareAndCommitOutcome {
+    pub fn compare_and_commit(
+        mut self,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    ) -> WorthQueryProviderCompareAndCommitOutcome {
         let fresh = self.proposed.attempt.read_set;
         let compared = self
             .proposed
@@ -146,7 +149,7 @@ impl WorthQueryInvariantApprovedProposedState<'_> {
             }
             Ok(WorthQueryDecisionReadSetFreshnessOutcome::Fresh(fresh)) => {
                 self.proposed.attempt.read_set = fresh;
-                self.commit_fresh()
+                self.commit_fresh(allocation_policy)
             }
         }
     }
@@ -156,7 +159,10 @@ impl WorthQueryInvariantApprovedProposedState<'_> {
         let _ = self.proposed.attempt.staged.abort();
     }
 
-    fn commit_fresh(mut self) -> WorthQueryProviderCompareAndCommitOutcome {
+    fn commit_fresh(
+        mut self,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    ) -> WorthQueryProviderCompareAndCommitOutcome {
         let prepared = match self.proposed.attempt.staged.prepare_for_commit() {
             Ok(prepared) => prepared,
             Err(failure) => {
@@ -166,7 +172,7 @@ impl WorthQueryInvariantApprovedProposedState<'_> {
                 );
             }
         };
-        match prepared.commit() {
+        match prepared.commit(allocation_policy) {
             WorthQuerySessionCommitOrAbortOutcome::ProductStale(stale) => {
                 let _ = self.proposed.attempt.overlay.discard();
                 WorthQueryProviderCompareAndCommitOutcome::ProductStale(stale)

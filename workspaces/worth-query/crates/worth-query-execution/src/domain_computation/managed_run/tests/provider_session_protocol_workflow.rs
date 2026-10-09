@@ -76,6 +76,7 @@ impl WorthQueryProviderSessionLifecycle for WorkflowSessionProvider {
     fn commit_prepared_session(
         &self,
         _session: &WorthQueryProviderSessionView<'_>,
+        _allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         crate::domain_computation::WorthQueryProviderTerminalDescription,
         crate::domain_computation::WorthQueryProviderSessionCommitStop,

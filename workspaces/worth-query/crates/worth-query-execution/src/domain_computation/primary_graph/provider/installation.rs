@@ -8,7 +8,6 @@ impl WorthQueryPrimaryGraphProvider {
         fault_port: Arc<dyn super::fault_port::WorthQueryPrimaryGraphFaultPort>,
         maximum_concurrent_graph_work: std::num::NonZeroUsize,
         resource_support: super::WorthQueryPrimaryGraphResourceSupport,
-        completed_evidence_resources: crate::domain_computation::execution_runtime::WorthQueryCompletedEvidenceResourceProfile,
         branch_coordination_resources: crate::domain_computation::execution_runtime::WorthQueryBranchCoordinationResourceProfile,
     ) -> (
         Arc<crate::domain_computation::provider_session::graph_provider::bounded_step::provider_anchor::WorthQueryGraphProviderAnchor>,
@@ -17,9 +16,6 @@ impl WorthQueryPrimaryGraphProvider {
         let provider = Arc::new(Self {
             graph,
             resource_support,
-            completed_evidence_capacity: super::completed_evidence_capacity::CompletedEvidenceCapacity::new(
-                completed_evidence_resources.retained_bytes(),
-            ),
             branch_commit_coordination:
                 super::branch_commit_coordination::WorthQueryApplicationBranchCommitCoordinator::new(
                     branch_coordination_resources.retained_bytes(),

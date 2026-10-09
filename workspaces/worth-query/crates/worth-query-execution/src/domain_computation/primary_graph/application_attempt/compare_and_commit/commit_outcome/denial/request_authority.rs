@@ -12,6 +12,7 @@ use crate::domain_computation::authorization::{
 pub(super) enum DenialCause {
     SourceRebase(crate::domain_computation::primary_graph::provider::PreparedRebaseDenial),
     InvariantExecution(crate::domain_computation::WorthQueryInvariantExecutionFailure),
+    ProviderSession(crate::domain_computation::WorthQueryProviderSessionFailure),
     DecisionReadSet(crate::domain_computation::WorthQueryDecisionReadSetFailure),
     /// The request's own authorization stopped the commit: its security
     /// basis on the branch, or what it may do there.
@@ -19,6 +20,17 @@ pub(super) enum DenialCause {
 }
 
 impl WorthQueryApplicationCommitDenial {
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn provider_session_denied(
+        failure: crate::domain_computation::WorthQueryProviderSessionFailure,
+    ) -> Self {
+        Self {
+            kind: WorthQueryApplicationCommitDenialKind::ProviderRejected,
+            stage: WorthQueryApplicationCommitDenialStage::ProviderCommit,
+            detail: Some(failure.detail().into()),
+            cause: Some(DenialCause::ProviderSession(failure)),
+        }
+    }
+
     /// The request was refused authorization at `stage`. The refusal is the
     /// request's own, so whoever shares the attempt's subject is not refused.
     pub(in crate::domain_computation::primary_graph::application_attempt) fn request_authority_denied(
@@ -67,6 +79,7 @@ impl WorthQueryApplicationCommitDenial {
     /// Exact physical owner refusal; not logical count policy or graph authority.
     pub fn allocation_denial(&self) -> Option<&worth_execution::ExecutionAllocationDenial> {
         match &self.cause {
+            Some(DenialCause::ProviderSession(failure)) => failure.allocation_denial(),
             Some(DenialCause::SourceRebase(crate::domain_computation::primary_graph::provider::PreparedRebaseDenial::Retention(crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial::Allocation(denial)))) => Some(denial),
             _ => None,
         }

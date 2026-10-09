@@ -16,7 +16,6 @@ pub(in crate::domain_computation::primary_graph) use preimage_retention::WorthQu
 pub(crate) use preimage_retention::WorthQueryRetainedPreImageSeal;
 pub(in crate::domain_computation::primary_graph::provider) use relational_commit::publish_recovered;
 pub(in crate::domain_computation::primary_graph::provider) use relational_commit::ManagedUnpublishedAttempt;
-pub(in crate::domain_computation::primary_graph) use relational_commit::RetainedTouchedRecords;
 pub(in crate::domain_computation::primary_graph) use relational_commit::{
     RebaseVerificationReason, WorthQueryMutationWorkCommitSeal,
     WorthQueryPrimaryGraphCommittedApplication,
@@ -52,6 +51,7 @@ impl WorthQueryPreparedApplicationCommit {
 pub(in crate::domain_computation::primary_graph::provider) fn commit_prepared_application(
     provider: &WorthQueryPrimaryGraphProvider,
     session: crate::domain_computation::WorthQueryProviderSessionView<'_>,
+    allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<
     crate::domain_computation::WorthQueryProviderTerminalDescription,
     crate::domain_computation::WorthQueryProviderSessionCommitStop,
@@ -71,7 +71,7 @@ pub(in crate::domain_computation::primary_graph::provider) fn commit_prepared_ap
     prepared
         .validate_decision_work()
         .map_err(crate::domain_computation::WorthQueryProviderSessionCommitStop::from)?;
-    relational_commit::commit_owner_validated(provider, prepared)
+    relational_commit::commit_owner_validated(provider, prepared, allocation_policy)
 }
 
 fn take_prepared_session(

@@ -52,8 +52,6 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryProviderIdempote
     /// intent but names its operation by a seal no later runtime can confirm.
     RecordedIntentUnverifiable,
     Unavailable,
-    /// The commit's evidence left the declared idempotency window.
-    WindowExpired,
 }
 
 impl From<&'static str> for WorthQueryProviderIdempotencyResolutionDenial {

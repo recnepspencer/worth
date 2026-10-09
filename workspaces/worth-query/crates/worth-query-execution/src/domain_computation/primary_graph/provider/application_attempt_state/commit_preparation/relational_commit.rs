@@ -3,7 +3,6 @@
 mod commit_execution;
 mod evidence_seal;
 pub(in crate::domain_computation::primary_graph::provider) use commit_execution::ManagedUnpublishedAttempt;
-pub(in crate::domain_computation::primary_graph) use commit_execution::RetainedTouchedRecords;
 
 pub(in crate::domain_computation::primary_graph) use commit_execution::WorthQueryPrimaryGraphCommittedApplication;
 
@@ -27,6 +26,7 @@ impl WorthQueryCommitProgressionMint {
 pub(super) fn commit_owner_validated(
     provider: &WorthQueryPrimaryGraphProvider,
     prepared: WorthQueryPreparedApplicationCommit,
+    allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<
     crate::domain_computation::WorthQueryProviderTerminalDescription,
     crate::domain_computation::WorthQueryProviderSessionCommitStop,
@@ -35,6 +35,7 @@ pub(super) fn commit_owner_validated(
         provider,
         prepared,
         WorthQueryCommitProgressionMint::witness(),
+        allocation_policy,
     )?;
     let (evidence, publication_admission) = evidence_seal::seal(provider, &mut committed);
     provider.graph.with_runtime_mut_unwind_isolated(|runtime| {

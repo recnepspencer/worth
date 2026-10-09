@@ -71,11 +71,14 @@ impl WorthQuerySessionPrepareOutcome<'_> {
         self.counters
     }
 
-    pub(crate) fn commit(mut self) -> WorthQuerySessionCommitOrAbortOutcome {
+    pub(crate) fn commit(
+        mut self,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    ) -> WorthQuerySessionCommitOrAbortOutcome {
         let terminal_binding = self.affinity.terminal_binding();
         self.counters.called_provider();
         let invocation = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            self.affinity.session_mut().commit()
+            self.affinity.session_mut().commit(allocation_policy)
         }));
         match invocation {
             Ok(Err(

@@ -728,6 +728,15 @@ hardware; an absolute seconds threshold is not a portable Query contract.
   accepted public correction-history contract.
 - Certification replay remains certification-only.
 
+Completed touched-record evidence is sealed from the exact native prepared
+candidate before effects using the caller's explicit `ExecutionAllocationPolicy`.
+The shared immutable array retains its checked payload allocation through
+receipt observers and unpublished recovery, including after the request lease
+drops. There is no aggregate completed-evidence byte window or quota-driven
+receipt eviction. Durable idempotency rows prevent re-execution when a fresh
+process or retired product occurrence no longer retains its performed receipt.
+Arc headers, native preparation and evidence indexes remain separate owners.
+
 ## Related Docs
 
 - [Application Authorization And Emergency Elevation](../capabilities/application-authorization-and-emergency-elevation.md)

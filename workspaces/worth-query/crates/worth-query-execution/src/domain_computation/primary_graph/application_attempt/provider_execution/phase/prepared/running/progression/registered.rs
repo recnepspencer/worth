@@ -157,6 +157,7 @@ impl<'run> WorthQueryRegisteredProviderAttempt<'run> {
             candidate,
             authority,
             self.dispatch_outbox,
+            allocation_policy,
         )
     }
 }

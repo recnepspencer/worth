@@ -1,3 +1,4 @@
+#[cfg(feature = "test-primary-graph-faults")]
 use worth_execution::ExecutionAllocationPolicy as NativeAllocationPolicy;
 use worth_query_installation::facade::ApplicationSchema;
 

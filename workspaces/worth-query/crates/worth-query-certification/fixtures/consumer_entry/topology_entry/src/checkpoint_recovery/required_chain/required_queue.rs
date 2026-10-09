@@ -314,13 +314,7 @@ fn limited_application(
     let application = support::install_program_with_limits::<program::ChainProgram>(
         None,
         profile,
-        // A small idempotency window fills within a few cycles, so the
-        // steady-retention cycles also prove completed evidence is evicted.
-        support::limits(4_096, invalidation.clone()).with_completed_evidence_resources(
-            worth_query_host::facade::runtime::WorthQueryCompletedEvidenceResourceProfile::bounded(
-                std::num::NonZeroUsize::new(4_096).unwrap(),
-            ),
-        ),
+        support::limits(4_096, invalidation.clone()),
         source_world::seed,
     );
     (application, invalidation)

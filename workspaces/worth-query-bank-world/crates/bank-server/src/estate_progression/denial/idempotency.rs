@@ -13,7 +13,6 @@ pub enum BankEstateIdempotencyResolutionDenial {
     RetentionCapacityExhausted,
     RetentionIdentityExhausted,
     SnapshotIdentityExhausted,
-    IdempotencyWindowExpired,
     ProviderUnavailable,
     /// The key is recorded with the same intent and that commit took effect,
     /// but the runtime no longer holds its receipt, as after a restore.
@@ -62,9 +61,6 @@ fn from_kind(
         }
         WorthQueryApplicationIdempotencyResolutionDenialKind::SnapshotIdentityExhausted => {
             BankEstateIdempotencyResolutionDenial::SnapshotIdentityExhausted
-        }
-        WorthQueryApplicationIdempotencyResolutionDenialKind::IdempotencyWindowExpired => {
-            BankEstateIdempotencyResolutionDenial::IdempotencyWindowExpired
         }
         WorthQueryApplicationIdempotencyResolutionDenialKind::ProviderUnavailable => {
             BankEstateIdempotencyResolutionDenial::ProviderUnavailable

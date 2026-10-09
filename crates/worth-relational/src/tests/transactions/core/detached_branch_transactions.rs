@@ -121,9 +121,18 @@ fn validated_proposal_complexity_excludes_intervening_sibling_commit_work() {
     let candidate = runtime
         .prepare_validated_proposal(proposal)
         .expect("sibling advancement permits candidate revalidation");
+    let exact_records = candidate
+        .with_prepared_changed_records(|records| records.to_vec())
+        .expect("the prepared owner retains its exact records");
+    assert_eq!(
+        candidate.prepared_changed_record_count(),
+        Some(exact_records.len())
+    );
     let committed = runtime
         .publish_prepared_candidate(candidate)
         .expect("prepared candidate publishes through its owner");
+    assert_eq!(committed.changed_records, exact_records);
+
     assert_eq!(
         committed
             .complexity_delta()

@@ -52,10 +52,6 @@ pub enum WorthQueryApplicationCommitDenialKind {
     /// The idempotency key is already bound to a different intent. New intent needs
     /// a new key.
     IdempotencyIntentDrift,
-    /// The key's commit left the declared idempotency window, so what it
-    /// committed can no longer be answered. The original commit stands and
-    /// nothing was re-executed; resubmitting under a new key repeats it.
-    IdempotencyWindowExpired,
     /// The key records `commit` for this intent, but this runtime does not
     /// retain its receipt: the commit was performed before a restore or
     /// reopen, or by a product occurrence that has since retired. The commit
@@ -253,16 +249,6 @@ impl WorthQueryApplicationCommitDenial {
     ) -> Self {
         Self {
             kind: WorthQueryApplicationCommitDenialKind::IdempotencyIntentDrift,
-            stage: WorthQueryApplicationCommitDenialStage::Idempotency,
-            detail: None,
-            cause: None,
-        }
-    }
-
-    pub(in crate::domain_computation::primary_graph::application_attempt) const fn idempotency_window_expired(
-    ) -> Self {
-        Self {
-            kind: WorthQueryApplicationCommitDenialKind::IdempotencyWindowExpired,
             stage: WorthQueryApplicationCommitDenialStage::Idempotency,
             detail: None,
             cause: None,

@@ -39,6 +39,7 @@ pub enum WorthQueryProviderSessionDenialKind {
     ProviderIdentityMismatch,
     ProviderGenerationMismatch,
     SessionProtocolUnsupported,
+    AllocationDenied,
     ProviderRejected,
     ProviderPanicked,
     TokenNotMintedForPlan,
@@ -53,6 +54,7 @@ pub struct WorthQueryProviderSessionFailure {
     recovery_posture: WorthQueryProviderSessionRecoveryPosture,
     detail: String,
     counters: WorthQueryProviderSessionProtocolCounters,
+    allocation: Option<worth_execution::ExecutionAllocationDenial>,
 }
 
 impl WorthQueryProviderSessionFailure {
@@ -68,7 +70,25 @@ impl WorthQueryProviderSessionFailure {
             recovery_posture: WorthQueryProviderSessionRecoveryPosture::Closed,
             detail: detail.into(),
             counters,
+            allocation: None,
         }
+    }
+
+    pub(in crate::domain_computation) fn allocation_denied(
+        denial: worth_execution::ExecutionAllocationDenial,
+    ) -> Self {
+        let mut failure = Self::new(
+            WorthQueryProviderSessionDenialKind::AllocationDenied,
+            WorthQueryProviderSessionProtocolStage::Commit,
+            format!("completed touched-record backing allocation denied: {denial:?}"),
+            WorthQueryProviderSessionProtocolCounters::default(),
+        );
+        failure.allocation = Some(denial);
+        failure
+    }
+
+    pub fn allocation_denial(&self) -> Option<&worth_execution::ExecutionAllocationDenial> {
+        self.allocation.as_ref()
     }
 
     pub(crate) fn unsupported() -> Self {

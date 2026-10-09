@@ -13,7 +13,6 @@ mod commit_completion;
 mod commit_preparation;
 pub(in crate::domain_computation::primary_graph::provider) use commit_preparation::publish_recovered;
 pub(in crate::domain_computation::primary_graph::provider) use commit_preparation::ManagedUnpublishedAttempt;
-pub(in crate::domain_computation::primary_graph) use commit_preparation::RetainedTouchedRecords;
 mod phase;
 mod registration;
 mod retained_basis;

@@ -122,8 +122,8 @@ fn an_unrelated_caller_advances_for_many_cycles_under_tight_custody() {
 
 /// Query-owned state one cycle leaves retained: invalidation index bytes,
 /// required custody, output-lineage history, and the completed evidence
-/// entries inside the idempotency window with the bytes their tickets hold.
-type QueryRetained = (u64, usize, u64, usize, usize);
+/// entries that retain the exact committed idempotency evidence.
+type QueryRetained = (u64, usize, u64, usize);
 
 /// History one cycle leaves retained: installed World commits, World history
 /// metadata bytes, unique World component pins and Relational retired roots.
@@ -150,7 +150,7 @@ fn cycle_chain_at_small_retention(
         settled_in_one_advance!(c, request, "the last consumer");
         settled_in_one_advance!(b, request, "the middle consumer");
         settled_in_one_advance!(a, request, "the open root demand");
-        let (evidence_entries, evidence_bytes) = application.completed_evidence_retained_for_test();
+        let evidence_entries = application.completed_evidence_retained_for_test();
         retained(
             cycle,
             (
@@ -158,7 +158,6 @@ fn cycle_chain_at_small_retention(
                 application.required_custody_bytes_for_test(),
                 application.output_lineage_retained_bytes_for_test(),
                 evidence_entries,
-                evidence_bytes,
             ),
             application.history_retained_for_test(),
         );
@@ -189,26 +188,34 @@ fn the_required_chain_stays_live_for_a_hundred_cycles_at_small_retention() {
     let _guard = checkpoint_recovery_test_guard();
     let cycles = 100;
     // World capacity is the fixture's own: history behind the settled head
-    // retires each cycle, and the idempotency window evicts the oldest
-    // completed evidence once full, so World, Relational and Query retention
-    // all stop growing once every one of the eight retained positions has
-    // rotated.
+    // retires each cycle. Invalidation, required custody and lineage rotate;
+    // committed idempotency evidence remains retained independently.
     let mut steady = None;
     let mut steady_history = None;
-    cycle_chain_at_small_retention(cycles, |cycle, retained, history| {
-        if cycle >= 16 {
-            assert_eq!(
-                *steady.get_or_insert(retained),
-                retained,
-                "cycle {cycle}: Query-owned retained bytes are steady"
+    let mut prior_evidence = 0;
+    cycle_chain_at_small_retention(
+        cycles,
+        |cycle, (invalidation, custody, lineage, evidence), history| {
+            assert!(
+                evidence >= prior_evidence,
+                "completed idempotency evidence is retained"
             );
-            assert_eq!(
-                *steady_history.get_or_insert(history),
-                history,
-                "cycle {cycle}: World history, pins and Relational retired roots are steady"
-            );
-        }
-    });
+            prior_evidence = evidence;
+            let retained = (invalidation, custody, lineage);
+            if cycle >= 16 {
+                assert_eq!(
+                    *steady.get_or_insert(retained),
+                    retained,
+                    "cycle {cycle}: Query-owned retained bytes are steady"
+                );
+                assert_eq!(
+                    *steady_history.get_or_insert(history),
+                    history,
+                    "cycle {cycle}: World history, pins and Relational retired roots are steady"
+                );
+            }
+        },
+    );
 }
 
 /// What the index retains once every retained version holds the same rows.

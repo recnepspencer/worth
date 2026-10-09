@@ -33,8 +33,11 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphCo
 pub(in crate::domain_computation::primary_graph) struct WorthQueryMutationWorkCommitSeal {
     counters: WorthQueryPrimaryMutationWorkCounters,
     index_maintenance_work: worth_relational::facade::indexes::DerivedIndexMaintenanceWork,
-    touched_records:
-        std::sync::Arc<crate::domain_computation::primary_graph::provider::RetainedTouchedRecords>,
+    touched_records: std::sync::Arc<
+        worth_execution::ExecutionArray<
+            crate::domain_computation::primary_graph::provider::WorthQueryTouchedRecordIdentity,
+        >,
+    >,
     preimage: WorthQueryPreImageRetentionWork,
 }
 
@@ -46,7 +49,8 @@ pub(super) fn seal(
     Option<crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission>,
 ){
     let prepared_touched_records = committed.take_prepared_touched_records();
-    let touched_records = prepared_touched_records.fill(&committed.committed().changed_records);
+    let touched_records =
+        prepared_touched_records.verify_performed(&committed.committed().changed_records);
     let mutation_work =
         WorthQueryPrimaryMutationWorkEvidence::from_commit_seal(WorthQueryMutationWorkCommitSeal {
             counters: committed.work(),
@@ -107,7 +111,11 @@ impl WorthQueryMutationWorkCommitSeal {
     ) -> (
         WorthQueryPrimaryMutationWorkCounters,
         worth_relational::facade::indexes::DerivedIndexMaintenanceWork,
-        std::sync::Arc<crate::domain_computation::primary_graph::provider::RetainedTouchedRecords>,
+        std::sync::Arc<
+            worth_execution::ExecutionArray<
+                crate::domain_computation::primary_graph::provider::WorthQueryTouchedRecordIdentity,
+            >,
+        >,
         WorthQueryPreImageRetentionWork,
     ) {
         (

@@ -192,6 +192,20 @@ pub(super) fn finish_authorized_compare(
 fn provider_compare_denied(
     denial: crate::domain_computation::WorthQueryProviderCompareAndCommitDenial,
 ) -> WorthQueryProviderProgressionOutcome {
+    let denial = match denial {
+        crate::domain_computation::WorthQueryProviderCompareAndCommitDenial::ProviderSession(
+            failure,
+        ) if failure.allocation_denial().is_some() => {
+            use worth_execution::ExecutionAllocationDenialKind as Kind;
+            return match failure.allocation_denial().expect("matched physical cause").kind() {
+                Kind::Cancelled => WorthQueryProviderProgressionOutcome::Cancelled,
+                Kind::DeadlineElapsed => WorthQueryProviderProgressionOutcome::TimedOut,
+                _ => WorthQueryProviderProgressionOutcome::Denied(
+                    crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenial::provider_session_denied(failure)),
+            };
+        }
+        other => other,
+    };
     let provider_detail = match &denial {
         crate::domain_computation::WorthQueryProviderCompareAndCommitDenial::ProviderSession(
             failure,

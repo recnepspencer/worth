@@ -86,9 +86,6 @@ where
         Ok(Err(crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::Unavailable)) => {
             Some(denied(DenialStage::Idempotency))
         }
-        Ok(Err(crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::WindowExpired)) => Some(WorthQueryApplicationCommitOutcome::Denied(
-            WorthQueryApplicationCommitDenial::idempotency_window_expired(),
-        )),
         Ok(Err(crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::CommittedReceiptNotRetained { commit })) => {
             Some(WorthQueryApplicationCommitOutcome::Denied(
                 WorthQueryApplicationCommitDenial::idempotency_receipt_not_retained(commit),
