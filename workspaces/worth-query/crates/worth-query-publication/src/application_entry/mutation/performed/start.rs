@@ -11,9 +11,7 @@ where
     Intent::Binding:
         WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
     Root::Dependents:
-        crate::application_entry::mutation::program_output_continuation::ProgramOutputContinuationFactory<
-            'application,
-            Schema,
+        crate::application_entry::mutation::program_output_continuation::ProgramOutputContinuationFactory<Schema,
             Program,
             ProgramDemand<Schema, Root>,
         >,

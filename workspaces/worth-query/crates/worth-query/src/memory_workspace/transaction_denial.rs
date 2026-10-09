@@ -113,13 +113,6 @@ pub(super) fn commit(
             Failure::RetentionIdentityExhausted => {
                 WorthQueryWorkspaceErrorKind::RetentionIdentityExhausted
             }
-            Failure::PreparedRootBudgetExhausted {
-                maximum_bytes,
-                required_bytes,
-            } => WorthQueryWorkspaceErrorKind::PreparedRootBudgetExhausted {
-                maximum_bytes: *maximum_bytes,
-                required_bytes: *required_bytes,
-            },
             _ => WorthQueryWorkspaceErrorKind::Unclassified,
         },
         Error::Preparation { error, .. }

@@ -47,7 +47,7 @@ where
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
         allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
-        WorthQueryApplicationDiscoveredMutationOutcome<'application, Schema, Intent, Program, Root>,
+        WorthQueryApplicationDiscoveredMutationOutcome<Schema, Intent, Program, Root>,
         WorthQueryPerformedMutationExecutionDenial,
     >
     where
@@ -106,6 +106,6 @@ where
                 allocation_policy,
             )
             .map_err(WorthQueryPerformedMutationExecutionDenial::Mutation)?;
-        Ok(discovered_outcome(application, discovery, outcome, source))
+        Ok(discovered_outcome(discovery, outcome, source))
     }
 }

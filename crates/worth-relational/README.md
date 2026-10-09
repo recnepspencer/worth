@@ -83,9 +83,12 @@ Transaction cancellation/deadline and the selected allocation policy are checked
 through preparation; allocation stops retain their typed cause. Declared relation
 rules, visited-set termination, and leased execution work, scratch and result
 admission remain. Preparation's existing BTree/Vec and adjacency-copy heaps are
-not admitted by these liveness checks. Patch-count, prepared-root bytes and live
-companion retention limits remain separate; this change does not establish a
-100,000-member or million-member lifecycle result.
+not admitted by these liveness checks. Prepared root byte costs remain observable
+without an aggregate admission ceiling. Companion cells retain their actual Arc
+ownership and publication coordination without a separate retained-cell byte
+counter. Patch-count, candidate, snapshot, branch retention and companion
+preflight controls remain; this does not establish a 100,000-member or
+million-member lifecycle result.
 
 Repeated equality selections can prepare an installed entity-field index with
 `index_access().prepare_entity_field_lookup(&view, index, kind, &locator)`.

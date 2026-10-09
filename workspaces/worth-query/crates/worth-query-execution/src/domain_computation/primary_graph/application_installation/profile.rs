@@ -26,7 +26,6 @@ impl WorthQueryInMemoryApplicationProfile {
         .policy;
         if self == Self::WorkflowScale {
             policy.max_patch_records_per_commit = 240_000;
-            policy.max_prepared_root_bytes = 512 * 1024 * 1024;
         }
         if let Some(maximum) = maximum_records {
             policy.max_patch_records_per_commit = maximum.get();
@@ -77,10 +76,9 @@ mod tests {
     }
 
     #[test]
-    fn workflow_scale_has_finite_publication_retention_envelope() {
+    fn workflow_scale_has_finite_patch_publication_envelope() {
         let profile = WorthQueryInMemoryApplicationProfile::WorkflowScale;
         let publication = profile.publication_override(None).unwrap();
         assert_eq!(publication.max_patch_records_per_commit, 240_000);
-        assert_eq!(publication.max_prepared_root_bytes, 512 * 1024 * 1024);
     }
 }

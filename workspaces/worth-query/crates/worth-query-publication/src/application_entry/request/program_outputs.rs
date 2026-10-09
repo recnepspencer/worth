@@ -56,8 +56,7 @@ where
             + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
         RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
         Root::Dependents:
-            crate::application_entry::mutation::program_output_continuation::ProgramOutputContinuationFactory<
-                'application, Schema, Program, RootDemand<Schema, Root>,
+            crate::application_entry::mutation::program_output_continuation::ProgramOutputContinuationFactory<Schema, Program, RootDemand<Schema, Root>,
             >,
         RootDemand<Schema, Root>: Clone,
         <RootSource<Schema, Root> as ApplicationQueryBinding<Schema>>::Input:
@@ -120,9 +119,7 @@ where
         Root: ApplicationOutputGraphShape<Schema> + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
         RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
         Root::Dependents:
-            crate::application_entry::mutation::program_output_continuation::ProgramOutputContinuationFactory<
-                'application,
-                Schema,
+            crate::application_entry::mutation::program_output_continuation::ProgramOutputContinuationFactory<Schema,
                 Program,
                 RootDemand<Schema, Root>,
             >,

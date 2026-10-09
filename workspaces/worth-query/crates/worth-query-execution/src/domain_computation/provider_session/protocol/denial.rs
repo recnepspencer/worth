@@ -25,17 +25,11 @@ pub enum WorthQueryProviderSessionDenialKind {
     ForeignGraphAuthority,
     UndeclaredOperationScope,
     ResourceEnvelopeMismatch,
-    ActiveSnapshotCapacityExhausted {
-        maximum_active_snapshots: usize,
-    },
+    ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
     RetentionCapacityExhausted,
     RetentionIdentityExhausted,
     SnapshotIdentityExhausted,
     CandidateIdentityExhausted,
-    PreparedRootBudgetExhausted {
-        maximum_bytes: u64,
-        required_bytes: u64,
-    },
     IndexMaintenanceBudgetExceeded,
     IndexGenerationIdentityExhausted,
     ProviderIdentityMismatch,
@@ -49,6 +43,9 @@ pub enum WorthQueryProviderSessionDenialKind {
     SessionIdentityExhausted,
 }
 
+/// A provider session's exact failure, protocol stage and recovery posture.
+/// Native preparation and allocation causes remain available for inspection;
+/// this description does not itself grant retry or cleanup authority.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryProviderSessionFailure {
     kind: WorthQueryProviderSessionDenialKind,

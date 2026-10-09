@@ -4,7 +4,7 @@ pub use crate::domain_computation::primary_graph::WorthQueryExecutionLeaseDenial
 
 pub use crate::domain_computation::{
     WorthQueryInvariantExecutionDenialKind, WorthQueryInvariantExecutionFailure,
-    WorthQueryInvariantExecutionFailurePosture,
+    WorthQueryInvariantExecutionFailurePosture, WorthQueryProviderSessionFailure,
 };
 
 #[cfg(feature = "test-query-execution-observer")]

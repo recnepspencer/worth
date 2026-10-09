@@ -162,13 +162,6 @@ pub(super) fn publication_failure(
         Failure::RetentionIdentityExhausted => {
             EffectExecutionDenialKind::TransactionRetentionIdentityExhausted
         }
-        Failure::PreparedRootBudgetExhausted {
-            maximum_bytes,
-            required_bytes,
-        } => EffectExecutionDenialKind::PreparedRootBudgetExceeded {
-            maximum_bytes: *maximum_bytes,
-            required_bytes: *required_bytes,
-        },
         _ => EffectExecutionDenialKind::RelationalCommitFailed,
     };
     RelationalEffectExecutionFailure::Denied {

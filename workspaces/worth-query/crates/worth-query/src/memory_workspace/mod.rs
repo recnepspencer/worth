@@ -350,23 +350,13 @@ pub enum WorthQueryWorkspaceErrorKind {
     RetentionCapacityExhausted,
     RetentionIdentityExhausted,
     SnapshotIdentityExhausted,
-    SavepointCapacityExhausted {
-        maximum_savepoints: usize,
-    },
+    SavepointCapacityExhausted { maximum_savepoints: usize },
     SavepointIdentityExhausted,
     TransactionMaterializationAuthorityRequired,
     TransactionMaterializationModeMismatch,
-    CandidateCapacityExhausted {
-        maximum_candidates: usize,
-    },
-    PublishedSnapshotCapacityExhausted {
-        maximum_handles: usize,
-    },
+    CandidateCapacityExhausted { maximum_candidates: usize },
+    PublishedSnapshotCapacityExhausted { maximum_handles: usize },
     CandidateIdentityExhausted,
-    PreparedRootBudgetExhausted {
-        maximum_bytes: u64,
-        required_bytes: u64,
-    },
     PatchPositionReservationContended,
     ProposalIdentityExhausted,
     RelationalBasisUnavailable,

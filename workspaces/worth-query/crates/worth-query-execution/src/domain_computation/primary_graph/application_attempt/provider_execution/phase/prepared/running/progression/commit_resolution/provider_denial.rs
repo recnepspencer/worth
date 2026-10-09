@@ -67,73 +67,65 @@ fn classified_provider_denial(
             _ => {}
         }
     }
-    let (capacity, retention, identity, prepared_root_budget) = match denial {
+    let (capacity, retention, identity) = match denial {
         crate::domain_computation::WorthQueryProviderCompareAndCommitDenial::ProviderSession(
             failure,
         ) => match failure.kind() {
             crate::domain_computation::WorthQueryProviderSessionDenialKind::ActiveSnapshotCapacityExhausted {
                 maximum_active_snapshots,
-            } => (Some(maximum_active_snapshots), false, None, None),
-            crate::domain_computation::WorthQueryProviderSessionDenialKind::RetentionCapacityExhausted => (None, true, None, None),
-            crate::domain_computation::WorthQueryProviderSessionDenialKind::RetentionIdentityExhausted => (None, false, Some(WorthQueryCommitIdentityExhaustion::Retention), None),
-            crate::domain_computation::WorthQueryProviderSessionDenialKind::SnapshotIdentityExhausted => (None, false, Some(WorthQueryCommitIdentityExhaustion::Snapshot), None),
-            crate::domain_computation::WorthQueryProviderSessionDenialKind::CandidateIdentityExhausted => (None, false, Some(WorthQueryCommitIdentityExhaustion::Candidate), None),
-            crate::domain_computation::WorthQueryProviderSessionDenialKind::PreparedRootBudgetExhausted { maximum_bytes, required_bytes } => (None, false, None, Some((maximum_bytes, required_bytes))),
-            _ => (None, false, None, None),
+            } => (Some(maximum_active_snapshots), false, None),
+            crate::domain_computation::WorthQueryProviderSessionDenialKind::RetentionCapacityExhausted => (None, true, None),
+            crate::domain_computation::WorthQueryProviderSessionDenialKind::RetentionIdentityExhausted => (None, false, Some(WorthQueryCommitIdentityExhaustion::Retention)),
+            crate::domain_computation::WorthQueryProviderSessionDenialKind::SnapshotIdentityExhausted => (None, false, Some(WorthQueryCommitIdentityExhaustion::Snapshot)),
+            crate::domain_computation::WorthQueryProviderSessionDenialKind::CandidateIdentityExhausted => (None, false, Some(WorthQueryCommitIdentityExhaustion::Candidate)),
+            _ => (None, false, None),
         },
         crate::domain_computation::WorthQueryProviderCompareAndCommitDenial::DecisionReadSet(
             failure,
         ) => match failure.kind() {
             crate::domain_computation::WorthQueryDecisionReadSetDenialKind::ActiveSnapshotCapacityExhausted {
                 maximum_active_snapshots,
-            } => (Some(maximum_active_snapshots), false, None, None),
+            } => (Some(maximum_active_snapshots), false, None),
             crate::domain_computation::WorthQueryDecisionReadSetDenialKind::RetentionCapacityExhausted => {
-                (None, true, None, None)
+                (None, true, None)
             }
             crate::domain_computation::WorthQueryDecisionReadSetDenialKind::RetentionIdentityExhausted => {
-                (None, false, Some(WorthQueryCommitIdentityExhaustion::Retention), None)
+                (None, false, Some(WorthQueryCommitIdentityExhaustion::Retention))
             }
             crate::domain_computation::WorthQueryDecisionReadSetDenialKind::SnapshotIdentityExhausted => {
-                (None, false, Some(WorthQueryCommitIdentityExhaustion::Snapshot), None)
+                (None, false, Some(WorthQueryCommitIdentityExhaustion::Snapshot))
             }
-            _ => (None, false, None, None),
+            _ => (None, false, None),
         },
     };
-    match (capacity, retention, identity, prepared_root_budget) {
-        (Some(maximum_active_snapshots), _, _, _) => WorthQueryProviderProgressionOutcome::Denied(
+    match (capacity, retention, identity) {
+        (Some(maximum_active_snapshots), _, _) => WorthQueryProviderProgressionOutcome::Denied(
             crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenial::active_snapshot_capacity_exhausted(
                 DenialStage::ProviderCommit,
                 maximum_active_snapshots,
             ),
         ),
-        (None, true, _, _) => WorthQueryProviderProgressionOutcome::Denied(
+        (None, true, _) => WorthQueryProviderProgressionOutcome::Denied(
             crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenial::retention_capacity_exhausted(
                 DenialStage::ProviderCommit,
             ),
         ),
-        (None, false, Some(WorthQueryCommitIdentityExhaustion::Retention), _) => WorthQueryProviderProgressionOutcome::Denied(
+        (None, false, Some(WorthQueryCommitIdentityExhaustion::Retention)) => WorthQueryProviderProgressionOutcome::Denied(
             crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenial::retention_identity_exhausted(
                 DenialStage::ProviderCommit,
             ),
         ),
-        (None, false, Some(WorthQueryCommitIdentityExhaustion::Snapshot), _) => WorthQueryProviderProgressionOutcome::Denied(
+        (None, false, Some(WorthQueryCommitIdentityExhaustion::Snapshot)) => WorthQueryProviderProgressionOutcome::Denied(
             crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenial::snapshot_identity_exhausted(
                 DenialStage::ProviderCommit,
             ),
         ),
-        (None, false, Some(WorthQueryCommitIdentityExhaustion::Candidate), _) => WorthQueryProviderProgressionOutcome::Denied(
+        (None, false, Some(WorthQueryCommitIdentityExhaustion::Candidate)) => WorthQueryProviderProgressionOutcome::Denied(
             crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenial::candidate_identity_exhausted(
                 DenialStage::ProviderCommit,
             ),
         ),
-        (None, false, None, Some((maximum_bytes, required_bytes))) => WorthQueryProviderProgressionOutcome::Denied(
-            crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenial::prepared_root_budget_exhausted(
-                DenialStage::ProviderCommit,
-                maximum_bytes,
-                required_bytes,
-            ),
-        ),
-        (None, false, None, None) => WorthQueryProviderProgressionOutcome::Denied(
+        (None, false, None) => WorthQueryProviderProgressionOutcome::Denied(
             crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenial::provider_rejected_with_detail(
                 DenialStage::ProviderCommit,
                 provider_detail,

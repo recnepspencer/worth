@@ -29,6 +29,7 @@ use crate::application_entry::{
 };
 
 mod branch;
+mod edge;
 mod leaf;
 
 mod sealed {
@@ -63,290 +64,41 @@ pub enum ProgramOutputContinuationProgress {
 }
 
 #[doc(hidden)]
-pub trait ProgramOutputContinuation<'application, Schema>: sealed::Continuation
+pub trait ProgramOutputContinuation<Schema, Program>: sealed::Continuation
 where
     Schema: ApplicationSchema,
+    Program: ApplicationProgramDefinition<Schema>,
 {
     fn advance(
         &mut self,
-        request: &WorthQueryApplicationRequest<'application, '_, '_, Schema>,
+        application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
     ) -> Result<ProgramOutputContinuationProgress, WorthQueryRequiredOutputPreparationDenial>;
 }
 
 #[doc(hidden)]
-pub trait ProgramOutputContinuationFactory<'application, Schema, Program, ParentDemand>:
-    sealed::Factory
+/// Creates owned, effect-free traversal state. Source queries and native
+/// admissions belong to `advance`, after the state is retained by its parent.
+pub trait ProgramOutputContinuationFactory<Schema, Program, ParentDemand>: sealed::Factory
 where
     Schema: ApplicationSchema,
     Program: ApplicationProgramDefinition<Schema>,
-    ParentDemand: WorthQueryApplicationOutputDemand<Schema>,
+    ParentDemand: WorthQueryApplicationOutputDemand<Schema> + Clone,
 {
     fn start(
-        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+        application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
         parent_demand: &ParentDemand,
         _parent_settlement: &WorthQueryApplicationOutputDemandSettlement<
             SourceQuery<Schema, ParentDemand>,
         >,
-        parent_authority: &WorthQuerySettledProgramOutput<Schema, Program, ParentDemand>,
+        parent_authority: &std::sync::Arc<
+            WorthQuerySettledProgramOutput<Schema, Program, ParentDemand>,
+        >,
         minimum_observation: &crate::application_entry::WorthQueryApplicationReadObservation,
-        request: &WorthQueryApplicationRequest<'application, '_, '_, Schema>,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
         controls: WorthQueryOutputDemandControls,
     ) -> Result<
-        Box<dyn ProgramOutputContinuation<'application, Schema> + 'application>,
+        Box<dyn ProgramOutputContinuation<Schema, Program> + 'static>,
         WorthQueryRequiredOutputPreparationDenial,
     >;
-}
-
-struct EdgeNode<'application, Schema, Program, Demand>
-where
-    Schema: ApplicationSchema,
-    Program: ApplicationProgramDefinition<Schema>,
-    Demand: WorthQueryApplicationOutputDemand<Schema>,
-{
-    demand: Demand,
-    handle: Option<WorthQueryApplicationProgramDemandHandle<'application, Schema, Program, Demand>>,
-    settled: Option<(
-        WorthQueryApplicationOutputDemandSettlement<SourceQuery<Schema, Demand>>,
-        WorthQuerySettledProgramOutput<Schema, Program, Demand>,
-    )>,
-    continuation: Option<Box<dyn ProgramOutputContinuation<'application, Schema> + 'application>>,
-}
-
-struct EdgeContinuation<'application, Schema, Program, Connection, Children>
-where
-    Schema: ApplicationSchema,
-    Program: ApplicationProgramDefinition<Schema>,
-    Connection: ApplicationConnectionShape<Schema>,
-    Binding<Schema, Connection>: WorthQueryApplicationDependentOutputConnection<Schema>,
-    Children: ApplicationOutputEdgesShape<Schema>,
-{
-    application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
-    nodes: Vec<EdgeNode<'application, Schema, Program, ChildDemand<Schema, Connection>>>,
-    outputs: Vec<ProgramOutputRecord>,
-    work: ProgramOutputTraversalWork,
-    controls: WorthQueryOutputDemandControls,
-    basis: crate::application_entry::WorthQueryApplicationReadObservation,
-    marker: std::marker::PhantomData<fn() -> Children>,
-}
-
-impl<'application, Schema, Program, Connection, Children> sealed::Continuation
-    for EdgeContinuation<'application, Schema, Program, Connection, Children>
-where
-    Schema: ApplicationSchema,
-    Program: ApplicationProgramDefinition<Schema>,
-    Connection: ApplicationConnectionShape<Schema>,
-    Binding<Schema, Connection>: WorthQueryApplicationDependentOutputConnection<Schema>,
-    Children: ApplicationOutputEdgesShape<Schema>,
-{
-}
-
-impl<Connection, Children> sealed::Factory for ApplicationOutputEdge<Connection, Children> {}
-
-impl<'application, Schema, Program, ParentDemand, Connection, Children>
-    ProgramOutputContinuationFactory<'application, Schema, Program, ParentDemand>
-    for ApplicationOutputEdge<Connection, Children>
-where
-    Schema: ApplicationSchema + 'static,
-    Program: ApplicationProgramDefinition<Schema>,
-    ParentDemand: WorthQueryApplicationOutputDemand<Schema>,
-    Connection: ApplicationConnectionShape<Schema>,
-    Binding<Schema, Connection>: WorthQueryApplicationDependentOutputConnection<
-        Schema,
-        RootDemand = ParentDemand,
-    >,
-    ChildDemand<Schema, Connection>: Clone,
-    DiscoveryValue<Schema, Connection>: WorthQueryApplicationProjection<
-            Schema,
-            <DiscoveryBinding<Schema, Connection> as ApplicationQueryBinding<Schema>>::Query,
-        > + Clone,
-    <DiscoveryBinding<Schema, Connection> as ApplicationQueryBinding<Schema>>::ScopeBinding:
-        ApplicationQueryScopeResolution<
-            Schema,
-            <DiscoveryBinding<Schema, Connection> as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
-        >,
-    SourceValue<Schema, ChildDemand<Schema, Connection>>: WorthQueryApplicationProjection<
-            Schema,
-            SourceQuery<Schema, ChildDemand<Schema, Connection>>,
-        > + Clone,
-    <Source<Schema, ChildDemand<Schema, Connection>> as ApplicationQueryBinding<Schema>>::Input:
-        ApplicationQueryIntent<
-            Schema,
-            Binding = Source<Schema, ChildDemand<Schema, Connection>>,
-        >,
-    <Source<Schema, ChildDemand<Schema, Connection>> as ApplicationQueryBinding<Schema>>::ScopeBinding:
-        ApplicationQueryScopeResolution<
-            Schema,
-            <Source<Schema, ChildDemand<Schema, Connection>> as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
-        >,
-    Children: ApplicationOutputEdgesShape<Schema>
-        + ProgramOutputContinuationFactory<
-            'application,
-            Schema,
-            Program,
-            ChildDemand<Schema, Connection>,
-        >,
-{
-    fn start(
-        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
-        parent_demand: &ParentDemand,
-        parent_settlement: &WorthQueryApplicationOutputDemandSettlement<
-            SourceQuery<Schema, ParentDemand>,
-        >,
-        parent_authority: &WorthQuerySettledProgramOutput<Schema, Program, ParentDemand>,
-        minimum_observation: &crate::application_entry::WorthQueryApplicationReadObservation,
-        request: &WorthQueryApplicationRequest<'application, '_, '_, Schema>,
-        controls: WorthQueryOutputDemandControls,
-    ) -> Result<
-        Box<dyn ProgramOutputContinuation<'application, Schema> + 'application>,
-        WorthQueryRequiredOutputPreparationDenial,
-    > {
-        let discovery = Binding::<Schema, Connection>::discovery_from_root(parent_demand)
-            .map_err(WorthQueryRequiredOutputPreparationDenial::Connection)?;
-        let basis = if parent_settlement.observation().selected_commit().ordinal()
-            >= minimum_observation.selected_commit().ordinal()
-        {
-            parent_settlement.observation()
-        } else {
-            minimum_observation
-        };
-        let retained = request.at(basis);
-        let result = retained
-            .query(discovery)
-            .execute()
-            .map_err(WorthQueryRequiredOutputPreparationDenial::SourceQuery)?;
-        if result.rows().len() != 1 {
-            return Err(WorthQueryRequiredOutputPreparationDenial::MissingSource);
-        }
-        let discovery_rows = result.rows().len();
-        let demands = Binding::<Schema, Connection>::demands_from_discovery(&result.rows()[0])
-            .map_err(WorthQueryRequiredOutputPreparationDenial::Connection)?;
-        let work = ProgramOutputTraversalWork::discovered(discovery_rows, demands.len());
-        let nodes = demands
-            .into_iter()
-            .map(|demand| {
-                let handle = retained
-                    .demand(demand.clone())
-                    .controls(controls)
-                    .start_dependent::<Program, ParentDemand, Connection>(
-                        application,
-                        parent_authority,
-                        basis,
-                        minimum_observation,
-                    )
-                    .map_err(WorthQueryRequiredOutputPreparationDenial::Demand)?;
-                Ok(EdgeNode {
-                    demand,
-                    handle: Some(handle),
-                    settled: None,
-                    continuation: None,
-                })
-            })
-            .collect::<Result<Vec<_>, WorthQueryRequiredOutputPreparationDenial>>()?;
-        Ok(Box::new(EdgeContinuation::<Schema, Program, Connection, Children> {
-            application,
-            nodes,
-            outputs: Vec::new(),
-            work,
-            controls,
-            basis: basis.retained_clone(),
-            marker: std::marker::PhantomData,
-        }))
-    }
-}
-
-impl<'application, Schema, Program, Connection, Children>
-    ProgramOutputContinuation<'application, Schema>
-    for EdgeContinuation<'application, Schema, Program, Connection, Children>
-where
-    Schema: ApplicationSchema + 'static,
-    Program: ApplicationProgramDefinition<Schema>,
-    Connection: ApplicationConnectionShape<Schema>,
-    Binding<Schema, Connection>: WorthQueryApplicationDependentOutputConnection<Schema>,
-    ChildDemand<Schema, Connection>: Clone,
-    SourceValue<Schema, ChildDemand<Schema, Connection>>: WorthQueryApplicationProjection<
-            Schema,
-            SourceQuery<Schema, ChildDemand<Schema, Connection>>,
-        > + Clone,
-    <Source<Schema, ChildDemand<Schema, Connection>> as ApplicationQueryBinding<Schema>>::Input:
-        ApplicationQueryIntent<
-            Schema,
-            Binding = Source<Schema, ChildDemand<Schema, Connection>>,
-        >,
-    <Source<Schema, ChildDemand<Schema, Connection>> as ApplicationQueryBinding<Schema>>::ScopeBinding:
-        ApplicationQueryScopeResolution<
-            Schema,
-            <Source<Schema, ChildDemand<Schema, Connection>> as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
-        >,
-    Children: ApplicationOutputEdgesShape<Schema>
-        + ProgramOutputContinuationFactory<
-            'application,
-            Schema,
-            Program,
-            ChildDemand<Schema, Connection>,
-        >,
-{
-    fn advance(
-        &mut self,
-        request: &WorthQueryApplicationRequest<'application, '_, '_, Schema>,
-    ) -> Result<ProgramOutputContinuationProgress, WorthQueryRequiredOutputPreparationDenial> {
-        for node in &mut self.nodes {
-            if let Some(handle) = &mut node.handle {
-                match handle
-                    .advance(request)
-                    .map_err(WorthQueryRequiredOutputPreparationDenial::Demand)?
-                {
-                    WorthQueryApplicationProgramDemandProgress::Pending => continue,
-                    WorthQueryApplicationProgramDemandProgress::Settled {
-                        settlement,
-                        authority,
-                    } => {
-                        node.settled = Some((settlement, authority));
-                        node.handle = None;
-                    }
-                }
-            }
-            // A settled output starts its children in the same call. A start
-            // that is refused keeps the settlement for the next call.
-            if let Some((settlement, authority)) = node.settled.as_ref() {
-                node.continuation = Some(Children::start(
-                    self.application,
-                    &node.demand,
-                    settlement,
-                    authority,
-                    &self.basis,
-                    request,
-                    self.controls,
-                )?);
-            }
-            if let Some((settlement, _)) = node.settled.take() {
-                self.outputs.push(ProgramOutputRecord::new::<Schema, Connection>(
-                    node.demand.clone(),
-                    settlement,
-                ));
-            }
-            if let Some(continuation) = &mut node.continuation {
-                match continuation.advance(request)? {
-                    ProgramOutputContinuationProgress::Pending => {}
-                    ProgramOutputContinuationProgress::Settled { outputs, work } => {
-                        self.outputs.extend(outputs);
-                        self.work.include(work);
-                        node.continuation = None;
-                    }
-                }
-            }
-        }
-        if self
-            .nodes
-            .iter()
-            .any(|node| {
-                node.handle.is_some() || node.settled.is_some() || node.continuation.is_some()
-            })
-        {
-            return Ok(ProgramOutputContinuationProgress::Pending);
-        }
-        Ok(ProgramOutputContinuationProgress::Settled {
-            outputs: std::mem::take(&mut self.outputs),
-            work: self.work,
-        })
-    }
 }

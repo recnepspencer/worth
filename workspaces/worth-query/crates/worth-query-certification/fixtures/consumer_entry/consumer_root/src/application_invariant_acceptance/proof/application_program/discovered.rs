@@ -1,3 +1,4 @@
+pub(super) mod continuation;
 pub(super) mod publication_basis;
 pub(super) mod publication_lifecycle;
 pub(super) mod recovery;
@@ -60,6 +61,7 @@ pub(super) fn performed_source_discovers_required_root(
     };
     let mut started = performed
         .start_required_outputs(
+            &world.application,
             &request,
             WorthQueryOutputDemandControls::new(
                 NonZeroUsize::new(4_096).unwrap(),
@@ -72,7 +74,7 @@ pub(super) fn performed_source_discovers_required_root(
     let settled = settle(|| {
         match started
             .required_output_mut()
-            .advance(&request)
+            .advance(&world.application, &request)
             .expect("the discovered roots advance")
         {
             WorthQueryDiscoveredProgramOutputProgress::Pending => None,
@@ -165,6 +167,7 @@ pub(super) fn isolated_source_settles_without_roots(
     };
     let mut started = performed
         .start_required_outputs(
+            &world.application,
             &request,
             WorthQueryOutputDemandControls::new(
                 NonZeroUsize::new(4_096).unwrap(),
@@ -174,7 +177,7 @@ pub(super) fn isolated_source_settles_without_roots(
         .unwrap_or_else(|failure| panic!("empty discovery starts: {:?}", failure.denial()));
     let WorthQueryDiscoveredProgramOutputProgress::Settled(settled) = started
         .required_output_mut()
-        .advance(&request)
+        .advance(&world.application, &request)
         .expect("empty discovery settles immediately")
     else {
         panic!("empty discovery has no output work")

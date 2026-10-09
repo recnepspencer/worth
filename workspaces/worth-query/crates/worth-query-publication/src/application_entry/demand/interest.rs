@@ -76,7 +76,7 @@ where
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
     ) -> Result<
         (
-            super::WorthQueryApplicationProgramDemandHandle<'application, Schema, Program, Demand>,
+            super::WorthQueryApplicationProgramDemandHandle<Schema, Program, Demand>,
             std::sync::Arc<
                 worth_query_execution::facade::primary_graph::WorthQueryApplicationReadObservation,
             >,
@@ -108,12 +108,7 @@ where
             )
             .map_err(WorthQueryApplicationOutputDemandDenial::Demand)?;
         Ok((
-            super::WorthQueryApplicationProgramDemandHandle::new(
-                application,
-                admitted,
-                self.demand,
-                None,
-            ),
+            super::WorthQueryApplicationProgramDemandHandle::new(admitted, self.demand, None),
             observation,
         ))
     }
@@ -124,7 +119,7 @@ where
         source_receipt: &worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
     ) -> Result<
         (
-            super::WorthQueryApplicationProgramDemandHandle<'application, Schema, Program, Demand>,
+            super::WorthQueryApplicationProgramDemandHandle<Schema, Program, Demand>,
             std::sync::Arc<
                 worth_query_execution::facade::primary_graph::WorthQueryApplicationReadObservation,
             >,
@@ -190,12 +185,7 @@ where
             )
             .map_err(WorthQueryApplicationOutputDemandDenial::Demand)?;
         Ok((
-            super::WorthQueryApplicationProgramDemandHandle::new(
-                application,
-                admitted,
-                self.demand,
-                None,
-            ),
+            super::WorthQueryApplicationProgramDemandHandle::new(admitted, self.demand, None),
             observation,
         ))
     }
@@ -211,7 +201,7 @@ where
         basis: &crate::application_entry::WorthQueryApplicationReadObservation,
         minimum_observation: &crate::application_entry::WorthQueryApplicationReadObservation,
     ) -> Result<
-        super::WorthQueryApplicationProgramDemandHandle<'application, Schema, Program, Demand>,
+        super::WorthQueryApplicationProgramDemandHandle<Schema, Program, Demand>,
         WorthQueryApplicationOutputDemandDenial,
     >
     where
@@ -224,6 +214,9 @@ where
             Demand = Demand,
         >,
     {
+        if !std::ptr::eq(self.application, application.runtime()) {
+            return Err(WorthQueryApplicationOutputDemandDenial::FreshRequestMismatch);
+        }
         let source_observation = self
             .observation
             .as_ref()
@@ -242,7 +235,6 @@ where
             )
             .map_err(WorthQueryApplicationOutputDemandDenial::Demand)?;
         Ok(super::WorthQueryApplicationProgramDemandHandle::new(
-            application,
             admitted,
             self.demand,
             Some(source_observation),
@@ -288,7 +280,7 @@ where
             SourceValue<Schema, Demand>,
         >,
     ) -> Result<
-        super::WorthQueryApplicationProgramDemandHandle<'application, Schema, Program, Demand>,
+        super::WorthQueryApplicationProgramDemandHandle<Schema, Program, Demand>,
         WorthQueryApplicationOutputDemandDenial,
     >
     where
@@ -308,7 +300,6 @@ where
             )
             .map_err(WorthQueryApplicationOutputDemandDenial::Demand)?;
         Ok(super::WorthQueryApplicationProgramDemandHandle::new(
-            application,
             admitted,
             self.demand,
             None,

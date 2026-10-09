@@ -102,7 +102,6 @@ impl SourceInvalidationOwner {
         head: &worth_relational::facade::runtime::PositionedRelationalSnapshot,
         admission: &mut super::InvalidationEditAdmission,
     ) -> Result<(), CompanionPreflightStop> {
-        use worth_relational::facade::mvcc::PublicationCompanionRegistrationStop as Stop;
         if head.runtime_instance_id() != self.runtime_instance_id {
             return Err(CompanionPreflightStop::ForeignCell);
         }
@@ -117,12 +116,7 @@ impl SourceInvalidationOwner {
         let initial = self.initial_root(admission)?;
         let cell = registration
             .mint_branch_cell(head, initial)
-            .map_err(|stop| match stop {
-                Stop::CellCapacityExhausted { maximum_bytes } => {
-                    CompanionPreflightStop::CellCapacityExhausted { maximum_bytes }
-                }
-                _ => CompanionPreflightStop::RegistrationChanged,
-            })?;
+            .map_err(|_| CompanionPreflightStop::RegistrationChanged)?;
         self.retain_cell(&mut branches, head.branch_id().clone(), &cell, admission)
     }
 

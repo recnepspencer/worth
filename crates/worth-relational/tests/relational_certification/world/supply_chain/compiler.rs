@@ -135,7 +135,6 @@ fn compile_supply_chain_baseline_with_limits_and_catalog_and_custom_invariants(
         max_transaction_savepoints: 4_096,
         max_prepared_candidates: 1_024,
         candidate_max_lifetime_millis: 30_000,
-        max_prepared_root_bytes: 268_435_456,
     });
     if let Some(invariant_catalog) = invariant_catalog {
         builder = builder.invariant_catalog(invariant_catalog);

@@ -7,13 +7,15 @@ struct CompleteContinuation {
 impl sealed::Continuation for CompleteContinuation {}
 impl sealed::Factory for ApplicationOutputLeaf {}
 
-impl<'application, Schema> ProgramOutputContinuation<'application, Schema> for CompleteContinuation
+impl<Schema, Program> ProgramOutputContinuation<Schema, Program> for CompleteContinuation
 where
     Schema: ApplicationSchema,
+    Program: ApplicationProgramDefinition<Schema>,
 {
     fn advance(
         &mut self,
-        _: &WorthQueryApplicationRequest<'application, '_, '_, Schema>,
+        _application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
+        _: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
     ) -> Result<ProgramOutputContinuationProgress, WorthQueryRequiredOutputPreparationDenial> {
         if std::mem::take(&mut self.open) {
             Ok(ProgramOutputContinuationProgress::Settled {
@@ -26,24 +28,23 @@ where
     }
 }
 
-impl<'application, Schema, Program, ParentDemand>
-    ProgramOutputContinuationFactory<'application, Schema, Program, ParentDemand>
+impl<Schema, Program, ParentDemand> ProgramOutputContinuationFactory<Schema, Program, ParentDemand>
     for ApplicationOutputLeaf
 where
     Schema: ApplicationSchema,
     Program: ApplicationProgramDefinition<Schema>,
-    ParentDemand: WorthQueryApplicationOutputDemand<Schema>,
+    ParentDemand: WorthQueryApplicationOutputDemand<Schema> + Clone,
 {
     fn start(
-        _: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+        _: &WorthQueryProgramApplicationRuntime<Schema, Program>,
         _: &ParentDemand,
         _: &WorthQueryApplicationOutputDemandSettlement<SourceQuery<Schema, ParentDemand>>,
-        _: &WorthQuerySettledProgramOutput<Schema, Program, ParentDemand>,
+        _: &std::sync::Arc<WorthQuerySettledProgramOutput<Schema, Program, ParentDemand>>,
         _: &crate::application_entry::WorthQueryApplicationReadObservation,
-        _: &WorthQueryApplicationRequest<'application, '_, '_, Schema>,
+        _: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
         _: WorthQueryOutputDemandControls,
     ) -> Result<
-        Box<dyn ProgramOutputContinuation<'application, Schema> + 'application>,
+        Box<dyn ProgramOutputContinuation<Schema, Program> + 'static>,
         WorthQueryRequiredOutputPreparationDenial,
     > {
         Ok(Box::new(CompleteContinuation { open: true }))

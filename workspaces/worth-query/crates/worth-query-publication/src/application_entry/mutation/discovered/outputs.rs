@@ -17,7 +17,8 @@ use worth_query_execution::facade::primary_graph::{
     WorthQueryApplicationDiscoveredOutputConnection, WorthQueryApplicationProjection,
 };
 
-use super::RootConnection;
+use super::DiscoveredRootStartKind;
+use super::{Discovery, RootConnection};
 use crate::application_entry::demand::{
     WorthQueryApplicationProgramDemandHandle, WorthQueryApplicationProgramDemandProgress,
 };
@@ -32,7 +33,9 @@ use crate::application_entry::{
     WorthQueryRequiredOutputPreparationDenial,
 };
 
+mod admission;
 mod settlement;
+use admission::{DiscoveryBinding, DiscoveryQuery, DiscoveryValue, RootAdmission};
 pub use settlement::{
     WorthQueryDiscoveredProgramOutputProgress, WorthQueryDiscoveredProgramOutputSettlement,
 };
@@ -47,7 +50,7 @@ type Query<Schema, Root> = <Source<Schema, Root> as ApplicationQueryBinding<Sche
 type Value<Schema, Root> =
     <<Source<Schema, Root> as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value;
 
-struct RootNode<'application, Schema, Program, Root>
+struct RootNode<Schema, Program, Root>
 where
     Schema: ApplicationSchema,
     Program: ApplicationProgramDefinition<Schema>,
@@ -56,25 +59,19 @@ where
     RootConnection<Schema, Root>: WorthQueryApplicationDiscoveredOutputConnection<Schema>,
 {
     demand: Demand<Schema, Root>,
-    handle: Option<
-        WorthQueryApplicationProgramDemandHandle<
-            'application,
-            Schema,
-            Program,
-            Demand<Schema, Root>,
-        >,
-    >,
+    handle: Option<WorthQueryApplicationProgramDemandHandle<Schema, Program, Demand<Schema, Root>>>,
     settlement: Option<WorthQueryApplicationOutputDemandSettlement<Query<Schema, Root>>>,
-    pending_authority:
-        Option<WorthQuerySettledProgramOutput<Schema, Program, Demand<Schema, Root>>>,
-    continuation: Option<Box<dyn ProgramOutputContinuation<'application, Schema> + 'application>>,
+    pending_authority: Option<
+        std::sync::Arc<WorthQuerySettledProgramOutput<Schema, Program, Demand<Schema, Root>>>,
+    >,
+    continuation: Option<Box<dyn ProgramOutputContinuation<Schema, Program> + 'static>>,
     outputs: Vec<ProgramOutputRecord>,
     work: ProgramOutputTraversalWork,
 }
 
 /// Drives a mutation's discovered program outputs to settlement. `advance` takes every
 /// discovered root as far as one call can.
-pub struct WorthQueryDiscoveredProgramOutputHandle<'application, Schema, Program, Root>
+pub struct WorthQueryDiscoveredProgramOutputHandle<Schema, Program, Root>
 where
     Schema: ApplicationSchema,
     Program: ApplicationProgramDefinition<Schema>,
@@ -82,10 +79,10 @@ where
         + worth_query_declaration::facade::application_program::ApplicationDiscoveredOutputRoot,
     RootConnection<Schema, Root>: WorthQueryApplicationDiscoveredOutputConnection<Schema>,
 {
-    application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
     source_receipt:
         worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
-    roots: Vec<RootNode<'application, Schema, Program, Root>>,
+    roots: Vec<RootNode<Schema, Program, Root>>,
+    admission: RootAdmission<Schema, Root>,
     superseded: Vec<Demand<Schema, Root>>,
     source_lease: Option<
         worth_query_execution::facade::primary_graph::WorthQueryPreparedRequiredOutputSource,
@@ -96,8 +93,7 @@ where
     complete: bool,
 }
 
-impl<'application, Schema, Program, Root>
-    WorthQueryDiscoveredProgramOutputHandle<'application, Schema, Program, Root>
+impl<Schema, Program, Root> WorthQueryDiscoveredProgramOutputHandle<Schema, Program, Root>
 where
     Schema: ApplicationSchema,
     Program: ApplicationProgramDefinition<Schema>,
@@ -106,38 +102,19 @@ where
     RootConnection<Schema, Root>: WorthQueryApplicationDiscoveredOutputConnection<Schema>,
     Demand<Schema, Root>: Clone,
 {
-    pub(in crate::application_entry) fn new(
-        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+    pub(super) fn new(
         source_receipt: worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
-        roots: Vec<
-            WorthQueryApplicationProgramDemandHandle<
-                'application,
-                Schema,
-                Program,
-                Demand<Schema, Root>,
-            >,
-        >,
-        superseded: Vec<Demand<Schema, Root>>,
+        discovery: Discovery<Schema, Root>,
         source_lease: worth_query_execution::facade::primary_graph::WorthQueryPreparedRequiredOutputSource,
         source: WorthQueryApplicationReadObservation,
         controls: WorthQueryOutputDemandControls,
+        start_kind: DiscoveredRootStartKind,
     ) -> Self {
         Self {
-            application,
             source_receipt,
-            roots: roots
-                .into_iter()
-                .map(|root| RootNode {
-                    demand: root.demand_clone(),
-                    handle: Some(root),
-                    settlement: None,
-                    pending_authority: None,
-                    continuation: None,
-                    outputs: Vec::new(),
-                    work: ProgramOutputTraversalWork::default(),
-                })
-                .collect(),
-            superseded,
+            roots: Vec::new(),
+            admission: RootAdmission::new(discovery, start_kind),
+            superseded: Vec::new(),
             source_lease: Some(source_lease),
             source,
             controls,
@@ -147,8 +124,7 @@ where
     }
 }
 
-impl<'application, Schema, Program, Root>
-    WorthQueryDiscoveredProgramOutputHandle<'application, Schema, Program, Root>
+impl<Schema, Program, Root> WorthQueryDiscoveredProgramOutputHandle<Schema, Program, Root>
 where
     Schema: ApplicationSchema + 'static,
     Program: ApplicationProgramDefinition<Schema>,
@@ -164,9 +140,23 @@ where
             Schema,
             <Source<Schema, Root> as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
         >,
-    Root::Dependents:
-        ProgramOutputContinuationFactory<'application, Schema, Program, Demand<Schema, Root>>,
+    DiscoveryValue<Schema, Root>:
+        WorthQueryApplicationProjection<Schema, DiscoveryQuery<Schema, Root>> + Clone,
+    <DiscoveryBinding<Schema, Root> as ApplicationQueryBinding<Schema>>::ScopeBinding:
+        ApplicationQueryScopeResolution<
+            Schema,
+            <DiscoveryBinding<Schema, Root> as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
+        >,
+    Root::Dependents: ProgramOutputContinuationFactory<Schema, Program, Demand<Schema, Root>>,
 {
+    /// The first native admission refusal remains available after a later retry.
+    /// It is diagnostic evidence, not continuation or completion authority.
+    pub fn first_admission_denial(
+        &self,
+    ) -> Option<&worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenial> {
+        self.admission.first_denial()
+    }
+
     pub fn settled_root_observations(&self) -> Vec<&WorthQueryApplicationReadObservation> {
         self.roots
             .iter()
@@ -180,17 +170,18 @@ where
 
     pub fn settle(
         &mut self,
-        request: &WorthQueryApplicationRequest<'application, '_, '_, Schema>,
+        application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
     ) -> Result<
         WorthQueryDiscoveredProgramOutputProgress<Query<Schema, Root>, Demand<Schema, Root>>,
         WorthQueryRequiredOutputPreparationDenial,
     > {
         for _ in 0..self
             .controls
-            .resolve(self.application.runtime().output_demand_resource_profile())
+            .resolve(application.runtime().output_demand_resource_profile())
             .settlement_attempts()
         {
-            let progress = self.advance(request)?;
+            let progress = self.advance(application, request)?;
             if matches!(
                 progress,
                 WorthQueryDiscoveredProgramOutputProgress::Settled(_)
@@ -208,7 +199,8 @@ where
     /// retired roots remain retained by this handle while later roots advance.
     pub fn advance(
         &mut self,
-        request: &WorthQueryApplicationRequest<'application, '_, '_, Schema>,
+        application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
     ) -> Result<
         WorthQueryDiscoveredProgramOutputProgress<Query<Schema, Root>, Demand<Schema, Root>>,
         WorthQueryRequiredOutputPreparationDenial,
@@ -216,9 +208,37 @@ where
         if self.complete {
             return Err(WorthQueryRequiredOutputPreparationDenial::Closed);
         }
+        if !std::ptr::eq(application.runtime(), request.application) {
+            return Err(WorthQueryRequiredOutputPreparationDenial::ForeignProgram);
+        }
+        let prepared = self
+            .source_lease
+            .as_ref()
+            .expect("an unfinished continuation owns its source");
+        application
+            .validate_discovered_program_source::<Root>(
+                &worth_query_execution::publication_boundary::program_publication_access(),
+                prepared,
+                &self.source_receipt,
+                &self.source.retained,
+                request.principal,
+                request.scope,
+                request.branch,
+            )
+            .map_err(WorthQueryRequiredOutputPreparationDenial::DemandExecution)?;
+        self.admission.admit(
+            application,
+            request,
+            &self.source_receipt,
+            prepared,
+            &self.source,
+            self.controls,
+            &mut self.roots,
+            &mut self.superseded,
+        )?;
         while let Some(root) = self.roots.get_mut(self.next_root) {
             if let Some(handle) = &mut root.handle {
-                match handle.advance(request) {
+                match handle.advance(application, request) {
                     Err(crate::application_entry::WorthQueryApplicationOutputDemandDenial::Superseded) => {
                         self.superseded.push(root.demand.clone());
                         root.handle = None;
@@ -236,7 +256,7 @@ where
                         authority,
                     }) => {
                         root.settlement = Some(settlement);
-                        root.pending_authority = Some(authority);
+                        root.pending_authority = Some(std::sync::Arc::new(authority));
                         root.handle = None;
                     }
                 }
@@ -249,7 +269,7 @@ where
                     .as_ref()
                     .expect("a settled root retains its output settlement");
                 root.continuation = Some(Root::Dependents::start(
-                    self.application,
+                    application,
                     &root.demand,
                     settlement,
                     authority,
@@ -263,7 +283,7 @@ where
                 .continuation
                 .as_mut()
                 .expect("a settled root installs its typed continuation");
-            match continuation.advance(request)? {
+            match continuation.advance(application, request)? {
                 ProgramOutputContinuationProgress::Pending => {
                     return Ok(WorthQueryDiscoveredProgramOutputProgress::Pending);
                 }
@@ -275,7 +295,7 @@ where
                 }
             }
         }
-        self.application.complete_program_output_source(
+        application.complete_program_output_source(
             &worth_query_execution::publication_boundary::program_publication_access(),
             &self.source_receipt,
         );

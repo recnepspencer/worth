@@ -341,7 +341,6 @@ pub(super) fn commit_denial(
             ),
         ),
         Denial::WorkflowSettlementDenied { .. }
-        | Denial::PreparedRootBudgetExhausted { .. }
         | Denial::ElevationTransitionRequired
         | Denial::ElevationRequestProgramMismatch
         | Denial::ElevationApprovalProgramMismatch

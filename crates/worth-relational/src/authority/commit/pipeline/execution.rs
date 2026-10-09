@@ -63,22 +63,6 @@ pub(crate) fn prepare_authoritative_commit(
         retention_binding.record_interruption(interruption);
         return Err(TransactionCommitError::interrupted(interruption));
     }
-    let required_bytes = prepared
-        .prepared_root()
-        .publication_cost()
-        .new_authoritative_bytes;
-    let maximum_bytes = runtime.config.publication.policy.max_prepared_root_bytes;
-    if required_bytes > maximum_bytes {
-        return Err(TransactionCommitError::publication_failed(
-            crate::mvcc::RelationalPublicationFailure::new(
-                crate::mvcc::RelationalPublicationFailureKind::PreparedRootBudgetExhausted {
-                    maximum_bytes,
-                    required_bytes,
-                },
-                "prepared publication root exceeds the configured byte budget",
-            ),
-        ));
-    }
     let published_snapshot_slot =
         runtime
             .reserve_published_snapshot_slot()

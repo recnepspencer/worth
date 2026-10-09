@@ -34,7 +34,6 @@ impl CompanionRootImage {
 }
 
 pub(super) struct CompanionBranchCellCore {
-    pub(super) _retention: super::registration::CompanionCellRetention,
     pub(super) runtime_instance_id: u64,
     pub(super) registration_generation: u64,
     pub(super) branch_id: BranchId,
@@ -132,7 +131,6 @@ impl<T: Send + Sync + 'static> CompanionBranchCell<T> {
         snapshot: &PositionedRelationalSnapshot,
         registration_generation: u64,
         payload: Arc<T>,
-        retention: super::registration::CompanionCellRetention,
     ) -> Self {
         Self::at_selection(
             snapshot.runtime_instance_id(),
@@ -142,14 +140,12 @@ impl<T: Send + Sync + 'static> CompanionBranchCell<T> {
             snapshot.position(),
             registration_generation,
             payload,
-            retention,
         )
     }
 
     pub(super) fn new_selected(
         binding: &super::preflight::CandidateCompanionBinding,
         payload: Arc<T>,
-        retention: super::registration::CompanionCellRetention,
     ) -> Self {
         Self::at_selection(
             binding.runtime_instance_id,
@@ -159,7 +155,6 @@ impl<T: Send + Sync + 'static> CompanionBranchCell<T> {
             binding.expected_position,
             binding.registration_generation,
             payload,
-            retention,
         )
     }
 
@@ -171,7 +166,6 @@ impl<T: Send + Sync + 'static> CompanionBranchCell<T> {
         position: Option<PatchStreamPosition>,
         registration_generation: u64,
         payload: Arc<T>,
-        retention: super::registration::CompanionCellRetention,
     ) -> Self {
         let image = Arc::new(CompanionRootImage {
             root_id,
@@ -182,7 +176,6 @@ impl<T: Send + Sync + 'static> CompanionBranchCell<T> {
         });
         Self {
             core: Arc::new(CompanionBranchCellCore {
-                _retention: retention,
                 runtime_instance_id,
                 registration_generation,
                 branch_id,

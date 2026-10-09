@@ -122,13 +122,6 @@ pub(super) fn map_validation_failure(
             Failure::RetentionIdentityExhausted => {
                 WorthQueryInvariantExecutionDenialKind::RetentionIdentityExhausted
             }
-            Failure::PreparedRootBudgetExhausted {
-                maximum_bytes,
-                required_bytes,
-            } => WorthQueryInvariantExecutionDenialKind::PreparedRootBudgetExhausted {
-                maximum_bytes: *maximum_bytes,
-                required_bytes: *required_bytes,
-            },
             _ => return owner_failure(),
         },
         Error::Preparation { error, .. }

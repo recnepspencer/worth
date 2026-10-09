@@ -52,15 +52,14 @@ where
         receipt: &WorthQueryApplicationCommitReceipt,
         controls: WorthQueryOutputDemandControls,
     ) -> Result<
-        WorthQueryDiscoveredProgramOutputHandle<'application, Schema, Program, Root>,
+        WorthQueryDiscoveredProgramOutputHandle<Schema, Program, Root>,
         WorthQueryRequiredOutputPreparationDenial,
     >
     where
         Program: ApplicationProgramDefinition<Schema>,
         Root: ApplicationOutputGraphShape<Schema> + worth_query_declaration::facade::application_program::ApplicationDiscoveredOutputRoot,
         RootConnection<Schema, Root>: WorthQueryApplicationDiscoveredOutputConnection<Schema>,
-        Root::Dependents: ProgramOutputContinuationFactory<
-            'application, Schema, Program, RootDemand<Schema, Root>,
+        Root::Dependents: ProgramOutputContinuationFactory<Schema, Program, RootDemand<Schema, Root>,
         >,
         RootDemand<Schema, Root>: Clone,
         DiscoveryValue<Schema, Root>:
@@ -89,15 +88,24 @@ where
                 receipt,
             )
             .map_err(WorthQueryRequiredOutputPreparationDenial::DemandExecution)?;
-        super::resolve::start_discovered_roots::<Schema, Program, Root>(
-            application,
-            self,
-            receipt,
+        application
+            .validate_discovered_program_source::<Root>(
+                &worth_query_execution::publication_boundary::program_publication_access(),
+                &prepared,
+                receipt,
+                &retained,
+                self.principal,
+                self.scope,
+                self.branch,
+            )
+            .map_err(WorthQueryRequiredOutputPreparationDenial::DemandExecution)?;
+        Ok(WorthQueryDiscoveredProgramOutputHandle::new(
+            receipt.clone(),
             discovery,
+            prepared,
             WorthQueryApplicationReadObservation::new(retained),
-            &prepared,
             controls,
-            super::resolve::DiscoveredRootStartKind::Recovery,
-        )
+            super::DiscoveredRootStartKind::Recovery,
+        ))
     }
 }

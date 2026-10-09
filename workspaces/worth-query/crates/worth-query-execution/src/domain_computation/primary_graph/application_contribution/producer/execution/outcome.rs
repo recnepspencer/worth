@@ -163,8 +163,7 @@ fn refused_budget(
         Stop::WorkExhausted { .. } | Stop::WorkCounterOverflow => {
             Some(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded)
         }
-        Stop::CellCapacityExhausted { .. }
-        | Stop::PreparationMemoryExhausted { .. }
+        Stop::PreparationMemoryExhausted { .. }
         | Stop::PreparationMemoryCounterOverflow
         | Stop::RetainedCompanionCapacityExhausted { .. } => {
             Some(WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded)

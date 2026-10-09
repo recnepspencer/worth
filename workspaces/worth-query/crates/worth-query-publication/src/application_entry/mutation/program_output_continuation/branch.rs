@@ -1,45 +1,50 @@
 use super::*;
 
-struct BranchContinuation<'application, Schema>
+struct BranchContinuation<Schema, Program>
 where
     Schema: ApplicationSchema,
+    Program: ApplicationProgramDefinition<Schema>,
 {
-    left: Option<Box<dyn ProgramOutputContinuation<'application, Schema> + 'application>>,
-    right: Option<Box<dyn ProgramOutputContinuation<'application, Schema> + 'application>>,
+    left: Option<Box<dyn ProgramOutputContinuation<Schema, Program> + 'static>>,
+    right: Option<Box<dyn ProgramOutputContinuation<Schema, Program> + 'static>>,
     outputs: Vec<ProgramOutputRecord>,
     work: ProgramOutputTraversalWork,
 }
 
-impl<'application, Schema> sealed::Continuation for BranchContinuation<'application, Schema> where
-    Schema: ApplicationSchema
+impl<Schema, Program> sealed::Continuation for BranchContinuation<Schema, Program>
+where
+    Schema: ApplicationSchema,
+    Program: ApplicationProgramDefinition<Schema>,
 {
 }
 
 impl<Left, Right> sealed::Factory for (Left, Right) {}
 
-impl<'application, Schema, Program, ParentDemand, Left, Right>
-    ProgramOutputContinuationFactory<'application, Schema, Program, ParentDemand> for (Left, Right)
+impl<Schema, Program, ParentDemand, Left, Right>
+    ProgramOutputContinuationFactory<Schema, Program, ParentDemand> for (Left, Right)
 where
     Schema: ApplicationSchema + 'static,
     Program: ApplicationProgramDefinition<Schema>,
-    ParentDemand: WorthQueryApplicationOutputDemand<Schema>,
+    ParentDemand: WorthQueryApplicationOutputDemand<Schema> + Clone,
     Left: ApplicationOutputEdgesShape<Schema>
-        + ProgramOutputContinuationFactory<'application, Schema, Program, ParentDemand>,
+        + ProgramOutputContinuationFactory<Schema, Program, ParentDemand>,
     Right: ApplicationOutputEdgesShape<Schema>
-        + ProgramOutputContinuationFactory<'application, Schema, Program, ParentDemand>,
+        + ProgramOutputContinuationFactory<Schema, Program, ParentDemand>,
 {
     fn start(
-        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+        application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
         parent_demand: &ParentDemand,
         parent_settlement: &WorthQueryApplicationOutputDemandSettlement<
             SourceQuery<Schema, ParentDemand>,
         >,
-        parent_authority: &WorthQuerySettledProgramOutput<Schema, Program, ParentDemand>,
+        parent_authority: &std::sync::Arc<
+            WorthQuerySettledProgramOutput<Schema, Program, ParentDemand>,
+        >,
         minimum_observation: &crate::application_entry::WorthQueryApplicationReadObservation,
-        request: &WorthQueryApplicationRequest<'application, '_, '_, Schema>,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
         controls: WorthQueryOutputDemandControls,
     ) -> Result<
-        Box<dyn ProgramOutputContinuation<'application, Schema> + 'application>,
+        Box<dyn ProgramOutputContinuation<Schema, Program> + 'static>,
         WorthQueryRequiredOutputPreparationDenial,
     > {
         Ok(Box::new(BranchContinuation {
@@ -67,21 +72,23 @@ where
     }
 }
 
-impl<'application, Schema> ProgramOutputContinuation<'application, Schema>
-    for BranchContinuation<'application, Schema>
+impl<Schema, Program> ProgramOutputContinuation<Schema, Program>
+    for BranchContinuation<Schema, Program>
 where
     Schema: ApplicationSchema,
+    Program: ApplicationProgramDefinition<Schema>,
 {
     fn advance(
         &mut self,
-        request: &WorthQueryApplicationRequest<'application, '_, '_, Schema>,
+        application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
     ) -> Result<ProgramOutputContinuationProgress, WorthQueryRequiredOutputPreparationDenial> {
         for branch in [&mut self.left, &mut self.right] {
             let Some(active) = branch else {
                 continue;
             };
             if let ProgramOutputContinuationProgress::Settled { outputs, work } =
-                active.advance(request)?
+                active.advance(application, request)?
             {
                 self.outputs.extend(outputs);
                 self.work.include(work);

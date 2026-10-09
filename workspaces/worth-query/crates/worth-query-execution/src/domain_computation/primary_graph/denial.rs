@@ -56,11 +56,6 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     PublishedSnapshotCapacityExhausted { maximum_handles: usize },
     /// The runtime ran out of candidate identities.
     CandidateIdentityExhausted,
-    /// The prepared root would exceed its byte budget.
-    PreparedRootBudgetExhausted {
-        maximum_bytes: u64,
-        required_bytes: u64,
-    },
     /// The commit position was contended.
     PatchPositionReservationContended,
     /// The runtime ran out of proposal identities.

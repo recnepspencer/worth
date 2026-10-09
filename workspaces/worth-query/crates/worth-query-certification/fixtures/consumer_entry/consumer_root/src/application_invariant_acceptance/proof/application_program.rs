@@ -31,6 +31,7 @@ pub(super) fn performed_source_settles_required_output(
     settlement::performed_source_settles_required_output(foreign);
     continuation_basis::revised_parent_publication_is_the_dependent_basis(foreign);
     discovered::performed_source_discovers_required_root(foreign);
+    discovered::continuation::owned_outputs_outlive_requests_and_reject_foreign_and_cancelled_advance(foreign);
     discovered::isolated_source_settles_without_roots(foreign);
     discovered::recovery::newer_discovered_source_retires_recovery(foreign);
     discovered::recovery::foreign_runtime_cannot_recover_discovered_source(foreign);

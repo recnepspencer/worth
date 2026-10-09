@@ -1,5 +1,4 @@
 use std::fmt::Debug;
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, RwLock, RwLockReadGuard, Weak};
 
 use crate::runtime::{
@@ -26,31 +25,12 @@ pub(crate) enum CompanionRegistrationState {
 #[derive(Debug)]
 pub(crate) struct CompanionRegistry {
     state: RwLock<CompanionRegistrationState>,
-    maximum_cell_bytes: u64,
-    retained_cell_bytes: AtomicU64,
-}
-
-pub(super) struct CompanionCellRetention {
-    registry: Weak<CompanionRegistry>,
-    bytes: u64,
-}
-
-impl Drop for CompanionCellRetention {
-    fn drop(&mut self) {
-        if let Some(registry) = self.registry.upgrade() {
-            registry
-                .retained_cell_bytes
-                .fetch_sub(self.bytes, Ordering::AcqRel);
-        }
-    }
 }
 
 impl CompanionRegistry {
-    pub(crate) fn new(maximum_cell_bytes: u64) -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             state: RwLock::new(CompanionRegistrationState::Standalone),
-            maximum_cell_bytes,
-            retained_cell_bytes: AtomicU64::new(0),
         }
     }
 
@@ -65,33 +45,7 @@ impl CompanionRegistry {
         };
         Self {
             state: RwLock::new(next),
-            maximum_cell_bytes: self.maximum_cell_bytes,
-            retained_cell_bytes: AtomicU64::new(0),
         }
-    }
-
-    pub(super) fn reserve_cell(
-        self: &Arc<Self>,
-    ) -> Result<CompanionCellRetention, PublicationCompanionRegistrationStop> {
-        let bytes = super::preflight::arc_allocation_bound::<super::cell::CompanionRootImage>()
-            .saturating_add(super::preflight::arc_allocation_bound::<
-                super::cell::CompanionBranchCellCore,
-            >());
-        self.retained_cell_bytes
-            .fetch_update(Ordering::AcqRel, Ordering::Acquire, |current| {
-                current
-                    .checked_add(bytes)
-                    .filter(|next| *next <= self.maximum_cell_bytes)
-            })
-            .map_err(
-                |_| PublicationCompanionRegistrationStop::CellCapacityExhausted {
-                    maximum_bytes: self.maximum_cell_bytes,
-                },
-            )?;
-        Ok(CompanionCellRetention {
-            registry: Arc::downgrade(self),
-            bytes,
-        })
     }
 
     pub(crate) fn enter(
@@ -154,7 +108,6 @@ pub enum PublicationCompanionRegistrationStop {
     Superseded,
     IdentityExhausted,
     ForeignSnapshot,
-    CellCapacityExhausted { maximum_bytes: u64 },
 }
 
 /// A runtime-owned registration entry, separate from individual publications.
@@ -345,10 +298,7 @@ impl PublicationCompanionRegistrationPort {
             | CompanionRegistrationState::RequiredActive {
                 generation: active, ..
             } if *active == generation => {
-                let retention = self.publication.companion_registry().reserve_cell()?;
-                Ok(CompanionBranchCell::new(
-                    selected, generation, initial, retention,
-                ))
+                Ok(CompanionBranchCell::new(selected, generation, initial))
             }
             _ => Err(PublicationCompanionRegistrationStop::Superseded),
         }

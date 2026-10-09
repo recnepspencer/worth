@@ -52,23 +52,18 @@ where
     source_receipt:
         Option<worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt>,
     source_observation: crate::application_entry::WorthQueryApplicationReadObservation,
-    root: Option<
-        WorthQueryApplicationProgramDemandHandle<
-            'application,
-            Schema,
-            Program,
-            RootDemand<Schema, Root>,
-        >,
-    >,
+    root:
+        Option<WorthQueryApplicationProgramDemandHandle<Schema, Program, RootDemand<Schema, Root>>>,
     root_demand: RootDemand<Schema, Root>,
     root_settlement: Option<
         crate::application_entry::WorthQueryApplicationOutputDemandSettlement<
             Query<Schema, RootDemand<Schema, Root>>,
         >,
     >,
-    pending_root_authority:
-        Option<WorthQuerySettledProgramOutput<Schema, Program, RootDemand<Schema, Root>>>,
-    continuation: Option<Box<dyn ProgramOutputContinuation<'application, Schema> + 'application>>,
+    pending_root_authority: Option<
+        std::sync::Arc<WorthQuerySettledProgramOutput<Schema, Program, RootDemand<Schema, Root>>>,
+    >,
+    continuation: Option<Box<dyn ProgramOutputContinuation<Schema, Program> + 'static>>,
     controls: crate::application_entry::WorthQueryOutputDemandControls,
     complete: bool,
 }
@@ -80,19 +75,14 @@ where
     Program: ApplicationProgramDefinition<Schema>,
     Root: ApplicationOutputGraphShape<Schema>,
     RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
-    Root::Dependents:
-        ProgramOutputContinuationFactory<'application, Schema, Program, RootDemand<Schema, Root>>,
+    RootDemand<Schema, Root>: Clone,
+    Root::Dependents: ProgramOutputContinuationFactory<Schema, Program, RootDemand<Schema, Root>>,
 {
     pub(in crate::application_entry) fn new(
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
         source_receipt: worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
         source_observation: crate::application_entry::WorthQueryApplicationReadObservation,
-        root: WorthQueryApplicationProgramDemandHandle<
-            'application,
-            Schema,
-            Program,
-            RootDemand<Schema, Root>,
-        >,
+        root: WorthQueryApplicationProgramDemandHandle<Schema, Program, RootDemand<Schema, Root>>,
         root_demand: RootDemand<Schema, Root>,
         controls: crate::application_entry::WorthQueryOutputDemandControls,
     ) -> Self {
@@ -113,12 +103,7 @@ where
     pub(in crate::application_entry) fn new_initial(
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
         source_observation: crate::application_entry::WorthQueryApplicationReadObservation,
-        root: WorthQueryApplicationProgramDemandHandle<
-            'application,
-            Schema,
-            Program,
-            RootDemand<Schema, Root>,
-        >,
+        root: WorthQueryApplicationProgramDemandHandle<Schema, Program, RootDemand<Schema, Root>>,
         root_demand: RootDemand<Schema, Root>,
         controls: crate::application_entry::WorthQueryOutputDemandControls,
     ) -> Self {
@@ -158,7 +143,7 @@ where
             <Source<Schema, RootDemand<Schema, Root>> as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
         >,
     Root::Dependents:
-        ProgramOutputContinuationFactory<'application, Schema, Program, RootDemand<Schema, Root>>,
+        ProgramOutputContinuationFactory<Schema, Program, RootDemand<Schema, Root>>,
 {
     pub fn notifications(
         &self,
@@ -223,7 +208,7 @@ where
         }
         if let Some(root) = &mut self.root {
             match root
-                .advance(request)
+                .advance(self.application, request)
                 .map_err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand)?
             {
                 WorthQueryApplicationProgramDemandProgress::Pending => {
@@ -234,7 +219,7 @@ where
                     authority,
                 } => {
                     self.root_settlement = Some(settlement);
-                    self.pending_root_authority = Some(authority);
+                    self.pending_root_authority = Some(std::sync::Arc::new(authority));
                     self.root = None;
                 }
             }
@@ -261,7 +246,7 @@ where
             .continuation
             .as_mut()
             .expect("a settled root installs its typed output continuation");
-        match continuation.advance(request)? {
+        match continuation.advance(self.application, request)? {
             ProgramOutputContinuationProgress::Pending => {
                 Ok(WorthQueryApplicationProgramOutputProgress::Pending)
             }

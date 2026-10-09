@@ -176,13 +176,6 @@ pub(super) fn map_bootstrap_commit_denial(
             Failure::RetentionIdentityExhausted => {
                 WorthQueryPrimaryGraphInstallationDenialKind::RetentionIdentityExhausted
             }
-            Failure::PreparedRootBudgetExhausted {
-                maximum_bytes,
-                required_bytes,
-            } => WorthQueryPrimaryGraphInstallationDenialKind::PreparedRootBudgetExhausted {
-                maximum_bytes: *maximum_bytes,
-                required_bytes: *required_bytes,
-            },
             _ => WorthQueryPrimaryGraphInstallationDenialKind::RelationalCommitRejected,
         },
         Error::Preparation { error, .. }

@@ -214,8 +214,12 @@ affected-target and complete Query workspace target checks, boundary/context
 enforcement, scoped formatting and dirty Rust line caps passed.
 These results do not establish the private 100k or million-member lifecycle.
 Preparation's existing BTree/Vec and adjacency-copy heaps remain physically
-uncharged by the new liveness checks; root bytes and companion retention retain
-their independent admission controls.
+uncharged by the new liveness checks. At that checkpoint, the prepared-root byte
+gate and coupled retained-cell counter still remained. The subsequent source
+cut removes both aggregate controls and their quota-only denial paths while
+retaining observational root costs, actual cell ownership, selected-policy
+backings, liveness and publication/recovery custody. Its verification is pending;
+the earlier test results do not establish this later cutover.
 The distinct checkpoint fact encoder/decoder and producer/performed merge now
 remove their 65,536-total-fact quota, with no replacement count policy. Seven
 existing fact-wire tests passed, including a complete literal 65,537-fact round

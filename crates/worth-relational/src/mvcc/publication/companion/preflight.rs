@@ -10,7 +10,7 @@ use crate::runtime::{
 };
 
 use super::cell::{CompanionBranchCellCore, CompanionRootImage};
-use super::{CompanionBranchCell, CompanionRegistry, ReservedCompanionBranchCell};
+use super::{CompanionBranchCell, ReservedCompanionBranchCell};
 
 mod observer;
 pub use observer::{CompanionPublicationCompletion, CompanionPublicationCompletionObserver};
@@ -30,9 +30,6 @@ pub enum CompanionPreflightStop {
     },
     ForeignCell,
     RegistrationChanged,
-    CellCapacityExhausted {
-        maximum_bytes: u64,
-    },
     WorkExhausted {
         required: u64,
         maximum: u64,
@@ -77,7 +74,6 @@ pub struct PublicationCompanionPreflight<'a> {
     pub(crate) envelope: &'a CanonicalCommitEnvelope,
     pub(crate) control: &'a RelationalOperationControl,
     pub(crate) budget: CompanionPreflightBudget,
-    pub(crate) cells: Arc<CompanionRegistry>,
     charged_work: u64,
     prepared_bytes: u64,
 }
@@ -88,14 +84,12 @@ impl<'a> PublicationCompanionPreflight<'a> {
         envelope: &'a CanonicalCommitEnvelope,
         control: &'a RelationalOperationControl,
         budget: CompanionPreflightBudget,
-        cells: Arc<CompanionRegistry>,
     ) -> Self {
         Self {
             binding,
             envelope,
             control,
             budget,
-            cells,
             charged_work: 0,
             prepared_bytes: 0,
         }
@@ -182,17 +176,10 @@ impl<'a> PublicationCompanionPreflight<'a> {
             arc_allocation_bound::<CompanionRootImage>()
                 .saturating_add(arc_allocation_bound::<CompanionBranchCellCore>()),
         )?;
-        let retention = self.cells.reserve_cell().map_err(|stop| match stop {
-            super::PublicationCompanionRegistrationStop::CellCapacityExhausted {
-                maximum_bytes,
-            } => CompanionPreflightStop::CellCapacityExhausted { maximum_bytes },
-            _ => CompanionPreflightStop::RegistrationChanged,
-        })?;
         Ok(CompanionBranchCell::new(
             selected,
             self.binding.registration_generation,
             initial,
-            retention,
         ))
     }
 
@@ -207,17 +194,7 @@ impl<'a> PublicationCompanionPreflight<'a> {
             arc_allocation_bound::<CompanionRootImage>()
                 .saturating_add(arc_allocation_bound::<CompanionBranchCellCore>()),
         )?;
-        let retention = self.cells.reserve_cell().map_err(|stop| match stop {
-            super::PublicationCompanionRegistrationStop::CellCapacityExhausted {
-                maximum_bytes,
-            } => CompanionPreflightStop::CellCapacityExhausted { maximum_bytes },
-            _ => CompanionPreflightStop::RegistrationChanged,
-        })?;
-        Ok(CompanionBranchCell::new_selected(
-            &self.binding,
-            initial,
-            retention,
-        ))
+        Ok(CompanionBranchCell::new_selected(&self.binding, initial))
     }
 
     pub(super) fn validate_cell(

@@ -14,7 +14,6 @@ fn active_snapshot_capacity_denies_before_handle_or_pin_admission() {
             max_transaction_savepoints: 8,
             max_prepared_candidates: 8,
             candidate_max_lifetime_millis: 30_000,
-            max_prepared_root_bytes: 268_435_456,
         })
         .build();
     let identity = runtime.main_branch_identity();

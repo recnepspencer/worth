@@ -41,7 +41,6 @@ pub(in crate::application_entry) enum WorthQueryApplicationProgramDemandProgress
 }
 
 pub(in crate::application_entry) struct WorthQueryApplicationProgramDemandHandle<
-    'application,
     Schema,
     Program,
     Demand,
@@ -50,7 +49,6 @@ pub(in crate::application_entry) struct WorthQueryApplicationProgramDemandHandle
     Program: ApplicationProgramDefinition<Schema>,
     Demand: WorthQueryApplicationOutputDemand<Schema>,
 {
-    application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
     admitted: WorthQueryAdmittedProgramOutput<Schema, Program, Demand>,
     demand: Demand,
     source_observation: Option<
@@ -60,19 +58,7 @@ pub(in crate::application_entry) struct WorthQueryApplicationProgramDemandHandle
     >,
 }
 
-impl<Schema, Program, Demand> WorthQueryApplicationProgramDemandHandle<'_, Schema, Program, Demand>
-where
-    Schema: ApplicationSchema,
-    Program: ApplicationProgramDefinition<Schema>,
-    Demand: WorthQueryApplicationOutputDemand<Schema> + Clone,
-{
-    pub(in crate::application_entry) fn demand_clone(&self) -> Demand {
-        self.demand.clone()
-    }
-}
-
-impl<'application, Schema, Program, Demand>
-    WorthQueryApplicationProgramDemandHandle<'application, Schema, Program, Demand>
+impl<Schema, Program, Demand> WorthQueryApplicationProgramDemandHandle<Schema, Program, Demand>
 where
     Schema: ApplicationSchema + 'static,
     Program: ApplicationProgramDefinition<Schema>,
@@ -88,7 +74,6 @@ where
         >,
 {
     pub(in crate::application_entry) fn new(
-        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
         admitted: WorthQueryAdmittedProgramOutput<Schema, Program, Demand>,
         demand: Demand,
         source_observation: Option<
@@ -98,7 +83,6 @@ where
         >,
     ) -> Self {
         Self {
-            application,
             admitted,
             demand,
             source_observation,
@@ -118,11 +102,15 @@ where
 
     pub(in crate::application_entry) fn advance(
         &mut self,
+        application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
         request: &crate::application_entry::WorthQueryApplicationRequest<'_, '_, '_, Schema>,
     ) -> Result<
         WorthQueryApplicationProgramDemandProgress<Schema, Program, Demand>,
         WorthQueryApplicationOutputDemandDenial,
     > {
+        if !std::ptr::eq(application.runtime(), request.application) {
+            return Err(WorthQueryApplicationOutputDemandDenial::FreshRequestMismatch);
+        }
         let disclosure = if let Some(observation) = &self.source_observation {
             request
                 .at(
@@ -137,8 +125,7 @@ where
         }
         .map_err(WorthQueryApplicationOutputDemandDenial::Source)?
         .into_output_demand_source();
-        match self
-            .application
+        match application
             .advance_program_output(
                 &worth_query_execution::publication_boundary::program_publication_access(),
                 &mut self.admitted,

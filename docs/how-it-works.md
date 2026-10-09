@@ -805,6 +805,16 @@ descriptive history.
   produces the outputs the operation requires, and `recover_required_outputs`
   resumes that work. Those outputs join the required set until their demand
   closes.
+- **Discovered outputs.** `execute_performed_discovered` returns owned source
+  custody. `start_required_outputs(&program, &request, controls)` creates an
+  owned continuation without querying or admitting its roots. Each
+  `advance(&program, &fresh_request)` checks the original runtime, program and
+  branch, then retains admitted roots and dependent progress before attempting
+  the next step. A refusal leaves that state available for retry; it does not
+  rerun the mutation. Discovery and binding remain fixed at the retained source
+  observation. Only an unadmitted root whose linear disclosure was consumed
+  reacquires that disclosure there. Completion releases the prepared source;
+  a commit receipt alone does not prove output completion.
 - **Reuse.** An output whose settlement is unmarked on a continuous basis is
   reused without contacting its producer or re-running its source query. A
   dirty output re-verifies only its marked facts; when the value its producer

@@ -192,13 +192,6 @@ fn publication_failure(
         Failure::RetentionIdentityExhausted => {
             crate::domain_computation::WorthQueryProviderSessionDenialKind::RetentionIdentityExhausted
         }
-        Failure::PreparedRootBudgetExhausted {
-            maximum_bytes,
-            required_bytes,
-        } => crate::domain_computation::WorthQueryProviderSessionDenialKind::PreparedRootBudgetExhausted {
-            maximum_bytes: *maximum_bytes,
-            required_bytes: *required_bytes,
-        },
         _ => crate::domain_computation::WorthQueryProviderSessionDenialKind::ProviderRejected,
     };
     WorthQueryProviderSessionFailure::new(

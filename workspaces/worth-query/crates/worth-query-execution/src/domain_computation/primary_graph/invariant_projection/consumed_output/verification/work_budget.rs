@@ -38,7 +38,6 @@ pub(in super::super) fn map_admission_stop(
         | CompanionPreflightStop::SelectedPositionUnavailable { .. }
         | CompanionPreflightStop::ForeignCell
         | CompanionPreflightStop::RegistrationChanged
-        | CompanionPreflightStop::CellCapacityExhausted { .. }
         | CompanionPreflightStop::PreparationMemoryExhausted { .. }
         | CompanionPreflightStop::PreparationMemoryCounterOverflow
         | CompanionPreflightStop::RetainedCompanionCapacityExhausted { .. }

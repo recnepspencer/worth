@@ -729,6 +729,7 @@ exports = [
     "WorthQueryProgramMigrationDescription",
     "WorthQueryProgramMigrationPreparationDenial",
     "WorthQueryProjectedApplicationMutation",
+    "WorthQueryProviderSessionFailure",
     "WorthQueryPublicTemporalOperationAuthorization",
     "WorthQueryPublicTemporalQueryAuthorization",
     "WorthQueryReconstructedOutputEntity",
