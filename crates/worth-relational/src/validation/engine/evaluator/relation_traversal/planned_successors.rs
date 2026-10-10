@@ -37,7 +37,3 @@ pub(super) fn planned_successor_map(
     }
     successors
 }
-
-pub(super) fn planned_successor_count(planned_successors: &PlannedSuccessorMap) -> usize {
-    planned_successors.values().map(Vec::len).sum()
-}

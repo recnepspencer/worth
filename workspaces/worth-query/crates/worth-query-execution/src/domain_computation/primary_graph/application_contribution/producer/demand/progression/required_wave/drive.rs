@@ -25,6 +25,7 @@ pub(super) fn drive_required_wave<'runtime, Schema, Family>(
     mut wave: RequiredWaveSelection<'runtime, Schema>,
     queue: &mut QueuedRequiredRoots,
     queue_custody: &mut RequiredContinuations<Schema>,
+    performed: &std::cell::RefCell<performed::PerformedMembers>,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<Option<WorthQueryOutputDemandAdvance>, WorthQueryOutputDemandDenial>
 where
@@ -55,6 +56,7 @@ where
             &mut frontier,
             &mut resolved,
             queue_custody,
+            performed,
             admission,
         )?;
         let mut selection_changed = false;
@@ -187,6 +189,7 @@ where
                 custody,
                 &head,
                 admission,
+                performed,
             ) {
                 Ok(HeldUpstream::Ready(ready)) => {
                     runtime.output_demands.clear_required_stop(&head);

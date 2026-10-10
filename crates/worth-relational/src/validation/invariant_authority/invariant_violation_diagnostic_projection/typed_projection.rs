@@ -237,43 +237,6 @@ impl InvariantViolationDiagnosticProjection<'_> {
                     ),
                 ],
             ),
-            Self::RelationIntegrityScopeBudgetExceeded {
-                limit_name,
-                limit,
-                observed,
-                relation_kind_count,
-                touched_entity_count,
-                deleted_entity_count,
-                scanned_relation_count,
-                planned_edge_count,
-            } => violation_diagnostic_object(
-                "relation_integrity_scope_budget_exceeded",
-                [
-                    ("limit_name", RelationalDiagnosticValue::string(*limit_name)),
-                    ("limit", RelationalDiagnosticValue::unsigned(*limit)),
-                    ("observed", RelationalDiagnosticValue::unsigned(*observed)),
-                    (
-                        "relation_kind_count",
-                        RelationalDiagnosticValue::unsigned(*relation_kind_count),
-                    ),
-                    (
-                        "touched_entity_count",
-                        RelationalDiagnosticValue::unsigned(*touched_entity_count),
-                    ),
-                    (
-                        "deleted_entity_count",
-                        RelationalDiagnosticValue::unsigned(*deleted_entity_count),
-                    ),
-                    (
-                        "scanned_relation_count",
-                        RelationalDiagnosticValue::unsigned(*scanned_relation_count),
-                    ),
-                    (
-                        "planned_edge_count",
-                        RelationalDiagnosticValue::unsigned(*planned_edge_count),
-                    ),
-                ],
-            ),
             Self::CustomInvariantFailure {
                 identity,
                 phase,

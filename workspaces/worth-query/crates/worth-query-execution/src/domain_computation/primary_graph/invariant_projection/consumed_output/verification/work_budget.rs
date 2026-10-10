@@ -24,8 +24,7 @@ pub(in crate::domain_computation::primary_graph::invariant_projection) fn map_ad
         | CompanionPreflightStop::RegistrationChanged => {
             ConsumedOutputVerificationStop::Unavailable
         }
-        CompanionPreflightStop::CellCapacityExhausted { .. }
-        | CompanionPreflightStop::PreparationMemoryExhausted { .. }
+        CompanionPreflightStop::PreparationMemoryExhausted { .. }
         | CompanionPreflightStop::PreparationMemoryCounterOverflow
         | CompanionPreflightStop::RetainedCompanionCapacityExhausted { .. } => {
             ConsumedOutputVerificationStop::CapacityExhausted
@@ -121,7 +120,6 @@ mod tests {
     #[test]
     fn capacity_stops_are_not_missing_output_evidence() {
         for stop in [
-            CompanionPreflightStop::CellCapacityExhausted { maximum_bytes: 1 },
             CompanionPreflightStop::PreparationMemoryCounterOverflow,
             CompanionPreflightStop::RetainedCompanionCapacityExhausted {
                 requested: 1,

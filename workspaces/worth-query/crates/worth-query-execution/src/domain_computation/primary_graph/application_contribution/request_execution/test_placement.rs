@@ -8,14 +8,14 @@
 //! the machine has. Each policy carries its own budget, far under the
 //! authority's, so tests running at once never meet on its memory.
 
+use super::test_authority::test_execution_authority;
+pub use super::test_authority::test_execution_workers;
 use std::cell::Cell;
 use std::num::NonZeroUsize;
-use std::sync::OnceLock;
 
 use worth_execution::{
-    compare_canonical_values, CanonicalBits, ChargedBytes, ExecutionAuthority,
-    ExecutionAuthorityConfig, ExecutionMap, ExecutionResourceLease, MapKernelContext,
-    MapKernelFailure, ReduceCertificationFailure, ReductionTree,
+    compare_canonical_values, CanonicalBits, ChargedBytes, ExecutionMap, ExecutionResourceLease,
+    MapKernelContext, MapKernelFailure, ReduceCertificationFailure, ReductionTree,
 };
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionReport, ExecutionRequestPolicy,
@@ -48,26 +48,6 @@ pub fn place_managed_computations_on_this_thread_for_test(
     placement: WorthQueryExecutionPlacementForTest,
 ) -> WorthQueryExecutionPlacementForTest {
     PLACEMENT.replace(placement)
-}
-
-/// The most workers a test lease may ask for: twice the machine's width.
-pub fn test_execution_workers() -> NonZeroUsize {
-    std::thread::available_parallelism()
-        .unwrap_or(NonZeroUsize::MIN)
-        .saturating_mul(NonZeroUsize::new(2).expect("two is not zero"))
-}
-
-/// This process's one authority, admitting [`test_execution_workers`].
-pub(in crate::domain_computation::primary_graph) fn test_authority() -> &'static ExecutionAuthority
-{
-    static AUTHORITY: OnceLock<ExecutionAuthority> = OnceLock::new();
-    AUTHORITY.get_or_init(|| {
-        ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
-            max_workers: test_execution_workers(),
-            charged_memory_bytes: Some(1 << 40),
-        })
-        .expect("a test process constructs one authority, here")
-    })
 }
 
 /// A canonical, automatic policy of `workers` and `memory`, with no work
@@ -139,7 +119,7 @@ pub(super) fn placed(
         WorthQueryExecutionPlacementForTest::Leased(workers)
         | WorthQueryExecutionPlacementForTest::Certified { workers, .. } => {
             RuntimeWorldExecutionPlacement::Leased {
-                authority: test_authority(),
+                authority: test_execution_authority(),
                 policy: request_policy(workers),
             }
         }

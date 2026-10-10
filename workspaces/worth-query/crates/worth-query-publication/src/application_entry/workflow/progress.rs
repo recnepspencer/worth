@@ -230,7 +230,7 @@ where
     }
 
     pub(super) fn prepare_workflow_request_in_advancement<Spec>(
-        mut self, _phase: &AdvancementPhase<'_>,
+        mut self, phase: &AdvancementPhase<'_>,
         workflow: WorthQueryWorkflowVocabulary<'application, Schema, Spec>,
         instance: PublishedWorkflowInstanceRef,
         action: WorkflowRequestedAction,
@@ -253,7 +253,7 @@ where
             .identities()
             .map_err(WorthQueryWorkflowAdvancePreparationDenial::RequestAdmission)?;
         let mutation = match authorization::prepare_capability_selected(
-            &self,
+            phase, &self,
             &identities,
             staged,
             &selected,

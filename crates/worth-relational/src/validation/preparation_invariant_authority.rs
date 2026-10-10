@@ -1,10 +1,7 @@
 use crate::branch::SelectedRelationalBranchState;
 use crate::runtime::{RelationalPreparationRuntime, WorkingState};
 use crate::transactions::data::{MergedCommitPlan, TransactionCommitError};
-use crate::validation::data::{
-    InvariantFailureEffect, InvariantGroup, InvariantGroupSet, InvariantPlanContract,
-    InvariantVerdict,
-};
+use crate::validation::data::{InvariantGroupSet, InvariantPlanContract};
 use crate::validation::engine::{
     InvariantEngine, InvariantExecutionDisposition, InvariantExecutionMetadata,
     InvariantExecutionRequest, InvariantExecutionResult, InvariantObservation,
@@ -30,6 +27,7 @@ impl PreparationInvariantAuthority<'_> {
         plan: &MergedCommitPlan,
         proposal: Option<&crate::mvcc::RelationalMutationProposalIdentity>,
         lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+        control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
     ) -> Result<InvariantExecutionResult, TransactionCommitError> {
         let result = self.execute(
             InvariantRequestProfile::CommitBoundary,
@@ -39,6 +37,7 @@ impl PreparationInvariantAuthority<'_> {
             plan,
             proposal,
             lease,
+            control,
         )?;
         match result.summary().blocking_failure() {
             Some(failure) => {
@@ -73,6 +72,7 @@ impl PreparationInvariantAuthority<'_> {
         plan: &MergedCommitPlan,
         proposal: Option<&crate::mvcc::RelationalMutationProposalIdentity>,
         lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+        control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
     ) -> Result<InvariantExecutionResult, TransactionCommitError> {
         let result = self.execute(
             InvariantRequestProfile::MutationSensitive,
@@ -82,6 +82,7 @@ impl PreparationInvariantAuthority<'_> {
             plan,
             proposal,
             lease,
+            control,
         )?;
         match result.summary().blocking_failure() {
             Some(failure) => {
@@ -116,6 +117,7 @@ impl PreparationInvariantAuthority<'_> {
         plan: &MergedCommitPlan,
         proposal: Option<&crate::mvcc::RelationalMutationProposalIdentity>,
         lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+        control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
     ) -> Result<InvariantExecutionResult, TransactionCommitError> {
         let result = self.execute(
             InvariantRequestProfile::SnapshotPublication,
@@ -125,6 +127,7 @@ impl PreparationInvariantAuthority<'_> {
             plan,
             proposal,
             lease,
+            control,
         )?;
         match result.summary().publication_failure() {
             Some(failure) => {
@@ -162,7 +165,9 @@ impl PreparationInvariantAuthority<'_> {
         plan: &MergedCommitPlan,
         proposal: Option<&crate::mvcc::RelationalMutationProposalIdentity>,
         lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+        control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
     ) -> Result<InvariantExecutionResult, TransactionCommitError> {
+        control.check()?;
         let execution_version = match profile {
             InvariantRequestProfile::CommitBoundary => selected.version_id(),
             _ => version,
@@ -209,40 +214,8 @@ impl PreparationInvariantAuthority<'_> {
             selected.version_id(),
             Some(plan),
             plan_contract,
-        );
-        if let Some(violation) = request.preparation_violation().cloned() {
-            return Ok(InvariantExecutionResult::executed(
-                self.metadata(
-                    profile,
-                    observation_kind,
-                    execution_version,
-                    plan_contract,
-                    request.applicable_groups(),
-                    request.max_cost(),
-                    InvariantExecutionDisposition::Executed,
-                    request.proposal_identity(),
-                ),
-                vec![crate::validation::data::InvariantCheckResult {
-                    execution_point: profile.execution_point(),
-                    failure_effect: InvariantFailureEffect::BlockCommit,
-                    rule: crate::validation::data::InvariantReportedRule::Native(
-                        crate::validation::data::InvariantRule::RelationIntegrityScopeBudget(
-                            self.runtime
-                                .config
-                                .execution
-                                .relation_integrity_scope_budget
-                                .max_planned_edges,
-                        ),
-                    ),
-                    groups: InvariantGroupSet::of(InvariantGroup::RelationIntegrity)
-                        .union(InvariantGroupSet::of(InvariantGroup::PublicationCoherence)),
-                    witness: violation.witness_key(),
-                    cost: crate::validation::data::InvariantCostClass::Touched,
-                    custom_provenance: None,
-                    verdict: InvariantVerdict::Violation(violation),
-                }],
-            ));
-        }
+            control,
+        )?;
         if !request.should_execute_anything() {
             return Ok(InvariantExecutionResult::skipped(self.metadata(
                 profile,

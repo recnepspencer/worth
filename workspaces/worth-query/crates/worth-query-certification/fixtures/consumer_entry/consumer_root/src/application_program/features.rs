@@ -71,5 +71,14 @@ pub(super) fn consumer_feature_specs() -> Vec<ApplicationFeatureSpec> {
         >()
         .provides::<PlanarFinalBodyOutput>()
         .finish(),
+        ApplicationFeatureSpec::at::<ConsumerSchema, InitialDiscoveredPlanarRoot, PlanarSourceFeature>()
+            .provides::<PlanarBodyOutput>()
+            .finish(),
+        ApplicationFeatureSpec::at::<ConsumerSchema, InitialDiscoveredPlanarRoot, PlanarOutputFeature>()
+            .provides::<PlanarDerivedBodyOutput>()
+            .finish(),
+        ApplicationFeatureSpec::at::<ConsumerSchema, InitialDiscoveredPlanarRoot, PlanarFinalOutputFeature>()
+            .provides::<PlanarFinalBodyOutput>()
+            .finish(),
     ]
 }

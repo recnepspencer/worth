@@ -1,3 +1,5 @@
+mod native_preparation;
+
 use super::WorthQueryProviderSessionProtocolCounters;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -52,10 +54,6 @@ pub enum WorthQueryProviderSessionDenialKind {
     RetentionIdentityExhausted,
     SnapshotIdentityExhausted,
     CandidateIdentityExhausted,
-    PreparedRootBudgetExhausted {
-        maximum_bytes: u64,
-        required_bytes: u64,
-    },
     IndexMaintenanceBudgetExceeded,
     IndexGenerationIdentityExhausted,
     ProviderIdentityMismatch,
@@ -69,6 +67,9 @@ pub enum WorthQueryProviderSessionDenialKind {
     SessionIdentityExhausted,
 }
 
+/// A provider session's exact failure, protocol stage and recovery posture.
+/// Native preparation and allocation causes remain available for inspection;
+/// this description does not itself grant retry or cleanup authority.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryProviderSessionFailure {
     kind: WorthQueryProviderSessionDenialKind,
@@ -77,6 +78,7 @@ pub struct WorthQueryProviderSessionFailure {
     detail: String,
     counters: WorthQueryProviderSessionProtocolCounters,
     allocation: Option<worth_execution::ExecutionAllocationDenial>,
+    native_preparation: Option<std::sync::Arc<native_preparation::NativePreparationFailure>>,
 }
 
 impl WorthQueryProviderSessionFailure {
@@ -93,6 +95,7 @@ impl WorthQueryProviderSessionFailure {
             detail: detail.into(),
             counters,
             allocation: None,
+            native_preparation: None,
         }
     }
 
@@ -111,6 +114,23 @@ impl WorthQueryProviderSessionFailure {
 
     pub fn allocation_denial(&self) -> Option<&worth_execution::ExecutionAllocationDenial> {
         self.allocation.as_ref()
+    }
+
+    pub(in crate::domain_computation) fn with_native_preparation_error(
+        mut self,
+        error: worth_relational::facade::mvcc::TransactionCommitError,
+    ) -> Self {
+        self.native_preparation = Some(std::sync::Arc::new(
+            native_preparation::NativePreparationFailure(error),
+        ));
+        self
+    }
+
+    /// Exact native refusal at the pre-publication candidate preparation port.
+    pub fn native_preparation_error(
+        &self,
+    ) -> Option<&worth_relational::facade::mvcc::TransactionCommitError> {
+        self.native_preparation.as_deref().map(|failure| &failure.0)
     }
 
     pub(crate) fn unsupported() -> Self {

@@ -106,7 +106,9 @@ fn admission_interruptions_after_retention_acquisition_release_exactly_once() {
 fn preparation_interruptions_leave_no_candidate_or_publication_residue() {
     for (boundary, trigger_on_visit) in [
         (RelationalInterruptionBoundary::ProposalValidation, 1),
-        (RelationalInterruptionBoundary::CandidatePreparation, 3),
+        // Scope-control admission is now the first visit. The fourth visit in
+        // pipeline/execution.rs follows candidate retention acquisition.
+        (RelationalInterruptionBoundary::CandidatePreparation, 4),
     ] {
         for interruption in interruption_twins() {
             let runtime = runtime_with_test_schema();

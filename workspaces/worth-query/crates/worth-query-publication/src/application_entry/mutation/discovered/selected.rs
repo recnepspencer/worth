@@ -47,7 +47,7 @@ where
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
         allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
-        WorthQueryApplicationDiscoveredMutationOutcome<'application, Schema, Intent, Program, Root>,
+        WorthQueryApplicationDiscoveredMutationOutcome<Schema, Intent, Program, Root>,
         WorthQueryPerformedMutationExecutionDenial,
     >
     where
@@ -92,7 +92,7 @@ where
             .execute_with_preparation_and_commit(phase,
                 move |request, identities, staged| {
                     crate::application_entry::mutation::authorization::prepare_selected(
-                        request, identities, staged, &selected,
+                        phase, request, identities, staged, &selected,
                     )
                 },
                 |_, program, binding| {
@@ -112,8 +112,7 @@ where
                 allocation_policy,
             )
             .map_err(WorthQueryPerformedMutationExecutionDenial::Mutation)?;
-        Ok(discovered_outcome(application, discovery, outcome, source))
-
+        Ok(discovered_outcome(discovery, outcome, source))
         }).map_err(|cause| WorthQueryPerformedMutationExecutionDenial::Mutation(WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause)))?
     }
 }

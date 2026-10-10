@@ -362,7 +362,6 @@ fn expired_candidate_summary_is_typed_and_cannot_retain_stale_scope() {
             max_transaction_savepoints: 8,
             max_prepared_candidates: 1,
             candidate_max_lifetime_millis: 0,
-            max_prepared_root_bytes: 268_435_456,
         })
         .build();
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);

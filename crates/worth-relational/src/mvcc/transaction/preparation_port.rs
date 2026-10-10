@@ -81,7 +81,7 @@ impl RelationalPreparationPort {
             None => runtime.validate_branch_transaction(transaction, allocation_policy),
         }
         .map_err(attach_validation_rejection)?;
-        self.prepare_validated_proposal_inner(&runtime, proposal, lease)
+        self.prepare_validated_proposal_inner(&runtime, proposal, lease, allocation_policy)
     }
 
     pub(crate) fn prepare_validated_proposal(
@@ -92,7 +92,12 @@ impl RelationalPreparationPort {
         let configuration = self.binding.configuration_binding();
         let epoch = configuration.operation();
         let runtime = self.binding.runtime_snapshot_from(&epoch);
-        self.prepare_validated_proposal_inner(&runtime, proposal, None)
+        self.prepare_validated_proposal_inner(
+            &runtime,
+            proposal,
+            None,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
     }
 
     /// Consume a prepared candidate without publishing it and release its
@@ -115,6 +120,7 @@ impl RelationalPreparationPort {
         runtime: &RelationalPreparationRuntime,
         proposal: crate::mvcc::ValidatedRelationalProposal,
         lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
         let proposal = runtime.revalidate_proposal_for_publication(proposal)?;
         crate::authority::commit::pipeline::prepare_authoritative_commit(
@@ -123,6 +129,7 @@ impl RelationalPreparationPort {
                 proposal,
             ),
             lease,
+            allocation_policy,
         )
     }
 

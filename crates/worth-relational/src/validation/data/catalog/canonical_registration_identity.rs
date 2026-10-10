@@ -95,10 +95,7 @@ impl RegistrationIdentityBytes {
                 self.tag(2);
                 self.usize(*limit);
             }
-            InvariantRule::RelationIntegrityScopeBudget(limit) => {
-                self.tag(3);
-                self.usize(*limit);
-            }
+            // Rule-body tag 3 stays retired; surviving meanings keep their tags.
             InvariantRule::MaxSnapshotEntities(limit) => {
                 self.tag(4);
                 self.usize(*limit);

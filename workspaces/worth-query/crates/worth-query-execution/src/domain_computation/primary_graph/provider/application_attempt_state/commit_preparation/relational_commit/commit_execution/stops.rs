@@ -85,46 +85,58 @@ pub(super) fn index_preparation_stop(
     )
 }
 
+/// Used only for `prepare_validated_proposal`, before product publication.
 pub(super) fn transaction_commit_stop(
     error: worth_relational::facade::mvcc::TransactionCommitError,
 ) -> crate::domain_computation::WorthQueryProviderSessionCommitStop {
+    use crate::domain_computation::WorthQueryProviderSessionCommitStop as Stop;
     use worth_relational::facade::mvcc::TransactionCommitError as Error;
+    let native_execution_error = matches!(&error, Error::Execution { .. }).then(|| error.clone());
     match error {
         Error::Execution { denial, .. } => match denial.kind {
             worth_relational::facade::transactions::CommitExecutionDenialKind::Cause(cause) => {
-                relational_execution_stop(cause, denial.partition_identity)
+                match relational_execution_stop(cause, denial.partition_identity) {
+                    Stop::PreEffectDenied(failure) => Stop::PreEffectDenied(
+                        WorthQueryProviderSessionFailure::new(
+                            crate::domain_computation::WorthQueryProviderSessionDenialKind::ProviderRejected,
+                            WorthQueryProviderSessionProtocolStage::Commit,
+                            failure.detail(),
+                            Default::default(),
+                        ).with_native_preparation_error(native_execution_error.expect("native execution error retained")),
+                    ),
+                    stopped => stopped,
+                }
             }
         },
         Error::Interrupted { interruption, .. } => {
-            crate::domain_computation::WorthQueryProviderSessionCommitStop::ControlStopped(
-                interruption_control_stopped(interruption),
-            )
+            Stop::ControlStopped(interruption_control_stopped(interruption))
         }
         Error::PublicationDeferred { deferred, .. } => {
-            crate::domain_computation::WorthQueryProviderSessionCommitStop::Deferred(
-                publication_deferred(deferred),
-            )
-        }
-        Error::PublicationFailed { failure, .. } => {
-            crate::domain_computation::WorthQueryProviderSessionCommitStop::Denied(
-                publication_failure(failure),
-            )
+            Stop::Deferred(publication_deferred(deferred))
         }
         Error::PerformedButDurabilityDeferred {
             settlement, error, ..
-        } => crate::domain_computation::WorthQueryProviderSessionCommitStop::SettlementDeferred(
+        } => Stop::SettlementDeferred(
             crate::domain_computation::WorthQueryProviderSessionSettlementDeferred::new(
                 error.detail,
                 settlement,
             ),
         ),
-        Error::Conflict { .. }
+        error @ (Error::Conflict { .. }
         | Error::Publication { .. }
         | Error::Preparation { .. }
-        | Error::PublicationDenied { .. } => {
-            crate::domain_computation::WorthQueryProviderSessionCommitStop::Denied(failure(
-                "Relational rejected application commit preparation",
-            ))
+        | Error::PublicationDenied { .. }
+        | Error::PublicationFailed { .. }) => {
+            let failure = match &error {
+                Error::PublicationFailed { failure, .. } => publication_failure(failure),
+                _ => WorthQueryProviderSessionFailure::new(
+                    crate::domain_computation::WorthQueryProviderSessionDenialKind::ProviderRejected,
+                    WorthQueryProviderSessionProtocolStage::Commit,
+                    error.detail(),
+                    crate::domain_computation::WorthQueryProviderSessionProtocolCounters::default(),
+                ),
+            }.with_native_preparation_error(error);
+            Stop::PreEffectDenied(failure)
         }
     }
 }
@@ -175,7 +187,7 @@ fn publication_deferred(
 }
 
 fn publication_failure(
-    failure: worth_relational::facade::mvcc::RelationalPublicationFailure,
+    failure: &worth_relational::facade::mvcc::RelationalPublicationFailure,
 ) -> WorthQueryProviderSessionFailure {
     use worth_relational::facade::mvcc::RelationalPublicationFailureKind as Failure;
     let kind = match failure.kind() {
@@ -188,13 +200,6 @@ fn publication_failure(
         Failure::RetentionIdentityExhausted => {
             crate::domain_computation::WorthQueryProviderSessionDenialKind::RetentionIdentityExhausted
         }
-        Failure::PreparedRootBudgetExhausted {
-            maximum_bytes,
-            required_bytes,
-        } => crate::domain_computation::WorthQueryProviderSessionDenialKind::PreparedRootBudgetExhausted {
-            maximum_bytes: *maximum_bytes,
-            required_bytes: *required_bytes,
-        },
         Failure::PreparedRootMismatch
         | Failure::PreparedBasisDescriptor(_)
         | Failure::NextBasisAdmission(_)

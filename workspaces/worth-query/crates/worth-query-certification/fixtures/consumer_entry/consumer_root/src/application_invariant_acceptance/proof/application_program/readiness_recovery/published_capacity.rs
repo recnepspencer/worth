@@ -35,7 +35,10 @@ pub(crate) fn published_outputs_hold_no_hidden_read_lease(
             .delay_next_output_readiness_delivery_for_test();
         let mut published = false;
         for _ in 0..8 {
-            match demand.advance(&request).expect("publication progresses") {
+            match demand
+                .advance(&world.application, &request)
+                .expect("publication progresses")
+            {
                 WorthQueryApplicationProgramOutputProgress::Pending => {}
                 WorthQueryApplicationProgramOutputProgress::Settled(_) => {
                     panic!("the checkpoint inspection must happen before readiness settles")
@@ -66,7 +69,7 @@ pub(crate) fn published_outputs_hold_no_hidden_read_lease(
         let mut settled = false;
         for _ in 0..32 {
             match demand
-                .advance(&request)
+                .advance(&world.application, &request)
                 .expect("readiness progresses without a hidden lease")
             {
                 WorthQueryApplicationProgramOutputProgress::Pending => {}

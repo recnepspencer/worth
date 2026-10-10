@@ -47,6 +47,7 @@ pub(super) fn mutate_commit_execution(
     runtime: &crate::runtime::RelationalPreparationRuntime,
     mut validated: BoundaryValidatedCommitExecution,
     lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+    control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
 ) -> Result<MutatedCommitExecution, crate::transactions::data::TransactionCommitError> {
     let selected_branch_state = validated.prepared_mut().selected_branch_state().clone();
     let proposed_version_id = validated.prepared_mut().proposed_version_id();
@@ -73,6 +74,7 @@ pub(super) fn mutate_commit_execution(
             prevalidated_mutation_sensitive,
             lease,
         },
+        control,
     )?;
     let (
         version_id,

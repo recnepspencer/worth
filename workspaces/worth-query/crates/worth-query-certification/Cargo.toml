@@ -21,6 +21,7 @@ worth-query.workspace = true
 worth-query-decl.workspace = true
 worth-query-admission = { path = "../worth-query-admission" }
 worth-query-execution = { path = "../worth-query-execution", features = ["test-durability-faults", "test-primary-graph-faults", "test-world-operation-control"] }
+worth-query-host = { workspace = true, features = ["test-query-execution-observer"] }
 worth-query-installation = { path = "../worth-query-installation", features = ["certification-query-lookup"] }
 worth-query-package-archive.workspace = true
 worth-proof.workspace = true

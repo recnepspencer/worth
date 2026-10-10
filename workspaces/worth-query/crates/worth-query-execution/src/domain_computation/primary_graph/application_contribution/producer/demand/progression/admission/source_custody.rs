@@ -30,10 +30,11 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema + 'static,
 {
-    pub(in crate::domain_computation::primary_graph) fn retain_required_output_source(
+    pub(in crate::domain_computation::primary_graph) fn retain_required_output_source_carrier(
         &self,
         receipt: crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
-        change: crate::domain_computation::execution_runtime::product_world::WorthQueryPerformedRelationalProductChange,
+        change: std::sync::Arc<crate::domain_computation::execution_runtime::product_world::WorthQueryPerformedRelationalProductChange>,
+        observation: worth_runtime_world::facade::ProductBranchObservation,
         preparation: &crate::domain_computation::primary_graph::application_output_demand::WorthQueryRequiredOutputSourcePreparation,
         root_kind: crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind,
         discovery: Option<std::sync::Arc<dyn std::any::Any + Send + Sync>>,
@@ -47,28 +48,17 @@ where
         WorthQueryOutputDemandDenial,
     > {
         let publication = receipt.committed_product_publication();
-        let same_runtime =
-            std::sync::Arc::ptr_eq(&change.root_identity, &self.product_runtime.root_identity());
-        let same_publication = change.product_branch_identity() == publication.product_branch()
-            && change.product_commit() == publication.composite_commit();
-        if !same_runtime || !same_publication {
+        if !std::sync::Arc::ptr_eq(&change.root_identity, &self.product_runtime.root_identity())
+            || change.product_branch_identity() != publication.product_branch()
+            || change.product_commit() != publication.composite_commit()
+            || observation.branch_identity() != change.product_branch_identity()
+            || observation.selected_commit() != change.product_commit()
+        {
             return Err(denial(
                 WorthQueryOutputDemandDenialKind::ForeignSource,
-                "performed source does not belong to its application publication",
+                "original performed carrier differs from its published receipt",
             ));
         }
-        let observation = publication
-            .take_output_demand_observation()
-            .filter(|observation| {
-                observation.branch_identity() == change.product_branch_identity()
-                    && observation.selected_commit() == change.product_commit()
-            })
-            .ok_or_else(|| {
-                denial(
-                    WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
-                    "performed source publication did not retain its exact output-demand basis",
-                )
-            })?;
         let retained = crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation::from_product(
             self,
             crate::basis::WorthQueryProductObservationLease::new(observation.clone()),
@@ -77,7 +67,7 @@ where
         let source_commit = self.output_demands.retain_performed_source(
             crate::domain_computation::primary_graph::application_output_demand::WorthQueryPerformedOutputDemandSource {
                 receipt,
-                change: std::sync::Arc::new(change),
+                change,
                 observation,
                 output_source_identity: None,
             },

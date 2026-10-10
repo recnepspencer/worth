@@ -166,7 +166,7 @@ impl<Query, Value> FreshOutputDisclosure<Query, Value> {
 
     /// Borrow the same owner-issued disclosure while its observed source is
     /// retained for required successor admission. The proof itself remains
-    /// intact for the later Schedule→Execute transition.
+    /// intact for the later Scheduleâ†’Execute transition.
     pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn value(
         &self,
     ) -> &Value {

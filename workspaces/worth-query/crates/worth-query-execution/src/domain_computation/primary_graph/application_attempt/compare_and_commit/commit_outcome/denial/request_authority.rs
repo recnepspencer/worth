@@ -17,9 +17,21 @@ impl WorthQueryApplicationCommitDenial {
     ) -> Self {
         if failure.allocation_denial().is_some() {
             self.detail = Some(failure.detail().into());
+        }
+        if failure.allocation_denial().is_some() || failure.native_preparation_error().is_some() {
             self.cause = Some(Box::new(DenialCause::ProviderSession(failure)));
         }
         self
+    }
+
+    /// Complete native diagnostics for a refusal proven to precede publication.
+    pub fn native_preparation_error(
+        &self,
+    ) -> Option<&worth_relational::facade::mvcc::TransactionCommitError> {
+        match self.cause.as_deref() {
+            Some(DenialCause::ProviderSession(failure)) => failure.native_preparation_error(),
+            _ => None,
+        }
     }
 
     /// The request was refused authorization at `stage`. The refusal is the

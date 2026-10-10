@@ -10,7 +10,7 @@ use crate::runtime::{
 
 use super::cell::publication_admission::PublicationCellAdmission;
 use super::cell::{CompanionBranchCellCore, CompanionRootImage};
-use super::{CompanionRegistry, PreparedCompanionBranchCell, ReservedCompanionBranchCell};
+use super::{PreparedCompanionBranchCell, ReservedCompanionBranchCell};
 mod cutover;
 pub use cutover::PreparedPublicationCompanionEffect;
 
@@ -32,9 +32,6 @@ pub enum CompanionPreflightStop {
     },
     ForeignCell,
     RegistrationChanged,
-    CellCapacityExhausted {
-        maximum_bytes: u64,
-    },
     WorkExhausted {
         required: u64,
         maximum: u64,
@@ -79,7 +76,6 @@ pub struct PublicationCompanionPreflight<'a> {
     pub(crate) envelope: &'a CanonicalCommitEnvelope,
     pub(crate) control: &'a RelationalOperationControl,
     pub(crate) budget: CompanionPreflightBudget,
-    pub(crate) cells: Arc<CompanionRegistry>,
     charged_work: u64,
     prepared_bytes: u64,
 }
@@ -90,14 +86,12 @@ impl<'a> PublicationCompanionPreflight<'a> {
         envelope: &'a CanonicalCommitEnvelope,
         control: &'a RelationalOperationControl,
         budget: CompanionPreflightBudget,
-        cells: Arc<CompanionRegistry>,
     ) -> Self {
         Self {
             binding,
             envelope,
             control,
             budget,
-            cells,
             charged_work: 0,
             prepared_bytes: 0,
         }
@@ -177,16 +171,9 @@ impl<'a> PublicationCompanionPreflight<'a> {
                 .saturating_add(arc_allocation_bound::<CompanionBranchCellCore>())
                 .saturating_add(arc_allocation_bound::<PublicationCellAdmission>()),
         )?;
-        let retention = self.cells.reserve_cell().map_err(|stop| match stop {
-            super::PublicationCompanionRegistrationStop::CellCapacityExhausted {
-                maximum_bytes,
-            } => CompanionPreflightStop::CellCapacityExhausted { maximum_bytes },
-            _ => CompanionPreflightStop::RegistrationChanged,
-        })?;
         Ok(PreparedCompanionBranchCell::new_selected(
             &self.binding,
             initial,
-            retention,
         ))
     }
 

@@ -46,7 +46,7 @@ type RootSourceValue<Schema, Root> = <<RootSource<Schema, Root> as ApplicationQu
 
 /// A landed mutation whose discovered outputs could not start. `performed` returns the
 /// landed mutation.
-pub struct WorthQueryDiscoveredOutputStartFailure<'application, Schema, Intent, Program, Root>
+pub struct WorthQueryDiscoveredOutputStartFailure<Schema, Intent, Program, Root>
 where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
@@ -56,18 +56,12 @@ where
     RootConnection<Schema, Root>:
         WorthQueryApplicationDiscoveredOutputConnection<Schema, Source = Intent::Binding>,
 {
-    performed: WorthQueryPerformedDiscoveredApplicationMutation<
-        'application,
-        Schema,
-        Intent,
-        Program,
-        Root,
-    >,
+    performed: WorthQueryPerformedDiscoveredApplicationMutation<Schema, Intent, Program, Root>,
     denial: WorthQueryRequiredOutputPreparationDenial,
 }
 
-impl<'application, Schema, Intent, Program, Root>
-    WorthQueryDiscoveredOutputStartFailure<'application, Schema, Intent, Program, Root>
+impl<Schema, Intent, Program, Root>
+    WorthQueryDiscoveredOutputStartFailure<Schema, Intent, Program, Root>
 where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
@@ -79,9 +73,17 @@ where
 {
     pub fn performed(
         self,
-    ) -> WorthQueryPerformedDiscoveredApplicationMutation<'application, Schema, Intent, Program, Root>
-    {
+    ) -> WorthQueryPerformedDiscoveredApplicationMutation<Schema, Intent, Program, Root> {
         self.performed
+    }
+
+    pub fn into_parts(
+        self,
+    ) -> (
+        WorthQueryPerformedDiscoveredApplicationMutation<Schema, Intent, Program, Root>,
+        WorthQueryRequiredOutputPreparationDenial,
+    ) {
+        (self.performed, self.denial)
     }
 
     pub const fn denial(&self) -> &WorthQueryRequiredOutputPreparationDenial {
@@ -89,8 +91,8 @@ where
     }
 }
 
-impl<'application, Schema, Intent, Program, Root>
-    WorthQueryPerformedDiscoveredApplicationMutation<'application, Schema, Intent, Program, Root>
+impl<Schema, Intent, Program, Root>
+    WorthQueryPerformedDiscoveredApplicationMutation<Schema, Intent, Program, Root>
 where
     Schema: ApplicationSchema + 'static,
     Intent: ApplicationMutationIntent<Schema>,
@@ -99,8 +101,7 @@ where
         + worth_query_declaration::facade::application_program::ApplicationDiscoveredOutputRoot,
     RootConnection<Schema, Root>:
         WorthQueryApplicationDiscoveredOutputConnection<Schema, Source = Intent::Binding>,
-    Root::Dependents:
-        ProgramOutputContinuationFactory<'application, Schema, Program, RootDemand<Schema, Root>>,
+    Root::Dependents: ProgramOutputContinuationFactory<Schema, Program, RootDemand<Schema, Root>>,
     RootDemand<Schema, Root>: Clone,
     DiscoveryValue<Schema, Root>:
         WorthQueryApplicationProjection<Schema, DiscoveryQuery<Schema, Root>> + Clone,
@@ -121,79 +122,75 @@ where
 {
     pub fn start_required_outputs(
         self,
-        request: &WorthQueryApplicationRequest<'application, '_, '_, Schema>,
+        application: &worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime<Schema, Program>,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
         controls: WorthQueryOutputDemandControls,
     ) -> Result<
-        WorthQueryStartedDiscoveredOutputs<'application, Schema, Intent, Program, Root>,
-        WorthQueryDiscoveredOutputStartFailure<'application, Schema, Intent, Program, Root>,
+        WorthQueryStartedDiscoveredOutputs<Schema, Intent, Program, Root>,
+        WorthQueryDiscoveredOutputStartFailure<Schema, Intent, Program, Root>,
     > {
-        let application = self.application.runtime();
         let mut retained = Some(self);
-        match application.with_application_advancement(request.scope, |phase| {
-            retained
-                .take()
-                .expect("host call retains its performed facts")
-                .start_required_outputs_in_advancement(&phase, request, controls)
-        }) {
+        match application
+            .runtime()
+            .with_application_advancement(request.scope, |phase| {
+                retained
+                    .take()
+                    .expect("host call retains its performed facts")
+                    .start_required_outputs_in_advancement(&phase, application, request, controls)
+            }) {
             Ok(outcome) => outcome,
             Err(cause) => Err(WorthQueryDiscoveredOutputStartFailure {
                 performed: retained.take().expect("refused request performs no work"),
-                denial: WorthQueryRequiredOutputPreparationDenial::Demand(
-                    crate::application_entry::WorthQueryApplicationOutputDemandDenial::advancement(
-                        cause,
-                    ),
-                ),
+                denial: WorthQueryRequiredOutputPreparationDenial::advancement(cause),
             }),
         }
     }
 
     fn start_required_outputs_in_advancement(
         self,
-        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
-            '_,
-        >,
-        request: &WorthQueryApplicationRequest<'application, '_, '_, Schema>,
+        _phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
+        application: &worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime<Schema, Program>,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
         controls: WorthQueryOutputDemandControls,
     ) -> Result<
-        WorthQueryStartedDiscoveredOutputs<'application, Schema, Intent, Program, Root>,
-        WorthQueryDiscoveredOutputStartFailure<'application, Schema, Intent, Program, Root>,
+        WorthQueryStartedDiscoveredOutputs<Schema, Intent, Program, Root>,
+        WorthQueryDiscoveredOutputStartFailure<Schema, Intent, Program, Root>,
     > {
-        if let Err(denial) = self
-            .application
+        if !std::ptr::eq(application.runtime(), request.application) {
+            return Err(WorthQueryDiscoveredOutputStartFailure {
+                performed: self,
+                denial: WorthQueryRequiredOutputPreparationDenial::ForeignProgram,
+            });
+        }
+        let validation = application
             .validate_program_discovered_root_artifact_source::<Root, Intent::Binding>(
                 &worth_query_execution::publication_boundary::program_publication_access(),
             )
-        {
+            .and_then(|()| {
+                application.validate_discovered_program_source::<Root>(
+                    &worth_query_execution::publication_boundary::program_publication_access(),
+                    &self.prepared,
+                    &self.receipt,
+                    &self.retained_source,
+                    request.principal,
+                    request.scope,
+                    request.branch,
+                )
+            });
+        if let Err(denial) = validation {
             return Err(WorthQueryDiscoveredOutputStartFailure {
                 performed: self,
-                denial: WorthQueryRequiredOutputPreparationDenial::Demand(
-                    crate::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(
-                        denial,
-                    ),
-                ),
+                denial: WorthQueryRequiredOutputPreparationDenial::DemandExecution(denial),
             });
         }
-        let retained =
-            WorthQueryApplicationReadObservation::new(std::sync::Arc::clone(&self.retained_source));
-        let required_output = match super::resolve::start_discovered_roots::<Schema, Program, Root>(
-            self.application,
-            phase,
-            request,
-            &self.receipt,
-            self.discovery.clone(),
-            retained,
-            &self.prepared,
+        let required_output = super::WorthQueryDiscoveredProgramOutputHandle::new(
+            self.receipt.clone(),
+            self.discovery,
+            self.prepared,
+            WorthQueryApplicationReadObservation::new(self.retained_source),
             controls,
-            super::resolve::DiscoveredRootStartKind::Performed,
-        ) {
-            Ok(required_output) => required_output,
-            Err(denial) => {
-                return Err(WorthQueryDiscoveredOutputStartFailure {
-                    performed: self,
-                    denial,
-                })
-            }
-        };
+            super::DiscoveredRootStartKind::Performed,
+        );
         Ok(WorthQueryStartedDiscoveredOutputs {
             receipt: self.receipt,
             result: self.result,

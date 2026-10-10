@@ -123,14 +123,14 @@ fn first_ordinary_and_performed_requests_visit_only_their_occurrence() {
             .unwrap();
         let worth_query_host::facade::application_entry::WorthQueryApplicationPerformedMutationOutcome::Performed(changed)=changed
             else { panic!("the performed source commits") };
-        let mut outputs=changed.start_required_outputs(&request,
+        let mut outputs=changed.start_required_outputs(&app, &request,
             worth_query_host::facade::application_entry::WorthQueryOutputDemandControls::host_policy()).unwrap_or_else(|failure|panic!("{:?}",failure.denial()));
         assert_eq!(
             app.registry_row_count_for_test(),
             unrelated + 2,
             "performed first admission adds one occurrence"
         );
-        assert!(matches!(outputs.required_output_mut().advance(&request).unwrap(),
+        assert!(matches!(outputs.required_output_mut().advance(&app, &request).unwrap(),
             worth_query_host::facade::application_entry::WorthQueryApplicationProgramOutputProgress::Settled(_)));
         drop(outputs);
         // OracleRoot declares one root and two leaf connections (Region and

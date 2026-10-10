@@ -99,7 +99,6 @@ pub(super) fn classify_denial(denial: &Denial) -> Outcome {
                     | Session::RetentionIdentityExhausted
                     | Session::SnapshotIdentityExhausted
                     | Session::CandidateIdentityExhausted
-                    | Session::PreparedRootBudgetExhausted { .. }
                     | Session::IndexMaintenanceBudgetExceeded
                     | Session::IndexGenerationIdentityExhausted
                     | Session::ProviderIdentityMismatch
@@ -176,7 +175,6 @@ fn classify_kind(kind: Kind) -> Outcome {
         | Kind::RetentionIdentityExhausted
         | Kind::SnapshotIdentityExhausted
         | Kind::CandidateIdentityExhausted
-        | Kind::PreparedRootBudgetExhausted { .. }
         | Kind::IndexMaintenanceBudgetExceeded
         | Kind::IndexGenerationIdentityExhausted
         | Kind::IdempotencyIntentDrift

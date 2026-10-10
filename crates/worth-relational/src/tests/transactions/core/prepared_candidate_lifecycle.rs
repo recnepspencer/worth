@@ -13,7 +13,6 @@ fn expired_candidate_is_typed_deferred_before_reference_movement() {
             max_transaction_savepoints: 8,
             max_prepared_candidates: 1,
             candidate_max_lifetime_millis: 0,
-            max_prepared_root_bytes: 268_435_456,
         })
         .build();
     let before = crate::tests::support::test_owner_main_basis(&runtime).unwrap();
@@ -83,7 +82,6 @@ fn candidate_that_expires_while_waiting_for_coordination_does_not_move_reference
             max_transaction_savepoints: 8,
             max_prepared_candidates: 1,
             candidate_max_lifetime_millis: 1_000,
-            max_prepared_root_bytes: 268_435_456,
         })
         .build();
     let basis = crate::tests::support::test_owner_main_basis(&runtime).unwrap();
@@ -188,7 +186,6 @@ fn candidate_population_exhaustion_is_typed_and_released_by_discard() {
             max_transaction_savepoints: 8,
             max_prepared_candidates: 1,
             candidate_max_lifetime_millis: 30_000,
-            max_prepared_root_bytes: 268_435_456,
         })
         .build();
     let basis = crate::tests::support::test_owner_main_basis(&runtime).unwrap();

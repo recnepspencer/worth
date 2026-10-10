@@ -20,6 +20,7 @@ use crate::domain_computation::primary_graph::{
 use std::cmp::Ordering;
 use worth_runtime_world::facade::CompositeCommitIdentity;
 
+mod owned_affinity;
 mod retention;
 
 impl WorthQueryOutputDemandRegistry {

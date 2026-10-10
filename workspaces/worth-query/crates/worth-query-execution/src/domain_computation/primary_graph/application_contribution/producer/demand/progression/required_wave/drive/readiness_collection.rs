@@ -30,6 +30,7 @@ pub(super) fn collect<'owner, 'custody, Schema, Family>(
     caller_contacts: usize,
     caller_kind: crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind,
     authority: &WorthQueryProducerCommitAuthority,
+    performed: &'owner std::cell::RefCell<super::super::performed::PerformedMembers>,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<PreparedRequiredWave<'owner, Schema>, WorthQueryOutputDemandDenial>
 where
@@ -122,6 +123,7 @@ where
                 view.as_ref(),
                 contacts,
                 permission,
+                performed,
                 installation.admission(),
             );
             installation

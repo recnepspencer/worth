@@ -141,7 +141,7 @@ impl WorthQueryApplicationOneShotDenial {
     /// The shared payload and its one reservation live until the last denial clone drops.
     fn retain_custody(&self, hold: worth_execution::ExecutionMemoryReservation) {
         // A concurrent clone may have retained custody first. Its hold remains;
-        // the rejected second hold refunds itself when this result drops.
+        // the rejected second hold drops and refunds at the set statement.
         let _ = self.payload.custody.set(hold);
     }
 

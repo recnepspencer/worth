@@ -28,7 +28,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn s
     for _ in 0..64 {
         match output
             .required_output_mut()
-            .advance(&request)
+            .advance(&world.application, &request)
             .expect("output advances")
         {
             WorthQueryApplicationProgramOutputProgress::Pending => {}

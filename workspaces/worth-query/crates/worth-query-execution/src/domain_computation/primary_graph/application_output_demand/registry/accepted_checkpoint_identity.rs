@@ -26,6 +26,12 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryAcceptedOutput
 }
 
 impl WorthQueryAcceptedOutputCheckpointIdentity {
+    pub(in crate::domain_computation::primary_graph) fn output_slot(
+        &self,
+    ) -> CheckpointOutputSlot<'_> {
+        CheckpointOutputSlot::new(&self.producer, self.scope, self.source_partition)
+    }
+
     pub(in crate::domain_computation::primary_graph) fn canonical_cmp(
         &self,
         other: &Self,
@@ -42,12 +48,33 @@ impl WorthQueryAcceptedOutputCheckpointIdentity {
             .then_with(|| self.roles.cmp(&other.roles))
     }
 
+    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn same_output_slot(
         &self,
         other: &Self,
     ) -> bool {
-        self.producer == other.producer
-            && self.scope == other.scope
-            && self.source_partition == other.source_partition
+        self.output_slot() == other.output_slot()
+    }
+}
+
+/// Borrowed checkpoint slot identity; it carries no publication authority.
+#[derive(Eq, Ord, PartialEq, PartialOrd)]
+pub(in crate::domain_computation::primary_graph) struct CheckpointOutputSlot<'a> {
+    producer: &'a str,
+    scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+    partition: [u8; 32],
+}
+
+impl<'a> CheckpointOutputSlot<'a> {
+    pub(in crate::domain_computation::primary_graph) fn new(
+        producer: &'a str,
+        scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        partition: [u8; 32],
+    ) -> Self {
+        Self {
+            producer,
+            scope,
+            partition,
+        }
     }
 }

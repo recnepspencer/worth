@@ -63,7 +63,7 @@ fn settle_and_close(
     let settled = (0..32)
         .find_map(|_| {
             match demand
-                .advance(request)
+                .advance(application, request)
                 .expect("the program output demand settles")
             {
                 WorthQueryApplicationProgramOutputProgress::Pending => None,

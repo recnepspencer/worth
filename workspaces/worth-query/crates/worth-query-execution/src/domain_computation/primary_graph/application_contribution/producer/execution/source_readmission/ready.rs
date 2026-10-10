@@ -26,7 +26,6 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
             | Stop::SelectedPositionUnavailable { .. }
             | Stop::ForeignCell
             | Stop::RegistrationChanged
-            | Stop::CellCapacityExhausted { .. }
             | Stop::PreparationMemoryExhausted { .. }
             | Stop::PreparationMemoryCounterOverflow
             | Stop::RetainedCompanionCapacityExhausted { .. } => {
@@ -38,7 +37,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     .into()
 }
 
-pub(super) fn ready_currentness_denial(
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn ready_currentness_denial(
     subject: &'static str,
     stop: CurrentAcceptedStop,
 ) -> ProducerExecutionStop {

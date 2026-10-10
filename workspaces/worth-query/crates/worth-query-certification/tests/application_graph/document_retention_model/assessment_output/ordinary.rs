@@ -92,6 +92,7 @@ impl OperationHandler<DocumentRetentionSchema, OrdinaryRetentionAssessmentBindin
         WorthQueryInvariantMutationTarget<DocumentRetentionSchema, Document>,
         RetentionAssessmentDenial,
     > {
+        super::super::retention_entry::record_ordinary_decision(input.retention_days);
         let document = match reader
             .resolve_entity(DocumentIdentityField::reference(), input.identity.clone())
         {
@@ -127,6 +128,7 @@ impl OperationHandler<DocumentRetentionSchema, OrdinaryRetentionAssessmentBindin
             OrdinaryRetentionAssessmentBinding,
         >,
     ) -> HandlerResult<RetentionAssessmentPublished, RetentionAssessmentDenial> {
+        super::super::retention_entry::record_ordinary_candidate(input.retention_days);
         let document = match writer.projected_entity(&target) {
             Ok(document) => document,
             Err(error) => {

@@ -106,6 +106,11 @@ impl RelationalPreparationRuntime {
         let transaction_id = transaction.transaction_id;
         let validation_input =
             super::RelationalTransactionValidationInput::from_transaction(&transaction);
+        let scope_control = crate::validation::engine::InvariantPreparationControl::for_transaction(
+            &validation_input,
+            allocation_policy,
+            crate::mvcc::RelationalInterruptionBoundary::ProposalValidation,
+        );
         let proposal_identity =
             self.issue_mutation_proposal_identity(transaction_id, &validation_input)?;
         let proposed_version = proposal_identity.proposed_version_id();
@@ -127,6 +132,7 @@ impl RelationalPreparationRuntime {
                 &prepared.merged_plan,
                 Some(&proposal_identity),
                 lease,
+                &scope_control,
             )?;
         let (mutation_sensitive, publication) = validate_proposed_state(
             self,
@@ -135,6 +141,7 @@ impl RelationalPreparationRuntime {
             proposed_version,
             Some(&proposal_identity),
             lease,
+            &scope_control,
         )?;
         let summary = CommitValidation::summarize(&[
             commit_boundary.clone(),

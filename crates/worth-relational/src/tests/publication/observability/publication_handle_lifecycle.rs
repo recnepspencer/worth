@@ -120,7 +120,6 @@ fn publication_handle_retention_is_bounded_by_policy() {
             max_transaction_savepoints: 8,
             max_prepared_candidates: 8,
             candidate_max_lifetime_millis: 30_000,
-            max_prepared_root_bytes: 268_435_456,
         })
         .build();
     let first = create_entity_outcome(&runtime, "first");
@@ -180,7 +179,6 @@ fn published_handle_and_admitted_observation_remain_exact_until_release() {
             max_transaction_savepoints: 8,
             max_prepared_candidates: 8,
             candidate_max_lifetime_millis: 30_000,
-            max_prepared_root_bytes: 268_435_456,
         })
         .build();
     let first = create_entity_outcome(&runtime, "first");
@@ -216,7 +214,6 @@ fn leased_commit_preparation_preserves_publication_surfaces() {
             max_transaction_savepoints: 8,
             max_prepared_candidates: 8,
             candidate_max_lifetime_millis: 30_000,
-            max_prepared_root_bytes: 268_435_456,
         })
         .build();
     let parallel = RelationalRuntimeApi::builder()
@@ -229,7 +226,6 @@ fn leased_commit_preparation_preserves_publication_surfaces() {
             max_transaction_savepoints: 8,
             max_prepared_candidates: 8,
             candidate_max_lifetime_millis: 30_000,
-            max_prepared_root_bytes: 268_435_456,
         })
         .build();
 

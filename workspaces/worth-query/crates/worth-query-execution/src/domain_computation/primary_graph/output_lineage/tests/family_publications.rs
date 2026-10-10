@@ -6,6 +6,8 @@ use super::{checkpoint_identity, source_facts};
 use crate::domain_computation::primary_graph::application_contribution::PriorAbsence;
 use worth_relational::facade::identity::{EntityId, PartitionId};
 
+mod checkpoint_locator_copy;
+mod checkpoint_selection_denial;
 mod inherited_settlement;
 mod publication_controls;
 mod selection_budget;

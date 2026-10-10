@@ -116,16 +116,6 @@ pub enum InvariantViolationFields {
         lookup: Option<StorageInconsistencyLookup>,
         failure: Option<StorageInconsistencyFailure>,
     },
-    RelationIntegrityScopeBudgetExceeded {
-        limit_name: String,
-        limit: usize,
-        observed: usize,
-        relation_kind_count: usize,
-        touched_entity_count: usize,
-        deleted_entity_count: usize,
-        scanned_relation_count: usize,
-        planned_edge_count: usize,
-    },
     CustomInvariantFailure {
         identity: CustomInvariantFailureIdentity,
         phase: CustomInvariantFailurePhase,
@@ -179,9 +169,6 @@ impl InvariantViolationFields {
                         .as_ref()
                         .map_or(0, |label| label.capacity() as u64),
                 ),
-            Fields::RelationIntegrityScopeBudgetExceeded { limit_name, .. } => {
-                limit_name.capacity() as u64
-            }
             Fields::CustomInvariantFailure {
                 identity, detail, ..
             } => (identity.semantic_identity().rule_id.as_str().len() as u64)

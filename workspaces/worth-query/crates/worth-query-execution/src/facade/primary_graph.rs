@@ -4,7 +4,7 @@ pub use crate::domain_computation::primary_graph::WorthQueryExecutionLeaseDenial
 
 pub use crate::domain_computation::{
     WorthQueryInvariantExecutionDenialKind, WorthQueryInvariantExecutionFailure,
-    WorthQueryInvariantExecutionFailurePosture,
+    WorthQueryInvariantExecutionFailurePosture, WorthQueryProviderSessionFailure,
 };
 
 #[cfg(feature = "test-query-execution-observer")]
@@ -32,7 +32,11 @@ pub use crate::domain_computation::primary_graph::{
     required_ready_custody_bytes_for_test, RequiredCustodyLayoutForTest,
 };
 
+#[cfg(feature = "test-query-execution-observer")]
+pub use crate::domain_computation::primary_graph::test_execution_authority;
+
 pub use worth_relational::facade::{
+    indexes::{DerivedIndexDiscardDenial, DerivedIndexDiscardOutcome, DerivedIndexDiscardRequest},
     lineage::{LineageEventKind, LineageEventRecord},
     publication::RecordStructuralChange,
 };

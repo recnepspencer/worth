@@ -4,6 +4,7 @@ use super::*;
 use crate::domain_computation::primary_graph::application_contribution::producer::execution;
 use crate::domain_computation::primary_graph::application_output_demand::RunningSelectedExecution;
 
+#[allow(clippy::too_many_arguments)]
 pub(super) fn finish(
     result: Result<
         execution::outcome::PreparedProducerExecutionOutcome,
@@ -12,8 +13,12 @@ pub(super) fn finish(
     selected_execution_finish: RunningSelectedExecution<'_>,
     retained_resources: Option<crate::domain_computation::primary_graph::application_contribution::producer::WorthQueryProducerDemandResources>,
     _request_admission: &mut InvalidationEditAdmission,
+    performed: &std::cell::RefCell<PerformedMembers>,
+    readiness: super::super::required_wave::performed::PublicationReadiness,
+    runtime_identity: u64,
+    root: worth_relational::facade::identity::EntityId,
 ) -> Result<CheckpointProgress, CompletionRefusal> {
-    let mut receipt = match result.map(|prepared| prepared.into_parts()) {
+    let receipt = match result.map(|prepared| prepared.into_parts()) {
         Ok((execution::ProducerExecutionOutcome::Committed(receipt), ready_backing)) => {
             (receipt, ready_backing)
         }
@@ -46,9 +51,23 @@ pub(super) fn finish(
             return Err(CompletionRefusal::denied(denial));
         }
     };
-    let publication = OwnPublication(receipt.0.committed_product_publication().clone());
+    let (receipt, ready_backing) = receipt;
+    let mut record = performed.borrow_mut();
+    let (receipt, recorded) = record
+        .publication(readiness, receipt, |member| member.performed())
+        .into_parts();
     #[cfg(feature = "test-query-execution-observer")]
-    super::super::caller_pass_observation::exhaust_after_commit(_request_admission);
+    super::super::caller_pass_observation::exhaust_after_commit(
+        _request_admission,
+        receipt.published_in_this_advance(),
+        *recorded,
+        runtime_identity,
+        root,
+    );
+    let _ = (recorded, runtime_identity, root);
+    let mut receipt = (receipt.into_receipt(), ready_backing);
+    drop(record);
+    let publication = OwnPublication(receipt.0.committed_product_publication().clone());
     let delivery = receipt.0
             .take_performed_relational_product_change()
             .map_or(

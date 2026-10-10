@@ -50,7 +50,7 @@ where
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
 
-        _: &WorthQueryProgramPublicationAccess,
+        access: &WorthQueryProgramPublicationAccess,
         owner: &WorthQuerySelectedProgramOwner<'_, Schema>,
         program: SourceProgram<Schema, Source>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
@@ -66,10 +66,17 @@ where
         let root = TypeId::of::<Root>();
         let presented = match self.selected_source_owner::<Source>(owner, root) {
             Ok(presented) => presented,
-            Err(denial) => return Ok((WorthQueryApplicationCommitOutcome::Denied(denial), None)),
+            Err(denial) => {
+                return Ok((
+                    WorthQueryApplicationCommitOutcome::Denied(denial),
+                    None,
+                    None,
+                ))
+            }
         };
         self.compare_and_commit_output_source::<Source>(
             phase,
+            access,
             Some(presented),
             program,
             idempotency,
@@ -84,7 +91,7 @@ where
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
 
-        _: &WorthQueryProgramPublicationAccess,
+        access: &WorthQueryProgramPublicationAccess,
         owner: &WorthQuerySelectedProgramOwner<'_, Schema>,
         program: SourceProgram<Schema, Source>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
@@ -101,10 +108,17 @@ where
         let root = TypeId::of::<Root>();
         let presented = match self.selected_source_owner::<Source>(owner, root) {
             Ok(presented) => presented,
-            Err(denial) => return Ok((WorthQueryApplicationCommitOutcome::Denied(denial), None)),
+            Err(denial) => {
+                return Ok((
+                    WorthQueryApplicationCommitOutcome::Denied(denial),
+                    None,
+                    None,
+                ))
+            }
         };
         self.compare_and_commit_output_source::<Source>(
             phase,
+            access,
             Some(presented),
             program,
             idempotency,
@@ -118,7 +132,7 @@ where
     /// owner was resolved on this host and both the initial program's output
     /// shape and the selected program declare that source and root. A selected
     /// revision whose support has since retired is refused as not active.
-    fn selected_source_owner<Source: 'static>(
+    pub(super) fn selected_source_owner<Source: 'static>(
         &self,
         owner: &WorthQuerySelectedProgramOwner<'_, Schema>,
         root: TypeId,

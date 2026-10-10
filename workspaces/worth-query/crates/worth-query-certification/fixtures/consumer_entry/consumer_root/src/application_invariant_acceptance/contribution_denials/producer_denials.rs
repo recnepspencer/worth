@@ -327,6 +327,9 @@ fn install_topology_behavior<Schema: TopologySchemaBinding>(
     setup.handler::<worth_query_topology_entry::PlanarSourceAdjustmentBinding<Schema>, _>(
         worth_query_topology_entry::PlanarSourceAdjustmentHandler,
     )?;
+    setup.handler::<worth_query_topology_entry::PlanarInitialAdjustmentBinding<Schema>, _>(
+        worth_query_topology_entry::PlanarInitialAdjustmentHandler,
+    )?;
     setup.handler::<worth_query_topology_entry::VertexReplacementBinding<Schema>, _>(
         worth_query_topology_entry::VertexReplacementHandler,
     )?;

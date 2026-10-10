@@ -1,3 +1,6 @@
+mod branch;
+use branch::fork;
+
 use std::num::NonZeroUsize;
 
 use worth_query_host::facade::application_entry::{
@@ -45,14 +48,17 @@ pub(super) fn supersession_retires_pending_predecessor(
         .application
         .delay_next_output_readiness_delivery_for_test();
     assert!(matches!(
-        predecessor.required_output_mut().advance(&request).unwrap(),
+        predecessor
+            .required_output_mut()
+            .advance(&world.application, &request)
+            .unwrap(),
         WorthQueryApplicationProgramOutputProgress::Pending
     ));
 
     let mut successor = perform(&request, &world.application, "anchor-a", 5, 10_007);
     let stopped = predecessor
         .required_output_mut()
-        .advance(&request)
+        .advance(&world.application, &request)
         .map(|progress| {
             matches!(
                 progress,
@@ -68,7 +74,7 @@ pub(super) fn supersession_retires_pending_predecessor(
         ),
         "the replaced publication's pending output stops superseded: {stopped:?}"
     );
-    let settled = settle(&mut successor, &request);
+    let settled = settle(&world.application, &mut successor, &request);
     let exact = request
         .at(settled.observation())
         .query(PlanarOutputRead {
@@ -130,7 +136,7 @@ pub(super) fn duplicate_retry_does_not_schedule_again(
         panic!("the first source operation must perform")
     };
     let mut performed = performed
-        .start_required_outputs(&request, controls())
+        .start_required_outputs(&world.application, &request, controls())
         .unwrap_or_else(|failure| panic!("required outputs start: {:?}", failure.denial()));
     let duplicate = request
         .mutate(intent)
@@ -147,7 +153,7 @@ pub(super) fn duplicate_retry_does_not_schedule_again(
             worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::AlreadyCommitted(_)
         )
     ));
-    let settled = settle(&mut performed, &request);
+    let settled = settle(&world.application, &mut performed, &request);
     assert_eq!(
         request
             .at(settled.observation())
@@ -190,10 +196,10 @@ pub(super) fn two_forks_preserve_predecessor_output(
 
     let left_prepared = prepare(&left_request, &world.application, "anchor-c", 2, 10_009);
     let right_prepared = prepare(&right_request, &world.application, "anchor-c", 4, 10_010);
-    let mut left_output = start(left_prepared, &left_request);
-    let mut right_output = start(right_prepared, &right_request);
-    let left_settled = settle(&mut left_output, &left_request);
-    let right_settled = settle(&mut right_output, &right_request);
+    let mut left_output = start(left_prepared, &world.application, &left_request);
+    let mut right_output = start(right_prepared, &world.application, &right_request);
+    let left_settled = settle(&world.application, &mut left_output, &left_request);
+    let right_settled = settle(&world.application, &mut right_output, &right_request);
     assert_eq!(read_at(&left_request, &left_settled, "anchor-c"), length(4));
     assert_eq!(
         read_at(&right_request, &right_settled, "anchor-c"),
@@ -244,6 +250,7 @@ pub(super) fn branch_close_wakes_live_required_output(
         .on_branch(branch);
     let mut output = start(
         prepare(&request, &world.application, "anchor-b", 2, 10_013),
+        &world.application,
         &request,
     );
     let notifications = output.required_output_mut().notifications().unwrap();
@@ -275,17 +282,14 @@ type ProgramApplication =
         crate::ConsumerProgram,
     >;
 
-type Prepared<'a> =
-    worth_query_host::facade::application_entry::WorthQueryPerformedApplicationMutation<
-        'a,
-        ConsumerSchema,
-        PlanarSourceAdjustment,
-        crate::ConsumerProgram,
-        crate::ConsumerProgramRoot,
-    >;
+type Prepared = worth_query_host::facade::application_entry::WorthQueryPerformedApplicationMutation<
+    ConsumerSchema,
+    PlanarSourceAdjustment,
+    crate::ConsumerProgram,
+    crate::ConsumerProgramRoot,
+>;
 
-type Started<'a> = worth_query_host::facade::application_entry::WorthQueryStartedRequiredOutputs<
-    'a,
+type Started = worth_query_host::facade::application_entry::WorthQueryStartedRequiredOutputs<
     ConsumerSchema,
     PlanarSourceAdjustment,
     crate::ConsumerProgram,
@@ -298,8 +302,12 @@ pub(super) fn perform<'a>(
     key: &str,
     y: u64,
     command: u64,
-) -> Started<'a> {
-    start(prepare(request, application, key, y, command), request)
+) -> Started {
+    start(
+        prepare(request, application, key, y, command),
+        application,
+        request,
+    )
 }
 
 fn prepare<'a>(
@@ -308,7 +316,7 @@ fn prepare<'a>(
     key: &str,
     y: u64,
     command: u64,
-) -> Prepared<'a> {
+) -> Prepared {
     let outcome = request
         .mutate(PlanarSourceAdjustment {
             scope_key: key.to_owned(),
@@ -327,9 +335,13 @@ fn prepare<'a>(
     performed
 }
 
-fn start<'a>(performed: Prepared<'a>, request: &'a Request<'a>) -> Started<'a> {
+fn start<'a>(
+    performed: Prepared,
+    application: &ProgramApplication,
+    request: &'a Request<'a>,
+) -> Started {
     performed
-        .start_required_outputs(request, controls())
+        .start_required_outputs(application, request, controls())
         .unwrap_or_else(|failure| panic!("required outputs start: {:?}", failure.denial()))
 }
 
@@ -352,14 +364,18 @@ pub(super) fn controls() -> WorthQueryOutputDemandControls {
 }
 
 fn settle<'a>(
-    performed: &mut Started<'a>,
+    application: &ProgramApplication,
+    performed: &mut Started,
     request: &'a Request<'a>,
 ) -> worth_query_host::facade::application_entry::WorthQueryApplicationProgramOutputSettlement<
     <worth_query_topology_entry::PlanarReadBinding<ConsumerSchema> as worth_query_decl::facade::application_query::ApplicationQueryBinding<ConsumerSchema>>::Query,
 >{
     crate::application_invariant_acceptance::proof::settle(|| {
         crate::application_invariant_acceptance::proof::settled(
-            performed.required_output_mut().advance(request).unwrap(),
+            performed
+                .required_output_mut()
+                .advance(application, request)
+                .unwrap(),
         )
     })
 }
@@ -380,18 +396,4 @@ fn read_at(
         .unwrap()
         .rows()[0]
         .value
-}
-
-fn fork(
-    application: &worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
-        ConsumerSchema,
-    >,
-    source: worth_query_host::facade::product::WorthQueryProductBranch,
-) -> worth_query_host::facade::product::WorthQueryProductBranch {
-    application
-        .branches()
-        .fork(source)
-        .components(|components| components.fork_relational().reuse_exact_signal_basis())
-        .create()
-        .unwrap()
 }

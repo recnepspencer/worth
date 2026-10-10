@@ -146,7 +146,6 @@ fn published_snapshot_capacity_defers_at_preparation_without_reaching_settlement
             max_transaction_savepoints: 8,
             max_prepared_candidates: 8,
             candidate_max_lifetime_millis: 30_000,
-            max_prepared_root_bytes: 268_435_456,
         })
         .build();
     let first = create_entity_outcome(&runtime, "capacity-first");

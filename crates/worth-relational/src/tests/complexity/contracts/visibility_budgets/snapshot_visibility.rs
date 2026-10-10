@@ -219,7 +219,6 @@ fn snapshot_registry_scale_runtime() -> RelationalRuntime {
             max_transaction_savepoints: 8,
             max_prepared_candidates: 8,
             candidate_max_lifetime_millis: 30_000,
-            max_prepared_root_bytes: 268_435_456,
         })
         .build()
 }

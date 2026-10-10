@@ -103,3 +103,18 @@ pub(in crate::domain_computation::primary_graph) fn relational_execution_stop(
         ),
     }
 }
+
+/// Native preparation evidence keeps the typed cause at the application boundary.
+pub(in crate::domain_computation::primary_graph) fn native_preparation_kind(
+    failure: &crate::domain_computation::WorthQueryProviderSessionFailure,
+) -> Option<crate::domain_computation::WorthQueryProviderSessionDenialKind> {
+    use worth_relational::facade::transactions::{
+        CommitExecutionDenialKind, TransactionCommitError,
+    };
+    let TransactionCommitError::Execution { denial, .. } = failure.native_preparation_error()?
+    else {
+        return None;
+    };
+    let CommitExecutionDenialKind::Cause(cause) = denial.kind;
+    relational_execution_kind(cause, denial.partition_identity).ok()
+}

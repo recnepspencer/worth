@@ -1,6 +1,6 @@
 //! Owner failure takes precedence over a later settled compute failure.
 use super::*;
-use crate::domain_computation::primary_graph::application_contribution::request_execution::test_authority;
+use crate::domain_computation::primary_graph::application_contribution::request_execution::test_execution_authority as test_authority;
 use worth_runtime_world::facade::RuntimeWorldExecutionPlacement;
 
 #[test]

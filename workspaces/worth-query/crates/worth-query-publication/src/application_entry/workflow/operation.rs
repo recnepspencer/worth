@@ -186,6 +186,9 @@ where
     /// the recovery admission that releases it.
     fn accept_custody<Binding, EffectOperation, EffectInput, EffectScope>(
         self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
         required: &RequiredWorkflowOperation,
         receipt: &worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
         recovery: Option<
@@ -198,78 +201,64 @@ where
         Binding: ApplicationMutationBinding<Schema>,
         EffectInput: Clone + Send + Sync + 'static,
     {
-        self.application
-            .with_application_advancement(self.scope, |phase| {
-                if required.operation() != Binding::Operation::IDENTIFIER
-                    || required.binding() != Some(Binding::IDENTITY)
-                    || required.input_type() != Binding::InputBinding::IDENTITY.as_str()
-                {
-                    return Err(WorthQueryWorkflowOperationAcceptanceDenial::RequirementMismatch);
-                }
-                if let Some(replayed) =
-                    WorthQueryWorkflowAdvanceAdapter::resolve_operation_replay::<
-                        Schema,
-                        Operation,
-                        Input,
-                        Scope,
-                        Binding,
-                    >(
-                        self.application,
-                        &self.prepared,
-                        required,
-                        receipt,
-                        recovery,
-                        self.idempotency,
-                    )
-                    .map_err(WorthQueryWorkflowOperationAcceptanceDenial::Replay)?
-                {
-                    return Ok(replayed);
-                }
-                let prepared = match self.prepared {
-                    PreparedWorkflowAdvance::AwaitingOperation(prepared) => prepared,
-                    PreparedWorkflowAdvance::Transition { .. }
-                    | PreparedWorkflowAdvance::AwaitingAssessment(_)
-                    | PreparedWorkflowAdvance::AwaitingCondition(_)
-                    | PreparedWorkflowAdvance::AwaitingEvidence { .. }
-                    | PreparedWorkflowAdvance::AwaitingApproval { .. }
-                    | PreparedWorkflowAdvance::ReplayOnly { .. } => {
-                        return Err(
-                            WorthQueryWorkflowOperationAcceptanceDenial::NotAwaitingOperation,
-                        )
-                    }
-                };
-                if !same_requirement(prepared.required(), required) {
-                    return Err(WorthQueryWorkflowOperationAcceptanceDenial::RequirementMismatch);
-                }
-                WorthQueryWorkflowAdvanceAdapter::compare_and_commit_operation::<
-                    Schema,
-                    Operation,
-                    Input,
-                    Scope,
-                    Binding,
-                    EffectOperation,
-                    EffectInput,
-                    EffectScope,
-                >(
-                    &phase,
-                    self.application,
-                    prepared,
-                    effect_admission,
-                    effect_idempotency,
-                    required,
-                    recovery,
-                    self.idempotency,
-                )
-                .map_err(WorthQueryWorkflowOperationAcceptanceDenial::Attempt)
-            })
-            .unwrap_or_else(|cause| {
-                Ok(WorkflowProgressOutcome::Application(
-                    cause
-                        .into_commit_outcome()
-                        .landed()
-                        .expect_err("request admission cannot commit"),
-                ))
-            })
+        if required.operation() != Binding::Operation::IDENTIFIER
+            || required.binding() != Some(Binding::IDENTITY)
+            || required.input_type() != Binding::InputBinding::IDENTITY.as_str()
+        {
+            return Err(WorthQueryWorkflowOperationAcceptanceDenial::RequirementMismatch);
+        }
+        if let Some(replayed) = WorthQueryWorkflowAdvanceAdapter::resolve_operation_replay::<
+            Schema,
+            Operation,
+            Input,
+            Scope,
+            Binding,
+        >(
+            self.application,
+            &self.prepared,
+            required,
+            receipt,
+            recovery,
+            self.idempotency,
+        )
+        .map_err(WorthQueryWorkflowOperationAcceptanceDenial::Replay)?
+        {
+            return Ok(replayed);
+        }
+        let prepared = match self.prepared {
+            PreparedWorkflowAdvance::AwaitingOperation(prepared) => prepared,
+            PreparedWorkflowAdvance::Transition { .. }
+            | PreparedWorkflowAdvance::AwaitingAssessment(_)
+            | PreparedWorkflowAdvance::AwaitingCondition(_)
+            | PreparedWorkflowAdvance::AwaitingEvidence { .. }
+            | PreparedWorkflowAdvance::AwaitingApproval { .. }
+            | PreparedWorkflowAdvance::ReplayOnly { .. } => {
+                return Err(WorthQueryWorkflowOperationAcceptanceDenial::NotAwaitingOperation)
+            }
+        };
+        if !same_requirement(prepared.required(), required) {
+            return Err(WorthQueryWorkflowOperationAcceptanceDenial::RequirementMismatch);
+        }
+        WorthQueryWorkflowAdvanceAdapter::compare_and_commit_operation::<
+            Schema,
+            Operation,
+            Input,
+            Scope,
+            Binding,
+            EffectOperation,
+            EffectInput,
+            EffectScope,
+        >(
+            phase,
+            self.application,
+            prepared,
+            effect_admission,
+            effect_idempotency,
+            required,
+            recovery,
+            self.idempotency,
+        )
+        .map_err(WorthQueryWorkflowOperationAcceptanceDenial::Attempt)
     }
 }
 

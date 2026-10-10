@@ -4,7 +4,7 @@ use crate::facade::branch::{
 use crate::facade::history::BranchId;
 use crate::facade::mvcc::{
     RelationalBranchTransactionAdmissionDenial, RelationalPublicationDeferred,
-    RelationalPublicationFailureKind, RelationalTransactionIntent,
+    RelationalTransactionIntent,
 };
 use crate::facade::transactions::TransactionCommitError;
 use crate::tests::support::*;
@@ -280,7 +280,7 @@ fn capacity_consumed_after_preparation_defers_next_basis_before_movement() {
 }
 
 #[test]
-fn prepared_root_byte_budget_denies_before_candidate_admission() {
+fn prepared_root_cost_is_observational_and_system_publication_remains_current() {
     let runtime = RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::AiWorkflow)
         .schema_registry(test_schema_registry())
@@ -292,41 +292,58 @@ fn prepared_root_byte_budget_denies_before_candidate_admission() {
             max_transaction_savepoints: 8,
             max_prepared_candidates: 8,
             candidate_max_lifetime_millis: 30_000,
-            max_prepared_root_bytes: 0,
         })
         .build();
-    let before = crate::tests::support::test_owner_main_basis(&runtime).unwrap();
+    let before = test_owner_main_basis(&runtime).unwrap();
     let mut transaction = runtime
         .begin_branch_transaction(&before, RelationalTransactionIntent::ordinary())
         .unwrap();
     transaction
         .push_batch(
-            batch_create("prepared-root-budget"),
+            batch_create("observed-root-cost"),
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-
-    assert!(matches!(
-        runtime.prepare_branch_transaction(transaction, worth_execution::ExecutionAllocationPolicy::SystemAllocation,),
-        Err(TransactionCommitError::PublicationFailed {
-            failure,
-            ..
-        }) if matches!(
-            failure.kind(),
-            RelationalPublicationFailureKind::PreparedRootBudgetExhausted {
-                maximum_bytes: 0,
-                required_bytes,
-            } if *required_bytes > 0
+    let candidate = runtime
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
-    ));
+        .unwrap();
     assert_eq!(
-        crate::tests::support::test_owner_main_basis(&runtime)
-            .unwrap()
-            .descriptor(),
+        test_owner_main_basis(&runtime).unwrap().descriptor(),
         before.descriptor()
+    );
+    let crate::mvcc::RelationalPublicationOutcome::Performed(performed) =
+        runtime.publication_port().compare_and_publish(candidate)
+    else {
+        panic!("a prepared system-allocated root must publish");
+    };
+    let cost = performed.next_basis().inner.root.publication_cost();
+    assert!(cost.new_authoritative_bytes > 0);
+    assert_eq!(cost.touched_regions, 1);
+    assert_eq!(
+        test_owner_main_basis(&runtime).unwrap().descriptor(),
+        performed.next_basis().descriptor(),
+    );
+    let committed = runtime.settle_performed_publication(performed).unwrap();
+    let entities = changed_entities(&committed);
+    assert_eq!(entities.len(), 1);
+    let records = runtime
+        .read_truth()
+        .project_historical_version(committed.commit.version_id)
+        .all_authoritative_entity_records();
+    let record = records
+        .iter()
+        .find(|record| record.entity_id == entities[0])
+        .unwrap();
+    assert_eq!(
+        read_entity_name(record),
+        Some("observed-root-cost".to_owned())
     );
     assert_eq!(
         runtime.history.pending_canonical_publication_route_count(),
         0
     );
+    release_test_commit_snapshot(&runtime, &committed);
 }

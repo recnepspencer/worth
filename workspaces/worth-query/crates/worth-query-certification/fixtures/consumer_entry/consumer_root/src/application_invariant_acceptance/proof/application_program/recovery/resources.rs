@@ -49,7 +49,7 @@ pub(in super::super) fn resource_denial_preserves_source_and_delivery(
         panic!("the source publication must succeed before derived admission")
     };
     let failure = performed
-        .start_required_outputs(&request, denied_controls)
+        .start_required_outputs(&world.application, &request, denied_controls)
         .err()
         .expect("insufficient derived resources deny required-output start");
     assert_eq!(
@@ -75,7 +75,7 @@ pub(in super::super) fn resource_denial_preserves_source_and_delivery(
         .composite_commit();
     let mut retried = failure
         .into_performed()
-        .start_required_outputs(&request, output_controls())
+        .start_required_outputs(&world.application, &request, output_controls())
         .unwrap_or_else(|failure| panic!("exact prepared retry starts: {:?}", failure.denial()));
     let published = request
         .query(PlanarRead {
@@ -84,12 +84,16 @@ pub(in super::super) fn resource_denial_preserves_source_and_delivery(
         .execute()
         .expect("the successful source publication remains visible");
     assert_eq!(published.rows()[0].y, length(2));
-    let settled = settle(
-        || match retried.required_output_mut().advance(&request).unwrap() {
+    let settled = settle(|| {
+        match retried
+            .required_output_mut()
+            .advance(&world.application, &request)
+            .unwrap()
+        {
             WorthQueryApplicationProgramOutputProgress::Pending => None,
             WorthQueryApplicationProgramOutputProgress::Settled(settled) => Some(settled),
-        },
-    );
+        }
+    });
     let row = request
         .at(settled.observation())
         .query(PlanarOutputRead {

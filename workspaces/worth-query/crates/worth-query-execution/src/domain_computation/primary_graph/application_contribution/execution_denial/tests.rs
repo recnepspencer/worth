@@ -12,7 +12,7 @@ use worth_execution::{
 };
 use worth_foundational::facade::PartitionIdentity;
 
-use super::super::request_execution::{test_authority, test_policy};
+use super::super::request_execution::{test_execution_authority, test_policy};
 use super::*;
 
 type Denial = WorthQueryPartitionedComputationDenial<u32>;
@@ -286,7 +286,9 @@ fn a_dispatch_child_and_a_serial_run_are_refused_by_the_same_policy() {
         deadline: None,
         cancellation: CancellationToken::new(),
     };
-    let parent = test_authority().request_lease(request(policy)).unwrap();
+    let parent = test_execution_authority()
+        .request_lease(request(policy))
+        .unwrap();
     let _routing = parent.reserve_memory(600).unwrap();
     let child = parent.child(request(policy)).unwrap();
     let leased = child.reserve_memory(500).unwrap_err();

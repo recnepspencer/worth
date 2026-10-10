@@ -10,9 +10,9 @@ pub mod config {
         CommitStrategiesConfig, CompiledLanePolicy, ConfigProvenance, ConfigProvenanceEntry,
         ConfigValueSource, CrossContextPolicy, DiagnosticsBoundary, DurabilityPolicy,
         DurableLogPolicy, DurableLogRetentionMode, MvccConfig, PublicationConfig,
-        RelationIntegrityScopeBudget, RelationalConfigOverride, RelationalRuntimeProfile,
-        RetentionBackend, RetentionPolicy, RuntimeExecutionLane, RuntimeProfileBoundaryPolicy,
-        SnapshotReleasePolicy, StorageLayoutConfig, VisibilityCachePolicy,
+        RelationalConfigOverride, RelationalRuntimeProfile, RetentionBackend, RetentionPolicy,
+        RuntimeExecutionLane, RuntimeProfileBoundaryPolicy, SnapshotReleasePolicy,
+        StorageLayoutConfig, VisibilityCachePolicy,
     };
 }
 pub mod commit_strategies {
@@ -196,7 +196,6 @@ pub mod merge {
 
 pub mod runtime {
     pub use super::runtime_validation_exports::*;
-    pub use crate::config::data::RelationIntegrityScopeBudget;
     pub use crate::presentation::facade::runtime::{
         ImmutableReadContract, RelationalBoundaryContract, RelationalRuntimeApi,
     };

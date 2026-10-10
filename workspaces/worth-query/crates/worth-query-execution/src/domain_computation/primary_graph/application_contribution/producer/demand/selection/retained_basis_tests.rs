@@ -27,22 +27,20 @@ fn owner_retained_program_basis_survives_a_new_head_without_admitting_foreign_or
         )
         .expect("the source owner authenticates");
     commit_live_activity(&world, &principal, &request);
-    let current = WorthQueryProductBranchReadIdentity::from_observation(
-        world.selected_product().product().observation(),
-    );
-    assert_ne!(source, current);
+    let selected_current = world.selected_product();
+    let current = selected_current.product().observation();
+    assert!(!source.matches_observation(current));
     assert!(world
         .application
         .select_application_read_observation(&retained)
         .is_ok());
-    assert!(source_basis_is_admitted(&source, &current, true));
-    assert!(!source_basis_is_admitted(&source, &current, false));
+    assert!(source_basis_is_admitted(&source, current, true));
+    assert!(!source_basis_is_admitted(&source, current, false));
 
     let foreign = installed_authorization_world(true);
-    let foreign_current = WorthQueryProductBranchReadIdentity::from_observation(
-        foreign.selected_product().product().observation(),
-    );
-    assert!(!source_basis_is_admitted(&source, &foreign_current, true));
+    let selected_foreign = foreign.selected_product();
+    let foreign_current = selected_foreign.product().observation();
+    assert!(!source_basis_is_admitted(&source, foreign_current, true));
     assert!(foreign
         .application
         .select_application_read_observation(&retained)

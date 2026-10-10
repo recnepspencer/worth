@@ -1,6 +1,7 @@
 //! The head each partition of one output source offers a reader.
 
 use super::*;
+use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 pub(in crate::domain_computation::primary_graph::output_lineage) struct FamilyPublicationHead<'a> {
     pub(in crate::domain_computation::primary_graph::output_lineage) coordinate: ProductCoordinate,
@@ -19,15 +20,29 @@ impl WorthQueryApplicationOutputLineage {
         source: &SemanticSource,
         coordinate: ProductCoordinate,
         maximum_work: usize,
-    ) -> Result<(Vec<(Option<[u8; 32]>, FamilyPublicationHead<'_>)>, usize), ()> {
+    ) -> Result<(Vec<(Option<[u8; 32]>, FamilyPublicationHead<'_>)>, usize), CompanionPreflightStop>
+    {
         if maximum_work == 0 {
-            return Err(());
+            return Err(CompanionPreflightStop::WorkExhausted {
+                required: 1,
+                maximum: 0,
+            });
         }
         let mut heads = Vec::new();
         let mut work = 0usize;
         let charge = |work: &mut usize| {
-            *work = work.checked_add(1).ok_or(())?;
-            (*work <= maximum_work).then_some(()).ok_or(())
+            *work = work
+                .checked_add(1)
+                .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
+            if *work > maximum_work {
+                return Err(CompanionPreflightStop::WorkExhausted {
+                    required: u64::try_from(*work)
+                        .map_err(|_| CompanionPreflightStop::WorkCounterOverflow)?,
+                    maximum: u64::try_from(maximum_work)
+                        .map_err(|_| CompanionPreflightStop::WorkCounterOverflow)?,
+                });
+            }
+            Ok(())
         };
         if let Some(partitions) = self
             .partition_index

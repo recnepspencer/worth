@@ -323,7 +323,7 @@ impl SourceInvalidationOwner {
         settlement::insert(
             &mut state,
             admitted,
-            image.payload(),
+            &image,
             alignment,
             output_coverage,
             admission,

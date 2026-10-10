@@ -23,12 +23,17 @@ use super::{
     WorthQueryPerformedMutationExecutionDenial, WorthQueryRequiredOutputPreparationDenial,
 };
 
+mod blocked;
+pub(super) mod recovery;
+pub use blocked::WorthQueryBlockedProgramSource;
+pub use recovery::WorthQueryProgramSourceRecoveryProgress;
+
 type PreparedCustody = (
     WorthQueryPreparedRequiredOutputSource,
     Arc<WorthQueryApplicationReadObservation>,
 );
 type SourceCommit = Result<
-    (WorthQueryApplicationCommitOutcome, Option<PreparedCustody>),
+    (WorthQueryApplicationCommitOutcome, Option<PreparedCustody>, Option<worth_query_execution::facade::application_installation::WorthQueryUnpublishedProgramOutputSource>),
     WorthQueryRequiredOutputSourcePreparationFailure,
 >;
 
@@ -60,6 +65,7 @@ where
 pub(super) struct PerformedSourceCommit {
     failure: RefCell<Option<WorthQueryRequiredOutputSourcePreparationFailure>>,
     prepared: RefCell<Option<PreparedCustody>>,
+    unpublished: RefCell<Option<worth_query_execution::facade::application_installation::WorthQueryUnpublishedProgramOutputSource>>,
 }
 
 impl PerformedSourceCommit {
@@ -68,7 +74,8 @@ impl PerformedSourceCommit {
     /// could not prepare custody still reports its committed receipt.
     pub(super) fn record(&self, commit: SourceCommit) -> WorthQueryApplicationCommitOutcome {
         match commit {
-            Ok((outcome, prepared)) => {
+            Ok((outcome, prepared, unpublished)) => {
+                self.unpublished.replace(unpublished);
                 if let Some(prepared) = prepared {
                     self.prepared.replace(Some(prepared));
                 }
@@ -85,14 +92,28 @@ impl PerformedSourceCommit {
     /// The prepared custody of a committed source, or why it has none.
     pub(super) fn into_custody(
         self,
-    ) -> Result<PreparedCustody, WorthQueryRequiredOutputPreparationDenial> {
+    ) -> Result<
+        PreparedCustody,
+        (
+            WorthQueryRequiredOutputPreparationDenial,
+            Option<WorthQueryRequiredOutputSourcePreparationFailure>,
+        ),
+    > {
         if let Some(failure) = self.failure.into_inner() {
-            return Err(WorthQueryRequiredOutputPreparationDenial::DemandExecution(
-                failure.denial().clone(),
+            return Err((
+                WorthQueryRequiredOutputPreparationDenial::DemandExecution(
+                    failure.denial().clone(),
+                ),
+                Some(failure),
             ));
         }
-        self.prepared
-            .into_inner()
-            .ok_or(WorthQueryRequiredOutputPreparationDenial::MissingPerformedDelivery)
+        self.prepared.into_inner().ok_or((
+            WorthQueryRequiredOutputPreparationDenial::MissingPerformedDelivery,
+            None,
+        ))
+    }
+
+    pub(super) fn take_unpublished(&self) -> Option<worth_query_execution::facade::application_installation::WorthQueryUnpublishedProgramOutputSource>{
+        self.unpublished.borrow_mut().take()
     }
 }

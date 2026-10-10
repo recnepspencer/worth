@@ -158,9 +158,7 @@ impl RelationalRuntime {
             record_identity: <RecordIdentitySubsystem as RuntimeSubsystem>::new(&()),
             services,
             owner_lifecycle: RelationalRuntimeOwner::new(),
-            publication_owner: RelationalRuntimePublicationOwner::new(
-                config.publication.policy.max_prepared_root_bytes,
-            ),
+            publication_owner: RelationalRuntimePublicationOwner::new(),
             partitions: <StorageSubsystem as RuntimeSubsystem>::new(&()),
             visibility,
             publication: extensions.build_publication_subsystem(),

@@ -88,13 +88,6 @@ pub enum WorthQueryInvariantExecutionDenialKind {
     },
     /// Relational has no candidate identities left.
     CandidateIdentityExhausted,
-    /// The prepared root would exceed its byte budget.
-    PreparedRootBudgetExhausted {
-        /// The byte bound.
-        maximum_bytes: u64,
-        /// The bytes this attempt needed.
-        required_bytes: u64,
-    },
     /// Another publication holds the patch-position reservation; retry later.
     PatchPositionReservationContended,
     /// Relational has no proposal identities left.

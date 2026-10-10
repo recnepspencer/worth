@@ -55,7 +55,7 @@ pub(super) fn caller_disposal_after_root_recovers_dependent(
         NonZeroUsize::new(8_192).unwrap(),
     );
     let mut started = performed
-        .start_required_outputs(&request, controls)
+        .start_required_outputs(&world.application, &request, controls)
         .unwrap_or_else(|failure| panic!("required outputs start: {:?}", failure.denial()));
     let source_receipt = started.receipt().clone();
 
@@ -63,7 +63,10 @@ pub(super) fn caller_disposal_after_root_recovers_dependent(
         .application
         .delay_next_output_readiness_delivery_for_test();
     assert!(matches!(
-        started.required_output_mut().advance(&request).unwrap(),
+        started
+            .required_output_mut()
+            .advance(&world.application, &request)
+            .unwrap(),
         WorthQueryApplicationProgramOutputProgress::Pending
     ));
     assert_eq!(
@@ -96,10 +99,12 @@ pub(super) fn caller_disposal_after_root_recovers_dependent(
             controls,
         )
         .expect("fresh caller authority recovers the installed obligation");
-    let settled = settle(|| match recovered.advance(&request).unwrap() {
-        WorthQueryApplicationProgramOutputProgress::Pending => None,
-        WorthQueryApplicationProgramOutputProgress::Settled(settled) => Some(settled),
-    });
+    let settled = settle(
+        || match recovered.advance(&world.application, &request).unwrap() {
+            WorthQueryApplicationProgramOutputProgress::Pending => None,
+            WorthQueryApplicationProgramOutputProgress::Settled(settled) => Some(settled),
+        },
+    );
     assert_eq!(
         settled
             .outputs_for::<ConsumerSchema, PlanarOutputToFinalConnection>()

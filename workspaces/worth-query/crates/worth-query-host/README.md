@@ -73,6 +73,61 @@ reservation precedes candidate allocation, and the candidate is checked with its
 affected untouched neighbors before atomic publication. A request does not retain
 admission or a selected World between executions.
 
+An ordinary mutation that returns `ProductUnpublished` retains actual
+owner effects without a published product successor. Keep its recovery handle
+and the original intent, idempotency key and preconditions. A freshly authenticated
+request can call `recover_unpublished_in_program(&recovery, &program)`; the current
+selected program must still own that action. Recovery reuses the retained owner
+effects rather than preparing a candidate or invoking its handler. A source-bound
+request must also supply its original checked row or result-set observation;
+a different source binding cannot replace it. The retained attempt
+owns the original source facts. Workflow and required/discovered output-source
+recovery still require their own owners and are not accepted by this entrance.
+Keep a `Performed` recovery outcome even when its receipt read, publication or
+cleanup reports a failure: the publication already took effect. A fresh
+`resolve_idempotency_in_program(&program)` request reads the original keyed outcome
+without executing a mutation. Both entrances preserve typed authorization,
+interruption, identity and owner failures.
+
+Discovered output sources have a separate move-only partial owner. A genuine
+`execute_performed_discovered` publication failure returns `ProductUnpublished`
+with its original preparation and typed discovery. Keep that owner and the exact
+original request, including its source observation when required. A fresh request
+can call `recover_unpublished_discovered_in_program`; after native performance,
+`promote_recovered_discovered_outputs` reads the exact original key and transfers
+the original performed carrier into an output handle once. Refused promotion
+returns the owner. Successful promotion also returns the raw performed recovery
+and all prior cleanup failures: starting outputs does not discharge those
+independent obligations. No original handler or candidate is executed again.
+Fixed required roots use `execute_performed`, which now owns its original
+preparation independently of the starting request and runtime borrow. Start and
+advance it with an explicit program runtime and fresh request. A genuine
+`ProductUnpublished` fixed source retains its typed demand and native partial;
+`recover_unpublished_required_in_program` and `promote_recovered_required_outputs`
+perform the same checked native transition and original-carrier handoff as the
+discovered lane. The promoted starter is result-free: it does not recreate the
+original handler result. All independent read, publication and cleanup results
+remain owned by the returned recovery result. A committed retention refusal
+keeps its original result, preparation and carrier for a fresh exact-key
+`retry_required_output_retention`; it is not an unpublished outcome.
+The `RequiredOutputDenied` variant carries an opaque
+`WorthQueryRequiredOutputRetentionFailure`. Its borrowed receipt, result and
+denial accessors leave the original demand and native custody paired; pass the
+whole failure to the retry entrance, which returns complete custody on refusal.
+
+Both output-source lanes retain unsupported `SettlementDeferred` and
+`Indeterminate` outcomes with their original preparation in non-actionable
+`Blocked` custody. They are not no-effect outcomes or evidence that recovery
+finished. Workflow recovery remains outside these entrances.
+
+A native candidate-preparation refusal before product publication is a typed
+`Denied` outcome, with its original native error available through
+`native_preparation_error()` on the application denial. That error retains its
+context and commit log; diagnostic `Debug` does not dump the log. Native
+cancellation and deadline refusal remain `Cancelled` and `TimedOut`. Deferred,
+performed-but-unsettled and uncertain publication outcomes retain their existing
+recovery obligations; preparation classification does not turn them into denials.
+
 Ordinary graph demands use `WorthQueryOutputDemandControls::default()` and inherit
 the installed host policy. Configure that policy once with
 `WorthQueryInMemoryApplicationLimits::with_output_demand_resources(...)` and

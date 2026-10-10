@@ -119,7 +119,7 @@ fn publish_initial(request: &Request<'_>, application: &ProgramApplication, scop
     super::settle(|| {
         super::settled(
             output
-                .advance(request)
+                .advance(application, request)
                 .expect("the declared root producer settles"),
         )
     });

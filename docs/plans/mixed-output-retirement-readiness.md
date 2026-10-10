@@ -40,8 +40,8 @@ The ordinary caller is:
 
 ```rust,ignore
 let performed = request.mutate(source_edit).expect_source(observed)
-    .idempotency(&command).execute_performed::<MixedProgram, MixedRoot>(&app)?;
-let outputs = performed.start_required_outputs(&request, controls)?;
+    .idempotency(&command).execute_performed::<MixedProgram, MixedRoot>(&app, allocation_policy)?;
+let outputs = performed.start_required_outputs(&app, &request, controls)?;
 // Ordinary bounded progression and currentness produce the settlement.
 ```
 

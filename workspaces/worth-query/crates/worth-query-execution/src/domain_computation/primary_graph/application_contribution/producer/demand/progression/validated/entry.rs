@@ -103,6 +103,7 @@ where
         >,
         entry: &InstalledProducerProvider<Schema>,
         commit_authority: WorthQueryProducerCommitAuthority,
+        performed: &std::cell::RefCell<super::super::required_wave::performed::PerformedMembers>,
         request_admission: &mut InvalidationEditAdmission,
     ) -> Result<
         CallerPass<FamilySourceQuery<Schema, Family>, FamilySourceValue<Schema, Family>>,
@@ -126,6 +127,7 @@ where
             entry,
             commit_authority,
             request_admission,
+            performed,
         )? {
             OwnStages::Answer(advance) => return Ok(CallerPass::Answer(advance)),
             OwnStages::Refreshed(disclosure) => return Ok(CallerPass::Refreshed(disclosure)),
@@ -155,6 +157,16 @@ where
                 _ => return Ok(waiting()),
             }
         };
+        performed.borrow_mut().capture_ordinary(
+            demand
+                .interest
+                .as_ref()
+                .expect("Ready retains its Interest")
+                .key(),
+            &completion,
+            self,
+            request_admission,
+        )?;
         if matches!(checkpoint_progress, CheckpointProgress::Published(_)) {
             return self.settle_own_ready(
                 phase,
@@ -174,6 +186,7 @@ where
             request_scope,
             delivery_branch,
             &wave_authority,
+            performed,
             request_admission,
         )? {
             return Ok(CallerPass::Answer(advance));

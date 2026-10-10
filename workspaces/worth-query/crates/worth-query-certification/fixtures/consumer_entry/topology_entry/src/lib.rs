@@ -15,10 +15,12 @@ mod application_program;
 mod contribution;
 mod final_output;
 mod handler;
+mod initial_adjustment;
 pub use alternate_output::*;
 pub use application_program::*;
 pub use contribution::TopologyConfiguration;
 pub use final_output::*;
+pub use initial_adjustment::*;
 #[cfg(test)]
 mod checkpoint_recovery;
 mod discovery_read;
@@ -88,7 +90,7 @@ worth_query_field!(
 
 worth_query_application_contribution! {
     pub contribution TopologyContribution for Schema: TopologySchemaBinding {
-        identity: "worth.query.certification.topology.v1",
+        identity: "worth.query.certification.topology.v2",
         members: |schema| {
             #[cfg(test)]
             let schema = checkpoint_recovery::required_chain::declare(schema);
@@ -98,6 +100,7 @@ worth_query_application_contribution! {
             let schema = vertex_replacement::declare_vertex_replacement(schema);
             let schema = prior_cycle_adjustment::declare_prior_cycle_adjustment(schema);
             let schema = source_adjustment::declare_planar_source_adjustment(schema);
+            let schema = initial_adjustment::declare_initial_adjustment(schema);
             let schema = final_output::declare_final_output(schema);
             schema
                 .entity(Body::reference::<Schema>())

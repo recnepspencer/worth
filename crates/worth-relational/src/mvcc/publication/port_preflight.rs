@@ -127,7 +127,6 @@ impl PreparedCanonicalBranchMovement {
                     envelope,
                     &control,
                     budget,
-                    Arc::clone(publication_binding.companion_registry()),
                 );
                 let effect = participant
                     .prepare(&mut context)
@@ -303,7 +302,6 @@ const fn follows_concurrent_publication(stop: &super::super::CompanionPreflightS
         Stop::SelectedPositionUnavailable { .. }
         | Stop::ForeignCell
         | Stop::RegistrationChanged
-        | Stop::CellCapacityExhausted { .. }
         | Stop::WorkExhausted { .. }
         | Stop::WorkCounterOverflow
         | Stop::PreparationMemoryExhausted { .. }

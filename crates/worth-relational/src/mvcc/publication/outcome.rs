@@ -317,10 +317,6 @@ pub enum RelationalPublicationDeferred {
 pub enum RelationalPublicationFailureKind {
     SnapshotIdentityExhausted,
     CandidateIdentityExhausted,
-    PreparedRootBudgetExhausted {
-        maximum_bytes: u64,
-        required_bytes: u64,
-    },
     PreparedRootMismatch,
     PreparedBasisDescriptor(crate::branch::RelationalBranchBasisDenial),
     NextBasisAdmission(crate::branch::RelationalBranchBasisDenial),

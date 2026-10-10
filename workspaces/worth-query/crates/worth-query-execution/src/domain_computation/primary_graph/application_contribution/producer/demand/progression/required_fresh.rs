@@ -1,6 +1,6 @@
 //! Admit one real required successor from the existing Fresh disclosure.
 //!
-//! The disclosure stays intact for Schedule→Execute. A paid shallow source
+//! The disclosure stays intact for ScheduleÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¾ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢Execute. A paid shallow source
 //! copy moves to the registry's retained readmission owner. This child is
 //! registered only with the selected execution continuation.
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
@@ -33,6 +33,7 @@ where
             FamilySourceQuery<Schema, Family>,
             FamilySourceValue<Schema, Family>,
         >,
+        readiness: required_wave::performed::FreshReadiness,
         shared: &'owner SharedSelectedProductOperation<'_, Schema>,
         claim: SelectedRequiredRefreshClaim,
         installed: &super::super::super::registry::InstalledProducerProvider<Schema>,
@@ -41,6 +42,7 @@ where
         delivery_branch: crate::basis::WorthQueryProductBranch,
         matched_predecessors: Option<MatchedRequiredPredecessors<'_>>,
         admission: &mut InvalidationEditAdmission,
+        performed: &'owner std::cell::RefCell<PerformedMembers>,
     ) -> Result<crate::domain_computation::primary_graph::application_contribution::producer::execution::prepared_plan::OwnerPlan<'owner, RequiredFreshProgress<Schema>, WorthQueryOutputDemandDenial>, WorthQueryOutputDemandDenial>
     where
         Family: WorthQueryProducerOutputFamily<Schema> + 'static,
@@ -63,20 +65,32 @@ where
         // The mode was prepared from this exact claim before registration. It
         // must be on the real admitted demand before any scheduling or effect.
         slot.bind_admitted(&mut successor);
+        let transfer = performed.borrow_mut().attach_successor(
+            readiness,
+            successor
+                .interest
+                .as_ref()
+                .expect("admitted successor keeps its Interest")
+                .key(),
+            admission,
+        );
         // The registry's custody handoff precedes the selected read: a Stable
         // join must observe the same predecessor ownership on every exit.
-        let outcome = self
-            .output_demands
-            .finish_replaced_interest(
-                slot.claim().interest(),
-                successor
-                    .interest
-                    .as_ref()
-                    .expect("an admitted successor has its issued Interest"),
-                Family::IDENTITY,
-                admission,
-            )
-            .and_then(|()| {
+        let outcome = transfer
+            .and_then(|readiness| {
+                self.output_demands
+                    .finish_replaced_interest(
+                        slot.claim().interest(),
+                        successor
+                            .interest
+                            .as_ref()
+                            .expect("an admitted successor has its issued Interest"),
+                        Family::IDENTITY,
+                        admission,
+                    )
+                    .map(|()| readiness)
+            })
+            .and_then(|readiness| {
                 match u64::try_from(std::mem::size_of::<
                     super::super::super::WorthQueryProducerCommitAuthority,
                 >())
@@ -106,8 +120,10 @@ where
                         super::validated::schedule_progression::ScheduleProgression::Selected {
                             shared,
                             matched_predecessors,
+                            readiness,
                         },
                         admission,
+                        performed,
                     )
                         })
                     }

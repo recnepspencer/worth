@@ -25,7 +25,7 @@ pub(crate) fn preserved_noop_output_completes_readiness_without_a_signal_success
     crate::application_invariant_acceptance::proof::settle(|| {
         crate::application_invariant_acceptance::proof::settled(
             initial
-                .advance(&request)
+                .advance(&world.application, &request)
                 .expect("the initial output settles"),
         )
     });
@@ -68,7 +68,7 @@ pub(crate) fn preserved_noop_output_completes_readiness_without_a_signal_success
     let settlement = crate::application_invariant_acceptance::proof::settle(|| {
         crate::application_invariant_acceptance::proof::settled(
             preserved
-                .advance(&request)
+                .advance(&world.application, &request)
                 .expect("an equal republication still completes readiness"),
         )
     });

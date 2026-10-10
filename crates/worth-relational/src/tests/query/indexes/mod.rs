@@ -4,6 +4,7 @@ mod bounded_relation_join_lookup;
 mod branch_scope;
 mod candidate_index_publication;
 mod canonical_build_basis;
+mod discard_rebuild;
 mod entity_field_lookup;
 mod entity_field_selection_budget;
 mod exact_observation;

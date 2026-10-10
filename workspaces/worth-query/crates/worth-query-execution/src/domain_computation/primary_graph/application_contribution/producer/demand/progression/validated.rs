@@ -33,6 +33,7 @@ where
         entry: &InstalledProducerProvider<Schema>,
         commit_authority: WorthQueryProducerCommitAuthority,
         request_admission: &mut InvalidationEditAdmission,
+        performed: &std::cell::RefCell<PerformedMembers>,
     ) -> Result<
         OwnStages<FamilySourceQuery<Schema, Family>, FamilySourceValue<Schema, Family>>,
         WorthQueryOutputDemandDenial,
@@ -53,6 +54,7 @@ where
             commit_authority,
             ScheduleProgression::Ordinary,
             request_admission,
+            performed,
         )?;
         match prepared {
             ExecutionPreparation::Reached(stages) => Ok(stages),

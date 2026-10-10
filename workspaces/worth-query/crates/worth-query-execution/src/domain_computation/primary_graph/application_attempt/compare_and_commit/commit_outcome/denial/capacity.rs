@@ -64,22 +64,6 @@ impl WorthQueryApplicationCommitDenial {
         }
     }
 
-    pub(in crate::domain_computation::primary_graph::application_attempt) const fn prepared_root_budget_exhausted(
-        stage: WorthQueryApplicationCommitDenialStage,
-        maximum_bytes: u64,
-        required_bytes: u64,
-    ) -> Self {
-        Self {
-            kind: WorthQueryApplicationCommitDenialKind::PreparedRootBudgetExhausted {
-                maximum_bytes,
-                required_bytes,
-            },
-            stage,
-            detail: None,
-            cause: None,
-        }
-    }
-
     pub(in crate::domain_computation::primary_graph::application_attempt) fn index_maintenance_budget_exceeded(
         stage: WorthQueryApplicationCommitDenialStage,
         detail: impl Into<std::sync::Arc<str>>,

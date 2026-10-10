@@ -60,13 +60,6 @@ pub(in crate::domain_computation::primary_graph) fn map_bootstrap_commit_denial(
             Failure::RetentionIdentityExhausted => {
                 WorthQueryPrimaryGraphInstallationDenialKind::RetentionIdentityExhausted
             }
-            Failure::PreparedRootBudgetExhausted {
-                maximum_bytes,
-                required_bytes,
-            } => WorthQueryPrimaryGraphInstallationDenialKind::PreparedRootBudgetExhausted {
-                maximum_bytes: *maximum_bytes,
-                required_bytes: *required_bytes,
-            },
             Failure::PreparedRootMismatch
             | Failure::PreparedBasisDescriptor(_)
             | Failure::NextBasisAdmission(_)
@@ -83,8 +76,8 @@ pub(in crate::domain_computation::primary_graph) fn map_bootstrap_commit_denial(
         {
             WorthQueryPrimaryGraphInstallationDenialKind::ProposalIdentityExhausted
         }
-        // HEAD treated operation interruption as a generic commit rejection.
-        // It is not an execution-owner refusal, matching the workspace route.
+        // Operation interruption remains a generic commit rejection here;
+        // execution-owner refusals retain their typed cause above.
         Error::Interrupted { .. } => {
             WorthQueryPrimaryGraphInstallationDenialKind::RelationalCommitRejected
         }

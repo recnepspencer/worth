@@ -47,18 +47,21 @@ fn explicit_publication_limit_survives_checkpoint_installation_and_enforces_comm
             "changed",
         );
         if maximum == 1 {
-            assert!(
-                matches!(
-                    outcome,
-                    primary_graph::WorthQueryApplicationCommitOutcome::Aborted
-                ),
-                "{outcome:?}"
-            );
+            assert_patch_budget_denial(outcome);
             assert_eq!(
                 read_intent(&application),
                 original,
                 "rejected publication leaves authoritative fields unchanged"
             );
+            assert_source_change_key_absent(&application);
+            assert_patch_budget_denial(change_input(
+                &application,
+                &installed.invariant,
+                application.current_world(),
+                "changed",
+            ));
+            assert_source_change_key_absent(&application);
+            assert_eq!(read_intent(&application), original);
         } else {
             outcome
                 .require_committed()
@@ -68,6 +71,78 @@ fn explicit_publication_limit_survives_checkpoint_installation_and_enforces_comm
             assert_eq!(changed.revision, 2);
         }
     }
+}
+
+fn assert_patch_budget_denial(outcome: primary_graph::WorthQueryApplicationCommitOutcome) {
+    let primary_graph::WorthQueryApplicationCommitOutcome::Denied(denial) = outcome else {
+        panic!("expected a pre-effect publication denial, got {outcome:?}");
+    };
+    assert_eq!(
+        denial.kind(),
+        primary_graph::WorthQueryApplicationCommitDenialKind::ProviderRejected
+    );
+    assert_eq!(
+        denial.stage(),
+        primary_graph::WorthQueryApplicationCommitDenialStage::ProviderCommit
+    );
+    let Some(worth_relational::facade::mvcc::TransactionCommitError::Publication { error, .. }) =
+        denial.native_preparation_error()
+    else {
+        panic!("expected the native publication cause, got {denial:?}");
+    };
+    // The native owner has no typed patch-budget subcause.
+    assert_eq!(error.detail, "patch record budget exceeded");
+}
+
+fn assert_source_change_key_absent(application: &Application) {
+    let request = request_scope();
+    let schema = application.installed_schema();
+    let binding = schema
+        .principal_binding(TemporalPrincipalBinding::reference())
+        .unwrap();
+    let authentication = admit_identity_adapter(schema);
+    let external = block_on(authentication.authenticate((), &request)).unwrap();
+    let selected = application
+        .on_branch(application.current_world())
+        .select()
+        .unwrap();
+    let principal = selected
+        .resolve_authenticated_principal(
+            &binding,
+            &external,
+            &request,
+            primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
+        )
+        .unwrap();
+    let scope = selected
+        .resolve_entity(
+            IntentIdentityField::reference(),
+            "intent-1".to_owned(),
+            &request,
+            primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
+        )
+        .unwrap();
+    let operation = schema
+        .installed_operation(AmendTemporal::reference())
+        .unwrap();
+    let admission = selected
+        .authorize_operation(&principal, &scope, &operation, Default::default(), &request)
+        .unwrap();
+    let key = primary_graph::WorthQueryApplicationIdempotencyBinding::for_host_commit::<
+        TemporalHostSchema,
+        AmendTemporal,
+        _,
+        _,
+    >("source-change", "source-change")
+    .unwrap();
+    let read = application
+        .resolve_admitted_application_idempotency(&admission, key)
+        .unwrap();
+    assert_eq!(
+        read.resolution(),
+        &primary_graph::WorthQueryApplicationIdempotencyResolution::Unseen,
+        "a pre-effect refusal records no idempotency commitment"
+    );
 }
 
 fn configuration() -> TemporalContributionConfiguration {

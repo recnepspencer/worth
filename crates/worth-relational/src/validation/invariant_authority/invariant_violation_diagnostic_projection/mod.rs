@@ -112,16 +112,6 @@ pub(super) enum InvariantViolationDiagnosticProjection<'a> {
         lookup: Option<StorageInconsistencyLookup>,
         failure: Option<StorageInconsistencyFailure>,
     },
-    RelationIntegrityScopeBudgetExceeded {
-        limit_name: &'a str,
-        limit: usize,
-        observed: usize,
-        relation_kind_count: usize,
-        touched_entity_count: usize,
-        deleted_entity_count: usize,
-        scanned_relation_count: usize,
-        planned_edge_count: usize,
-    },
     CustomInvariantFailure {
         identity: &'a CustomInvariantFailureIdentity,
         phase: CustomInvariantFailurePhase,

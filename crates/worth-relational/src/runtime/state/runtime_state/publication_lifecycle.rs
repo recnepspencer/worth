@@ -34,10 +34,8 @@ pub(crate) enum RelationalCandidateRegistrationDenial {
 }
 
 impl RelationalRuntimePublicationOwner {
-    pub(in crate::runtime) fn new(maximum_companion_cell_bytes: u64) -> Self {
-        Self::with_companion(crate::mvcc::publication::CompanionRegistry::new(
-            maximum_companion_cell_bytes,
-        ))
+    pub(in crate::runtime) fn new() -> Self {
+        Self::with_companion(crate::mvcc::publication::CompanionRegistry::new())
     }
 
     pub(in crate::runtime) fn fork_from(source: &Self) -> Self {

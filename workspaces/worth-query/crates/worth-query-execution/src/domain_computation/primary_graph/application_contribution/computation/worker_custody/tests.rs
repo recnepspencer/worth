@@ -3,7 +3,7 @@ use super::super::prepared_request::PreparedCompute;
 use super::super::wave_dispatch::{self, PreparedMember};
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::request_execution::{
-    test_authority, test_policy,
+    test_execution_authority as test_authority, test_policy,
 };
 use crate::domain_computation::primary_graph::application_contribution::QueryRequestExecution;
 use crate::domain_computation::primary_graph::{tests::fixture, WorthQueryAdvancementDenial};

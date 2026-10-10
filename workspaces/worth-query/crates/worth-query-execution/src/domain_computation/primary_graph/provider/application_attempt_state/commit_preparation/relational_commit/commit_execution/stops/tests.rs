@@ -43,3 +43,5 @@ fn maintenance_lifetime_and_budgets_keep_their_paths() {
         panic!("expired candidate must defer")
     };
 }
+
+mod native_preparation;

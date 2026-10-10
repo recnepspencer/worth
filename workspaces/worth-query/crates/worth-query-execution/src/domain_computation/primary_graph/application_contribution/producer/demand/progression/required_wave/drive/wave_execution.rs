@@ -23,6 +23,7 @@ pub(super) fn run<'owner, Schema, Family>(
     frontier: &mut RequiredFrontier,
     resolved: &mut ResolvedOnWave,
     queue_custody: &mut RequiredContinuations<Schema>,
+    performed: &'owner std::cell::RefCell<super::super::performed::PerformedMembers>,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<WaveProgress, WorthQueryOutputDemandDenial>
 where
@@ -45,6 +46,7 @@ where
         demand.producer_contacts_in_this_demand,
         demand.admission_kind,
         authority,
+        performed,
         admission,
     )?;
     if prepared.members.is_empty() {

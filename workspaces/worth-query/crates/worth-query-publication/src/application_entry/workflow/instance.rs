@@ -89,7 +89,7 @@ where
     }
 
     pub(in crate::application_entry) fn prepare_workflow_instance_start_in_advancement<'workflow, Spec>(
-        self, _phase: &AdvancementPhase<'_>,
+        self, phase: &AdvancementPhase<'_>,
         workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec>>,
         definition: PublishedWorkflowDefinitionRef,
     ) -> Result<
@@ -106,7 +106,7 @@ where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
 
-        self.prepare_start(workflow, |selected, installed, key, admission| {
+        self.prepare_start(phase, workflow, |selected, installed, key, admission| {
             WorthQueryWorkflowInstanceAdapter::prepare::<
                 Schema,
                 <IntentBinding<Schema, Intent> as ApplicationCapabilityMutationBinding<Schema>>::Capability,
@@ -150,9 +150,9 @@ where
     {
         let request_scope = self.request_scope().clone();
         let runtime = self.application_runtime();
-        runtime.with_application_advancement(&request_scope, |_phase| {
+        runtime.with_application_advancement(&request_scope, |phase| {
 
-        self.prepare_start(workflow, |selected, installed, key, admission| {
+        self.prepare_start(&phase, workflow, |selected, installed, key, admission| {
             WorthQueryWorkflowInstanceAdapter::prepare_migration::<
                 Schema,
                 <IntentBinding<Schema, Intent> as ApplicationCapabilityMutationBinding<Schema>>::Capability,
@@ -199,9 +199,9 @@ where
     {
         let request_scope = self.request_scope().clone();
         let runtime = self.application_runtime();
-        runtime.with_application_advancement(&request_scope, |_phase| {
+        runtime.with_application_advancement(&request_scope, |phase| {
 
-        self.prepare_start(workflow, |selected, installed, key, admission| {
+        self.prepare_start(&phase, workflow, |selected, installed, key, admission| {
             WorthQueryWorkflowInstanceAdapter::prepare_fork_continuation::<
                 Schema,
                 <IntentBinding<Schema, Intent> as ApplicationCapabilityMutationBinding<Schema>>::Capability,
@@ -218,6 +218,7 @@ where
     #[allow(clippy::type_complexity)]
     fn prepare_start<'workflow, Spec>(
         self,
+        phase: &AdvancementPhase<'_>,
         workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec>>,
         prepare: impl FnOnce(
             &worth_query_execution::facade::primary_graph::WorthQuerySelectedProductOperation<
@@ -256,7 +257,7 @@ where
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
-        let (application, prepared, idempotency) = self.prepare_instance(workflow, prepare)?;
+        let (application, prepared, idempotency) = self.prepare_instance(phase, workflow, prepare)?;
         Ok(WorthQueryWorkflowInstanceStartRequest {
             application,
             prepared,
@@ -269,6 +270,7 @@ where
     #[allow(clippy::type_complexity)]
     fn prepare_instance<'workflow, Spec, Prepared>(
         mut self,
+        phase: &AdvancementPhase<'_>,
         workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec>>,
         prepare: impl FnOnce(
             &worth_query_execution::facade::primary_graph::WorthQuerySelectedProductOperation<
@@ -311,7 +313,7 @@ where
         let identities = self
             .identities()
             .map_err(WorthQueryWorkflowInstancePreparationDenial::RequestAdmission)?;
-        let mutation = authorization::prepare_capability_selected(&self, &identities, staged, &selected)
+        let mutation = authorization::prepare_capability_selected(phase, &self, &identities, staged, &selected)
             .map_err(WorthQueryWorkflowInstancePreparationDenial::RequestAdmission)?;
         let prepared = prepare(
             &selected,

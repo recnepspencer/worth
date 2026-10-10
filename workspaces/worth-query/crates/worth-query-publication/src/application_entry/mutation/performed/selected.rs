@@ -68,7 +68,7 @@ where
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
         allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
-        WorthQueryApplicationPerformedMutationOutcome<'application, Schema, Intent, Program, Root>,
+        WorthQueryApplicationPerformedMutationOutcome<Schema, Intent, Program, Root>,
         WorthQueryPerformedMutationExecutionDenial,
     >
     where
@@ -101,7 +101,7 @@ where
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
         allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> crate::application_entry::mutation::WorthQueryApplicationMutationAttemptReport<Result<
-        WorthQueryApplicationPerformedMutationOutcome<'application, Schema, Intent, Program, Root>,
+        WorthQueryApplicationPerformedMutationOutcome<Schema, Intent, Program, Root>,
         WorthQueryPerformedMutationExecutionDenial,
     >>
     where
@@ -145,7 +145,7 @@ where
         decision_work: &mut worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork,
         allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
-        WorthQueryApplicationPerformedMutationOutcome<'application, Schema, Intent, Program, Root>,
+        WorthQueryApplicationPerformedMutationOutcome<Schema, Intent, Program, Root>,
         WorthQueryPerformedMutationExecutionDenial,
     >
     where
@@ -192,7 +192,7 @@ where
             .execute_with_preparation_and_commit_report(phase,
                 move |request, identities, staged| {
                     crate::application_entry::mutation::authorization::prepare_selected(
-                        request, identities, staged, &selected,
+                        phase, request, identities, staged, &selected,
                     )
                 },
                 |_, program, binding| {
@@ -212,6 +212,6 @@ where
             .into_parts();
         *decision_work = work;
         let outcome = outcome.map_err(WorthQueryPerformedMutationExecutionDenial::Mutation)?;
-        Ok(performed_outcome(application, demand, outcome, source))
+        Ok(performed_outcome(demand, outcome, source))
     }
 }

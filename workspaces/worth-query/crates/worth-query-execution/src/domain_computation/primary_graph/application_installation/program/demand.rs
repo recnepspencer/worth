@@ -14,6 +14,8 @@ use super::WorthQueryProgramApplicationRuntime;
 mod dependent;
 mod discovered_roots;
 mod handle;
+mod required_affinity;
+mod unavailable;
 use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedOutputDemand, WorthQueryApplicationDependentOutputConnection,
     WorthQueryApplicationOutputDemand, WorthQueryApplicationOutputDemandSource,

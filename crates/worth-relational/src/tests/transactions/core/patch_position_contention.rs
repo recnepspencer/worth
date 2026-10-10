@@ -33,7 +33,6 @@ fn a_held_patch_position_reservation_defers_an_unrelated_branch_without_residue(
             max_transaction_savepoints: 8,
             max_prepared_candidates: 2,
             candidate_max_lifetime_millis: 30_000,
-            max_prepared_root_bytes: 268_435_456,
         })
         .build();
     create_entity(&runtime, "patch-position-contention-anchor");

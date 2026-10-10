@@ -44,12 +44,12 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn j
         panic!("the first source publication is fresh")
     };
     let mut first = first
-        .start_required_outputs(&request, controls)
+        .start_required_outputs(&world.application, &request, controls)
         .unwrap_or_else(|failure| panic!("the first roots start: {:?}", failure.denial()));
     let first_settled = settle(|| {
         match first
             .required_output_mut()
-            .advance(&request)
+            .advance(&world.application, &request)
             .expect("first program advances")
         {
             WorthQueryDiscoveredProgramOutputProgress::Pending => None,
@@ -93,12 +93,12 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn j
         .composite_commit()
         .ordinal();
     let mut second = second
-        .start_required_outputs(&request, controls)
+        .start_required_outputs(&world.application, &request, controls)
         .unwrap_or_else(|failure| panic!("unchanged roots join: {:?}", failure.denial()));
     let second_settled = settle(|| {
         match second
             .required_output_mut()
-            .advance(&request)
+            .advance(&world.application, &request)
             .expect("later program advances")
         {
             WorthQueryDiscoveredProgramOutputProgress::Pending => None,

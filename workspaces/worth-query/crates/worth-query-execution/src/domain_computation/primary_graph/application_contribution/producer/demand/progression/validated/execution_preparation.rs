@@ -56,8 +56,9 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         >,
         entry: &InstalledProducerProvider<Schema>,
         commit_authority: WorthQueryProducerCommitAuthority,
-        mut schedule_progression: ScheduleProgression<'owner, '_, '_, Schema>,
+        schedule_progression: ScheduleProgression<'owner, '_, '_, Schema>,
         request_admission: &mut InvalidationEditAdmission,
+        performed: &'owner std::cell::RefCell<PerformedMembers>,
     ) -> Result<
         ExecutionPreparation<
             'owner,
@@ -231,6 +232,38 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             }
         };
         let selected_execution_finish = crate::domain_computation::primary_graph::application_output_demand::RunningSelectedExecution::new(selected_execution_finish);
+        let ordinary_readiness = if schedule_progression.is_selected() {
+            None
+        } else {
+            let readiness = disclosed_source
+                .output_source_epoch()
+                .ok_or_else(|| {
+                    denial(
+                        WorthQueryOutputDemandDenialKind::ForeignSource,
+                        Family::IDENTITY,
+                    )
+                })
+                .and_then(|source| {
+                    performed.borrow_mut().ordinary(
+                        interest.key(),
+                        source,
+                        self,
+                        delivery_branch,
+                        request_admission,
+                    )
+                });
+            match readiness {
+                Ok(Some(readiness)) => Some(readiness),
+                Ok(None) => {
+                    selected_execution_finish.relinquish();
+                    return Ok(ExecutionPreparation::Reached(waiting()));
+                }
+                Err(stop) => {
+                    selected_execution_finish.relinquish();
+                    return Err(stop);
+                }
+            }
+        };
         let mut required_output = match interest.required_context(
             &self.primary_provider.graph.source_owner.invalidation_owner,
             request_admission,
@@ -270,15 +303,21 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         }
         let required_execution = required_output.prepare_execution(published_mode);
         let retained_resources = demand.resources;
-        let finish = move |result, request_admission: &mut InvalidationEditAdmission| {
+        let runtime_identity = self.runtime.authority_identity().as_u64();
+        let root = demand.observed_source.source_root();
+        let finish = move |result, request_admission: &mut InvalidationEditAdmission, readiness| {
             super::execution_completion::finish(
                 result,
                 selected_execution_finish,
                 retained_resources,
                 request_admission,
+                performed,
+                readiness,
+                runtime_identity,
+                root,
             )
         };
-        let result = disclosure.with_erased(|input| match &mut schedule_progression {
+        let result = disclosure.with_erased(|input| match schedule_progression {
             ScheduleProgression::Ordinary => {
                 let result = entry.executor.execute(
                     phase,
@@ -295,7 +334,11 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                     request_admission,
                     &mut demand.producer_contacts_in_this_demand,
                 );
-                match finish(result, request_admission) {
+                match finish(
+                    result,
+                    request_admission,
+                    ordinary_readiness.expect("ordinary effect has publication readiness"),
+                ) {
                     Ok(progress) => Ok(ExecutionPreparation::Reached(OwnStages::Checkpoint(
                         progress,
                     ))),
@@ -310,6 +353,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             ScheduleProgression::Selected {
                 shared,
                 matched_predecessors,
+                readiness,
             } => {
                 let prepared = entry.executor.execute_on_selected(
                     phase,
@@ -317,7 +361,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                     principal,
                     request_scope,
                     shared,
-                    matched_predecessors.take(),
+                    matched_predecessors,
                     required_execution,
                     input,
                     successor_of,
@@ -334,7 +378,9 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                     Ok(plan) => plan,
                     Err(stop) => OwnerPlan::immediate(Err(stop)),
                 };
-                Ok(ExecutionPreparation::Planned(plan.map_result(finish)))
+                Ok(ExecutionPreparation::Planned(plan.map_result(
+                    move |result, admission| finish(result, admission, readiness),
+                )))
             }
         });
         result.map_err(|stop| match stop {

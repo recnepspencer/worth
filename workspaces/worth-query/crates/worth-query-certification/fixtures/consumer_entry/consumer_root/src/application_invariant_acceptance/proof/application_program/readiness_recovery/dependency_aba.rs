@@ -24,7 +24,9 @@ pub(crate) fn complete_dependency_aba_advances_the_live_demand(
         )
         .expect("the program owns the first A publication");
     assert!(matches!(
-        initial_program.settle(&request).unwrap(),
+        initial_program
+            .settle(&world.application, &request)
+            .unwrap(),
         WorthQueryApplicationProgramOutputProgress::Settled(_)
     ));
     drop(initial_program);
@@ -107,7 +109,9 @@ pub(crate) fn complete_dependency_aba_advances_the_live_demand(
         )
         .expect("the program owns the restored A publication");
     assert!(matches!(
-        restored_program.settle(&request).unwrap(),
+        restored_program
+            .settle(&world.application, &request)
+            .unwrap(),
         WorthQueryApplicationProgramOutputProgress::Settled(_)
     ));
     drop(restored_program);

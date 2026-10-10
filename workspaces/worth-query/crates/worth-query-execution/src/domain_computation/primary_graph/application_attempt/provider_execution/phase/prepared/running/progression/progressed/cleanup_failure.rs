@@ -61,7 +61,6 @@ pub(super) fn cleanup_failed_outcome(outcome: Progression) -> Outcome {
             | Kind::RetentionIdentityExhausted
             | Kind::SnapshotIdentityExhausted
             | Kind::CandidateIdentityExhausted
-            | Kind::PreparedRootBudgetExhausted { .. }
             | Kind::IndexMaintenanceBudgetExceeded
             | Kind::IndexGenerationIdentityExhausted
             | Kind::IdempotencyIntentDrift

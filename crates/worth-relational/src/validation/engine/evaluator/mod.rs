@@ -55,7 +55,6 @@ pub(crate) fn evaluate_rule(
                 Vec::new()
             }
         }
-        InvariantRule::RelationIntegrityScopeBudget(_) => Vec::new(),
         InvariantRule::MaxSnapshotEntities(limit) => {
             single_violation(evaluate_snapshot_entity_limit_rule(context, class, *limit))
         }

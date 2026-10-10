@@ -63,11 +63,6 @@ pub enum WorthQueryApplicationCommitDenialKind {
     SnapshotIdentityExhausted,
     /// The owner ran out of candidate identities.
     CandidateIdentityExhausted,
-    /// The prepared candidate would exceed its byte budget.
-    PreparedRootBudgetExhausted {
-        maximum_bytes: u64,
-        required_bytes: u64,
-    },
     /// Maintaining indexes for the candidate exceeded its work budget.
     IndexMaintenanceBudgetExceeded,
     /// The owner ran out of index generation identities.

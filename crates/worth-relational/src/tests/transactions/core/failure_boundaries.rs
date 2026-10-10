@@ -59,7 +59,6 @@ fn patch_budget_failure_carries_artifact_phase_decision_trace() {
             max_transaction_savepoints: 8,
             max_prepared_candidates: 8,
             candidate_max_lifetime_millis: 30_000,
-            max_prepared_root_bytes: 268_435_456,
         })
         .build();
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);

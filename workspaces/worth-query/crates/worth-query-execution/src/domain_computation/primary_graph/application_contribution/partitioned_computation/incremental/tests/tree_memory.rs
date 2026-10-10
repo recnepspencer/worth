@@ -9,7 +9,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use worth_execution::ReductionTree;
 use worth_runtime_world::facade::RuntimeWorldExecutionPlacement;
 
-use super::super::super::super::request_execution::{test_authority, test_policy};
+use super::super::super::super::request_execution::{test_execution_authority, test_policy};
 use super::super::super::super::WorthQueryManagedComputationResourceDenial as Resource;
 use super::*;
 
@@ -40,7 +40,7 @@ fn rebuilt_under(memory: Option<u64>) -> Vec<(Outcome, usize)> {
             let policy = move || test_policy(NonZeroUsize::new(2).unwrap(), memory);
             vec![
                 Box::new(move || RuntimeWorldExecutionPlacement::Leased {
-                    authority: test_authority(),
+                    authority: test_execution_authority(),
                     policy: policy(),
                 }),
                 Box::new(move || RuntimeWorldExecutionPlacement::Serial(policy())),

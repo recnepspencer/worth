@@ -29,7 +29,7 @@ use program::{validated_program, AssessmentRoot};
 
 #[test]
 fn captured_producer_predicate_reuses_after_reopen_and_refreshes_after_source_change() {
-    let (checkpoint, subject, foreign_settlement) = {
+    let (checkpoint, subject, foreign_settlement, accepted_section) = {
         let host = publish(
             validated_program(),
             WorthQueryApplicationProgramRoster::new().support(validated_second_program()),
@@ -75,7 +75,19 @@ fn captured_producer_predicate_reuses_after_reopen_and_refreshes_after_source_ch
             sections.accepted_output_bytes(),
             subject,
         );
-        (checkpoint, subject, settled)
+        let accepted_section = checkpoint.bytes()
+            [checkpoint.bytes().len() - sections.accepted_output_bytes()..]
+            .to_vec();
+        let (repeated, repeated_sections) = runtime
+            .capture_application_checkpoint_with_sections(CapturePolicy::SystemAllocation)
+            .unwrap();
+        assert_eq!(repeated_sections.accepted_output_count(), 1);
+        assert_eq!(
+            &repeated.bytes()[repeated.bytes().len() - repeated_sections.accepted_output_bytes()..],
+            accepted_section.as_slice(),
+            "the accepted native head preserves its complete roles and predicate on repeated capture"
+        );
+        (checkpoint, subject, settled, accepted_section)
     };
     let restored = restore(
         validated_program(),
@@ -92,6 +104,11 @@ fn captured_producer_predicate_reuses_after_reopen_and_refreshes_after_source_ch
         recaptured.bytes(),
         sections.accepted_output_bytes(),
         subject,
+    );
+    assert_eq!(
+        &recaptured.bytes()[recaptured.bytes().len() - sections.accepted_output_bytes()..],
+        accepted_section.as_slice(),
+        "fresh native readmission preserves the complete accepted record"
     );
     let scope = request_scope();
     let principal = authenticate_operator(runtime.installed_schema(), &scope);

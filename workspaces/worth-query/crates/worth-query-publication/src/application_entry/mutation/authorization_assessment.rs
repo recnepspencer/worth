@@ -30,8 +30,8 @@ where
         let application = self.application;
         let scope = self.scope.clone();
         application
-            .with_application_advancement(&scope, |_phase| {
-                super::authorization::assess(&mut self)?;
+            .with_application_advancement(&scope, |phase| {
+                super::authorization::assess(&phase, &mut self)?;
                 Ok(WorthQueryCurrentAuthorizationAssessment { private: () })
             })
             .map_err(WorthQueryApplicationRequestMutationDenial::ExecutionRequest)?

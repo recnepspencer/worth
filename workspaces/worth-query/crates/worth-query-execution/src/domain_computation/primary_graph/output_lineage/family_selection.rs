@@ -8,24 +8,42 @@ use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 mod checkpoint_priors;
 mod publication_heads;
 pub(in crate::domain_computation::primary_graph) use checkpoint_priors::NativePriorCheckpointOutput;
+pub(in crate::domain_computation::primary_graph) use checkpoint_priors::{
+    CheckpointPriorSelectionDenial, CheckpointPriorStructure,
+};
 use publication_heads::PublicationHeads;
 
 impl WorthQueryApplicationOutputLineage {
     pub(in crate::domain_computation::primary_graph) fn checkpoint_family_role(
         &self,
         binding: Option<std::any::TypeId>,
-    ) -> Result<Option<(&str, &str)>, ()> {
+        admission: &mut super::InvalidationEditAdmission,
+    ) -> Result<Option<(&str, &str)>, CheckpointPriorSelectionDenial> {
         let Some(binding) = binding else {
             return Ok(None);
         };
         let mut found = None;
         for (family, bindings) in &self.output_families {
+            admission.charge_external_work(1).map_err(|stop| {
+                CheckpointPriorSelectionDenial::Admission {
+                    phase: "accepted family inventory visit",
+                    stop,
+                }
+            })?;
             for (candidate, role) in bindings {
+                admission.charge_external_work(1).map_err(|stop| {
+                    CheckpointPriorSelectionDenial::Admission {
+                        phase: "accepted binding inventory visit",
+                        stop,
+                    }
+                })?;
                 if *candidate != binding {
                     continue;
                 }
                 if found.is_some() {
-                    return Err(());
+                    return Err(CheckpointPriorSelectionDenial::Structural(
+                        CheckpointPriorStructure::DuplicateInstalledBinding,
+                    ));
                 }
                 found = Some((family.as_str(), role.as_str()));
             }
@@ -76,11 +94,13 @@ impl WorthQueryApplicationOutputLineage {
             let mut seen = BTreeSet::new();
             let mut ancestry_depth = 0usize;
             loop {
-                let (heads, work) = self.family_partition_heads_budgeted(
-                    &source,
-                    coordinate,
-                    maximum_selection_work.saturating_sub(selection_work),
-                )?;
+                let (heads, work) = self
+                    .family_partition_heads_budgeted(
+                        &source,
+                        coordinate,
+                        maximum_selection_work.saturating_sub(selection_work),
+                    )
+                    .map_err(|_| ())?;
                 selection_work = selection_work.checked_add(work).ok_or(())?;
                 for (partition, publication) in heads {
                     if !seen.insert(partition) {

@@ -12,6 +12,8 @@ pub(super) use stable_publication::performed_fact_sequence;
 pub(in crate::domain_computation::primary_graph) use stable_publication::{
     prepare_stable_address, PreparedStableLineageAddress, StableEqualityConsequence,
 };
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use verification::InputCutoffDecision;
 
 pub(in crate::domain_computation::primary_graph) use selected_basis::PreparedInputCutoffBasis;
 pub(in crate::domain_computation::primary_graph) use verification::{
@@ -36,6 +38,7 @@ use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutp
 
 /// Pins the exact owner-selected record, including its retained capacity and
 /// source evidence. A restored row may lack the proofs needed for input reuse.
+#[derive(Clone)]
 pub(in crate::domain_computation::primary_graph) struct RetainedInputCutoffCandidate {
     cell: Arc<OnceLock<RecordedOutput>>,
 }

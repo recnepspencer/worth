@@ -19,19 +19,14 @@ where
     pub(in crate::application_entry) fn start_performed<Program, Root>(
         self,
         _phase: &AdvancementPhase<'_>,
-        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+        application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
         prepared: &worth_query_execution::facade::primary_graph::WorthQueryPreparedRequiredOutputSource,
         source_result: WorthQueryApplicationOutputDemandSource<
             SourceQuery<Schema, Demand>,
             SourceValue<Schema, Demand>,
         >,
     ) -> Result<
-        super::super::WorthQueryApplicationProgramDemandHandle<
-            'application,
-            Schema,
-            Program,
-            Demand,
-        >,
+        super::super::WorthQueryApplicationProgramDemandHandle<Schema, Program, Demand>,
         WorthQueryApplicationOutputDemandDenial,
     >
     where
@@ -51,7 +46,6 @@ where
             )
             .map_err(WorthQueryApplicationOutputDemandDenial::Demand)?;
         Ok(super::super::WorthQueryApplicationProgramDemandHandle::new(
-            application,
             admitted,
             self.demand,
             None,

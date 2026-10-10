@@ -47,6 +47,7 @@ mod cycles;
 mod drive;
 mod frontier;
 mod member_key;
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) mod performed;
 mod queued;
 mod resolved;
 mod selection;
@@ -134,6 +135,7 @@ pub(super) fn certify_required_ready<'owner, Schema>(
     resolved: Option<&ResolvedRequiredPredecessors<'_, Schema>>,
     producer_contacts_in_this_demand: usize,
     refresh_permission: Result<(), WorthQueryOutputDemandDenial>,
+    performed: &'owner std::cell::RefCell<performed::PerformedMembers>,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<RequiredWaveStep<'owner, Schema>, WorthQueryOutputDemandDenial>
 where
@@ -154,16 +156,17 @@ where
         );
     // A reason withholds the candidate: the selected Ready is verified in
     // full.
-    let candidate = candidate
-        .map_err(required_settlement_denial)?
-        .ok()
-        .flatten();
+    let candidate = candidate.map_err(required_settlement_denial)?;
     admission
         .charge_external_work(1)
         .map_err(admission_denial)?;
-    // Only the caller's exact Interest→Ready join may reuse the installed
+    // Only the caller's exact InterestÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢Ready join may reuse the installed
     // entry retained when that same demand was admitted. Other cues still
     // resolve their own producer through the installed table.
+    performed
+        .borrow_mut()
+        .capture(selected.key(), &candidate, admission)?;
+    let candidate = candidate.ok().flatten();
     let installed = match caller_installed {
         Some(entry) => entry,
         None => installed_for_selected_cue(runtime, selected.producer_identity(), admission)?,
@@ -184,6 +187,7 @@ where
             wave.branch,
             producer_contacts_in_this_demand,
             refresh_permission,
+            performed,
             admission,
         )
         .map_err(|stop| match stop {

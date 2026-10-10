@@ -204,5 +204,4 @@ pub struct PublicationConfig {
     pub max_transaction_savepoints: usize,
     pub max_prepared_candidates: usize,
     pub candidate_max_lifetime_millis: u64,
-    pub max_prepared_root_bytes: u64,
 }

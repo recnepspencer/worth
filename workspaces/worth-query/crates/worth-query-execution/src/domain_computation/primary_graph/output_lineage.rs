@@ -13,7 +13,9 @@ mod current_output;
 pub(in crate::domain_computation::primary_graph) use current_output::RetainedOutputCurrentnessRead;
 mod denial;
 mod family_selection;
-pub(in crate::domain_computation::primary_graph) use family_selection::NativePriorCheckpointOutput;
+pub(in crate::domain_computation::primary_graph) use family_selection::{
+    CheckpointPriorSelectionDenial, NativePriorCheckpointOutput,
+};
 mod input_cutoff;
 mod input_reuse_key;
 pub(in crate::domain_computation::primary_graph) mod invalidation;
@@ -72,6 +74,9 @@ pub(in crate::domain_computation::primary_graph) use native_output_witness::{
 pub(in crate::domain_computation::primary_graph) use prepared_slot::prepare as prepare_output_lineage_slot;
 pub(in crate::domain_computation::primary_graph) use prepared_slot::PreparedLineageRecoveryMetadata;
 pub(in crate::domain_computation::primary_graph) use prepared_slot::PreparedOutputLineageSlot;
+pub(in crate::domain_computation::primary_graph) use prepared_slot::{
+    tree_insert_bytes, tree_work,
+};
 pub(in crate::domain_computation::primary_graph) use recorded_output::RecordedOutput;
 use recorded_output::RecordedOutputMutable;
 pub(in crate::domain_computation::primary_graph) use recorded_source_identity::RecordedSourceIdentity;

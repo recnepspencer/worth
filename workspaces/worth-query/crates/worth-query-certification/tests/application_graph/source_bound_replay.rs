@@ -24,13 +24,15 @@ use worth_query_host::facade::{
         WorthQueryMutationHandlerWork, WorthQueryOperationProjectionDenialKind as ProjectionKind,
     },
     runtime::{
-        ExecutionAllocationDenialKind, ExecutionAllocationPolicy as Policy, ExecutionAuthority,
-        ExecutionAuthorityConfig, LeaseDenial, LeaseRequest,
+        ExecutionAllocationDenialKind, ExecutionAllocationPolicy as Policy, LeaseDenial,
+        LeaseRequest,
     },
 };
 
 #[path = "source_bound_replay/program.rs"]
 mod program;
+#[path = "source_bound_replay/recovery.rs"]
+mod recovery;
 
 #[test]
 fn source_bound_recorded_retry_preserves_checked_identity_before_fresh_allocation() {
@@ -54,11 +56,7 @@ fn source_bound_recorded_retry_preserves_checked_identity_before_fresh_allocatio
         assert!(String::from_utf8_lossy(&output.stdout).contains("1 passed; 0 failed"));
         return;
     }
-    let authority = ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
-        max_workers: NonZeroUsize::new(1).unwrap(),
-        charged_memory_bytes: Some(64 * 1024),
-    })
-    .unwrap();
+    let authority = worth_query_host::facade::primary_graph::test_execution_authority();
     let token = worth_query_host::facade::runtime::CancellationSource::new();
     let zero = authority
         .request_lease(LeaseRequest {

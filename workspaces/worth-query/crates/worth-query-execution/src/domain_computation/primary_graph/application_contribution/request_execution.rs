@@ -21,6 +21,8 @@ use super::{WorthQueryManagedComputationInterruption, WorthQueryManagedComputati
 
 #[cfg(any(test, feature = "test-query-execution-observer"))]
 mod test_placement;
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use test_placement::test_policy;
 #[cfg(feature = "test-query-execution-observer")]
 pub use test_placement::{
     bound_advancement_requests_on_this_thread_for_test,
@@ -31,10 +33,11 @@ pub use test_placement::{
 pub(in crate::domain_computation::primary_graph) use test_placement::{
     place_managed_computations_on_this_thread_for_test, WorthQueryExecutionPlacementForTest,
 };
-#[cfg(test)]
-pub(in crate::domain_computation::primary_graph) use test_placement::{
-    test_authority, test_policy,
-};
+
+#[cfg(any(test, feature = "test-query-execution-observer"))]
+mod test_authority;
+#[cfg(any(test, feature = "test-query-execution-observer"))]
+pub use test_authority::test_execution_authority;
 
 type Resource = WorthQueryManagedComputationResourceDenial;
 

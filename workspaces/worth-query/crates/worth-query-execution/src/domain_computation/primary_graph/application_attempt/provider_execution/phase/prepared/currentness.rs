@@ -2,13 +2,16 @@
 
 use super::*;
 
-pub(super) fn select_current_product<Schema>(
+pub(super) fn select_current_product<Schema: ApplicationSchema>(
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     retained: &crate::basis::WorthQueryProductBranchLease,
 ) -> Result<crate::basis::WorthQueryProductBranchLease, WorthQueryApplicationCommitOutcome> {
     application
-        .product_runtime
-        .admit_product_occurrence(retained.observation().lifecycle_incarnation())
+        .admit_with_observation_room(|| {
+            application
+                .product_runtime
+                .admit_product_occurrence(retained.observation().lifecycle_incarnation())
+        })
         .map_err(|denial| {
             denied_with_detail(
                 DenialStage::DecisionReadSet,
@@ -129,3 +132,6 @@ pub(super) fn validate_workflow_deadline<Schema>(
         })
     })
 }
+
+#[cfg(test)]
+mod tests;

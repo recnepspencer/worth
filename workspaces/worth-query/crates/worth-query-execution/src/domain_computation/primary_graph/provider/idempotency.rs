@@ -249,7 +249,6 @@ fn pending_publication_denial(
         | Kind::UndeclaredOperationScope
         | Kind::ResourceEnvelopeMismatch
         | Kind::CandidateIdentityExhausted
-        | Kind::PreparedRootBudgetExhausted { .. }
         | Kind::IndexMaintenanceBudgetExceeded
         | Kind::IndexGenerationIdentityExhausted
         | Kind::ProviderIdentityMismatch

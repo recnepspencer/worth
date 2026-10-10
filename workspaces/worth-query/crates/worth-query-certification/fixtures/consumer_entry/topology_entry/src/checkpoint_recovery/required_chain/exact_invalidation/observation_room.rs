@@ -21,7 +21,7 @@ fn a_write_only_caller_leaves_room(starts_outputs: bool) {
         court.create_ring(index, at);
         rings.push(Ring::created(index));
     }
-    take_all_decisions();
+    Reading::decisions();
     let write = |body: &str, y| {
         if starts_outputs {
             court.write_y_and_abandon_its_outputs(body, y, at);
@@ -65,7 +65,7 @@ fn a_released_write_refuses_receipt_recovery_and_is_not_performed_again() {
         court.create_ring(index, at);
         rings.push(Ring::created(index));
     }
-    take_all_decisions();
+    Reading::decisions();
     let body = rings[0].key("a");
     let source = request
         .query(PlanarRead {

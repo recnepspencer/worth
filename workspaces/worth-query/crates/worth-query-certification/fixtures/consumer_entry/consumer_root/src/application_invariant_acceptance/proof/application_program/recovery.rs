@@ -185,10 +185,12 @@ pub(super) fn caller_disposal_before_progress_recovers(
             controls,
         )
         .expect("interrupted recovery re-enters the same receipt-bound obligation");
-    let settled = settle(|| match recovered.advance(&request).unwrap() {
-        WorthQueryApplicationProgramOutputProgress::Pending => None,
-        WorthQueryApplicationProgramOutputProgress::Settled(settled) => Some(settled),
-    });
+    let settled = settle(
+        || match recovered.advance(&world.application, &request).unwrap() {
+            WorthQueryApplicationProgramOutputProgress::Pending => None,
+            WorthQueryApplicationProgramOutputProgress::Settled(settled) => Some(settled),
+        },
+    );
     let row = request
         .at(settled.observation())
         .query(PlanarOutputRead {

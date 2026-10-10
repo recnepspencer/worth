@@ -102,7 +102,6 @@ pub(in crate::http::server) fn pending_execution_denial(
         Kind::ExecutionNestedPatternStopped { .. }
         | Kind::ActiveSnapshotCapacityExhausted { .. }
         | Kind::RetentionCapacityExhausted
-        | Kind::PreparedRootBudgetExhausted { .. }
         | Kind::IndexMaintenanceBudgetExceeded
         | Kind::AllocationDenied
         | Kind::ProviderRejected => {

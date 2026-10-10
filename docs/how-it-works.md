@@ -802,8 +802,23 @@ descriptive history.
   the principal.
 - **Required outputs.** After `execute_performed`, `start_required_outputs`
   opens the outputs the operation requires, and `recover_required_outputs`
-  resumes that work. Open demands contribute membership to the required set;
-  closing one demand does not remove another demand's obligation.
+  resumes that work. Those outputs join the required set until their demand
+  closes. The continuation owns its source custody independently of the starting
+  request. Starting and advancing it supply the original installed program runtime
+  and a fresh request explicitly. Unpublished source recovery retains the native
+  preparation and effects; it never repeats the original mutation handler.
+- **Discovered outputs.** `execute_performed_discovered` returns owned source
+  custody. `start_required_outputs(&program, &request, controls)` creates an
+  owned continuation without querying or admitting its roots. Each
+  `advance(&program, &fresh_request)` checks the original runtime, program and
+  branch, then retains admitted roots and dependent progress before attempting
+  the next step. A refusal leaves that state available for retry; it does not
+  rerun the mutation. Discovery and binding remain fixed at the retained source
+  observation. Only an unadmitted root whose linear disclosure was consumed
+  reacquires that disclosure there. Completion releases the prepared source;
+  a commit receipt alone does not prove output completion.
+  Open demands contribute membership to the required set; closing one demand
+  does not remove another demand's obligation.
 - **Reuse.** An output whose settlement is unmarked on a continuous basis can
   be reused without contacting its producer or re-running its source query.
   Reuse also requires the producer's reader and context contracts to permit it.

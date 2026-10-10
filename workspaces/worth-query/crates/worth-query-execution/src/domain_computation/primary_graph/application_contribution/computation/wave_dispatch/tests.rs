@@ -1,7 +1,7 @@
 //! Declared charges and canonical outcomes judge the one production dispatch.
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::request_execution::{
-    test_authority, test_policy,
+    test_execution_authority as test_authority, test_policy,
 };
 use std::{
     num::NonZeroUsize,

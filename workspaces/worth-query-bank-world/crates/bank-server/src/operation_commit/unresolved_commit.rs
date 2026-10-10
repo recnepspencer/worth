@@ -22,17 +22,11 @@ pub enum BankProviderFailureKind {
     ForeignGraphAuthority,
     UndeclaredOperationScope,
     ResourceEnvelopeMismatch,
-    ActiveSnapshotCapacityExhausted {
-        maximum_active_snapshots: usize,
-    },
+    ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
     RetentionCapacityExhausted,
     RetentionIdentityExhausted,
     SnapshotIdentityExhausted,
     CandidateIdentityExhausted,
-    PreparedRootBudgetExhausted {
-        maximum_bytes: u64,
-        required_bytes: u64,
-    },
     ProviderIdentityMismatch,
     ProviderGenerationMismatch,
     SessionProtocolUnsupported,
@@ -143,13 +137,6 @@ const fn provider_failure_kind(
         Query::RetentionIdentityExhausted => BankProviderFailureKind::RetentionIdentityExhausted,
         Query::SnapshotIdentityExhausted => BankProviderFailureKind::SnapshotIdentityExhausted,
         Query::CandidateIdentityExhausted => BankProviderFailureKind::CandidateIdentityExhausted,
-        Query::PreparedRootBudgetExhausted {
-            maximum_bytes,
-            required_bytes,
-        } => BankProviderFailureKind::PreparedRootBudgetExhausted {
-            maximum_bytes,
-            required_bytes,
-        },
         Query::ProviderIdentityMismatch => BankProviderFailureKind::ProviderIdentityMismatch,
         Query::ProviderGenerationMismatch => BankProviderFailureKind::ProviderGenerationMismatch,
         Query::SessionProtocolUnsupported => BankProviderFailureKind::SessionProtocolUnsupported,

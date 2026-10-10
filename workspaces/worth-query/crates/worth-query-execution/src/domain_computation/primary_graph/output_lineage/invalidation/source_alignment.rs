@@ -62,6 +62,7 @@ pub(super) struct SnapshotAlignedMarkState<'selected> {
     current_root_id: u64,
     current_commit_id: Option<CommitId>,
     current_position: Option<PatchStreamPosition>,
+    observed_position: Option<PatchStreamPosition>,
     selected: &'selected PositionedRelationalSnapshot,
 }
 
@@ -114,6 +115,7 @@ impl<'selected> SnapshotAlignedMarkState<'selected> {
                 current_root_id: image.root_id(),
                 current_commit_id: image.commit_id(),
                 current_position: image.position(),
+                observed_position: selected.position(),
                 selected,
             });
         }
@@ -131,8 +133,27 @@ impl<'selected> SnapshotAlignedMarkState<'selected> {
             current_root_id: image.root_id(),
             current_commit_id: image.commit_id(),
             current_position: image.position(),
+            observed_position: selected.position(),
             selected,
         })
+    }
+
+    /// Registration edits the live image of the already-selected branch,
+    /// including when its own read basis is retained. Consume equality at
+    /// that live image; replay separately governs the registrant's facts.
+    pub(super) fn observe_registration_image(
+        image: &CompanionBranchImage<BranchMarkRoot>,
+        selected: &'selected PositionedRelationalSnapshot,
+    ) -> Self {
+        Self {
+            state: Arc::clone(&image.payload().current),
+            retained: Arc::clone(image.payload()),
+            current_root_id: image.root_id(),
+            current_commit_id: image.commit_id(),
+            current_position: image.position(),
+            observed_position: image.position(),
+            selected,
+        }
     }
 
     pub(super) fn currentness(
@@ -166,7 +187,7 @@ impl<'selected> SnapshotAlignedMarkState<'selected> {
                 FullVerificationReason::DifferentBranch,
             );
         }
-        if self.selected.position() < basis.position() {
+        if self.observed_position < basis.position() {
             return SettlementCurrentness::FullVerificationRequired(
                 FullVerificationReason::BeforeReadBasis,
             );

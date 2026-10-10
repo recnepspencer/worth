@@ -162,14 +162,4 @@ impl<'runtime, 'budget> InvariantExecutionContext<'runtime, 'budget> {
     pub fn metrics(&self) -> InvariantMetrics<'runtime> {
         InvariantMetrics::new(self.runtime.performance_access())
     }
-
-    pub fn relation_integrity_scope_budget(
-        &self,
-    ) -> &crate::config::data::RelationIntegrityScopeBudget {
-        &self
-            .runtime
-            .config
-            .execution
-            .relation_integrity_scope_budget
-    }
 }

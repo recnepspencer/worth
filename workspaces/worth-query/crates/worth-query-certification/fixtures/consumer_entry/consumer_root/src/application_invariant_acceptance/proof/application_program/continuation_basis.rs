@@ -69,14 +69,14 @@ pub(super) fn revised_parent_publication_is_the_dependent_basis(
             panic!("the source revision is fresh")
         };
         let mut performed = performed
-            .start_required_outputs(&request, controls)
+            .start_required_outputs(&world.application, &request, controls)
             .unwrap_or_else(|failure| {
                 panic!("the typed output graph starts: {:?}", failure.denial())
             });
         let settled = settle(|| {
             match performed
                 .required_output_mut()
-                .advance(&request)
+                .advance(&world.application, &request)
                 .unwrap_or_else(|denial| {
                     panic!("revision {replacement_y} output graph advances: {denial:?}")
                 }) {
