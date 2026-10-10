@@ -169,6 +169,9 @@ where
                 Family::IDENTITY,
             ));
         }
+        if let Some(stop) = &demand.terminal_caller_denial {
+            return Err(stop.clone());
+        }
         if let Some(settlement) = demand.settled_at_observation.as_ref() {
             // No commit after its observation applies to this demand.
             return Ok(AdvancePassProgress::Answer(

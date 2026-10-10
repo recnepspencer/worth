@@ -84,6 +84,8 @@ where
     // Whether an advance of this demand has settled. Until one does, a cached
     // Ready it joined at its start is still cache: see `caller_custody`.
     settled: bool,
+    // A caller resource refusal ends this handle; the shared row remains claimable.
+    terminal_caller_denial: Option<WorthQueryOutputDemandDenial>,
     admission_kind: super::super::super::application_output_demand::DemandAdmissionKind,
     retained_program_basis: Option<
         std::sync::Arc<

@@ -279,6 +279,7 @@ where
             retained_program_basis: None,
             progression_provenance: Default::default(),
             required_continuations: Default::default(),
+            terminal_caller_denial: None,
             unpublished_selected_checkpoint: None,
             interest: None,
             settled_at_observation: Some(settlement),
