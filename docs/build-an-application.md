@@ -458,9 +458,11 @@ back on the caller thread. Preparation precedes kernel dispatch; completion
 follows successful computation and reduction.
 
 Partition reuse applies only to the runs of a producer. A producer is a
-`WorthQueryApplicationProducerBinding` registered with `setup.producer`; its
-`Operation` is the mutation the producer runs. Installation decides retention
-once, from the owner's `Operation` type. When a declared producer runs that
+`WorthQueryApplicationProducerBinding` declared with
+`contracts.producer::<Binding>()` and registered with `setup.producer`; its
+`Operation` is the mutation binding the producer runs. Installation decides
+retention once: it compares the owner's `Operation` type with the `Operation`
+of each declared producer's mutation binding. When a declared producer runs that
 operation, a run made under that producer leaves its partition state on the
 record its attempt publishes. When no declared producer runs it, a run is never
 retained: no input or item digest is taken, and every run gathers and computes
@@ -481,16 +483,20 @@ these holds:
 - The selected record holds no computation state. A run that stopped before it
   completed, whose charge could not be measured, or whose reservation was
   refused leaves none. A previous attempt that ran no partitioned computation
-  leaves none. Checkpoint restoration and republication carry none.
+  leaves none. Checkpoint restoration and republication carry none. A record
+  whose successor took over its state holds none.
 
 Otherwise the run names and keys again only what changed, and gathers and
 computes again only the partitions whose members or facts changed. A partition
 is carried only when every fact its owner calls read in the previous run has
 the same content at this attempt's snapshot; a fact that cannot be observed
-counts as changed. An outcome never depends on reuse: carried charges replay in
-a full run's order, `charged_work()` counts every partition's kernel and every
-combine whether the partition was computed again or carried, and a work ceiling
-names the partition a full run would name.
+counts as changed. A run's result, its charged work, and the partition a work
+ceiling names never depend on reuse: carried charges replay in a full run's
+order, `charged_work()` counts every partition's kernel and every combine
+whether the partition was computed again or carried, and a work ceiling names
+the partition a full run would name. A reused run holds less request memory and
+meets fewer checkpoints than a full run, so a memory limit, a deadline, or a
+cancellation can stop one and not the other.
 
 The example groups warehouse quantities by storage zone and sums them. Stable
 item IDs identify inventory lines; the zone key defines partition membership.
@@ -734,7 +740,7 @@ owner's own stop type. A denied run has no result. Handle every variant:
 | `NestedPatternStopped` | A pattern started inside a partition's kernel stopped, outside any one partition. |
 | `ReducerPanicked` | The reducer panicked. |
 | `ReducedEncodingInvalid` | A reduced value's canonical bits disagree with the length it declares. |
-| `ReductionInputInvalid(..)` | The reduction refused the identities or values it was given. The platform builds both from one canonical list, so no run produces it; match it for exhaustiveness. |
+| `ReductionInputInvalid(..)` | The reduction refused the identities or values it was given. The platform builds both from one canonical list, so no run is expected to produce it; match it for exhaustiveness. |
 
 Inside `compute_partition`, `checkpoint.advance(work)?` converts a refused
 checkpoint (`WorthQueryManagedComputationCheckpointDenial`: `Resource`,
@@ -1367,7 +1373,10 @@ The owned continuation can outlive the starting request. Each advance supplies
 the original installed runtime and a freshly authenticated request. An unpublished
 source retains its original preparation and native partial; recovery continues
 it under fresh authorization and never prepares a candidate or invokes the
-original handler again.
+original handler again. Once recovery has performed,
+`promote_recovered_required_outputs` transfers that original source into its
+required-output handle once, also without invoking the handler; a refusal
+returns the recovery owner intact.
 
 ---
 
