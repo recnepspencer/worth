@@ -503,14 +503,14 @@ counterpart is the consumer fixture at
 (declaration) and `.../checkpoint_recovery/computation_partition/owner.rs`
 (owner, installation, and run).
 
+<!-- compiled: warehouse_inventory.rs -->
 ```rust
-use std::marker::PhantomData;
 use serde::Serialize;
+use std::marker::PhantomData;
 use worth_query_host::facade::{
     application_contribution::*,
     declaration::{
-        application_operation::ApplicationMutationBinding,
-        application_program::*,
+        application_operation::ApplicationMutationBinding, application_program::*,
         application_schema::ApplicationSchema,
     },
     primary_graph::{DecisionReader, WorthQueryPrimaryGraphInstallationDenial},
@@ -523,7 +523,9 @@ pub struct InventoryLine {
     quantity: f64,
 }
 impl ChargedBytes for InventoryLine {
-    fn additional_charged_bytes(&self) -> u64 { 0 }
+    fn additional_charged_bytes(&self) -> u64 {
+        0
+    }
 }
 impl ApplicationComputationPartition for InventoryLine {
     const IDENTITY: &'static str = "inventory.line.v1";
@@ -588,10 +590,13 @@ where
         &self,
         _reader: &mut WorthQueryComputationReader<'_, '_, '_, S, Op>,
         input: &Vec<InventoryLine>,
-    ) -> Result<WorthQueryComputationPartitionPlan<InventoryLine>,
-                WorthQueryComputationInputDenial<u32>> {
+    ) -> Result<
+        WorthQueryComputationPartitionPlan<InventoryLine>,
+        WorthQueryComputationInputDenial<u32>,
+    > {
         Ok(WorthQueryComputationPartitionPlan::keyed(
-            input.iter().cloned(), |line| PartitionItemId(line.id),
+            input.iter().cloned(),
+            |line| PartitionItemId(line.id),
         ))
     }
 
@@ -630,7 +635,9 @@ where
         WorthQueryDeterministicReducer::canonical(|| 0.0, |left, right| left + right)
     }
 
-    fn complete(&self, reduced: f64) -> Result<f64, u32> { Ok(reduced) }
+    fn complete(&self, reduced: f64) -> Result<f64, u32> {
+        Ok(reduced)
+    }
 }
 
 pub fn declare_inventory<S, F, A>() -> ApplicationFeatureSpec
@@ -662,7 +669,10 @@ where
 
 pub fn run_inventory<S, F, A, Op, B>(
     installed: &WorthQueryInstalledPartitionedComputation<
-        S, F, InventoryTotal<A>, InventoryOwner<Op>,
+        S,
+        F,
+        InventoryTotal<A>,
+        InventoryOwner<Op>,
     >,
     reader: &mut DecisionReader<'_, '_, '_, S, B>,
     input: &Vec<InventoryLine>,
@@ -674,7 +684,8 @@ where
     Op: 'static,
     B: ApplicationMutationBinding<S, Operation = Op>,
 {
-    let computed = installed.prepare(reader, input)?
+    let computed = installed
+        .prepare(reader, input)?
         .compute(reader.managed_computation_execution())?;
     let charged_work = computed.charged_work();
     Ok((computed.complete()?, charged_work))
@@ -737,14 +748,14 @@ item, the key, and the reducer. It groups readings by station, takes each
 station's peak, and reduces the peaks to one maximum. Integer maximum is exact,
 so the reducer needs no floating-point care.
 
+<!-- compiled: sensor_telemetry.rs -->
 ```rust
-use std::marker::PhantomData;
 use serde::Serialize;
+use std::marker::PhantomData;
 use worth_query_host::facade::{
     application_contribution::*,
     declaration::{
-        application_operation::ApplicationMutationBinding,
-        application_program::*,
+        application_operation::ApplicationMutationBinding, application_program::*,
         application_schema::ApplicationSchema,
     },
     primary_graph::{DecisionReader, WorthQueryPrimaryGraphInstallationDenial},
@@ -757,7 +768,9 @@ pub struct Reading {
     millivolts: u64,
 }
 impl ChargedBytes for Reading {
-    fn additional_charged_bytes(&self) -> u64 { 0 }
+    fn additional_charged_bytes(&self) -> u64 {
+        0
+    }
 }
 impl ApplicationComputationPartition for Reading {
     const IDENTITY: &'static str = "telemetry.reading.v1";
@@ -802,8 +815,7 @@ where
 }
 
 pub struct PeakOwner<Op>(PhantomData<fn() -> Op>);
-impl<S, F, A, Op> WorthQueryPartitionedComputationOwner<S, F, PeakReading<A>>
-    for PeakOwner<Op>
+impl<S, F, A, Op> WorthQueryPartitionedComputationOwner<S, F, PeakReading<A>> for PeakOwner<Op>
 where
     S: ApplicationSchema,
     F: ApplicationFeature<S>,
@@ -821,10 +833,11 @@ where
         &self,
         _reader: &mut WorthQueryComputationReader<'_, '_, '_, S, Op>,
         input: &Vec<Reading>,
-    ) -> Result<WorthQueryComputationPartitionPlan<Reading>,
-                WorthQueryComputationInputDenial<u32>> {
+    ) -> Result<WorthQueryComputationPartitionPlan<Reading>, WorthQueryComputationInputDenial<u32>>
+    {
         Ok(WorthQueryComputationPartitionPlan::keyed(
-            input.iter().cloned(), |reading| PartitionItemId(reading.id),
+            input.iter().cloned(),
+            |reading| PartitionItemId(reading.id),
         ))
     }
 
@@ -843,7 +856,10 @@ where
         _input: &Vec<Reading>,
         partition: WorthQueryComputationPartitionMembers<'_, Station, Reading>,
     ) -> Result<Vec<u64>, WorthQueryComputationInputDenial<u32>> {
-        Ok(partition.items().map(|(_, reading)| reading.millivolts).collect())
+        Ok(partition
+            .items()
+            .map(|(_, reading)| reading.millivolts)
+            .collect())
     }
 
     fn compute_partition(
@@ -860,12 +876,12 @@ where
     }
 
     fn reducer(&self) -> WorthQueryDeterministicReducer<u64> {
-        WorthQueryDeterministicReducer::canonical(
-            || 0, |left, right| (*left).max(*right),
-        )
+        WorthQueryDeterministicReducer::canonical(|| 0, |left, right| (*left).max(*right))
     }
 
-    fn complete(&self, reduced: u64) -> Result<u64, u32> { Ok(reduced) }
+    fn complete(&self, reduced: u64) -> Result<u64, u32> {
+        Ok(reduced)
+    }
 }
 
 pub fn declare_peak<S, F, A>() -> ApplicationFeatureSpec
@@ -896,9 +912,7 @@ where
 }
 
 pub fn run_peak<S, F, A, Op, B>(
-    installed: &WorthQueryInstalledPartitionedComputation<
-        S, F, PeakReading<A>, PeakOwner<Op>,
-    >,
+    installed: &WorthQueryInstalledPartitionedComputation<S, F, PeakReading<A>, PeakOwner<Op>>,
     reader: &mut DecisionReader<'_, '_, '_, S, B>,
     input: &Vec<Reading>,
 ) -> Result<(u64, u64), WorthQueryPartitionedComputationDenial<u32>>
@@ -909,7 +923,8 @@ where
     Op: 'static,
     B: ApplicationMutationBinding<S, Operation = Op>,
 {
-    let computed = installed.prepare(reader, input)?
+    let computed = installed
+        .prepare(reader, input)?
         .compute(reader.managed_computation_execution())?;
     let charged_work = computed.charged_work();
     Ok((computed.complete()?, charged_work))
