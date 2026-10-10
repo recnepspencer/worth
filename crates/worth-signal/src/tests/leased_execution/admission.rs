@@ -8,6 +8,41 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 const ASPECT: Aspect = Aspect::new(0);
 
 #[test]
+fn a_missing_footprint_is_refused_before_shared_epoch_evaluation() {
+    let mut graph = SignalGraph::new();
+    let declared = graph
+        .node()
+        .with_contract(NodeContract::wildcard().with_bounded_inputs(BoundedSignalInputs::default()))
+        .build();
+    let open = graph.node().build();
+    let open_calls = AtomicUsize::new(0);
+    let lease = authority().request_lease(request(4, 1_000_000)).unwrap();
+    let result = graph.evaluate_checked(
+        &[declared, open],
+        EvaluationRequestMode::Default,
+        &(),
+        &|ctx| {
+            if ctx.node() == open {
+                open_calls.fetch_add(1, Ordering::SeqCst);
+            }
+            Ok(AspectVersion::zero().with(ASPECT, 9))
+        },
+        worth_execution::ExecutionRequest::leased(&lease),
+    );
+    let error = result.expect_err("a missing footprint must refuse checked epoch evaluation");
+    assert!(
+        matches!(&error, SignalError::InvalidInput { message, .. } if message == "missing bounded inputs"),
+        "a missing footprint must be refused by epoch resource admission: {error:?}"
+    );
+    assert_eq!(
+        open_calls.load(Ordering::SeqCst),
+        0,
+        "a missing footprint must never reach the evaluator"
+    );
+    assert_eq!(graph.node_aspect_version(open).unwrap().get(ASPECT), 0);
+}
+
+#[test]
 fn public_stage_splits_a_declared_reader_from_its_unsettled_producer() {
     let mut graph = SignalGraph::new();
     let producer = graph
