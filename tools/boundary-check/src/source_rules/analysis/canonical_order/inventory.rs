@@ -265,7 +265,7 @@ impl<'ast> Visit<'ast> for OrderingSites<'_> {
             if let Some(syn::GenericArgument::Type(key)) = arguments.args.first() {
                 if field_names([key])
                     .iter()
-                    .any(|name| self.vocabulary.type_ids.contains(name))
+                    .any(|name| self.type_ids.contains(name))
                 {
                     self.record(
                         path.span().start().line,
@@ -275,6 +275,34 @@ impl<'ast> Visit<'ast> for OrderingSites<'_> {
             }
         }
         visit::visit_path(self, path);
+    }
+    fn visit_expr_method_call(&mut self, call: &'ast syn::ExprMethodCall) {
+        if super::expression_identity::decides_order(&call.method.to_string())
+            && super::expression_identity::names_type_identity(
+                std::iter::once(call.receiver.as_ref()).chain(call.args.iter()),
+                &self.vocabulary.type_ids,
+            )
+        {
+            self.record(call.span().start().line, "ordering expression names TypeId");
+        }
+        visit::visit_expr_method_call(self, call);
+    }
+    fn visit_expr_call(&mut self, call: &'ast syn::ExprCall) {
+        let deciding = match call.func.as_ref() {
+            syn::Expr::Path(path) => path.path.segments.last().is_some_and(|segment| {
+                super::expression_identity::decides_order(&segment.ident.to_string())
+            }),
+            _ => false,
+        };
+        if deciding
+            && super::expression_identity::names_type_identity(
+                call.args.iter(),
+                &self.vocabulary.type_ids,
+            )
+        {
+            self.record(call.span().start().line, "ordering expression names TypeId");
+        }
+        visit::visit_expr_call(self, call);
     }
     fn visit_item_mod(&mut self, _: &'ast syn::ItemMod) {}
 }

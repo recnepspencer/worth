@@ -83,3 +83,52 @@ fn another_module_cannot_hide_a_type_id_field_with_the_same_type_name() {
     assert_eq!(found.len(), 1);
     assert_eq!(found[0].source, "src/ordered.rs");
 }
+
+#[test]
+fn manual_order_fixture_refuses_the_impl() {
+    assert_eq!(
+        rejects(include_str!(
+            "../../../../tests/fixtures/canonical_order_rules/manual_order.rs"
+        )),
+        ["ordering impl on a TypeId-bearing type"]
+    );
+}
+#[test]
+fn aliased_container_fixture_refuses_the_transitive_key() {
+    assert_eq!(
+        rejects(include_str!(
+            "../../../../tests/fixtures/canonical_order_rules/aliased_container.rs"
+        )),
+        ["ordered container keyed by TypeId"]
+    );
+}
+#[test]
+fn expression_fixture_refuses_each_deciding_call() {
+    let found = rejects(include_str!(
+        "../../../../tests/fixtures/canonical_order_rules/expression_order.rs"
+    ));
+    assert!(
+        found.len() >= 4,
+        "all deciding expressions must be refused: {found:?}"
+    );
+    assert!(found
+        .into_iter()
+        .all(|reason| reason == "ordering expression names TypeId"));
+}
+
+#[test]
+fn every_runtime_owner_is_in_scope() {
+    let root =
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/canonical_order");
+    let mut governed =
+        super::super::workspace_crates::discover_workspace_crates(&root, "workspaces/worth-query")
+            .unwrap()
+            .remove(0);
+    let graph = super::super::crate_modules::parse_crate_modules(&governed).unwrap();
+    for package in super::CRATES {
+        governed.package = (*package).to_owned();
+        assert_eq!(super::enforce(&governed, &graph).len(), 1, "{package}");
+    }
+    governed.package = "worth-signal".to_owned();
+    assert!(super::enforce(&governed, &graph).is_empty());
+}

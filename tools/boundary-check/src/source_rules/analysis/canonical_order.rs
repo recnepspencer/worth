@@ -1,4 +1,5 @@
-//! Query Execution orders declared identity, never Rust build identity.
+//! Query and its runtime owners order declared identity, never Rust build identity.
+mod expression_identity;
 mod inventory;
 #[cfg(test)]
 mod tests;
@@ -6,7 +7,12 @@ mod tests;
 use super::crate_modules::{GovernedCrate, ModuleGraph};
 use crate::diagnostics::{Diagnostic, DiagnosticCode};
 
-const CRATE: &str = "worth-query-execution";
+const CRATES: &[&str] = &[
+    "worth-query-execution",
+    "worth-runtime-world",
+    "worth-execution",
+    "worth-runtime-bridge",
+];
 
 /// Named exceptions are membership contracts, never permission to iterate for
 /// output, selection, or cost. Every exception names its membership consumer.
@@ -30,19 +36,19 @@ const MEMBERSHIP_ONLY: &[(&str, &str, &str)] = &[
 
 pub(super) fn validate(root: &std::path::Path) -> Result<Vec<Diagnostic>, String> {
     let mut diagnostics = Vec::new();
-    for governed in
-        super::workspace_crates::discover_workspace_crates(root, "workspaces/worth-query")?
-    {
-        if governed.package == CRATE {
-            let graph = super::crate_modules::parse_crate_modules(&governed)?;
-            diagnostics.extend(enforce(&governed, &graph));
+    for workspace in ["", "workspaces/worth-query"] {
+        for governed in super::workspace_crates::discover_workspace_crates(root, workspace)? {
+            if CRATES.contains(&governed.package.as_str()) {
+                let graph = super::crate_modules::parse_crate_modules(&governed)?;
+                diagnostics.extend(enforce(&governed, &graph));
+            }
         }
     }
     Ok(diagnostics)
 }
 
 fn enforce(governed: &GovernedCrate, graph: &ModuleGraph) -> Vec<Diagnostic> {
-    if governed.package != CRATE {
+    if !CRATES.contains(&governed.package.as_str()) {
         return Vec::new();
     }
     let files: Vec<_> = graph
