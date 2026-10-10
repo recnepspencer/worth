@@ -58,6 +58,9 @@ fn lease_opened_after_reservation_receives_the_exact_committed_successor() {
         let committed = scope.spawn(|| commit_live_activity(&world, &principal, &request));
         parked_rx.recv().unwrap();
         let mut lease = world
+            .application
+            .with_application_advancement(&request, |phase| {
+                world
             .selected_product()
             .open_application_query_live::<
                 LiveAccountActivityQuery,
@@ -69,6 +72,7 @@ fn lease_opened_after_reservation_receives_the_exact_committed_successor() {
                 Activity,
                 LiveAccountActivityCause,
             >(
+ &phase,
                 query,
                 &principal,
                 account,
@@ -76,6 +80,8 @@ fn lease_opened_after_reservation_receives_the_exact_committed_successor() {
                 WorthQueryApplicationLiveControls::bounded(request.clone(), 4, 16, 2_048)
                     .unwrap(),
             )
+            .unwrap()
+            })
             .unwrap();
         release_tx.send(()).unwrap();
         let committed = committed.join().unwrap();

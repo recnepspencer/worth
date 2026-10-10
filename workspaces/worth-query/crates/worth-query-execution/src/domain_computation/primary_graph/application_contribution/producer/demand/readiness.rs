@@ -181,7 +181,7 @@ where
         }
         let execution = execution.map_err(|error| {
             if admitted.is_some() {
-                WorthQueryOutputDemandDenial::new(bridge_denial_kind(&error), "")
+                WorthQueryOutputDemandDenial::new(bridge_denial_kind(error.kind()), "")
             } else {
                 bridge_denial(producer_identity, error)
             }

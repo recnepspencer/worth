@@ -57,6 +57,8 @@ pub(super) fn open_snapshot_reader(
     snapshot_identity: &crate::snapshot::TruthSnapshotIdentity,
     execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<Box<dyn TruthSnapshotReader>, crate::adapter::RelationalBridgeSourceError> {
+    crate::execution_contact::admit(execution)
+        .map_err(crate::adapter::RelationalBridgeSourceError::execution_denied)?;
     if let Some(pool) = runtime.snapshot_reader_pool.as_ref() {
         let pool = std::sync::Arc::clone(pool);
         let reader = pool.acquire(snapshot_identity, execution)?;

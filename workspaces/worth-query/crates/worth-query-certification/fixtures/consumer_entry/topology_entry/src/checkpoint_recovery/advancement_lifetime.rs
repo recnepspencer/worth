@@ -79,15 +79,15 @@ fn a_leased_output_demand_carries_its_request_through_bridge_and_signal() {
         query_units, 0,
         "this producer invokes no managed computation"
     );
-    assert_eq!(
-        charged,
-        query_units + signal_units,
-        "the parent includes the separately observed Query and Signal owners exactly"
-    );
     let bridge_units = charged - query_units - signal_units;
     assert_eq!(
-        bridge_units, 0,
-        "Bridge adds no checkpoint work on this path"
+        bridge_units, 12,
+        "the fixture performs twelve Bridge contacts"
+    );
+    assert_eq!(
+        charged,
+        query_units + signal_units + 12,
+        "the parent includes all three owners' work exactly"
     );
     assert!(matches!(
         outcome,

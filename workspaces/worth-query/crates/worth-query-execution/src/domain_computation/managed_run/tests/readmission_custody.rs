@@ -29,14 +29,19 @@ fn bounded_provider_fixture_opener_refuses_before_direct_and_workflow_readmissio
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
         let _restore = Restore(place(placement), bound(None));
         let (yielded, bridge, runtime) = host
-            .run_provider_fixture(|phase| readmission_direct::yielded_direct(&phase))
+            .run_provider_fixture(|phase| {
+                let bootstrap = phase.bootstrap_for_test();
+                readmission_direct::yielded_direct(&phase, bootstrap.execution_request())
+            })
             .unwrap();
         let mut direct = Some(yielded);
         let (yielded, workflow_bridge, workflow_runtime, _) = host
             .run_provider_fixture(|phase| {
+                let bootstrap = phase.bootstrap_for_test();
                 readmission_workflow::yielded_workflow(
                     &phase,
                     yield_fixture::YieldProvider::installed(5),
+                    bootstrap.execution_request(),
                 )
             })
             .unwrap();

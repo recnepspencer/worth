@@ -170,3 +170,6 @@ fn unwinding_a_host_callback_releases_opening_custody() {
     assert_eq!(with_bootstrap_advancement(policy, |_| ()), Ok(()));
     observation::advancement_requests_on_this_thread_for_test();
 }
+
+#[path = "seam_cancellation.rs"]
+mod seam_cancellation;

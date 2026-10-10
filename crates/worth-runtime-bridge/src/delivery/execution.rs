@@ -236,6 +236,16 @@ fn deliver_prepared_route_in_scope(
         lowered.artifact(),
         lowered.contract_proof(),
     );
+    crate::execution_contact::admit(request).map_err(|cause| {
+        reject_delivery(
+            runtime,
+            lowered_failure_base.clone(),
+            BridgeDeliveryError::new(
+                BridgeDeliveryErrorKind::ExecutionDenied(cause),
+                cause.label(),
+            ),
+        )
+    })?;
     let receipt = runtime
         .signal_sink
         .deliver_invalidation(delivery, request)

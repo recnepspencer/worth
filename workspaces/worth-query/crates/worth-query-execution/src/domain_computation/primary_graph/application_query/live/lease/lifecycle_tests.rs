@@ -112,6 +112,9 @@ mod tests {
                 )
                 .unwrap();
             self.world
+                .application
+                .with_application_advancement(&self.request, |phase| {
+                    self.world
                 .selected_product()
                 .open_application_query_live::<
                     LiveAccountActivityQuery,
@@ -123,6 +126,7 @@ mod tests {
                     Activity,
                     LiveAccountActivityCause,
                 >(
+ &phase,
                     query,
                     &self.principal,
                     account,
@@ -135,6 +139,8 @@ mod tests {
                     )
                     .unwrap(),
                 )
+                .unwrap()
+                })
                 .unwrap()
         }
 

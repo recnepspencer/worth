@@ -149,6 +149,29 @@ impl From<MapStop<SignalError>> for SignalExecutionStopReason {
     fn from(stop: MapStop<SignalError>) -> Self {
         match stop {
             MapStop::Failure {
+                cause: MapKernelFailure::Domain(SignalError::ExecutionStopped(stop)),
+                ..
+            } if stop.publication_progress().completed_tasks() == 0
+                && matches!(
+                    stop.disposition(),
+                    super::SignalPublicationDisposition::NoWork
+                        | super::SignalPublicationDisposition::WorkerLocal
+                )
+                && !matches!(
+                    stop.reason(),
+                    Self::Failure {
+                        cause: SignalExecutionFailure::Domain(_),
+                        ..
+                    }
+                ) =>
+            {
+                // A checked callback's pre-publication request stop is the
+                // same refusal at the enclosing scan. The enclosing stop
+                // retains its own aggregate report and publication progress.
+                // A nested performed effect stays in its full domain payload.
+                stop.reason().clone()
+            }
+            MapStop::Failure {
                 identity,
                 cause: MapKernelFailure::Domain(SignalError::ExecutionCheckpointStopped(stop)),
             } => Self::Failure {

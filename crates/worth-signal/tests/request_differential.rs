@@ -223,3 +223,6 @@ fn checked_serial_request_and_one_worker_lease_have_identical_results_and_charge
         one.1.execution.last().unwrap().charged_work()
     );
 }
+
+#[path = "request_differential/request_custody.rs"]
+mod request_custody;

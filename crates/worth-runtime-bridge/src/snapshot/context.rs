@@ -64,7 +64,8 @@ impl<R: TruthSnapshotReader> BridgeSnapshotContext<R> {
     ) -> Result<SnapshotReadPacketResult, BridgeSnapshotReadError> {
         execution
             .in_scope(|_| {
-                BridgeSnapshotReadError::checkpoint(execution)?;
+                crate::execution_contact::admit(execution)
+                    .map_err(BridgeSnapshotReadError::execution_denied)?;
                 let result = self.snapshot.read_packet(request, execution)?;
                 BridgeSnapshotReadError::checkpoint(execution)?;
                 Ok(result)

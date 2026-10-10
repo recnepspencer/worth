@@ -255,8 +255,8 @@ fn mutation_handler_and_inline_commit_remain_in_one_request() {
     let policy = support::CHECKPOINT_EXECUTION_POLICY.budget();
     // This handler has no managed computation, and the ordinary Relational
     // reads are inline until part two. One is the least positive opening
-    // allowance. This mutation reaches no Signal dispatch: Relational commit
-    // carriage (and its exhaustion probe) belongs to part two.
+    // allowance. Bridge now charges the publication dispatch contact here;
+    // Relational commit carriage (and its exhaustion probe) belongs to part two.
     let restore = Restore(
         place(Placement::Leased(NonZeroUsize::MIN)),
         bound(Some(worth_foundational::ExecutionBudget::new(
@@ -288,7 +288,7 @@ fn mutation_handler_and_inline_commit_remain_in_one_request() {
     assert!(matches!(outcome, Outcome::Committed { .. }));
     let opened = reports();
     assert_eq!(opened.len(), 1);
-    assert_eq!(opened[0].as_ref().unwrap().charged_work(), 0);
+    assert_eq!(opened[0].as_ref().unwrap().charged_work(), 1);
     drop(restore);
     let after = request
         .query(PlanarRead {

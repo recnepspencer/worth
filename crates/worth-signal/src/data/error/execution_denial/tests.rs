@@ -90,3 +90,53 @@ fn waiter_preparation_preserves_checkpoint_and_storage_causes() {
         );
     }
 }
+
+#[test]
+fn nested_performed_stop_keeps_its_publication_witness() {
+    use crate::data::error::{
+        SignalExecutionStop, SignalPublicationDisposition, SignalPublicationProgress,
+    };
+    use worth_foundational::{
+        ExecutionPhysicalReport, ExecutionPosture, ExecutionReport, PartitionIdentity,
+    };
+    let identity = PartitionIdentity::new(3);
+    let report = ExecutionReport::new(
+        ExecutionPosture::Serial,
+        17,
+        17,
+        ExecutionPhysicalReport::default(),
+    );
+    for performed in [false, true] {
+        let mut progress = SignalPublicationProgress::default();
+        progress.stopped_epoch(SignalPublicationDisposition::WorkerLocal);
+        if performed {
+            progress.complete_epoch(1);
+        }
+        let inner = SignalExecutionStop::new(
+            SignalExecutionStopReason::Failure {
+                identity,
+                cause: SignalExecutionFailure::Cancelled,
+            },
+            Some(identity),
+            progress,
+            report,
+        );
+        let translated: SignalExecutionStopReason = MapStop::Failure {
+            identity: PartitionIdentity::new(4),
+            cause: MapKernelFailure::Domain(SignalError::execution_stopped(inner.clone())),
+        }
+        .into();
+        if performed {
+            let SignalExecutionStopReason::Failure {
+                cause: SignalExecutionFailure::Domain(error),
+                ..
+            } = translated
+            else {
+                panic!("a performed effect must keep its witness");
+            };
+            assert_eq!(*error, SignalError::execution_stopped(inner));
+        } else {
+            assert_eq!(&translated, inner.reason());
+        }
+    }
+}

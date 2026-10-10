@@ -28,6 +28,12 @@ impl BridgeOwnedSignalRuntime {
                     "owner-published conditional change requires an exact retained source record",
                 )
             })?;
+        crate::execution_contact::admit(execution).map_err(|cause| {
+            BridgeConditionalDenial::new(
+                BridgeConditionalDenialKind::ExecutionDenied(cause),
+                cause.label(),
+            )
+        })?;
         let envelope = self.reserve_owned_change_envelope(correspondence, record)?;
         let targets = self
             .owned_conditional_targets
@@ -89,6 +95,12 @@ impl BridgeOwnedSignalRuntime {
             .iter()
             .find(|item| item.dependency().dependency_ordinal() == dependency_ordinal)
             .ok_or_else(dependency_ordinal_denial)?;
+        crate::execution_contact::admit(execution).map_err(|cause| {
+            BridgeConditionalDenial::new(
+                BridgeConditionalDenialKind::ExecutionDenied(cause),
+                cause.label(),
+            )
+        })?;
         let requested_commit = request.commit_identity().clone();
         let envelope =
             match self

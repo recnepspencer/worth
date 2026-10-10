@@ -13,7 +13,11 @@ use worth_query_host::facade::{
 fn producer_completes_but_delivery_cannot_reset_its_remaining_budget() {
     let _guard = checkpoint_recovery_test_guard();
     let _restore = Restore(place(Placement::Serial), bound(None));
-    for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
+    for placement in [
+        Placement::Serial,
+        Placement::Leased(NonZeroUsize::MIN),
+        Placement::Leased(NonZeroUsize::new(4).unwrap()),
+    ] {
         place(placement);
         bound(None);
         let application = installation::install_configured::<false, PRODUCER_WORK, RUNS>(

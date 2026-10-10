@@ -28,6 +28,12 @@ pub trait BridgeSourceAdapter: Send + Sync + 'static {
                 )
             })?;
 
+        crate::execution_contact::admit(execution).map_err(|cause| {
+            BridgeDeliveryError::new(
+                BridgeDeliveryErrorKind::ExecutionDenied(cause),
+                cause.label(),
+            )
+        })?;
         let snapshot_reader =
             self.open_snapshot(&snapshot_identity, execution)
                 .map_err(|error| {

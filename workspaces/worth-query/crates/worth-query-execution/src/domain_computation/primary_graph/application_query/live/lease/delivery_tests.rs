@@ -57,6 +57,9 @@ fn committed_live_cause_projects_with_bounded_result_buffer_evidence() {
         .unwrap();
     let observer = world.application.result_buffer_observer();
     let mut lease = world
+        .application
+        .with_application_advancement(&request, |phase| {
+            world
         .selected_product()
         .open_application_query_live::<
             LiveAccountActivityQuery,
@@ -68,12 +71,15 @@ fn committed_live_cause_projects_with_bounded_result_buffer_evidence() {
             Activity,
             LiveAccountActivityCause,
         >(
+ &phase,
             query,
             &principal,
             account,
             live_account_parameters("account-1"),
             WorthQueryApplicationLiveControls::bounded(request.clone(), 4, 16, 2_048).unwrap(),
         )
+        .unwrap()
+        })
         .unwrap();
     let committed = commit_live_activity(&world, &principal, &request);
 
@@ -192,6 +198,9 @@ fn governed_live_delivery_reuses_only_query_owned_current_authority() {
         .unwrap();
     let capability = admit_touch_account_capability(&world, &principal, &request).unwrap();
     let mut lease = world
+        .application
+        .with_application_advancement(&request, |phase| {
+            world
         .selected_product()
         .open_governed_application_query_live::<
             GovernedLiveAccountActivityQuery,
@@ -206,6 +215,7 @@ fn governed_live_delivery_reuses_only_query_owned_current_authority() {
             _,
             _,
         >(
+ &phase,
             query,
             &principal,
             account,
@@ -213,6 +223,8 @@ fn governed_live_delivery_reuses_only_query_owned_current_authority() {
             governed_live_account_parameters("account-1"),
             WorthQueryApplicationLiveControls::bounded(request.clone(), 4, 16, 2_048).unwrap(),
         )
+        .unwrap()
+        })
         .unwrap();
     let committed = commit_live_activity(&world, &committer, &request);
 
@@ -288,6 +300,9 @@ fn revoked_capability_stops_governed_live_delivery_before_projection() {
         .unwrap();
     let capability = admit_touch_account_capability(&world, &principal, &request).unwrap();
     let mut lease = world
+        .application
+        .with_application_advancement(&request, |phase| {
+            world
         .selected_product()
         .open_governed_application_query_live::<
             GovernedLiveAccountActivityQuery,
@@ -302,6 +317,7 @@ fn revoked_capability_stops_governed_live_delivery_before_projection() {
             _,
             _,
         >(
+ &phase,
             query,
             &principal,
             account,
@@ -309,6 +325,8 @@ fn revoked_capability_stops_governed_live_delivery_before_projection() {
             governed_live_account_parameters("account-1"),
             WorthQueryApplicationLiveControls::bounded(request.clone(), 4, 16, 2_048).unwrap(),
         )
+        .unwrap()
+        })
         .unwrap();
     commit_live_activity(&world, &committer, &request);
     revoke_current_capability(&world);

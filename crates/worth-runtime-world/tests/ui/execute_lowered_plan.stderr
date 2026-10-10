@@ -1,8 +1,8 @@
 error[E0308]: mismatched types
- --> tests/ui/execute_lowered_plan.rs:4:33
+ --> tests/ui/execute_lowered_plan.rs:9:44
   |
-4 |     port.execute_without_signal(prepared,token);
-  |          ---------------------- ^^^^^^^^ expected `PreparedCompositePublicationWithoutSignal`, found `PreparedCompositePublicationWithSignal`
+9 |     port.execute_without_signal(execution, prepared, token);
+  |          ----------------------            ^^^^^^^^ expected `PreparedCompositePublicationWithoutSignal`, found `PreparedCompositePublicationWithSignal`
   |          |
   |          arguments to this method are incorrect
   |

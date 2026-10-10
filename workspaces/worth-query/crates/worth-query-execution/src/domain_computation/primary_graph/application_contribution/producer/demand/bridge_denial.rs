@@ -6,7 +6,7 @@ pub(super) fn bridge_denial(
     producer_identity: &str,
     failure: BridgeConditionalDenial,
 ) -> WorthQueryOutputDemandDenial {
-    let kind = bridge_denial_kind(&failure);
+    let kind = bridge_denial_kind(failure.kind());
     WorthQueryOutputDemandDenial::new(
         kind,
         format!(
@@ -18,10 +18,10 @@ pub(super) fn bridge_denial(
 }
 
 pub(super) fn bridge_denial_kind(
-    failure: &BridgeConditionalDenial,
+    kind: BridgeConditionalDenialKind,
 ) -> WorthQueryOutputDemandDenialKind {
     use BridgeConditionalDenialKind as Kind;
-    match failure.kind() {
+    match kind {
         Kind::ExecutionDenied(cause) => match super::bridge_execution_denial::query_cause(cause) {
             Ok(cause) => WorthQueryOutputDemandDenialKind::ExecutionRequest(cause),
             Err(interruption) => {
@@ -185,5 +185,33 @@ fn signal_service_is_deferred(cause: &worth_runtime_bridge::facade::BridgeSignal
         | Cause::BranchReadmission(_)
         | Cause::OwnerServiceIssuance(_)
         | Cause::ConditionalServiceIssuance(_) => false,
+    }
+}
+
+#[cfg(test)]
+mod cause_contracts {
+    use super::*;
+    use crate::domain_computation::primary_graph::application_contribution::{
+        WorthQueryAdvancementDenial as RequestDenial,
+        WorthQueryManagedComputationResourceDenial as Resource,
+    };
+    #[test]
+    fn native_bridge_causes_cannot_be_replaced_by_a_signal_cause() {
+        use worth_runtime_bridge::facade::BridgeExecutionDenial as Cause;
+        for (native, expected) in [
+            (Cause::WorkCeiling, WorthQueryOutputDemandDenialKind::ExecutionRequest(
+                RequestDenial::Resource(Resource::WorkExhausted))),
+            (Cause::Cancelled, WorthQueryOutputDemandDenialKind::of_execution_interruption(
+                crate::domain_computation::primary_graph::application_contribution::WorthQueryManagedComputationInterruption::Cancelled)),
+            (Cause::DeadlineElapsed, WorthQueryOutputDemandDenialKind::of_execution_interruption(
+                crate::domain_computation::primary_graph::application_contribution::WorthQueryManagedComputationInterruption::DeadlineExceeded)),
+        ] {
+            assert_eq!(bridge_denial_kind(BridgeConditionalDenialKind::ExecutionDenied(native)), expected);
+        }
+        let native = BridgeConditionalDenialKind::MissingComputeProvider;
+        assert_eq!(
+            bridge_denial_kind(native.clone()),
+            WorthQueryOutputDemandDenialKind::BridgeConditional(Box::new(native))
+        );
     }
 }

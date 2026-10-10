@@ -69,6 +69,7 @@ where
         Binding,
     >(
         self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         query: WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
         principal: &'principal WorthQueryAuthenticatedPrincipal<
             Schema,
@@ -107,7 +108,7 @@ where
             Scope,
             Target,
             Binding,
-        >(WorthQueryApplicationLiveOpenRequest {
+        >(phase, WorthQueryApplicationLiveOpenRequest {
             query,
             principal,
             scope,
@@ -135,6 +136,7 @@ where
         Input,
     >(
         self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         query: WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
         principal: &'principal WorthQueryAuthenticatedPrincipal<
             Schema,
@@ -171,6 +173,14 @@ where
         Input: ApplicationCapabilityRequest<Schema, Capability, Scope = Scope>,
     {
         let (application, product, application_basis) = self.into_parts();
+        phase
+            .execution_request_for(&application.product_runtime)
+            .map_err(|_| {
+                open_denial(
+                    WorthQueryApplicationLiveOpenDenialKind::ForeignAdvancementPhase,
+                    query.name(),
+                )
+            })?;
         let access = WorthQueryApplicationQueryAccessContext::new(principal, &scope);
         let query_controls = WorthQueryApplicationQueryControls::product_live(
             product.read_lease(),
@@ -199,7 +209,7 @@ where
             Scope,
             Target,
             Binding,
-        >(WorthQueryApplicationLiveOpenRequest {
+        >(phase, WorthQueryApplicationLiveOpenRequest {
             query,
             principal,
             scope,
@@ -230,6 +240,7 @@ where
         Binding,
     >(
         &'runtime self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         request: WorthQueryApplicationLiveOpenRequest<
             'principal,
             Schema,
@@ -259,6 +270,14 @@ where
         QueryResult: WorthQueryApplicationProjection<Schema, Query>,
         Binding: ApplicationQueryLiveCauseBinding<Schema, Query, Scope, Target>,
     {
+        let execution = phase
+            .execution_request_for(&self.product_runtime)
+            .map_err(|_| {
+                open_denial(
+                    WorthQueryApplicationLiveOpenDenialKind::ForeignAdvancementPhase,
+                    request.query.name(),
+                )
+            })?;
         let live = validate_live_binding::<
             Schema,
             Query,
@@ -297,31 +316,13 @@ where
             )
             .map_err(open_admission_denial)?;
         let initial_read = execute_live_initial_read(self, plan, request.query.name())?;
-        let basis = self
-            .with_application_advancement(request.controls.request(), |phase| {
-                let execution =
-                    phase
-                        .execution_request_for(&self.product_runtime)
-                        .map_err(|_| {
-                            open_denial(
-                                WorthQueryApplicationLiveOpenDenialKind::BridgeBasisRejected,
-                                request.query.name(),
-                            )
-                        })?;
-                admit_live_managed_basis(
-                    self,
-                    live,
-                    &initial_read.graph_work,
-                    request.query.name(),
-                    execution,
-                )
-            })
-            .map_err(|_| {
-                open_denial(
-                    WorthQueryApplicationLiveOpenDenialKind::BridgeBasisRejected,
-                    request.query.name(),
-                )
-            })??;
+        let basis = admit_live_managed_basis(
+            self,
+            live,
+            &initial_read.graph_work,
+            request.query.name(),
+            execution,
+        )?;
         let buffer_capacity = request.controls.buffer_capacity();
         let queue = WorthQueryLiveCauseQueue::open(
             &self.primary_provider.live_delivery,

@@ -60,7 +60,7 @@ where
     {
         let application = self.application;
         let request_scope = self.scope;
-        application.with_application_advancement(request_scope, |_phase| {
+        application.with_application_advancement(request_scope, |phase| {
 
         if self.retained.is_some() {
             return Err(WorthQueryApplicationLiveOpenRequestDenial::RetainedBasis);
@@ -147,6 +147,7 @@ where
                 Operation,
                 Input,
             >(
+                &phase,
                 binding.into_query(),
                 &principal,
                 scope,

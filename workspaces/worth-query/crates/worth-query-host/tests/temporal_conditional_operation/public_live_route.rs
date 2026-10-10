@@ -28,6 +28,8 @@ pub fn world_no_effect_retains_conditional_provenance() {
         .unwrap();
     let live = world
         .application
+        .with_application_advancement(&request, |phase| {
+            world.application
         .on_branch(branch)
         .select()
         .unwrap()
@@ -41,6 +43,7 @@ pub fn world_no_effect_retains_conditional_provenance() {
             schema::TemporalIntent,
             schema::TemporalIntentLiveCause,
         >(
+            &phase,
             query,
             &principal,
             scope,
@@ -53,6 +56,8 @@ pub fn world_no_effect_retains_conditional_provenance() {
             )
             .unwrap(),
         )
+        })
+        .unwrap()
         .unwrap();
 
     let transaction = world.change_input_on_branch(branch, "history-pressure");
@@ -124,6 +129,8 @@ pub fn live_query_receives_conditional_world_publication() {
         .unwrap();
     let mut live = world
         .application
+        .with_application_advancement(&request, |phase| {
+            world.application
         .on_branch(branch)
         .select()
         .unwrap()
@@ -137,6 +144,7 @@ pub fn live_query_receives_conditional_world_publication() {
             schema::TemporalIntent,
             schema::TemporalIntentLiveCause,
         >(
+            &phase,
             query,
             &principal,
             scope,
@@ -149,6 +157,8 @@ pub fn live_query_receives_conditional_world_publication() {
             )
             .unwrap(),
         )
+        })
+        .unwrap()
         .unwrap();
 
     let committed = courtroom_support::observe(&world);
