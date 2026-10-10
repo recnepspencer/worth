@@ -74,6 +74,7 @@ impl WorthQueryOutputDemandRegistry {
         // an upstream claim: that would prevent replacement from retiring the
         // predecessor's postings and leave its dependents on obsolete rows.
         let interest = WorthQueryOutputDemandInterest {
+            join_pause: None,
             key: interest_key,
             requires_output: true,
             notifications: WorthQueryOutputDemandNotifications {

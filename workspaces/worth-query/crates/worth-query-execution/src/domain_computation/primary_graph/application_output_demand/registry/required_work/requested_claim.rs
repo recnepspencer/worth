@@ -135,6 +135,7 @@ impl WorthQueryOutputDemandRegistry {
         }
         let capacity = state.reserve_required_custody_capacity(key_bytes)?;
         let interest = WorthQueryOutputDemandInterest {
+            join_pause: None,
             key: key.clone(),
             requires_output: true,
             notifications: WorthQueryOutputDemandNotifications { wake },

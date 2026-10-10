@@ -1,18 +1,18 @@
 //! Owned observation lifetime for Query execution, independent of request authority.
-use super::execution_runtime::source_invalidation::NativeReservationObservation;
 use std::cell::{Cell, RefCell};
+pub(in crate::domain_computation) mod owned_control_scope;
 thread_local! {
     static LISTENERS: Cell<usize> = const { Cell::new(0) };
-    static CLEANUPS: RefCell<Vec<fn()>> = const { RefCell::new(Vec::new()) };
+    static CLEANUPS: RefCell<Vec<Box<dyn FnOnce()>>> = const { RefCell::new(Vec::new()) };
 }
 
 /// Records this thread's Query work while an owned listener exists.
 /// It grants no execution, publication or installation authority.
 #[must_use = "the observation ends when its guard is dropped"]
 pub struct WorthQueryExecutionObservation {
+    _controls: owned_control_scope::OwnedControlScope,
     _signal: worth_signal::facade::SignalRequestWorkObservation,
     _world: worth_runtime_world::facade::RuntimeWorldReadObservation,
-    _native: NativeReservationObservation,
 }
 impl WorthQueryExecutionObservation {
     /// Install passive Query, Signal and World observation on this thread.
@@ -23,10 +23,10 @@ impl WorthQueryExecutionObservation {
             .checked_add(1)
             .expect("Query listener count overflow");
         let observation = Self {
+            _controls: owned_control_scope::OwnedControlScope::install(),
             _signal: worth_signal::facade::SignalRequestWorkObservation::install_on_this_thread(),
             _world:
                 worth_runtime_world::facade::RuntimeWorldReadObservation::install_on_this_thread(),
-            _native: NativeReservationObservation::install(),
         };
         LISTENERS.with(|listeners| listeners.set(count));
         observation
@@ -51,7 +51,11 @@ pub(in crate::domain_computation) fn is_installed() -> bool {
     LISTENERS.with(Cell::get) != 0
 }
 pub(in crate::domain_computation) fn register_cleanup(cleanup: fn()) {
-    CLEANUPS.with(|cleanups| cleanups.borrow_mut().push(cleanup));
+    CLEANUPS.with(|cleanups| cleanups.borrow_mut().push(Box::new(cleanup)));
+}
+// Law 2, scope: cleanup owns only weak receiver references and ends on guard drop.
+pub(in crate::domain_computation) fn register_owned_cleanup(cleanup: impl FnOnce() + 'static) {
+    owned_control_scope::register(cleanup);
 }
 
 #[cfg(test)]

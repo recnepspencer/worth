@@ -2,7 +2,7 @@
 use std::num::NonZeroUsize;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
-    Arc, Condvar, Mutex,
+    Arc, Condvar, Mutex, Weak,
 };
 use std::time::Duration;
 
@@ -37,6 +37,7 @@ struct ExactPause {
     changed: Condvar,
 }
 pub struct RuntimeWorldProductComparePause {
+    receiver: Weak<ProductCompareSlot>,
     latch: Arc<ExactPause>,
 }
 impl RuntimeWorldOperationControl {
@@ -62,7 +63,10 @@ impl RuntimeWorldOperationControl {
         self.pending_product_compare
             .armed
             .store(true, Ordering::Release);
-        RuntimeWorldProductComparePause { latch }
+        RuntimeWorldProductComparePause {
+            latch,
+            receiver: Arc::downgrade(&self.pending_product_compare),
+        }
     }
 
     /// Inject one unwind after owner execution and before product movement.
@@ -140,6 +144,18 @@ impl RuntimeWorldProductComparePause {
 }
 impl Drop for RuntimeWorldProductComparePause {
     fn drop(&mut self) {
+        // Law 2, scope: only this receiver's matching pause is cleared.
+        if let Some(receiver) = self.receiver.upgrade() {
+            let mut pending = receiver
+                .pending
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            if matches!(pending.as_ref(), Some(ProductCompareControl::Pause(latch)) if Arc::ptr_eq(latch, &self.latch))
+            {
+                *pending = None;
+                receiver.armed.store(false, Ordering::Release);
+            }
+        }
         self.release();
     }
 }
@@ -155,5 +171,24 @@ where
 {
     pub fn world_operation_control_for_test(&self) -> RuntimeWorldOperationControl {
         self.root.state.operation_control.clone()
+    }
+}
+
+#[cfg(test)]
+mod scope_tests {
+    use super::*;
+    #[test]
+    fn unwinding_an_unreached_compare_pause_clears_its_receiver() {
+        let control = RuntimeWorldOperationControl::default();
+        assert!(std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let _pause = control.pause_before_product_compare(NonZeroUsize::MIN);
+            panic!("exercise pause cleanup");
+        }))
+        .is_err());
+        assert!(!control
+            .pending_product_compare
+            .armed
+            .load(Ordering::Acquire));
+        let _next = control.pause_before_product_compare(NonZeroUsize::MIN);
     }
 }

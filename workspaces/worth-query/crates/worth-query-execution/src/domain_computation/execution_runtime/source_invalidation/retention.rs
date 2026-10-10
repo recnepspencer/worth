@@ -7,6 +7,8 @@ use super::WorthQueryInvalidationResourceDenial;
 pub(super) struct InvalidationRetentionLedger {
     maximum_bytes: u64,
     retained_bytes: AtomicU64,
+    pub(super) exhaust_delivery: std::sync::atomic::AtomicBool,
+    pub(super) native: super::native_reservation_observation::NativeReservationRecorder,
 }
 
 impl InvalidationRetentionLedger {
@@ -14,9 +16,24 @@ impl InvalidationRetentionLedger {
         Self {
             maximum_bytes,
             retained_bytes: AtomicU64::new(0),
+            exhaust_delivery: std::sync::atomic::AtomicBool::new(false),
+            native: super::native_reservation_observation::NativeReservationRecorder::new(),
         }
     }
 
+    pub(super) fn install(maximum_bytes: u64) -> Arc<Self> {
+        let ledger = Arc::new(Self::new(maximum_bytes));
+        if crate::domain_computation::execution_observation::is_installed() {
+            ledger.native.install();
+            let receiver = Arc::downgrade(&ledger);
+            crate::domain_computation::execution_observation::register_owned_cleanup(move || {
+                if let Some(ledger) = receiver.upgrade() {
+                    ledger.native.clear();
+                }
+            });
+        }
+        ledger
+    }
     pub(super) fn retained_bytes(&self) -> u64 {
         self.retained_bytes.load(Ordering::Acquire)
     }
@@ -59,21 +76,19 @@ impl RetainedInvalidationCapacity {
         &self,
         site: &'static std::panic::Location<'static>,
     ) {
-        super::native_reservation_observation::observe(
-            self as *const Self as usize,
-            Arc::as_ptr(&self.ledger) as usize,
-            self.bytes,
-            site,
-        );
+        self.ledger
+            .native
+            .observe(self as *const Self as usize, self.bytes, site);
     }
     pub(in crate::domain_computation) fn observe_native(&self, kind: super::NativeRetainedKind) {
-        super::native_reservation_observation::retain(
-            self as *const Self as usize,
-            Arc::as_ptr(&self.ledger) as usize,
-            kind,
-            self.bytes,
-        );
+        self.ledger
+            .native
+            .retain(self as *const Self as usize, kind, self.bytes);
     }
+    pub(in crate::domain_computation) fn observe_consumed(self: &Arc<Self>, runtime: u64) {
+        self.ledger.native.observe_consumed(runtime, self);
+    }
+
     pub(in crate::domain_computation) const fn bytes(&self) -> u64 {
         self.bytes
     }
@@ -81,7 +96,7 @@ impl RetainedInvalidationCapacity {
 
 impl Drop for RetainedInvalidationCapacity {
     fn drop(&mut self) {
-        super::native_reservation_observation::release(self as *const Self as usize);
+        self.ledger.native.release(self as *const Self as usize);
         self.ledger
             .retained_bytes
             .fetch_sub(self.bytes, Ordering::AcqRel);

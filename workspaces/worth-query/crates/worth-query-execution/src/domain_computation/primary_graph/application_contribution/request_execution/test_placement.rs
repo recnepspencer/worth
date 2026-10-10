@@ -36,7 +36,11 @@ pub enum WorthQueryExecutionPlacementForTest {
     Certified { workers: NonZeroUsize, seed: u64 },
 }
 
+use crate::domain_computation::execution_observation::owned_control_scope;
+
 thread_local! {
+    static PLACEMENT_OWNER: Cell<u64> = const { Cell::new(0) };
+    static BUDGET_OWNER: Cell<u64> = const { Cell::new(0) };
     static REQUEST_BUDGET: Cell<Option<ExecutionBudget>> = const { Cell::new(None) };
     static PLACEMENT: Cell<WorthQueryExecutionPlacementForTest> =
         const { Cell::new(WorthQueryExecutionPlacementForTest::World) };
@@ -47,6 +51,23 @@ thread_local! {
 pub fn place_managed_computations_on_this_thread_for_test(
     placement: WorthQueryExecutionPlacementForTest,
 ) -> WorthQueryExecutionPlacementForTest {
+    // Law 2, scope: this pre-request placement is owned by the arming guard.
+    let owner = owned_control_scope::current_id();
+    if PLACEMENT_OWNER.get() != owner {
+        let previous = (PLACEMENT.get(), PLACEMENT_OWNER.get());
+        owned_control_scope::register(move || {
+            if PLACEMENT_OWNER.get() == owner {
+                let (placement, owner) = if owned_control_scope::is_live(previous.1) {
+                    previous
+                } else {
+                    (WorthQueryExecutionPlacementForTest::World, 0)
+                };
+                PLACEMENT.set(placement);
+                PLACEMENT_OWNER.set(owner);
+            }
+        });
+    }
+    PLACEMENT_OWNER.set(owner);
     PLACEMENT.replace(placement)
 }
 
@@ -190,5 +211,75 @@ pub(super) fn certify<T, K, R, E, Kernel, Combine>(
 pub fn bound_advancement_requests_on_this_thread_for_test(
     budget: Option<ExecutionBudget>,
 ) -> Option<ExecutionBudget> {
+    // Law 2, scope: every request-budget arm ends with its owned guard.
+    let owner = owned_control_scope::current_id();
+    if BUDGET_OWNER.get() != owner {
+        let previous = (REQUEST_BUDGET.get(), BUDGET_OWNER.get());
+        owned_control_scope::register(move || {
+            if BUDGET_OWNER.get() == owner {
+                let (budget, owner) = if owned_control_scope::is_live(previous.1) {
+                    previous
+                } else {
+                    (None, 0)
+                };
+                REQUEST_BUDGET.set(budget);
+                BUDGET_OWNER.set(owner);
+            }
+        });
+    }
+    BUDGET_OWNER.set(owner);
     REQUEST_BUDGET.replace(budget)
+}
+
+#[cfg(test)]
+mod scope_tests {
+    use super::*;
+    use crate::domain_computation::execution_observation::WorthQueryExecutionObservation as Observation;
+    #[test]
+    fn unwinding_clears_placement_and_budget_before_the_thread_is_reused() {
+        assert!(std::panic::catch_unwind(|| {
+            let _guard = Observation::install_on_this_thread();
+            place_managed_computations_on_this_thread_for_test(
+                WorthQueryExecutionPlacementForTest::Serial,
+            );
+            bound_advancement_requests_on_this_thread_for_test(Some(ExecutionBudget::new(
+                NonZeroUsize::MIN,
+                7,
+                9,
+            )));
+            panic!("exercise placement cleanup");
+        })
+        .is_err());
+        assert_eq!(PLACEMENT.get(), WorthQueryExecutionPlacementForTest::World);
+        assert!(REQUEST_BUDGET.get().is_none());
+    }
+    #[test]
+    fn dropping_an_older_guard_cannot_clear_a_newer_guards_placement() {
+        let outer = Observation::install_on_this_thread();
+        place_managed_computations_on_this_thread_for_test(
+            WorthQueryExecutionPlacementForTest::Serial,
+        );
+        let inner = Observation::install_on_this_thread();
+        let leased = WorthQueryExecutionPlacementForTest::Leased(NonZeroUsize::MIN);
+        place_managed_computations_on_this_thread_for_test(leased);
+        drop(outer);
+        assert_eq!(PLACEMENT.get(), leased);
+        drop(inner);
+        assert_eq!(PLACEMENT.get(), WorthQueryExecutionPlacementForTest::World);
+    }
+    #[test]
+    fn an_inner_guard_restores_only_a_still_owned_outer_placement() {
+        let outer = Observation::install_on_this_thread();
+        place_managed_computations_on_this_thread_for_test(
+            WorthQueryExecutionPlacementForTest::Serial,
+        );
+        let inner = Observation::install_on_this_thread();
+        place_managed_computations_on_this_thread_for_test(
+            WorthQueryExecutionPlacementForTest::Leased(NonZeroUsize::MIN),
+        );
+        drop(inner);
+        assert_eq!(PLACEMENT.get(), WorthQueryExecutionPlacementForTest::Serial);
+        drop(outer);
+        assert_eq!(PLACEMENT.get(), WorthQueryExecutionPlacementForTest::World);
+    }
 }

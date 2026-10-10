@@ -180,7 +180,7 @@ where
                 self.record_restored_output(source_scope, &readmitted, registry_admission)?;
             }
             let observed_source = observed_source.install(&interest, installed_entry.clone())?;
-            crate::domain_computation::primary_graph::application_output_demand::observe_stable_join_admission();
+            crate::domain_computation::primary_graph::application_output_demand::observe_stable_join_admission(&interest);
             return Ok(WorthQueryAdmittedOutputDemand {
                 runtime_authority: self.runtime.authority_identity().as_u64(),
                 schema_binding: self.installed_schema.binding_identity(),
@@ -263,7 +263,7 @@ where
         // Rejoin the posture of the authenticated accepted row.
         selected.applicability = interest.key().applicability();
         let observed_source = observed_source.install(&interest, installed_entry.clone())?;
-        crate::domain_computation::primary_graph::application_output_demand::observe_stable_join_admission();
+        crate::domain_computation::primary_graph::application_output_demand::observe_stable_join_admission(&interest);
         let resources_validated = !selected.exact_retained_output;
         Ok(WorthQueryAdmittedOutputDemand {
             runtime_authority: self.runtime.authority_identity().as_u64(),

@@ -28,7 +28,15 @@ impl RuntimeWorldReadObservation {
 }
 impl Drop for RuntimeWorldReadObservation {
     fn drop(&mut self) {
-        LISTENERS.with(|listeners| listeners.set(listeners.get() - 1));
+        // Law 2, scope: the final recorder guard clears all records it kept.
+        if LISTENERS.with(|listeners| {
+            let remaining = listeners.get() - 1;
+            listeners.set(remaining);
+            remaining
+        }) == 0
+        {
+            READS.set(0);
+        }
     }
 }
 
@@ -64,8 +72,9 @@ mod tests {
         record_read();
         drop(outer);
         record_read();
+        assert_eq!(world_branch_reads_on_this_thread_for_test(), before + 2);
         drop(inner);
         record_read();
-        assert_eq!(world_branch_reads_on_this_thread_for_test(), before + 2);
+        assert_eq!(world_branch_reads_on_this_thread_for_test(), 0);
     }
 }

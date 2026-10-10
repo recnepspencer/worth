@@ -18,7 +18,7 @@ pub enum SignalOwnerOperationBoundary {
 
 mod deterministic {
     use std::sync::atomic::{AtomicBool, Ordering};
-    use std::sync::{Arc, Condvar, Mutex};
+    use std::sync::{Arc, Condvar, Mutex, Weak};
     use std::time::{Duration, Instant};
 
     use super::SignalOwnerOperationBoundary;
@@ -54,6 +54,7 @@ mod deterministic {
 
     #[derive(Debug)]
     pub struct SignalOwnerOperationPause {
+        receiver: Weak<SignalOwnerOperationControlState>,
         latch: Arc<SignalOwnerPauseLatch>,
     }
 
@@ -84,7 +85,10 @@ mod deterministic {
             assert!(armed.pause.is_none(), "only one owner pause may be armed");
             armed.pause = Some((boundary, Arc::clone(&latch)));
             self.state.active.store(true, Ordering::Release);
-            SignalOwnerOperationPause { latch }
+            SignalOwnerOperationPause {
+                latch,
+                receiver: Arc::downgrade(&self.state),
+            }
         }
 
         pub fn inject_panic_once(&self, boundary: SignalOwnerOperationBoundary) {
@@ -201,7 +205,38 @@ mod deterministic {
 
     impl Drop for SignalOwnerOperationPause {
         fn drop(&mut self) {
+            // Law 2, scope: dropping even an unreached pause disarms its receiver.
+            if let Some(receiver) = self.receiver.upgrade() {
+                let mut armed = receiver
+                    .armed
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner);
+                if armed
+                    .pause
+                    .as_ref()
+                    .is_some_and(|(_, latch)| Arc::ptr_eq(latch, &self.latch))
+                {
+                    armed.pause = None;
+                    receiver
+                        .active
+                        .store(armed.panic.is_some(), Ordering::Release);
+                }
+            }
             self.release();
+        }
+    }
+    #[cfg(test)]
+    mod scope_tests {
+        use super::*;
+        #[test]
+        fn dropping_an_unreached_pause_does_not_leave_its_owner_armed() {
+            let control = SignalOwnerOperationControl::new();
+            let pause =
+                control.arm_pause_once(SignalOwnerOperationBoundary::OwnerLifecycleAdmission);
+            drop(pause);
+            assert!(!control.state.active.load(Ordering::Acquire));
+            let _next =
+                control.arm_pause_once(SignalOwnerOperationBoundary::OwnerLifecycleAdmission);
         }
     }
 }

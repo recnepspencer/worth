@@ -281,6 +281,7 @@ impl WorthQueryOutputDemandRegistry {
         if let Some(prepared) = prepared_record {
             state.install_prepared_record(prepared);
         }
+        let mut joined_stable = false;
         let record = state.records.get_mut(&key).expect("admitted record exists");
         if let Some(successor) = successor_of {
             let reopens_exact_ready = matches!(
@@ -294,6 +295,7 @@ impl WorthQueryOutputDemandRegistry {
             );
             if existing_record && reopens_exact_ready {
                 if stable_refresh {
+                    joined_stable = true;
                     super::join_observation::joined(key.source.root_entity_for_test());
                 }
                 let DemandState::Output(reopened) =
@@ -322,7 +324,13 @@ impl WorthQueryOutputDemandRegistry {
         }
         record.interests = record.interests.saturating_add(1);
         record.required_interests += usize::from(admission_kind.is_required());
-        let interest = interest(self, key, record, admission_kind.is_required());
+        let mut interest = interest(self, key, record, admission_kind.is_required());
+        if joined_stable {
+            interest.join_pause = super::join_observation::take_pause(
+                &mut state,
+                interest.key.source.root_entity_for_test(),
+            );
+        }
         state.install_required_member(required_member);
         Ok(interest)
     }
@@ -373,6 +381,7 @@ pub(super) fn interest(
     requires_output: bool,
 ) -> WorthQueryOutputDemandInterest {
     WorthQueryOutputDemandInterest {
+        join_pause: None,
         key,
         requires_output,
         notifications: WorthQueryOutputDemandNotifications {
