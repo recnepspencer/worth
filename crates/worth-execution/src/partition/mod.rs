@@ -45,7 +45,9 @@ impl PartitionWork {
     /// Charge a bounded pure candidate edit before publication. Checked mutators
     /// already checkpoint internally; charging their result again is an error.
     pub fn charge(self, context: &mut KernelContext<'_, '_>) -> Result<Self, KernelStop> {
-        let units = self.units().ok_or(KernelStop::WorkCounterOverflow)?;
+        let units = self
+            .units()
+            .ok_or_else(|| context.refuse_request(KernelStop::WorkCounterOverflow))?;
         context.checkpoint(units)?;
         Ok(self)
     }

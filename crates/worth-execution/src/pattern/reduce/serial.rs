@@ -84,10 +84,10 @@ impl<T: Sync + ChargedBytes, K> ExecutionMap<T, K> {
                     metrics.charged_span,
                 ) {
                     reduction_failure = Some(ReductionRunFailure {
-                        reason: ReductionRunStop::WorkCounterOverflow,
+                        reason: ReductionRunStop::work_counter_overflow(),
                         metrics,
                     });
-                    return Err(KernelFailure::Stop(KernelStop::WorkCounterOverflow));
+                    return Err(KernelFailure::Stop(KernelStop::work_counter_overflow()));
                 }
                 match reduced {
                     Ok((tree, metrics)) => Ok(ReduceComplete { tree, metrics }),

@@ -168,7 +168,7 @@ impl<T: Sync + ChargedBytes, K> ExecutionMap<T, K> {
                             context
                                 .record_nested_stop_owner(crate::backend::NestedStopOwner::Request);
                             KernelFailure::Domain(ReduceScopeError::Admission(
-                                LeaseDenial::ChargedBytesOverflow,
+                                LeaseDenial::charged_bytes_overflow(),
                             ))
                         },
                     )?;
@@ -254,7 +254,7 @@ fn memory_admission_denial<E>() -> ReduceInputDenial<E> {
     );
     crate::backend::record_nested(report, Some(crate::backend::NestedStopOwner::Request));
     ReduceInputDenial::ScopeAdmission {
-        denial: LeaseDenial::ChargedBytesOverflow,
+        denial: LeaseDenial::charged_bytes_overflow(),
         report,
     }
 }

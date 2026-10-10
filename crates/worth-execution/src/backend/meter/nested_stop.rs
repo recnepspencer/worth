@@ -77,6 +77,14 @@ impl super::KernelContext<'_, '_> {
         self.meter.borrow_mut().nested_stop.record(owner);
     }
 
+    pub(crate) fn refuse_request<E>(&self, cause: E) -> E {
+        self.meter
+            .borrow_mut()
+            .nested_stop
+            .record(NestedStopOwner::Request);
+        cause
+    }
+
     pub(crate) fn failure_owner<E>(&self, failure: &super::KernelFailure<E>) -> NestedStopOwner {
         use super::{KernelFailure, KernelStop};
         let meter = self.meter.borrow();
@@ -108,4 +116,18 @@ impl super::KernelContext<'_, '_> {
                 .unwrap_or(NestedStopOwner::Request),
         }
     }
+}
+
+/// A framework producer refuses through the invoking meter before its value
+/// can be translated or caught. Outside execution there is no parent to stop.
+pub(crate) fn request_refusal<E>(cause: E) -> E {
+    super::ACTIVE_METER.with(|active| {
+        if let Some(meter) = active.borrow().last() {
+            meter
+                .borrow_mut()
+                .nested_stop
+                .record(NestedStopOwner::Request);
+        }
+    });
+    cause
 }

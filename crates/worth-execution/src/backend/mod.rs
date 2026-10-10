@@ -36,6 +36,7 @@ pub(crate) use meter::active_serial_memory;
 
 mod task_result;
 
+pub(crate) use meter::request_refusal;
 pub(crate) use meter::{record_nested, NestedStopOwner};
 
 mod scope_refusal;

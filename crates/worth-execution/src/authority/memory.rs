@@ -80,6 +80,15 @@ enum Held {
 }
 
 impl SerialMemoryBudget {
+    /// Bytes currently held against this budget's own policy, including descendants.
+    /// This observation grants no reservation or admission authority.
+    pub fn charged_memory_bytes(&self) -> u64 {
+        *self.ledgers[0]
+            .charged
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+    }
+
     pub fn limit(&self) -> u64 {
         self.ledgers[0].ceiling
     }
@@ -157,13 +166,13 @@ impl SerialMemoryBudget {
                 .unwrap();
             let admitted = ledger.ceiling.saturating_sub(*charge.1 - from);
             if to > admitted {
-                return Err(MemoryLimitDenial {
+                return Err(crate::backend::request_refusal(MemoryLimitDenial {
                     requested: to,
                     admitted,
                     level: MemoryLimitLevel::Policy {
                         ancestor: ancestor as u32,
                     },
-                });
+                }));
             }
         }
         for (_, charge) in &mut charges {
@@ -184,7 +193,7 @@ impl ExecutionMemoryReservation {
                 .map_err(LeaseDenial::MemoryExhausted);
         }
         crate::backend::active_serial_memory()
-            .ok_or(LeaseDenial::NoActiveExecutionScope)?
+            .ok_or_else(|| crate::backend::request_refusal(LeaseDenial::NoActiveExecutionScope))?
             .reserve(bytes)
             .map_err(LeaseDenial::MemoryExhausted)
     }
@@ -227,7 +236,9 @@ impl ExecutionMemoryReservation {
                 *held = bytes;
                 Ok(())
             }
-            _ => Err(LeaseDenial::UnrelatedNestedLease),
+            _ => Err(crate::backend::request_refusal(
+                LeaseDenial::UnrelatedNestedLease,
+            )),
         }
     }
 

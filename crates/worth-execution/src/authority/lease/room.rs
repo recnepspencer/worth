@@ -18,11 +18,11 @@ pub(super) fn check<'a>(
 ) -> Result<(), MemoryLimitDenial> {
     let refuse = |admitted: u64, level| {
         if requested > admitted {
-            Err(MemoryLimitDenial {
+            Err(crate::backend::request_refusal(MemoryLimitDenial {
                 requested,
                 admitted,
                 level,
-            })
+            }))
         } else {
             Ok(())
         }

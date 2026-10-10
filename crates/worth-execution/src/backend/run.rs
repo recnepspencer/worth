@@ -34,7 +34,7 @@ where
 {
     let mut custody = RunCustody::new(inputs, taken, prepared);
     if lease.is_none() && RunLimits::has_leased_parent() {
-        let outcome = denied(LeaseDenial::UnrelatedNestedLease);
+        let outcome = denied(LeaseDenial::unrelated_nested_lease());
         record_nested(outcome.report, Some(NestedStopOwner::Request));
         return custody.finish(outcome, batch);
     }
@@ -43,7 +43,7 @@ where
         .as_ref()
         .is_some_and(|resources| !resources.matches_current_parent())
     {
-        let outcome = denied(LeaseDenial::UnrelatedNestedLease);
+        let outcome = denied(LeaseDenial::unrelated_nested_lease());
         if charge_parent {
             record_nested(outcome.report, Some(NestedStopOwner::Request));
         }
@@ -112,7 +112,7 @@ where
             bytes.checked_add(limits.framework_context_bytes(batch.len(), max_workers)?)
         });
     let Some(memory_bytes) = memory_bytes else {
-        let outcome = denied(LeaseDenial::ChargedBytesOverflow);
+        let outcome = denied(LeaseDenial::charged_bytes_overflow());
         if charge_parent {
             record_nested(outcome.report, Some(NestedStopOwner::Request));
         }
@@ -123,7 +123,7 @@ where
         .as_ref()
         .is_some_and(|resources| !resources.matches_dispatch(memory_bytes))
     {
-        let outcome = denied(LeaseDenial::UnrelatedNestedLease);
+        let outcome = denied(LeaseDenial::unrelated_nested_lease());
         if charge_parent {
             record_nested(outcome.report, Some(NestedStopOwner::Request));
         }

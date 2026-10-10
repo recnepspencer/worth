@@ -9,14 +9,7 @@ use super::{
 use crate::{backend::run_scope, ExecutionResourceLease, LeaseDenial};
 
 fn charged(lease: &ExecutionResourceLease<'_>) -> u64 {
-    let budget = lease.policy().budget().charged_memory_bytes();
-    match lease.reserve_memory(budget) {
-        Ok(held) => {
-            drop(held);
-            0
-        }
-        Err(denial) => budget - denial.admitted,
-    }
+    lease.charged_memory_bytes()
 }
 
 #[test]

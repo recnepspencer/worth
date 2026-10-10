@@ -46,23 +46,23 @@ impl ReductionMetrics {
             structural_visits: self
                 .structural_visits
                 .checked_add(other.structural_visits)
-                .ok_or(ReductionRunStop::WorkCounterOverflow)?,
+                .ok_or_else(ReductionRunStop::work_counter_overflow)?,
             recombined_nodes: self
                 .recombined_nodes
                 .checked_add(other.recombined_nodes)
-                .ok_or(ReductionRunStop::WorkCounterOverflow)?,
+                .ok_or_else(ReductionRunStop::work_counter_overflow)?,
             combine_calls: self
                 .combine_calls
                 .checked_add(other.combine_calls)
-                .ok_or(ReductionRunStop::WorkCounterOverflow)?,
+                .ok_or_else(ReductionRunStop::work_counter_overflow)?,
             charged_work: self
                 .charged_work
                 .checked_add(other.charged_work)
-                .ok_or(ReductionRunStop::WorkCounterOverflow)?,
+                .ok_or_else(ReductionRunStop::work_counter_overflow)?,
             charged_span: self
                 .charged_span
                 .checked_add(other.charged_span)
-                .ok_or(ReductionRunStop::WorkCounterOverflow)?,
+                .ok_or_else(ReductionRunStop::work_counter_overflow)?,
         })
     }
 
@@ -70,15 +70,15 @@ impl ReductionMetrics {
         self.structural_visits = self
             .structural_visits
             .checked_add(1)
-            .ok_or(ReductionRunStop::WorkCounterOverflow)?;
+            .ok_or_else(ReductionRunStop::work_counter_overflow)?;
         self.charged_work = self
             .charged_work
             .checked_add(1)
-            .ok_or(ReductionRunStop::WorkCounterOverflow)?;
+            .ok_or_else(ReductionRunStop::work_counter_overflow)?;
         self.charged_span = self
             .charged_span
             .checked_add(1)
-            .ok_or(ReductionRunStop::WorkCounterOverflow)?;
+            .ok_or_else(ReductionRunStop::work_counter_overflow)?;
         Ok(())
     }
 
@@ -86,15 +86,15 @@ impl ReductionMetrics {
         let calls = self
             .combine_calls
             .checked_add(1)
-            .ok_or(ReductionRunStop::WorkCounterOverflow)?;
+            .ok_or_else(ReductionRunStop::work_counter_overflow)?;
         let work = self
             .charged_work
             .checked_add(1)
-            .ok_or(ReductionRunStop::WorkCounterOverflow)?;
+            .ok_or_else(ReductionRunStop::work_counter_overflow)?;
         let span = self
             .charged_span
             .checked_add(1)
-            .ok_or(ReductionRunStop::WorkCounterOverflow)?;
+            .ok_or_else(ReductionRunStop::work_counter_overflow)?;
         self.combine_calls = calls;
         self.charged_work = work;
         self.charged_span = span;
@@ -105,7 +105,7 @@ impl ReductionMetrics {
         self.recombined_nodes = self
             .recombined_nodes
             .checked_add(1)
-            .ok_or(ReductionRunStop::WorkCounterOverflow)?;
+            .ok_or_else(ReductionRunStop::work_counter_overflow)?;
         Ok(())
     }
 }
@@ -117,6 +117,12 @@ pub enum ReductionRunStop<E> {
     Denial(ReductionDenial),
     ResultCapacityExceeded,
     WorkCounterOverflow,
+}
+
+impl<E> ReductionRunStop<E> {
+    pub(crate) fn work_counter_overflow() -> Self {
+        crate::backend::request_refusal(Self::WorkCounterOverflow)
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -193,7 +199,7 @@ impl<T: Clone + ChargedBytes + CanonicalBits, F: Fn(&T, &T) -> T> ReductionTree<
             tree.root = candidate;
             let span = shape_span
                 .checked_add(dependency_span)
-                .ok_or_else(|| engine.failure(ReductionRunStop::WorkCounterOverflow))?;
+                .ok_or_else(|| engine.failure(ReductionRunStop::work_counter_overflow()))?;
             engine.set_full_span(span);
         }
         let metrics = engine.metrics();

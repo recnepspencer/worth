@@ -344,7 +344,10 @@ fn add_metrics(
 
 fn metric_overflow(metrics: ReductionMetrics) -> ReductionRunFailure<MapKernelStop> {
     ReductionRunFailure {
-        reason: crate::reduction::ReductionRunStop::WorkCounterOverflow,
+        reason: crate::reduction::ReductionRunStop::work_counter_overflow(),
         metrics,
     }
 }
+
+#[cfg(test)]
+mod tests;

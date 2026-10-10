@@ -100,7 +100,7 @@ where
         };
     }
     if lease.is_none() && RunLimits::has_leased_parent() {
-        return denied(initial, LeaseDenial::UnrelatedNestedLease);
+        return denied(initial, LeaseDenial::unrelated_nested_lease());
     }
     // The chain itself is ordered; an independent nested pattern may still
     // spend the lease's parallel worker budget at a round boundary.
@@ -125,7 +125,7 @@ where
         .and_then(|bytes| bytes.checked_add(input_bytes))
         .and_then(|bytes| bytes.checked_add(limits.framework_context_bytes(1, 1)?));
     let Some(memory_bytes) = memory_bytes else {
-        return denied(initial, LeaseDenial::ChargedBytesOverflow);
+        return denied(initial, LeaseDenial::charged_bytes_overflow());
     };
     let state_bytes = initial.additional_charged_bytes();
     if state_bytes > max_state_bytes {
@@ -161,7 +161,7 @@ where
     let mut boundary = None;
     let mut completed_early = false;
     for (index, identity) in identities.as_slice().iter().copied().enumerate() {
-        let result = match limits.safe_point() {
+        let result = match context.safe_point() {
             Err(reason) => Err(KernelFailure::Stop(reason)),
             Ok(()) => {
                 let _meter_context = context.enter();

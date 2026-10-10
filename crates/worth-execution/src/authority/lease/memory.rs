@@ -22,6 +22,19 @@ impl ExecutionAuthority {
 }
 
 impl ExecutionResourceLease<'_> {
+    /// Bytes currently held on this lease, including descendant charges.
+    /// This observation grants no room; reservations still check the whole lineage.
+    pub fn charged_memory_bytes(&self) -> u64 {
+        self.authority
+            .inner
+            .ledger
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .nodes
+            .get(&self.node.id)
+            .map_or(0, |usage| usage.charged_memory_bytes)
+    }
+
     /// Holds `bytes` on this lease, every ancestor and the process until the
     /// reservation drops or is resized.
     pub fn reserve_memory(
@@ -84,7 +97,9 @@ impl LeaseMemory {
         bytes: u64,
     ) -> Result<(), LeaseDenial> {
         if !Arc::ptr_eq(&self.authority, &lease.authority.inner) {
-            return Err(LeaseDenial::UnrelatedNestedLease);
+            return Err(crate::backend::request_refusal(
+                LeaseDenial::UnrelatedNestedLease,
+            ));
         }
         let held = self.bytes;
         let old = self.lineage().map(|node| node.id).collect::<Vec<_>>();

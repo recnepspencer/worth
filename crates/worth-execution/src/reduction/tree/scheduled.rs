@@ -2,7 +2,7 @@ use crate::{
     authority::{ExecutionResourceLease, LeaseDenial},
     backend::{
         run_checked_batch_with_charge, AdmittedBatch, BackendKind, BatchDenial, BatchStop,
-        KernelContext, KernelFailure, KernelStop,
+        KernelContext, KernelFailure, KernelStop, NestedStopOwner,
     },
     oracle::CanonicalBits,
     report::ChargedBytes,
@@ -42,21 +42,18 @@ where
             })
             .map_err(ScheduledReductionError::Reduction)?;
         let frontier = shape.frontier(lease.policy().budget().max_workers().get());
-        let task_scratch =
-            max_value_bytes
-                .checked_mul(6)
-                .ok_or(ScheduledReductionError::Admission(
-                    LeaseDenial::ChargedBytesOverflow,
-                ))?;
+        let task_scratch = max_value_bytes.checked_mul(6).ok_or_else(|| {
+            ScheduledReductionError::Admission(LeaseDenial::charged_bytes_overflow())
+        })?;
         let entries = frontier
             .tasks
             .iter()
             .copied()
             .map(|spec| {
                 let capacity = Self::checked_subtree_result_bound(spec.len(), max_value_bytes)
-                    .ok_or(ScheduledReductionError::Admission(
-                        LeaseDenial::ChargedBytesOverflow,
-                    ))?;
+                    .ok_or_else(|| {
+                        ScheduledReductionError::Admission(LeaseDenial::charged_bytes_overflow())
+                    })?;
                 Ok((spec.identity, spec, task_scratch, capacity))
             })
             .collect::<Result<Vec<_>, _>>()?;
@@ -66,7 +63,7 @@ where
                 metrics: ReductionMetrics::default(),
             }),
             BatchDenial::MemoryOverflow => {
-                ScheduledReductionError::Admission(LeaseDenial::ChargedBytesOverflow)
+                ScheduledReductionError::Admission(LeaseDenial::charged_bytes_overflow())
             }
         })?;
         // Suppress the backend's task-order parent charge. Canonical tree
@@ -91,87 +88,97 @@ where
                     result.metrics.charged_work,
                     result.metrics.charged_span,
                 ) {
-                    return Err(KernelFailure::Stop(KernelStop::WorkCounterOverflow));
+                    return Err(KernelFailure::Stop(KernelStop::work_counter_overflow()));
                 }
                 Ok(result)
             },
             false,
         );
-        let failed = match outcomes.stop {
-            Some(BatchStop::Admission(denial)) => {
-                return Err(ScheduledReductionError::Admission(denial));
-            }
-            Some(BatchStop::WorkExhausted { identity }) => {
-                let spec = frontier
-                    .tasks
-                    .iter()
-                    .find(|spec| spec.identity == identity)
-                    .ok_or_else(|| overflow(shape_metrics))?;
-                let target = u64::try_from(spec.len())
-                    .ok()
-                    .and_then(|len| len.checked_mul(4))
-                    .ok_or_else(|| overflow(shape_metrics))?;
-                Some((
-                    identity,
-                    stopped(ReductionRunStop::Hook(KernelStop::WorkCeiling)),
-                    target,
-                ))
-            }
-            Some(BatchStop::Failure { identity, cause }) => {
-                let failure = task_failure(cause);
-                let target = failure.metrics.charged_work;
-                Some((identity, failure, target))
-            }
-            None => None,
-        };
-        let before_evaluation = context.cost();
-        let mut accepted_task_work = 0_u64;
-        let settled = Self::settle_frontier_checked(
-            shape,
-            identity,
-            combine,
-            shape_metrics,
-            frontier,
-            outcomes.values,
-            failed,
-            max_value_bytes,
-            |charge| match charge {
-                FrontierCharge::Node => context.checkpoint(1),
-                FrontierCharge::TaskUnit => {
-                    context.checkpoint(1)?;
-                    accepted_task_work = accepted_task_work
-                        .checked_add(1)
-                        .ok_or(KernelStop::WorkCounterOverflow)?;
-                    Ok(())
+        let request_stopped = outcomes.stop_owner == Some(NestedStopOwner::Request);
+        let settled = (|| {
+            let failed = match outcomes.stop {
+                Some(BatchStop::Admission(denial)) => {
+                    return Err(ScheduledReductionError::Admission(denial));
                 }
-            },
-        );
-        if !context.reconcile_discarded_work(outcomes.report.charged_work(), accepted_task_work) {
-            return Err(overflow(shape_metrics));
+                Some(BatchStop::WorkExhausted { identity }) => {
+                    let spec = frontier
+                        .tasks
+                        .iter()
+                        .find(|spec| spec.identity == identity)
+                        .ok_or_else(|| overflow(shape_metrics))?;
+                    let target = u64::try_from(spec.len())
+                        .ok()
+                        .and_then(|len| len.checked_mul(4))
+                        .ok_or_else(|| overflow(shape_metrics))?;
+                    Some((
+                        identity,
+                        stopped(ReductionRunStop::Hook(KernelStop::WorkCeiling)),
+                        target,
+                    ))
+                }
+                Some(BatchStop::Failure { identity, cause }) => {
+                    let failure = task_failure(cause);
+                    let target = failure.metrics.charged_work;
+                    Some((identity, failure, target))
+                }
+                None => None,
+            };
+            let before_evaluation = context.cost();
+            let mut accepted_task_work = 0_u64;
+            let settled = Self::settle_frontier_checked(
+                shape,
+                identity,
+                combine,
+                shape_metrics,
+                frontier,
+                outcomes.values,
+                failed,
+                max_value_bytes,
+                |charge| match charge {
+                    FrontierCharge::Node => context.checkpoint(1),
+                    FrontierCharge::TaskUnit => {
+                        context.checkpoint(1)?;
+                        accepted_task_work = accepted_task_work
+                            .checked_add(1)
+                            .ok_or_else(KernelStop::work_counter_overflow)?;
+                        Ok(())
+                    }
+                },
+            );
+            if !context.reconcile_discarded_work(outcomes.report.charged_work(), accepted_task_work)
+            {
+                return Err(overflow(shape_metrics));
+            }
+            let (tree, metrics) = settled.map_err(|mut failure| {
+                // The serial checked oracle reports an interrupted traversal's
+                // accepted prefix as sequential span. Completed speculative
+                // subtrees may have DAG spans, but they cannot change this
+                // failure-prefix convention when frontier width changes.
+                failure.metrics.charged_span = failure.metrics.charged_work;
+                ScheduledReductionError::Reduction(failure)
+            })?;
+            if outcomes.report.charged_work() != accepted_task_work {
+                return Err(overflow(metrics));
+            }
+            let evaluation_work = metrics
+                .charged_work
+                .checked_sub(shape_metrics.charged_work)
+                .ok_or_else(|| overflow(metrics))?;
+            let evaluation_span = metrics
+                .charged_span
+                .checked_sub(shape_metrics.charged_span)
+                .ok_or_else(|| overflow(metrics))?;
+            if !context.apply_structural_span(before_evaluation, evaluation_work, evaluation_span) {
+                return Err(overflow(metrics));
+            }
+            Ok((tree, metrics))
+        })();
+        // Canonical metering preserves the accepted prefix and its failure.
+        // Even a discarded task's request owner dominates before we return.
+        if request_stopped {
+            context.record_nested_stop_owner(NestedStopOwner::Request);
         }
-        let (tree, metrics) = settled.map_err(|mut failure| {
-            // The serial checked oracle reports an interrupted traversal's
-            // accepted prefix as sequential span. Completed speculative
-            // subtrees may have DAG spans, but they cannot change this
-            // failure-prefix convention when frontier width changes.
-            failure.metrics.charged_span = failure.metrics.charged_work;
-            ScheduledReductionError::Reduction(failure)
-        })?;
-        if outcomes.report.charged_work() != accepted_task_work {
-            return Err(overflow(metrics));
-        }
-        let evaluation_work = metrics
-            .charged_work
-            .checked_sub(shape_metrics.charged_work)
-            .ok_or_else(|| overflow(metrics))?;
-        let evaluation_span = metrics
-            .charged_span
-            .checked_sub(shape_metrics.charged_span)
-            .ok_or_else(|| overflow(metrics))?;
-        if !context.apply_structural_span(before_evaluation, evaluation_work, evaluation_span) {
-            return Err(overflow(metrics));
-        }
-        Ok((tree, metrics))
+        settled
     }
 }
 
@@ -195,7 +202,10 @@ fn stopped(reason: ReductionRunStop<KernelStop>) -> ReductionRunFailure<KernelSt
 
 fn overflow(metrics: ReductionMetrics) -> ScheduledReductionError {
     ScheduledReductionError::Reduction(ReductionRunFailure {
-        reason: ReductionRunStop::WorkCounterOverflow,
+        reason: ReductionRunStop::work_counter_overflow(),
         metrics,
     })
 }
+
+#[cfg(test)]
+mod tests;

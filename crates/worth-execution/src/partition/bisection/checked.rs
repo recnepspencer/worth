@@ -53,8 +53,9 @@ impl Bisection {
                 BisectionDenial::WeightOverflow,
             ))?;
         let bytes = if previous == 0 {
-            u64::try_from(8 * size_of::<((PartitionItemId, PartitionItemId), u64)>())
-                .map_err(|_| PartitionUpdateDenial::Admission(LeaseDenial::ChargedBytesOverflow))?
+            u64::try_from(8 * size_of::<((PartitionItemId, PartitionItemId), u64)>()).map_err(
+                |_| PartitionUpdateDenial::Admission(LeaseDenial::charged_bytes_overflow()),
+            )?
         } else {
             0
         };
@@ -197,9 +198,9 @@ impl Bisection {
                 work.members_visited += 1;
                 degree_visits = degree_visits
                     .checked_add(self.incident[member].len())
-                    .ok_or(PartitionUpdateDenial::Admission(
-                        LeaseDenial::ChargedBytesOverflow,
-                    ))?;
+                    .ok_or_else(|| {
+                        PartitionUpdateDenial::Admission(LeaseDenial::charged_bytes_overflow())
+                    })?;
             }
             let next_members = selected.members.len() + usize::from(previous.is_none())
                 - usize::from(next.is_none());
@@ -285,7 +286,7 @@ impl Bisection {
                 }
             }
             return Err(PartitionUpdateDenial::Stop(
-                crate::backend::KernelStop::WorkCounterOverflow,
+                crate::backend::KernelStop::work_counter_overflow(),
             ));
         };
         if let Err(stop) = context.checkpoint(commit_units) {
@@ -386,7 +387,5 @@ fn candidate_scratch_bytes(
         .and_then(|bytes| bytes.checked_add(degree_visits.checked_mul(per_edge)?))
         .and_then(|bytes| bytes.checked_add(path_nodes.checked_mul(per_member)?))
         .and_then(|bytes| u64::try_from(bytes).ok())
-        .ok_or(PartitionUpdateDenial::Admission(
-            LeaseDenial::ChargedBytesOverflow,
-        ))
+        .ok_or_else(|| PartitionUpdateDenial::Admission(LeaseDenial::charged_bytes_overflow()))
 }

@@ -31,6 +31,7 @@ mod adversarial;
 mod controlled_child;
 mod map_dispatch;
 mod memory_level;
+mod nested_certification_refusal;
 mod nested_request_stops;
 mod nested_scope_ownership;
 mod nested_stop_dominance;

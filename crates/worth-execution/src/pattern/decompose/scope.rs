@@ -168,9 +168,9 @@ where
                                 u64::try_from(size_of::<Staged<I, C, S, B, O, F>>()).ok()?,
                             )
                         })
-                        .ok_or({
+                        .ok_or_else(|| {
                             ScopeKernelFailure::Refused(DecomposeFailure::ScopeAdmission(
-                                LeaseDenial::ChargedBytesOverflow,
+                                LeaseDenial::charged_bytes_overflow(),
                             ))
                         })?;
                     handoff(bytes).map_err(|denial| {

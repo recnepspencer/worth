@@ -85,9 +85,11 @@ where
                         .checked_mul(if self.snapshot.is_some() { 2 } else { 1 })?,
                 )
             })
-            .ok_or(DecomposeCertificationFailure::Mismatch(
-                OracleMismatch::Stop,
-            ))?;
+            .ok_or_else(|| {
+                crate::backend::request_refusal(DecomposeCertificationFailure::Mismatch(
+                    OracleMismatch::Stop,
+                ))
+            })?;
         let oracle_retention = lease
             .reserve_retained_memory(clone_bytes)
             .map_err(|_| DecomposeCertificationFailure::Mismatch(OracleMismatch::Stop))?;

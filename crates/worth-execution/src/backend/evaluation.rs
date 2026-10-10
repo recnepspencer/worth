@@ -22,7 +22,7 @@ where
     let newly_active_worker = lease.is_some_and(|value| !value.is_current_worker_in_lineage());
     let _worker_context = lease.map(ExecutionResourceLease::enter_worker_context);
     let mut context = KernelContext::new(limits.clone());
-    let result = match limits.safe_point() {
+    let result = match context.safe_point() {
         Err(stop) => {
             let owner = context.failure_owner(&KernelFailure::<()>::Stop(stop));
             context.record_nested_stop_owner(owner);

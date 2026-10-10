@@ -49,12 +49,9 @@ impl Ledger<'_> {
     }
 
     fn charged(self) -> u64 {
-        match self.reserve(BUDGET) {
-            Ok(held) => {
-                drop(held);
-                0
-            }
-            Err(denial) => BUDGET - denial.admitted,
+        match self {
+            Self::Lease(lease) => lease.charged_memory_bytes(),
+            Self::Serial(budget) => budget.charged_memory_bytes(),
         }
     }
 }
