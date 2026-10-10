@@ -3,6 +3,7 @@ use super::*;
 use crate::domain_computation::primary_graph::application_query::WorthQueryObservedSourceEpoch;
 use std::cmp::Ordering;
 
+// Binding fixes family; source fixes profile; lifecycle handoff stops the older Ready.
 pub(super) struct RequiredMemberKey {
     producer: String,
     source: WorthQueryObservedSourceEpoch,
