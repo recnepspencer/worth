@@ -107,7 +107,6 @@ impl RealReferenceFixture {
             .expect("real Signal owner performs the empty bounded transaction")
     }
 
-    #[cfg(feature = "test-operation-control")]
     pub(crate) fn signal_operation_control(
         &self,
     ) -> worth_signal::facade::branch::SignalOwnerOperationControl {
@@ -116,7 +115,6 @@ impl RealReferenceFixture {
             .expect("real Signal owner exposes operation control")
     }
 
-    #[cfg(feature = "test-operation-control")]
     pub(crate) fn inject_signal_retention_panic(&self) {
         use worth_signal::facade::branch::SignalOwnerOperationBoundary;
 

@@ -93,7 +93,6 @@ fn close_admission_excludes_bootstrap_before_component_acquisition() {
     );
     assert_eq!(engine.state.history.len(), 0);
 }
-#[cfg(feature = "test-operation-control")]
 #[test]
 fn cancellation_and_owner_loss_during_pin_acquisition_never_expose_a_root() {
     use std::time::Duration;

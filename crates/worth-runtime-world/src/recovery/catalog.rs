@@ -308,7 +308,6 @@ impl ProductUnpublishedRecoveryCatalog {
     }
 
     #[cfg(test)]
-    #[cfg(feature = "test-operation-control")]
     pub(crate) fn set_metadata_ceiling_for_test(&self, maximum_metadata_bytes: usize) {
         let mut state = self.locked_state();
         assert!(

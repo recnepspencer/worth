@@ -71,6 +71,7 @@ fn exact_generic_contract<D, I, E, Ctx, T, F>(
     bridge: RuntimeWorldCorrespondencePort,
     budgets: worth_runtime_world::facade::RuntimeWorldBudgets,
     clock: worth_runtime_world::facade::RuntimeWorldClock,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
     prepared: PreparedCompositePublicationWithSignal,
     execution_policy: worth_foundational::ExecutionRequestPolicy,
     context: &mut Ctx,
@@ -97,7 +98,7 @@ where
         .unwrap();
     owner
         .publication_port()
-        .execute_with_signal(prepared, context, cancellation, apply)
+        .execute_with_signal(execution, prepared, context, cancellation, apply)
 }
 
 fn canonical_owner_artifacts(

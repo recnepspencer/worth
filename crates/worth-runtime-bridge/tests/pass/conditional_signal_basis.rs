@@ -4,6 +4,7 @@ use worth_runtime_bridge::facade::{
 };
 
 fn admitted_operations(
+    execution: worth_execution::ExecutionRequest<'_, '_>,
     bridge: &BridgeSealedRuntimeAssembly,
     signal: &BridgeConditionalSignalBasisBinding,
     snapshot: &TruthSnapshotIdentity,
@@ -14,7 +15,7 @@ fn admitted_operations(
             signal, snapshot,
         ),
     );
-    let _ = bridge.deliver_authoritative_change(signal, 0, patch);
+    let _ = bridge.deliver_authoritative_change(execution, signal, 0, patch);
 }
 
 fn main() {}

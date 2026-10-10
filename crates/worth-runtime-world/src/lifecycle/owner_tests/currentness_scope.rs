@@ -121,7 +121,6 @@ fn currentness_scope_denies_foreign_and_closed_owner_before_callback() {
     ));
 }
 
-#[cfg(feature = "test-operation-control")]
 #[test]
 fn currentness_control_observes_real_reference_contention_without_head_movement() {
     use std::time::Duration;

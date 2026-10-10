@@ -49,6 +49,6 @@ path = "tests/installed_operating_world.rs"
 workspace = true
 
 [dev-dependencies]
-worth-runtime-bridge = { path = "../../../../crates/worth-runtime-bridge", features = ["certification-construction"] }
+worth-runtime-bridge = { path = "../../../../crates/worth-runtime-bridge" }
 worth-relational = { path = "../../../../crates/worth-relational" }
 worth-query-installation = { path = "../worth-query-installation", features = ["certification-query-lookup"] }

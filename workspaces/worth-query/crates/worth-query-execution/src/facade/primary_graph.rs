@@ -315,3 +315,6 @@ pub use crate::domain_computation::primary_graph::carried_read_basis_custody_for
 
 /// Owns this thread's Signal checkpoint observation; grants no request authority.
 pub use worth_signal::facade::SignalRequestWorkObservation;
+
+/// Owns this thread's actual World read observation; grants no publication authority.
+pub use worth_runtime_world::facade::RuntimeWorldReadObservation;

@@ -110,7 +110,6 @@ where
             self.root.clone();
         RuntimeWorldLifecyclePort::new(Arc::downgrade(&service))
     }
-    #[cfg(feature = "test-operation-control")]
     pub fn operation_control(&self) -> super::RuntimeWorldOperationControl {
         self.root.state.operation_control.clone()
     }

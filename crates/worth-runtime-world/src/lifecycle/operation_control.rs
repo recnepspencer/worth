@@ -1,6 +1,9 @@
-//! Feature-only scheduling at the real final product comparison boundary.
+//! In-process scheduling at the real final product comparison boundary.
 use std::num::NonZeroUsize;
-use std::sync::{Arc, Condvar, Mutex};
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc, Condvar, Mutex,
+};
 use std::time::Duration;
 
 mod currentness_hold;
@@ -9,9 +12,20 @@ pub use currentness_hold::RuntimeWorldProductCurrentnessPause;
 
 #[derive(Clone, Default)]
 pub struct RuntimeWorldOperationControl {
-    pending_product_compare: Arc<Mutex<Option<ProductCompareControl>>>,
-    pending_currentness: Arc<Mutex<Option<Arc<ProductCurrentnessLatch>>>>,
+    pending_product_compare: Arc<ProductCompareSlot>,
+    pending_currentness: Arc<ProductCurrentnessSlot>,
 }
+#[derive(Default)]
+struct ProductCompareSlot {
+    armed: AtomicBool,
+    pending: Mutex<Option<ProductCompareControl>>,
+}
+#[derive(Default)]
+struct ProductCurrentnessSlot {
+    armed: AtomicBool,
+    pending: Mutex<Option<Arc<ProductCurrentnessLatch>>>,
+}
+
 enum ProductCompareControl {
     Pause(Arc<ExactPause>),
     Panic,
@@ -40,18 +54,23 @@ impl RuntimeWorldOperationControl {
         });
         let mut pending = self
             .pending_product_compare
+            .pending
             .lock()
             .unwrap_or_else(|e| e.into_inner());
         assert!(pending.is_none(), "one product compare pause may be armed");
         *pending = Some(ProductCompareControl::Pause(Arc::clone(&latch)));
+        self.pending_product_compare
+            .armed
+            .store(true, Ordering::Release);
         RuntimeWorldProductComparePause { latch }
     }
 
     /// Inject one unwind after owner execution and before product movement.
-    /// Available only in the explicit operation-control test build.
+    /// Armed only through this owner-issued control handle.
     pub fn panic_before_product_compare_once(&self) {
         let mut pending = self
             .pending_product_compare
+            .pending
             .lock()
             .unwrap_or_else(|e| e.into_inner());
         assert!(
@@ -59,11 +78,18 @@ impl RuntimeWorldOperationControl {
             "one product compare control may be armed"
         );
         *pending = Some(ProductCompareControl::Panic);
+        self.pending_product_compare
+            .armed
+            .store(true, Ordering::Release);
     }
 
     pub(crate) fn before_product_compare(&self) {
+        if !self.pending_product_compare.armed.load(Ordering::Acquire) {
+            return;
+        }
         let mut pending = self
             .pending_product_compare
+            .pending
             .lock()
             .unwrap_or_else(|e| e.into_inner());
         let Some(control) = pending.as_ref() else {
@@ -72,6 +98,9 @@ impl RuntimeWorldOperationControl {
         let latch = match control {
             ProductCompareControl::Panic => {
                 pending.take();
+                self.pending_product_compare
+                    .armed
+                    .store(false, Ordering::Release);
                 panic!("injected unwind before product comparison")
             }
             ProductCompareControl::Pause(latch) => Arc::clone(latch),
@@ -80,6 +109,9 @@ impl RuntimeWorldOperationControl {
         state.0 += 1;
         if state.0 == latch.target {
             pending.take();
+            self.pending_product_compare
+                .armed
+                .store(false, Ordering::Release);
         }
         drop(pending);
         latch.changed.notify_all();

@@ -70,7 +70,6 @@ mod adapter;
 mod authorization;
 mod builder;
 mod canonical_basis;
-#[cfg(feature = "certification-construction")]
 pub mod certification;
 mod certification_constructor;
 mod clone_budget;

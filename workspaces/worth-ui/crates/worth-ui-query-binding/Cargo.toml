@@ -33,4 +33,4 @@ worth-signal.workspace = true
 serde_json.workspace = true
 worth-ui-host-contract = { path = "../worth-ui-host-contract", features = ["certification-construction"] }
 worth-query-host = { path = "../../../worth-query/crates/worth-query-host" }
-worth-runtime-bridge = { workspace = true, features = ["certification-construction"] }
+worth-runtime-bridge = { workspace = true }

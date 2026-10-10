@@ -41,7 +41,6 @@ fn final_clock_panic_keeps_owner_effects_without_product_movement() {
             &cell,
             &cancellation.token(),
             &RuntimeWorldClock::from_source(PanickingClock),
-            #[cfg(feature = "test-operation-control")]
             &owner.state.operation_control,
         )))
         .is_err()
@@ -100,7 +99,6 @@ fn cancellation_during_clock_check_prevents_product_movement() {
         &cell,
         &source.token(),
         &RuntimeWorldClock::from_source(CancellingClock(source)),
-        #[cfg(feature = "test-operation-control")]
         &owner.state.operation_control,
     ) {
         RuntimeWorldPublicationOutcome::ProductUnpublished(record) => record,

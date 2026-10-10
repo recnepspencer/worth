@@ -1,4 +1,4 @@
-//! Test-only contention at the final Product currentness read.
+//! In-process contention at the final Product currentness read.
 
 use super::*;
 use crate::identity::ProductBranchIncarnation;
@@ -12,7 +12,7 @@ pub(crate) struct ProductCurrentnessLatch {
 /// Arms one final currentness read; the real writer starts at that boundary.
 pub struct RuntimeWorldProductCurrentnessPause {
     latch: Arc<ProductCurrentnessLatch>,
-    pending: Arc<Mutex<Option<Arc<ProductCurrentnessLatch>>>>,
+    pending: Arc<ProductCurrentnessSlot>,
 }
 
 pub(crate) struct ProductCurrentnessHold {
@@ -32,10 +32,14 @@ impl RuntimeWorldOperationControl {
         });
         let mut pending = self
             .pending_currentness
+            .pending
             .lock()
             .unwrap_or_else(|e| e.into_inner());
         assert!(pending.is_none(), "one currentness pause may be armed");
         *pending = Some(Arc::clone(&latch));
+        self.pending_currentness
+            .armed
+            .store(true, Ordering::Release);
         RuntimeWorldProductCurrentnessPause {
             latch,
             pending: Arc::clone(&self.pending_currentness),
@@ -46,14 +50,21 @@ impl RuntimeWorldOperationControl {
         &self,
         occurrence: ProductBranchIncarnation,
     ) -> Option<Arc<ProductCurrentnessLatch>> {
+        if !self.pending_currentness.armed.load(Ordering::Acquire) {
+            return None;
+        }
         let mut pending = self
             .pending_currentness
+            .pending
             .lock()
             .unwrap_or_else(|e| e.into_inner());
         if pending
             .as_ref()
             .is_some_and(|latch| latch.occurrence == occurrence)
         {
+            self.pending_currentness
+                .armed
+                .store(false, Ordering::Release);
             pending.take()
         } else {
             None
@@ -118,12 +129,17 @@ impl RuntimeWorldProductCurrentnessPause {
 impl Drop for RuntimeWorldProductCurrentnessPause {
     fn drop(&mut self) {
         self.release();
-        let mut pending = self.pending.lock().unwrap_or_else(|e| e.into_inner());
+        let mut pending = self
+            .pending
+            .pending
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
         if pending
             .as_ref()
             .is_some_and(|latch| Arc::ptr_eq(latch, &self.latch))
         {
             pending.take();
+            self.pending.armed.store(false, Ordering::Release);
         }
     }
 }

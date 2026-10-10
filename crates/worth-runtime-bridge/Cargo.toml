@@ -9,7 +9,6 @@ keywords = ["bridge", "runtime", "invalidation", "snapshot", "facade"]
 categories = ["data-structures", "science"]
 
 [features]
-certification-construction = []
 
 [dependencies]
 worth-foundational = { path = "../worth-foundational" }

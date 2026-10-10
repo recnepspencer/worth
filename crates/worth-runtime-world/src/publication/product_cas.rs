@@ -75,7 +75,6 @@ impl CompositePublicationReady {
         cell: &ProductBranchReferenceCell,
         cancellation: &super::RuntimeWorldCancellationToken,
         clock: &crate::lifecycle::RuntimeWorldClock,
-        #[cfg(feature = "test-operation-control")]
         control: &crate::lifecycle::RuntimeWorldOperationControl,
     ) -> RuntimeWorldPublicationOutcome {
         let cutoff = super::ProductMovementCutoff::new(cancellation, clock, self.deadline);
@@ -83,8 +82,7 @@ impl CompositePublicationReady {
             cell,
             CompositeLateCancellationPosture::NotRequested,
             Some(cutoff),
-            #[cfg(feature = "test-operation-control")]
-            Some(control),
+            || control.before_product_compare(),
         )
     }
 
@@ -153,13 +151,7 @@ impl CompositePublicationReady {
         cell: &ProductBranchReferenceCell,
         late_cancellation: CompositeLateCancellationPosture,
     ) -> RuntimeWorldPublicationOutcome {
-        self.publish_with_cutoff(
-            cell,
-            late_cancellation,
-            None,
-            #[cfg(feature = "test-operation-control")]
-            None,
-        )
+        self.publish_with_cutoff(cell, late_cancellation, None, || {})
     }
 
     fn publish_with_cutoff(
@@ -167,9 +159,7 @@ impl CompositePublicationReady {
         cell: &ProductBranchReferenceCell,
         late_cancellation: CompositeLateCancellationPosture,
         cutoff: Option<super::ProductMovementCutoff>,
-        #[cfg(feature = "test-operation-control")] control: Option<
-            &crate::lifecycle::RuntimeWorldOperationControl,
-        >,
+        before_compare: impl FnOnce(),
     ) -> RuntimeWorldPublicationOutcome {
         let mut ready = self.into_inputs();
         assert!(
@@ -187,10 +177,7 @@ impl CompositePublicationReady {
         match loss_before_product_movement(&ready, late_cancellation, &observed_head) {
             Some(cause) => retain_before_product_movement(ready, observed_head, cause),
             None => {
-                #[cfg(feature = "test-operation-control")]
-                if let Some(control) = control {
-                    control.before_product_compare();
-                }
+                before_compare();
                 attempt_product_movement(ready, cell, late_cancellation, cutoff)
             }
         }

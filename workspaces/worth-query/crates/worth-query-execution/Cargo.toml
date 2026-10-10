@@ -11,10 +11,9 @@ allocation-probes = []
 test-durability-faults = []
 test-primary-graph-faults = []
 test-query-execution-observer = [
-    "worth-runtime-world/test-execution-observer",
 ]
 certification-invalidation-equivalence = []
-test-world-operation-control = ["worth-runtime-world/test-operation-control"]
+test-world-operation-control = []
 
 [dependencies]
 im = "=15.1.0"

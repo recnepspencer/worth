@@ -78,7 +78,6 @@ where
     I: Copy + Ord + Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
-    #[cfg(feature = "test-operation-control")]
     pub(super) operation_control: super::RuntimeWorldOperationControl,
     pub(super) owner_present: AtomicBool,
     pub(super) owner_identity: RuntimeWorldOwnerIdentity,
@@ -155,7 +154,6 @@ where
             RuntimeWorldPublicationCapacityLedger::new(budgets.active_publication_attempts());
         Ok(Self {
             state: Arc::new(RuntimeWorldOwnerState {
-                #[cfg(feature = "test-operation-control")]
                 operation_control: super::RuntimeWorldOperationControl::default(),
                 owner_present: AtomicBool::new(true),
                 owner_identity,

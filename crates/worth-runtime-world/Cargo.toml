@@ -8,13 +8,6 @@ repository = "https://github.com/recnepspencer/WORTH"
 keywords = ["runtime", "world", "composition", "publication"]
 categories = ["data-structures", "database-implementations"]
 
-[features]
-default = []
-test-execution-observer = []
-test-operation-control = [
-]
-test-durability-faults = []
-
 [dependencies]
 worth-foundational = { path = "../worth-foundational" }
 worth-proof = { path = "../worth-proof" }

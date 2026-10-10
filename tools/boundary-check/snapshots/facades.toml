@@ -371,6 +371,7 @@ exports = [
     "RecoveryContinuationContract",
     "RelationalBridgeRecordIdentityParts",
     "RequiredCustodyLayoutForTest",
+    "RuntimeWorldReadObservation",
     "RuntimeWorldRecoveryCursor",
     "RuntimeWorldRecoveryDenial",
     "RuntimeWorldRecoveryPage",
