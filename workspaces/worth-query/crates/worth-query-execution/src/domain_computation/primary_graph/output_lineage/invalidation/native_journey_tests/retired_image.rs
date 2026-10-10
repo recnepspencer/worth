@@ -149,6 +149,14 @@ fn shared_empty_images_still_fence_a_changed_native_position() {
                 crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
             .unwrap();
+        // The first discard released its predecessor's retained history.
+        // Fill that new headroom so the second publication also discards.
+        let second_held = resources
+            .reserve_retained_capacity(
+                resources.installation().maximum_retained_bytes
+                    - resources.retained_capacity_bytes(),
+            )
+            .unwrap();
         let candidate = runtime
             .prepare_branch_transaction(
                 transaction,
@@ -183,6 +191,7 @@ fn shared_empty_images_still_fence_a_changed_native_position() {
         let committed = runtime.settle_performed_publication(performed).unwrap();
         release_test_commit_snapshot(runtime, &committed);
         runtime.snapshots().release_snapshot(&snapshot).unwrap();
+        drop(second_held);
     });
     drop(held);
 }
