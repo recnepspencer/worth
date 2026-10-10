@@ -357,16 +357,20 @@ where
             ScheduleProgression::Ordinary => ordinary_readiness
                 .expect("an ordinary effect consumes its admitted publication permission"),
         };
-        let _published_in_this_advance = receipt.0.published_in_this_advance();
-        let mut receipt = (performed.publication(readiness, receipt.0), receipt.1);
-        let publication = OwnPublication(receipt.0.committed_product_publication().clone());
+        let (publication, _recorded) = performed
+            .publication(readiness, receipt.0, |member| member.performed())
+            .into_parts();
+        let receipt = (publication, receipt.1);
         #[cfg(feature = "test-query-execution-observer")]
         super::caller_pass_observation::exhaust_after_commit(
             request_admission,
-            _published_in_this_advance,
+            receipt.0.published_in_this_advance(),
+            *_recorded,
             self.runtime.authority_identity().as_u64(),
             interest.key().source_epoch().root_entity_for_test(),
         );
+        let mut receipt = (receipt.0.into_receipt(), receipt.1);
+        let publication = OwnPublication(receipt.0.committed_product_publication().clone());
         let delivery = receipt.0
             .take_performed_relational_product_change()
             .map_or(

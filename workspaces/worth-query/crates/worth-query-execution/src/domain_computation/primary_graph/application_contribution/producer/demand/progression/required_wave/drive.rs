@@ -330,7 +330,7 @@ where
                     phase; runtime, principal, request_scope;
                     wave, resolved_on_wave, queue, frame_custody;
                     demand, admission; current, current_contacts, current_role, successor_role;
-                    performed; hold_queue_frame, finish_caller, stopped)
+                    hold_queue_frame, finish_caller, stopped)
             }
             RequiredWaveStep::Held(head) => {
                 drop(slot);

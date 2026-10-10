@@ -40,11 +40,16 @@ impl ProducerCommitReceipt {
     pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn record_publication(
         self,
         record: impl FnOnce(),
-    ) -> WorthQueryApplicationCommitReceipt {
-        match self.publication {
-            CommitPublication::PublishedNow => record(),
-            CommitPublication::PreviouslyPublished => {}
+    ) -> Self {
+        if self.published_in_this_advance() {
+            record();
         }
+        self
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn into_receipt(
+        self,
+    ) -> WorthQueryApplicationCommitReceipt {
         self.receipt
     }
 }

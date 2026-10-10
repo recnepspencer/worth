@@ -206,7 +206,7 @@ where
     >(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
-        readiness: super::super::required_wave::performed::FreshReadiness,
+        readiness: super::super::required_wave::performed::PublicationReadiness,
 
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
