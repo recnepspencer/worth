@@ -144,22 +144,21 @@ fn a_held_chain_outlives_a_newer_demand_the_next_commit_supersedes() {
 /// A held chain is not advanced while its root input is edited and more
 /// commits follow than the window retains, so no mark of that edit is left.
 /// Each held demand still follows its output in one advance, whichever is
-/// advanced first, and both consumers decide once over the new root output.
+/// advanced first. B decides over the new root; its equal output cuts off C.
 ///
 /// Beside each order is what every advance costs: the producer contacts its
 /// demand reports, the source queries it runs and the chain decisions it
-/// makes. An advance produces its row and what that row reads. The root reads
-/// its source once to be produced, and once more when its own demand is the
-/// one that finds the edit. A demand whose row an earlier advance produced
-/// follows it without a contact, and the root's advance decides the last
-/// consumer when the middle one has just republished under it.
+/// makes. A refresh carries its one source disclosure into execution. Each
+/// handle counts only its own producer, even when its advance pumps upstream
+/// work. The marked C source is disclosed once; B's unchanged output and C's
+/// unchanged handler facts permit its stable cutoff without another decision.
 #[test]
 fn a_held_chain_follows_an_edit_the_window_no_longer_retains() {
     let _guard = checkpoint_recovery_test_guard();
     for (order, follows) in [
-        (['a', 'b', 'c'], [(1, 2, 0), (1, 1, 1), (1, 1, 1)]),
-        (['c', 'b', 'a'], [(1, 3, 2), (0, 0, 0), (0, 0, 0)]),
-        (['b', 'a', 'c'], [(1, 2, 1), (0, 1, 1), (0, 0, 0)]),
+        (['a', 'b', 'c'], [(1, 1, 0), (1, 1, 1), (0, 1, 0)]),
+        (['c', 'b', 'a'], [(0, 3, 1), (0, 0, 0), (0, 0, 0)]),
+        (['b', 'a', 'c'], [(1, 2, 1), (0, 1, 0), (0, 0, 0)]),
     ] {
         let application = install(
             None,
@@ -278,7 +277,7 @@ fn a_never_settled_stop_leaves_the_output_to_its_settled_holders() {
                 held.map(|cost| cost.source_queries),
                 judge_decisions(&mut rings, &at)
             ),
-            ([1, 1], [2, 1], 1),
+            ([1, 1], [1, 1], 1),
             "{at}: the settled holders follow the output"
         );
         court.judge_middle(&rings[2], &at);
