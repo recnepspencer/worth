@@ -129,6 +129,7 @@ macro_rules! output_lengths {
 }
 
 mod dropped_dependency;
+mod dropped_plan;
 mod initial_dependency;
 
 #[test]

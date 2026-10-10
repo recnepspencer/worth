@@ -89,6 +89,10 @@ impl<Schema: TopologySchemaBinding>
                 upstream("diamond-left", true),
                 upstream("diamond-right", true),
             ],
+            "diamond-tail" => vec![
+                upstream("diamond-join", false),
+                upstream("diamond-right", true),
+            ],
             ring => vec![super::ring_world::upstream_of(ring)
                 .expect("the courtroom declares no other downstream node")],
         };

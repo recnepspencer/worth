@@ -201,7 +201,7 @@ where
     // dropped. Their real interests are restored by the original claim custody.
     for member in &mut frontier.members {
         if result.is_err() && matches!(member.state, MemberState::Prepared) {
-            member.state = MemberState::Pending;
+            member.state = MemberState::Inspect;
         }
     }
     let stopped = result.err().map(|failure| (failure.index, failure.stop));
