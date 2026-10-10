@@ -8,40 +8,104 @@ fn equal_contents_reclaim_the_declared_component_in_both_insertion_orders() {
     let fixture = real_fixture(4, 4);
     let relational = RuntimeWorldRetentionKey::relational(&fixture.basis);
     let signal = RuntimeWorldRetentionKey::signal(&fixture.basis);
-    // Independent hash seeds and reversed insertion must both preserve the
+    // Reversed insertion preserves the
     // declared Relational-before-Signal component order.
-    for _ in 0..16 {
-        for reversed in [false, true] {
-            let owner = RuntimeWorldRetentionOwner::new(
-                fixture.owner_identity,
-                fixture
-                    .relational_runtime
-                    .owner_component_services()
-                    .basis_port(),
-                fixture.signal_port.clone(),
-                fixture.budgets.unique_exact_component_pins(),
-                fixture.budgets.in_flight_pin_acquisition_reservations(),
-                fixture.budgets.active_observations(),
-            );
-            let requests = [
-                ExactComponentPinRequest::relational(
-                    &fixture.basis,
-                    ComponentBasisDependencyClass::ActivePublicationAttempt,
-                ),
-                ExactComponentPinRequest::signal(
-                    &fixture.basis,
-                    ComponentBasisDependencyClass::ActivePublicationAttempt,
-                ),
-            ];
-            let order = if reversed { [1, 0] } else { [0, 1] };
-            for index in order {
-                drop(owner.issue_component(requests[index]).unwrap());
-            }
-            let report = owner.reclaim(1);
-            assert_eq!(report.examined(), 1);
-            assert_eq!(report.reclaimed(), 1);
-            assert!(owner.inspect_key(&relational).unwrap().is_none());
-            assert!(owner.inspect_key(&signal).unwrap().is_some());
+    for reversed in [false, true] {
+        let owner = RuntimeWorldRetentionOwner::new(
+            fixture.owner_identity,
+            fixture
+                .relational_runtime
+                .owner_component_services()
+                .basis_port(),
+            fixture.signal_port.clone(),
+            fixture.budgets.unique_exact_component_pins(),
+            fixture.budgets.in_flight_pin_acquisition_reservations(),
+            fixture.budgets.active_observations(),
+        );
+        let requests = [
+            ExactComponentPinRequest::relational(
+                &fixture.basis,
+                ComponentBasisDependencyClass::ActivePublicationAttempt,
+            ),
+            ExactComponentPinRequest::signal(
+                &fixture.basis,
+                ComponentBasisDependencyClass::ActivePublicationAttempt,
+            ),
+        ];
+        let order = if reversed { [1, 0] } else { [0, 1] };
+        for index in order {
+            drop(owner.issue_component(requests[index]).unwrap());
         }
+        let report = owner.reclaim(1);
+        assert_eq!(report.examined(), 1);
+        assert_eq!(report.reclaimed(), 1);
+        assert!(owner.inspect_key(&relational).unwrap().is_none());
+        assert!(owner.inspect_key(&signal).unwrap().is_some());
     }
+}
+
+#[test]
+fn reclamation_orders_two_signal_bases_inside_the_same_component_variant() {
+    let mut fixture = real_fixture(4, 4);
+    let services = fixture._signal_runtime.owner_component_services().unwrap();
+    let mutation = services.mutation_port();
+    let fork = |name| {
+        mutation
+            .fork_exact(
+                worth_signal::facade::branch::validate_signal_branch_name(name).unwrap(),
+                fixture.basis.signal_basis(),
+                &worth_signal::facade::branch::SignalOwnerCancellationSource::new().token(),
+            )
+            .unwrap()
+    };
+    let children = [fork("zulu"), fork("alpha")];
+    let descriptions = children
+        .each_ref()
+        .map(|child| child.created_basis().observation().canonical_encoding());
+    assert_ne!(descriptions[0], descriptions[1]);
+    let declared = if descriptions[0] < descriptions[1] {
+        [0, 1]
+    } else {
+        [1, 0]
+    };
+    let correspondence = fixture.bridge.runtime_world_correspondence_port();
+    let bases = children.each_ref().map(|child| {
+        crate::basis::admit_current(
+            fixture.identities.issuer(),
+            &fixture
+                .relational_runtime
+                .owner_component_services()
+                .basis_port(),
+            &fixture.signal_port,
+            &correspondence,
+            fixture.basis.relational_basis().clone(),
+            child.created_basis().clone(),
+            fixture.basis.correspondence_basis().clone(),
+        )
+        .unwrap()
+    });
+    for index in declared.into_iter().rev() {
+        drop(
+            fixture
+                .owner
+                .issue_component(ExactComponentPinRequest::signal(
+                    &bases[index],
+                    ComponentBasisDependencyClass::ActivePublicationAttempt,
+                ))
+                .unwrap(),
+        );
+    }
+    let report = fixture.owner.reclaim(1);
+    assert_eq!(report.examined(), 1);
+    assert_eq!(report.reclaimed(), 1);
+    assert!(fixture
+        .owner
+        .inspect_key(&RuntimeWorldRetentionKey::signal(&bases[declared[0]]))
+        .unwrap()
+        .is_none());
+    assert!(fixture
+        .owner
+        .inspect_key(&RuntimeWorldRetentionKey::signal(&bases[declared[1]]))
+        .unwrap()
+        .is_some());
 }

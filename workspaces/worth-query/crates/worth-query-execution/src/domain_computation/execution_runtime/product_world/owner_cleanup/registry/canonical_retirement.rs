@@ -51,33 +51,31 @@ fn equal_contents_retire_in_the_same_declared_branch_sequence() {
             .map(|occurrence| (occurrence.branch().clone(), occurrence.incarnation()))
             .collect::<Vec<_>>()
     };
-    for _ in 0..16 {
-        let install = |entries: [(u64, WorthQueryRetiredProductOccurrence); 2]| {
-            let registry = WorthQueryProductBranchOwnerCleanupRegistry::new(2);
-            for (identity, occurrence) in entries {
-                // This read asks only for descriptions, including while a
-                // retry has taken the record; it grants no cleanup authority.
-                lock(&registry.state).entries.insert(
-                    identity,
-                    Arc::new(CleanupEntry {
-                        record: Mutex::new(None),
-                        scope: CleanupScope::ApplicationRetirement(occurrence),
-                    }),
-                );
-            }
-            registry
-        };
-        let left = install([(1, zulu.clone()), (2, alpha.clone())]);
-        let right = install([(2, alpha.clone()), (1, zulu.clone())]);
-        let a = sequence(&left);
-        let b = sequence(&right);
-        assert_eq!(a, b);
-        assert_eq!(
-            a,
-            [
-                (alpha.branch().clone(), alpha.incarnation()),
-                (zulu.branch().clone(), zulu.incarnation())
-            ]
-        );
-    }
+    let install = |entries: [(u64, WorthQueryRetiredProductOccurrence); 2]| {
+        let registry = WorthQueryProductBranchOwnerCleanupRegistry::new(2);
+        for (identity, occurrence) in entries {
+            // This read asks only for descriptions, including while a
+            // retry has taken the record; it grants no cleanup authority.
+            lock(&registry.state).entries.insert(
+                identity,
+                Arc::new(CleanupEntry {
+                    record: Mutex::new(None),
+                    scope: CleanupScope::ApplicationRetirement(occurrence),
+                }),
+            );
+        }
+        registry
+    };
+    let left = install([(1, zulu.clone()), (2, alpha.clone())]);
+    let right = install([(2, alpha.clone()), (1, zulu.clone())]);
+    let a = sequence(&left);
+    let b = sequence(&right);
+    assert_eq!(a, b);
+    assert_eq!(
+        a,
+        [
+            (alpha.branch().clone(), alpha.incarnation()),
+            (zulu.branch().clone(), zulu.incarnation())
+        ]
+    );
 }

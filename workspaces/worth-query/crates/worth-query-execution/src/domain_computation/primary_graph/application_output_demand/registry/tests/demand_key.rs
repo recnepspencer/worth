@@ -5,20 +5,40 @@ use crate::domain_computation::primary_graph::application_contribution::{
 };
 use std::{any::TypeId, cmp::Ordering};
 
+pub(super) fn reverse_families() -> [(TypeId, &'static str); 2] {
+    struct A;
+    struct B;
+    let declarations = [
+        [
+            (TypeId::of::<A>(), "alpha-output"),
+            (TypeId::of::<B>(), "zulu-output"),
+        ],
+        [
+            (TypeId::of::<B>(), "alpha-output"),
+            (TypeId::of::<A>(), "zulu-output"),
+        ],
+    ];
+    declarations
+        .into_iter()
+        .find(|families| families[0].0 > families[1].0)
+        .unwrap()
+}
+
 #[test]
 fn family_key_order_follows_declared_identity() {
-    struct AlphaFamily;
-    struct ZuluFamily;
-    // Rust marker names are not the declared identity of their output.
-    const ALPHA_IDENTITY: &str = "zulu-output";
-    const ZULU_IDENTITY: &str = "alpha-output";
-    let mut alpha = support::key("same-producer", 7, 1);
-    let mut zulu = alpha.clone();
-    assert_ne!(TypeId::of::<AlphaFamily>(), TypeId::of::<ZuluFamily>());
-    alpha.family = crate::domain_computation::primary_graph::output_family_identity::OutputFamilyIdentity::declared(ALPHA_IDENTITY);
-    zulu.family = crate::domain_computation::primary_graph::output_family_identity::OutputFamilyIdentity::declared(ZULU_IDENTITY);
-    assert_eq!(ALPHA_IDENTITY.cmp(ZULU_IDENTITY), Ordering::Greater);
-    assert_eq!(alpha.cmp(&zulu), Ordering::Greater);
+    let families = reverse_families();
+    assert!(families[0].0 > families[1].0);
+    assert!(families[0].1 < families[1].1);
+    let source = support::key("same-producer", 7, 1);
+    let keys = families.map(|(_, identity)| {
+        WorthQueryOutputDemandKey::new(
+            identity,
+            source.producer_identity().to_owned(),
+            source.applicability(),
+            source.source_epoch().clone(),
+        )
+    });
+    assert_eq!(keys[0].cmp(&keys[1]), Ordering::Less);
 }
 
 fn initial() -> WorthQueryOutputDemandKey {

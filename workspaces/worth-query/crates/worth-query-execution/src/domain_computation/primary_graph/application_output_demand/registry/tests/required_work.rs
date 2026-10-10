@@ -178,3 +178,51 @@ fn requeued_last_cause_becomes_one_stale_pop() {
     assert!(matches!(queue.pop(), RequiredWorkPop::Stale));
     assert!(matches!(queue.pop(), RequiredWorkPop::Empty));
 }
+
+#[test]
+fn discontinuity_selects_the_first_declared_family_member() {
+    let families = super::demand_key::reverse_families();
+    assert!(families[0].0 > families[1].0);
+    let registry = super::WorthQueryOutputDemandRegistry::default();
+    let occurrence = super::occurrence();
+    let seed = key("same-producer", 1, 1);
+    let outputs = families.map(|(_, identity)| {
+        super::WorthQueryOutputDemandKey::new(
+            identity,
+            seed.producer_identity().to_owned(),
+            seed.applicability(),
+            seed.source_epoch().clone(),
+        )
+    });
+    let mut interests = Vec::new();
+    for output in outputs.iter().rev() {
+        interests.push(
+            registry
+                .fixture_work_membership_at(occurrence, super::root(1), output.clone())
+                .0,
+        );
+    }
+    let queue = registry
+        .state
+        .lock()
+        .unwrap()
+        .required_work_queue
+        .clone()
+        .unwrap();
+    for _ in 0..2 {
+        assert!(selected(&queue).acknowledge().is_some());
+    }
+    registry
+        .state
+        .lock()
+        .unwrap()
+        .fixture_page_required_discontinuity(
+            occurrence,
+            &worth_relational::facade::history::BranchId("main".to_owned()),
+            worth_relational::facade::history::CommitId(1),
+            &mut super::record_admission(),
+        )
+        .unwrap();
+    let first = selected(&queue);
+    assert_eq!(first.key().family_identity(), "alpha-output");
+}
