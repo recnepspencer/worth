@@ -251,11 +251,20 @@ where
 
         }).unwrap_or_else(|cause| WorthQueryOrdinaryWorkflowRunProgress {
             transitions: Vec::new(), attempted_steps: 0,
-            stop: WorthQueryOrdinaryWorkflowRunStop::PreparationDenied(
-                WorthQueryWorkflowAdvancePreparationDenial::RequestAdmission(
-                    crate::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause),
+            stop: match cause {
+                worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial::Interrupted(interruption) => {
+                    use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationInterruption as Interrupted;
+                    WorthQueryOrdinaryWorkflowRunStop::Interrupted(match interruption {
+                        Interrupted::Cancelled => WorthQueryRequestInterruption::Cancelled,
+                        Interrupted::DeadlineExceeded => WorthQueryRequestInterruption::DeadlineExceeded,
+                    })
+                }
+                cause => WorthQueryOrdinaryWorkflowRunStop::PreparationDenied(
+                    WorthQueryWorkflowAdvancePreparationDenial::RequestAdmission(
+                        crate::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause),
+                    ),
                 ),
-            ),
+            },
         })
     }
 }
