@@ -1,11 +1,131 @@
 use super::support::{authority, cancellable, request};
 use crate::facade::{
-    Aspect, AspectVersion, BoundedSignalInputs, DeclaredSignalInput, EvaluationRequestMode,
-    NodeContract, SignalError, SignalGraph,
+    mark_dirty, Aspect, AspectVersion, BoundedSignalInputs, DeclaredSignalInput,
+    EvaluationRequestMode, NodeContract, SignalError, SignalGraph,
 };
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 const ASPECT: Aspect = Aspect::new(0);
+
+#[test]
+fn public_stage_splits_a_declared_reader_from_its_unsettled_producer() {
+    let mut graph = SignalGraph::new();
+    let producer = graph
+        .node()
+        .with_contract(NodeContract::wildcard().with_bounded_inputs(BoundedSignalInputs::default()))
+        .build();
+    let consumer = graph
+        .node()
+        .with_contract(
+            NodeContract::wildcard().with_bounded_inputs(BoundedSignalInputs::new([
+                DeclaredSignalInput::new(producer, ASPECT),
+            ])),
+        )
+        .build();
+    let mut plan = graph
+        .build_evaluation_plan(&[consumer], EvaluationRequestMode::Default)
+        .unwrap();
+    assert_eq!(plan.stages.len(), 2);
+    // Public stages are caller-editable; depth staging is not the admission proof.
+    let later = plan.stages.remove(1).tasks;
+    plan.stages[0].tasks.extend(later);
+    plan.summary.stage_count = 1;
+    plan.summary.max_stage_width = 2;
+    let lease = authority().request_lease(request(4, 1_000_000)).unwrap();
+    let result = graph.execute_prepared_plan_checked(
+        &plan,
+        &(),
+        &|ctx| {
+            let value = if ctx.node() == producer {
+                7
+            } else {
+                ctx.read(producer, ASPECT)? + 1
+            };
+            Ok(AspectVersion::zero().with(ASPECT, value))
+        },
+        worth_execution::ExecutionRequest::leased(&lease),
+    );
+    assert!(
+        result.is_ok(),
+        "an epoch must split declared conflicts before producer readiness: {result:?}"
+    );
+    assert_eq!(result.unwrap().stages.len(), 2);
+    assert_eq!(graph.node_aspect_version(consumer).unwrap().get(ASPECT), 8);
+}
+
+#[test]
+fn public_stage_splits_a_rewiring_reader_from_its_declared_producer() {
+    let mut graph = SignalGraph::new();
+    let empty = NodeContract::wildcard().with_bounded_inputs(BoundedSignalInputs::default());
+    let producer = graph.node().with_contract(empty.clone()).build();
+    let alternate = graph.node().with_contract(empty).build();
+    let lease = authority().request_lease(request(4, 1_000_000)).unwrap();
+    graph
+        .evaluate_checked(
+            &[producer, alternate],
+            EvaluationRequestMode::Default,
+            &(),
+            &|_| Ok(AspectVersion::zero().with(ASPECT, 3)),
+            worth_execution::ExecutionRequest::leased(&lease),
+        )
+        .unwrap();
+    let consumer = graph
+        .node()
+        .with_contract(
+            NodeContract::wildcard().with_bounded_inputs(BoundedSignalInputs::new([
+                DeclaredSignalInput::new(producer, ASPECT),
+                DeclaredSignalInput::new(alternate, ASPECT),
+            ])),
+        )
+        .build();
+    graph
+        .evaluate_checked(
+            &[consumer],
+            EvaluationRequestMode::Default,
+            &(),
+            &|ctx| Ok(AspectVersion::zero().with(ASPECT, ctx.read(alternate, ASPECT)? + 1)),
+            worth_execution::ExecutionRequest::leased(&lease),
+        )
+        .unwrap();
+    mark_dirty(&mut graph, producer, ASPECT).unwrap();
+    mark_dirty(&mut graph, consumer, ASPECT).unwrap();
+    let mut plan = graph
+        .build_evaluation_plan(&[consumer], EvaluationRequestMode::Default)
+        .unwrap();
+    assert_eq!(plan.stages.len(), 2);
+    let later = plan.stages.remove(1).tasks;
+    plan.stages[0].tasks.extend(later);
+    plan.summary.stage_count = 1;
+    plan.summary.max_stage_width = 2;
+    let result = graph.execute_prepared_plan_checked(
+        &plan,
+        &(),
+        &|ctx| {
+            let value = if ctx.node() == producer {
+                9
+            } else {
+                ctx.read(producer, ASPECT)? + 1
+            };
+            Ok(AspectVersion::zero().with(ASPECT, value))
+        },
+        worth_execution::ExecutionRequest::leased(&lease),
+    );
+    assert!(
+        result.is_ok(),
+        "an epoch must split a rewire's declared producer conflict: {result:?}"
+    );
+    assert_eq!(result.unwrap().stages.len(), 2);
+    assert_eq!(graph.node_aspect_version(consumer).unwrap().get(ASPECT), 10);
+    assert_eq!(
+        graph
+            .dependencies_of(consumer)
+            .unwrap()
+            .iter()
+            .map(|edge| edge.source())
+            .collect::<Vec<_>>(),
+        vec![producer]
+    );
+}
 
 #[test]
 fn declared_maximum_schedules_an_unsettled_producer_absent_from_current_edges() {
