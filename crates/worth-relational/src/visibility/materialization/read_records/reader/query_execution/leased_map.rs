@@ -9,6 +9,9 @@ use crate::query::data::{QueryExecutionOutcome, QueryWorkerFragment};
 
 const RESULT_BUDGET_DIVISOR: u64 = 4;
 
+#[cfg(test)]
+mod caller_lease_tests;
+
 struct QueryPacketMapInput {
     ordinal: usize,
     work: PacketizedQueryWork,
