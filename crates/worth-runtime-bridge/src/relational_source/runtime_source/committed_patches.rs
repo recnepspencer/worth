@@ -2,6 +2,7 @@ use crate::facade::{
     BridgeCommittedPatchEnvelope, CommittedPatchSource, RelationalBridgeSourceError,
     RelationalCommittedPatchRequest, TruthBranchIdentity, TruthSnapshotIdentity,
 };
+use worth_execution::ExecutionRequest;
 use worth_proof::TransitionOutcome;
 
 use super::{
@@ -43,12 +44,17 @@ impl RuntimeBridgeRelationalSource {
     /// Publish one commit through an explicitly retained observation while
     /// consuming runtime-affine widening admission. A raw commit identity or
     /// copied snapshot identity cannot open this door.
+    /// The caller's request is consulted at entry and throughout patch lowering.
     pub fn publish_commit_with_widening_at_snapshot(
         &self,
         commit_id: CommitId,
         snapshot_identity: &TruthSnapshotIdentity,
         admission: &RelationalOpaqueAspectWideningAdmission,
+        execution: ExecutionRequest<'_, '_>,
     ) -> Result<RelationalBridgePublicationOutcome, RelationalBridgeSourceError> {
+        execution
+            .consult()
+            .map_err(|denial| RelationalBridgeSourceError::execution_denied(denial.into()))?;
         let observation = self.observation_bindings.resolve(snapshot_identity)?;
         let selected_commit = self.select_commit_for_observation(commit_id, observation)?;
         if admission.runtime_instance_id() != self.runtime.runtime_instance_id() {
@@ -66,13 +72,14 @@ impl RuntimeBridgeRelationalSource {
             partition_role: None,
             widening: Some(admission.cause()),
         };
-        Ok(self.publish_selected_commit(selected_commit, &context, None))
+        self.publish_selected_commit(selected_commit, &context, None, execution)
     }
 
     pub(super) fn publish_commit_for_selected_observation(
         &self,
         selected_commit: RelationalBridgeSelectedCommitObservation,
-    ) -> RelationalBridgePublicationOutcome {
+        execution: ExecutionRequest<'_, '_>,
+    ) -> Result<RelationalBridgePublicationOutcome, RelationalBridgeSourceError> {
         let partition = self.partition.as_ref();
         let context = ChangeLoweringContext {
             graph_role: &self.graph_role,
@@ -83,6 +90,7 @@ impl RuntimeBridgeRelationalSource {
             selected_commit,
             &context,
             partition.map(|partition| partition.relational),
+            execution,
         )
     }
 
@@ -92,7 +100,8 @@ impl RuntimeBridgeRelationalSource {
         selected_commit: RelationalBridgeSelectedCommitObservation,
         context: &ChangeLoweringContext<'_>,
         relational_partition: Option<PartitionId>,
-    ) -> RelationalBridgePublicationOutcome {
+        execution: ExecutionRequest<'_, '_>,
+    ) -> Result<RelationalBridgePublicationOutcome, RelationalBridgeSourceError> {
         let RelationalBridgeSelectedCommitObservation {
             selected,
             snapshot_identity,
@@ -100,12 +109,13 @@ impl RuntimeBridgeRelationalSource {
         let receipt = self
             .runtime
             .with_runtime(|runtime| runtime.mint_change_receipt(selected, relational_partition));
-        lower_change_receipt_outcome(receipt, snapshot_identity, context)
+        lower_change_receipt_outcome(receipt, snapshot_identity, context, execution)
     }
 
     fn publish_commit(
         &self,
         commit_id: CommitId,
+        execution: ExecutionRequest<'_, '_>,
     ) -> Result<RelationalBridgePublicationOutcome, RelationalBridgeSourceError> {
         let snapshot_identity = match self
             .branch_head_bindings
@@ -118,16 +128,17 @@ impl RuntimeBridgeRelationalSource {
         };
         let observation = self.observation_bindings.resolve(&snapshot_identity)?;
         let selected_commit = self.select_commit_for_observation(commit_id, observation)?;
-        Ok(self.publish_commit_for_selected_observation(selected_commit))
+        self.publish_commit_for_selected_observation(selected_commit, execution)
     }
 
     fn publish_commit_on_branch(
         &self,
         commit_id: CommitId,
         branch_identity: &TruthBranchIdentity,
+        execution: ExecutionRequest<'_, '_>,
     ) -> Result<RelationalBridgePublicationOutcome, RelationalBridgeSourceError> {
         let selected_commit = self.select_commit_on_branch(commit_id, branch_identity)?;
-        Ok(self.publish_commit_for_selected_observation(selected_commit))
+        self.publish_commit_for_selected_observation(selected_commit, execution)
     }
 
     /// Select `commit_id` at the branch's bound head: exactly when it is the
@@ -193,18 +204,18 @@ impl CommittedPatchSource for RuntimeBridgeRelationalSource {
         execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeCommittedPatchEnvelope, RelationalBridgeSourceError> {
         execution
-            .run(worth_execution::ExecutionWorkCeiling::new(0), |_| ())
+            .consult()
             .map_err(|denial| RelationalBridgeSourceError::execution_denied(denial.into()))?;
 
         let commit_id = parse_bridge_commit_identity(request.commit_identity())?;
         let publication = match request.snapshot_identity() {
             Some(snapshot) => {
                 let selected_commit = self.select_commit_at_snapshot(commit_id, snapshot)?;
-                self.publish_commit_for_selected_observation(selected_commit)
+                self.publish_commit_for_selected_observation(selected_commit, execution)?
             }
             None => match request.branch_identity() {
-                Some(branch) => self.publish_commit_on_branch(commit_id, branch)?,
-                None => self.publish_commit(commit_id)?,
+                Some(branch) => self.publish_commit_on_branch(commit_id, branch, execution)?,
+                None => self.publish_commit(commit_id, execution)?,
             },
         };
         super::publication_result::publication_envelope(publication)

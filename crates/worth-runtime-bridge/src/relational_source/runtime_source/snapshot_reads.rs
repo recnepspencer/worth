@@ -12,7 +12,7 @@ impl SnapshotReadSource for RuntimeBridgeRelationalSource {
         execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError> {
         execution
-            .run(worth_execution::ExecutionWorkCeiling::new(0), |_| ())
+            .consult()
             .map_err(|denial| RelationalBridgeSourceError::execution_denied(denial.into()))?;
 
         let observation = self.observation_bindings.resolve(identity)?;

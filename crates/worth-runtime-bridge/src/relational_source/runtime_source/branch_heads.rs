@@ -25,13 +25,13 @@ impl TruthBranchHeadSource for RuntimeBridgeRelationalSource {
         execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeCommittedPatchEnvelope, RelationalBridgeSourceError> {
         execution
-            .run(worth_execution::ExecutionWorkCeiling::new(0), |_| ())
+            .consult()
             .map_err(|denial| RelationalBridgeSourceError::execution_denied(denial.into()))?;
 
         let selected_commit = self.select_branch_head(branch_identity)?;
 
         super::publication_result::publication_envelope(
-            self.publish_commit_for_selected_observation(selected_commit),
+            self.publish_commit_for_selected_observation(selected_commit, execution)?,
         )
     }
 }

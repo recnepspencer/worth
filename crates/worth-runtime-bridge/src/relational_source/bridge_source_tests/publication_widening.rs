@@ -9,6 +9,9 @@ use super::support::runtime_with_test_schema;
 
 #[test]
 fn live_runtime_mints_publication_provenance_and_rejects_foreign_widening_authority() {
+    let serial = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial);
     let owner = runtime_with_test_schema();
     create_entity_outcome(&owner, "owner");
     let commit = owner
@@ -50,6 +53,7 @@ fn live_runtime_mints_publication_provenance_and_rejects_foreign_widening_author
                 commit,
                 lease.snapshot_identity(),
                 &foreign_admission,
+                execution,
             )
             .expect("selected commit"),
         TransitionOutcome::Stale(super::super::RelationalBridgePublicationStale::RuntimeAuthority)
@@ -60,6 +64,7 @@ fn live_runtime_mints_publication_provenance_and_rejects_foreign_widening_author
                 commit,
                 lease.snapshot_identity(),
                 &wrong_role_admission,
+                execution,
             )
             .expect("selected commit"),
         TransitionOutcome::RebindRequired(
@@ -67,7 +72,12 @@ fn live_runtime_mints_publication_provenance_and_rejects_foreign_widening_author
         )
     ));
     let TransitionOutcome::Success(publication) = source
-        .publish_commit_with_widening_at_snapshot(commit, lease.snapshot_identity(), &admission)
+        .publish_commit_with_widening_at_snapshot(
+            commit,
+            lease.snapshot_identity(),
+            &admission,
+            execution,
+        )
         .expect("selected commit")
     else {
         panic!("owner-minted publication authority should publish its exact commit");

@@ -35,3 +35,4 @@ pub(crate) use scope::{
 };
 
 pub(crate) use meter::active_serial_memory;
+pub(crate) use meter::active_stop;

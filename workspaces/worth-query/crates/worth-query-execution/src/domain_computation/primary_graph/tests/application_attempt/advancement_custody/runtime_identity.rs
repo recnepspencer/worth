@@ -63,8 +63,8 @@ fn foreign_runtime_phase_refuses_query_and_commit_before_source_read() {
         assert_eq!(requests.len(), 1, "B never opens or charges a request");
         assert_eq!(
             requests[0].as_ref().unwrap().charged_work(),
-            1,
-            "only A's admitted Bridge publication dispatch charges execution work"
+            0,
+            "these inline reads and mutations charge no execution work in part one"
         );
     }
 }

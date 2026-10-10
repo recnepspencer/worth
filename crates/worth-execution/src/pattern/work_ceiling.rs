@@ -21,8 +21,7 @@ pub struct ExecutionWorkCeiling(u64);
 pub enum WorkCeilingDenial {
     /// The lease refused the scope before the computation started.
     Admission(LeaseDenial),
-    /// Cancellation or a deadline stopped the scope before the computation
-    /// started.
+    /// Cancellation, a deadline, or exhausted active work stopped the request.
     Stopped(KernelStop),
     /// The computation panicked outside every pattern.
     Panicked,

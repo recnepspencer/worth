@@ -31,10 +31,7 @@ impl BridgeSnapshotReadError {
     pub(crate) fn checkpoint(
         request: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<(), Self> {
-        request
-            .run(worth_execution::ExecutionWorkCeiling::new(0), |_| ())
-            .map(|_| ())
-            .map_err(Self::execution_scope_denied)
+        request.consult().map_err(Self::execution_scope_denied)
     }
 
     pub(crate) fn execution_denied(denial: crate::error::BridgeExecutionDenial) -> Self {

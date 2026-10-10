@@ -202,18 +202,27 @@ fn opaque_change_requires_explicit_precision_admission() {
     );
 
     let branch = BranchId("main".to_string());
-    let TransitionOutcome::Success(envelope) =
-        lower_canonical_patch(RelationalBridgePatchPublicationRequest {
-            commit_id: CommitId(9),
-            branch_id: &branch,
-            snapshot_identity: snapshot(9),
-            patch: &patch.canonicalized(),
-            admitted_widening: Some(BridgeAspectChangeWideningCause::OpaquePayloadToWholeAspect),
-            producer_metadata: crate::facade::BridgeProducerMetadata::bridge_harness_fixture(),
-            source_record_patches_examined: 1,
-            source_record_patches_filtered_out: 0,
-        })
-    else {
+    let Ok(envelope) = crate::host_execution::with_declared_request(
+        crate::policy::BridgeExecutionPolicyBaseline::operational(),
+        |execution| {
+            lower_canonical_patch(
+                RelationalBridgePatchPublicationRequest {
+                    commit_id: CommitId(9),
+                    branch_id: &branch,
+                    snapshot_identity: snapshot(9),
+                    patch: &patch.canonicalized(),
+                    admitted_widening: Some(
+                        BridgeAspectChangeWideningCause::OpaquePayloadToWholeAspect,
+                    ),
+                    producer_metadata:
+                        crate::facade::BridgeProducerMetadata::bridge_harness_fixture(),
+                    source_record_patches_examined: 1,
+                    source_record_patches_filtered_out: 0,
+                },
+                execution,
+            )
+        },
+    ) else {
         panic!("the exact owner-admitted opaque widening should publish");
     };
     let semantic = envelope.patch_body().canonical_items()[0]

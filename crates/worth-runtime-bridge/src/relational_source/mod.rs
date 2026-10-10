@@ -13,6 +13,7 @@ mod lowering_precision;
 pub(crate) mod patch_envelopes;
 #[cfg(test)]
 mod patch_envelopes_tests;
+mod patch_lowering_denial;
 mod publication_outcome;
 #[cfg(test)]
 mod relational_test_support;

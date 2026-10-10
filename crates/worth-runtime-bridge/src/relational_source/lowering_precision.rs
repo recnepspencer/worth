@@ -8,7 +8,9 @@ use worth_relational::facade::change_source::{
 };
 use worth_relational::facade::publication::PublishedAuthoritativePatchEnvelope;
 
+use super::patch_lowering_denial::PatchLoweringDenial;
 use super::RelationalBridgePublicationDenial;
+use worth_execution::ExecutionRequest;
 
 /// Count what lowering inspects and refuse an opaque change the Bridge has
 /// not admitted a widening for.
@@ -19,11 +21,13 @@ use super::RelationalBridgePublicationDenial;
 pub(super) fn gate_lowering_precision(
     patch: &PublishedAuthoritativePatchEnvelope,
     admitted_widening: Option<BridgeAspectChangeWideningCause>,
-) -> Result<BridgeAuthoritativePatchLoweringCounters, RelationalBridgePublicationDenial> {
+    execution: ExecutionRequest<'_, '_>,
+) -> Result<BridgeAuthoritativePatchLoweringCounters, PatchLoweringDenial> {
     let widening_admitted =
         admitted_widening == Some(BridgeAspectChangeWideningCause::OpaquePayloadToWholeAspect);
     let mut counters = BridgeAuthoritativePatchLoweringCounters::default();
     for record in &patch.authoritative_record_patches {
+        execution.consult()?;
         let changes = record.semantic_changes.len() as u64;
         counters.record_patches_inspected += 1;
         counters.authoritative_operations_inspected +=
@@ -41,11 +45,12 @@ pub(super) fn gate_lowering_precision(
                     "opaque authoritative change has no admitted field or whole-aspect widening",
                 ),
                 counters,
-            ));
+            )
+            .into());
         }
         counters.semantic_changes_matched += changes;
     }
-    retain_emitted_target_counters(patch, widening_admitted, &mut counters);
+    retain_emitted_target_counters(patch, widening_admitted, &mut counters, execution)?;
     Ok(counters)
 }
 
@@ -86,10 +91,13 @@ fn retain_emitted_target_counters(
     patch: &PublishedAuthoritativePatchEnvelope,
     widening_admitted: bool,
     counters: &mut BridgeAuthoritativePatchLoweringCounters,
-) {
+    execution: ExecutionRequest<'_, '_>,
+) -> Result<(), PatchLoweringDenial> {
     use AuthoritativeAspectChangeKind as Kind;
     for record in &patch.authoritative_record_patches {
+        execution.consult()?;
         for change in &record.semantic_changes {
+            execution.consult()?;
             counters.semantic_changes_emission_classified += 1;
             match change.kind() {
                 Kind::FieldSet | Kind::FieldClear => counters.field_targets_emitted += 1,
@@ -118,4 +126,5 @@ fn retain_emitted_target_counters(
             }
         }
     }
+    Ok(())
 }

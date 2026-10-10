@@ -1,4 +1,6 @@
+use crate::facade::RelationalBridgeSourceError;
 use std::sync::Arc;
+use worth_execution::ExecutionRequest;
 
 use crate::facade::{
     BridgeAspectChangeWideningCause, BridgeAuthoritativeSourceProvenance, BridgeProducerMetadata,
@@ -74,10 +76,11 @@ pub(super) fn lower_change_receipt_outcome(
     outcome: RelationalChangeReceiptOutcome,
     snapshot_identity: TruthSnapshotIdentity,
     context: &ChangeLoweringContext<'_>,
-) -> RelationalBridgePublicationOutcome {
-    match outcome {
+    execution: ExecutionRequest<'_, '_>,
+) -> Result<RelationalBridgePublicationOutcome, RelationalBridgeSourceError> {
+    Ok(match outcome {
         TransitionOutcome::Success(receipt) => {
-            lower_change_receipt(receipt, snapshot_identity, context)
+            return lower_change_receipt(receipt, snapshot_identity, context, execution);
         }
         TransitionOutcome::Denied(denial) => TransitionOutcome::Denied(consistency_denial(&denial)),
         TransitionOutcome::Deferred(RelationalChangeReceiptDeferred::CommitVisibilityPending) => {
@@ -93,7 +96,7 @@ pub(super) fn lower_change_receipt_outcome(
         }
         TransitionOutcome::RebindRequired(never) => match never {},
         TransitionOutcome::Failed(never) => match never {},
-    }
+    })
 }
 
 /// The only way to mint a committed-patch envelope with Relational
@@ -102,7 +105,8 @@ fn lower_change_receipt(
     receipt: RelationalChangeReceipt,
     snapshot_identity: TruthSnapshotIdentity,
     context: &ChangeLoweringContext<'_>,
-) -> RelationalBridgePublicationOutcome {
+    execution: ExecutionRequest<'_, '_>,
+) -> Result<RelationalBridgePublicationOutcome, RelationalBridgeSourceError> {
     let source_basis = change_source_basis(&receipt, context);
     let adapter_semantic_identity =
         super::identities::relational_bridge_adapter_semantic_identity();
@@ -112,28 +116,31 @@ fn lower_change_receipt(
         adapter_semantic_identity.clone(),
         source_basis.clone(),
     );
-    let outcome = lower_canonical_patch(RelationalBridgePatchPublicationRequest {
-        commit_id: receipt.commit_id(),
-        branch_id: receipt.selected_branch_id(),
-        snapshot_identity,
-        patch: receipt.patch(),
-        admitted_widening: context.widening,
-        producer_metadata: BridgeProducerMetadata::registered_authoritative_source()
-            .with_authoritative_source(provenance),
-        source_record_patches_examined: receipt.records_examined(),
-        source_record_patches_filtered_out: receipt.records_filtered_out(),
-    });
+    let outcome = lower_canonical_patch(
+        RelationalBridgePatchPublicationRequest {
+            commit_id: receipt.commit_id(),
+            branch_id: receipt.selected_branch_id(),
+            snapshot_identity,
+            patch: receipt.patch(),
+            admitted_widening: context.widening,
+            producer_metadata: BridgeProducerMetadata::registered_authoritative_source()
+                .with_authoritative_source(provenance),
+            source_record_patches_examined: receipt.records_examined(),
+            source_record_patches_filtered_out: receipt.records_filtered_out(),
+        },
+        execution,
+    );
     match outcome {
-        TransitionOutcome::Success(envelope) => {
-            TransitionOutcome::Success(RelationalBridgePatchPublication::mint(
+        Ok(envelope) => Ok(TransitionOutcome::Success(
+            RelationalBridgePatchPublication::mint(
                 &receipt,
                 envelope,
                 context,
                 adapter_semantic_identity,
                 source_basis,
-            ))
-        }
-        TransitionOutcome::Denied(denial) => TransitionOutcome::Denied(denial),
+            ),
+        )),
+        Err(denial) => denial.into_outcome(),
     }
 }
 
