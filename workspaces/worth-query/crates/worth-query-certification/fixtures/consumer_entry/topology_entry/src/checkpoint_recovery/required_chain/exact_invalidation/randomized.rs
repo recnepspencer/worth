@@ -4,6 +4,7 @@
 use super::*;
 use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 
+mod acknowledged_claim;
 mod sequence;
 use sequence::{Commit, Demands, Trace, Xorshift, COMMITS, DEMANDS, HELD_ORDERS};
 
@@ -51,7 +52,7 @@ macro_rules! held_settled {
 /// One seeded sequence over a world whose branch admits `observations`
 /// product observations at once. A restore ends the world: the next one is
 /// installed from its checkpoint and opens the held chain again.
-fn run(seed: u64, observations: u64, driven: &mut Driven) {
+fn run(seed: u64, observations: u64, steps: usize, driven: &mut Driven) {
     let mut random = Xorshift(seed);
     // The draws that shape a step without changing what it commits.
     let mut shape = Xorshift(!seed);
@@ -61,7 +62,7 @@ fn run(seed: u64, observations: u64, driven: &mut Driven) {
     let mut idempotency = seed << 16;
     let mut step = 0;
     Reading::decisions();
-    while step < STEPS {
+    while step < steps {
         let opens = if checkpoint.is_some() {
             "restored"
         } else {
@@ -93,7 +94,7 @@ fn run(seed: u64, observations: u64, driven: &mut Driven) {
         // Whether a commit wrote to ring 0 since its held chain settled.
         let mut held_written = false;
 
-        while step < STEPS {
+        while step < steps {
             let index = random.below(3) as usize;
             let commit = COMMITS[random.below(COMMITS.len() as u64) as usize];
             let demands = DEMANDS[random.below(DEMANDS.len() as u64) as usize];
@@ -213,7 +214,7 @@ fn run(seed: u64, observations: u64, driven: &mut Driven) {
         drop((a, b, c));
         idempotency = court.idempotency.get();
         drop((principal, scope));
-        if step < STEPS {
+        if step < steps {
             // Whatever the last step left marked and unsettled is captured so.
             checkpoint = Some(
                 application
@@ -230,7 +231,7 @@ fn randomized_marking_agrees_with_full_verification() {
     let _guard = checkpoint_recovery_test_guard();
     let mut driven = Driven::default();
     for seed in SEEDS {
-        run(seed, AMPLE_OBSERVATIONS, &mut driven);
+        run(seed, AMPLE_OBSERVATIONS, STEPS, &mut driven);
     }
     assert!(
         driven.commits.iter().all(|count| *count > 0)
@@ -255,7 +256,7 @@ fn randomized_marking_makes_room_on_a_branch_with_few_observations() {
     let _guard = checkpoint_recovery_test_guard();
     let mut driven = Driven::default();
     for seed in SEEDS {
-        run(seed, 16, &mut driven);
+        run(seed, 16, STEPS, &mut driven);
     }
     assert!(
         driven.evicted_rechecks > 0 && driven.free_rechecks > 0 && driven.restores > 0,

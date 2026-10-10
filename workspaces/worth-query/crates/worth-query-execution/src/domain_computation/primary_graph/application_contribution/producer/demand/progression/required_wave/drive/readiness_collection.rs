@@ -197,6 +197,7 @@ where
                     }
                     if let Some(queued) = queued {
                         queue.acknowledge_root(queued, admission)?;
+                        frontier.members[index].ready.finish_claim();
                         frontier.members[index].queued = None;
                     }
                     frontier.members[index].state = MemberState::Current(None);

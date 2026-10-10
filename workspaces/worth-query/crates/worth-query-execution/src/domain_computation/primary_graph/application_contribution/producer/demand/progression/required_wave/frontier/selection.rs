@@ -17,6 +17,14 @@ impl<Ready> MemberInput<Ready> {
                 .expect("inspection must bind the claim first"),
         }
     }
+    /// An acknowledged queue claim cannot be selected again. Keep only the
+    /// native pin, which a later Upstream may inspect without queue custody.
+    pub(in super::super) fn finish_claim(&mut self) {
+        if let Self::Queued { ready, .. } = self {
+            let ready = ready.take().expect("a Current claim owns its native pin");
+            *self = Self::Selected(ready);
+        }
+    }
     pub(in super::super) fn rebind(&mut self, next: Ready) {
         match self {
             Self::Selected(ready) => *ready = next,
