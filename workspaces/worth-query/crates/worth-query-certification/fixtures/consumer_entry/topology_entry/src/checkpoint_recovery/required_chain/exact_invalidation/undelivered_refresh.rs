@@ -44,8 +44,8 @@ fn a_settled_demand_follows_its_output_past_an_undelivered_refresh() {
             held.map(|cost| cost.producer_contacts),
             judge_decisions(&mut rings, at)
         ),
-        ([1, 1], 1),
-        "{at}: the settled holders follow the output"
+        ([2, 1], 1),
+        "{at}: the root ran for both edits since its preceding reading; the consumer follows"
     );
     court.judge_middle(&rings[0], at);
     let clean = [settled!(court, a, at), settled!(court, b, at)];
@@ -116,8 +116,8 @@ fn a_never_settled_stop_leaves_an_undelivered_refresh_to_its_settled_holder() {
                 held.map(|cost| cost.producer_contacts),
                 judge_decisions(&mut rings, &at)
             ),
-            ([1, 1], 1),
-            "{at}: the settled holders follow the output"
+            ([2, 1], 1),
+            "{at}: the root ran for both edits since its preceding reading; the consumer follows"
         );
         court.judge_middle(&rings[0], &at);
         assert!(
