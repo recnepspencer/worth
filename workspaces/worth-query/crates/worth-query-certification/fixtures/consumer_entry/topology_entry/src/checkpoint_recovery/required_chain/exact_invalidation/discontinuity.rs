@@ -331,8 +331,8 @@ fn a_restored_chain_settles_through_its_last_consumer_alone() {
     settled!(court, c, at);
     assert_eq!(
         judge_decisions(&mut rings, at),
-        2,
-        "{at}: both consumers decide over the new root"
+        1,
+        "{at}: B decides over the new root; its equal output leaves C unchanged"
     );
     court.judge_chain(&rings[0], at);
     let rest = [settled!(court, a, at), settled!(court, b, at)];

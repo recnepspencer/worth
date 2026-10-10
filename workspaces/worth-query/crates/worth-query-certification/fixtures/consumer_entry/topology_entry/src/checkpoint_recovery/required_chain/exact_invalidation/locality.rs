@@ -94,8 +94,8 @@ fn a_one_field_edit_costs_the_same_at_one_and_a_hundred_copies() {
             one.refresh.map(|cost| cost.producer_contacts),
             one.decisions
         ),
-        ([1, 0, 0], 2),
-        "the first advance refreshes the edited chain, and both its consumers decide"
+        ([0, 0, 0], 1),
+        "C drives the edited chain; B decides and its equal output cuts off C"
     );
     assert_eq!(one.inexact_deliveries, 0, "the edit is delivered exactly");
 }
