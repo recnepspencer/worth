@@ -7,7 +7,7 @@ pub(in crate::domain_computation) use native_reservation_observation::NativeReta
 
 use std::sync::Arc;
 
-use retention::InvalidationRetentionLedger;
+pub(in crate::domain_computation) use retention::InvalidationRetentionLedger;
 pub(in crate::domain_computation) use retention::RetainedInvalidationCapacity;
 
 /// Explicit capacities for canonical delivery and derived invalidation state.
@@ -96,12 +96,14 @@ impl WorthQueryInvalidationResources {
     // Law 2, scope: the fault arms only this receiver's real retention ledger.
     pub(in crate::domain_computation) fn arm_delivery_exhaustion(&self) {
         use std::sync::atomic::Ordering;
-        let receiver = Arc::downgrade(&self.retention);
-        crate::domain_computation::execution_observation::register_owned_cleanup(move || {
-            if let Some(receiver) = receiver.upgrade() {
-                receiver.exhaust_delivery.store(false, Ordering::Release);
-            }
-        });
+        if crate::domain_computation::execution_observation::is_installed() {
+            let receiver = Arc::downgrade(&self.retention);
+            crate::domain_computation::execution_observation::register_owned_cleanup(move || {
+                if let Some(receiver) = receiver.upgrade() {
+                    receiver.exhaust_delivery.store(false, Ordering::Release);
+                }
+            });
+        }
         self.retention
             .exhaust_delivery
             .store(true, Ordering::Release);
@@ -110,6 +112,30 @@ impl WorthQueryInvalidationResources {
         self.retention
             .exhaust_delivery
             .swap(false, std::sync::atomic::Ordering::AcqRel)
+    }
+    // Runtime construction, including resources prepared before its fixture guard.
+    pub(in crate::domain_computation) fn attach_runtime_observations(&self) {
+        self.retention.attach_native_observation();
+        crate::domain_computation::invalidation_equivalence_control::attach_constructed_receiver(
+            &self.retention,
+        );
+    }
+    pub(in crate::domain_computation) fn retention_receiver(
+        &self,
+    ) -> &Arc<InvalidationRetentionLedger> {
+        &self.retention
+    }
+    // Law 2, scope: unarmed verification costs one receiver atomic read.
+    pub(in crate::domain_computation) fn invalidation_equivalence_is_armed(&self) -> bool {
+        self.retention
+            .oracle_guards
+            .load(std::sync::atomic::Ordering::Acquire)
+            != 0
+    }
+    pub(in crate::domain_computation) fn record_invalidation_shadow_check(&self) {
+        self.retention
+            .oracle_checks
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
     }
     pub(in crate::domain_computation) fn consumed_capacity_observation(
         &self,

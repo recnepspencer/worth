@@ -4,7 +4,9 @@ use std::sync::Arc;
 use super::WorthQueryInvalidationResourceDenial;
 
 #[derive(Debug)]
-pub(super) struct InvalidationRetentionLedger {
+pub(in crate::domain_computation) struct InvalidationRetentionLedger {
+    pub(in crate::domain_computation) oracle_guards: std::sync::atomic::AtomicUsize,
+    pub(in crate::domain_computation) oracle_checks: AtomicU64,
     maximum_bytes: u64,
     retained_bytes: AtomicU64,
     pub(super) exhaust_delivery: std::sync::atomic::AtomicBool,
@@ -15,6 +17,8 @@ impl InvalidationRetentionLedger {
     pub(super) const fn new(maximum_bytes: u64) -> Self {
         Self {
             maximum_bytes,
+            oracle_guards: std::sync::atomic::AtomicUsize::new(0),
+            oracle_checks: AtomicU64::new(0),
             retained_bytes: AtomicU64::new(0),
             exhaust_delivery: std::sync::atomic::AtomicBool::new(false),
             native: super::native_reservation_observation::NativeReservationRecorder::new(),
@@ -23,16 +27,23 @@ impl InvalidationRetentionLedger {
 
     pub(super) fn install(maximum_bytes: u64) -> Arc<Self> {
         let ledger = Arc::new(Self::new(maximum_bytes));
+        ledger.attach_native_observation();
+        // Law 2: construction may finish on a worker after resource installation.
+        crate::domain_computation::invalidation_equivalence_control::attach_constructed_receiver(
+            &ledger,
+        );
+        ledger
+    }
+    pub(super) fn attach_native_observation(self: &Arc<Self>) {
         if crate::domain_computation::execution_observation::is_installed() {
-            ledger.native.install();
-            let receiver = Arc::downgrade(&ledger);
+            self.native.install();
+            let receiver = Arc::downgrade(self);
             crate::domain_computation::execution_observation::register_owned_cleanup(move || {
                 if let Some(ledger) = receiver.upgrade() {
                     ledger.native.clear();
                 }
             });
         }
-        ledger
     }
     pub(super) fn retained_bytes(&self) -> u64 {
         self.retained_bytes.load(Ordering::Acquire)

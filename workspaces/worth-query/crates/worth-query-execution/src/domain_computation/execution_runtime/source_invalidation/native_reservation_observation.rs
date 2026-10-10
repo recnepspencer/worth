@@ -3,7 +3,7 @@ use super::RetainedInvalidationCapacity;
 use std::{
     collections::BTreeMap,
     sync::{
-        atomic::{AtomicBool, Ordering},
+        atomic::{AtomicUsize, Ordering},
         Arc, Mutex, Weak,
     },
 };
@@ -26,13 +26,13 @@ struct Records {
 }
 #[derive(Debug, Default)]
 pub(super) struct NativeReservationRecorder {
-    active: AtomicBool,
+    active: AtomicUsize,
     records: Mutex<Records>,
 }
 impl NativeReservationRecorder {
     pub(super) const fn new() -> Self {
         Self {
-            active: AtomicBool::new(false),
+            active: AtomicUsize::new(0),
             records: Mutex::new(Records {
                 reservations: BTreeMap::new(),
                 consumed: BTreeMap::new(),
@@ -40,14 +40,19 @@ impl NativeReservationRecorder {
         }
     }
     pub(super) fn install(&self) {
-        self.active.store(true, Ordering::Release);
+        self.active.fetch_add(1, Ordering::AcqRel);
     }
     pub(super) fn clear(&self) {
-        self.active.store(false, Ordering::Release);
-        *self
+        if self.active.fetch_sub(1, Ordering::AcqRel) != 1 {
+            return;
+        }
+        let mut records = self
             .records
             .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner) = Records::default();
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if self.active.load(Ordering::Acquire) == 0 {
+            *records = Records::default();
+        }
     }
     pub(super) fn observe(
         &self,
@@ -55,14 +60,14 @@ impl NativeReservationRecorder {
         bytes: u64,
         site: &'static std::panic::Location<'static>,
     ) {
-        if !self.active.load(Ordering::Acquire) {
+        if self.active.load(Ordering::Acquire) == 0 {
             return;
         }
         let mut records = self
             .records
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        if !self.active.load(Ordering::Acquire) {
+        if self.active.load(Ordering::Acquire) == 0 {
             return;
         }
         assert!(
@@ -81,14 +86,14 @@ impl NativeReservationRecorder {
         );
     }
     pub(super) fn retain(&self, address: usize, kind: NativeRetainedKind, bytes: u64) {
-        if !self.active.load(Ordering::Acquire) {
+        if self.active.load(Ordering::Acquire) == 0 {
             return;
         }
         let mut records = self
             .records
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        if !self.active.load(Ordering::Acquire) {
+        if self.active.load(Ordering::Acquire) == 0 {
             return;
         }
         let reservation = records
@@ -102,7 +107,7 @@ impl NativeReservationRecorder {
         );
     }
     pub(super) fn release(&self, address: usize) {
-        if !self.active.load(Ordering::Acquire) {
+        if self.active.load(Ordering::Acquire) == 0 {
             return;
         }
         self.records
@@ -152,14 +157,14 @@ impl NativeReservationRecorder {
         runtime: u64,
         ticket: &Arc<RetainedInvalidationCapacity>,
     ) {
-        if !self.active.load(Ordering::Acquire) {
+        if self.active.load(Ordering::Acquire) == 0 {
             return;
         }
         let mut records = self
             .records
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        if !self.active.load(Ordering::Acquire) {
+        if self.active.load(Ordering::Acquire) == 0 {
             return;
         }
         if let Some(tickets) = records.consumed.get_mut(&runtime) {
@@ -167,7 +172,7 @@ impl NativeReservationRecorder {
         }
     }
     pub(super) fn consumed(&self, runtime: u64) -> (usize, u64) {
-        if !self.active.load(Ordering::Acquire) {
+        if self.active.load(Ordering::Acquire) == 0 {
             return (0, 0);
         }
         let mut records = self

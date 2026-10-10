@@ -192,7 +192,7 @@ impl ConsumedOutputEvidence {
         selected: &PositionedRelationalSnapshot,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
-        if !crate::domain_computation::invalidation_equivalence_control::is_armed() {
+        if !owner.invalidation_equivalence_is_armed() {
             return Self::verify_optimized_views(
                 roots,
                 owner,
@@ -215,7 +215,10 @@ impl ConsumedOutputEvidence {
             snapshot,
             selected,
             admission,
-            |result, admission| super::equivalence::check(oracle_roots, image, result, admission),
+            |result, admission| {
+                owner.record_invalidation_shadow_check();
+                super::equivalence::check(oracle_roots, image, result, admission)
+            },
         )
     }
 

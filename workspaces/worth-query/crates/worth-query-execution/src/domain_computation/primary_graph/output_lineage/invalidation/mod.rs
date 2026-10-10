@@ -23,6 +23,7 @@ mod head_cell;
 pub(in crate::domain_computation) use head_cell::HeadCellRegistrationStop;
 mod index_capacity;
 pub(in crate::domain_computation::primary_graph) use index_capacity::arc_bytes;
+mod equivalence_control;
 mod logical_marking;
 mod mark_state;
 mod output_facts;

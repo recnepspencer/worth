@@ -287,7 +287,7 @@ fn assert_source_only_alias_verification(
     };
     assert_eq!(verify(), Ok(ConsumedOutputVerification::Current));
     let _oracle =
-        crate::facade::primary_graph::WorthQueryInvalidationEquivalence::arm_on_this_thread();
+        crate::facade::primary_graph::WorthQueryInvalidationEquivalence::arm_for_invalidation_resources(&owner.resources);
     assert_eq!(
         verify(),
         Err(ConsumedOutputVerificationStop::Unavailable),
