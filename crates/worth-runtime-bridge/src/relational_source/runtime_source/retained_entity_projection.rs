@@ -23,18 +23,25 @@ impl RuntimeBridgeRelationalSource {
             TruthBranchIdentity::from_relational_branch_id(observation.branch_id().0.clone());
         if &observed_branch != branch {
             return Err(RelationalBridgeSourceError::new(
+                crate::adapter::RelationalBridgeSourceErrorTag::Binding(
+                    crate::adapter::BridgeSourceBindingDenial::TruthBranchMismatch,
+                ),
                 "retained relational observation belongs to a different truth branch",
             ));
         }
         if !self.admits_relational_partition(record.partition_id()) {
             return Err(RelationalBridgeSourceError::new(
+                crate::adapter::RelationalBridgeSourceErrorTag::Binding(
+                    crate::adapter::BridgeSourceBindingDenial::PartitionAuthorityMismatch,
+                ),
                 "retained relational entity projection is outside the source partition authority",
             ));
         }
-        let RecordRef::Entity(entity_id) = record_ref_from_identity_parts(record)
-            .map_err(|error| RelationalBridgeSourceError::new(error.to_string()))?
-        else {
+        let RecordRef::Entity(entity_id) = record_ref_from_identity_parts(record)? else {
             return Err(RelationalBridgeSourceError::new(
+                crate::adapter::RelationalBridgeSourceErrorTag::Binding(
+                    crate::adapter::BridgeSourceBindingDenial::EntityIdentityRequired,
+                ),
                 "retained relational entity projection requires an entity identity",
             ));
         };
@@ -45,7 +52,7 @@ impl RuntimeBridgeRelationalSource {
             })
             .map(|record| record.and_then(|record| record.authoritative_aspect_state))
             .map_err(|denial| {
-                RelationalBridgeSourceError::new(format!(
+                RelationalBridgeSourceError::new(crate::adapter::RelationalBridgeSourceErrorTag::ObservationRead(denial), format!(
                     "retained relational entity projection read an observation from another runtime: {denial:?}"
                 ))
             })

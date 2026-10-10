@@ -106,7 +106,7 @@ pub(in crate::branch::owner_services) enum SignalPreparedInstallationTarget {
     Allocate(SignalConditionalContractDefinition),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SignalConditionalInstallationExtensionDenial {
     OwnerUnavailable(SignalOwnerUnavailable),
     OwnerAdmission(SignalBranchBasisObservationDenial),

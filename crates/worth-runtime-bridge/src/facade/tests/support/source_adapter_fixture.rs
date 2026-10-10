@@ -33,7 +33,12 @@ impl CommittedPatchSource for StaticSource {
             ),
             vec![native_profile_name_patch_item()],
         )
-        .map_err(|error| RelationalBridgeSourceError::new(error.to_string()))
+        .map_err(|error| {
+            RelationalBridgeSourceError::new(
+                crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                error.to_string(),
+            )
+        })
     }
 }
 
@@ -64,7 +69,12 @@ impl TruthBranchHeadSource for StaticSource {
             ),
             vec![native_profile_name_patch_item()],
         )
-        .map_err(|error| RelationalBridgeSourceError::new(error.to_string()))
+        .map_err(|error| {
+            RelationalBridgeSourceError::new(
+                crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                error.to_string(),
+            )
+        })
     }
 }
 
@@ -104,10 +114,10 @@ impl BridgeSourceAdapter for RejectingSourceAdapter {
         identity: &TruthSnapshotIdentity,
         _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError> {
-        Err(RelationalBridgeSourceError::new(format!(
-            "refused snapshot `{}`",
-            identity.as_str()
-        )))
+        Err(RelationalBridgeSourceError::new(
+            crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+            format!("refused snapshot `{}`", identity.as_str()),
+        ))
     }
 }
 
@@ -193,5 +203,8 @@ fn is_primary_snapshot(identity: &TruthSnapshotIdentity) -> bool {
 }
 
 fn unknown_snapshot_error(identity: &TruthSnapshotIdentity) -> RelationalBridgeSourceError {
-    RelationalBridgeSourceError::new(format!("unknown snapshot `{}`", identity.as_str()))
+    RelationalBridgeSourceError::new(
+        crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+        format!("unknown snapshot `{}`", identity.as_str()),
+    )
 }

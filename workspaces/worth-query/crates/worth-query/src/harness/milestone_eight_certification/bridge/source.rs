@@ -73,6 +73,7 @@ impl SnapshotReadSource for StaticSource {
             }))
         } else {
             Err(RelationalBridgeSourceError::new(
+                worth_runtime_bridge::facade::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
                 "unknown snapshot identity",
             ))
         }
@@ -118,6 +119,7 @@ impl BridgeSourceAdapter for StaticSourceAdapter {
             }))
         } else {
             Err(RelationalBridgeSourceError::new(
+                worth_runtime_bridge::facade::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
                 "unknown snapshot identity",
             ))
         }

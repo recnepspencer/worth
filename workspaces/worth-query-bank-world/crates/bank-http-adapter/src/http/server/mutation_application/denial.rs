@@ -77,7 +77,8 @@ pub(in crate::http::server) fn pending_execution_denial(
         Kind::ExecutionResource { denial, .. } => {
             super::commit_denial::execution_resource(denial).1
         }
-        Kind::ExecutionWorkerPanicked { .. }
+        Kind::ExecutionNestedPatternStopped { .. }
+        | Kind::ExecutionWorkerPanicked { .. }
         | Kind::ExecutionUncheckedCustomKernel { .. }
         | Kind::ExecutionIdentitiesNotCanonical { .. }
         | Kind::RetentionIdentityExhausted
@@ -99,8 +100,7 @@ pub(in crate::http::server) fn pending_execution_denial(
             BankHttpDenialKind::InternalDenied,
             BankHttpNextAction::ContactOperator,
         ),
-        Kind::ExecutionNestedPatternStopped { .. }
-        | Kind::ActiveSnapshotCapacityExhausted { .. }
+        Kind::ActiveSnapshotCapacityExhausted { .. }
         | Kind::RetentionCapacityExhausted
         | Kind::PreparedRootBudgetExhausted { .. }
         | Kind::IndexMaintenanceBudgetExceeded

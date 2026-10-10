@@ -42,9 +42,8 @@ fn bridge_delivery_fails_when_newer_truth_arrives_without_required_snapshot() {
         .deliver_invalidation(route, execution)
         .expect_err("delivery should still require the original planned snapshot");
 
-    assert_eq!(
-        error.kind(),
-        BridgeDeliveryErrorKind::SnapshotAcquisitionFailure
+    assert!(
+        matches!(error.kind(), BridgeDeliveryErrorKind::SnapshotAcquisitionFailure(ref cause) if cause.kind() == crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure)
     );
     assert_eq!(
         error

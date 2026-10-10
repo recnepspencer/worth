@@ -63,6 +63,7 @@ impl<'a> PreparedSelectedSchedulingFinish<'a> {
         {
             return;
         }
+        let terminal_cleanup = terminal_kind.is_some() && !interrupted;
         let (released_bytes, obligations) = if interrupted {
             // Interruption before execution leaves the exact reopened Ready
             // with its owners, including its claims and retained custody.
@@ -93,7 +94,7 @@ impl<'a> PreparedSelectedSchedulingFinish<'a> {
         state.obligation_reserved_bytes = state
             .obligation_reserved_bytes
             .saturating_sub(released_bytes);
-        if terminal_kind.is_some() && !interrupted {
+        if terminal_cleanup {
             state.defer_terminal_cleanup(self.member.key_arc(), 0);
         }
         drop(state);

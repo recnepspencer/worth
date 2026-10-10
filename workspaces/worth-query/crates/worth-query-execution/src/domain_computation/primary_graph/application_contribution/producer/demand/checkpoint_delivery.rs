@@ -164,13 +164,17 @@ where
             Ok(crate::domain_computation::execution_runtime::product_world::WorthQueryPerformedRelationalProductChangeDeliveryOutcome::Success(delivered)) => delivered,
             Ok(outcome) => {
                 let detail = if selected { String::new() } else { format!("{producer_identity}: readiness delivery returned {outcome:?}") };
-                let kind = if outcome.is_retryable() {
-                    WorthQueryOutputDemandDenialKind::SchedulingDeferred
-                } else {
-                    WorthQueryOutputDemandDenialKind::SchedulingRejected
+                use crate::domain_computation::execution_runtime::product_world::WorthQueryPerformedRelationalProductChangeDeliveryOutcome as Outcome;
+                use worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryStop as Stop;
+                let (posture, change) = match outcome {
+                    Outcome::Success(_) => unreachable!("success was consumed above"),
+                    Outcome::Denied { posture, change } => (Stop::Denied(posture), change),
+                    Outcome::Deferred { posture, change } => (Stop::Deferred(posture), change),
+                    Outcome::Stale { posture, change } => (Stop::Stale(posture), change),
+                    Outcome::RebindRequired { posture, change } => (Stop::RebindRequired(posture), change),
+                    Outcome::Failed { posture, change } => (Stop::Failed(posture), change),
                 };
-                let change = outcome.into_undelivered_change()
-                    .expect("non-success delivery returns its performed change");
+                let kind = WorthQueryOutputDemandDenialKind::CorrespondenceDelivery(Box::new(posture));
                 return finish(
                     Checkpoint::Published { receipt, delivery: Delivery::Change(change), ready_backing },
                     Some(denial(kind, detail)),
@@ -179,12 +183,13 @@ where
             Err(cause) => {
                 let kind = match cause.kind() {
                     DeliveryDenialKind::ExecutionRequest(cause) => WorthQueryOutputDemandDenialKind::of_execution_stop(cause),
-                    DeliveryDenialKind::ForeignProductRoot
+                    kind @ (DeliveryDenialKind::ForeignProductRoot
                     | DeliveryDenialKind::ForeignProductOccurrence
                     | DeliveryDenialKind::ForeignConditionalOperation
                     | DeliveryDenialKind::ProductAdmission
                     | DeliveryDenialKind::ConditionalProductAdmission
-                    | DeliveryDenialKind::Bridge => WorthQueryOutputDemandDenialKind::SchedulingRejected,
+                    | DeliveryDenialKind::BridgeRuntimeClosed) => WorthQueryOutputDemandDenialKind::ProductDelivery(Box::new(kind)),
+                    DeliveryDenialKind::Bridge(kind) => WorthQueryOutputDemandDenialKind::BridgeConditional(Box::new(kind)),
                 };
                 let detail = if selected { String::new() } else { format!(
                     "{producer_identity}: readiness delivery denied ({:?}): {}",

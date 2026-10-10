@@ -14,6 +14,7 @@ pub(in crate::http::server) fn commit_denial(
     match kind {
         Denial::ExecutionResource { denial, .. } => execution_resource(denial),
         Denial::ExecutionWorkerPanicked { .. } => operator_denial(),
+        Denial::ExecutionNestedPatternStopped { .. } => operator_denial(),
         Denial::ExecutionUncheckedCustomKernel { .. } => operator_denial(),
         Denial::ExecutionIdentitiesNotCanonical { .. } => operator_denial(),
         Denial::ProductBasisStale => (
@@ -64,10 +65,7 @@ pub(in crate::http::server) fn commit_denial(
                 BankHttpNextAction::CorrectRequest,
             ),
         ),
-        // A nested stop only records that an inner run stopped: cancellation,
-        // a deadline or memory pressure among them. It stays retryable.
-        Denial::ExecutionNestedPatternStopped { .. }
-        | Denial::ProviderRejected
+        Denial::ProviderRejected
         | Denial::ActiveSnapshotCapacityExhausted { .. }
         | Denial::RetentionCapacityExhausted
         | Denial::IndexMaintenanceBudgetExceeded => (
@@ -117,6 +115,7 @@ pub(in crate::http::server) fn execution_resource(
             level: Level::Declared,
             ..
         }
+        | Resource::WorkerLimit
         | Resource::WorkExhausted
         | Resource::PolicyMemoryLimit
         | Resource::WorkLimit
@@ -126,8 +125,6 @@ pub(in crate::http::server) fn execution_resource(
             BankHttpDenialKind::MalformedRequest,
             BankHttpNextAction::CorrectRequest,
         ),
-        // Requests can shrink their memory/work demands. Worker limits are
-        // host configuration; only the operator can repair that refusal.
         Resource::NestedAdvancementOpening => (
             BankHttpDenialKind::InternalDenied,
             BankHttpNextAction::ContactOperator,
@@ -136,8 +133,7 @@ pub(in crate::http::server) fn execution_resource(
             BankHttpDenialKind::InternalDenied,
             BankHttpNextAction::ContactOperator,
         ),
-        Resource::WorkerLimit
-        | Resource::WorkCounterOverflow
+        Resource::WorkCounterOverflow
         | Resource::CapacityOverflow
         | Resource::ChargedBytesOverflow
         | Resource::NestedLeaseMisuse

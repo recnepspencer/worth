@@ -79,12 +79,12 @@ fn retire_committed_wake(
     bridge: &BridgeSealedRuntimeAssembly,
     clock: &BridgeManagedClockBinding,
     wake: &WorthQueryRetainedConditionalWake,
-) -> Result<(), String> {
+) -> Result<(), super::super::WorthQueryConditionalReentryFailure> {
     let revision = wake
         .due
         .revision()
         .checked_add(1)
-        .ok_or_else(|| "committed temporal intent revision overflowed".to_string())?;
+        .ok_or(super::super::WorthQueryConditionalReentryFailure::WakeRevisionExhausted)?;
     let outcome = bridge
         .reconcile_managed_temporal_intent(BridgeManagedTemporalIntentReconciliationParts {
             binding: clock,
@@ -95,10 +95,12 @@ fn retire_committed_wake(
             source_record_identity: wake.due.source_record_identity(),
             lifecycle: BridgeManagedTemporalIntentLifecycle::Completed,
         })
-        .map_err(|denial| denial.detail().to_string())?;
+        .map_err(|denial| {
+            super::super::WorthQueryConditionalReentryFailure::ManagedWake(denial.kind())
+        })?;
     if outcome == BridgeManagedTemporalIntentReconciliation::Retired {
         Ok(())
     } else {
-        Err("committed temporal intent did not retire its exact managed wake".to_string())
+        Err(super::super::WorthQueryConditionalReentryFailure::WakeDidNotRetire(outcome))
     }
 }

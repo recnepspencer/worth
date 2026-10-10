@@ -10,7 +10,7 @@ pub struct BridgeTypedError<K> {
     context: Box<BridgeErrorContext>,
 }
 
-impl<K: Copy> BridgeTypedError<K> {
+impl<K> BridgeTypedError<K> {
     pub fn new(kind: K, message: impl Into<Arc<str>>) -> Self {
         Self {
             kind,
@@ -19,8 +19,11 @@ impl<K: Copy> BridgeTypedError<K> {
         }
     }
 
-    pub fn kind(&self) -> K {
-        self.kind
+    pub fn kind(&self) -> K
+    where
+        K: Clone,
+    {
+        self.kind.clone()
     }
 
     pub(crate) fn with_context(mut self, context: BridgeErrorContext) -> Self {

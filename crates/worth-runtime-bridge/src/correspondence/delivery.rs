@@ -39,9 +39,9 @@ impl RuntimeBridge {
             .load_committed_patch(request, execution)
         {
             Ok(envelope) => envelope,
-            Err(_) => {
+            Err(cause) => {
                 return TransitionOutcome::Failed(
-                    BridgeCorrespondenceAdmissionFailure::SourceLoadFailed,
+                    BridgeCorrespondenceAdmissionFailure::SourceLoadFailed(cause),
                 )
             }
         };
@@ -162,13 +162,27 @@ impl RuntimeBridge {
                 )
             }
         };
-        let worth_proof::TransitionOutcome::Success(admitted) =
-            worth_signal::facade::apply_installed_scoped_changes(graph, scoped_changes)
-        else {
-            return TransitionOutcome::Failed(
-                BridgeCorrespondenceAdmissionFailure::SignalMutationFailed,
-            );
-        };
+        let admitted =
+            match worth_signal::facade::apply_installed_scoped_changes(graph, scoped_changes) {
+                TransitionOutcome::Success(admitted) => admitted,
+                TransitionOutcome::Denied(cause) => {
+                    return TransitionOutcome::Failed(
+                        BridgeCorrespondenceAdmissionFailure::SignalMutationFailed(
+                            super::BridgeCorrespondenceSignalFailure::ScopedChangeAdmission(cause),
+                        ),
+                    )
+                }
+                TransitionOutcome::Failed(cause) => {
+                    return TransitionOutcome::Failed(
+                        BridgeCorrespondenceAdmissionFailure::SignalMutationFailed(
+                            super::BridgeCorrespondenceSignalFailure::ScopedChangeExecution(cause),
+                        ),
+                    )
+                }
+                TransitionOutcome::Deferred(never)
+                | TransitionOutcome::Stale(never)
+                | TransitionOutcome::RebindRequired(never) => match never {},
+            };
         counters.signal_seeds_emitted = admitted.len();
         counters.node_fan_out = node_fan_out;
         counters.slots_touched = target_count;

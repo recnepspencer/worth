@@ -104,7 +104,7 @@ pub(super) fn execute_source_request(
             runtime_bridge,
             fixture,
             &declaration_identity,
-            crate::error::BridgeDeliveryErrorKind::SnapshotAcquisitionFailure,
+            |kind| matches!(kind, crate::error::BridgeDeliveryErrorKind::SnapshotAcquisitionFailure(cause) if cause.kind() == crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure),
             execution,
         ),
         SourceHarnessTarget::RejectSnapshotDrift {
@@ -113,7 +113,12 @@ pub(super) fn execute_source_request(
             runtime_bridge,
             fixture,
             &declaration_identity,
-            crate::error::BridgeDeliveryErrorKind::SnapshotIdentityMismatch,
+            |kind| {
+                matches!(
+                    kind,
+                    crate::error::BridgeDeliveryErrorKind::SnapshotIdentityMismatch
+                )
+            },
             execution,
         ),
     }
@@ -251,7 +256,7 @@ fn reject_source_materialization(
     runtime_bridge: &crate::facade::RuntimeBridge,
     fixture: &BridgeHarnessFixture,
     declaration_identity: &SourceDeclarationIdentity,
-    expected_error_kind: crate::error::BridgeDeliveryErrorKind,
+    expected_error_kind: fn(&crate::error::BridgeDeliveryErrorKind) -> bool,
     execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<SourceHarnessExecution, BridgeHarnessError> {
     let declaration = fixture
@@ -276,7 +281,7 @@ fn reject_source_materialization(
         Ok(_) => panic!("hostile source materialization should fail"),
         Err(error) => error,
     };
-    if error.kind() != expected_error_kind {
+    if !expected_error_kind(&error.kind()) {
         return Err(BridgeHarnessError::new(format!(
             "hostile source materialization yielded unexpected error kind `{:?}`",
             error.kind()

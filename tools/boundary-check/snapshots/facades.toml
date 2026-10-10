@@ -334,6 +334,8 @@ exports = [
 [[facades]]
 package = "worth-query-host::primary_graph"
 exports = [
+    "BridgeConditionalDenialKind",
+    "BridgeCorrespondenceDeliveryStop",
     "CandidateWriter",
     "DecisionReader",
     "ExecutionRequest",
@@ -528,6 +530,7 @@ exports = [
     "WorthQueryCompletedMutationCandidate",
     "WorthQueryCompletedOperationInvariantProjection",
     "WorthQueryConditionalApplicationRuntimeInstallation",
+    "WorthQueryConditionalAuthoritativeDeliveryFailure",
     "WorthQueryConditionalClockHandle",
     "WorthQueryConditionalClockObservationDenial",
     "WorthQueryConditionalClockObservationDenialKind",
@@ -541,6 +544,7 @@ exports = [
     "WorthQueryConditionalExecutionCause",
     "WorthQueryConditionalExecutionProvenance",
     "WorthQueryConditionalExecutionTerminal",
+    "WorthQueryConditionalReentryFailure",
     "WorthQueryConditionalRuntimeInspection",
     "WorthQueryConditionalRuntimeInstallationDenial",
     "WorthQueryConditionalRuntimeInstallationDenialKind",

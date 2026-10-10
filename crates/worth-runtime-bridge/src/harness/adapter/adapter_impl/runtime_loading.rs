@@ -285,10 +285,13 @@ impl crate::adapter::BridgeSourceAdapter for SessionSourceAdapter {
         match self.runtime.source_adapter_behavior {
             SourceAdapterBehavior::Honest => self.inner.open_snapshot(identity, execution),
             SourceAdapterBehavior::RejectOpenSnapshot => {
-                Err(crate::adapter::RelationalBridgeSourceError::new(format!(
-                    "session source adapter refused snapshot `{}`",
-                    identity.as_str()
-                )))
+                Err(crate::adapter::RelationalBridgeSourceError::new(
+                    crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                    format!(
+                        "session source adapter refused snapshot `{}`",
+                        identity.as_str()
+                    ),
+                ))
             }
             SourceAdapterBehavior::DriftSnapshotIdentity => {
                 let reader = self.inner.open_snapshot(identity, execution)?;

@@ -44,7 +44,10 @@ impl PricingWorkloadCertificationBundle {
         &self,
     ) -> Vec<PricingCertificationBasisEntry> {
         vec![
-            PricingCertificationBasisEntry::debug("hostile_error", self.hostile_failure.error_kind),
+            PricingCertificationBasisEntry::debug(
+                "hostile_error",
+                self.hostile_failure.error_kind.clone(),
+            ),
             PricingCertificationBasisEntry::debug(
                 "hostile_failure",
                 &self.hostile_failure.failure_class,
@@ -69,7 +72,10 @@ impl PricingWorkloadCertificationBundle {
         &self,
     ) -> Vec<PricingCertificationBasisEntry> {
         vec![
-            PricingCertificationBasisEntry::debug("hostile_error", self.hostile_failure.error_kind),
+            PricingCertificationBasisEntry::debug(
+                "hostile_error",
+                self.hostile_failure.error_kind.clone(),
+            ),
             PricingCertificationBasisEntry::debug(
                 "hostile_failure",
                 &self.hostile_failure.failure_class,

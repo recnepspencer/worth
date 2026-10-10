@@ -56,9 +56,10 @@ impl PublicationBridgeCatalog {
         ) {
             worth_proof::TransitionOutcome::Success(envelope) => envelope,
             worth_proof::TransitionOutcome::Denied(denial) => {
-                return Err(RelationalBridgeSourceError::new(format!(
-                    "publication patch could not be admitted by Bridge: {denial}"
-                )));
+                return Err(RelationalBridgeSourceError::new(
+                    crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                    format!("publication patch could not be admitted by Bridge: {denial}"),
+                ));
             }
         };
         self.state
@@ -92,6 +93,7 @@ impl CommittedPatchSource for PublicationBridgeCatalog {
             .cloned()
             .ok_or_else(|| {
                 RelationalBridgeSourceError::new(
+                    crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
                     "no publication bridge patch registered for commit",
                 )
             })
@@ -112,7 +114,10 @@ impl SnapshotReadSource for PublicationBridgeCatalog {
             .get(identity)
             .cloned()
             .ok_or_else(|| {
-                RelationalBridgeSourceError::new("no publication bridge snapshot registered")
+                RelationalBridgeSourceError::new(
+                    crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                    "no publication bridge snapshot registered",
+                )
             })?;
         Ok(Box::new(PublicationSnapshotReader { snapshot }))
     }
@@ -133,7 +138,10 @@ impl TruthBranchHeadSource for PublicationBridgeCatalog {
             .cloned()
             .next_back()
             .ok_or_else(|| {
-                RelationalBridgeSourceError::new("no publication bridge branch head registered")
+                RelationalBridgeSourceError::new(
+                    crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                    "no publication bridge branch head registered",
+                )
             })
     }
 }

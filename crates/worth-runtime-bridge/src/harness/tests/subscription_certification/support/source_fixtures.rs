@@ -55,7 +55,12 @@ impl crate::adapter::CommittedPatchSource for StaticSource {
                 profile_name_patch_target(),
             )],
         )
-        .map_err(|error| crate::adapter::RelationalBridgeSourceError::new(error.to_string()))
+        .map_err(|error| {
+            crate::adapter::RelationalBridgeSourceError::new(
+                crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                error.to_string(),
+            )
+        })
     }
 }
 
@@ -68,10 +73,10 @@ impl crate::adapter::SnapshotReadSource for StaticSource {
         if crate::truth_identity_fixtures::truth_snapshot_fixture_matches(identity, "snapshot-a") {
             Ok(Box::new(StaticSnapshotReader))
         } else {
-            Err(crate::adapter::RelationalBridgeSourceError::new(format!(
-                "unknown snapshot `{}`",
-                identity.as_str()
-            )))
+            Err(crate::adapter::RelationalBridgeSourceError::new(
+                crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                format!("unknown snapshot `{}`", identity.as_str()),
+            ))
         }
     }
 }
@@ -97,7 +102,12 @@ impl crate::adapter::TruthBranchHeadSource for StaticSource {
                 profile_name_patch_target(),
             )],
         )
-        .map_err(|error| crate::adapter::RelationalBridgeSourceError::new(error.to_string()))
+        .map_err(|error| {
+            crate::adapter::RelationalBridgeSourceError::new(
+                crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                error.to_string(),
+            )
+        })
     }
 }
 
@@ -170,10 +180,10 @@ impl crate::adapter::SnapshotReadSource for MisbindingSource {
         if crate::truth_identity_fixtures::truth_snapshot_fixture_matches(identity, "snapshot-a") {
             Ok(Box::new(MisbindingSnapshotReader))
         } else {
-            Err(crate::adapter::RelationalBridgeSourceError::new(format!(
-                "unknown snapshot `{}`",
-                identity.as_str()
-            )))
+            Err(crate::adapter::RelationalBridgeSourceError::new(
+                crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                format!("unknown snapshot `{}`", identity.as_str()),
+            ))
         }
     }
 }
@@ -238,7 +248,12 @@ impl crate::adapter::TruthBranchHeadSource for WrongBranchHeadSource {
                 profile_name_patch_target(),
             )],
         )
-        .map_err(|error| crate::adapter::RelationalBridgeSourceError::new(error.to_string()))
+        .map_err(|error| {
+            crate::adapter::RelationalBridgeSourceError::new(
+                crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                error.to_string(),
+            )
+        })
     }
 }
 

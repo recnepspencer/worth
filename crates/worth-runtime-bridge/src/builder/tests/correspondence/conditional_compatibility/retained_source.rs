@@ -171,6 +171,7 @@ impl SnapshotReadSource for SingleReaderSource {
             .is_err()
         {
             return Err(RelationalBridgeSourceError::new(
+                crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
                 "one retained reader exhausts source capacity",
             ));
         }
@@ -296,9 +297,17 @@ fn retained_decisions_keep_exact_reader_and_pool_custody_without_reacquisition()
             .execute(request_execution, &signal_basis, request(), &mut ())
             .err()
             .expect("retained reader still occupies capacity");
+        let BridgeConditionalDenialKind::Delivery(delivery) = exhausted.kind() else {
+            panic!("source capacity must preserve delivery admission: {exhausted:?}");
+        };
+        let crate::facade::BridgeDeliveryErrorKind::SnapshotAcquisitionFailure(source) =
+            delivery.kind()
+        else {
+            panic!("source capacity must preserve acquisition failure: {delivery:?}");
+        };
         assert_eq!(
-            exhausted.kind(),
-            BridgeConditionalDenialKind::SnapshotAdmission
+            source.kind(),
+            crate::facade::RelationalBridgeSourceErrorTag::ExternalSourceFailure
         );
         assert_eq!(
             exhausted

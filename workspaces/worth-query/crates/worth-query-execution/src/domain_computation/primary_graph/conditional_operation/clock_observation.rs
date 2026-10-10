@@ -13,7 +13,7 @@ pub(in crate::domain_computation::primary_graph) use erased::{
 };
 
 /// Why a clock observation port could not be opened.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryConditionalClockObservationDenialKind {
     /// The clock handle is not installed in this runtime.
     ForeignRuntime,
@@ -43,7 +43,7 @@ impl WorthQueryConditionalClockObservationDenial {
     }
 
     pub fn kind(&self) -> WorthQueryConditionalClockObservationDenialKind {
-        self.kind
+        self.kind.clone()
     }
 
     pub fn subject(&self) -> &str {
@@ -52,8 +52,10 @@ impl WorthQueryConditionalClockObservationDenial {
 }
 
 /// Why a clock observation failed.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryConditionalClockObservationFailureKind {
+    /// Delivery retained the original Bridge or Signal cause.
+    AuthoritativeDelivery(super::WorthQueryConditionalAuthoritativeDeliveryFailure),
     /// The host's request could not enter this wake advancement.
     ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
     /// The clock source was unavailable.
@@ -86,7 +88,7 @@ pub struct WorthQueryConditionalClockObservationFailure {
 
 impl WorthQueryConditionalClockObservationFailure {
     pub fn kind(&self) -> WorthQueryConditionalClockObservationFailureKind {
-        self.kind
+        self.kind.clone()
     }
 
     pub fn detail(&self) -> &str {

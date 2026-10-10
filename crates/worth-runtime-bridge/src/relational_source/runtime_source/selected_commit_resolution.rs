@@ -90,7 +90,7 @@ fn selection_error(
     denial: RelationalCommitSelectionDenial,
     no_commit_detail: &str,
 ) -> RelationalBridgeSourceError {
-    RelationalBridgeSourceError::new(match denial {
+    RelationalBridgeSourceError::new(crate::adapter::RelationalBridgeSourceErrorTag::CommitSelection(denial), match denial {
         RelationalCommitSelectionDenial::ForeignObservation => {
             format!("relational bridge snapshot {snapshot:?} was observed in another runtime")
         }

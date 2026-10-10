@@ -47,8 +47,11 @@ pub struct BankApplicationQueryLaneDenial<Kind> {
     authorization: Option<BankAuthorizationDenial>,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum BankApplicationOutputSettlementDenialKind {
+    BridgeConditional(Box<worth_query_host::facade::primary_graph::BridgeConditionalDenialKind>),
+    CorrespondenceDelivery(Box<worth_query_host::facade::primary_graph::BridgeCorrespondenceDeliveryStop>),
+    ProductDelivery(Box<worth_query_host::facade::product::WorthQueryPerformedRelationalProductChangeDeliveryDenialKind>),
     ExecutionRequest(
         worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial,
     ),
@@ -271,6 +274,9 @@ impl BankApplicationQueryDenial {
         use WorthQueryOutputDemandDenialKind as Query;
 
         let kind = match denial.kind() {
+            Query::BridgeConditional(cause) => Bank::BridgeConditional(cause),
+            Query::CorrespondenceDelivery(cause) => Bank::CorrespondenceDelivery(cause),
+            Query::ProductDelivery(cause) => Bank::ProductDelivery(cause),
             Query::ExecutionRequest(cause) => Bank::ExecutionRequest(cause),
             Query::SourceQueryInstallation(kind) => {
                 Bank::SourceQueryInstallation(query_installation(kind))

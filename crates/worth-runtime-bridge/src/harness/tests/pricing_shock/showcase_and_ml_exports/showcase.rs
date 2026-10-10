@@ -234,9 +234,8 @@ fn pricing_shock_showcase_trust_attack_matrix_is_bundle_derived() {
                 .as_str()
                 .is_some_and(|value| !value.is_empty())
     }));
-    assert_eq!(
-        bundle.hostile_failure.failure_class,
-        BridgeFailureClass::Delivery(BridgeDeliveryErrorKind::SnapshotAcquisitionFailure)
+    assert!(
+        matches!(bundle.hostile_failure.failure_class, BridgeFailureClass::Delivery(BridgeDeliveryErrorKind::SnapshotAcquisitionFailure(ref cause)) if cause.kind() == crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure)
     );
     assert_eq!(
         bundle.restart_failure.error_kind,

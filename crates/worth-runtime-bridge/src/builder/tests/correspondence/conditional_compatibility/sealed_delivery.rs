@@ -225,7 +225,7 @@ fn successor_readmission_requires_the_exact_ordered_chain_and_allows_fresh_fallb
         .unwrap_err();
     assert_eq!(
         incomplete.kind(),
-        crate::facade::BridgeConditionalDenialKind::ConditionalTransitionChainIncomplete
+        crate::facade::BridgeConditionalDenialKind::SignalExecution(crate::facade::BridgeSignalDenial::EvaluationReadmission(worth_signal::facade::branch::SignalConditionalEvaluationReadmissionDenial::TransitionChainIncomplete))
     );
     for invalid in [&[&bc, &ab][..], &[&ab, &ab][..], &[&bc][..]] {
         let denial = owner
@@ -238,7 +238,7 @@ fn successor_readmission_requires_the_exact_ordered_chain_and_allows_fresh_fallb
             .unwrap_err();
         assert_eq!(
             denial.kind(),
-            crate::facade::BridgeConditionalDenialKind::ConditionalTransitionChainMismatch
+            crate::facade::BridgeConditionalDenialKind::SignalExecution(crate::facade::BridgeSignalDenial::EvaluationReadmission(worth_signal::facade::branch::SignalConditionalEvaluationReadmissionDenial::TransitionChainMismatch))
         );
     }
 
@@ -297,6 +297,6 @@ fn successor_readmission_requires_the_exact_ordered_chain_and_allows_fresh_fallb
         .unwrap_err();
     assert_eq!(
         foreign_denial.kind(),
-        crate::facade::BridgeConditionalDenialKind::ConditionalTransitionChainMismatch
+        crate::facade::BridgeConditionalDenialKind::SignalExecution(crate::facade::BridgeSignalDenial::EvaluationReadmission(worth_signal::facade::branch::SignalConditionalEvaluationReadmissionDenial::TransitionChainMismatch))
     );
 }

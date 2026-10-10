@@ -113,7 +113,12 @@ fn runtime_branch_comparison_ignores_read_result_order_when_structure_is_equal()
                     ),
                 ],
             )
-            .map_err(|error| crate::adapter::RelationalBridgeSourceError::new(error.to_string()))
+            .map_err(|error| {
+                crate::adapter::RelationalBridgeSourceError::new(
+                    crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                    error.to_string(),
+                )
+            })
         }
     }
 
@@ -137,10 +142,10 @@ fn runtime_branch_comparison_ignores_read_result_order_when_structure_is_equal()
             ) {
                 Ok(Box::new(ReverseReader))
             } else {
-                Err(crate::adapter::RelationalBridgeSourceError::new(format!(
-                    "unknown snapshot `{}`",
-                    identity.as_str()
-                )))
+                Err(crate::adapter::RelationalBridgeSourceError::new(
+                    crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                    format!("unknown snapshot `{}`", identity.as_str()),
+                ))
             }
         }
     }
@@ -187,7 +192,12 @@ fn runtime_branch_comparison_ignores_read_result_order_when_structure_is_equal()
                     ),
                 ],
             )
-            .map_err(|error| crate::adapter::RelationalBridgeSourceError::new(error.to_string()))
+            .map_err(|error| {
+                crate::adapter::RelationalBridgeSourceError::new(
+                    crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                    error.to_string(),
+                )
+            })
         }
     }
 

@@ -21,7 +21,7 @@ pub struct WorthQueryProviderSessionCommitDeferred {
         Option<crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial>,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryProviderSessionCommitDeferredKind {
     RelationalDeferred(worth_relational::facade::mvcc::RelationalPublicationDeferred),
     RetentionCapacityExhausted,
@@ -115,8 +115,8 @@ impl WorthQueryProviderSessionCommitDeferred {
         self.prerequisite_denial
     }
 
-    pub const fn kind(&self) -> WorthQueryProviderSessionCommitDeferredKind {
-        self.kind
+    pub fn kind(&self) -> WorthQueryProviderSessionCommitDeferredKind {
+        self.kind.clone()
     }
 
     pub const fn stage(&self) -> WorthQueryProviderSessionProtocolStage {

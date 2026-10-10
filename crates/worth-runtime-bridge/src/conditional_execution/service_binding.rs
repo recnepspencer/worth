@@ -50,7 +50,9 @@ impl BridgeOwnedSignalRuntime {
     ) -> Result<&BridgeSignalServiceBinding, BridgeConditionalDenial> {
         self.signal_services.as_ref().ok_or_else(|| {
             BridgeConditionalDenial::new(
-                BridgeConditionalDenialKind::SignalExecution,
+                BridgeConditionalDenialKind::SignalExecution(
+                    super::BridgeSignalDenial::UnsealedOwnerServices,
+                ),
                 "Signal owner services were not sealed before operation dispatch",
             )
         })
@@ -61,7 +63,9 @@ impl BridgeOwnedSignalRuntime {
     ) -> Result<&mut BridgeSignalServiceBinding, BridgeConditionalDenial> {
         self.signal_services.as_mut().ok_or_else(|| {
             BridgeConditionalDenial::new(
-                BridgeConditionalDenialKind::SignalExecution,
+                BridgeConditionalDenialKind::SignalExecution(
+                    super::BridgeSignalDenial::UnsealedOwnerServices,
+                ),
                 "Signal owner services were not sealed before operation dispatch",
             )
         })
@@ -77,18 +81,48 @@ impl BridgeSignalServiceBinding {
         let selected = runtime.current_branch();
         let basis = runtime
             .observe_signal_branch_basis(selected)
-            .map_err(|error| service_denial("selected basis admission", error))?;
+            .map_err(|error| {
+                let detail = format!("Signal selected basis admission failed: {error:?}");
+                BridgeConditionalDenial::new(
+                    BridgeConditionalDenialKind::SignalExecution(
+                        super::BridgeSignalDenial::BranchObservation(error),
+                    ),
+                    detail,
+                )
+            })?;
         let source_owner = ConditionalSourceObservationOwner::fresh();
         let source_authority = source_owner.authority();
-        let services = runtime
-            .owner_component_services()
-            .map_err(|error| service_denial("owner-service sealing", error))?;
+        let services = runtime.owner_component_services().map_err(|error| {
+            let detail = format!("Signal owner-service sealing failed: {error:?}");
+            BridgeConditionalDenial::new(
+                BridgeConditionalDenialKind::SignalExecution(
+                    super::BridgeSignalDenial::OwnerServiceIssuance(error),
+                ),
+                detail,
+            )
+        })?;
         let definition_publication = runtime
             .runtime_world_definition_publication_port()
-            .map_err(|error| service_denial("definition-publication sealing", error))?;
+            .map_err(|error| {
+                let detail = format!("Signal definition-publication sealing failed: {error:?}");
+                BridgeConditionalDenial::new(
+                    BridgeConditionalDenialKind::SignalExecution(
+                        super::BridgeSignalDenial::OwnerServiceIssuance(error),
+                    ),
+                    detail,
+                )
+            })?;
         let conditional_port = runtime
             .issue_conditional_execution_service(&basis, claimant, &source_authority)
-            .map_err(|error| service_denial("conditional service issuance", error))?;
+            .map_err(|error| {
+                let detail = format!("Signal conditional service issuance failed: {error:?}");
+                BridgeConditionalDenial::new(
+                    BridgeConditionalDenialKind::SignalExecution(
+                        super::BridgeSignalDenial::ConditionalServiceIssuance(error),
+                    ),
+                    detail,
+                )
+            })?;
         let conditional_port = Arc::new(conditional_port);
         let installed = lowerings.values().cloned().collect::<Vec<_>>();
         for lowering in installed {
@@ -111,7 +145,9 @@ impl BridgeSignalServiceBinding {
     ) -> Result<super::signal_port::BridgeConditionalSignalPort, BridgeConditionalDenial> {
         lowering.signal_port().ok_or_else(|| {
             BridgeConditionalDenial::new(
-                BridgeConditionalDenialKind::SignalExecution,
+                BridgeConditionalDenialKind::SignalExecution(
+                    super::BridgeSignalDenial::MissingConditionalPort,
+                ),
                 "installed lowering has no exact Signal service binding",
             )
         })
@@ -129,7 +165,9 @@ impl BridgeSignalServiceBinding {
     > {
         self.definition_publication.take().ok_or_else(|| {
             BridgeConditionalDenial::new(
-                BridgeConditionalDenialKind::SignalExecution,
+                BridgeConditionalDenialKind::SignalExecution(
+                    super::BridgeSignalDenial::DefinitionPublicationAlreadyOwned,
+                ),
                 "Runtime World already owns the Signal definition-publication capability",
             )
         })
@@ -193,11 +231,4 @@ impl BridgeSignalServiceBinding {
             None => ConditionalEvaluationSource::NoRelationalSource,
         }
     }
-}
-
-fn service_denial(context: &str, error: impl std::fmt::Debug) -> BridgeConditionalDenial {
-    BridgeConditionalDenial::new(
-        BridgeConditionalDenialKind::SignalExecution,
-        format!("Signal {context} failed: {error:?}"),
-    )
 }

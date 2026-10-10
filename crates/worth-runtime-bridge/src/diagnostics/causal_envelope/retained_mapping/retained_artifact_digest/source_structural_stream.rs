@@ -90,23 +90,22 @@ fn delivery_error_kind_label(value: BridgeDeliveryErrorKind) -> &'static str {
         BridgeDeliveryErrorKind::InvalidWideningAdmission => "invalid-widening-admission",
         BridgeDeliveryErrorKind::BulkDeliveryRejected => "bulk-delivery-rejected",
         BridgeDeliveryErrorKind::HistoricalPolicyRejected => "historical-policy-rejected",
-        BridgeDeliveryErrorKind::HistoricalTruthViewUnavailable => {
-            "historical-truth-view-unavailable"
-        }
+        BridgeDeliveryErrorKind::HistoricalTruthViewUnavailable(_)
+        | BridgeDeliveryErrorKind::MissingBranchHeadSource => "historical-truth-view-unavailable",
         BridgeDeliveryErrorKind::HistoricalBranchMismatch => "historical-branch-mismatch",
         BridgeDeliveryErrorKind::HistoricalCommitMismatch => "historical-commit-mismatch",
         BridgeDeliveryErrorKind::HistoricalSelectorMissingCommit => {
             "historical-selector-missing-commit"
         }
-        BridgeDeliveryErrorKind::SnapshotAcquisitionFailure => "snapshot-acquisition-failure",
-        BridgeDeliveryErrorKind::SnapshotReadFailure => "snapshot-read-failure",
-        BridgeDeliveryErrorKind::SnapshotReadContractViolation => {
+        BridgeDeliveryErrorKind::SnapshotAcquisitionFailure(_) => "snapshot-acquisition-failure",
+        BridgeDeliveryErrorKind::SnapshotReadFailure(_) => "snapshot-read-failure",
+        BridgeDeliveryErrorKind::SnapshotReadContractViolation(_) => {
             "snapshot-read-contract-violation"
         }
         BridgeDeliveryErrorKind::SnapshotIdentityMismatch => "snapshot-identity-mismatch",
         BridgeDeliveryErrorKind::StructuralContractMismatch => "structural-contract-mismatch",
         BridgeDeliveryErrorKind::StructuralPlanRejected => "structural-plan-rejected",
-        BridgeDeliveryErrorKind::SignalSinkRejection => "signal-sink-rejection",
+        BridgeDeliveryErrorKind::SignalSinkRejection(_) => "signal-sink-rejection",
     }
 }
 

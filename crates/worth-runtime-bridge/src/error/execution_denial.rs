@@ -77,12 +77,17 @@ impl BridgeExecutionDenial {
     }
 }
 
+pub(crate) enum BridgeSnapshotDeliveryStage {
+    Read,
+    ContractValidation,
+}
+
 impl crate::snapshot::BridgeSnapshotReadError {
     /// Carry resource refusals through delivery adapters while retaining the
     /// adapter's existing domain-error classification.
     pub(crate) fn delivery_kind(
         &self,
-        domain: super::BridgeDeliveryErrorKind,
+        stage: BridgeSnapshotDeliveryStage,
     ) -> super::BridgeDeliveryErrorKind {
         use crate::snapshot::BridgeSnapshotReadErrorKind as Kind;
         match self.kind() {
@@ -96,7 +101,14 @@ impl crate::snapshot::BridgeSnapshotReadError {
             | Kind::MissingRecord
             | Kind::ExtraRecord
             | Kind::ProjectionMaskRejected
-            | Kind::AspectContractValidationDenied => domain,
+            | Kind::AspectContractValidationDenied => match stage {
+                BridgeSnapshotDeliveryStage::Read => {
+                    super::BridgeDeliveryErrorKind::SnapshotReadFailure(self.clone())
+                }
+                BridgeSnapshotDeliveryStage::ContractValidation => {
+                    super::BridgeDeliveryErrorKind::SnapshotReadContractViolation(self.clone())
+                }
+            },
         }
     }
 }

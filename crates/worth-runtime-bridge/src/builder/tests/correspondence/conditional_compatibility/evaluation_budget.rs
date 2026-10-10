@@ -158,7 +158,7 @@ fn cold_source_recomputes_and_a_live_slot_forces_typed_capacity_denial() {
         .expect_err("the retained first session must hold the only installed Signal slot");
     assert_eq!(
         denial.kind(),
-        BridgeConditionalDenialKind::ConditionalEvaluationAdmissionCapacity
+        BridgeConditionalDenialKind::SignalExecution(crate::facade::BridgeSignalDenial::ConditionalExecution(worth_signal::facade::branch::SignalConditionalServiceExecutionDenial::AdmissionCapacityExhausted))
     );
     assert_eq!(computes.load(Ordering::SeqCst), 1);
     assert_eq!(denial.signal_counters(), Default::default());
@@ -308,7 +308,11 @@ fn concurrent_busy_denial_does_not_claim_slot_reuse() {
         };
         assert_eq!(
             denial.kind(),
-            BridgeConditionalDenialKind::ConditionalEvaluationBusy
+            BridgeConditionalDenialKind::SignalExecution(
+                crate::facade::BridgeSignalDenial::ConditionalExecution(
+                    worth_signal::facade::branch::SignalConditionalServiceExecutionDenial::SlotBusy
+                )
+            )
         );
         assert_eq!(denial.bridge_execution_counters().signal_slot_reuse_hits, 0);
         assert_eq!(

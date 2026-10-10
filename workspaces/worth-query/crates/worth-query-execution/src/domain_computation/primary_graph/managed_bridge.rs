@@ -262,6 +262,7 @@ impl InvalidationSink for WorthQueryApplicationGranularOnlySink {
         _lease: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeDeliveryReceipt, SignalBridgeSinkError> {
         Err(SignalBridgeSinkError::new(
+            worth_runtime_bridge::facade::SignalBridgeSinkErrorKind::WorldPublicationRequired,
             "the primary Query runtime accepts only installed granular correspondence delivery",
         ))
     }

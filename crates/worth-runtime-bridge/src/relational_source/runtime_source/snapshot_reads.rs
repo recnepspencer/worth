@@ -11,9 +11,9 @@ impl SnapshotReadSource for RuntimeBridgeRelationalSource {
         identity: &TruthSnapshotIdentity,
         execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError> {
-        crate::snapshot::BridgeSnapshotReadError::checkpoint(execution).map_err(|denial| {
-            RelationalBridgeSourceError::new(format!("Bridge source request refused: {denial:?}"))
-        })?;
+        execution
+            .run(worth_execution::ExecutionWorkCeiling::new(0), |_| ())
+            .map_err(|denial| RelationalBridgeSourceError::execution_denied(denial.into()))?;
 
         let observation = self.observation_bindings.resolve(identity)?;
         Ok(Box::new(

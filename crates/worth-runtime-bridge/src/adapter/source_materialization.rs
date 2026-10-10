@@ -1,9 +1,5 @@
 use super::*;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum RelationalBridgeSourceErrorTag {}
-pub type RelationalBridgeSourceError = BridgeMessageError<RelationalBridgeSourceErrorTag>;
-
 pub trait BridgeSourceAdapter: Send + Sync + 'static {
     fn declared_capabilities(&self) -> BridgeSourceCapabilitySet;
 
@@ -36,7 +32,7 @@ pub trait BridgeSourceAdapter: Send + Sync + 'static {
             self.open_snapshot(&snapshot_identity, execution)
                 .map_err(|error| {
                     BridgeDeliveryError::new(
-                        BridgeDeliveryErrorKind::SnapshotAcquisitionFailure,
+                        error.delivery_kind(),
                         format!(
                             "Bridge source adapter failed to open snapshot `{}`: {error}",
                             snapshot_identity.as_str()

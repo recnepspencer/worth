@@ -156,7 +156,7 @@ where
 {
     let selected = runtime
         .on_product(product.retained_clone())
-        .map_err(|denial| format!("temporal selected product denied: {denial:?}"))?;
+        .map_err(super::super::WorthQueryConditionalReentryFailure::ProductSelection)?;
     let fresh = access.resolve_fresh_operation_access(&selected)?;
     let Some(current) = execution.resolve_current_intent(
         &selected,

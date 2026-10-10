@@ -7,9 +7,16 @@ use worth_query_host::facade::primary_graph::{
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankCommitDenialKind {
+    ExecutionResource {
+        denial: worth_query_host::facade::application_contribution::WorthQueryManagedComputationResourceDenial,
+        partition_identity: Option<u64>,
+        policy_ancestor: Option<u32>,
+    },
+    ExecutionNestedPatternStopped { partition_identity: Option<u64> },
+    ExecutionWorkerPanicked { partition_identity: Option<u64> },
+    ExecutionUncheckedCustomKernel { partition_identity: Option<u64> },
+    ExecutionIdentitiesNotCanonical { partition_identity: Option<u64> },
     ProviderRejected,
-    /// The execution worker panicked before publication.
-    ProviderPanicked,
     CustomInvariantDenied,
     WorkflowSettlementDenied {
         kind: WorthQueryApplicationAttemptDenialKind,
@@ -79,11 +86,27 @@ pub(crate) const fn denial_kind(
 ) -> BankCommitDenialKind {
     use WorthQueryApplicationCommitDenialKind as Query;
     match kind {
-        Query::ExecutionResource { .. } => BankCommitDenialKind::ProviderRejected,
-        Query::ExecutionNestedPatternStopped { .. } => BankCommitDenialKind::ProviderRejected,
-        Query::ExecutionWorkerPanicked { .. } => BankCommitDenialKind::ProviderPanicked,
-        Query::ExecutionUncheckedCustomKernel { .. } => BankCommitDenialKind::ProviderRejected,
-        Query::ExecutionIdentitiesNotCanonical { .. } => BankCommitDenialKind::ProviderRejected,
+        Query::ExecutionResource {
+            denial,
+            partition_identity,
+            policy_ancestor,
+        } => BankCommitDenialKind::ExecutionResource {
+            denial,
+            partition_identity,
+            policy_ancestor,
+        },
+        Query::ExecutionNestedPatternStopped { partition_identity } => {
+            BankCommitDenialKind::ExecutionNestedPatternStopped { partition_identity }
+        }
+        Query::ExecutionWorkerPanicked { partition_identity } => {
+            BankCommitDenialKind::ExecutionWorkerPanicked { partition_identity }
+        }
+        Query::ExecutionUncheckedCustomKernel { partition_identity } => {
+            BankCommitDenialKind::ExecutionUncheckedCustomKernel { partition_identity }
+        }
+        Query::ExecutionIdentitiesNotCanonical { partition_identity } => {
+            BankCommitDenialKind::ExecutionIdentitiesNotCanonical { partition_identity }
+        }
         Query::ProviderRejected => BankCommitDenialKind::ProviderRejected,
         Query::CustomInvariantDenied => BankCommitDenialKind::CustomInvariantDenied,
         Query::WorkflowSettlementDenied { kind } => {
@@ -182,11 +205,42 @@ mod tests {
     }
 
     #[test]
+    fn execution_resource_retains_its_kind_location_and_memory_level() {
+        use worth_query_host::facade::application_contribution::{
+            WorthQueryManagedComputationResourceDenial as Resource,
+            WorthQueryMemoryLimitLevel as Level,
+        };
+        for level in [Level::Process, Level::Policy, Level::Declared] {
+            let denial = Resource::MemoryLimit {
+                requested: 31,
+                admitted: 17,
+                level,
+            };
+            assert_eq!(
+                denial_kind(WorthQueryApplicationCommitDenialKind::ExecutionResource {
+                    denial,
+                    partition_identity: Some(7),
+                    policy_ancestor: Some(2)
+                }),
+                BankCommitDenialKind::ExecutionResource {
+                    denial,
+                    partition_identity: Some(7),
+                    policy_ancestor: Some(2)
+                },
+            );
+        }
+    }
+    #[test]
     fn packet_panic_is_panicked_before_effects() {
         let query = WorthQueryApplicationCommitDenialKind::ExecutionWorkerPanicked {
             partition_identity: Some(7),
         };
-        assert_eq!(denial_kind(query), BankCommitDenialKind::ProviderPanicked);
+        assert_eq!(
+            denial_kind(query),
+            BankCommitDenialKind::ExecutionWorkerPanicked {
+                partition_identity: Some(7)
+            }
+        );
         assert_eq!(
             denial_kind(WorthQueryApplicationCommitDenialKind::ProviderRejected),
             BankCommitDenialKind::ProviderRejected

@@ -41,7 +41,7 @@ pub(super) fn read_condition_observations(
                 | crate::snapshot::BridgeSnapshotReadErrorKind::ExtraRecord
                 | crate::snapshot::BridgeSnapshotReadErrorKind::ProjectionMaskRejected
                 | crate::snapshot::BridgeSnapshotReadErrorKind::AspectContractValidationDenied =>
-                    BridgeConditionalDenialKind::SnapshotAdmission,
+                    BridgeConditionalDenialKind::SnapshotRead(error.clone()),
             },
             format!("conditional semantic observation failed: {error}"),
         )
@@ -55,7 +55,7 @@ pub(super) fn read_condition_observations(
     let validated = crate::snapshot::validate_snapshot_read_result_contract(&packet, result)
         .map_err(|error| {
             BridgeConditionalDenial::new(
-                BridgeConditionalDenialKind::SnapshotAdmission,
+                BridgeConditionalDenialKind::SnapshotRead(error.clone()),
                 format!("conditional semantic observation violated its contract: {error}"),
             )
         })?;

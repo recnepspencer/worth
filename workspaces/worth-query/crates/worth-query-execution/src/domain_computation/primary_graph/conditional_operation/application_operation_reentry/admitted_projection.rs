@@ -70,7 +70,7 @@ where
     ) -> Result<Option<WorthQueryAdmittedTemporalProjection<Schema, Operation, Input, Scope, Invoker::Projection>>, WorthQueryTemporalReentryDenial>
     {
         let preconditions = isolate_invoker(|| self.invoker.preconditions(candidate.input()))
-            .map_err(|detail| format!("temporal operation preconditions failed: {detail}"))?;
+            .map_err(|super::invoker_isolation::TemporalInvokerPanicked| super::super::WorthQueryConditionalReentryFailure::PreconditionInvokerPanicked)?;
         let admission = self
             .authorization
             .authorize(
@@ -99,15 +99,15 @@ where
                     (host_projection, current_intent)
                 }, worth_execution::ExecutionAllocationPolicy::SystemAllocation)
         })
-        .map_err(|detail| format!("temporal operation projection failed: {detail}"))?
+        .map_err(|super::invoker_isolation::TemporalInvokerPanicked| super::super::WorthQueryConditionalReentryFailure::ProjectionInvokerPanicked)?
         .map_err(WorthQueryTemporalReentryDenial::from_projection)?;
         let ((host_projection, current_intent), projection, _) = projected.into_parts();
         if current_intent.is_err() {
             return Ok(None);
         }
         let host_projection = host_projection
-            .ok_or_else(|| "temporal intent became obsolete before host projection".to_string())?
-            .map_err(|failure| format!("{:?}: {}", failure.kind(), failure.detail()))?;
+            .ok_or(super::super::WorthQueryConditionalReentryFailure::IntentObsoleteBeforeProjection)?
+            .map_err(super::super::WorthQueryConditionalReentryFailure::Invocation)?;
         Ok(Some(WorthQueryAdmittedTemporalProjection {
             admission,
             projection,

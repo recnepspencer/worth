@@ -80,8 +80,10 @@ impl BridgeOwnedSignalRuntime {
             .compare_current_exact(basis)
             .map_err(|denial| {
                 BridgeConditionalDenial::new(
-                    BridgeConditionalDenialKind::StaleLowering,
-                    format!("conditional branch retirement rejected its exact basis: {denial:?}"),
+                    BridgeConditionalDenialKind::SignalExecution(
+                        super::BridgeSignalDenial::BranchReadmission(denial),
+                    ),
+                    "conditional branch retirement rejected its exact basis",
                 )
             })
     }
@@ -158,21 +160,25 @@ fn conditional_retirement_port(
     }) {
         return Ok(port);
     }
-    current_by_node
-        .values()
-        .find_map(|lowering| {
-            lowering.signal_port().and_then(|port| {
-                port.reconstitute_at_basis(basis)
-                    .ok()
-                    .map(|(service, _)| BridgeConditionalSignalPort::shared(Arc::new(service)))
-            })
-        })
-        .ok_or_else(|| {
-            BridgeConditionalDenial::new(
-                BridgeConditionalDenialKind::SignalContractInstallation,
-                "conditional branch retirement could not re-admit its current Signal service",
-            )
-        })
+    let mut last_denial = None;
+    for lowering in current_by_node.values() {
+        if let Some(port) = lowering.signal_port() {
+            match port.reconstitute_at_basis(basis) {
+                Ok((service, _)) => {
+                    return Ok(BridgeConditionalSignalPort::shared(Arc::new(service)))
+                }
+                Err(cause) => {
+                    last_denial = Some(super::BridgeSignalDenial::ConditionalServiceIssuance(cause))
+                }
+            }
+        }
+    }
+    Err(BridgeConditionalDenial::new(
+        BridgeConditionalDenialKind::SignalExecution(
+            last_denial.unwrap_or(super::BridgeSignalDenial::MissingConditionalPort),
+        ),
+        "conditional branch retirement could not re-admit its current Signal service",
+    ))
 }
 
 fn is_current_lowering(
@@ -194,9 +200,13 @@ fn lowering_belongs_to_branch(
     lowering.registry_key.branch() == branch_identity
 }
 
-fn signal_retirement_denial(error: impl std::fmt::Debug) -> BridgeConditionalDenial {
+fn signal_retirement_denial(
+    error: worth_signal::facade::branch::SignalConditionalInstallationChangeDenial,
+) -> BridgeConditionalDenial {
     BridgeConditionalDenial::new(
-        BridgeConditionalDenialKind::SignalContractInstallation,
+        BridgeConditionalDenialKind::SignalExecution(
+            super::BridgeSignalDenial::InstallationChange(error.clone()),
+        ),
         format!("Signal denied owned conditional retirement: {error:?}"),
     )
 }

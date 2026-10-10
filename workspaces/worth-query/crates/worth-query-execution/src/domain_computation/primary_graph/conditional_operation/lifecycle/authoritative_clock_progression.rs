@@ -82,7 +82,12 @@ pub(super) fn reconsider_authoritative_clock_work<Schema>(
         work.truth,
         work.pending,
     )
-    .map_err(|detail| AuthoritativeClockStop::Failed(runtime_rejection(detail)))?;
+    .map_err(|cause| {
+        AuthoritativeClockStop::Failed(ErasedClockObservationOutcome::Failed {
+            detail: format!("authoritative delivery refused: {cause:?}"),
+            kind: WorthQueryConditionalClockObservationFailureKind::AuthoritativeDelivery(cause),
+        })
+    })?;
     Ok(AuthoritativeClockProgress {
         commit_count,
         work_remaining: delivered.work_remaining,

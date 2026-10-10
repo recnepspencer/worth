@@ -80,12 +80,15 @@ impl worth_runtime_bridge::facade::SnapshotReadSource for StaticSource {
         if identity == &preview_snapshot_identity() {
             Ok(Box::new(StaticSnapshotReader))
         } else {
-            Err(RelationalBridgeSourceError::new(format!(
-                "unknown snapshot `{}`",
-                identity
-                    .bridge_admission_evidence()
-                    .terminal_projection_for_reporting()
-            )))
+            Err(RelationalBridgeSourceError::new(
+                worth_runtime_bridge::facade::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                format!(
+                    "unknown snapshot `{}`",
+                    identity
+                        .bridge_admission_evidence()
+                        .terminal_projection_for_reporting()
+                ),
+            ))
         }
     }
 }

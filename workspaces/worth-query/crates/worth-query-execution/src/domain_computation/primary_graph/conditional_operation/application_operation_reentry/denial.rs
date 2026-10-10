@@ -1,6 +1,6 @@
 pub(in crate::domain_computation::primary_graph::conditional_operation) enum WorthQueryTemporalReentryDenial
 {
-    Retryable(String),
+    Retryable(super::super::WorthQueryConditionalReentryFailure),
     ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
     RetentionCapacityExhausted,
     ControlStopped(super::WorthQueryTemporalControlStop),
@@ -147,9 +147,9 @@ impl WorthQueryTemporalReentryDenial {
     }
 }
 
-impl From<String> for WorthQueryTemporalReentryDenial {
-    fn from(detail: String) -> Self {
-        Self::Retryable(detail)
+impl From<super::super::WorthQueryConditionalReentryFailure> for WorthQueryTemporalReentryDenial {
+    fn from(cause: super::super::WorthQueryConditionalReentryFailure) -> Self {
+        Self::Retryable(cause)
     }
 }
 

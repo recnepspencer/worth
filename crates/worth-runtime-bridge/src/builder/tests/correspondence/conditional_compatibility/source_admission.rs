@@ -65,14 +65,8 @@ fn installed_source_dependency_denies_missing_or_mismatched_reader_before_comput
     let wrong = crate::truth_identity_fixtures::truth_snapshot(1, 2);
     let exact = crate::truth_identity_fixtures::truth_snapshot(1, 1);
     for (source, expected) in [
-        (
-            None,
-            Some(BridgeConditionalDenialKind::MissingSourceObservation),
-        ),
-        (
-            Some(&wrong),
-            Some(BridgeConditionalDenialKind::SnapshotAdmission),
-        ),
+        (None, Some(false)),
+        (Some(&wrong), Some(true)),
         (Some(&exact), None),
     ] {
         let result = owner.execute(
@@ -92,7 +86,20 @@ fn installed_source_dependency_denies_missing_or_mismatched_reader_before_comput
         );
         if let Some(expected) = expected {
             let denial = result.err().expect("source admission must fail");
-            assert_eq!(denial.kind(), expected);
+            if expected {
+                let BridgeConditionalDenialKind::Delivery(delivery) = denial.kind() else {
+                    panic!("mismatched source must preserve delivery admission: {denial:?}");
+                };
+                assert_eq!(
+                    delivery.kind(),
+                    crate::facade::BridgeDeliveryErrorKind::SnapshotIdentityMismatch
+                );
+            } else {
+                assert_eq!(
+                    denial.kind(),
+                    BridgeConditionalDenialKind::MissingSourceObservation
+                );
+            }
             assert_eq!(computes.load(Ordering::SeqCst), 0);
             assert_eq!(denial.signal_counters(), Default::default());
             let counters = denial.bridge_execution_counters();

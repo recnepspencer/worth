@@ -141,7 +141,7 @@ fn selected_execution_failure_fails_the_row_only_for_an_intrinsic_stop() {
                     successor_of: None
                 }
             ));
-            let mut denial = WorthQueryOutputDemandDenial::new(kind, "");
+            let mut denial = WorthQueryOutputDemandDenial::new(kind.clone(), "");
             finish.failure(&mut denial);
             assert_eq!(
             denial.recovery_posture(),

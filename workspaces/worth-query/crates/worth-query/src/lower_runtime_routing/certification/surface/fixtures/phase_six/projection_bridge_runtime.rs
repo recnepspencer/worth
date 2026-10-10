@@ -147,10 +147,10 @@ impl SnapshotReadSource for ProjectionBridgeSource {
                 rows: self.rows.clone(),
             }))
         } else {
-            Err(RelationalBridgeSourceError::new(format!(
-                "unknown snapshot `{:?}`",
-                identity
-            )))
+            Err(RelationalBridgeSourceError::new(
+                worth_runtime_bridge::facade::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                format!("unknown snapshot `{:?}`", identity),
+            ))
         }
     }
 }

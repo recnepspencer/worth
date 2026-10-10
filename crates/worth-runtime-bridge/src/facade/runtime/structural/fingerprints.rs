@@ -42,7 +42,9 @@ impl RuntimeBridge {
         StructuralFingerprint::from_observation(contract, &observation, execution).map_err(
             |error| {
                 BridgeDeliveryError::new(
-                    error.delivery_kind(BridgeDeliveryErrorKind::SnapshotReadContractViolation),
+                    error.delivery_kind(
+                        crate::error::BridgeSnapshotDeliveryStage::ContractValidation,
+                    ),
                     format!(
                         "Structural fingerprint materialization could not validate reads: {error}"
                     ),
@@ -107,7 +109,7 @@ impl RuntimeBridge {
             StructuralFingerprint::from_observation(contract, &left, execution).map_err(
                 |error| {
                     BridgeDeliveryError::new(
-                error.delivery_kind(BridgeDeliveryErrorKind::SnapshotReadContractViolation),
+                error.delivery_kind(crate::error::BridgeSnapshotDeliveryStage::ContractValidation),
                 format!("Structural branch comparison could not validate left-side reads: {error}"),
             )
                 },
@@ -115,7 +117,9 @@ impl RuntimeBridge {
         let right = StructuralFingerprint::from_observation(contract, &right, execution).map_err(
             |error| {
                 BridgeDeliveryError::new(
-                    error.delivery_kind(BridgeDeliveryErrorKind::SnapshotReadContractViolation),
+                    error.delivery_kind(
+                        crate::error::BridgeSnapshotDeliveryStage::ContractValidation,
+                    ),
                     format!(
                         "Structural branch comparison could not validate right-side reads: {error}"
                     ),

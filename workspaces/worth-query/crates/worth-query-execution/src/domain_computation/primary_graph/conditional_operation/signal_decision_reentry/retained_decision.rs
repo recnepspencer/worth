@@ -13,7 +13,10 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) enum Wor
     Eligible(BridgeConditionalDecisionEvidence),
     Suppressed(BridgeConditionalDecisionEvidence),
     Deferred(BridgeConditionalDecisionEvidence),
-    OperationRetryable(BridgeConditionalDecisionEvidence, String),
+    OperationRetryable(
+        BridgeConditionalDecisionEvidence,
+        super::super::WorthQueryConditionalReentryFailure,
+    ),
     OperationCommitRetryable(
         BridgeConditionalDecisionEvidence,
         crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind,
@@ -47,13 +50,17 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) enum Wor
         BridgeConditionalDecisionEvidence,
         crate::domain_computation::WorthQueryProductUnpublishedRecovery,
     ),
-    OperationIndeterminate(BridgeConditionalDecisionEvidence, String),
+    OperationIndeterminate(
+        BridgeConditionalDecisionEvidence,
+        super::super::WorthQueryConditionalReentryFailure,
+    ),
     OperationCommitted(BridgeConditionalDecisionEvidence),
     OperationAlreadyCommitted(BridgeConditionalDecisionEvidence),
-    Failed(String),
+    Failed(worth_runtime_bridge::facade::BridgeConditionalDenial),
+    InterruptedDuringReentry,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph::conditional_operation) enum WorthQueryOperationBackpressureCause
 {
     ActiveSnapshotCapacityExhausted {

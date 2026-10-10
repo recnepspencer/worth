@@ -183,13 +183,11 @@ fn pricing_shock_missing_snapshot_fails_with_typed_delivery_record() {
     let runtime = build_pricing_runtime(source, sink);
     let failure = capture_pricing_missing_snapshot_failure_bundle(&runtime, resource_request);
 
-    assert_eq!(
-        failure.error_kind,
-        BridgeDeliveryErrorKind::SnapshotAcquisitionFailure
+    assert!(
+        matches!(failure.error_kind, BridgeDeliveryErrorKind::SnapshotAcquisitionFailure(ref cause) if cause.kind() == crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure)
     );
-    assert_eq!(
-        failure.failure_class,
-        BridgeFailureClass::Delivery(BridgeDeliveryErrorKind::SnapshotAcquisitionFailure)
+    assert!(
+        matches!(failure.failure_class, BridgeFailureClass::Delivery(BridgeDeliveryErrorKind::SnapshotAcquisitionFailure(ref cause)) if cause.kind() == crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure)
     );
     assert_eq!(
         failure.source_commit,

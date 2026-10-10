@@ -14,7 +14,7 @@ pub(crate) fn open_planned_snapshot(
     let snapshot_reader =
         open_snapshot_reader(runtime, snapshot_identity, execution).map_err(|error| {
             BridgeDeliveryError::new(
-                BridgeDeliveryErrorKind::SnapshotAcquisitionFailure,
+                error.delivery_kind(),
                 format!(
                     "Bridge failed to open snapshot `{}`: {error}",
                     snapshot_identity.as_str()

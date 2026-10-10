@@ -50,8 +50,12 @@ fn failed_conditional_compute_retains_exact_lower_runtime_work() {
     assert!(matches!(
         denial.kind(),
         domain::WorthQueryBoundExecutionDenialKind::ConditionalExecution(
-            worth_runtime_bridge::facade::BridgeConditionalDenialKind::SignalExecution
-        )
+            domain::WorthQueryConditionalExecutionDenialKind::Bridge(
+                worth_runtime_bridge::facade::BridgeConditionalDenialKind::SignalExecution(
+                    worth_runtime_bridge::facade::BridgeSignalDenial::Error(ref native)
+                )
+            )
+        ) if native == &worth_signal::facade::SignalError::invalid_input("declared compute failed")
     ));
     assert_eq!(denial.counters().conditional_dependency_checks, 1);
     assert_eq!(denial.counters().conditional_condition_checks, 1);

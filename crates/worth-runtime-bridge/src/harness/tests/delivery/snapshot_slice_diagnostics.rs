@@ -48,7 +48,12 @@ fn bridge_sink_rejection_records_failure_diagnostics_with_slice_identity() {
         .deliver_invalidation(route, execution)
         .expect_err("delivery should surface the sink rejection");
 
-    assert_eq!(error.kind(), BridgeDeliveryErrorKind::SignalSinkRejection);
+    assert_eq!(
+        error.kind(),
+        BridgeDeliveryErrorKind::SignalSinkRejection(
+            crate::adapter::SignalBridgeSinkErrorKind::ExternalSinkFailure
+        )
+    );
     let failure = runtime
         .diagnostics()
         .last_failure_record()

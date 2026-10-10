@@ -17,6 +17,15 @@ pub enum BankCommitRecoveryKind {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankProviderFailureKind {
+    ExecutionResource {
+        denial: worth_query_host::facade::application_contribution::WorthQueryManagedComputationResourceDenial,
+        partition_identity: Option<u64>,
+        policy_ancestor: Option<u32>,
+    },
+    ExecutionNestedPatternStopped { partition_identity: Option<u64> },
+    ExecutionWorkerPanicked { partition_identity: Option<u64> },
+    ExecutionUncheckedCustomKernel { partition_identity: Option<u64> },
+    ExecutionIdentitiesNotCanonical { partition_identity: Option<u64> },
     ForeignOperationAttempt,
     ForeignExecutionBasis,
     ForeignGraphAuthority,
@@ -124,11 +133,27 @@ const fn provider_failure_kind(
 ) -> BankProviderFailureKind {
     use WorthQueryProviderSessionDenialKind as Query;
     match kind {
-        Query::ExecutionResource { .. } => BankProviderFailureKind::ProviderRejected,
-        Query::ExecutionNestedPatternStopped { .. } => BankProviderFailureKind::ProviderRejected,
-        Query::ExecutionWorkerPanicked { .. } => BankProviderFailureKind::ProviderPanicked,
-        Query::ExecutionUncheckedCustomKernel { .. } => BankProviderFailureKind::ProviderRejected,
-        Query::ExecutionIdentitiesNotCanonical { .. } => BankProviderFailureKind::ProviderRejected,
+        Query::ExecutionResource {
+            denial,
+            partition_identity,
+            policy_ancestor,
+        } => BankProviderFailureKind::ExecutionResource {
+            denial,
+            partition_identity,
+            policy_ancestor,
+        },
+        Query::ExecutionNestedPatternStopped { partition_identity } => {
+            BankProviderFailureKind::ExecutionNestedPatternStopped { partition_identity }
+        }
+        Query::ExecutionWorkerPanicked { partition_identity } => {
+            BankProviderFailureKind::ExecutionWorkerPanicked { partition_identity }
+        }
+        Query::ExecutionUncheckedCustomKernel { partition_identity } => {
+            BankProviderFailureKind::ExecutionUncheckedCustomKernel { partition_identity }
+        }
+        Query::ExecutionIdentitiesNotCanonical { partition_identity } => {
+            BankProviderFailureKind::ExecutionIdentitiesNotCanonical { partition_identity }
+        }
         Query::ForeignOperationAttempt => BankProviderFailureKind::ForeignOperationAttempt,
         Query::ForeignExecutionBasis => BankProviderFailureKind::ForeignExecutionBasis,
         Query::ForeignGraphAuthority => BankProviderFailureKind::ForeignGraphAuthority,

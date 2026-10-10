@@ -94,7 +94,9 @@ impl BridgeOwnedSignalRuntime {
             )
             .map_err(|denial| {
                 BridgeConditionalDenial::new(
-                    BridgeConditionalDenialKind::SignalContractInstallation,
+                    BridgeConditionalDenialKind::SignalExecution(
+                        super::super::BridgeSignalDenial::InstallationExtension(denial.clone()),
+                    ),
                     format!("Signal successor preparation was denied: {denial:?}"),
                 )
             })?;

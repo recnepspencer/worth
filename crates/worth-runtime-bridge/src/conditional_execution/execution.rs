@@ -1,3 +1,4 @@
+use super::signal_service_denial::signal_service_denial;
 use worth_signal::facade::adapters::SignalInvalidationExecutionReceipt;
 use worth_signal::facade::branch::SignalConditionalServiceExecutionRequest;
 use worth_signal::facade::SignalConditionalDecisionEvidence;
@@ -313,37 +314,6 @@ fn admit_signal_execution(
             .with_execution_counters(counters, observation_reads))
         }
     }
-}
-
-pub(super) fn signal_service_denial(
-    error: worth_signal::facade::branch::SignalConditionalServiceExecutionDenial,
-) -> BridgeConditionalDenial {
-    use worth_signal::facade::branch::SignalConditionalServiceExecutionDenial as Denial;
-    let kind = match error {
-        Denial::AdmissionCapacityExhausted => {
-            BridgeConditionalDenialKind::ConditionalEvaluationAdmissionCapacity
-        }
-        Denial::SlotBusy => BridgeConditionalDenialKind::ConditionalEvaluationBusy,
-        Denial::SlotPoisoned => BridgeConditionalDenialKind::ConditionalEvaluationPoisoned,
-        Denial::UnconsumedUnwind => BridgeConditionalDenialKind::ConditionalEvaluationUnwindPending,
-        Denial::StaleBasisAdmission
-        | Denial::DefinitionReadmissionRequired
-        | Denial::DefinitionMismatch => BridgeConditionalDenialKind::StaleLowering,
-        Denial::MissingSourceEvidence => BridgeConditionalDenialKind::MissingSourceObservation,
-        Denial::UnexpectedSourceEvidence => BridgeConditionalDenialKind::SourcePostureMismatch,
-        Denial::SourceAuthorityMismatch => BridgeConditionalDenialKind::OperationAuthorityMismatch,
-        Denial::OwnerUnavailable(_)
-        | Denial::OwnerAdmission(_)
-        | Denial::NestedOperationScopeMismatch
-        | Denial::EvaluationIdentityExhausted
-        | Denial::AdmissionUnavailable
-        | Denial::ObservationAdmission(_) => BridgeConditionalDenialKind::SignalExecution,
-        Denial::SlotAdmission(ref cause) => super::signal_execution_denial::kind(cause),
-    };
-    BridgeConditionalDenial::new(
-        kind,
-        format!("Signal conditional service denied execution: {error:?}"),
-    )
 }
 
 struct RetainedBridgeDecisionOutcome {

@@ -278,7 +278,10 @@ impl InvalidationSink for RejectingSignalSink {
         _delivery: crate::facade::BridgeSignalInvalidationDelivery,
         _lease: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<crate::facade::BridgeDeliveryReceipt, SignalBridgeSinkError> {
-        Err(SignalBridgeSinkError::new("forced sink rejection"))
+        Err(SignalBridgeSinkError::new(
+            crate::adapter::SignalBridgeSinkErrorKind::ExternalSinkFailure,
+            "forced sink rejection",
+        ))
     }
 }
 

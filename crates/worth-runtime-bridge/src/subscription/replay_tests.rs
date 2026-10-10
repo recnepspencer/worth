@@ -67,7 +67,12 @@ impl crate::adapter::CommittedPatchSource for StaticSource {
             ),
             vec![profile_name_patch_item("entity-1")],
         )
-        .map_err(|error| crate::adapter::RelationalBridgeSourceError::new(error.to_string()))
+        .map_err(|error| {
+            crate::adapter::RelationalBridgeSourceError::new(
+                crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                error.to_string(),
+            )
+        })
     }
 }
 
@@ -80,10 +85,10 @@ impl crate::adapter::SnapshotReadSource for StaticSource {
         if snapshot_matches_replay_fixture(identity) {
             Ok(Box::new(StaticSnapshotReader))
         } else {
-            Err(crate::adapter::RelationalBridgeSourceError::new(format!(
-                "unknown snapshot `{}`",
-                identity.as_str()
-            )))
+            Err(crate::adapter::RelationalBridgeSourceError::new(
+                crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                format!("unknown snapshot `{}`", identity.as_str()),
+            ))
         }
     }
 }
@@ -103,7 +108,12 @@ impl crate::adapter::TruthBranchHeadSource for StaticSource {
             ),
             vec![profile_name_patch_item("entity-1")],
         )
-        .map_err(|error| crate::adapter::RelationalBridgeSourceError::new(error.to_string()))
+        .map_err(|error| {
+            crate::adapter::RelationalBridgeSourceError::new(
+                crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                error.to_string(),
+            )
+        })
     }
 }
 

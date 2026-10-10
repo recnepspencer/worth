@@ -192,13 +192,15 @@ pub use super::authenticated_principal::{
 };
 pub use super::bootstrap::{WorthQueryPrimaryGraphBootstrap, WorthQueryPrimaryGraphPublication};
 pub use super::conditional_operation::{
-    WorthQueryConditionalApplicationRuntimeInstallation, WorthQueryConditionalClockHandle,
+    WorthQueryConditionalApplicationRuntimeInstallation,
+    WorthQueryConditionalAuthoritativeDeliveryFailure, WorthQueryConditionalClockHandle,
     WorthQueryConditionalClockObservationDenial, WorthQueryConditionalClockObservationDenialKind,
     WorthQueryConditionalClockObservationFailure, WorthQueryConditionalClockObservationFailureKind,
     WorthQueryConditionalClockObservationOutcome, WorthQueryConditionalClockObservationPort,
     WorthQueryConditionalClockObservationReceipt, WorthQueryConditionalExecutionCause,
     WorthQueryConditionalExecutionProvenance, WorthQueryConditionalExecutionTerminal,
-    WorthQueryConditionalRuntimeInspection, WorthQueryConditionalRuntimeInstallationDenial,
+    WorthQueryConditionalReentryFailure, WorthQueryConditionalRuntimeInspection,
+    WorthQueryConditionalRuntimeInstallationDenial,
     WorthQueryConditionalRuntimeInstallationDenialKind, WorthQueryConditionalRuntimeLifecycleProbe,
     WorthQueryConditionalRuntimeReinstallationReceipt, WorthQueryConditionalSignalDecision,
     WorthQueryGovernedTemporalOperationAuthorization, WorthQueryGovernedTemporalQueryAuthorization,

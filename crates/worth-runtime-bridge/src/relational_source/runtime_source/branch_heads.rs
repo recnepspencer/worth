@@ -24,33 +24,14 @@ impl TruthBranchHeadSource for RuntimeBridgeRelationalSource {
         branch_identity: &TruthBranchIdentity,
         execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeCommittedPatchEnvelope, RelationalBridgeSourceError> {
-        crate::snapshot::BridgeSnapshotReadError::checkpoint(execution).map_err(|denial| {
-            RelationalBridgeSourceError::new(format!("Bridge source request refused: {denial:?}"))
-        })?;
+        execution
+            .run(worth_execution::ExecutionWorkCeiling::new(0), |_| ())
+            .map_err(|denial| RelationalBridgeSourceError::execution_denied(denial.into()))?;
 
         let selected_commit = self.select_branch_head(branch_identity)?;
 
-        match self.publish_commit_for_selected_observation(selected_commit) {
-            worth_proof::TransitionOutcome::Success(publication) => {
-                Ok(publication.into_bridge_envelope())
-            }
-            worth_proof::TransitionOutcome::Denied(denial) => {
-                Err(RelationalBridgeSourceError::new(format!(
-                    "relational branch-head patch could not be admitted by Bridge: {denial}"
-                )))
-            }
-            worth_proof::TransitionOutcome::Deferred(_) => Err(RelationalBridgeSourceError::new(
-                "relational branch-head publication deferred",
-            )),
-            worth_proof::TransitionOutcome::Stale(_) => Err(RelationalBridgeSourceError::new(
-                "relational branch-head authority is stale",
-            )),
-            worth_proof::TransitionOutcome::RebindRequired(_) => Err(
-                RelationalBridgeSourceError::new("relational branch-head requires graph rebind"),
-            ),
-            worth_proof::TransitionOutcome::Failed(_) => Err(RelationalBridgeSourceError::new(
-                "relational branch-head lowering failed",
-            )),
-        }
+        super::publication_result::publication_envelope(
+            self.publish_commit_for_selected_observation(selected_commit),
+        )
     }
 }

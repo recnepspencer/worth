@@ -151,7 +151,7 @@ impl SignalConditionalEvaluationSourceEvidence {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SignalConditionalServiceExecutionDenial {
     OwnerUnavailable(SignalOwnerUnavailable),
     OwnerAdmission(SignalBranchBasisObservationDenial),

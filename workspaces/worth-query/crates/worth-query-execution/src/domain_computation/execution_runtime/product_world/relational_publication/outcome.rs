@@ -54,7 +54,7 @@ impl WorthQueryPerformedRelationalProductChangeDeliveryOutcome {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum WorthQueryPerformedRelationalProductChangeDeliveryDenialKind {
     /// The receiving runtime refused the advancement's custody.
     ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
@@ -63,7 +63,8 @@ pub enum WorthQueryPerformedRelationalProductChangeDeliveryDenialKind {
     ForeignConditionalOperation,
     ProductAdmission,
     ConditionalProductAdmission,
-    Bridge,
+    BridgeRuntimeClosed,
+    Bridge(worth_runtime_bridge::facade::BridgeConditionalDenialKind),
 }
 
 /// A denied delivery returns the unique performed witness to its caller.
@@ -87,8 +88,8 @@ impl WorthQueryPerformedRelationalProductChangeDeliveryDenial {
         }
     }
 
-    pub const fn kind(&self) -> WorthQueryPerformedRelationalProductChangeDeliveryDenialKind {
-        self.kind
+    pub fn kind(&self) -> WorthQueryPerformedRelationalProductChangeDeliveryDenialKind {
+        self.kind.clone()
     }
 
     pub fn detail(&self) -> &str {

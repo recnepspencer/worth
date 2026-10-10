@@ -184,9 +184,8 @@ fn structural_read_adapter_preserves_resource_and_domain_refusals() {
                 "the public structural adapter must retain its resource cause: {error:?}"
             );
         } else {
-            assert_eq!(
-                error.kind(),
-                BridgeDeliveryErrorKind::SnapshotReadContractViolation
+            assert!(
+                matches!(error.kind(), BridgeDeliveryErrorKind::SnapshotReadContractViolation(cause) if cause.kind() == crate::snapshot::BridgeSnapshotReadErrorKind::ExternalSnapshotReadFailure)
             );
             assert!(error.to_string().contains("domain read refusal"));
         }

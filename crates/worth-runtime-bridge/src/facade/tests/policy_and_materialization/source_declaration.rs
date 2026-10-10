@@ -179,9 +179,8 @@ fn runtime_records_source_materialization_rejection_when_adapter_cannot_open_sna
         Err(error) => error,
     };
 
-    assert_eq!(
-        error.kind(),
-        crate::error::BridgeDeliveryErrorKind::SnapshotAcquisitionFailure
+    assert!(
+        matches!(error.kind(), crate::error::BridgeDeliveryErrorKind::SnapshotAcquisitionFailure(ref cause) if cause.kind() == crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure)
     );
     let failure = runtime
         .diagnostics()
@@ -191,9 +190,8 @@ fn runtime_records_source_materialization_rejection_when_adapter_cannot_open_sna
         failure.failure_class(),
         crate::source::SourceFailureClass::SourceMaterializationRejected
     );
-    assert_eq!(
-        failure.delivery_error_kind(),
-        crate::error::BridgeDeliveryErrorKind::SnapshotAcquisitionFailure
+    assert!(
+        matches!(failure.delivery_error_kind(), crate::error::BridgeDeliveryErrorKind::SnapshotAcquisitionFailure(ref cause) if cause.kind() == crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure)
     );
 }
 

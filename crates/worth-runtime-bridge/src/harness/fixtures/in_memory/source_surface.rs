@@ -69,10 +69,13 @@ impl CommittedPatchSource for InMemoryRelationalBridgeSource {
             .get(request.commit_identity())
             .cloned()
             .ok_or_else(|| {
-                RelationalBridgeSourceError::new(format!(
-                    "no committed patch registered for `{}`",
-                    request.commit_identity().as_str()
-                ))
+                RelationalBridgeSourceError::new(
+                    crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                    format!(
+                        "no committed patch registered for `{}`",
+                        request.commit_identity().as_str()
+                    ),
+                )
             })
     }
 }
@@ -91,10 +94,10 @@ impl SnapshotReadSource for InMemoryRelationalBridgeSource {
             .get(identity)
             .cloned()
             .ok_or_else(|| {
-                RelationalBridgeSourceError::new(format!(
-                    "no snapshot registered for `{}`",
-                    identity.as_str()
-                ))
+                RelationalBridgeSourceError::new(
+                    crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                    format!("no snapshot registered for `{}`", identity.as_str()),
+                )
             })?;
         Ok(Box::new(InMemorySnapshotReader { snapshot }))
     }
@@ -108,21 +111,27 @@ impl TruthBranchHeadSource for InMemoryRelationalBridgeSource {
     ) -> Result<BridgeCommittedPatchEnvelope, RelationalBridgeSourceError> {
         let state = self.state.read().expect("bridge source lock poisoned");
         let commit_identity = state.branch_heads.get(branch_identity).ok_or_else(|| {
-            RelationalBridgeSourceError::new(format!(
-                "no branch head registered for `{}`",
-                branch_identity.as_str()
-            ))
+            RelationalBridgeSourceError::new(
+                crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                format!(
+                    "no branch head registered for `{}`",
+                    branch_identity.as_str()
+                ),
+            )
         })?;
         state
             .committed_patches
             .get(commit_identity)
             .cloned()
             .ok_or_else(|| {
-                RelationalBridgeSourceError::new(format!(
-                    "branch head `{}` for `{}` had no registered committed patch envelope",
-                    commit_identity.as_str(),
-                    branch_identity.as_str()
-                ))
+                RelationalBridgeSourceError::new(
+                    crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                    format!(
+                        "branch head `{}` for `{}` had no registered committed patch envelope",
+                        commit_identity.as_str(),
+                        branch_identity.as_str()
+                    ),
+                )
             })
     }
 }

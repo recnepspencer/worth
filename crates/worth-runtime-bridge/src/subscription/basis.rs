@@ -218,7 +218,7 @@ fn bind_snapshot_basis(
     open_planned_snapshot(runtime, snapshot_identity, execution)
         .map(|_| ())
         .map_err(|error| match error.kind() {
-            BridgeDeliveryErrorKind::SnapshotAcquisitionFailure => BridgeTypedError::new(
+            BridgeDeliveryErrorKind::SnapshotAcquisitionFailure(_) => BridgeTypedError::new(
                 BridgeSubscriptionBasisResolutionFailureKind::SnapshotAcquisitionFailure,
                 format!(
                     "Bridge runtime failed to acquire snapshot `{}` for subscription basis binding: {}",

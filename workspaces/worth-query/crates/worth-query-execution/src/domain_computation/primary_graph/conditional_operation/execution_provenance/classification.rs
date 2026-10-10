@@ -51,8 +51,14 @@ pub enum WorthQueryConditionalExecutionTerminal {
 }
 
 /// Why processing a due wake ended as it did, when a specific cause is known.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryConditionalExecutionCause {
+    /// A reentry retry or unresolved outcome retains the original typed cause.
+    Reentry(super::super::WorthQueryConditionalReentryFailure),
+    /// Bridge refused the retained conditional decision with this native cause.
+    BridgeConditional(worth_runtime_bridge::facade::BridgeConditionalDenialKind),
+    /// Reentry did not finish replacing its retained decision.
+    InterruptedDuringReentry,
     /// The original execution refusal, whether retryable or terminal.
     ApplicationCommitDenied(
         crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind,

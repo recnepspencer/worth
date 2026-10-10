@@ -1,6 +1,8 @@
 mod bridge_lowering;
 mod compute_bridge;
 mod evaluation;
+mod execution_denial;
+pub use execution_denial::WorthQueryConditionalExecutionDenialKind;
 mod installation;
 mod reentry;
 mod registry;

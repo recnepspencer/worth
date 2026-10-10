@@ -73,7 +73,7 @@ fn both_scheduling_finishes_preserve_claims_and_custody_on_interruption() {
                 let fixture = Fixture::new(reopened);
                 let before = fixture.custody();
                 assert!(before.0 > 0 && before.1 > 0 && before.2 > 0 && before.3 > 0);
-                let denial = finish.stop(&fixture, kind);
+                let denial = finish.stop(&fixture, kind.clone());
                 assert_eq!(denial.kind(), kind);
                 assert_eq!(
                     denial.recovery_posture(),

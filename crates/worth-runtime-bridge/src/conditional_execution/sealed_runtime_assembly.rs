@@ -182,7 +182,9 @@ impl BridgeSealedRuntimeAssembly {
     > {
         self.signal_definition_publication.take().ok_or_else(|| {
             BridgeConditionalDenial::new(
-                super::BridgeConditionalDenialKind::SignalExecution,
+                super::BridgeConditionalDenialKind::SignalExecution(
+                    super::BridgeSignalDenial::DefinitionPublicationAlreadyOwned,
+                ),
                 "Runtime World already owns the Signal definition-publication capability",
             )
         })

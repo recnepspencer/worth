@@ -262,7 +262,9 @@ where
             .install_owned_conditional(request)
             .map_err(|denial| {
                 WorthQueryConditionalRuntimeInstallationDenial::new(
-                    WorthQueryConditionalRuntimeInstallationDenialKind::BridgeRejected,
+                    WorthQueryConditionalRuntimeInstallationDenialKind::BridgeConditional(
+                        denial.kind(),
+                    ),
                     format!("{:?}: {}", denial.kind(), denial.detail()),
                 )
             })?;

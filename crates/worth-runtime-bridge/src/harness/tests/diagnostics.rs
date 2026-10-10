@@ -134,9 +134,8 @@ fn bridge_diagnostics_respect_failure_record_retention_budget() {
         let error = runtime
             .deliver_invalidation(route, execution)
             .expect_err("bridge should fail delivery when the planned snapshot is absent");
-        assert_eq!(
-            error.kind(),
-            BridgeDeliveryErrorKind::SnapshotAcquisitionFailure
+        assert!(
+            matches!(error.kind(), BridgeDeliveryErrorKind::SnapshotAcquisitionFailure(ref cause) if cause.kind() == crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure)
         );
     }
 

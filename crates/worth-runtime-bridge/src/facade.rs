@@ -23,6 +23,7 @@
 //!     branch_heads: BranchHeads,
 //!     compute_sink: ComputeSink,
 //!     commit_identity: TruthCommitIdentity,
+//!     execution: worth_execution::ExecutionRequest<'_, '_>,
 //! ) -> Result<(), Box<dyn std::error::Error>>
 //! where
 //!     TruthSource: worth_runtime_bridge::facade::RelationalBridgeSource + Clone + 'static,
@@ -49,8 +50,8 @@
 //!         ))
 //!         .build()?;
 //!
-//!     let route = bridge.route(commit_identity)?;
-//!     let evaluation = bridge.evaluate_current(route.target())?;
+//!     let route = bridge.route(commit_identity, execution)?;
+//!     let evaluation = bridge.evaluate_current(route.target(), execution)?;
 //!     let diagnostics = bridge.diagnostics().explain_last();
 //!
 //!     let _ = evaluation;

@@ -26,7 +26,7 @@ fn only_a_stop_intrinsic_to_the_head_row_fails_its_dependents() {
         WorthQueryOutputDemandDenialKind::TimedOut,
     ] {
         assert!(
-            super::super::required_stop::head_stop(&failed(kind), &head).is_none(),
+            super::super::required_stop::head_stop(&failed(kind.clone()), &head).is_none(),
             "{kind:?} belongs to the advance that met it"
         );
     }

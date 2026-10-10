@@ -84,12 +84,15 @@ impl SnapshotReadSource for StaticSource {
         if identity == &TruthSnapshotIdentity::from_bridge_harness_label("snapshot-a") {
             Ok(Box::new(StaticSnapshotReader))
         } else {
-            Err(RelationalBridgeSourceError::new(format!(
-                "unknown snapshot `{}`",
-                identity
-                    .bridge_admission_evidence()
-                    .terminal_projection_for_reporting()
-            )))
+            Err(RelationalBridgeSourceError::new(
+                worth_runtime_bridge::facade::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                format!(
+                    "unknown snapshot `{}`",
+                    identity
+                        .bridge_admission_evidence()
+                        .terminal_projection_for_reporting()
+                ),
+            ))
         }
     }
 }
@@ -151,12 +154,15 @@ impl BridgeSourceAdapter for StaticSourceAdapter {
         {
             Ok(Box::new(StaticSnapshotReader))
         } else {
-            Err(RelationalBridgeSourceError::new(format!(
-                "unknown snapshot `{}`",
-                identity
-                    .bridge_admission_evidence()
-                    .terminal_projection_for_reporting()
-            )))
+            Err(RelationalBridgeSourceError::new(
+                worth_runtime_bridge::facade::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                format!(
+                    "unknown snapshot `{}`",
+                    identity
+                        .bridge_admission_evidence()
+                        .terminal_projection_for_reporting()
+                ),
+            ))
         }
     }
 }

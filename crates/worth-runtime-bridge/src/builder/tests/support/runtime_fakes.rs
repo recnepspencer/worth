@@ -82,7 +82,12 @@ impl TruthBranchHeadSource for TestSource {
                 ),
             ],
         )
-        .map_err(|error| RelationalBridgeSourceError::new(error.to_string()))
+        .map_err(|error| {
+            RelationalBridgeSourceError::new(
+                crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                error.to_string(),
+            )
+        })
     }
 }
 

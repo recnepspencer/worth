@@ -202,9 +202,8 @@ fn pricing_shock_workload_certification_bundle_exposes_phase_3_truth_edges() {
     );
     assert_eq!(bundle.provenance.shock_multiplier_per_mille, 4000);
     assert_eq!(bundle.provenance.representative_sku, "scooter-001");
-    assert_eq!(
-        bundle.hostile_failure.error_kind,
-        BridgeDeliveryErrorKind::SnapshotAcquisitionFailure
+    assert!(
+        matches!(bundle.hostile_failure.error_kind, BridgeDeliveryErrorKind::SnapshotAcquisitionFailure(ref cause) if cause.kind() == crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure)
     );
     assert_eq!(
         bundle.aspect.target_canonical_basis,
@@ -273,9 +272,8 @@ fn pricing_shock_workload_certification_bundle_exposes_phase_3_truth_edges() {
     assert!(!suite_26.failure_digest.is_empty());
     assert!(!suite_26.replay_failure_digest.is_empty());
     assert_ne!(suite_26.failure_digest, suite_26.replay_failure_digest);
-    assert_eq!(
-        bundle.hostile_failure.failure_class,
-        BridgeFailureClass::Delivery(BridgeDeliveryErrorKind::SnapshotAcquisitionFailure)
+    assert!(
+        matches!(bundle.hostile_failure.failure_class, BridgeFailureClass::Delivery(BridgeDeliveryErrorKind::SnapshotAcquisitionFailure(ref cause)) if cause.kind() == crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure)
     );
     assert_eq!(
         bundle.writeback.rejection_error_kind,

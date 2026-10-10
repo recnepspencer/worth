@@ -25,10 +25,12 @@ fn check(cause: Cause) {
         Cause::Equivalence => Own::EquivalenceContractUnavailable,
         Cause::MissingScope => Own::NoActiveExecutionScope,
     };
-    let SignalBridgeSinkError::Execution(actual) = raw.into() else {
+    let error = SignalBridgeSinkError::from(raw);
+    let worth_runtime_bridge::facade::SignalBridgeSinkErrorKind::Execution(actual) = error.kind()
+    else {
         panic!("typed Bridge resource cause required");
     };
-    assert_eq!(actual, expected, "{cause:?}");
+    assert_eq!(*actual, expected, "{cause:?}");
 }
 
 #[test]

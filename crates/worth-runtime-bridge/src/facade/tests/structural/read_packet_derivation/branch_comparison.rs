@@ -79,7 +79,12 @@ fn runtime_derives_branch_comparison_candidates_from_branch_pair_reads() {
                     ),
                 ],
             )
-            .map_err(|error| crate::adapter::RelationalBridgeSourceError::new(error.to_string()))
+            .map_err(|error| {
+                crate::adapter::RelationalBridgeSourceError::new(
+                    crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                    error.to_string(),
+                )
+            })
         }
     }
 
@@ -103,10 +108,10 @@ fn runtime_derives_branch_comparison_candidates_from_branch_pair_reads() {
             ) {
                 Ok(Box::new(SnapshotBReader))
             } else {
-                Err(crate::adapter::RelationalBridgeSourceError::new(format!(
-                    "unknown snapshot `{}`",
-                    identity.as_str()
-                )))
+                Err(crate::adapter::RelationalBridgeSourceError::new(
+                    crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                    format!("unknown snapshot `{}`", identity.as_str()),
+                ))
             }
         }
     }
@@ -153,7 +158,12 @@ fn runtime_derives_branch_comparison_candidates_from_branch_pair_reads() {
                     ),
                 ],
             )
-            .map_err(|error| crate::adapter::RelationalBridgeSourceError::new(error.to_string()))
+            .map_err(|error| {
+                crate::adapter::RelationalBridgeSourceError::new(
+                    crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                    error.to_string(),
+                )
+            })
         }
     }
 

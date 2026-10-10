@@ -103,7 +103,9 @@ impl BridgeOwnedSignalRuntime {
         let signal_runtime = signal_runtime.with_kernel_defaults();
         let signal_runtime = signal_runtime.build_validated().map_err(|error| {
             BridgeConditionalDenial::new(
-                BridgeConditionalDenialKind::SignalExecution,
+                BridgeConditionalDenialKind::SignalExecution(super::BridgeSignalDenial::Error(
+                    error.clone(),
+                )),
                 format!("Signal conditional evaluation policy was denied: {error:?}"),
             )
         })?;
@@ -208,9 +210,11 @@ impl BridgeOwnedSignalRuntime {
                     node_capability,
                     definition,
                 )
-                .map_err(|_| {
+                .map_err(|cause| {
                     BridgeConditionalDenial::new(
-                        BridgeConditionalDenialKind::SignalContractInstallation,
+                        BridgeConditionalDenialKind::SignalExecution(
+                            super::BridgeSignalDenial::ContractInstallation(cause),
+                        ),
                         "Signal rejected the owner-bound conditional contract",
                     )
                     .with_lowering_counters(counters)
@@ -240,7 +244,9 @@ impl BridgeOwnedSignalRuntime {
                 .observe_signal_branch_basis(selected)
                 .map_err(|denial| {
                     BridgeConditionalDenial::new(
-                        BridgeConditionalDenialKind::SignalExecution,
+                        BridgeConditionalDenialKind::SignalExecution(
+                            super::BridgeSignalDenial::BranchObservation(denial.clone()),
+                        ),
                         format!("Signal branch identity admission was denied: {denial:?}"),
                     )
                     .with_lowering_counters(counters)
@@ -294,7 +300,8 @@ impl BridgeOwnedSignalRuntime {
         }
         counters.correspondence_registrations_inspected += registrations.len();
         registrations.sort_by_key(|registration| registration.dependency().dependency_ordinal());
-        let (graph_instance_id, node) = declared_signal_node(registrations, counters)?;
+        let (graph_instance_id, node) =
+            super::declared_signal_node::declared_signal_node(registrations, counters)?;
         counters.signal_graph_checks += 1;
         if graph_instance_id
             != self
@@ -366,34 +373,4 @@ impl Drop for BridgeOwnedSignalRuntime {
         self.revoke_conditional_liveness();
         self.revoke_managed_clock_liveness();
     }
-}
-
-fn declared_signal_node(
-    registrations: &[crate::correspondence::BridgeSemanticCorrespondenceRegistration],
-    counters: &mut BridgeInstalledConditionalLoweringCounters,
-) -> Result<(u64, worth_signal::facade::NodeId), BridgeConditionalDenial> {
-    let mut targets = registrations
-        .iter()
-        .flat_map(|registration| registration.targets.iter());
-    let first_target = targets.next().ok_or_else(|| {
-        BridgeConditionalDenial::new(
-            BridgeConditionalDenialKind::EmptyCorrespondenceSet,
-            "conditional registrations retained no Signal target",
-        )
-        .with_lowering_counters(*counters)
-    })?;
-    counters.correspondence_targets_inspected += 1;
-    let graph = first_target.graph_instance_id();
-    let first = first_target.node;
-    for target in targets {
-        counters.correspondence_targets_inspected += 1;
-        if target.graph_instance_id() != graph || target.node != first {
-            return Err(BridgeConditionalDenial::new(
-                BridgeConditionalDenialKind::MixedSignalNodes,
-                "one conditional declaration cannot lower across multiple Signal nodes",
-            )
-            .with_lowering_counters(*counters));
-        }
-    }
-    Ok((graph, first))
 }

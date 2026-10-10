@@ -15,7 +15,7 @@ use super::WorthQueryInstalledProduct;
 use entry::WorthQueryConditionalEvaluationEntry;
 
 type WorthQueryConditionalExecutionStop = (
-    BridgeConditionalDenialKind,
+    crate::domain_installation::WorthQueryConditionalExecutionDenialKind,
     String,
     worth_signal::facade::SignalConditionalDecisionCounters,
     usize,
@@ -50,7 +50,16 @@ impl WorthQueryInstalledProduct {
         context: &mut dyn std::any::Any,
     ) -> Result<WorthQueryExecutedConditional, WorthQueryConditionalExecutionStop> {
         self.validate_selected_source(selected, request.bridge_snapshot_identity)
-            .map_err(|(kind, detail)| (kind, detail.to_string(), Default::default(), 0))?;
+            .map_err(|(kind, detail)| {
+                (
+                    crate::domain_installation::WorthQueryConditionalExecutionDenialKind::Bridge(
+                        kind,
+                    ),
+                    detail.to_string(),
+                    Default::default(),
+                    0,
+                )
+            })?;
         self.conditional_evaluations
             .execute(execution, self, selected, request, context)
     }
@@ -96,8 +105,11 @@ impl WorthQueryConditionalEvaluationRegistry {
             match entry.admit_session(installed, execution) {
                 Ok(session) => break session,
                 Err(denial)
-                    if denial.kind()
-                        == BridgeConditionalDenialKind::ConditionalEvaluationAdmissionCapacity
+                    if matches!(denial.kind(), BridgeConditionalDenialKind::SignalExecution(
+                        worth_runtime_bridge::facade::BridgeSignalDenial::ConditionalExecution(
+                            worth_signal::facade::branch::SignalConditionalServiceExecutionDenial::AdmissionCapacityExhausted
+                        )
+                    ))
                         && self.cache.evict_oldest_idle_except(&entry) => {}
                 Err(denial) => return Err(denial_parts(denial)),
             }
@@ -110,7 +122,7 @@ impl WorthQueryConditionalEvaluationRegistry {
 
 fn admission_capacity_stop() -> WorthQueryConditionalExecutionStop {
     (
-        BridgeConditionalDenialKind::ConditionalEvaluationAdmissionCapacity,
+        crate::domain_installation::WorthQueryConditionalExecutionDenialKind::EvaluationCacheExhausted,
         "all installed conditional evaluation slots are actively retained".to_string(),
         Default::default(),
         0,
@@ -119,7 +131,7 @@ fn admission_capacity_stop() -> WorthQueryConditionalExecutionStop {
 
 fn denial_parts(denial: BridgeConditionalDenial) -> WorthQueryConditionalExecutionStop {
     (
-        denial.kind(),
+        crate::domain_installation::WorthQueryConditionalExecutionDenialKind::Bridge(denial.kind()),
         denial.detail().to_string(),
         denial.signal_counters(),
         denial.semantic_observation_reads(),

@@ -51,7 +51,7 @@ where
         current: WorthQueryCurrentTemporalIntent<Schema, IntentEntity, IdentityValue, RevisionValue>,
         projected: WorthQueryAdmittedTemporalProjection<Schema, Operation, Input, Scope, Invoker::Projection>,
         idempotency: &WorthQueryPreparedTemporalIdempotency,
-    ) -> Result<WorthQueryTemporalReentryOutcome, String>
+    ) -> Result<WorthQueryTemporalReentryOutcome, super::super::WorthQueryConditionalReentryFailure>
     where
         RevisionField: OperationReads<Operation>,
         RevisionField: DeclaredApplicationFieldValue<Value = RevisionValue>,
@@ -63,36 +63,36 @@ where
     {
         let reads = runtime
             .begin_projected_application_read_attempt(projected.admission, projected.projection, worth_execution::ExecutionAllocationPolicy::SystemAllocation)
-            .map_err(|denial| denial.to_string())?;
+            .map_err(|denial| super::super::WorthQueryConditionalReentryFailure::ApplicationAttempt(denial.kind()))?;
         let mut effects = reads
             .complete_projected_dependencies(crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
-            .map_err(|denial| denial.to_string())?
+            .map_err(|denial| super::super::WorthQueryConditionalReentryFailure::ApplicationAttempt(denial.kind()))?
             .begin_effect_program();
         isolate_invoker(|| {
             self.invoker
                 .apply(candidate.input().clone(), projected.host_projection, &mut effects)
         })
-        .map_err(|detail| format!("temporal operation invocation failed: {detail}"))?
-        .map_err(|failure| format!("{:?}: {}", failure.kind(), failure.detail()))?;
+        .map_err(|super::invoker_isolation::TemporalInvokerPanicked| super::super::WorthQueryConditionalReentryFailure::EffectInvokerPanicked)?
+        .map_err(super::super::WorthQueryConditionalReentryFailure::Invocation)?;
         let target = effects
             .existing_entity(&current.entity)
-            .map_err(|denial| denial.to_string())?;
+            .map_err(|denial| super::super::WorthQueryConditionalReentryFailure::ApplicationAttempt(denial.kind()))?;
         let next_revision = candidate
             .revision()
             .checked_add(1)
             .and_then(RevisionField::Binding::from_revision)
-            .ok_or_else(|| "temporal intent revision cannot advance".to_string())?;
+            .ok_or(super::super::WorthQueryConditionalReentryFailure::IntentRevisionCannotAdvance)?;
         effects
             .write_field(&target, self.revision_field, next_revision)
-            .map_err(|denial| denial.to_string())?;
+            .map_err(|denial| super::super::WorthQueryConditionalReentryFailure::ApplicationAttempt(denial.kind()))?;
         effects
             .write_field(
                 &target,
                 self.lifecycle_field,
                 self.completed_lifecycle.clone(),
             )
-            .map_err(|denial| denial.to_string())?;
-        let program = effects.finish().map_err(|denial| denial.to_string())?;
+            .map_err(|denial| super::super::WorthQueryConditionalReentryFailure::ApplicationAttempt(denial.kind()))?;
+        let program = effects.finish().map_err(|denial| super::super::WorthQueryConditionalReentryFailure::ApplicationAttempt(denial.kind()))?;
         Ok(classify_commit(
             runtime.compare_and_commit_conditional_operation(phase, program, idempotency.binding()),
         ))
@@ -132,7 +132,7 @@ fn classify_commit(
         WorthQueryApplicationCommitOutcome::Denied(denial) => denial::classify_denial(&denial),
         WorthQueryApplicationCommitOutcome::Aborted => {
             WorthQueryTemporalReentryOutcome::RetryableFailure(
-                "temporal application commit aborted before effect".to_string(),
+                super::super::WorthQueryConditionalReentryFailure::AbortedBeforeEffect,
             )
         }
         WorthQueryApplicationCommitOutcome::Deferred(deferred) => {
@@ -142,7 +142,9 @@ fn classify_commit(
             WorthQueryTemporalReentryOutcome::SettlementDeferred(deferred)
         }
         WorthQueryApplicationCommitOutcome::Indeterminate(evidence) => {
-            WorthQueryTemporalReentryOutcome::Indeterminate(evidence.detail().to_string())
+            WorthQueryTemporalReentryOutcome::Indeterminate(
+                super::super::WorthQueryConditionalReentryFailure::UnresolvedCommit(evidence),
+            )
         }
     }
 }

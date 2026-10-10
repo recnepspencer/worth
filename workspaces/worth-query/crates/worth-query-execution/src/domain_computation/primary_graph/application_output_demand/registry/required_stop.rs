@@ -77,7 +77,17 @@ pub(super) fn fails_row(stop: &WorthQueryOutputDemandDenial) -> bool {
 pub(super) fn intrinsic_to_row(kind: WorthQueryOutputDemandDenialKind) -> bool {
     use WorthQueryOutputDemandDenialKind as Kind;
     match kind {
+        Kind::ProductDelivery(_) => true,
+        Kind::CorrespondenceDelivery(cause) => {
+            WorthQueryOutputDemandDenial::new(Kind::CorrespondenceDelivery(cause), "")
+                .recovery_posture()
+                == WorthQueryOutputDemandRecoveryPosture::Terminal
+        }
         Kind::ExecutionRequest(_) => false,
+        Kind::BridgeConditional(kind) => {
+            WorthQueryOutputDemandDenial::new(Kind::BridgeConditional(kind), "").recovery_posture()
+                == WorthQueryOutputDemandRecoveryPosture::Terminal
+        }
         Kind::Cancelled
         | Kind::TimedOut
         | Kind::WorkBudgetExceeded
@@ -150,8 +160,8 @@ pub(super) fn head_stop(
     if let Some(denial) = stopped.filter(|denial| fails_row(denial)) {
         return Some(denial.clone());
     }
-    record.required_stop.map(|kind| {
-        WorthQueryOutputDemandDenial::new(kind, "the required upstream refresh stopped")
+    record.required_stop.as_ref().map(|kind| {
+        WorthQueryOutputDemandDenial::new(kind.clone(), "the required upstream refresh stopped")
     })
 }
 

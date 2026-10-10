@@ -23,7 +23,9 @@ impl BridgeOwnedSignalRuntime {
             .apply_installation_extension(transaction, prepared.signal)
             .map_err(|denial| {
                 BridgeConditionalDenial::new(
-                    BridgeConditionalDenialKind::SignalContractInstallation,
+                    BridgeConditionalDenialKind::SignalExecution(
+                        super::super::BridgeSignalDenial::InstallationExtension(denial.clone()),
+                    ),
                     format!("Signal installation extension was denied: {denial:?}"),
                 )
             })?;
@@ -43,7 +45,9 @@ impl BridgeOwnedSignalRuntime {
             let (signal_contract, definition_custody, signal_port) =
                 signal.into_retained_parts(binding).map_err(|denial| {
                     BridgeConditionalDenial::new(
-                        BridgeConditionalDenialKind::SignalContractInstallation,
+                        BridgeConditionalDenialKind::SignalExecution(
+                            super::super::BridgeSignalDenial::InstallationExtension(denial.clone()),
+                        ),
                         format!("Signal successor activation was denied: {denial:?}"),
                     )
                 })?;

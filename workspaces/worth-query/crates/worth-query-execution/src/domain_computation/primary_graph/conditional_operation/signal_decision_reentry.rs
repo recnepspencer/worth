@@ -195,7 +195,7 @@ pub(super) fn retained_decision_counts(
             WorthQueryRetainedConditionalDecision::OperationRetryable(evidence, detail)
             | WorthQueryRetainedConditionalDecision::OperationIndeterminate(evidence, detail) => {
                 let _decision = evidence.signal().class();
-                let _failure_detail = detail.as_str();
+                let _failure_cause = detail;
                 counts.failed += 1;
             }
             WorthQueryRetainedConditionalDecision::OperationSettlementDeferred(
@@ -208,8 +208,11 @@ pub(super) fn retained_decision_counts(
             }
             WorthQueryRetainedConditionalDecision::OperationCommitted(_)
             | WorthQueryRetainedConditionalDecision::OperationAlreadyCommitted(_) => {}
-            WorthQueryRetainedConditionalDecision::Failed(detail) => {
-                let _failure_detail = detail.as_str();
+            WorthQueryRetainedConditionalDecision::InterruptedDuringReentry => {
+                counts.failed += 1;
+            }
+            WorthQueryRetainedConditionalDecision::Failed(cause) => {
+                let _failure_kind = cause.kind();
                 counts.failed += 1;
             }
         }
@@ -257,11 +260,7 @@ pub(super) fn evaluate_due_wake(
         .map(|evidence| super::execution_provenance::signal_decision(evidence.signal().class()));
     let decision = match result {
         Ok(evidence) => classify(evidence),
-        Err(denial) => WorthQueryRetainedConditionalDecision::Failed(format!(
-            "{:?}: {}",
-            denial.kind(),
-            denial.detail()
-        )),
+        Err(denial) => WorthQueryRetainedConditionalDecision::Failed(denial),
     };
     WorthQueryRetainedConditionalWake {
         lifecycle_token: Default::default(),
@@ -325,11 +324,7 @@ pub(super) fn reconsider_retained_wake(
         worth_query_installation::facade::WorthQueryCanonicalWorkEvidence::zero();
     wake.decision = match result {
         Ok(evidence) => classify(evidence),
-        Err(denial) => WorthQueryRetainedConditionalDecision::Failed(format!(
-            "{:?}: {}",
-            denial.kind(),
-            denial.detail()
-        )),
+        Err(denial) => WorthQueryRetainedConditionalDecision::Failed(denial),
     };
 }
 

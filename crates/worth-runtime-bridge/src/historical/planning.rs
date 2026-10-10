@@ -90,7 +90,7 @@ impl RuntimeBridge {
                     ), execution)
                     .map_err(|error| {
                         BridgeDeliveryError::new(
-                            BridgeDeliveryErrorKind::HistoricalTruthViewUnavailable,
+                            error.historical_delivery_kind(),
                             format!(
                                 "Truth-view selector `{}` could not resolve committed envelope for `{}`: {error}",
                                 selector.selector_identity().as_str(),
@@ -103,7 +103,7 @@ impl RuntimeBridge {
             BridgeTruthViewKind::BranchHead => {
                 let source = self.truth_branch_head_source.as_ref().ok_or_else(|| {
                     BridgeDeliveryError::new(
-                        BridgeDeliveryErrorKind::HistoricalTruthViewUnavailable,
+                        BridgeDeliveryErrorKind::MissingBranchHeadSource,
                         format!(
                             "Truth-view selector `{}` requires a configured truth branch-head source.",
                             selector.selector_identity().as_str()
@@ -114,7 +114,7 @@ impl RuntimeBridge {
                     .load_branch_head_patch(selector.branch_identity(), execution)
                     .map_err(|error| {
                         BridgeDeliveryError::new(
-                            BridgeDeliveryErrorKind::HistoricalTruthViewUnavailable,
+                            error.historical_delivery_kind(),
                             format!(
                                 "Truth-view selector `{}` could not resolve branch head for `{}`: {error}",
                                 selector.selector_identity().as_str(),

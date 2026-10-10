@@ -38,9 +38,8 @@ fn bridge_snapshot_contract_rejects_missing_required_reads() {
         .deliver_invalidation(route, execution)
         .expect_err("bridge should reject incomplete snapshot read results");
 
-    assert_eq!(
-        error.kind(),
-        BridgeDeliveryErrorKind::SnapshotReadContractViolation
+    assert!(
+        matches!(error.kind(), BridgeDeliveryErrorKind::SnapshotReadContractViolation(cause) if cause.kind() == crate::snapshot::BridgeSnapshotReadErrorKind::RecordCountMismatch)
     );
     assert_eq!(
         error

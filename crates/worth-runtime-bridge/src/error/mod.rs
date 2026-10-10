@@ -10,3 +10,5 @@ pub use typed::*;
 
 mod execution_denial;
 pub use execution_denial::BridgeExecutionDenial;
+
+pub(crate) use execution_denial::BridgeSnapshotDeliveryStage;

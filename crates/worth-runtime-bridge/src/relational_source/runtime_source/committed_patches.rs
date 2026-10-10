@@ -192,9 +192,9 @@ impl CommittedPatchSource for RuntimeBridgeRelationalSource {
         request: RelationalCommittedPatchRequest,
         execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeCommittedPatchEnvelope, RelationalBridgeSourceError> {
-        crate::snapshot::BridgeSnapshotReadError::checkpoint(execution).map_err(|denial| {
-            RelationalBridgeSourceError::new(format!("Bridge source request refused: {denial:?}"))
-        })?;
+        execution
+            .run(worth_execution::ExecutionWorkCeiling::new(0), |_| ())
+            .map_err(|denial| RelationalBridgeSourceError::execution_denied(denial.into()))?;
 
         let commit_id = parse_bridge_commit_identity(request.commit_identity())?;
         let publication = match request.snapshot_identity() {
@@ -207,23 +207,6 @@ impl CommittedPatchSource for RuntimeBridgeRelationalSource {
                 None => self.publish_commit(commit_id)?,
             },
         };
-        match publication {
-            TransitionOutcome::Success(publication) => Ok(publication.into_bridge_envelope()),
-            TransitionOutcome::Denied(denial) => Err(RelationalBridgeSourceError::new(format!(
-                "relational committed patch could not be admitted by Bridge: {denial}"
-            ))),
-            TransitionOutcome::Deferred(_) => Err(RelationalBridgeSourceError::new(
-                "relational committed patch publication deferred",
-            )),
-            TransitionOutcome::Stale(_) => Err(RelationalBridgeSourceError::new(
-                "relational committed patch authority is stale",
-            )),
-            TransitionOutcome::RebindRequired(_) => Err(RelationalBridgeSourceError::new(
-                "relational committed patch requires graph rebind",
-            )),
-            TransitionOutcome::Failed(_) => Err(RelationalBridgeSourceError::new(
-                "relational committed patch lowering failed",
-            )),
-        }
+        super::publication_result::publication_envelope(publication)
     }
 }

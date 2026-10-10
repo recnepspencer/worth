@@ -31,8 +31,14 @@ pub use continuity_lineage::{
     BridgeHistoricalLineageTopology, BridgeHistoricalResolvedLineageIdentity,
     BridgeHistoricalResolvedRecordIdentity, ContinuityLineageSource,
 };
-pub use signal_sink::{InvalidationSink, SignalBridgeSink, SignalBridgeSinkError};
-pub use source_materialization::{BridgeSourceAdapter, RelationalBridgeSourceError};
+pub use signal_sink::{
+    InvalidationSink, SignalBridgeSink, SignalBridgeSinkError, SignalBridgeSinkErrorKind,
+};
+pub use source_materialization::BridgeSourceAdapter;
+mod source_failure;
+pub use source_failure::{
+    BridgeSourceBindingDenial, RelationalBridgeSourceError, RelationalBridgeSourceErrorTag,
+};
 pub use truth_sources::{
     CommittedPatchSource, RelationalBridgeSource, RelationalCommittedPatchRequest,
     SnapshotReadSource, SnapshotReaderPool, TruthBranchHeadSource,

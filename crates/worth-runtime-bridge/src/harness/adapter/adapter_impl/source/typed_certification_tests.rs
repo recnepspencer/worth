@@ -334,24 +334,23 @@ fn adapter_snapshot_failures_retain_typed_failure_kind_and_zero_success_residue(
 
     assert_typed_source_failure(
         open_failure,
-        BridgeDeliveryErrorKind::SnapshotAcquisitionFailure,
+        |kind| matches!(kind, BridgeDeliveryErrorKind::SnapshotAcquisitionFailure(cause) if cause.kind() == crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure),
     );
-    assert_typed_source_failure(
-        drift_failure,
-        BridgeDeliveryErrorKind::SnapshotIdentityMismatch,
-    );
+    assert_typed_source_failure(drift_failure, |kind| {
+        matches!(kind, BridgeDeliveryErrorKind::SnapshotIdentityMismatch)
+    });
 }
 
 fn assert_typed_source_failure(
     execution: SourceHarnessExecution,
-    expected_kind: BridgeDeliveryErrorKind,
+    expected_kind: fn(&BridgeDeliveryErrorKind) -> bool,
 ) {
     let SourceHarnessExecution::Rejected { failure } = execution else {
         panic!("expected rejected source execution");
     };
     let bundle = SourceHarnessCertificationBundle::rejected(&failure);
 
-    assert_eq!(failure.delivery_error_kind(), expected_kind);
+    assert!(expected_kind(&failure.delivery_error_kind()));
     assert!(bundle.truth_view_digest().is_none());
     assert!(bundle.source_contract_digest().is_none());
     assert_eq!(bundle.counter_snapshot().source_materialization_count(), 0);

@@ -68,7 +68,7 @@ impl CommittedPatchSource for TestRelationalSource {
             .get(request.commit_identity())
             .cloned()
             .ok_or_else(|| {
-                RelationalBridgeSourceError::new(format!(
+                RelationalBridgeSourceError::new(worth_runtime_bridge::facade::RelationalBridgeSourceErrorTag::ExternalSourceFailure, format!(
                     "no committed patch registered for `{:?}`",
                     request.commit_identity()
                 ))
@@ -90,7 +90,7 @@ impl SnapshotReadSource for TestRelationalSource {
             .get(identity)
             .cloned()
             .ok_or_else(|| {
-                RelationalBridgeSourceError::new(format!(
+                RelationalBridgeSourceError::new(worth_runtime_bridge::facade::RelationalBridgeSourceErrorTag::ExternalSourceFailure, format!(
                     "no snapshot registered for `{:?}`",
                     identity
                 ))
@@ -113,17 +113,17 @@ impl TruthBranchHeadSource for TestRelationalSource {
             .read()
             .expect("fixture bridge source lock poisoned");
         let commit_identity = state.branch_heads.get(branch_identity).ok_or_else(|| {
-            RelationalBridgeSourceError::new(format!(
-                "no branch head registered for `{:?}`",
-                branch_identity
-            ))
+            RelationalBridgeSourceError::new(
+                worth_runtime_bridge::facade::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                format!("no branch head registered for `{:?}`", branch_identity),
+            )
         })?;
         state
             .committed_patches
             .get(commit_identity)
             .cloned()
             .ok_or_else(|| {
-                RelationalBridgeSourceError::new(format!(
+                RelationalBridgeSourceError::new(worth_runtime_bridge::facade::RelationalBridgeSourceErrorTag::ExternalSourceFailure, format!(
                     "branch head `{:?}` for `{:?}` had no patch envelope",
                     commit_identity, branch_identity
                 ))

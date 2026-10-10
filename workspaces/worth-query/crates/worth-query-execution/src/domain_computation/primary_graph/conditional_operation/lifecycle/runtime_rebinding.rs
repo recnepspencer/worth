@@ -68,7 +68,7 @@ where
     let bounds = binding.bounds();
     let lowering = bridge.readmit_lowering(predecessor).map_err(|denial| {
         WorthQueryConditionalRuntimeInstallationDenial::new(
-            WorthQueryConditionalRuntimeInstallationDenialKind::BridgeRejected,
+            WorthQueryConditionalRuntimeInstallationDenialKind::BridgeConditional(denial.kind()),
             format!("{:?}: {}", denial.kind(), denial.detail()),
         )
     })?;
@@ -77,7 +77,9 @@ where
         .admit_exact_conditional_signal_basis(&lowering, product.signal_basis())
         .map_err(|denial| {
             WorthQueryConditionalRuntimeInstallationDenial::new(
-                WorthQueryConditionalRuntimeInstallationDenialKind::BridgeRejected,
+                WorthQueryConditionalRuntimeInstallationDenialKind::BridgeConditional(
+                    denial.kind(),
+                ),
                 denial.detail(),
             )
         })?;
@@ -92,7 +94,7 @@ where
         })
         .map_err(|denial| {
             WorthQueryConditionalRuntimeInstallationDenial::new(
-                WorthQueryConditionalRuntimeInstallationDenialKind::BridgeRejected,
+                WorthQueryConditionalRuntimeInstallationDenialKind::ManagedTemporal(denial.kind()),
                 denial.detail(),
             )
         })?;

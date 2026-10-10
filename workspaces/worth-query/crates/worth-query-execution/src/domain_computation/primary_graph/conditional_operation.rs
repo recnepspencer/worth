@@ -1,3 +1,7 @@
+mod reentry_failure;
+pub use reentry_failure::WorthQueryConditionalReentryFailure;
+mod authoritative_delivery_failure;
+pub use authoritative_delivery_failure::WorthQueryConditionalAuthoritativeDeliveryFailure;
 mod access_validation;
 mod application_operation_reentry;
 mod authoritative_reconsideration;

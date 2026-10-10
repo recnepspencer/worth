@@ -162,7 +162,10 @@ impl SnapshotReadSource for StructSource {
         if identity == &snapshot_identity() {
             Ok(Box::new(StructSnapshotReader))
         } else {
-            Err(RelationalBridgeSourceError::new("unknown struct snapshot"))
+            Err(RelationalBridgeSourceError::new(
+                worth_runtime_bridge::facade::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                "unknown struct snapshot",
+            ))
         }
     }
 }

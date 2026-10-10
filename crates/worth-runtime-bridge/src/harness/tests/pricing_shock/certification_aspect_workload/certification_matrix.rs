@@ -73,9 +73,8 @@ fn pricing_shock_certification_matrix_distinguishes_control_replay_and_hostile_l
         control.replay.source_commit,
         crate::truth_identity_fixtures::truth_commit_fixture("commit:steel-main")
     );
-    assert_eq!(
-        hostile.failure_class,
-        BridgeFailureClass::Delivery(BridgeDeliveryErrorKind::SnapshotAcquisitionFailure)
+    assert!(
+        matches!(hostile.failure_class, BridgeFailureClass::Delivery(BridgeDeliveryErrorKind::SnapshotAcquisitionFailure(ref cause)) if cause.kind() == crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure)
     );
     assert_eq!(
         hostile.source_commit,

@@ -97,8 +97,10 @@ impl BridgeOwnedSignalRuntime {
                 .load_committed_patch(request, execution)
             {
                 Ok(envelope) => envelope,
-                Err(_) => return Ok(TransitionOutcome::Failed(
-                    crate::correspondence::BridgeCorrespondenceAdmissionFailure::SourceLoadFailed,
+                Err(cause) => return Ok(TransitionOutcome::Failed(
+                    crate::correspondence::BridgeCorrespondenceAdmissionFailure::SourceLoadFailed(
+                        cause,
+                    ),
                 )),
             };
         let mut counters = crate::correspondence::CorrespondenceDeliveryCounters::zero();
@@ -226,21 +228,14 @@ fn map_signal_delivery_denial(
 ) -> crate::correspondence::CorrespondenceDeliveryOutcome {
     use worth_signal::facade::branch::SignalCommittedPatchDeliveryDenial as Denial;
     match denial {
-        Denial::StaleBasisAdmission => TransitionOutcome::RebindRequired(
-            crate::correspondence::BridgeCorrespondenceRebindRequired::ConditionalBasis,
+        native @ (Denial::StaleBasisAdmission
+        | Denial::DefinitionReadmissionRequired
+        | Denial::DefinitionMismatch
+        | Denial::ForeignGraph
+        | Denial::MissingOrStaleTarget) => TransitionOutcome::RebindRequired(
+            crate::correspondence::BridgeCorrespondenceRebindRequired::ConditionalService(native),
         ),
-        Denial::DefinitionReadmissionRequired => TransitionOutcome::RebindRequired(
-            crate::correspondence::BridgeCorrespondenceRebindRequired::ConditionalDefinitionReadmission,
-        ),
-        Denial::DefinitionMismatch => TransitionOutcome::RebindRequired(
-            crate::correspondence::BridgeCorrespondenceRebindRequired::ConditionalDefinitionMismatch,
-        ),
-        Denial::ForeignGraph | Denial::MissingOrStaleTarget => {
-            TransitionOutcome::RebindRequired(
-                crate::correspondence::BridgeCorrespondenceRebindRequired::ConditionalTarget,
-            )
-        }
-        Denial::OwnerUnavailable(_)
+        native @ (Denial::OwnerUnavailable(_)
         | Denial::OwnerAdmission(_)
         | Denial::EmptyChangeSet
         | Denial::ForeignContractTarget
@@ -248,8 +243,10 @@ fn map_signal_delivery_denial(
         | Denial::SuccessorCaptureCapacityExhausted
         | Denial::SuccessorCaptureWorkExhausted { .. }
         | Denial::SuccessorCaptureUnavailable
-        | Denial::SignalMutation(_) => TransitionOutcome::Failed(
-            crate::correspondence::BridgeCorrespondenceAdmissionFailure::SignalMutationFailed,
+        | Denial::SignalMutation(_)) => TransitionOutcome::Failed(
+            crate::correspondence::BridgeCorrespondenceAdmissionFailure::SignalMutationFailed(
+                crate::correspondence::BridgeCorrespondenceSignalFailure::CommittedPatch(native),
+            ),
         ),
     }
 }

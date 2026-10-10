@@ -83,7 +83,12 @@ fn runtime_replay_rejects_historical_authority_drift_as_authority_mismatch() {
                     ),
                 ],
             )
-            .map_err(|error| crate::adapter::RelationalBridgeSourceError::new(error.to_string()))
+            .map_err(|error| {
+                crate::adapter::RelationalBridgeSourceError::new(
+                    crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                    error.to_string(),
+                )
+            })
         }
     }
 
@@ -100,6 +105,7 @@ fn runtime_replay_rejects_historical_authority_drift_as_authority_mismatch() {
                 Ok(Box::new(StaticSnapshotReader))
             } else {
                 Err(crate::adapter::RelationalBridgeSourceError::new(
+                    crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
                     "missing snapshot",
                 ))
             }
@@ -139,7 +145,12 @@ fn runtime_replay_rejects_historical_authority_drift_as_authority_mismatch() {
                     ),
                 ],
             )
-            .map_err(|error| crate::adapter::RelationalBridgeSourceError::new(error.to_string()))
+            .map_err(|error| {
+                crate::adapter::RelationalBridgeSourceError::new(
+                    crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                    error.to_string(),
+                )
+            })
         }
     }
 

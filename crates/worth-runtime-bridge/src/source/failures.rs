@@ -92,7 +92,7 @@ impl SourceFailureRecord {
     }
 
     pub fn delivery_error_kind(&self) -> BridgeDeliveryErrorKind {
-        self.delivery_error_kind
+        self.delivery_error_kind.clone()
     }
 
     pub fn detail(&self) -> &str {

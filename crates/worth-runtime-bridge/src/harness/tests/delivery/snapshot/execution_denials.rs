@@ -95,7 +95,12 @@ impl InvalidationSink for RefusingSink {
                 };
                 Err(denial.into())
             })
-            .map_err(|denial| SignalBridgeSinkError::Execution(denial.into()))?
+            .map_err(|denial| {
+                SignalBridgeSinkError::new(
+                    crate::adapter::SignalBridgeSinkErrorKind::Execution(denial.into()),
+                    "request admission refused",
+                )
+            })?
     }
 }
 

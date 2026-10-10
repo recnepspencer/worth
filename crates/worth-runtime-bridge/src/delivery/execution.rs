@@ -133,7 +133,7 @@ fn deliver_prepared_route_in_scope(
         Ok(snapshot_reader) => snapshot_reader,
         Err(error) => {
             let failure = BridgeDeliveryError::new(
-                BridgeDeliveryErrorKind::SnapshotAcquisitionFailure,
+                error.delivery_kind(),
                 format!(
                     "Bridge failed to open snapshot `{}`: {error}",
                     lowering_plan.source_snapshot().as_str()
@@ -175,7 +175,7 @@ fn deliver_prepared_route_in_scope(
     let read_result = snapshot
         .read_packet(read_packet, request)
         .map_err(|error| {
-            let kind = error.delivery_kind(BridgeDeliveryErrorKind::SnapshotReadFailure);
+            let kind = error.delivery_kind(crate::error::BridgeSnapshotDeliveryStage::Read);
             BridgeDeliveryError::new(
                 kind,
                 format!(
@@ -213,7 +213,7 @@ fn deliver_prepared_route_in_scope(
         Ok(validated_reads) => validated_reads,
         Err(error) => {
             let failure = BridgeDeliveryError::new(
-                error.delivery_kind(BridgeDeliveryErrorKind::SnapshotReadContractViolation),
+                error.delivery_kind(crate::error::BridgeSnapshotDeliveryStage::ContractValidation),
                 format!(
                     "Bridge snapshot read contract failed for `{}`: {error}",
                     lowering_plan.source_snapshot().as_str()
