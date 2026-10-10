@@ -53,6 +53,24 @@ fn concatenation_preserves_partition_identity_order_after_build_and_update() {
 }
 
 #[test]
+fn reduction_shape_uses_identity_digest_for_a_cancelling_float_pair() {
+    // The fixed digest priorities of identities 1, 2, 3 put 3 at the root.
+    // That groups the cancelling pair before adding 1, whose exact result is 1.
+    let (tree, _) = from_plan(
+        plan(&[1, 2, 3]),
+        vec![1.0e16_f64, -1.0e16, 1.0],
+        0.0,
+        |left, right| left + right,
+    )
+    .unwrap();
+    assert_eq!(
+        tree.result().to_bits(),
+        1.0_f64.to_bits(),
+        "reduction shape must follow partition identity digest"
+    );
+}
+
+#[test]
 fn a_leaf_reads_the_value_its_partition_holds() {
     let (mut tree, _) = from_plan(plan(&[3, 5, 9]), vec![30_u64, 50, 90], 0, sum).unwrap();
 
