@@ -30,48 +30,65 @@ enum NarrowingAxis {
 
 #[test]
 fn every_stored_narrowing_axis_is_enforced_by_production_admission() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
-        for axis in [
-            NarrowingAxis::Action,
-            NarrowingAxis::Purpose,
-            NarrowingAxis::Disclosure,
-            NarrowingAxis::RelatedRelationship,
-            NarrowingAxis::Magnitude,
-            NarrowingAxis::Workflow,
-            NarrowingAxis::ValidityStart,
-            NarrowingAxis::ValidityEnd,
-            NarrowingAxis::DownstreamDelegation,
-        ] {
-            let world = installed_delegated_capability_world();
-            world.authorization_time.script([time(100)]);
-            break_narrowing_axis(
-                &host_custody.phase_for_application(&world.application),
-                &world,
-                axis,
-            );
-            let request = live_scope();
-            let principal = authenticated_principal(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
-                &world,
-                &request,
-            );
+    for axis in [
+        NarrowingAxis::Action,
+        NarrowingAxis::Purpose,
+        NarrowingAxis::Disclosure,
+        NarrowingAxis::RelatedRelationship,
+        NarrowingAxis::Magnitude,
+        NarrowingAxis::Workflow,
+        NarrowingAxis::ValidityStart,
+        NarrowingAxis::ValidityEnd,
+        NarrowingAxis::DownstreamDelegation,
+    ] {
+        let world = installed_delegated_capability_world();
+        world.authorization_time.script([time(100)]);
+        world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+                break_narrowing_axis(
+                    &host_custody.phase_for_application(&world.application),
+                    &world,
+                    axis,
+                )
+            })
+            .expect("the fixture read owns its installed host call");
+        let request = live_scope();
+        let principal = world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+                authenticated_principal(
+                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &world,
+                    &request,
+                )
+            })
+            .expect("the fixture read owns its installed host call");
 
-            let Err(denial) = admitted_capability_access(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
-                &world,
-                &principal,
-                &request,
-                100,
-            ) else {
-                panic!("a widened delegated grant must mint no access authority");
-            };
-            assert_eq!(
-                denial.kind(),
-                WorthQueryOperationAuthorizationDenialKind::DelegationRejected,
-                "axis {axis:?} escaped the installed narrowing transition"
-            );
-        }
-    })
+        let Err(denial) = world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+                admitted_capability_access(
+                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &world,
+                    &principal,
+                    &request,
+                    100,
+                )
+            })
+            .expect("the fixture read owns its installed host call")
+        else {
+            panic!("a widened delegated grant must mint no access authority");
+        };
+        assert_eq!(
+            denial.kind(),
+            WorthQueryOperationAuthorizationDenialKind::DelegationRejected,
+            "axis {axis:?} escaped the installed narrowing transition"
+        );
+    }
 }
 
 fn break_narrowing_axis(
