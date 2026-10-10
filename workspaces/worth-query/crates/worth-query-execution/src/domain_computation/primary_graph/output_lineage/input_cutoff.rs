@@ -148,7 +148,9 @@ impl WorthQueryApplicationOutputLineage {
             runtime_authority: scope.runtime_authority(),
             schema: scope.binding_identity().clone(),
             scope: scope.scope(),
-            output_binding: TypeId::of::<Binding>(),
+            output_binding: self
+                .binding_identity(TypeId::of::<Binding>())
+                .expect("admitted binding is installed"),
         };
         let mut coordinate = ProductCoordinate {
             occurrence: observation.lifecycle_incarnation(),

@@ -1,5 +1,6 @@
 use super::super::FullVerificationStop;
 use super::*;
+use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 
 #[test]
 fn a_retired_row_absent_in_both_images_does_not_change_the_image() {
@@ -32,7 +33,7 @@ fn retirement_image(retired_before_capture: bool) {
         runtime_authority: world.application.runtime.authority_identity().as_u64(),
         schema: world.application.installed_schema.binding_identity(),
         scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(entity),
-        output_binding: std::any::TypeId::of::<StatusOutput>(),
+        output_binding: OutputBindingIdentity::declared("StatusOutput"),
     };
     let identity = RecordedSettlementIdentity::retain(&source, coordinate, 0);
     let graph = world.application.runtime.primary_graph().unwrap();

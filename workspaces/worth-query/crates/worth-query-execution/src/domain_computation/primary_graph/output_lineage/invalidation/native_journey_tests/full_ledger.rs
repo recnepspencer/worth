@@ -1,6 +1,7 @@
 //! A full ledger refuses new derived rows, never a legal writer. Source
 //! publication evicts to its paid empty image; fresh registration recovers
 //! after pinned predecessor custody and the held capacity actually end.
+use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 
 use crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts;
 #[path = "full_ledger/fork_consumption.rs"]
@@ -44,7 +45,7 @@ fn a_full_ledger_still_publishes_retires_and_registers_again() {
         runtime_authority: world.application.runtime.authority_identity().as_u64(),
         schema: world.application.installed_schema.binding_identity(),
         scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(entity),
-        output_binding: TypeId::of::<StatusOutput>(),
+        output_binding: OutputBindingIdentity::declared("StatusOutput"),
     };
     let graph = world.application.runtime.primary_graph().unwrap();
     let handle = graph.integration_handle();

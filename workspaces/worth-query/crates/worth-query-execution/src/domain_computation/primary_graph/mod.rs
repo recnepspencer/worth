@@ -54,6 +54,7 @@ mod request_allocation_control;
 pub(in crate::domain_computation) use output_lineage::{
     InvalidationEditAdmission, SourceInvalidationOwner,
 };
+mod output_binding_identity;
 mod output_family_identity;
 mod output_reuse;
 mod principal_currentness_capture;

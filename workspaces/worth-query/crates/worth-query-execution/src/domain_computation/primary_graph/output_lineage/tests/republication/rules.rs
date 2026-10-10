@@ -133,7 +133,7 @@ fn a_restored_row_without_performed_proof_stays_fresh_until_verified() {
             )
             .is_none());
         stage.lineage.record_restoration(
-            stage.source.output_binding,
+            stage.lineage.binding_type(&stage.source.output_binding),
             stage.source.runtime_authority,
             stage.source.schema.clone(),
             stage.source.scope,
@@ -295,7 +295,7 @@ fn a_stable_alias_is_compared_by_the_witness_of_its_origin() {
                 stage.source.scope,
                 stage.observation.lifecycle_incarnation(),
                 alias_generation,
-                &[stage.source.output_binding],
+                &[stage.lineage.binding_type(&stage.source.output_binding)],
                 PARTITION,
                 4_096,
             )

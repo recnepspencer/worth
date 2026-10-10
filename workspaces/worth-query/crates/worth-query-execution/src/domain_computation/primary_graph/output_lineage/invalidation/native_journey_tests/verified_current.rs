@@ -1,5 +1,6 @@
 //! Actor image and retention behavior, using real native source snapshots.
 //! The existing test-only equality mint establishes actor coverage only.
+use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 
 use super::*;
 use crate::domain_computation::primary_graph::output_lineage::input_cutoff::StableEqualityConsequence;
@@ -28,7 +29,7 @@ fn repeated_current_certification_preserves_image_and_retention_and_rejects_a_ra
         runtime_authority: world.application.runtime.authority_identity().as_u64(),
         schema: world.application.installed_schema.binding_identity(),
         scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(entity),
-        output_binding: TypeId::of::<StatusOutput>(),
+        output_binding: OutputBindingIdentity::declared("StatusOutput"),
     };
     let prior = RecordedSettlementIdentity::retain(&source, coordinate, 0);
     let current = RecordedSettlementIdentity::retain(&source, coordinate, 1);
@@ -94,7 +95,7 @@ fn repeated_current_certification_preserves_image_and_retention_and_rejects_a_ra
             if with_downstream {
                 let downstream = RecordedSettlementIdentity::retain(
                     &SemanticSource {
-                        output_binding: TypeId::of::<DownstreamOutput>(),
+                        output_binding: OutputBindingIdentity::declared("DownstreamOutput"),
                         ..source.clone()
                     },
                     coordinate,

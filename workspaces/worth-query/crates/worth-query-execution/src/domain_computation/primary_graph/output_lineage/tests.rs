@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 use std::sync::Arc;
 
 use super::{
@@ -39,6 +40,10 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
     let first = Arc::new(WorthQueryApplicationOutputCorrespondence::default());
     let sibling = Arc::new(WorthQueryApplicationOutputCorrespondence::default());
     let mut lineage = WorthQueryApplicationOutputLineage::default();
+    lineage.fixture_binding(
+        std::any::TypeId::of::<RestoredOutputBinding>(),
+        "RestoredOutputBinding",
+    );
 
     lineage.record_restoration(
         std::any::TypeId::of::<RestoredOutputBinding>(),
@@ -90,7 +95,7 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
         runtime_authority,
         schema,
         scope,
-        output_binding: std::any::TypeId::of::<RestoredOutputBinding>(),
+        output_binding: OutputBindingIdentity::declared("RestoredOutputBinding"),
     };
     let history = &lineage.by_source[&source][&observation.lifecycle_incarnation()];
     let maximum_generation = observation.reference_generation().get();
@@ -218,6 +223,10 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
         .unwrap(),
     );
     let mut lineage = WorthQueryApplicationOutputLineage::default();
+    lineage.fixture_binding(
+        std::any::TypeId::of::<RestoredOutputBinding>(),
+        "RestoredOutputBinding",
+    );
 
     lineage.record_recovered_prior_output(
         std::any::TypeId::of::<RestoredOutputBinding>(),
@@ -251,7 +260,7 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
         runtime_authority,
         schema: schema.clone(),
         scope,
-        output_binding: std::any::TypeId::of::<RestoredOutputBinding>(),
+        output_binding: OutputBindingIdentity::declared("RestoredOutputBinding"),
     };
     assert_eq!(
         lineage.by_source[&semantic_source][&observation.lifecycle_incarnation()].len(),

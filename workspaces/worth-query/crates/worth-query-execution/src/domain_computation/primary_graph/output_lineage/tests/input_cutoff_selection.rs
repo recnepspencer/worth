@@ -1,4 +1,5 @@
-use std::{any::TypeId, sync::Arc};
+use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
+use std::sync::Arc;
 
 use worth_relational::facade::mvcc::{CompanionPreflightBudget, CompanionPreflightStop};
 use worth_runtime_world::facade::{
@@ -78,15 +79,20 @@ fn cutoff_candidate_pins_the_selected_ancestor_partition_and_denies_before_pin()
         runtime_authority,
         schema: schema.clone(),
         scope: scope.scope(),
-        output_binding: TypeId::of::<RestoredOutputBinding>(),
+        output_binding: OutputBindingIdentity::declared("RestoredOutputBinding"),
     };
     let target_partition = [0x11; 32];
     let sibling_partition = [0x22; 32];
     let target = Arc::new(WorthQueryApplicationOutputCorrespondence::default());
     let sibling = Arc::new(WorthQueryApplicationOutputCorrespondence::default());
     let mut lineage = WorthQueryApplicationOutputLineage::default();
+    lineage.fixture_binding(
+        std::any::TypeId::of::<RestoredOutputBinding>(),
+        "RestoredOutputBinding",
+    );
+
     lineage.record_recovered_prior_output(
-        source.output_binding,
+        lineage.binding_type(&source.output_binding),
         runtime_authority,
         schema.clone(),
         source.scope,
@@ -100,7 +106,7 @@ fn cutoff_candidate_pins_the_selected_ancestor_partition_and_denies_before_pin()
         None,
     );
     lineage.record_recovered_prior_output(
-        source.output_binding,
+        lineage.binding_type(&source.output_binding),
         runtime_authority,
         schema,
         source.scope,

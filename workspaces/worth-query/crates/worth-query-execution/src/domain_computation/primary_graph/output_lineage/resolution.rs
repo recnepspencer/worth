@@ -15,11 +15,19 @@ impl WorthQueryApplicationOutputLineage {
         source_partition_identity: [u8; 32],
         maximum_source_lookups: usize,
     ) -> Result<WorthQueryPriorOutputBindingResolution, ()> {
+        let Some(output_binding) = self.binding_identity(TypeId::of::<Binding>()) else {
+            return (maximum_source_lookups > 0)
+                .then_some(WorthQueryPriorOutputBindingResolution {
+                    correspondence: None,
+                    source_lookups: 1,
+                })
+                .ok_or(());
+        };
         let source = SemanticSource {
             runtime_authority: scope.runtime_authority(),
             schema: scope.binding_identity().clone(),
             scope: scope.scope(),
-            output_binding: TypeId::of::<Binding>(),
+            output_binding,
         };
         if !self.by_source.contains_key(&source) {
             return (maximum_source_lookups > 0)

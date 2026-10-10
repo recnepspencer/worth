@@ -1,7 +1,7 @@
 //! Completeness of retained upstream evidence against actual actor registration.
+use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 
 use super::*;
-use std::any::TypeId;
 
 use crate::domain_computation::primary_graph::{
     invariant_projection::ConsumedOutputEvidence,
@@ -9,9 +9,6 @@ use crate::domain_computation::primary_graph::{
     tests::fixture::{installed_authorization_world, live_scope, AccountStatus},
     WorthQueryPrincipalResolutionMode,
 };
-
-struct UpstreamOutput;
-struct ConsumerOutput;
 
 #[test]
 fn retained_source_must_include_every_registered_upstream_edge() {
@@ -39,10 +36,16 @@ fn retained_source_must_include_every_registered_upstream_edge() {
         output_binding,
     }
     };
-    let upstream =
-        RecordedSettlementIdentity::retain(&source(TypeId::of::<UpstreamOutput>()), coordinate, 0);
-    let consumer =
-        RecordedSettlementIdentity::retain(&source(TypeId::of::<ConsumerOutput>()), coordinate, 0);
+    let upstream = RecordedSettlementIdentity::retain(
+        &source(OutputBindingIdentity::declared("UpstreamOutput")),
+        coordinate,
+        0,
+    );
+    let consumer = RecordedSettlementIdentity::retain(
+        &source(OutputBindingIdentity::declared("ConsumerOutput")),
+        coordinate,
+        0,
+    );
     let graph = world.application.runtime.primary_graph().unwrap();
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;

@@ -20,6 +20,7 @@ fn overflow_is_unmeasured_and_a_real_ledger_refusal_is_evicted() {
         RecordedComputation::Absent(PriorAbsence::Unmeasured)
     ));
     let mut lineage = WorthQueryApplicationOutputLineage::default();
+
     lineage.retention = super::super::retained_capacity::LineageRetentionLedger::new(0);
     let recorded = lineage.retain_computation(
         sealed_run_for_lineage_test(),

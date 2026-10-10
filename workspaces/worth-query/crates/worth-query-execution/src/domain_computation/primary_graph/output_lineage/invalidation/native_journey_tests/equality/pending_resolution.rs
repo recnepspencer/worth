@@ -1,5 +1,6 @@
 //! Pending-edge resolution does not replace the cutoff's native verification.
 use super::*;
+use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 use std::sync::{Mutex, OnceLock};
 
 use crate::domain_computation::primary_graph::{
@@ -20,9 +21,6 @@ use crate::domain_computation::primary_graph::{
     },
     DecisionContextUse,
 };
-
-struct Upstream;
-struct Consumer;
 
 enum Successor {
     Equal,
@@ -71,12 +69,12 @@ fn cutoff_journey(successor: Successor) {
             .unwrap()
             .clone();
         let mut source = record.settlement_identity.source().clone();
-        source.output_binding = TypeId::of::<Upstream>();
+        source.output_binding = OutputBindingIdentity::declared("Upstream");
         let a0 =
             RecordedSettlementIdentity::retain(&source, record.settlement_identity.coordinate(), 0);
         let a1 =
             RecordedSettlementIdentity::retain(&source, record.settlement_identity.coordinate(), 1);
-        source.output_binding = TypeId::of::<Consumer>();
+        source.output_binding = OutputBindingIdentity::declared("Consumer");
         let consumer =
             RecordedSettlementIdentity::retain(&source, record.settlement_identity.coordinate(), 0);
         handle.with_runtime_mut(|runtime| {
@@ -86,7 +84,7 @@ fn cutoff_journey(successor: Successor) {
             // b has an authentic equality chain. Both b rows become pending
             // when a changes; a's later equality clears them one level only,
             // leaving c's pending edge to b's predecessor in place.
-            source.output_binding = TypeId::of::<DownstreamOutput>();
+            source.output_binding = OutputBindingIdentity::declared("DownstreamOutput");
             let b = RecordedSettlementIdentity::retain(&source, record.settlement_identity.coordinate(), 0);
             let b_successor = RecordedSettlementIdentity::retain(&source, record.settlement_identity.coordinate(), 1);
             register(owner, Arc::clone(&b), Arc::from([]), &before, OrdSet::unit(Arc::clone(&a0)));
@@ -289,12 +287,12 @@ fn retained_registration_consumes_the_equal_successor_at_the_live_image() {
             .unwrap()
             .clone();
         let mut source = record.settlement_identity.source().clone();
-        source.output_binding = TypeId::of::<Upstream>();
+        source.output_binding = OutputBindingIdentity::declared("Upstream");
         let a0 =
             RecordedSettlementIdentity::retain(&source, record.settlement_identity.coordinate(), 0);
         let a1 =
             RecordedSettlementIdentity::retain(&source, record.settlement_identity.coordinate(), 1);
-        source.output_binding = TypeId::of::<Consumer>();
+        source.output_binding = OutputBindingIdentity::declared("Consumer");
         let consumer =
             RecordedSettlementIdentity::retain(&source, record.settlement_identity.coordinate(), 0);
         handle.with_runtime_mut(|runtime| {

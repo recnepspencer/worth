@@ -175,13 +175,20 @@ where
     producers
         .validate_readiness_routes(&output_readiness_routes)
         .map_err(super::super::conditional_operation::publication_denial)?;
-    graph
-        .primary_provider
-        .graph
-        .output_lineage
-        .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner)
-        .install_output_families(producers.output_family_bindings());
+    {
+        let mut lineage = graph
+            .primary_provider
+            .graph
+            .output_lineage
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        lineage.install_binding_identities(
+            installed_schema
+                .installed_mutation_binding_inventory()
+                .map(|binding| (binding.binding_type(), binding.identity())),
+        );
+        lineage.install_output_families(producers.output_family_bindings());
+    }
     let graph = seal_application_graph(graph)
         .map_err(super::super::conditional_operation::publication_denial)?;
     let mut application = assemble_application_runtime(

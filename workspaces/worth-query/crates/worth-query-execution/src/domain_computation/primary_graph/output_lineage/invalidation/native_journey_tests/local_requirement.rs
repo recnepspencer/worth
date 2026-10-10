@@ -42,6 +42,8 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
     });
 
     let mut lineage = WorthQueryApplicationOutputLineage::default();
+    lineage.fixture_binding(std::any::TypeId::of::<StatusOutput>(), "StatusOutput");
+
     lineage.install_output_families(BTreeMap::from([(
         "local-requirement".to_owned(),
         vec![(TypeId::of::<StatusOutput>(), "output".to_owned())],

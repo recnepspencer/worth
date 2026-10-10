@@ -23,7 +23,7 @@ impl WorthQueryApplicationOutputLineage {
             runtime_authority,
             schema: schema.clone(),
             scope,
-            output_binding: TypeId::of::<Binding>(),
+            output_binding: self.binding_identity(TypeId::of::<Binding>())?,
         };
         let history = self.by_source.get(&source)?.get(&occurrence)?;
         let recorded = latest_output_matching(history, generation, |recorded| {
@@ -55,7 +55,7 @@ impl WorthQueryApplicationOutputLineage {
         generation: u64,
     ) -> bool {
         self.by_source.iter().any(|(source, versions)| {
-            source.output_binding == TypeId::of::<Binding>()
+            self.binding_identity(TypeId::of::<Binding>()).as_ref() == Some(&source.output_binding)
                 && versions.get(&occurrence).is_some_and(|history| {
                     history
                         .range(..=generation)

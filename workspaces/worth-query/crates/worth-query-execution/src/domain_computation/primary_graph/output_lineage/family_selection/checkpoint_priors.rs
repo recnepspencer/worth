@@ -94,7 +94,10 @@ impl WorthQueryApplicationOutputLineage {
             if source.runtime_authority != runtime_authority || &source.schema != schema {
                 continue;
             }
-            let Some((family, role)) = installed.get(&source.output_binding).copied() else {
+            let Some((family, role)) = installed
+                .get(&self.binding_type(&source.output_binding))
+                .copied()
+            else {
                 continue;
             };
             let group = (family, role, source.scope);
@@ -170,7 +173,7 @@ impl WorthQueryApplicationOutputLineage {
                     heads.insert(
                         partition,
                         role,
-                        source.output_binding,
+                        self.binding_type(&source.output_binding),
                         ancestry_depth,
                         publication,
                     );

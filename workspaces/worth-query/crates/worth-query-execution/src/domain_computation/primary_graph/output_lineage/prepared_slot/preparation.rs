@@ -35,19 +35,21 @@ pub(in crate::domain_computation::primary_graph) fn prepare(
     admission
         .charge_external_work(4 + std::mem::size_of::<Option<crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerDemandResources>>() as u64)
         .map_err(|_| denial(Kind::WorkBudgetExceeded))?;
+    let mut lineage = owner
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
     let source = SemanticSource {
         runtime_authority: scope.runtime_authority(),
         schema: scope.binding_identity().clone(),
         scope: scope.scope(),
-        output_binding,
+        output_binding: lineage
+            .binding_identity(output_binding)
+            .expect("admitted binding is installed"),
     };
     let coordinate = ProductCoordinate {
         occurrence: planned.occurrence(),
         generation: planned.generation().get(),
     };
-    let mut lineage = owner
-        .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner);
     lineage.drain_cancelled_slots(admission)?;
     let computation_fork_scan_bound = lineage.prepay_computation_fork_scan(admission)?;
     // History no retained reader selects is freed before this address extends it.
@@ -230,6 +232,7 @@ pub(in crate::domain_computation::primary_graph) fn prepare(
     drop(lineage);
     Ok(PreparedOutputLineageSlot {
         owner: Arc::clone(owner),
+        output_binding_type: output_binding,
         source,
         coordinate,
         partition,
