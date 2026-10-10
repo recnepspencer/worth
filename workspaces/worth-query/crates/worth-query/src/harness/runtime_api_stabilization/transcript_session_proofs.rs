@@ -12,6 +12,7 @@ use super::transcript_aspect_touch;
 use super::transcripts::TranscriptSpec;
 
 pub(super) fn preview_proof(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace: &mut WorthQueryWorkspace,
     live: &WorthQueryLiveView<WorthQueryUnrefinedLiveShape>,
     computed: &crate::facade::runtime::WorthQueryDerivedViewHandle<WorthQueryUnrefinedLiveShape>,
@@ -20,6 +21,7 @@ pub(super) fn preview_proof(
 ) -> (String, usize) {
     let mut preview = workspace
         .preview_with_options(
+            request_execution,
             WorthQuerySessionLabel::scoped_strs(
                 "runtime-api-stabilization",
                 [format!("{}.preview", spec.family)],
@@ -31,10 +33,10 @@ pub(super) fn preview_proof(
     let live_binding = preview.use_view(live);
     let computed_binding = preview.use_computed(computed);
     let effect_binding = preview
-        .use_effect(effect)
+        .use_effect(request_execution, effect)
         .expect("effect should bind in preview");
     let preview_write = preview
-        .insert(spec.collection, |entity| {
+        .insert(request_execution, spec.collection, |entity| {
             let entity = entity.set_aspect(
                 transcript_aspect_touch("identity.id"),
                 string_aspect_value(format!("{}-preview-1", spec.family)),
@@ -86,9 +88,14 @@ pub(super) fn preview_proof(
     )
 }
 
-pub(super) fn branch_proof(workspace: &mut WorthQueryWorkspace, spec: &TranscriptSpec) -> String {
+pub(super) fn branch_proof(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    workspace: &mut WorthQueryWorkspace,
+    spec: &TranscriptSpec,
+) -> String {
     let mut branch = workspace
         .branch_with_options(
+            request_execution,
             WorthQuerySessionLabel::scoped_strs(
                 "runtime-api-stabilization",
                 [format!("{}.branch", spec.family)],

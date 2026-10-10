@@ -169,6 +169,7 @@ where
 {
     pub fn prepare_workflow_operation_recovery_from_owner(
         mut self,
+phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
         required: &RequiredWorkflowOperation,
     ) -> Result<
         WorthQueryPreparedWorkflowOperationRecovery<'application, Schema, IntentBinding<Schema, Intent>>,
@@ -196,9 +197,9 @@ where
             return Err(WorthQueryWorkflowOperationRecoveryPreparationDenial::RequirementMismatch);
         }
         let application = self.application_runtime();
-        let prepared = authorization::prepare(&self, &identities, staged)
+        let prepared = authorization::prepare(phase, &self, &identities, staged)
             .map_err(WorthQueryWorkflowOperationRecoveryPreparationDenial::Request)?;
-        let custody = WorthQueryWorkflowAdvanceAdapter::resolve_guarded_operation_custody(
+        let custody = WorthQueryWorkflowAdvanceAdapter::resolve_guarded_operation_custody(phase,
             application,
             &prepared.admission,
             prepared.idempotency,
@@ -235,6 +236,9 @@ where
 {
     pub fn safe_retry(
         self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
     ) -> Result<
         WorthQueryRecoverySafeRetryAdmission,
         WorthQueryWorkflowOperationRecoveryDenial<'application, Schema, Binding>,
@@ -251,7 +255,7 @@ where
             }
         };
         let redispatch = match application
-            .redispatch_admitted_external_effect(&handle, &authority, &admission)
+            .redispatch_admitted_external_effect(phase, &handle, &authority, &admission)
         {
             Ok(redispatch) => redispatch,
             Err(denial) => {

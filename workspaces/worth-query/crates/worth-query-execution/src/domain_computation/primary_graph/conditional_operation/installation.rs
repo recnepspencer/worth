@@ -340,12 +340,13 @@ where
     }
     pub fn publish(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
     ) -> Result<
         WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         WorthQueryConditionalRuntimeInstallationDenial,
     > {
-        super::super::application_runtime::installation::publish_application_runtime_with_conditionals(
+        super::super::application_runtime::installation::publish_application_runtime_with_conditionals(execution,
             phase,
             self.publication,
             self.bindings,

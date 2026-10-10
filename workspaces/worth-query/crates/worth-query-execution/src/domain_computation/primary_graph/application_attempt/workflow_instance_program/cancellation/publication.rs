@@ -73,6 +73,7 @@ where
         Scope,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
 
         prepared: PreparedWorkflowInstanceCancellation<Schema, Operation, Input, Scope>,
@@ -111,7 +112,7 @@ where
             }
         };
         let (receipt, replayed) = match self
-            .compare_and_commit_application_for_program_action(
+            .compare_and_commit_application_for_program_action(execution,
                 phase,
                 &presented,
                 program,

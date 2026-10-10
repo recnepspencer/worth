@@ -188,6 +188,7 @@ impl ConsumedOutputEvidence {
     /// registration, leaving the commit to compare the root in full again.
     pub(in crate::domain_computation::primary_graph) fn establish_restored_before_commit(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         source_owner: &WorthQueryRelationalSourceOwner,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<(), ConsumedOutputVerificationStop> {
@@ -195,8 +196,11 @@ impl ConsumedOutputEvidence {
             return Ok(());
         }
         use crate::domain_computation::primary_graph::output_lineage::invalidation::HeadCellRegistrationStop;
-        match source_owner.mint_mark_cell_at_head(self.selected_native_root.branch_id(), admission)
-        {
+        match source_owner.mint_mark_cell_at_head(
+            execution,
+            self.selected_native_root.branch_id(),
+            admission,
+        ) {
             Ok(()) => {}
             Err(HeadCellRegistrationStop::Admission(stop)) => return Err(map_admission_stop(stop)),
             Err(HeadCellRegistrationStop::Native(stop)) => {

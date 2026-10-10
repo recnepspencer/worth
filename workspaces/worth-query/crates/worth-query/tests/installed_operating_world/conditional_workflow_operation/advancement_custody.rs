@@ -2,6 +2,9 @@
 use super::*;
 #[test]
 fn deferred_start_retry_opens_before_the_same_condition_reader() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     super::super::advancement_custody::verify(
         "deferred workflow retry",
         || {
@@ -14,6 +17,7 @@ fn deferred_start_retry_opens_before_the_same_condition_reader() {
                     ),
                 );
             let mut workspace = operation_conditional_workflow_workspace_with(
+                request_execution,
                 "deferred-start-retry-custody",
                 node,
                 installation,

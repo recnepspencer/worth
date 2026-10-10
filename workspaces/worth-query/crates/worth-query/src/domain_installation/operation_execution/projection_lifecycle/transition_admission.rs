@@ -67,6 +67,7 @@ pub(super) struct WorthQueryTransitionSuccessorStop<C> {
 }
 
 pub(super) fn open_transition_successor<D: 'static, O, F, L, C>(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     execution: worth_execution::ExecutionRequest<'_, '_>,
     current: C,
     workspace: &mut WorthQueryWorkspace,
@@ -124,7 +125,7 @@ where
         }
     };
     let resource_name = ready.resource_name.clone();
-    match open_lifecycle_read(resource_name, admitted.read, workspace) {
+    match open_lifecycle_read(request_execution, resource_name, admitted.read, workspace) {
         WorthQueryLiveOpenOutcome::Opened(completion) => {
             let mut counters = ready.counters;
             retain_journey_counters(&mut counters, completion.journey_counters());

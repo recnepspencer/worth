@@ -51,6 +51,9 @@ where
     /// Every refusal returns the complete move-only recovery owner.
     pub fn promote_recovered_required_outputs<Program, Root>(
         mut self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
         recovery: WorthQueryUnpublishedRequiredApplicationMutation<Schema, Intent, Program, Root>,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
     ) -> Result<
@@ -71,7 +74,7 @@ where
                 RootConnection<Schema, Root>,
             >,
     {
-        let receipt = match self.published_required_receipt(application, &recovery) {
+        let receipt = match self.published_required_receipt(phase, application, &recovery) {
             Ok(receipt) => receipt,
             Err(denial) => return Err((denial, recovery)),
         };
@@ -147,6 +150,9 @@ where
 
     fn published_required_receipt<Program, Root>(
         &mut self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
         recovery: &WorthQueryUnpublishedRequiredApplicationMutation<Schema, Intent, Program, Root>,
     ) -> Result<
@@ -168,11 +174,15 @@ where
             return Err(binding_mismatch());
         }
         let prepared =
-            self.authorize_required_source::<Program, Root>(application, &recovery.source)?;
+            self.authorize_required_source::<Program, Root>(phase, application, &recovery.source)?;
         let read = self
             .request
             .application
-            .resolve_admitted_application_idempotency(&prepared.admission, prepared.idempotency)
+            .resolve_admitted_application_idempotency(
+                phase,
+                &prepared.admission,
+                prepared.idempotency,
+            )
             .map_err(WorthQueryApplicationRecoveryRequestDenial::Idempotency)?;
         self.check_required_recovery_liveness()?;
         match read.into_resolution() {

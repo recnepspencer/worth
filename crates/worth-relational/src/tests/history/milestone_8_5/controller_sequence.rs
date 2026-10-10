@@ -6,10 +6,12 @@ pub(super) struct ControllerSequenceProof {
 }
 
 pub(super) fn certify_controller_sequence_shared_truth(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
 ) -> ControllerSequenceProof {
     let controller_sequence_entity = create_entity(runtime, "controller-sequence");
     let _controller_initial_intent = execute_strategy_commit(
+        execution,
         runtime,
         IntentReconciliationInput {
             entity_id: controller_sequence_entity,
@@ -26,6 +28,7 @@ pub(super) fn certify_controller_sequence_shared_truth(
     let controller_sequence_branch =
         create_branch_from_main(runtime, "controller-sequence-feature");
     let _controller_feature_converge = execute_strategy_commit(
+        execution,
         runtime,
         ReplicaConvergenceInput {
             entity_id: controller_sequence_entity,
@@ -40,6 +43,7 @@ pub(super) fn certify_controller_sequence_shared_truth(
         Some(controller_sequence_branch.clone()),
     );
     let _controller_narrowed_intent = execute_strategy_commit(
+        execution,
         runtime,
         IntentReconciliationInput {
             entity_id: controller_sequence_entity,
@@ -66,6 +70,7 @@ pub(super) fn certify_controller_sequence_shared_truth(
         None,
     );
     let controller_feature_idempotent_commit = execute_strategy_commit(
+        execution,
         runtime,
         ReplicaConvergenceInput {
             entity_id: controller_sequence_entity,
@@ -88,11 +93,14 @@ pub(super) fn certify_controller_sequence_shared_truth(
     );
     let controller_sequence_planning = runtime
         .merge()
-        .inspect_planning_scope(MergePlanningRequest::new(
-            BranchId("main".to_string()),
-            controller_sequence_branch.clone(),
-            MergeIntent::ReconcileIntoTarget,
-        ))
+        .inspect_planning_scope(
+            execution,
+            MergePlanningRequest::new(
+                BranchId("main".to_string()),
+                controller_sequence_branch.clone(),
+                MergeIntent::ReconcileIntoTarget,
+            ),
+        )
         .expect("controller sequence merge planning");
     let controller_sequence_classification = controller_sequence_planning
         .conflict_classification

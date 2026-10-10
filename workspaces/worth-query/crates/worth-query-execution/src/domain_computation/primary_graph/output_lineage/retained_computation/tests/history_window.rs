@@ -45,15 +45,21 @@ fn a_superseded_pinned_parent_stays_charged_until_it_leaves_the_history_window()
         panic!("the real fork performs");
     };
     let account = world
-        .selected_product()
-        .resolve_entity(
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+        .selected_product(&(phase).test_host_request(), )
+        .resolve_entity(&phase,
             AccountStatus::reference(),
             "open".to_owned(),
             &live_scope(),
             crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap()
-        .entity_id();
+        .entity_id()
+        })
+        .expect("the fixture read owns its installed host call");
     let source = SemanticSource {
         runtime_authority: world.application.runtime.authority_identity().as_u64(),
         schema: world.application.installed_schema.binding_identity(),
@@ -103,65 +109,72 @@ fn a_superseded_pinned_parent_stays_charged_until_it_leaves_the_history_window()
         .field_locator(label.entity(), label.aspect(), label.field())
         .unwrap()
         .clone();
-    for (index, value) in ["superseded", "outside-window"].into_iter().enumerate() {
-        publish_relational_mutation(
-            &world,
-            WorkerIntentBatch::new("history-custody-window").push(MutationIntent::Entity(
-                EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
-                    entity_id: account,
-                    fields: AspectFieldPatch::from(std::collections::BTreeMap::from([(
-                        field.clone(),
-                        AspectValue::String(InternedString::Raw(value.to_owned())),
-                    )])),
-                }),
-            )),
-        );
-        let next = world
-            .application
-            .product_runtime()
-            .admit_product_branch(world.application.product_runtime().default_branch())
-            .unwrap();
-        record(&mut lineage, next.observation());
-        if index == 0 {
-            assert_eq!(
-                lineage.retention.retained_bytes(),
-                bytes,
-                "superseded while fork-pinned"
-            );
-            lineage.release_occurrence(child.lifecycle_incarnation());
-            assert!(lineage.origins.is_empty());
-            assert_eq!(
-                lineage.retention.retained_bytes(),
-                bytes,
-                "last descendant deletion keeps in-window state"
-            );
-        }
-        lineage
-            .retire_unselected_generations(
-                &source,
-                occurrence,
-                &mut InvalidationEditAdmission::new(
-                    worth_relational::facade::mvcc::CompanionPreflightBudget {
-                        maximum_work_visits: 1_000_000,
-                        maximum_preparation_bytes: 1_000_000,
-                    },
-                ),
-            )
-            .unwrap();
-        if index == 0 {
-            assert!(old_cell.upgrade().is_some());
-            assert_eq!(
-                lineage.retention.retained_bytes(),
-                bytes,
-                "still inside the two-generation window"
-            );
-        } else {
-            assert!(old_cell.upgrade().is_none());
-            assert_eq!(
-                lineage.retention.retained_bytes(),
-                0,
-                "outside the window refunds the final state ticket"
-            );
-        }
-    }
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            for (index, value) in ["superseded", "outside-window"].into_iter().enumerate() {
+                publish_relational_mutation(
+                    &host_custody.borrowed_request_for_test(),
+                    &world,
+                    WorkerIntentBatch::new("history-custody-window").push(MutationIntent::Entity(
+                        EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
+                            entity_id: account,
+                            fields: AspectFieldPatch::from(std::collections::BTreeMap::from([(
+                                field.clone(),
+                                AspectValue::String(InternedString::Raw(value.to_owned())),
+                            )])),
+                        }),
+                    )),
+                );
+                let next = world
+                    .application
+                    .product_runtime()
+                    .admit_product_branch(world.application.product_runtime().default_branch())
+                    .unwrap();
+                record(&mut lineage, next.observation());
+                if index == 0 {
+                    assert_eq!(
+                        lineage.retention.retained_bytes(),
+                        bytes,
+                        "superseded while fork-pinned"
+                    );
+                    lineage.release_occurrence(child.lifecycle_incarnation());
+                    assert!(lineage.origins.is_empty());
+                    assert_eq!(
+                        lineage.retention.retained_bytes(),
+                        bytes,
+                        "last descendant deletion keeps in-window state"
+                    );
+                }
+                lineage
+                    .retire_unselected_generations(
+                        &source,
+                        occurrence,
+                        &mut InvalidationEditAdmission::new(
+                            worth_relational::facade::mvcc::CompanionPreflightBudget {
+                                maximum_work_visits: 1_000_000,
+                                maximum_preparation_bytes: 1_000_000,
+                            },
+                        ),
+                    )
+                    .unwrap();
+                if index == 0 {
+                    assert!(old_cell.upgrade().is_some());
+                    assert_eq!(
+                        lineage.retention.retained_bytes(),
+                        bytes,
+                        "still inside the two-generation window"
+                    );
+                } else {
+                    assert!(old_cell.upgrade().is_none());
+                    assert_eq!(
+                        lineage.retention.retained_bytes(),
+                        0,
+                        "outside the window refunds the final state ticket"
+                    );
+                }
+            }
+        })
+        .expect("the fixture read owns its installed host call")
 }

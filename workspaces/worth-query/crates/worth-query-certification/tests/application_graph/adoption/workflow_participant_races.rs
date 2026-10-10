@@ -79,12 +79,16 @@ fn a_fork_adopts_without_deciding_the_instance_it_copied() {
     let (application, definition, instance) = live_instance_on_first_program(85_400);
     let main = application.current_world();
     let fork = application
-        .runtime()
-        .branches()
-        .fork(main)
-        .components(|components| components.fork_relational().reuse_exact_signal_basis())
-        .create()
-        .expect("the fork publishes");
+        .with_host_advancement(|host_phase| {
+            application
+                .runtime()
+                .branches()
+                .fork(main)
+                .components(|components| components.fork_relational().reuse_exact_signal_basis())
+                .create(&host_phase)
+                .expect("the fork publishes")
+        })
+        .expect("installed host call opens");
 
     let copied = second_program_workflow_inventory(&application, fork);
     assert!(

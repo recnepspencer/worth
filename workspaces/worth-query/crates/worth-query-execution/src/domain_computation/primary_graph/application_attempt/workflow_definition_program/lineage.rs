@@ -20,6 +20,7 @@ pub(super) struct SelectedLineage {
 
 pub(super) fn select_lineage<Spec: ApplicationWorkflowSpec>(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
     definition: &worth_query_declaration::facade::application_program::ValidatedWorkflowDefinition<
@@ -30,6 +31,7 @@ pub(super) fn select_lineage<Spec: ApplicationWorkflowSpec>(
     let identity = text(definition.identity().as_str());
     let selection = observe_indexed_entity_selection(
         runtime,
+        execution,
         snapshot,
         layout.lineage.identity_index_id,
         layout.lineage.entity_kind,
@@ -68,6 +70,7 @@ pub(super) fn select_lineage<Spec: ApplicationWorkflowSpec>(
     let spec_identity = Spec::IDENTITY;
     facts.extend(lineage_identity_facts(
         runtime,
+        execution,
         snapshot,
         layout,
         lineage,
@@ -76,6 +79,7 @@ pub(super) fn select_lineage<Spec: ApplicationWorkflowSpec>(
     )?);
     let relations = observe_adjacency(
         runtime,
+        execution,
         snapshot,
         layout.current_definition_relation,
         lineage,
@@ -104,7 +108,7 @@ pub(super) fn select_lineage<Spec: ApplicationWorkflowSpec>(
     });
     if current_definition
         .as_ref()
-        .is_some_and(|fact| !fact.remains_equal_in(runtime, snapshot))
+        .is_some_and(|fact| !fact.remains_equal_in(runtime, execution, snapshot))
     {
         return Err(lineage_denial(definition.identity().as_str()));
     }
@@ -129,6 +133,7 @@ pub(super) fn select_lineage<Spec: ApplicationWorkflowSpec>(
 /// them. Every lineage reader pins both before trusting its relations.
 pub(super) fn lineage_identity_facts(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
     lineage: worth_relational::facade::identity::EntityId,
@@ -138,6 +143,7 @@ pub(super) fn lineage_identity_facts(
     Ok([
         exact_field_fact(
             runtime,
+            execution,
             snapshot,
             lineage,
             layout.lineage.entity_kind,
@@ -147,6 +153,7 @@ pub(super) fn lineage_identity_facts(
         )?,
         exact_field_fact(
             runtime,
+            execution,
             snapshot,
             lineage,
             layout.lineage.entity_kind,
@@ -161,6 +168,7 @@ pub(super) fn lineage_identity_facts(
 
 fn exact_field_fact(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     entity_id: worth_relational::facade::identity::EntityId,
     kind: worth_relational::facade::identity::KindId,
@@ -168,8 +176,10 @@ fn exact_field_fact(
     expected: AspectValue,
     subject: &str,
 ) -> Result<WorthQueryApplicationObservedFact, WorthQueryApplicationAttemptDenial> {
-    if super::super::observation::observe_field_value(runtime, snapshot, entity_id, kind, &locator)
-        .as_ref()
+    if super::super::observation::observe_field_value(
+        runtime, execution, snapshot, entity_id, kind, &locator,
+    )
+    .as_ref()
         != Some(&expected)
     {
         return Err(lineage_denial(subject));

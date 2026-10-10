@@ -5,7 +5,7 @@ use super::yield_fixture::YieldProvider;
 use super::*;
 
 fn shared_yielded_workflow_peers(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 ) -> (
     crate::domain_computation::WorthQueryYieldedWorkflowRun,
     crate::domain_computation::WorthQueryYieldedWorkflowRun,
@@ -16,7 +16,7 @@ fn shared_yielded_workflow_peers(
 }
 
 pub(super) fn shared_yielded_workflow_peers_with_provider(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     provider: YieldProvider,
 ) -> (
@@ -60,7 +60,7 @@ pub(super) fn shared_yielded_workflow_peers_with_provider(
 }
 
 fn yield_peer(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     runtime: &WorthQueryExecutionRuntime,
     graph: &WorthQueryInstalledGraphParticipationAuthority,
@@ -96,15 +96,20 @@ fn yield_peer(
         .expect("shared workflow peer should admit")
         .start()
         .expect("shared workflow peer should start");
-    let active = running
-        .begin_stage_graph_execution(
-            execution,
+    let active = {
+        let installed_fixture_phase = running.fixture_phase(execution);
+        running.begin_stage_graph_execution(
+            &installed_fixture_phase,
             "producer",
             graph,
             WorthQueryManagedGraphCallRequest::new(WorthQueryGraphProviderCallKind::Observe, label),
         )
-        .expect("shared workflow provider should begin");
-    let paused = match active.advance(execution) {
+    }
+    .expect("shared workflow provider should begin");
+    let paused = match {
+        let installed_fixture_phase = active.fixture_phase(execution);
+        active.advance(&installed_fixture_phase)
+    } {
         WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused,
         _ => panic!("shared workflow peer provider did not pause"),
     };
@@ -209,7 +214,10 @@ fn foreign_bridge_denial_preserves_both_workflow_peers_without_fresh_query_work(
             second_inspection.yielded_attempt_identity()
         );
         let foreign_bridge = causal_fixture::managed_admission_context().bridge;
-        let first = match first.readmit_same_runtime(active_request, &runtime, &foreign_bridge) {
+        let first = match {
+            let installed_fixture_phase = first.fixture_phase(active_request);
+            first.readmit_same_runtime(&installed_fixture_phase, &runtime, &foreign_bridge)
+        } {
             crate::domain_computation::WorthQueryWorkflowReadmissionOutcome::Denied(denied) => {
                 assert_eq!(
                 denied.kind(),
@@ -256,7 +264,7 @@ fn foreign_bridge_denial_preserves_both_workflow_peers_without_fresh_query_work(
 }
 
 fn readmit(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     yielded: crate::domain_computation::WorthQueryYieldedWorkflowRun,
     runtime: &WorthQueryExecutionRuntime,
@@ -264,7 +272,10 @@ fn readmit(
 ) -> crate::domain_computation::WorthQueryActiveWorkflowGraphExecution {
     let active_request = execution;
 
-    match yielded.readmit_same_runtime(active_request, runtime, bridge) {
+    match {
+        let installed_fixture_phase = yielded.fixture_phase(active_request);
+        yielded.readmit_same_runtime(&installed_fixture_phase, runtime, bridge)
+    } {
         crate::domain_computation::WorthQueryWorkflowReadmissionOutcome::Readmitted(readmitted) => {
             let query = readmitted.readmission_evidence().query_counters();
             assert_eq!(query.fresh_resource_attempt_count(), 1);
@@ -278,11 +289,14 @@ fn readmit(
 }
 
 fn complete(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     active: crate::domain_computation::WorthQueryActiveWorkflowGraphExecution,
 ) -> crate::domain_computation::WorthQueryWorkflowRunTerminal {
-    match active.advance(execution) {
+    match {
+        let installed_fixture_phase = active.fixture_phase(execution);
+        active.advance(&installed_fixture_phase)
+    } {
         WorthQueryWorkflowGraphStepOutcome::Completed(completion) => completion,
         _ => panic!("restored workflow peer should complete"),
     }

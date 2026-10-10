@@ -148,6 +148,9 @@ fn prepared_candidate_is_sendable_across_one_worker_boundary() {
 
 #[test]
 fn publication_port_performs_one_exact_candidate_and_reports_the_loser_stale() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let anchor = create_entity_outcome(&runtime, "publication-race-anchor");
     let anchor_commit_id = anchor.commit.commit_id;
@@ -159,6 +162,7 @@ fn publication_port_performs_one_exact_candidate_and_reports_the_loser_stale() {
     let visible_entity_count_before = runtime
         .read_truth()
         .read_observation(
+            execution,
             &crate::tests::support::test_owner_main_basis(&runtime)
                 .expect("counting basis")
                 .observation(),
@@ -289,7 +293,7 @@ fn publication_port_performs_one_exact_candidate_and_reports_the_loser_stale() {
     };
     let visible = runtime
         .read_truth()
-        .read_observation(&observation)
+        .read_observation(execution, &observation)
         .expect("the performed basis reads its selected root");
     assert!(visible.get_entity(created_entity).is_some());
     assert_eq!(

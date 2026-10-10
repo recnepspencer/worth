@@ -25,6 +25,7 @@ use crate::domain_computation::primary_graph::{
 };
 
 pub(super) fn read_retained_source<Schema, Family>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     retained: &WorthQueryObservedSource<FamilySourceQuery<Schema, Family>>,
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
@@ -68,7 +69,7 @@ where
         })?;
     let selected = runtime
         .on_branch(branch)
-        .select()
+        .select_with_request(execution)
         .map_err(|stop| WorthQueryOutputDemandDenial::product_selection(stop, ""))?;
     let shared = selected
         .prepare_shared_query_basis(request_admission)
@@ -103,7 +104,7 @@ where
     )
     .map_err(resource_denial)?;
     runtime
-        .with_fresh_retained_query_permission(
+        .with_fresh_retained_query_permission(execution,
             &installed,
             None,
             principal,
@@ -113,12 +114,12 @@ where
             request_admission,
             |permission, admission| {
                 let plan = runtime
-                    .finish_prepared_application_query_permission(permission, admission)
+                    .finish_prepared_application_query_permission(execution, permission, admission)
                     .map_err(query_admission_denial)?;
                 #[cfg(feature = "test-query-execution-observer")]
                 let before = admission.charged_work();
                 let read = runtime
-                    .execute_application_query_one_shot_admitted(plan, admission)
+                    .execute_application_query_one_shot_admitted(execution, plan, admission)
                     .map_err(|stop| {
                         use crate::domain_computation::primary_graph::application_query::WorthQueryAdmittedOneShotStop as Stop;
                         match stop {

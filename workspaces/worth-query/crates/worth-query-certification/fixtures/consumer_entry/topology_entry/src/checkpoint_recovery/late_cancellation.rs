@@ -34,7 +34,7 @@ fn cancellation_during_final_product_guard_wait_refuses_stable_publication() {
         )
         .expect("a real source suffix changes before cutoff preparation");
     drop(successor);
-    let before = request.retain_read().unwrap();
+    let before = crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
     let output_before = request
         .query(PlanarOutputRead {
             body_key: "anchor-a".to_owned(),
@@ -83,7 +83,7 @@ fn cancellation_during_final_product_guard_wait_refuses_stable_publication() {
     });
     drop(pause);
     drop(demand);
-    let after = request.retain_read().unwrap();
+    let after = crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
     assert_eq!(before.selected_commit(), after.selected_commit());
     let output_after = request
         .query(PlanarOutputRead {

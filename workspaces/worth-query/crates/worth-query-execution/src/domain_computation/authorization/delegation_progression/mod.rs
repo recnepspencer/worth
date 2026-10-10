@@ -40,6 +40,65 @@ where
         Input,
     >(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        access: WorthQueryAdmittedApplicationCapabilityAccess<
+            Schema,
+            CommandCapability,
+            Operation,
+            Input,
+        >,
+        target: &WorthQueryInstalledApplicationCapability<
+            Schema,
+            TargetCapability,
+            TargetOperation,
+            TargetInput,
+        >,
+        operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
+        preconditions: TypedMutationPreconditions<
+            Schema,
+            Operation,
+            <Input as ApplicationCapabilityRequest<Schema, CommandCapability>>::Scope,
+        >,
+    ) -> Result<
+        WorthQueryAdmittedApplicationOperation<
+            Schema,
+            Operation,
+            Input,
+            <Input as ApplicationCapabilityRequest<Schema, CommandCapability>>::Scope,
+        >,
+        WorthQueryOperationAuthorizationDenial,
+    >
+    where
+        Operation:
+            worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<
+                Schema,
+            >,
+        Input: ApplicationCapabilityRequest<Schema, CommandCapability>
+            + ApplicationCapabilityDelegationRequest<Schema, TargetCapability>,
+    {
+        let execution = match phase.execution_request_for(&self.product_runtime) {
+            Ok(execution) => execution,
+            Err(_) => return Err(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::ForeignPhase, "phase-custody")),
+        };
+        self.authorize_capability_delegation_with_request(
+            &execution,
+            access,
+            target,
+            operation,
+            preconditions,
+        )
+    }
+
+    pub(in crate::domain_computation) fn authorize_capability_delegation_with_request<
+        CommandCapability,
+        TargetCapability,
+        TargetOperation,
+        TargetInput,
+        Operation,
+        Input,
+    >(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         access: WorthQueryAdmittedApplicationCapabilityAccess<
             Schema,
             CommandCapability,
@@ -89,7 +148,7 @@ where
             .capability_plan(target)
             .ok_or_else(|| stale(target.contract().name()))?;
         validate_activation_operation(installed, operation)?;
-        let observed = authorize_target_support(self, target, &access, &proposed)?;
+        let observed = authorize_target_support(execution, self, target, &access, &proposed)?;
         let mut access = access;
         let prepared = observed.prepare_activation(
             self,
@@ -100,6 +159,7 @@ where
             &mut access,
         )?;
         let admitted = progress_capability_operation(
+            execution,
             self,
             access,
             operation,

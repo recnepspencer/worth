@@ -14,10 +14,13 @@ use fixtures::{
 
 #[test]
 fn merge_support_inspection_witness_parity_survives_live_replay_recovery_and_compatibility_lane() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_schema_declared_entity_policy(true);
-    let prepared = prepared_merge(&runtime);
+    let prepared = prepared_merge(execution, &runtime);
     let outcome = runtime
-        .execute_prepared_merge(prepared)
+        .execute_prepared_merge(execution, prepared)
         .expect("executed merge");
     let live_support = runtime
         .inspect_what_happened()
@@ -28,7 +31,7 @@ fn merge_support_inspection_witness_parity_survives_live_replay_recovery_and_com
         .inspect_what_happened()
         .prepare_published_merge_support_inspection_witness(&published_authority)
         .expect("published support");
-    let (_recovery, recovered) = checkpoint_and_recover_with(&runtime, || {
+    let (_recovery, recovered) = checkpoint_and_recover_with(execution, &runtime, || {
         runtime_with_schema_declared_entity_policy(true)
     });
     let recovered_authority =
@@ -61,10 +64,13 @@ fn merge_support_inspection_witness_parity_survives_live_replay_recovery_and_com
 
 #[test]
 fn merge_support_inspection_witness_denies_inconsistent_retained_proof_authority() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_schema_declared_entity_policy(false);
-    let prepared = prepared_merge(&runtime);
+    let prepared = prepared_merge(execution, &runtime);
     let outcome = runtime
-        .execute_prepared_merge(prepared)
+        .execute_prepared_merge(execution, prepared)
         .expect("executed merge");
     let honest_summary = outcome.execution_summary.clone();
     let honest_packet = honest_summary.proof_packet.clone();
@@ -100,8 +106,11 @@ fn merge_support_inspection_witness_denies_inconsistent_retained_proof_authority
 
 #[test]
 fn merge_support_inspection_witness_denies_missing_required_proof_family() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_schema_declared_entity_policy(false);
-    let prepared = prepared_merge(&runtime);
+    let prepared = prepared_merge(execution, &runtime);
     let correspondence = runtime
         .merge()
         .retain_merge_correspondence_witness_from_prepared_execution(&prepared);

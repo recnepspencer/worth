@@ -2,11 +2,14 @@ use super::*;
 
 #[test]
 fn batch_existing_targets_preserve_component_and_aggregate_binding_evidence() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("tasks.batch-existing")
         .expect("task runtime should open a named workspace");
     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.batch-existing-table", |q| {
+        .live_view(request_execution, "tasks.batch-existing-table", |q| {
             q.from("Task")
                 .select([
                     crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
@@ -23,7 +26,7 @@ fn batch_existing_targets_preserve_component_and_aggregate_binding_evidence() {
         .expect("live view should declare");
 
     let seed_one = workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(
                 test_aspect_touch("identity.id"),
                 test_authored_string_aspect_value("task-1"),
@@ -35,7 +38,7 @@ fn batch_existing_targets_preserve_component_and_aggregate_binding_evidence() {
         })
         .expect("first seed should execute");
     let seed_two = workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(
                 test_aspect_touch("identity.id"),
                 test_authored_string_aspect_value("task-2"),
@@ -83,7 +86,7 @@ fn batch_existing_targets_preserve_component_and_aggregate_binding_evidence() {
         .expect("binding two should build");
 
     let receipt = workspace
-        .batch(|batch| {
+        .batch(request_execution, |batch| {
             batch
                 .update_existing(binding_one, |task| {
                     task.set_aspect(
@@ -97,7 +100,7 @@ fn batch_existing_targets_preserve_component_and_aggregate_binding_evidence() {
         })
         .expect("existing-target batch should execute");
     let inspection = workspace
-        .inspect(&receipt)
+        .inspect(request_execution, &receipt)
         .expect("batch receipt should inspect");
 
     assert_eq!(
@@ -150,28 +153,35 @@ fn batch_existing_targets_preserve_component_and_aggregate_binding_evidence() {
 
 #[test]
 fn mixed_existing_and_symbolic_batch_preserves_aggregate_session_digests() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("tasks.batch-existing-symbolic")
         .expect("task runtime should open a named workspace");
     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.batch-existing-symbolic-table", |q| {
-            q.from("Task")
-                .select([
-                    crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
-                        .unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
-                        .unwrap(),
-                ])
-                .order_by(
-                    crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
-                        .unwrap(),
-                )
-                .schema_basis("tasks-batch-existing-symbolic-table")
-        })
+        .live_view(
+            request_execution,
+            "tasks.batch-existing-symbolic-table",
+            |q| {
+                q.from("Task")
+                    .select([
+                        crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
+                            .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
+                            .unwrap(),
+                    ])
+                    .order_by(
+                        crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
+                            .unwrap(),
+                    )
+                    .schema_basis("tasks-batch-existing-symbolic-table")
+            },
+        )
         .expect("live view should declare");
 
     let seed = workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(
                 test_aspect_touch("identity.id"),
                 test_authored_string_aspect_value("task-existing"),
@@ -195,7 +205,7 @@ fn mixed_existing_and_symbolic_batch_preserves_aggregate_session_digests() {
         .expect("binding should build");
 
     let receipt = workspace
-        .batch(|batch| {
+        .batch(request_execution, |batch| {
             batch
                 .insert_symbolic("draft-task", "Task", |task| {
                     task.set_aspect(

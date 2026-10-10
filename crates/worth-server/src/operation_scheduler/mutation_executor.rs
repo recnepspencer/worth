@@ -153,24 +153,28 @@ fn execute_slot_operation(
         .clone();
     let handoff = slot.handoff_mut();
     let workspace = handoff.workspace_mut();
-    let mut submission_lane = workspace.submissions()?;
+    workspace.with_execution_request_mut(|execution, workspace| {
+        let mut submission_lane = workspace.submissions()?;
 
-    match query_operation {
-        WorthServerQueryOperation::SingleMutation { command, .. } => {
-            let (receipt, inspection) = submission_lane.submit_with_inspection(*command)?;
-            Ok(WorthServerScheduledMutationResult::Single {
-                receipt: Box::new(receipt),
-                inspection: Box::new(inspection),
-            })
+        match query_operation {
+            WorthServerQueryOperation::SingleMutation { command, .. } => {
+                let (receipt, inspection) =
+                    submission_lane.submit_with_inspection(execution, *command)?;
+                Ok(WorthServerScheduledMutationResult::Single {
+                    receipt: Box::new(receipt),
+                    inspection: Box::new(inspection),
+                })
+            }
+            WorthServerQueryOperation::BatchMutation { commands, .. } => {
+                let (receipt, inspection) =
+                    submission_lane.submit_batch_with_inspection(execution, commands)?;
+                Ok(WorthServerScheduledMutationResult::Batch {
+                    receipt: Box::new(receipt),
+                    inspection: Box::new(inspection),
+                })
+            }
         }
-        WorthServerQueryOperation::BatchMutation { commands, .. } => {
-            let (receipt, inspection) = submission_lane.submit_batch_with_inspection(commands)?;
-            Ok(WorthServerScheduledMutationResult::Batch {
-                receipt: Box::new(receipt),
-                inspection: Box::new(inspection),
-            })
-        }
-    }
+    })?
 }
 
 fn increment_admission_counter(
@@ -235,7 +239,9 @@ fn is_stale_for_current_basis(
 fn current_basis_digest(slot: &WorthServerOperationExecutionSlot) -> String {
     slot.handoff()
         .workspace()
-        .snapshot_identity()
+        .with_advancement(|phase| slot.handoff().workspace().snapshot_identity(&phase))
+        .expect("installed snapshot host call opens")
+        .expect("snapshot phase belongs to workspace")
         .terminal_projection_for_reporting()
         .to_string()
 }

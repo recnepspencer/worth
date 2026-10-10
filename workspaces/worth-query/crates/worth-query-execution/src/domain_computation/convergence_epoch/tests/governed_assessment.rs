@@ -92,7 +92,7 @@ fn query_counts_each_governed_domain_port_and_contains_rejection_or_panic() {
 }
 
 fn indeterminate_terminal_with_probe(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     disposition: FixtureDisposition,
 ) -> (
@@ -103,16 +103,21 @@ fn indeterminate_terminal_with_probe(
 ) {
     let (fixture, probe) = direct_admission_fixture_with_domain_port_probe(disposition);
     let epoch = fixture.admit();
-    let started = epoch
-        .begin_iteration(
-            execution,
+    let started = {
+        let installed_fixture_phase = epoch.fixture_phase(execution);
+        epoch.begin_iteration(
+            &installed_fixture_phase,
             WorthQueryManagedGraphCallRequest::new(
                 WorthQueryGraphProviderCallKind::Observe,
                 "governed-domain-port-probe",
             ),
         )
-        .unwrap_or_else(|_| panic!("governed probe iteration must start"));
-    let outcome = match started.advance(execution) {
+    }
+    .unwrap_or_else(|_| panic!("governed probe iteration must start"));
+    let outcome = match {
+        let installed_fixture_phase = started.fixture_phase(execution);
+        started.advance(&installed_fixture_phase)
+    } {
         WorthQueryDirectConvergenceStepOutcome::Completed(outcome) => outcome,
         _ => panic!("governed probe provider must complete"),
     };

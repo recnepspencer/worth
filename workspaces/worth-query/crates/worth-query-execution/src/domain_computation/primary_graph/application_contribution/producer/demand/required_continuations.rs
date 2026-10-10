@@ -200,12 +200,23 @@ where
 
     fn advance_checkpoint(
         &mut self,
+
         phase: &WorthQueryAdvancementPhase<'_>,
 
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         request: &WorthQueryRequestScope,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, WorthQueryOutputDemandDenial> {
+        let phase_request = phase
+            .execution_request_for(&runtime.product_runtime)
+            .map_err(|cause| {
+                WorthQueryOutputDemandDenial::new(
+                    super::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
+                    "required-checkpoint-phase",
+                )
+            })?;
+        let execution = &phase_request;
+
         let demand = self
             .demand
             .as_mut()
@@ -224,6 +235,7 @@ where
             return Ok(false);
         };
         runtime.advance_selected_output_checkpoint(
+            execution,
             phase,
             &demand.selected.identity,
             claim,
@@ -246,7 +258,15 @@ where
         branch: crate::basis::WorthQueryProductBranch,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial> {
-        self.run_again(phase, runtime, principal, request, branch, admission)
+        let execution = phase.execution_request_for(&runtime.product_runtime).map_err(|_| {
+            WorthQueryOutputDemandDenial::new(
+                super::WorthQueryOutputDemandDenialKind::ExecutionRequest(
+                    crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase),
+                "required successor advancement phase")
+        })?;
+        self.run_again(
+            &execution, phase, runtime, principal, request, branch, admission,
+        )
     }
 
     fn into_any(self: Box<Self>) -> Box<dyn Any> {

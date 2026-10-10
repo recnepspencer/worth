@@ -55,6 +55,7 @@ where
         Spec,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         instance: PublishedWorkflowInstanceRef,
         admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
@@ -90,7 +91,8 @@ where
         let (_, projection, _) = self
             .application()
             .mutation_projection
-            .project_admitted_operation(
+            .project_admitted_operation_with_request(
+                execution,
                 &admission,
                 |_, _| {},
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -99,13 +101,15 @@ where
             .into_parts();
         let read_set = self
             .application()
-            .begin_projected_application_read_attempt(
+            .begin_projected_application_read_attempt_with_request(
+                execution,
                 admission,
                 projection,
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )
             .map_err(WorkflowProposalPreparationDenial::Attempt)?
-            .complete_projected_dependencies(
+            .complete_projected_dependencies_with_request(
+                execution,
                 crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
             .map_err(WorkflowProposalPreparationDenial::Attempt)?;
@@ -120,6 +124,7 @@ where
         }
         read_set
             .materialize_workflow_proposal(
+                execution,
                 installed,
                 instance,
                 input_identity,
@@ -135,6 +140,7 @@ pub struct WorthQueryWorkflowProposalAdapter;
 
 impl WorthQueryWorkflowProposalAdapter {
     pub fn resolve_replay<Schema, Operation, Input, Scope>(
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
@@ -145,7 +151,14 @@ impl WorthQueryWorkflowProposalAdapter {
         Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
         Input: Clone + Send + Sync + 'static,
     {
+        let phase_request = match phase.execution_request_for(&runtime.product_runtime) {
+            Ok(request) => request,
+            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::ForeignPhase, "workflow-phase"))),
+        };
+        let execution = &phase_request;
+
         runtime.resolve_workflow_proposal_replay(
+            execution,
             admission,
             idempotency,
             instance,
@@ -160,6 +173,7 @@ impl WorthQueryWorkflowProposalAdapter {
 
     #[allow(clippy::too_many_arguments)]
     pub fn prepare<Schema, Operation, Input, Scope, Spec>(
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         selected: &WorthQuerySelectedProductOperation<'_, Schema>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         instance: PublishedWorkflowInstanceRef,
@@ -174,7 +188,14 @@ impl WorthQueryWorkflowProposalAdapter {
         Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
+        let phase_request = match phase.execution_request_for(&selected.application().product_runtime) {
+            Ok(request) => request,
+            Err(_) => return Err(WorkflowProposalPreparationDenial::Attempt(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::ForeignPhase, "workflow-phase"))),
+        };
+        let execution = &phase_request;
+
         selected.prepare_workflow_proposal(
+            execution,
             installed,
             instance,
             admission,
@@ -195,6 +216,17 @@ impl WorthQueryWorkflowProposalAdapter {
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        runtime.compare_and_commit_workflow_proposal(phase, prepared, idempotency)
+        let phase_request = match phase.execution_request_for(&runtime.product_runtime) {
+            Ok(request) => request,
+            Err(_) => return WorkflowProposalOutcome::Application(
+                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase
+                    .into_commit_outcome()
+                    .landed()
+                    .expect_err("a foreign phase cannot commit"),
+            ),
+        };
+        let execution = &phase_request;
+
+        runtime.compare_and_commit_workflow_proposal(execution, phase, prepared, idempotency)
     }
 }

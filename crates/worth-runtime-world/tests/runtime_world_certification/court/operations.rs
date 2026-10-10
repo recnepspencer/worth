@@ -48,15 +48,21 @@ impl CompositeSupplyChainCourt {
             other => panic!("World: healthy cargo publication {other:?}"),
         }
     }
-    pub fn context(&self, head: &ProductBranchObservation) -> RoutingContext {
+    pub fn context(
+        &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        head: &ProductBranchObservation,
+    ) -> RoutingContext {
         RoutingContext {
             records: Arc::new(OnceLock::from(
-                self.records.read(head.basis().relational_basis()),
+                self.records
+                    .read(request_execution, head.basis().relational_basis()),
             )),
         }
     }
     pub fn partial_after_relational(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         head: &ProductBranchObservation,
     ) -> ProductUnpublishedOwnerEffects {
         let policy = match self.world.execution_placement() {
@@ -83,12 +89,18 @@ impl CompositeSupplyChainCourt {
         let prepared = port
             .prepare_with_signal(head.clone(), intent, &token, None)
             .unwrap();
-        match port.execute_with_signal(execution, prepared, &mut self.context(head), &token, |_| {
-            Err(SignalError::InvalidInput {
-                message: "court routing denial".into(),
-                context: None,
-            })
-        }) {
+        match port.execute_with_signal(
+            execution,
+            prepared,
+            &mut self.context(request_execution, head),
+            &token,
+            |_| {
+                Err(SignalError::InvalidInput {
+                    message: "court routing denial".into(),
+                    context: None,
+                })
+            },
+        ) {
             RuntimeWorldPublicationOutcome::ProductUnpublished(effects) => effects,
             other => {
                 panic!("World: settled Relational then denied Signal must remain partial {other:?}")

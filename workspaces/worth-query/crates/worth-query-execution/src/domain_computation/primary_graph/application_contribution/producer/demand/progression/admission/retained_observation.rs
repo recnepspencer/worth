@@ -39,6 +39,7 @@ where
     /// demand settles on the output current there, or stops `Superseded`.
     pub fn admit_output_demand_at<Family>(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         source_result: WorthQueryApplicationOutputDemandSource<
             FamilySourceQuery<Schema, Family>,
             FamilySourceValue<Schema, Family>,
@@ -49,8 +50,14 @@ where
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
+        let phase_request = match phase.execution_request_for(&self.product_runtime) {
+            Ok(request) => request,
+            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase), "output-demand-phase")),
+        };
+        let execution = &phase_request;
+
         let at = self
-            .select_application_read_observation(observation)
+            .select_application_read_observation_with_request(execution, observation)
             .map_err(|error| {
                 denial(
                     WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
@@ -61,7 +68,7 @@ where
             WorthQueryProductBranchReadIdentity::from_observation(at.product().observation());
         let head = self
             .on_branch(read.product_branch())
-            .select()
+            .select_with_request(execution)
             .map_err(|selection| {
                 WorthQueryOutputDemandDenial::product_selection(
                     selection,
@@ -74,7 +81,7 @@ where
         drop(head);
         if at_head {
             drop(at);
-            return self.admit_output_demand::<Family>(source_result, limits);
+            return self.admit_output_demand::<Family>(phase, source_result, limits);
         }
         let (_, observed_source) = source_result.into_single_source().ok_or_else(|| {
             denial(
@@ -82,11 +89,12 @@ where
                 "output source query did not return one owner-paired occurrence",
             )
         })?;
-        self.admit_settled_at_observation::<Family>(observed_source, limits, &at, &read)
+        self.admit_settled_at_observation::<Family>(execution, observed_source, limits, &at, &read)
     }
 
     fn admit_settled_at_observation<Family>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         observed_source: WorthQueryObservedSource<FamilySourceQuery<Schema, Family>>,
         limits: WorthQueryOutputDemandLimits,
         at: &WorthQuerySelectedProductOperation<'_, Schema>,
@@ -171,56 +179,61 @@ where
             ) else {
                 continue;
             };
-            let verified = self.primary_provider.graph.with_runtime(|relational| {
-                let unavailable =
-                    || stop(WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable);
-                let truth = relational.read_truth();
-                let live = truth
-                    .project_snapshot(snapshot)
-                    .ok_or_else(unavailable)?
-                    .entity_record_with_projection_scope(
-                        entity,
-                        ProjectionAspectScope::empty(),
-                        |record| Some(record.lifecycle()),
-                    )
-                    == Some(RecordLifecycleState::Live);
-                let selected = truth
-                    .positioned_snapshot(snapshot)
-                    .map_err(|_| unavailable())?;
-                if !live {
-                    return Ok(false);
-                }
-                match ConsumedOutputEvidence::verify_at_observation(
-                    output.stable.exact_settlement(),
-                    facts,
-                    &output.consumed_outputs,
-                    output.verification_requirement,
-                    witness,
-                    owner,
-                    relational,
-                    snapshot,
-                    &selected,
-                    &mut remaining,
-                ) {
-                    Ok(verification) => Ok(verification == ConsumedOutputVerification::Current),
-                    // What it consumed was not current at this observation.
-                    Err(ConsumedOutputVerificationStop::PendingUpstream) => Ok(false),
-                    Err(ConsumedOutputVerificationStop::WorkExhausted) => {
-                        Err(retry(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded))
+            let verified = self
+                .primary_provider
+                .graph
+                .with_runtime(execution, |relational| {
+                    let unavailable =
+                        || stop(WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable);
+                    let truth = relational.read_truth();
+                    let live = truth
+                        .project_snapshot(snapshot, execution)
+                        .ok_or_else(unavailable)?
+                        .entity_record_with_projection_scope(
+                            execution,
+                            entity,
+                            ProjectionAspectScope::empty(),
+                            |record| Some(record.lifecycle()),
+                        )
+                        == Some(RecordLifecycleState::Live);
+                    let selected = truth
+                        .positioned_snapshot(snapshot)
+                        .map_err(|_| unavailable())?;
+                    if !live {
+                        return Ok(false);
                     }
-                    Err(ConsumedOutputVerificationStop::RetryCurrentness(_)) => {
-                        Err(retry(WorthQueryOutputDemandDenialKind::PublicationStale))
+                    match ConsumedOutputEvidence::verify_at_observation(
+                        execution,
+                        output.stable.exact_settlement(),
+                        facts,
+                        &output.consumed_outputs,
+                        output.verification_requirement,
+                        witness,
+                        owner,
+                        relational,
+                        snapshot,
+                        &selected,
+                        &mut remaining,
+                    ) {
+                        Ok(verification) => Ok(verification == ConsumedOutputVerification::Current),
+                        // What it consumed was not current at this observation.
+                        Err(ConsumedOutputVerificationStop::PendingUpstream) => Ok(false),
+                        Err(ConsumedOutputVerificationStop::WorkExhausted) => {
+                            Err(retry(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded))
+                        }
+                        Err(ConsumedOutputVerificationStop::RetryCurrentness(_)) => {
+                            Err(retry(WorthQueryOutputDemandDenialKind::PublicationStale))
+                        }
+                        Err(ConsumedOutputVerificationStop::Interrupted(event)) => Err(denial(
+                            WorthQueryOutputDemandDenialKind::of_interruption(event.interruption()),
+                            Family::IDENTITY,
+                        )),
+                        Err(ConsumedOutputVerificationStop::CapacityExhausted) => Err(retry(
+                            WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
+                        )),
+                        Err(ConsumedOutputVerificationStop::Unavailable) => Err(unavailable()),
                     }
-                    Err(ConsumedOutputVerificationStop::Interrupted(event)) => Err(denial(
-                        WorthQueryOutputDemandDenialKind::of_interruption(event.interruption()),
-                        Family::IDENTITY,
-                    )),
-                    Err(ConsumedOutputVerificationStop::CapacityExhausted) => Err(retry(
-                        WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
-                    )),
-                    Err(ConsumedOutputVerificationStop::Unavailable) => Err(unavailable()),
-                }
-            })?;
+                })?;
             if verified {
                 current = Some(output);
                 break;

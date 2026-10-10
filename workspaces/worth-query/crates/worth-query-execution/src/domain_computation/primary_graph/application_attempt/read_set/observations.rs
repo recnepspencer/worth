@@ -20,6 +20,7 @@ impl<Schema, Operation, Input, Scope, Phase>
 {
     pub fn observe_entity<Entity>(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity: ApplicationEntityRef<Schema, Entity>,
         identity: &WorthQueryApplicationEntityIdentity<Schema, Entity>,
     ) -> Result<(), WorthQueryApplicationAttemptDenial>
@@ -39,7 +40,7 @@ impl<Schema, Operation, Input, Scope, Phase>
             self.admission.publication_request(),
             self.admission.operation(),
         )?;
-        self.validate_identity_freshness(entity.name(), identity)?;
+        self.validate_identity_freshness(execution, entity.name(), identity)?;
         self.installed_read_scopes.insert(key.clone(), read_scope);
         self.facts.insert(
             key,
@@ -53,6 +54,7 @@ impl<Schema, Operation, Input, Scope, Phase>
 
     pub fn observe_field<Entity, Aspect, Field, Value, Write, Equality, Unit>(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         identity: &WorthQueryApplicationEntityIdentity<Schema, Entity>,
         field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
     ) -> Result<Value, WorthQueryApplicationAttemptDenial>
@@ -79,13 +81,14 @@ impl<Schema, Operation, Input, Scope, Phase>
             self.admission.publication_request(),
             self.admission.operation(),
         )?;
-        self.validate_identity_freshness(field.entity(), identity)?;
+        self.validate_identity_freshness(execution, field.entity(), identity)?;
         let value = self
             .lease
             .handle()
-            .with_runtime(|runtime| {
+            .with_runtime(execution, |runtime| {
                 observe_field_value(
                     runtime,
+                    execution,
                     self.lease.snapshot(),
                     identity.entity_id(),
                     identity.entity_kind(),
@@ -119,6 +122,7 @@ impl<Schema, Operation, Input, Scope, Phase>
 
     pub fn observe_relation<Relation, From, To>(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         relation: ApplicationRelationRef<Schema, Relation, From, To>,
         from: &WorthQueryApplicationEntityIdentity<Schema, From>,
         to: &WorthQueryApplicationEntityIdentity<Schema, To>,
@@ -156,11 +160,12 @@ impl<Schema, Operation, Input, Scope, Phase>
             self.admission.publication_request(),
             self.admission.operation(),
         )?;
-        self.validate_identity_freshness(relation.from(), from)?;
-        self.validate_identity_freshness(relation.to(), to)?;
-        let matching_relations = self.lease.handle().with_runtime(|runtime| {
+        self.validate_identity_freshness(execution, relation.from(), from)?;
+        self.validate_identity_freshness(execution, relation.to(), to)?;
+        let matching_relations = self.lease.handle().with_runtime(execution, |runtime| {
             exact_relations(
                 runtime,
+                execution,
                 self.lease.snapshot(),
                 layout.kind,
                 from.entity_id(),

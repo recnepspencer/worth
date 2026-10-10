@@ -286,3 +286,6 @@ fn iteration_start_rejection(
         epoch,
     }
 }
+
+#[cfg(test)]
+mod test_host_policy;

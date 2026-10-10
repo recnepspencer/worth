@@ -96,13 +96,14 @@ where
     /// installation is exactly the installation already owning this runtime.
     pub fn reinstall_conditional_runtime(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         product_branch: crate::basis::WorthQueryProductBranch,
     ) -> Result<
         WorthQueryConditionalRuntimeReinstallationReceipt,
         WorthQueryConditionalRuntimeInstallationDenial,
     > {
         let current = self.runtime.retain_installed_packages();
-        self.reinstall_conditional_runtime_for_installation(current, product_branch)
+        self.reinstall_conditional_runtime_for_installation(execution, current, product_branch)
     }
 
     /// Rebuilds derived conditional state for one explicitly presented
@@ -110,6 +111,7 @@ where
     /// incumbent typed bindings and therefore fails closed with RebindRequired.
     pub fn reinstall_conditional_runtime_for_installation(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         candidate: Arc<WorthQueryInstalledPackageIndex>,
         product_branch: crate::basis::WorthQueryProductBranch,
     ) -> Result<
@@ -119,7 +121,7 @@ where
         require_equivalent_installation(self.runtime.installed_packages(), &candidate)?;
         let selected = self
             .on_branch(product_branch)
-            .select()
+            .select_with_request(execution)
             .map_err(|denial| bridge_denial(format!("product selection failed: {denial:?}")))?;
         let truth = WorthQueryConditionalTruthBasis::from_selected(selected);
         let mut bridge_candidate = self
@@ -133,6 +135,7 @@ where
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .snapshot();
         let mut prepared = registry.prepare_derived_runtime_reinstallation(
+            execution,
             self,
             &mut bridge_candidate,
             truth.product(),

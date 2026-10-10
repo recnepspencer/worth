@@ -73,7 +73,10 @@ pub(crate) use kind_scan_visibility::KindScanVisibility;
 pub use positioned_snapshot::{
     PositionedRelationalSnapshot, RelationalSnapshotPositionAdmissionStop, SnapshotPositionDenial,
 };
-pub use query_execution::{QueryLeasedReadOutcome, QueryReadExecutionStop, QueryReadPacketDenial};
+pub use query_execution::{
+    QueryLeasedReadOutcome, QueryReadExecutionStop, QueryReadPacketDenial,
+    RelationalQueryReadStrategy,
+};
 use query_fragment_scratch::QueryFragmentScratch;
 pub use truth_adjacency::{AdjacencyTruthReadLimitExceeded, BoundedAdjacencyTruthRead};
 pub use truth_frontier_adjacency::{

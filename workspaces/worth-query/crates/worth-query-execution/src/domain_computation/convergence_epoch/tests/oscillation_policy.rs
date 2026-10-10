@@ -107,7 +107,7 @@ fn assert_indeterminate_policy_denial(
 }
 
 fn indeterminate_terminal(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     disposition: FixtureDisposition,
     contract: FixtureConvergenceContract,
@@ -119,7 +119,7 @@ fn indeterminate_terminal(
 }
 
 fn oscillating_terminal(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     disposition: FixtureDisposition,
     contract: FixtureConvergenceContract,
@@ -131,12 +131,15 @@ fn oscillating_terminal(
 }
 
 fn terminal_outcome(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     disposition: FixtureDisposition,
     contract: FixtureConvergenceContract,
 ) -> WorthQueryDirectConvergenceIterationOutcome {
     let epoch = direct_admission_fixture_with_contract(disposition, contract).admit();
+
+    let installed_fixture_phase = epoch.fixture_phase(execution);
+    let execution = &installed_fixture_phase;
     let started = match epoch.begin_iteration(
         execution,
         WorthQueryManagedGraphCallRequest::new(

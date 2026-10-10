@@ -91,7 +91,7 @@ where
         let application = self.application;
         let request_scope = self.scope;
         application
-            .with_application_advancement(request_scope, |_phase| {
+            .with_application_advancement(request_scope, |phase| {
                 if self.retained.is_some() {
                     return Err(WorthQueryApplicationRequestQueryDenial::RequestMode);
                 }
@@ -115,7 +115,7 @@ where
                 let selected = self
                     .application
                     .on_branch(self.branch)
-                    .select()
+                    .select(&phase)
                     .map_err(WorthQueryApplicationRequestQueryDenial::ProductSelection)?;
                 let installed_capability = self
                     .application
@@ -124,6 +124,7 @@ where
                     .map_err(WorthQueryApplicationRequestQueryDenial::CapabilityInstallation)?;
                 let principal = selected
                     .resolve_authenticated_principal(
+                        &phase,
                         binding.principal_binding(),
                         self.principal,
                         self.scope,
@@ -132,6 +133,7 @@ where
                     .map_err(WorthQueryApplicationRequestQueryDenial::PrincipalResolution)?;
                 let capability_access = match approved {
                     Some(approved) => selected.admit_approved_elevation_access(
+                        &phase,
                         approved,
                         &principal,
                         &installed_capability,
@@ -139,6 +141,7 @@ where
                         self.scope,
                     ),
                     None => selected.admit_capability_access(
+                        &phase,
                         &principal,
                         &installed_capability,
                         input,
@@ -150,6 +153,7 @@ where
                     scope_binding.into_field_parts(principal.principal_identity());
                 let scope = selected
                     .resolve_entity(
+                        &phase,
                         scope_field,
                         scope_value,
                         self.scope,
@@ -167,6 +171,7 @@ where
                 );
                 let plan = selected
                     .admit_governed_application_query(
+                        &phase,
                         binding.query(),
                         &access,
                         capability_access,
@@ -176,7 +181,7 @@ where
                     .map_err(WorthQueryApplicationRequestQueryDenial::Admission)?;
                 let result = self
                     .application
-                    .execute_application_query_one_shot(plan)
+                    .execute_application_query_one_shot(&phase, plan)
                     .map_err(WorthQueryApplicationRequestQueryDenial::Execution)?;
                 Ok(publish_application_result(result.into_admitted_disclosed()))
             })

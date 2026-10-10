@@ -15,12 +15,13 @@ use super::field_projection_scope::{
 use super::IndexProjectionSource;
 
 pub(in crate::indexes) fn build_relation_aspect_field_index(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &IndexProjectionSource<'_, '_>,
     field_locator: &AspectFieldLocator,
 ) -> BTreeMap<AuthoritativeFieldComparisonKey, Vec<RelationId>> {
     let mut entries = BTreeMap::new();
     for scope in relation_index_projection_scopes(projection, field_locator) {
-        projection.for_each_relation(scope.kind_id(), |record| {
+        projection.for_each_relation(execution, scope.kind_id(), |record| {
             if let Some(key) = relation_query_locus_comparison_key(record, field_locator) {
                 entries
                     .entry(key)
@@ -33,6 +34,7 @@ pub(in crate::indexes) fn build_relation_aspect_field_index(
 }
 
 pub(in crate::indexes) fn build_relation_aspect_field_index_checked(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &IndexProjectionSource<'_, '_>,
     field_locator: &AspectFieldLocator,
     context: &mut crate::execution::PacketKernelContext<'_, '_, '_>,
@@ -45,6 +47,7 @@ pub(in crate::indexes) fn build_relation_aspect_field_index_checked(
                 continue;
             }
             projection.try_for_each_relation(
+                request_execution,
                 plan.kind_id,
                 |bytes| {
                     budget.borrow_mut().checkpoint(1)?;

@@ -11,6 +11,9 @@ use crate::identity::data::PartitionId;
 #[test]
 #[ignore = "run explicitly to measure a bounded synthetic native checkpoint restore"]
 fn synthetic_native_restore_and_image_digest_benchmark() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     const RECORDS: usize = 8_192;
     const DIGEST_SAMPLES: usize = 16;
 
@@ -80,14 +83,14 @@ fn synthetic_native_restore_and_image_digest_benchmark() {
     let restore_started = Instant::now();
     recovered
         .durability_recovery()
-        .restore_native_checkpoint(&native)
+        .restore_native_checkpoint(execution, &native)
         .unwrap();
     let restore_elapsed = restore_started.elapsed();
     let snapshot = snapshot_for_owner_branch(&recovered, &BranchId("main".into()));
     assert_eq!(
         recovered
             .read_truth()
-            .read_snapshot(&snapshot)
+            .read_snapshot(&snapshot, execution)
             .unwrap()
             .entities()
             .len(),

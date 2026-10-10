@@ -13,98 +13,122 @@ use super::transcript_session_proofs::{
     branch_proof, intent_declaration, preview_proof, support_gated_neighbor_denials,
 };
 
-pub(super) fn workflow_editor_transcript() -> WorthQueryRuntimePublicApiTranscriptEvidence {
-    execute_transcript(TranscriptSpec {
-        family: "workflow-editor",
-        collection: "WorkflowNode",
-        view_name: "workflow.editor.canvas",
-        first_computed: "workflow.editor.section-readiness",
-        second_computed: "workflow.editor.workflow-readiness",
-        effect_name: "workflow.editor.publish-readiness",
-        intent_name: "workflow.editor.commit-intent",
-        produced_aspects: &["validation.state", "layout.frame", "runtimeValue.preview"],
-        neighbor_families: &[WorthQueryRuntimeFacadeFamily::StoreBackedExecution],
-        assertion_floor: 12,
-    })
+pub(super) fn workflow_editor_transcript(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryRuntimePublicApiTranscriptEvidence {
+    execute_transcript(
+        request_execution,
+        TranscriptSpec {
+            family: "workflow-editor",
+            collection: "WorkflowNode",
+            view_name: "workflow.editor.canvas",
+            first_computed: "workflow.editor.section-readiness",
+            second_computed: "workflow.editor.workflow-readiness",
+            effect_name: "workflow.editor.publish-readiness",
+            intent_name: "workflow.editor.commit-intent",
+            produced_aspects: &["validation.state", "layout.frame", "runtimeValue.preview"],
+            neighbor_families: &[WorthQueryRuntimeFacadeFamily::StoreBackedExecution],
+            assertion_floor: 12,
+        },
+    )
 }
 
-pub(super) fn geometry_kernel_transcript() -> WorthQueryRuntimePublicApiTranscriptEvidence {
-    execute_transcript(TranscriptSpec {
-        family: "geometry-kernel",
-        collection: "ModelEntity",
-        view_name: "geometry.kernel.topology",
-        first_computed: "geometry.kernel.nurbs-evaluation",
-        second_computed: "geometry.kernel.fillet-solver-readiness",
-        effect_name: "geometry.kernel.persist-solver-output",
-        intent_name: "geometry.kernel.commit-solve",
-        produced_aspects: &["topology.edge", "surface.trim", "solver.residue"],
-        neighbor_families: &[WorthQueryRuntimeFacadeFamily::DurableArtifacts],
-        assertion_floor: 12,
-    })
+pub(super) fn geometry_kernel_transcript(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryRuntimePublicApiTranscriptEvidence {
+    execute_transcript(
+        request_execution,
+        TranscriptSpec {
+            family: "geometry-kernel",
+            collection: "ModelEntity",
+            view_name: "geometry.kernel.topology",
+            first_computed: "geometry.kernel.nurbs-evaluation",
+            second_computed: "geometry.kernel.fillet-solver-readiness",
+            effect_name: "geometry.kernel.persist-solver-output",
+            intent_name: "geometry.kernel.commit-solve",
+            produced_aspects: &["topology.edge", "surface.trim", "solver.residue"],
+            neighbor_families: &[WorthQueryRuntimeFacadeFamily::DurableArtifacts],
+            assertion_floor: 12,
+        },
+    )
 }
 
-pub(super) fn table_spreadsheet_transcript() -> WorthQueryRuntimePublicApiTranscriptEvidence {
-    execute_transcript(TranscriptSpec {
-        family: "table-spreadsheet",
-        collection: "SheetCell",
-        view_name: "table.sheet.visible-window",
-        first_computed: "table.sheet.formula-values",
-        second_computed: "table.sheet.dropdown-domain",
-        effect_name: "table.sheet.persist-batched-edit",
-        intent_name: "table.sheet.commit-edit",
-        produced_aspects: &["formula.value", "dropdown.domain", "layout.width"],
-        neighbor_families: &[WorthQueryRuntimeFacadeFamily::StoreBackedExecution],
-        assertion_floor: 12,
-    })
+pub(super) fn table_spreadsheet_transcript(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryRuntimePublicApiTranscriptEvidence {
+    execute_transcript(
+        request_execution,
+        TranscriptSpec {
+            family: "table-spreadsheet",
+            collection: "SheetCell",
+            view_name: "table.sheet.visible-window",
+            first_computed: "table.sheet.formula-values",
+            second_computed: "table.sheet.dropdown-domain",
+            effect_name: "table.sheet.persist-batched-edit",
+            intent_name: "table.sheet.commit-edit",
+            produced_aspects: &["formula.value", "dropdown.domain", "layout.width"],
+            neighbor_families: &[WorthQueryRuntimeFacadeFamily::StoreBackedExecution],
+            assertion_floor: 12,
+        },
+    )
 }
 
-pub(super) fn composed_runtime_transcript() -> WorthQueryRuntimePublicApiTranscriptEvidence {
-    execute_transcript(TranscriptSpec {
-        family: "composed-runtime",
-        collection: "ComposedNode",
-        view_name: "composed.runtime.surface",
-        first_computed: "composed.runtime.derived-a",
-        second_computed: "composed.runtime.derived-b",
-        effect_name: "composed.runtime.pending-intent-effect",
-        intent_name: "composed.runtime.commit-intent",
-        produced_aspects: &[
-            "invariant.state",
-            "branch.preview",
-            "expression.output",
-            "intent.commit",
-        ],
-        neighbor_families: &[
-            WorthQueryRuntimeFacadeFamily::StoreBackedExecution,
-            WorthQueryRuntimeFacadeFamily::DurableArtifacts,
-        ],
-        assertion_floor: 16,
-    })
+pub(super) fn composed_runtime_transcript(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryRuntimePublicApiTranscriptEvidence {
+    execute_transcript(
+        request_execution,
+        TranscriptSpec {
+            family: "composed-runtime",
+            collection: "ComposedNode",
+            view_name: "composed.runtime.surface",
+            first_computed: "composed.runtime.derived-a",
+            second_computed: "composed.runtime.derived-b",
+            effect_name: "composed.runtime.pending-intent-effect",
+            intent_name: "composed.runtime.commit-intent",
+            produced_aspects: &[
+                "invariant.state",
+                "branch.preview",
+                "expression.output",
+                "intent.commit",
+            ],
+            neighbor_families: &[
+                WorthQueryRuntimeFacadeFamily::StoreBackedExecution,
+                WorthQueryRuntimeFacadeFamily::DurableArtifacts,
+            ],
+            assertion_floor: 16,
+        },
+    )
 }
 
-pub(super) fn composed_runtime_hostile_transcript() -> WorthQueryRuntimePublicApiTranscriptEvidence
-{
-    execute_transcript(TranscriptSpec {
-        family: "composed-runtime-hostile",
-        collection: "ComposedNode",
-        view_name: "composed.runtime.surface.hostile",
-        first_computed: "composed.runtime.derived-a.hostile",
-        second_computed: "composed.runtime.derived-b.hostile",
-        effect_name: "composed.runtime.pending-intent-effect.hostile",
-        intent_name: "composed.runtime.commit-intent.hostile",
-        produced_aspects: &[
-            "invariant.state",
-            "branch.preview",
-            "expression.output",
-            "intent.commit",
-            "store.debt-denial",
-            "durable.debt-denial",
-        ],
-        neighbor_families: &[
-            WorthQueryRuntimeFacadeFamily::StoreBackedExecution,
-            WorthQueryRuntimeFacadeFamily::DurableArtifacts,
-        ],
-        assertion_floor: 18,
-    })
+pub(super) fn composed_runtime_hostile_transcript(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryRuntimePublicApiTranscriptEvidence {
+    execute_transcript(
+        request_execution,
+        TranscriptSpec {
+            family: "composed-runtime-hostile",
+            collection: "ComposedNode",
+            view_name: "composed.runtime.surface.hostile",
+            first_computed: "composed.runtime.derived-a.hostile",
+            second_computed: "composed.runtime.derived-b.hostile",
+            effect_name: "composed.runtime.pending-intent-effect.hostile",
+            intent_name: "composed.runtime.commit-intent.hostile",
+            produced_aspects: &[
+                "invariant.state",
+                "branch.preview",
+                "expression.output",
+                "intent.commit",
+                "store.debt-denial",
+                "durable.debt-denial",
+            ],
+            neighbor_families: &[
+                WorthQueryRuntimeFacadeFamily::StoreBackedExecution,
+                WorthQueryRuntimeFacadeFamily::DurableArtifacts,
+            ],
+            assertion_floor: 18,
+        },
+    )
 }
 
 pub(super) struct TranscriptSpec {
@@ -120,12 +144,15 @@ pub(super) struct TranscriptSpec {
     assertion_floor: usize,
 }
 
-fn execute_transcript(spec: TranscriptSpec) -> WorthQueryRuntimePublicApiTranscriptEvidence {
-    let mut workspace = transcript_runtime(spec.produced_aspects)
+fn execute_transcript(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    spec: TranscriptSpec,
+) -> WorthQueryRuntimePublicApiTranscriptEvidence {
+    let mut workspace = transcript_runtime(request_execution, spec.produced_aspects)
         .workspace(format!("{}.workspace", spec.family))
         .expect("transcript runtime should expose a named workspace");
     let live = workspace
-        .live_view::<WorthQueryUnrefinedLiveShape>(spec.view_name, |q| {
+        .live_view::<WorthQueryUnrefinedLiveShape>(request_execution, spec.view_name, |q| {
             q.from(spec.collection)
                 .select(
                     std::iter::once(live_field("identity.id")).chain(
@@ -141,6 +168,7 @@ fn execute_transcript(spec: TranscriptSpec) -> WorthQueryRuntimePublicApiTranscr
         .expect("transcript live surface should declare");
     let first = workspace
         .computed::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             spec.first_computed,
             |c| {
                 c.depends_on_live(&live)
@@ -163,6 +191,7 @@ fn execute_transcript(spec: TranscriptSpec) -> WorthQueryRuntimePublicApiTranscr
         .expect("first computed transcript surface should declare");
     let second = workspace
         .computed::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             spec.second_computed,
             |c| {
                 c.depends_on_computed(&first)
@@ -206,13 +235,22 @@ fn execute_transcript(spec: TranscriptSpec) -> WorthQueryRuntimePublicApiTranscr
         })
         .expect("write-intent effect transcript surface should declare");
 
-    let (preview_digest, preview_residue_count) =
-        preview_proof(&mut workspace, &live, &second, &effect, &spec);
+    let (preview_digest, preview_residue_count) = preview_proof(
+        request_execution,
+        &mut workspace,
+        &live,
+        &second,
+        &effect,
+        &spec,
+    );
     let intent = workspace
-        .intent(intent_declaration(spec.intent_name, spec.collection))
+        .intent(
+            request_execution,
+            intent_declaration(spec.intent_name, spec.collection),
+        )
         .expect("authoritative transcript intent should commit");
     let write = workspace
-        .insert(spec.collection, |entity| {
+        .insert(request_execution, spec.collection, |entity| {
             let entity = entity.set_aspect(
                 transcript_aspect_touch("identity.id"),
                 string_aspect_value(format!("{}-entity-1", spec.family)),
@@ -245,7 +283,7 @@ fn execute_transcript(spec: TranscriptSpec) -> WorthQueryRuntimePublicApiTranscr
         "transcript live surface should emit query delivery batches"
     );
     let live_inspection = match workspace
-        .inspect(&live)
+        .inspect(request_execution, &live)
         .expect("live transcript surface should inspect")
     {
         WorthQueryInspection::LiveView(inspection) => inspection,
@@ -262,7 +300,7 @@ fn execute_transcript(spec: TranscriptSpec) -> WorthQueryRuntimePublicApiTranscr
         .as_str()
         .to_string();
     let computed_inspection = match workspace
-        .inspect(&second)
+        .inspect(request_execution, &second)
         .expect("nested computed transcript surface should inspect")
     {
         WorthQueryInspection::DerivedView(inspection) => inspection,
@@ -273,7 +311,7 @@ fn execute_transcript(spec: TranscriptSpec) -> WorthQueryRuntimePublicApiTranscr
         "nested computed should retain incremental patch evidence"
     );
     let effect_inspection = match workspace
-        .inspect(&effect)
+        .inspect(request_execution, &effect)
         .expect("effect transcript surface should inspect")
     {
         WorthQueryInspection::Effect(inspection) => inspection,
@@ -284,18 +322,23 @@ fn execute_transcript(spec: TranscriptSpec) -> WorthQueryRuntimePublicApiTranscr
         "effect inspection should expose pending intent residue"
     );
     let effect_intent = workspace
-        .next_effect_intent(&effect, "1.0", "transcript.effect.intent.v1")
+        .next_effect_intent(
+            request_execution,
+            &effect,
+            "1.0",
+            "transcript.effect.intent.v1",
+        )
         .expect("effect pending intent should execute through intent authority");
     let effect_intent_inspection = match workspace
-        .inspect(&effect_intent)
+        .inspect(request_execution, &effect_intent)
         .expect("effect intent receipt should inspect")
     {
         WorthQueryInspection::EffectIntentReceipt(inspection) => inspection,
         other => panic!("expected effect intent receipt inspection, got {other:?}"),
     };
-    let branch_digest = branch_proof(&mut workspace, &spec);
+    let branch_digest = branch_proof(request_execution, &mut workspace, &spec);
     let intent_inspection = match workspace
-        .inspect(&intent)
+        .inspect(request_execution, &intent)
         .expect("authoritative intent receipt should inspect")
     {
         WorthQueryInspection::IntentReceipt(inspection) => inspection,
@@ -304,7 +347,7 @@ fn execute_transcript(spec: TranscriptSpec) -> WorthQueryRuntimePublicApiTranscr
     let support_contract = workspace.public_api_contract();
     let denial_digests = support_gated_neighbor_denials(&support_contract, spec.neighbor_families);
     let state = workspace
-        .state(&second)
+        .state(request_execution, &second)
         .expect("golden transcript should use the public state boundary");
     let authority_lane_digest = hash_parts(&[
         format!("live:{live_active_lane_digest}"),

@@ -11,9 +11,34 @@ use crate::domain_computation::primary_graph::{
 fn pre_effect_index_budget_denial_leaves_no_effect_and_retries_through_query() {
     let world = installed_authorization_world(true);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
-    let denied = admitted_program(&world, &principal, &account, &request, "budget-replacement");
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let denied = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            admitted_program(
+                &phase,
+                &world,
+                &principal,
+                &account,
+                &request,
+                "budget-replacement",
+            )
+        })
+        .expect("the fixture read owns its installed host call");
 
     // Constrain only the next ordinary preflight. The real Relational candidate
     // and index preparation still run; no World publication is faulted.
@@ -42,9 +67,28 @@ fn pre_effect_index_budget_denial_leaves_no_effect_and_retries_through_query() {
             .published_application_commit_count(),
         0
     );
-    let _still_open = resolved_account(&world, "open", &live_scope());
+    let _still_open = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            resolved_account(&(phase).test_host_request(), &world, "open", &live_scope())
+        })
+        .expect("the fixture read owns its installed host call");
 
-    let retry = admitted_program(&world, &principal, &account, &request, "budget-replacement");
+    let retry = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            admitted_program(
+                &phase,
+                &world,
+                &principal,
+                &account,
+                &request,
+                "budget-replacement",
+            )
+        })
+        .expect("the fixture read owns its installed host call");
     let WorthQueryApplicationCommitOutcome::Committed(receipt) =
         world.application.compare_and_commit_application(
             retry,
@@ -61,5 +105,16 @@ fn pre_effect_index_budget_denial_leaves_no_effect_and_retries_through_query() {
     assert!(index_work.work_units > 0);
     assert_eq!(index_work.cold_record_slots, 0);
     assert!(index_work.generation_publications_reserved > 0);
-    let _committed = resolved_account(&world, "budget-replacement", &live_scope());
+    let _committed = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            resolved_account(
+                &(phase).test_host_request(),
+                &world,
+                "budget-replacement",
+                &live_scope(),
+            )
+        })
+        .expect("the fixture read owns its installed host call");
 }

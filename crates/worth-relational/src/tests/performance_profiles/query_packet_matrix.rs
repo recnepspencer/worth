@@ -3,6 +3,9 @@ use super::*;
 #[test]
 #[ignore = "performance baseline capture; run with -- --ignored --nocapture --test-threads=1"]
 fn perf_query_packet_matrix() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let suite = "query_packet_matrix";
 
     let explicit_target_samples =
@@ -37,7 +40,13 @@ fn perf_query_packet_matrix() {
             let execution_started_at = Instant::now();
             let outcome = runtime
                 .read_truth()
-                .execute_query_plan(planned)
+                .execute_query_plan(
+                    planned,
+                    execution,
+                    crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
+                )
+                .expect("request remains live")
+                .map(|read| read.outcome)
                 .expect("explicit target query outcome");
             let execution_micros = execution_started_at.elapsed().as_micros();
             let elapsed_micros = planning_micros + execution_micros;
@@ -141,7 +150,11 @@ fn perf_query_packet_matrix() {
                         .read_truth()
                         .plan_query_packet(&snapshot, packet)
                         .expect("planned query packet"),
+                    execution,
+                    crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                 )
+                .expect("request remains live")
+                .map(|read| read.outcome)
                 .expect("entity kind scan outcome");
             let elapsed_micros = started_at.elapsed().as_micros();
             let counters = runtime.performance_access().counters();
@@ -249,7 +262,13 @@ fn perf_query_packet_matrix() {
             let execution_started_at = Instant::now();
             let outcome = runtime
                 .read_truth()
-                .execute_query_plan(planned)
+                .execute_query_plan(
+                    planned,
+                    execution,
+                    crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
+                )
+                .expect("request remains live")
+                .map(|read| read.outcome)
                 .expect("connectivity traversal outcome");
             let execution_micros = execution_started_at.elapsed().as_micros();
             let elapsed_micros = planning_micros + execution_micros;

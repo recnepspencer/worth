@@ -94,14 +94,20 @@ fn merge_commit_uses_deterministic_parent_order_and_advances_target_branch() {
 
 #[test]
 fn merge_commit_requires_existing_parent_branch_heads() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     create_entity_outcome(&runtime, "main-a");
     let error = runtime
-        .prepare_merge_execution(MergeExecutionRequest::new(
-            BranchId("main".to_string()),
-            BranchId("missing".to_string()),
-            MergeIntent::ReconcileIntoTarget,
-        ))
+        .prepare_merge_execution(
+            execution,
+            MergeExecutionRequest::new(
+                BranchId("main".to_string()),
+                BranchId("missing".to_string()),
+                MergeIntent::ReconcileIntoTarget,
+            ),
+        )
         .unwrap_err();
 
     assert!(matches!(

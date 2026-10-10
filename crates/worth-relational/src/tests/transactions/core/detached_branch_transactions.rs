@@ -154,6 +154,9 @@ fn validated_proposal_complexity_excludes_intervening_sibling_commit_work() {
 
 #[test]
 fn stale_transaction_reads_remain_on_the_admitted_root_and_commit_has_no_effect() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let entity = create_entity(&runtime, "basis-value");
     let (_, mut transaction) = begin_on(&runtime, "main");
@@ -230,7 +233,7 @@ fn stale_transaction_reads_remain_on_the_admitted_root_and_commit_has_no_effect(
         .clone();
     let current = runtime
         .read_truth()
-        .read_snapshot(&current_snapshot)
+        .read_snapshot(&current_snapshot, execution)
         .unwrap();
     assert_eq!(
         current.get_entity(entity).and_then(read_entity_name),

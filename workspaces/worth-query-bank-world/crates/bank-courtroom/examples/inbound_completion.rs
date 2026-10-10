@@ -130,7 +130,10 @@ async fn run() {
         panic!("the notification must commit a fresh outbox: {receipt:?}");
     };
     let outbox = runtime
-        .observe_committed_dispatch_outbox(&receipt)
+        .with_application_advancement(&support::request_scope(), |phase| {
+            runtime.observe_committed_dispatch_outbox(&phase, &receipt)
+        })
+        .expect("installed host call opens")
         .expect("the committed dispatch is readable")
         .expect("one external effect was emitted");
     let token = *outbox.correlation();

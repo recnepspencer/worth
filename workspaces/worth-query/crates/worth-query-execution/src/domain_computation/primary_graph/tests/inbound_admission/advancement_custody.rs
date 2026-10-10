@@ -63,7 +63,10 @@ fn inbound_receive_refuses_before_authentication_or_correlation_reads() {
         // A fresh correlation in each placement exercises the real source read.
         // An already completed duplicate legitimately returns retained terminal data.
         let world = installed_world_with_verifier(verifier.clone());
-        let dispatch = world.commit_dispatch(147, "custody-probe");
+        let dispatch = world
+            .application
+            .with_host_advancement(|phase| world.commit_dispatch(&phase, 147, "custody-probe"))
+            .expect("installed host call opens");
         let record = dispatch.dispatch_outbox().unwrap();
         let envelope = signed_envelope(record, [0x97; 32], record.payload(), false);
         verifier.0.store(0, Ordering::Relaxed);

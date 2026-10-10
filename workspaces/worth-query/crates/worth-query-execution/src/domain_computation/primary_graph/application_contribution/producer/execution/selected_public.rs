@@ -68,6 +68,7 @@ where
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn prepare_selected_public_mutation<'selected, 'runtime, Schema, Binding>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     installed: &TypedInstalledProducer<Schema, Binding>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     shared: &'selected SharedSelectedProductOperation<'runtime, Schema>,
@@ -111,6 +112,7 @@ where
     admission.charge_external_work(8).map_err(Stop::Admission)?;
     let principal = selected
         .resolve_authenticated_principal_issued(
+            execution,
             current.principal_binding(),
             external,
             request,
@@ -132,7 +134,7 @@ where
         .scope_binding()
         .into_field_parts(principal.principal().principal_identity());
     let scope = selected
-        .resolve_mutation_scope_issued(field, value, request, admission)
+        .resolve_mutation_scope_issued(execution, field, value, request, admission)
         .map_err(Stop::Scope)?;
     if !source_readmission::is_current_selected_product::<Schema, Binding>(
         runtime, selected, admission,

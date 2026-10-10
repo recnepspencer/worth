@@ -32,6 +32,9 @@ fn a_revalidation_demand_makes_a_rule_judge_and_reject_an_unchanged_record() {
 
 #[test]
 fn without_the_demand_the_same_candidate_leaves_the_record_unjudged() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = strictness_runtime();
     let offending = create_entity(&runtime, "oversized");
     let mode = create_entity(&runtime, "lax");
@@ -52,7 +55,7 @@ fn without_the_demand_the_same_candidate_leaves_the_record_unjudged() {
 
     release_test_commit_snapshot(&runtime, &outcome);
     assert_eq!(
-        committed_name(&runtime, offending),
+        committed_name(execution, &runtime, offending),
         Some("oversized".to_owned()),
         "the unjudged record is also unchanged"
     );
@@ -84,9 +87,12 @@ fn a_demand_alone_is_enough_when_the_committed_mode_is_already_strict() {
 
 #[test]
 fn a_passing_demand_leaves_the_record_and_its_aspect_versions_untouched() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = strictness_runtime();
     let compliant = create_entity(&runtime, COMPLIANT_NAME);
-    let before_state = committed_name(&runtime, compliant);
+    let before_state = committed_name(execution, &runtime, compliant);
     let before_versions = runtime
         .read_truth()
         .entity_aspect_versions(compliant)
@@ -116,7 +122,7 @@ fn a_passing_demand_leaves_the_record_and_its_aspect_versions_untouched() {
         "a demand authors nothing, so there is no patch to deliver"
     );
     release_test_commit_snapshot(&runtime, &outcome);
-    assert_eq!(committed_name(&runtime, compliant), before_state);
+    assert_eq!(committed_name(execution, &runtime, compliant), before_state);
     assert_eq!(
         runtime
             .read_truth()
@@ -206,11 +212,12 @@ fn assert_rejected_by_strictness_rule(error: &TransactionCommitError) {
 }
 
 fn committed_name(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     entity_id: crate::facade::identity::EntityId,
 ) -> Option<String> {
     let current = runtime
         .read_truth()
-        .read_version(runtime.current_version_id());
+        .read_version(execution, runtime.current_version_id());
     read_entity_name(current.get_entity(entity_id).expect("record is present"))
 }

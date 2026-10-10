@@ -37,14 +37,16 @@ pub struct WorthQueryPrimaryGraphBackendHandle {
 impl WorthQueryPrimaryGraphBackendHandle {
     pub(super) fn prepare_product_source(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
         worth_query_execution::facade::integration::WorthQueryProductRelationalInstallation,
         worth_relational::facade::branch::RelationalBranchBasisDenial,
     > {
         let branch = self
             .integration
-            .with_runtime(|runtime| runtime.main_branch_identity());
-        self.integration.prepare_product_source(&branch)
+            .with_runtime(request_execution, |runtime| runtime.main_branch_identity());
+        self.integration
+            .prepare_product_source(request_execution, &branch)
     }
     pub(in crate::runtime) fn new(integration: WorthQueryPrimaryGraphIntegrationHandle) -> Self {
         Self { integration }
@@ -52,20 +54,24 @@ impl WorthQueryPrimaryGraphBackendHandle {
 
     pub(in crate::runtime) fn with_runtime<T>(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         read: impl FnOnce(&RelationalRuntime) -> T,
     ) -> T {
-        self.integration.with_runtime(read)
+        self.integration.with_runtime(request_execution, read)
     }
 
     pub(in crate::runtime) fn execute_mutation<T, E>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         mutate: impl FnOnce(&mut RelationalRuntime) -> Result<T, E>,
     ) -> Result<Result<T, E>, WorthQueryPrimaryGraphIndexRefreshDenial> {
-        self.integration.execute_mutation_with_index_refresh(mutate)
+        self.integration
+            .execute_mutation_with_index_refresh(execution, mutate)
     }
 
     pub(in crate::runtime) fn execute_merge(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         declaration: &crate::workflow::LoweredMergeWorkflowDeclaration,
     ) -> Result<
         Result<
@@ -77,8 +83,22 @@ impl WorthQueryPrimaryGraphBackendHandle {
         let unique_values =
             crate::effect_lifecycle::MergeUniqueValueAuthority::PrimaryGraph(&self.integration);
         self.integration
-            .execute_mutation_with_index_refresh(|runtime| {
-                crate::effect_lifecycle::execute_lowered_merge(runtime, declaration, unique_values)
+            .execute_mutation_with_index_refresh(execution, |runtime| {
+                crate::effect_lifecycle::execute_lowered_merge(
+                    execution,
+                    runtime,
+                    declaration,
+                    unique_values,
+                )
             })
+    }
+}
+
+impl WorthQueryPrimaryGraphBackendHandle {
+    pub(super) fn release_query_snapshot(
+        &self,
+        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    ) {
+        self.integration.release_query_snapshot(snapshot);
     }
 }

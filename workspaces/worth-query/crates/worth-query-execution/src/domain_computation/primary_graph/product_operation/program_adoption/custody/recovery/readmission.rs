@@ -1,7 +1,7 @@
 //! Re-admits the retained adoption facts inside the caller's active advancement.
 use super::*;
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
-    pub(super) fn recover_branch_adoption_in_advancement(
+    pub(in crate::domain_computation::primary_graph::product_operation::program_adoption) fn recover_branch_adoption_in_advancement(
         &self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         recovery: WorthQueryBranchAdoptionRecovery,

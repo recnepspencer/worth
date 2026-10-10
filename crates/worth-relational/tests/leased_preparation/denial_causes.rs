@@ -18,6 +18,7 @@ fn assert_request_cause(request: LeaseRequest, expected: fn(Cause) -> bool) {
         .request_lease(request)
         .expect("request policy is admitted");
     let index_outcome = runtime.index_authority().build_for_commit_with_lease(
+        &worth_execution::ExecutionRequest::leased(&lease),
         DerivedIndexBuildRequest {
             source_commit_id: created.commit.commit_id,
             branch_id: BranchId("main".to_owned()),

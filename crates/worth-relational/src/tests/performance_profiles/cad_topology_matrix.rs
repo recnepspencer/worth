@@ -3,6 +3,8 @@ use super::*;
 #[test]
 #[ignore = "performance baseline capture; run with -- --ignored --nocapture --test-threads=1"]
 fn perf_cad_topology_matrix() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let suite = "cad_topology_matrix";
 
     let assembly_bridge_samples = capture_perf_samples(
@@ -93,12 +95,17 @@ fn perf_cad_topology_matrix() {
                         .read_truth()
                         .plan_query_packet(&snapshot, explicit_packet)
                         .expect("planned cad explicit packet"),
+                    execution,
+                    crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                 )
+                .expect("request remains live")
+                .map(|read| read.outcome)
                 .expect("cad explicit query outcome");
             let explicit_query_micros = explicit_started_at.elapsed().as_micros();
 
             let connectivity_started_at = Instant::now();
             let summary = runtime.inspect_what_happened().connectivity_summary(
+                execution,
                 &ConnectivityInspectionRequest {
                     scope: InspectionScope::Current,
                     partition_scope: None,

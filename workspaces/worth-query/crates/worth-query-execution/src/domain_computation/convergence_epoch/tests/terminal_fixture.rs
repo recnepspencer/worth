@@ -10,11 +10,14 @@ use crate::domain_computation::{
 };
 
 pub(super) fn direct_terminal_outcome(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     disposition: FixtureDisposition,
 ) -> WorthQueryDirectConvergenceIterationOutcome {
     let epoch = direct_epoch_fixture(disposition);
+
+    let installed_fixture_phase = epoch.fixture_phase(execution);
+    let execution = &installed_fixture_phase;
     let started = match epoch.begin_iteration(
         execution,
         WorthQueryManagedGraphCallRequest::new(
@@ -32,7 +35,7 @@ pub(super) fn direct_terminal_outcome(
 }
 
 pub(super) fn converged_terminal(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 ) -> WorthQueryDirectConvergenceTerminal<WorthQueryConverged> {
     match direct_terminal_outcome(execution, FixtureDisposition::Converged) {
         WorthQueryDirectConvergenceIterationOutcome::Converged(terminal) => terminal,
@@ -41,7 +44,7 @@ pub(super) fn converged_terminal(
 }
 
 pub(super) fn stable_without_proof_terminal(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 ) -> WorthQueryDirectConvergenceTerminal<WorthQueryStableWithoutProof> {
     match direct_terminal_outcome(execution, FixtureDisposition::StableWithoutProof) {
         WorthQueryDirectConvergenceIterationOutcome::StableWithoutProof(terminal) => terminal,
@@ -50,7 +53,7 @@ pub(super) fn stable_without_proof_terminal(
 }
 
 pub(super) fn indeterminate_terminal(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     disposition: FixtureDisposition,
 ) -> WorthQueryDirectConvergenceTerminal<WorthQueryIndeterminate> {
@@ -61,7 +64,7 @@ pub(super) fn indeterminate_terminal(
 }
 
 pub(super) fn workflow_converged_terminal(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 ) -> WorthQueryWorkflowConvergenceTerminal<WorthQueryConverged> {
     match workflow_terminal_outcome(execution, FixtureDisposition::Converged) {
         WorthQueryWorkflowConvergenceIterationOutcome::Converged(terminal) => terminal,
@@ -70,7 +73,7 @@ pub(super) fn workflow_converged_terminal(
 }
 
 pub(super) fn workflow_indeterminate_terminal(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     disposition: FixtureDisposition,
 ) -> WorthQueryWorkflowConvergenceTerminal<WorthQueryIndeterminate> {
@@ -81,11 +84,14 @@ pub(super) fn workflow_indeterminate_terminal(
 }
 
 fn workflow_terminal_outcome(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     disposition: FixtureDisposition,
 ) -> WorthQueryWorkflowConvergenceIterationOutcome {
     let epoch = workflow_epoch_fixture(disposition);
+
+    let installed_fixture_phase = epoch.fixture_phase(execution);
+    let execution = &installed_fixture_phase;
     let started = match epoch.begin_stage_iteration(
         execution,
         WORKFLOW_STAGE,

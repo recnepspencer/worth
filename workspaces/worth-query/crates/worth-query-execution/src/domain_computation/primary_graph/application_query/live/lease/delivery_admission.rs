@@ -46,6 +46,7 @@ where
 {
     pub(super) fn admit_delivery_progress(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
     ) -> Result<(), super::super::outcome::WorthQueryApplicationLiveOutcome<Query, QueryResult>>
     {
@@ -53,7 +54,7 @@ where
         let product = self._opening_product.read_lease();
         let application_basis = self
             .runtime
-            .retain_product_application_basis(product.observation())
+            .retain_product_application_basis(execution, product.observation())
             .map_err(|_| super::super::outcome::WorthQueryApplicationLiveOutcome::Unavailable)?;
         let controls = WorthQueryApplicationQueryControls::product_live(
             product,
@@ -67,6 +68,7 @@ where
             super::super::super::disclosure::WorthQueryApplicationQueryGovernance::Public,
         );
         let mut plan = match self.runtime.readmit_application_query_live(
+            execution,
             &self.query,
             &access,
             governance,
@@ -76,12 +78,14 @@ where
             Ok(plan) => plan,
             Err(denial) => return Err(self.delivery_admission_denial(denial)),
         };
-        if let Err(denial) = refresh_governed_authorization(self.runtime, &mut plan) {
+        if let Err(denial) = refresh_governed_authorization(execution, self.runtime, &mut plan) {
             let _ = plan.basis.release();
             return Err(self.delivery_read_denial(denial));
         }
         let ((scope_identity, observed), _, read_proof) =
-            match execute_authorized_read(self.runtime, &plan, read_scope_identity) {
+            match execute_authorized_read(execution, self.runtime, &plan, |runtime, graph, plan| {
+                read_scope_identity(execution, runtime, graph, plan)
+            }) {
                 Ok(read) => read,
                 Err(denial) => {
                     let _ = plan.basis.release();

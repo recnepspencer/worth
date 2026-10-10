@@ -17,6 +17,9 @@ use worth_relational::facade::runtime::RelationalRuntime;
 
 #[test]
 fn every_supply_chain_delta_shares_payloads_within_its_declared_partition_footprint() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let scenarios = [
         ("storm", BranchLabel::Storm, DeltaId::StormRerouteAurora),
         (
@@ -52,13 +55,18 @@ fn every_supply_chain_delta_shares_payloads_within_its_declared_partition_footpr
         ),
     ];
     for (branch, label, delta) in scenarios {
-        prove_named_delta_cow(branch, label, delta);
+        prove_named_delta_cow(execution, branch, label, delta);
     }
 }
 
-fn prove_named_delta_cow(branch: &str, label: BranchLabel, delta: DeltaId) {
-    let (world, baseline) = certified_supply_chain_world(SupplyChainScale::court());
-    assert_oracle_matches(&world, &baseline);
+fn prove_named_delta_cow(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    branch: &str,
+    label: BranchLabel,
+    delta: DeltaId,
+) {
+    let (world, baseline) = certified_supply_chain_world(execution, SupplyChainScale::court());
+    assert_oracle_matches(execution, &world, &baseline);
     fork_from_main(&world.runtime, branch);
     fork_from_main(&world.runtime, "cost-sibling");
     let selected = world
@@ -105,6 +113,7 @@ fn prove_named_delta_cow(branch: &str, label: BranchLabel, delta: DeltaId) {
     let main_scope = RelationalMvccCostScope::capture(&world.runtime, vec![main]);
     let sibling_scope = RelationalMvccCostScope::capture(&world.runtime, vec![sibling]);
     let batch = lower_supply_chain_production_delta(
+        execution,
         &world.runtime,
         &world.program,
         &world.handles,
@@ -177,6 +186,7 @@ fn prove_named_delta_cow(branch: &str, label: BranchLabel, delta: DeltaId) {
     }
     let snapshot = snapshot_for_supply_chain_identity(&world.runtime, &selected);
     let observed = observe_supply_chain_snapshot(
+        execution,
         &world.program,
         &world.handles.for_snapshot(snapshot.clone()),
         &world.runtime,

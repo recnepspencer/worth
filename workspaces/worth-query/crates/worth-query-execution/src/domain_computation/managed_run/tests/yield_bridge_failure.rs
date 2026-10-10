@@ -15,9 +15,11 @@ fn bridge_terminalization_failure_preserves_the_paused_run_for_retry_or_cleanup(
             WorthQueryOperationGraphAccess::Observe,
             YieldProvider::installed(5),
         );
+        let installed_running_phase = execution.phase_for_direct(&running);
+
         let active = running
             .begin_graph_execution(
-                execution,
+                &installed_running_phase,
                 &graph,
                 WorthQueryManagedGraphCallRequest::new(
                     WorthQueryGraphProviderCallKind::Observe,
@@ -25,7 +27,7 @@ fn bridge_terminalization_failure_preserves_the_paused_run_for_retry_or_cleanup(
                 ),
             )
             .unwrap();
-        let paused = match active.advance(execution) {
+        let paused = match active.advance(&installed_running_phase) {
             WorthQueryDirectGraphStepOutcome::Continue(paused) => paused,
             _ => panic!("provider did not pause"),
         };
@@ -53,7 +55,7 @@ fn bridge_terminalization_failure_preserves_the_paused_run_for_retry_or_cleanup(
             .active
             .request_cancellation(BridgeManagedExecutionCancellationReason::HostRequested)
             .unwrap();
-        let terminal = match paused.advance(execution) {
+        let terminal = match paused.advance(&installed_running_phase) {
             WorthQueryDirectGraphStepOutcome::Cancelled(terminal) => terminal,
             _ => panic!("recovered paused run did not retain cancellation authority"),
         };
@@ -110,6 +112,8 @@ fn workflow_bridge_failure_aborts_artifact_freeze_and_restores_production() {
         );
         let running =
             super::workflow_provider_steps::admitted_workflow(&runtime, &operation, resources);
+        let installed_running_phase = execution.phase_for_workflow(&running);
+
         let production = running
             .artifacts()
             .production_authority("producer")
@@ -117,7 +121,7 @@ fn workflow_bridge_failure_aborts_artifact_freeze_and_restores_production() {
             .expect("producer output artifact should install");
         let active = running
             .begin_stage_graph_execution(
-                execution,
+                &installed_running_phase,
                 "producer",
                 &graph,
                 WorthQueryManagedGraphCallRequest::new(
@@ -126,7 +130,7 @@ fn workflow_bridge_failure_aborts_artifact_freeze_and_restores_production() {
                 ),
             )
             .unwrap();
-        let paused = match active.advance(execution) {
+        let paused = match active.advance(&installed_running_phase) {
             WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused,
             _ => panic!("workflow provider did not pause"),
         };
@@ -173,7 +177,7 @@ fn workflow_bridge_failure_aborts_artifact_freeze_and_restores_production() {
             .active
             .request_cancellation(BridgeManagedExecutionCancellationReason::HostRequested)
             .unwrap();
-        let terminal = match paused.advance(execution) {
+        let terminal = match paused.advance(&installed_running_phase) {
             WorthQueryWorkflowGraphStepOutcome::Cancelled(terminal) => terminal,
             _ => panic!("recovered workflow did not retain cancellation authority"),
         };

@@ -100,11 +100,15 @@ fn revoked_advance_grant_yields_a_redacted_actor_wait() {
     );
     let runtime = application.runtime();
     let sibling = runtime
-        .branches()
-        .fork(instance.branch())
-        .components(|components| components.fork_relational().reuse_exact_signal_basis())
-        .create()
-        .expect("historical sibling publishes");
+        .with_host_advancement(|host_phase| {
+            runtime
+                .branches()
+                .fork(instance.branch())
+                .components(|components| components.fork_relational().reuse_exact_signal_basis())
+                .create(&host_phase)
+                .expect("historical sibling publishes")
+        })
+        .expect("installed host call opens");
     let scope = request_scope();
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
     let foreign = runtime

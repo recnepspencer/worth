@@ -12,3 +12,5 @@ mod compat_http_phase_twelve_runtime;
 mod compat_http_phase_twelve_transfer_lifecycle_cases;
 #[path = "support/query_handoff/runtime.rs"]
 mod query_handoff_runtime;
+#[path = "support/test_execution_policy.rs"]
+mod test_execution_policy;

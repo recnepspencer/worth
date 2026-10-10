@@ -15,10 +15,28 @@ fn parent_revocation_after_program_admission_denies_final_commit() {
     let world = installed_delegated_capability_world();
     world.authorization_time.script(vec![time(100); 16]);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let program = admitted_capability_program(&world, &principal, &request, "denied").0;
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let program = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            admitted_capability_program(&phase, &world, &principal, &request, "denied").0
+        })
+        .expect("the fixture read owns its installed host call");
 
-    revoke_parent(&world);
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            revoke_parent(&phase, &world)
+        })
+        .expect("the fixture read owns its installed host call");
 
     assert_decision_read_set_denial(world.application.compare_and_commit_application(
         program,
@@ -32,9 +50,27 @@ fn parent_revocation_denies_idempotency_receipt_inspection() {
     let world = installed_delegated_capability_world();
     world.authorization_time.script(vec![time(100); 32]);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let first = admitted_capability_program(&world, &principal, &request, "committed").0;
-    let retry = admitted_capability_program(&world, &principal, &request, "committed").0;
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let first = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            admitted_capability_program(&phase, &world, &principal, &request, "committed").0
+        })
+        .expect("the fixture read owns its installed host call");
+    let retry = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            admitted_capability_program(&phase, &world, &principal, &request, "committed").0
+        })
+        .expect("the fixture read owns its installed host call");
     let WorthQueryApplicationCommitOutcome::Committed(_) =
         world.application.compare_and_commit_application(
             first,
@@ -45,7 +81,13 @@ fn parent_revocation_denies_idempotency_receipt_inspection() {
         panic!("the current delegated program must establish the idempotency receipt");
     };
 
-    revoke_parent(&world);
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            revoke_parent(&phase, &world)
+        })
+        .expect("the fixture read owns its installed host call");
 
     assert_decision_read_set_denial(world.application.compare_and_commit_application(
         retry,
@@ -54,8 +96,12 @@ fn parent_revocation_denies_idempotency_receipt_inspection() {
     ));
 }
 
-pub(super) fn revoke_parent(world: &super::super::fixture::AuthorizationWorld) {
+pub(super) fn revoke_parent(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    world: &super::super::fixture::AuthorizationWorld,
+) {
     update_grant_field(
+        phase_custody,
         world,
         "capability-parent",
         field(world, CapabilityStatusField::reference()),

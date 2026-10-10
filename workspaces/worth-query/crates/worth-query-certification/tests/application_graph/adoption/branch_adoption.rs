@@ -27,11 +27,15 @@ fn one_branch_adopts_p1_while_its_sibling_keeps_running_p0() {
         .expect("the activation record is published once at bootstrap");
     let sibling = host
         .runtime()
-        .branches()
-        .fork(main)
-        .components(|components| components.fork_relational().reuse_exact_signal_basis())
-        .create()
-        .expect("the sibling branch must publish");
+        .with_host_advancement(|host_phase| {
+            host.runtime()
+                .branches()
+                .fork(main)
+                .components(|components| components.fork_relational().reuse_exact_signal_basis())
+                .create(&host_phase)
+                .expect("the sibling branch must publish")
+        })
+        .expect("installed host call opens");
     let target = *host
         .supported_program::<RetentionProgramP1>()
         .expect("P1 is rostered")

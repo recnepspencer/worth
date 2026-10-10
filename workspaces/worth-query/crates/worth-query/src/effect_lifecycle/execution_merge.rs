@@ -27,13 +27,14 @@ pub(crate) enum MergeUniqueValueAuthority<'graph> {
 impl MergeUniqueValueAuthority<'_> {
     fn admit(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &RelationalRuntime,
         prepared: &PreparedMergeExecution,
     ) -> Result<(), RelationalEffectExecutionFailure> {
         match self {
             Self::NoApplicationSchema => Ok(()),
             Self::PrimaryGraph(graph) => graph
-                .admit_merge_unique_values(runtime, prepared)
+                .admit_merge_unique_values(runtime, execution, prepared)
                 .map_err(merge_unique_value_failure),
         }
     }
@@ -74,6 +75,7 @@ pub(super) fn merge_unique_value_denial_kind(
 }
 
 pub(crate) fn execute_lowered_merge(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
     declaration: &crate::workflow::LoweredMergeWorkflowDeclaration,
     unique_values: MergeUniqueValueAuthority<'_>,
@@ -82,15 +84,19 @@ pub(crate) fn execute_lowered_merge(
         .bind_merge_execution_request(declaration.merge_request().clone())
         .map_err(merge_binding_failure)
         .and_then(|bound| {
-            runtime.prepare_merge_execution(bound).map_err(|error| {
-                let (kind, message) =
-                    lower_runtime_error(error, EffectExecutionDenialKind::MergePreparationFailed);
-                RelationalEffectExecutionFailure::Denied { kind, message }
-            })
+            runtime
+                .prepare_merge_execution(execution, bound)
+                .map_err(|error| {
+                    let (kind, message) = lower_runtime_error(
+                        error,
+                        EffectExecutionDenialKind::MergePreparationFailed,
+                    );
+                    RelationalEffectExecutionFailure::Denied { kind, message }
+                })
         })?;
-    unique_values.admit(runtime, &prepared)?;
+    unique_values.admit(execution, runtime, &prepared)?;
     runtime
-        .execute_prepared_merge(prepared)
+        .execute_prepared_merge(execution, prepared)
         .map_err(|error| match error {
             worth_relational::facade::merge::MergeExecutionError::Commit(error) => {
                 super::relational_execution_deferred::transaction_commit(error)

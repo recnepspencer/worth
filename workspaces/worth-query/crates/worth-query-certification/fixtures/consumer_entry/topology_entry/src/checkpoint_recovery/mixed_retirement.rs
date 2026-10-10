@@ -94,7 +94,8 @@ fn mixed_retirement_performed_product_settles_and_checkpoint_stays_ineligible() 
         .entity_id();
     assert_ne!(created, retired);
     assert_ne!(preserved, retired);
-    let retained = request.retain_read().unwrap();
+    let retained =
+        crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
     request
         .at(&retained)
         .require_current_program_output(&settled, NonZeroUsize::new(4096).unwrap())
@@ -118,10 +119,14 @@ fn mixed_retirement_performed_product_settles_and_checkpoint_stays_ineligible() 
             .expect("preserved and created members stay live");
     }
     let bytes = application
-        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
-        .unwrap()
-        .bytes()
-        .to_vec();
+        .with_host_advancement(|host_phase| {
+            application
+                .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
+                .unwrap()
+                .bytes()
+                .to_vec()
+        })
+        .expect("installed host call opens");
     // The created live member still owns all installed aspects. Reverting its
     // Length value cannot revert the native revision or revive this settlement.
     for (command, value) in [(0x9176_7303_u64, 13), (0x9176_7304_u64, 1)] {
@@ -148,7 +153,8 @@ fn mixed_retirement_performed_product_settles_and_checkpoint_stays_ineligible() 
                 worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
             .unwrap();
-        let changed = request.retain_read().unwrap();
+        let changed =
+            crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
         assert!(
             matches!(request.at(&changed).require_current_program_output(&settled, NonZeroUsize::new(4096).unwrap()),
             Err(WorthQueryProgramOutputCurrentnessDenial::Output(denial)) if denial.kind() == WorthQueryOutputDemandDenialKind::Superseded)

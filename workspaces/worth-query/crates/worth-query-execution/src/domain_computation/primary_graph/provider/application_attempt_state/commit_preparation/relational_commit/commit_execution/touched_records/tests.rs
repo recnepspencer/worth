@@ -52,7 +52,10 @@ fn native_prepared_records_are_admitted_before_effects_and_shared_until_last_dro
 
 fn native_prepared_records_are_admitted_before_effects_and_shared_until_last_drop_isolated() {
     let world = installed_authorization_world(true);
-    let head = world.selected_product().product().selected_commit().clone();
+    world.application.with_host_advancement(|phase| {
+    let phase_custody = &phase;
+
+    let head = world.selected_product(&(phase_custody).test_host_request(), ).product().selected_commit().clone();
     let graph = world.application.primary_provider.graph.clone();
     let kind = graph
         .layout
@@ -91,8 +94,8 @@ fn native_prepared_records_are_admitted_before_effects_and_shared_until_last_dro
             fields: AspectFieldPatch::from(fields),
         }),
     ));
-    let (_, product, _basis) = world.selected_product().into_parts();
-    let candidate = graph.with_runtime_mut(|runtime| {
+    let (_, product, _basis) = world.selected_product(&(phase_custody).test_host_request(), ).into_parts();
+    let candidate = graph.with_runtime_mut(&phase.borrowed_request_for_test(), |runtime| {
         let mut transaction = runtime
             .begin_branch_transaction(
                 product.relational_basis(),
@@ -146,7 +149,7 @@ fn native_prepared_records_are_admitted_before_effects_and_shared_until_last_dro
         ))
     );
     assert_eq!(cause.requested_payload_bytes(), Some(quote));
-    assert_eq!(world.selected_product().product().selected_commit(), &head);
+    assert_eq!(world.selected_product(&(phase_custody).test_host_request(), ).product().selected_commit(), &head);
     assert_eq!(
         candidate.with_prepared_changed_records(|records| records.to_vec()),
         Some(exact.clone())
@@ -169,7 +172,7 @@ fn native_prepared_records_are_admitted_before_effects_and_shared_until_last_dro
         cancelled.allocation_denial().unwrap().kind(),
         ExecutionAllocationDenialKind::Cancelled
     );
-    assert_eq!(world.selected_product().product().selected_commit(), &head);
+    assert_eq!(world.selected_product(&(phase_custody).test_host_request(), ).product().selected_commit(), &head);
     drop(stopped);
 
     let parent = authority.request_lease(request(quote)).unwrap();
@@ -226,4 +229,5 @@ fn native_prepared_records_are_admitted_before_effects_and_shared_until_last_dro
     ));
     drop(retained);
     assert_eq!(parent.reserve_memory(quote).unwrap().bytes(), quote);
+    }).expect("fixture host admits its prepared-record control");
 }

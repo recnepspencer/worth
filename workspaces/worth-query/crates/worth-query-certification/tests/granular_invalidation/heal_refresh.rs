@@ -15,29 +15,37 @@ use crate::schema::{IntentGateField, UnrelatedValueField};
 /// invalidations are never delivered, so the healed batch must make every
 /// live projection refresh its full scope, and the projection must show the
 /// relevant write.
-pub fn assert_healed_observation_refreshes_live_projection() {
+pub fn assert_healed_observation_refreshes_live_projection(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) {
     // Strictly more than the installation's retained positions (128).
     const UNRELATED_COMMITS: u64 = 130;
     let mut world = CourtroomWorld::publish_with_unrelated_rows("blocked", 1);
-    let mut query = build_primary_query_world(&world);
-    let mut suppressed = observe(&mut world);
+    let mut query = build_primary_query_world(request_execution, &world);
+    let mut suppressed = observe(request_execution, &mut world);
     assert_eq!(suppressed.committed_operation_count(), 0);
     assert!(suppressed.take_granular_invalidation_batch().is_empty());
 
     let branch = world.application.current_world();
     let unrelated = world
         .application
-        .on_branch(branch)
-        .select()
-        .expect("the selected product branch remains admitted")
-        .resolve_entity(
-            UnrelatedValueField::reference(),
-            0,
-            &request_scope(),
-            primary_graph::WorthQueryPrincipalResolutionMode::Certification,
-        )
-        .expect("the unrelated row must remain exactly resolvable")
-        .relational_record_identity_parts();
+        .with_host_advancement(|host_phase| {
+            world
+                .application
+                .on_branch(branch)
+                .select(&host_phase)
+                .expect("the selected product branch remains admitted")
+                .resolve_entity(
+                    &host_phase,
+                    UnrelatedValueField::reference(),
+                    0,
+                    &request_scope(),
+                    primary_graph::WorthQueryPrincipalResolutionMode::Certification,
+                )
+                .expect("the unrelated row must remain exactly resolvable")
+                .relational_record_identity_parts()
+        })
+        .expect("installed host call opens");
     world.application.publish_native_field_write_for_test(
         branch,
         world.intent_record_identity(),
@@ -55,7 +63,7 @@ pub fn assert_healed_observation_refreshes_live_projection() {
         );
     }
 
-    let mut healed = observe(&mut world);
+    let mut healed = observe(request_execution, &mut world);
     let batch = healed.take_granular_invalidation_batch();
     assert_eq!(
         batch.coverage(),
@@ -66,9 +74,14 @@ pub fn assert_healed_observation_refreshes_live_projection() {
         &query.live,
         world.application.granular_invalidation_installation(),
     );
-    let outcome =
-        maintain_primary_runtime_granular_batch(&query.live, &mut query.workspace, &binding, batch)
-            .expect("the healed batch must maintain the live projection");
+    let outcome = maintain_primary_runtime_granular_batch(
+        request_execution,
+        &query.live,
+        &mut query.workspace,
+        &binding,
+        batch,
+    )
+    .expect("the healed batch must maintain the live projection");
     let WorthQueryPrimaryGranularMaintenanceOutcome::Performed(performed) = outcome else {
         panic!("the gap's relevant write must reach the live projection")
     };
@@ -97,9 +110,10 @@ pub fn assert_healed_observation_refreshes_live_projection() {
 }
 
 fn observe(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &mut CourtroomWorld,
 ) -> primary_graph::WorthQueryConditionalClockObservationReceipt<crate::adapters::CourtroomClock> {
-    match world.conditional_clock().observe() {
+    match world.conditional_clock().observe(request_execution) {
         primary_graph::WorthQueryConditionalClockObservationOutcome::Accepted(receipt) => receipt,
         _ => panic!("the due courtroom observation must be accepted"),
     }

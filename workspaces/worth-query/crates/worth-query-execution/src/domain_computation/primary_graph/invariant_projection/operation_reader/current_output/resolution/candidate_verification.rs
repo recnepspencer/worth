@@ -31,6 +31,7 @@ where
     /// lineage row keeps the witness that comparison built.
     pub(super) fn verify_current_candidate(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         candidate: &WorthQueryCurrentOutputCandidate,
         selected: &PositionedRelationalSnapshot,
         subject: &str,
@@ -67,6 +68,7 @@ where
             .edit_admission_within(maximum_work);
         let verification = match sealed {
             Some(witness) => ConsumedOutputEvidence::verify_at_observation(
+                execution,
                 &candidate.settlement_identity,
                 &facts,
                 &candidate.consumed_outputs,
@@ -88,6 +90,7 @@ where
                 })
             }),
             None => ConsumedOutputEvidence::verify_restored_root_at(
+                execution,
                 &candidate.correspondence,
                 &facts,
                 self.reader.layout,

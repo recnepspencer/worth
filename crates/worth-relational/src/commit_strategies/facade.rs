@@ -32,9 +32,10 @@ impl<'runtime> CommitStrategiesFacade<'runtime> {
         &self,
         request: &CanonicalStrategyCommitRequest,
         snapshot: &SnapshotHandle,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<StrategyExecutionDraft, crate::commit_strategies::StrategyExecutionError> {
-        let bound = bind_execution(self.runtime, request, snapshot)?;
-        execute_bound_strategy(bound)
+        let bound = bind_execution(self.runtime, request, snapshot, execution)?;
+        execute_bound_strategy(execution, bound)
     }
 }
 

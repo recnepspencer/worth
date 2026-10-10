@@ -89,6 +89,9 @@ where
 {
     pub fn accept_operation_from_owner<Intent, SourcePreparation>(
         self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
         required: &RequiredWorkflowOperation,
         mut operation: WorthQueryApplicationMutationRequestWithIdempotency<
             '_,
@@ -110,7 +113,7 @@ where
                 <Intent::Binding as ApplicationMutationBinding<Schema>>::PrincipalIdentity,
             >,
     {
-        let (prepared, custody) = resolve_owner(&self, required, &mut operation)?;
+        let (prepared, custody) = resolve_owner(phase, &self, required, &mut operation)?;
         match custody {
             WorthQueryGuardedWorkflowOperationCustody::Committed(receipt)
             | WorthQueryGuardedWorkflowOperationCustody::ExternallySettled(receipt) => self
@@ -135,6 +138,9 @@ where
 
     pub fn accept_recovered_operation_from_owner<Intent, SourcePreparation>(
         self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
         required: &RequiredWorkflowOperation,
         mut operation: WorthQueryApplicationMutationRequestWithIdempotency<
             '_,
@@ -157,7 +163,7 @@ where
                 <Intent::Binding as ApplicationMutationBinding<Schema>>::PrincipalIdentity,
             >,
     {
-        let (prepared, custody) = resolve_owner(&self, required, &mut operation)?;
+        let (prepared, custody) = resolve_owner(phase, &self, required, &mut operation)?;
         match custody {
             WorthQueryGuardedWorkflowOperationCustody::DispatchPending(receipt)
             | WorthQueryGuardedWorkflowOperationCustody::ExternallySettled(receipt) => self
@@ -180,6 +186,7 @@ where
 }
 
 fn resolve_owner<Schema, Spec, Operation, Input, Scope, Intent, SourcePreparation>(
+    phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
     advance: &WorthQueryWorkflowAdvanceRequest<'_, '_, '_, Schema, Spec, Operation, Input, Scope>,
     required: &RequiredWorkflowOperation,
     operation: &mut WorthQueryApplicationMutationRequestWithIdempotency<
@@ -227,9 +234,10 @@ where
             WorthQueryWorkflowOperationBindingDenial::RequirementMismatch,
         ));
     }
-    let prepared = authorization::prepare(operation, &identities, staged)
+    let prepared = authorization::prepare(phase, operation, &identities, staged)
         .map_err(WorthQueryWorkflowOperationOwnerAcceptanceDenial::Request)?;
     let custody = WorthQueryWorkflowAdvanceAdapter::resolve_guarded_operation_custody(
+        phase,
         advance.application,
         &prepared.admission,
         prepared.idempotency,

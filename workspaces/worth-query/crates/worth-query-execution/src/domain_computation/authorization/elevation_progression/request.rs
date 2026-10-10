@@ -31,6 +31,43 @@ where
 {
     pub fn authorize_elevation_request<Capability, Operation, Input>(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        access: WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
+        operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
+        preconditions: TypedMutationPreconditions<
+            Schema,
+            Operation,
+            <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
+        >,
+    ) -> Result<
+        WorthQueryAdmittedApplicationOperation<
+            Schema,
+            Operation,
+            Input,
+            <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
+        >,
+        WorthQueryOperationAuthorizationDenial,
+    >
+    where
+        Operation: ApplicationOperationMarkerIdentity<Schema>,
+        Input: ApplicationCapabilityRequest<Schema, Capability>
+            + ApplicationCapabilityElevationRequest<Schema, Operation>
+            + 'static,
+    {
+        let execution = match phase.execution_request_for(&self.product_runtime) {
+            Ok(execution) => execution,
+            Err(_) => return Err(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::ForeignPhase, "phase-custody")),
+        };
+        self.authorize_elevation_request_with_request(&execution, access, operation, preconditions)
+    }
+
+    pub(in crate::domain_computation) fn authorize_elevation_request_with_request<
+        Capability,
+        Operation,
+        Input,
+    >(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         mut access: WorthQueryAdmittedApplicationCapabilityAccess<
             Schema,
             Capability,
@@ -70,7 +107,14 @@ where
         let (capability_identity, installed) =
             installed_request_lifecycle(self, &access, operation)?;
         validate_request_projection::<Schema, Operation, Input>(installed, &proposed)?;
-        let binding = bind_request(self, capability_identity, installed, &access, &proposed)?;
+        let binding = bind_request(
+            execution,
+            self,
+            capability_identity,
+            installed,
+            &access,
+            &proposed,
+        )?;
         access
             .retain_observed_support(binding.supporting().retained_for_operation())
             .map_err(|()| {
@@ -80,6 +124,7 @@ where
                 )
             })?;
         progress_capability_operation(
+            execution,
             self,
             access,
             operation,

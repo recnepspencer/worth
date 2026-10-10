@@ -1,6 +1,9 @@
 use super::*;
 
-pub(super) fn certify_topology_bridge_connectivity_wave(suite: &'static str) {
+pub(super) fn certify_topology_bridge_connectivity_wave(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    suite: &'static str,
+) {
     let topology_bridge_samples =
         capture_perf_samples(suite, "topology_bridge_connectivity_wave", || {
             let runtime =
@@ -48,6 +51,7 @@ pub(super) fn certify_topology_bridge_connectivity_wave(suite: &'static str) {
 
             let connectivity_started_at = Instant::now();
             let summary = runtime.inspect_what_happened().connectivity_summary(
+                execution,
                 &ConnectivityInspectionRequest {
                     scope: InspectionScope::Current,
                     partition_scope: None,
@@ -168,6 +172,7 @@ pub(super) fn certify_topology_bridge_connectivity_wave(suite: &'static str) {
 
             let connectivity_started_at = Instant::now();
             let summary = runtime.inspect_what_happened().connectivity_summary(
+                execution,
                 &ConnectivityInspectionRequest {
                     scope: InspectionScope::Current,
                     partition_scope: None,
@@ -299,6 +304,7 @@ pub(super) fn certify_topology_bridge_connectivity_wave(suite: &'static str) {
 
             let connectivity_started_at = Instant::now();
             let summary = runtime.inspect_what_happened().connectivity_summary(
+                execution,
                 &ConnectivityInspectionRequest {
                     scope: InspectionScope::Current,
                     partition_scope: None,

@@ -74,6 +74,9 @@ fn rolled_back_illegal_relation_work_leaves_zero_cdc_and_diagnostic_residue() {
 
 #[test]
 fn rolled_back_endpoint_deletion_work_leaves_zero_cdc_and_diagnostic_residue() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let schema = relation_integrity_schema(
         CascadeDeletePolicy::RetainDanglingForAudit,
         endpoint_deletion_integrity_declarations(),
@@ -128,7 +131,7 @@ fn rolled_back_endpoint_deletion_work_leaves_zero_cdc_and_diagnostic_residue() {
 
     let read = runtime
         .read_truth()
-        .read_snapshot(&outcome.snapshot)
+        .read_snapshot(&outcome.snapshot, execution)
         .unwrap();
     let relation = read.get_relation(relation).unwrap();
     assert_eq!(relation.lifecycle, RecordLifecycleState::Live);

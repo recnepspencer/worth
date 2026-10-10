@@ -13,10 +13,11 @@ pub(super) struct WorthQueryPrecommitSnapshot {
 
 impl WorthQueryPrecommitSnapshot {
     pub(super) fn acquire(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         graph: WorthQueryPrimaryGraphIntegrationHandle,
         basis: &AdmittedRelationalBranchBasis,
     ) -> Result<Self, RelationalSnapshotAdmissionDenial> {
-        let snapshot = graph.with_runtime_mut(|runtime| {
+        let snapshot = graph.with_runtime_mut(execution, |runtime| {
             crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(
                 runtime, basis,
             )
@@ -54,24 +55,37 @@ mod tests {
 
     #[test]
     fn unwind_releases_only_its_precommit_snapshot() {
+        let host_request = crate::test_request_policy::serial_request();
+        let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
         let world =
             crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
                 true,
             );
-        let selected = world.selected_product();
+        let selected = world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+                world.selected_product(&(phase).test_host_request())
+            })
+            .expect("the fixture read owns its installed host call");
         let product = selected.product().publication_binding();
         let graph = world.application.primary_provider.graph.clone();
         let count = || {
-            graph.with_runtime(|runtime| runtime.retention().inspect_plan().active_snapshot_count)
+            graph.with_runtime(request_execution, |runtime| {
+                runtime.retention().inspect_plan().active_snapshot_count
+            })
         };
         let baseline = count();
         let peer = WorthQueryPrecommitSnapshot::acquire(
+            request_execution,
             graph.clone(),
             product.observation().basis().relational_basis(),
         )
         .unwrap();
         let unwind = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             let _attempt = WorthQueryPrecommitSnapshot::acquire(
+                request_execution,
                 graph.clone(),
                 product.observation().basis().relational_basis(),
             )

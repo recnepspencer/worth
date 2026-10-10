@@ -2,7 +2,10 @@ use super::*;
 
 #[test]
 fn intent_common_path_helper_executes_through_canonical_handoff() {
-    let mut runtime = intent_runtime_with_authority(TestIntentAuthority);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = intent_runtime_with_authority(request_execution, TestIntentAuthority);
     let receipt = runtime
         .intent(WorthQueryIntentDeclaration::strategy_commit(
             "helper-runtime-intent",
@@ -11,7 +14,7 @@ fn intent_common_path_helper_executes_through_canonical_handoff() {
             "intent.reconcile.input.v1",
             test_intent_input([("entity", "task-1"), ("title", "Intent committed title")]),
         ))
-        .execute()
+        .execute(request_execution)
         .expect("common-path helper should execute");
 
     assert_eq!(
@@ -32,7 +35,10 @@ fn intent_common_path_helper_executes_through_canonical_handoff() {
 
 #[test]
 fn intent_advanced_path_helper_exposes_request_eligibility_decision_and_handoff() {
-    let mut runtime = intent_runtime_with_authority(TestIntentAuthority);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = intent_runtime_with_authority(request_execution, TestIntentAuthority);
     let review = runtime
         .intent(WorthQueryIntentDeclaration::strategy_commit(
             "advanced-helper-runtime-intent",
@@ -78,9 +84,13 @@ fn intent_advanced_path_helper_exposes_request_eligibility_decision_and_handoff(
 
 #[test]
 fn effect_write_intent_common_path_helper_executes_through_canonical_handoff() {
-    let mut runtime = intent_runtime_with_authority(TestIntentAuthority);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = intent_runtime_with_authority(request_execution, TestIntentAuthority);
     let live = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "tasks.effect-dx",
             task_live_request(),
             task_schema(),
@@ -94,16 +104,19 @@ fn effect_write_intent_common_path_helper_executes_through_canonical_handoff() {
         ))
         .expect("write-intent effect should declare");
     runtime
-        .write(test_update_string_aspect_command(
-            crate::memory_workspace::admit_authored_entity_label("task-1"),
-            "title.value",
-            "title from helper",
-        ))
+        .write(
+            request_execution,
+            test_update_string_aspect_command(
+                crate::memory_workspace::admit_authored_entity_label("task-1"),
+                "title.value",
+                "title from helper",
+            ),
+        )
         .expect("write should queue pending effect intent");
 
     let receipt = runtime
         .next_effect_write_intent(&effect, "1.0", "effect.intent.input.v1")
-        .execute()
+        .execute(request_execution)
         .expect("effect common-path helper should execute");
 
     assert_eq!(
@@ -115,14 +128,17 @@ fn effect_write_intent_common_path_helper_executes_through_canonical_handoff() {
 
 #[test]
 fn write_intent_common_path_helper_executes_through_canonical_handoff() {
-    let mut runtime = intent_runtime_with_authority(TestIntentAuthority);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = intent_runtime_with_authority(request_execution, TestIntentAuthority);
     let receipt = runtime
         .write_intent(test_update_string_aspect_command(
             crate::memory_workspace::admit_authored_entity_label("task-1"),
             "title.value",
             "title from write helper",
         ))
-        .execute()
+        .execute(request_execution)
         .expect("write common-path helper should execute");
 
     assert_eq!(
@@ -146,14 +162,17 @@ fn write_intent_common_path_helper_executes_through_canonical_handoff() {
 
 #[test]
 fn write_intent_advanced_path_helper_exposes_request_eligibility_decision_and_handoff() {
-    let mut runtime = intent_runtime_with_authority(TestIntentAuthority);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = intent_runtime_with_authority(request_execution, TestIntentAuthority);
     let review = runtime
         .write_intent(test_update_string_aspect_command(
             crate::memory_workspace::admit_authored_entity_label("task-1"),
             "title.value",
             "title from advanced write helper",
         ))
-        .review()
+        .review(request_execution)
         .expect("advanced write path should review");
 
     assert_eq!(

@@ -23,51 +23,96 @@ fn hidden_ordering_material_is_consumed_before_domain_projection() {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
-        .expect("the selected product branch remains admitted")
-        .resolve_authenticated_principal(
-            &world.binding,
-            &external,
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .select_product_branch(
+                    &host_custody.borrowed_request_for_test(),
+                    world.application.product_runtime().default_branch(),
+                )
+                .expect("the selected product branch remains admitted")
+                .resolve_authenticated_principal(
+                    &phase,
+                    &world.binding,
+                    &external,
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let account = world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
-        .expect("the selected product branch remains admitted")
-        .resolve_entity(
-            AccountIdentity::reference(),
-            "account-1".to_owned(),
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .select_product_branch(
+                    &host_custody.borrowed_request_for_test(),
+                    world.application.product_runtime().default_branch(),
+                )
+                .expect("the selected product branch remains admitted")
+                .resolve_entity(
+                    &phase,
+                    AccountIdentity::reference(),
+                    "account-1".to_owned(),
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let query = world
         .application
         .installed_schema()
         .certification_query(GovernedHiddenOrderingQuery::reference())
         .unwrap();
-    let capability = admit_touch_account_capability(&world, &principal, &request).unwrap();
+    let capability = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            admit_touch_account_capability(
+                &(phase).test_host_request(),
+                &world,
+                &principal,
+                &request,
+            )
+            .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
     let plan = world
-        .selected_product()
-        .admit_governed_application_query(
-            &query,
-            &access,
-            capability,
-            ApplicationQueryParameterSet::<GovernedHiddenOrderingQuery>::new(),
-            crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
-                NonZeroUsize::new(1).unwrap(),
-                NonZeroUsize::new(512).unwrap(),
-                &request,
-            ),
-        )
-        .unwrap();
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .selected_product(&(phase).test_host_request())
+                .admit_governed_application_query(
+                    &phase,
+                    &query,
+                    &access,
+                    capability,
+                    ApplicationQueryParameterSet::<GovernedHiddenOrderingQuery>::new(),
+                    crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
+                        NonZeroUsize::new(1).unwrap(),
+                        NonZeroUsize::new(512).unwrap(),
+                        &request,
+                    ),
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let result = world
         .application
-        .execute_application_query_one_shot(plan)
-        .unwrap();
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .execute_application_query_one_shot(&phase, plan)
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let WorthQueryApplicationDisclosed::Disclosed(activities) = result.rows()[0].activities()
     else {
         panic!("the activity collection must be disclosed");

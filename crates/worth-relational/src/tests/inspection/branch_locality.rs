@@ -2,6 +2,9 @@ use super::*;
 
 #[test]
 fn historical_inspection_stays_branch_local_under_divergence_and_reclaim_pressure() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(test_schema_registry())
         .visibility_cache_policy(VisibilityCachePolicy {
@@ -83,9 +86,11 @@ fn historical_inspection_stays_branch_local_under_divergence_and_reclaim_pressur
         .release_snapshot(&feature_update.snapshot)
         .is_ok());
 
-    let retained_only = runtime
-        .inspect_what_happened()
-        .open_historical_view(created.version_id, HistoricalInspectionMode::RetainedOnly);
+    let retained_only = runtime.inspect_what_happened().open_historical_view(
+        execution,
+        created.version_id,
+        HistoricalInspectionMode::RetainedOnly,
+    );
     assert!(retained_only.view.is_none());
     assert_eq!(
         retained_only.availability,
@@ -93,12 +98,14 @@ fn historical_inspection_stays_branch_local_under_divergence_and_reclaim_pressur
     );
 
     let main = reconstructed_record_inspection(
+        execution,
         &runtime,
         &BranchId("main".to_string()),
         created.version_id,
         crate::facade::transactions::RecordRef::Entity(entity),
     );
     let feature = reconstructed_record_inspection(
+        execution,
         &runtime,
         &BranchId("feature".to_string()),
         created.version_id,

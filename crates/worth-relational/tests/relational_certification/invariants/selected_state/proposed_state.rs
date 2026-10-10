@@ -53,6 +53,9 @@ impl ProbeEvidence {
 
 #[test]
 fn proposed_candidate_receipt_identifies_rule_that_read_proposed_and_committed_state() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let definition = SupplyChainWorldDefinition::operating(SupplyChainScale::court())
         .expect("Court Supply Chain definition is valid");
     let program = CompiledSupplyChainProgram::compile(definition)
@@ -68,6 +71,7 @@ fn proposed_candidate_receipt_identifies_rule_that_read_proposed_and_committed_s
 
     let target = world.handles.aurora_voyage().id;
     assert_snapshot_status(
+        execution,
         &world.runtime,
         &BranchId("main".to_owned()),
         target,
@@ -280,6 +284,7 @@ fn assert_status(
 }
 
 fn assert_snapshot_status(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     branch: &BranchId,
     entity_id: EntityId,
@@ -291,7 +296,7 @@ fn assert_snapshot_status(
     let snapshot = snapshot_for_supply_chain_identity(runtime, &identity);
     let view = runtime
         .read_truth()
-        .read_snapshot(&snapshot)
+        .read_snapshot(&snapshot, execution)
         .expect("branch snapshot is readable");
     let record = view
         .entities()

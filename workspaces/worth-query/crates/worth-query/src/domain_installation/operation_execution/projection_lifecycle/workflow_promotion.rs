@@ -21,6 +21,7 @@ where
 {
     pub fn promote(
         self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         workspace: &mut crate::runtime::WorthQueryWorkspace,
     ) -> WorthQueryWorkflowProjectionPromotionOutcome<D, O, F, L> {
         let owner = workspace.advancement_owner();
@@ -30,6 +31,7 @@ where
                 .take()
                 .expect("host call retains its projection before admission");
             current.promote_in_advancement(
+                request_execution,
                 phase
                     .execution_request_for(&owner)
                     .expect("the opener lent this owner its phase"),
@@ -55,6 +57,7 @@ where
 
     fn promote_in_advancement(
         self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         execution: worth_execution::ExecutionRequest<'_, '_>,
         workspace: &mut crate::runtime::WorthQueryWorkspace,
     ) -> WorthQueryWorkflowProjectionPromotionOutcome<D, O, F, L> {
@@ -93,7 +96,12 @@ where
             }
         };
         let resource_name = ready.resource_name.clone();
-        match open_lifecycle_read(resource_name.clone(), admitted.read, workspace) {
+        match open_lifecycle_read(
+            request_execution,
+            resource_name.clone(),
+            admitted.read,
+            workspace,
+        ) {
             WorthQueryLiveOpenOutcome::Opened(completion) => {
                 let mut counters = ready.counters;
                 retain_journey_counters(&mut counters, completion.journey_counters());

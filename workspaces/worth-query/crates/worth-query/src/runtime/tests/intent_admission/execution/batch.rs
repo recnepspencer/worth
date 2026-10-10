@@ -2,6 +2,9 @@ use super::*;
 
 #[test]
 fn batch_write_delegates_to_canonical_admission_and_execution_handoff() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let commands = vec![
         WorthQueryAspectMutationBuilder::new()
             .set_aspect(
@@ -27,12 +30,14 @@ fn batch_write_delegates_to_canonical_admission_and_execution_handoff() {
             .expect("batch command should build"),
     ];
 
-    let mut delegated_runtime = intent_runtime_with_authority(TestIntentAuthority);
+    let mut delegated_runtime =
+        intent_runtime_with_authority(request_execution, TestIntentAuthority);
     let delegated = delegated_runtime
-        .write_batch(commands.clone())
+        .write_batch(request_execution, commands.clone())
         .expect("delegated batch write should execute");
 
-    let mut canonical_runtime = intent_runtime_with_authority(TestIntentAuthority);
+    let mut canonical_runtime =
+        intent_runtime_with_authority(request_execution, TestIntentAuthority);
     let review = canonical_runtime
         .review_authoritative_runtime_write_batch(commands)
         .expect("canonical batch write review should succeed");
@@ -41,7 +46,7 @@ fn batch_write_delegates_to_canonical_admission_and_execution_handoff() {
         .expect("canonical batch handoff should admit");
     let binding = canonical_runtime.prepare_authoritative_mutation_batch_execution_binding(handoff);
     let canonical = canonical_runtime
-        .execute_authoritative_mutation_batch_execution_binding(binding)
+        .execute_authoritative_mutation_batch_execution_binding(request_execution, binding)
         .expect("canonical batch binding should execute");
 
     assert_eq!(

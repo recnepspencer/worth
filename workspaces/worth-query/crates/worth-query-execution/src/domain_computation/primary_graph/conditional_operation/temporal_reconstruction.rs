@@ -81,6 +81,7 @@ pub(super) fn reconstruct_temporal_intents<
     IdentityWrite,
     IdentityUnit,
 >(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     binding: &WorthQueryInstalledTemporalConditionalOperation<
         Schema,
@@ -169,10 +170,11 @@ where
     let admission = isolate_principal_source(access)?;
     let (external, request) = admission.into_parts();
     let selected = runtime
-        .on_product(product.retained_clone())
+        .on_product(execution, product.retained_clone())
         .map_err(product_denial)?;
     let principal = selected
-        .resolve_authenticated_principal(
+        .resolve_authenticated_principal_with_request(
+            execution,
             &access.principal_binding,
             &external,
             &request,
@@ -180,7 +182,8 @@ where
         )
         .map_err(denial::principal)?;
     let scope = selected
-        .resolve_entity(
+        .resolve_entity_with_request(
+            execution,
             access.scope_field,
             access.scope_value.clone(),
             &request,
@@ -205,6 +208,7 @@ where
     let plan = access
         .query_authorization
         .admit(
+            execution,
             runtime,
             binding.query(),
             &query_access,
@@ -213,7 +217,7 @@ where
         )
         .map_err(denial::query_authorization)?;
     let result = runtime
-        .execute_application_query_one_shot(plan)
+        .execute_application_query_one_shot_with_request(execution, plan)
         .map_err(denial::one_shot)?;
     let receipt = result.receipt();
     let work = WorthQueryTemporalReconstructionWork {
@@ -225,6 +229,7 @@ where
     let candidates =
         super::temporal_intent_projection::project_unique_candidates(binding, result.into_rows())?;
     let intents = bind_source_records(
+        execution,
         runtime,
         candidates,
         identity_field,

@@ -57,6 +57,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         Unit,
     >(
         &'selected self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         field: ApplicationFieldRef<
             Schema,
             Entity,
@@ -79,7 +80,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
-        let scope = self.resolve_entity_admitted(field, value, request, admission)?;
+        let scope = self.resolve_entity_admitted(execution, field, value, request, admission)?;
         admission
             .charge_external_work(1)
             .map_err(|stop| selected_index_admission_denial(stop, scope.entity_name()))?;
@@ -100,6 +101,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         Unit,
     >(
         &'selected self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         field: ApplicationFieldRef<
             Schema,
             Entity,
@@ -122,7 +124,8 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
-        let scope = self.resolve_retained_query_scope(field, selector, request, admission)?;
+        let scope =
+            self.resolve_retained_query_scope(execution, field, selector, request, admission)?;
         admission
             .charge_external_work(1)
             .map_err(|stop| selected_index_admission_denial(stop, scope.entity_name()))?;

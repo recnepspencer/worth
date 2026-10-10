@@ -14,6 +14,7 @@ use crate::domain_computation::primary_graph::workflow::{
 };
 
 pub(super) fn inventory<Schema: ApplicationSchema>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     selected: &WorthQuerySelectedProductOperation<'_, Schema>,
     target: &ApplicationProgramRevision,
     expected_requirements: &WorthQueryProgramAdoptionRequirements,
@@ -42,9 +43,13 @@ pub(super) fn inventory<Schema: ApplicationSchema>(
         target,
         maximum_work_units,
     };
-    graph.with_runtime(|runtime| {
-        let branch = super::selection::branch_view(runtime, selected.product().relational_basis())?;
-        inventory_workflows(branch, &request)
+    graph.with_runtime(execution, |runtime| {
+        let branch = super::selection::branch_view(
+            execution,
+            runtime,
+            selected.product().relational_basis(),
+        )?;
+        inventory_workflows(execution, branch, &request)
             .map_err(|denial| workflow_read_denial(denial, maximum_work_units, 0))
     })
 }

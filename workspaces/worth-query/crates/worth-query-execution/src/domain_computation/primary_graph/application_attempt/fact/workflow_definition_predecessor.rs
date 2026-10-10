@@ -4,6 +4,7 @@ use super::{observe_adjacency, WorthQueryApplicationAdjacencyDirection};
 
 pub(super) fn remains_equal(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     relation_kind: KindId,
     lineage: Option<EntityId>,
@@ -13,6 +14,7 @@ pub(super) fn remains_equal(
     lineage.is_some_and(|lineage| {
         observe_adjacency(
             runtime,
+            execution,
             snapshot,
             relation_kind,
             lineage,

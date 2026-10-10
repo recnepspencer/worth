@@ -1,6 +1,9 @@
 use super::*;
 
-pub(super) fn certify_geometry_hot_commit_vs_replay_reconstruction(suite: &'static str) {
+pub(super) fn certify_geometry_hot_commit_vs_replay_reconstruction(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    suite: &'static str,
+) {
     let geometry_hot_vs_replay_samples = capture_perf_samples(
         suite,
         "geometry_hot_commit_vs_replay_reconstruction",
@@ -56,7 +59,11 @@ pub(super) fn certify_geometry_hot_commit_vs_replay_reconstruction(suite: &'stat
                         .read_truth()
                         .plan_query_packet(&snapshot, hot_packet)
                         .expect("planned hot geometry query"),
+                    execution,
+                    crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                 )
+                .expect("request remains live")
+                .map(|read| read.outcome)
                 .expect("hot geometry query outcome");
             let hot_query_micros = hot_query_started_at.elapsed().as_micros();
 
@@ -77,19 +84,20 @@ pub(super) fn certify_geometry_hot_commit_vs_replay_reconstruction(suite: &'stat
             let recover_started_at = Instant::now();
             recovered
                 .durability_recovery()
-                .recover(plan)
+                .recover(execution, plan)
                 .expect("geometry hot/cold recovery");
             let recover_micros = recover_started_at.elapsed().as_micros();
 
             let replay_started_at = Instant::now();
-            let replay = recovered
-                .replay_authority()
-                .replay_commit(RelationalReplayRequest {
+            let replay = recovered.replay_authority().replay_commit(
+                RelationalReplayRequest {
                     commit_id: hot_commit.commit.commit_id,
                     branch_id: BranchId("main".to_string()),
                     execution_mode: ReplayExecutionMode::SerialDeterministic,
                     verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-                });
+                },
+                execution,
+            );
             let replay_commit_micros = replay_started_at.elapsed().as_micros();
 
             let recovered_snapshot = recovered.visibility_authority().snapshot();
@@ -110,7 +118,11 @@ pub(super) fn certify_geometry_hot_commit_vs_replay_reconstruction(suite: &'stat
                         .read_truth()
                         .plan_query_packet(&recovered_snapshot, cold_packet)
                         .expect("planned cold geometry query"),
+                    execution,
+                    crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                 )
+                .expect("request remains live")
+                .map(|read| read.outcome)
                 .expect("cold geometry query outcome");
             let cold_query_micros = cold_query_started_at.elapsed().as_micros();
 

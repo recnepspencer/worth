@@ -12,6 +12,7 @@ use crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDe
 use crate::domain_computation::WorthQueryProviderSessionFailure;
 
 pub(super) fn seal(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,
     runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
     pending: &mut WorthQueryPendingApplicationPublication,
@@ -34,6 +35,7 @@ pub(super) fn seal(
     }
     let committed = provider
         .resolve_aftermath_causality_in_snapshot(
+            execution,
             runtime,
             &pending.next_basis,
             after,

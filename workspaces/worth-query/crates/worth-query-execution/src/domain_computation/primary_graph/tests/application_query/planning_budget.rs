@@ -22,26 +22,46 @@ fn nested_query_total_work_exhaustion_returns_no_plan_authority() {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
-        .expect("the selected product branch remains admitted")
-        .resolve_authenticated_principal(
-            &world.binding,
-            &external,
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .select_product_branch(
+                    &host_custody.borrowed_request_for_test(),
+                    world.application.product_runtime().default_branch(),
+                )
+                .expect("the selected product branch remains admitted")
+                .resolve_authenticated_principal(
+                    &phase,
+                    &world.binding,
+                    &external,
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let account = world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
-        .expect("the selected product branch remains admitted")
-        .resolve_entity(
-            AccountStatus::reference(),
-            "open".to_string(),
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .select_product_branch(
+                    &host_custody.borrowed_request_for_test(),
+                    world.application.product_runtime().default_branch(),
+                )
+                .expect("the selected product branch remains admitted")
+                .resolve_entity(
+                    &phase,
+                    AccountStatus::reference(),
+                    "open".to_string(),
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let query = installed_nested_query(&world);
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
     let controls = crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
@@ -51,17 +71,24 @@ fn nested_query_total_work_exhaustion_returns_no_plan_authority() {
     );
 
     let denial = world
-        .selected_product()
-        .admit_application_query(
-            &query,
-            &access,
-            ApplicationQueryParameterSet::new()
-                .bind(status_parameter(), "open".to_string())
-                .expect("fixture query parameter must encode"),
-            controls,
-        )
-        .err()
-        .expect("exhausted total work must not mint execution authority");
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .selected_product(&(phase).test_host_request())
+                .admit_application_query(
+                    &phase,
+                    &query,
+                    &access,
+                    ApplicationQueryParameterSet::new()
+                        .bind(status_parameter(), "open".to_string())
+                        .expect("fixture query parameter must encode"),
+                    controls,
+                )
+                .err()
+                .expect("exhausted total work must not mint execution authority")
+        })
+        .expect("the fixture read owns its installed host call");
 
     assert_eq!(
         denial.kind(),
@@ -78,26 +105,46 @@ fn caller_work_cannot_widen_the_installed_index_profile() {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
-        .expect("the selected product branch remains admitted")
-        .resolve_authenticated_principal(
-            &world.binding,
-            &external,
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .select_product_branch(
+                    &host_custody.borrowed_request_for_test(),
+                    world.application.product_runtime().default_branch(),
+                )
+                .expect("the selected product branch remains admitted")
+                .resolve_authenticated_principal(
+                    &phase,
+                    &world.binding,
+                    &external,
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let account = world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
-        .expect("the selected product branch remains admitted")
-        .resolve_entity(
-            AccountStatus::reference(),
-            "open".to_string(),
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .select_product_branch(
+                    &host_custody.borrowed_request_for_test(),
+                    world.application.product_runtime().default_branch(),
+                )
+                .expect("the selected product branch remains admitted")
+                .resolve_entity(
+                    &phase,
+                    AccountStatus::reference(),
+                    "open".to_string(),
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let query = installed_nested_query(&world);
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
     let controls = crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
@@ -107,17 +154,24 @@ fn caller_work_cannot_widen_the_installed_index_profile() {
     );
 
     let denial = world
-        .selected_product()
-        .admit_application_query(
-            &query,
-            &access,
-            ApplicationQueryParameterSet::new()
-                .bind(status_parameter(), "open".to_string())
-                .expect("fixture query parameter must encode"),
-            controls,
-        )
-        .err()
-        .expect("caller work cannot widen installed index capacity");
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .selected_product(&(phase).test_host_request())
+                .admit_application_query(
+                    &phase,
+                    &query,
+                    &access,
+                    ApplicationQueryParameterSet::new()
+                        .bind(status_parameter(), "open".to_string())
+                        .expect("fixture query parameter must encode"),
+                    controls,
+                )
+                .err()
+                .expect("caller work cannot widen installed index capacity")
+        })
+        .expect("the fixture read owns its installed host call");
 
     assert_eq!(
         denial.kind(),
@@ -142,26 +196,46 @@ fn installer_profile_changes_admission_without_changing_query_identity() {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
-        .expect("the selected product branch remains admitted")
-        .resolve_authenticated_principal(
-            &world.binding,
-            &external,
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .select_product_branch(
+                    &host_custody.borrowed_request_for_test(),
+                    world.application.product_runtime().default_branch(),
+                )
+                .expect("the selected product branch remains admitted")
+                .resolve_authenticated_principal(
+                    &phase,
+                    &world.binding,
+                    &external,
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let account = world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
-        .expect("the selected product branch remains admitted")
-        .resolve_entity(
-            AccountStatus::reference(),
-            "open".to_string(),
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .select_product_branch(
+                    &host_custody.borrowed_request_for_test(),
+                    world.application.product_runtime().default_branch(),
+                )
+                .expect("the selected product branch remains admitted")
+                .resolve_entity(
+                    &phase,
+                    AccountStatus::reference(),
+                    "open".to_string(),
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let query = installed_nested_query(&world);
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
     let controls = crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
@@ -170,16 +244,23 @@ fn installer_profile_changes_admission_without_changing_query_identity() {
         &request,
     );
     let plan = world
-        .selected_product()
-        .admit_application_query(
-            &query,
-            &access,
-            ApplicationQueryParameterSet::new()
-                .bind(status_parameter(), "open".to_string())
-                .expect("fixture query parameter must encode"),
-            controls,
-        )
-        .expect("the installer-owned profile should admit the exact plan");
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .selected_product(&(phase).test_host_request())
+                .admit_application_query(
+                    &phase,
+                    &query,
+                    &access,
+                    ApplicationQueryParameterSet::new()
+                        .bind(status_parameter(), "open".to_string())
+                        .expect("fixture query parameter must encode"),
+                    controls,
+                )
+                .expect("the installer-owned profile should admit the exact plan")
+        })
+        .expect("the fixture read owns its installed host call");
 
     assert_eq!(
         plan.graph_read_plan()

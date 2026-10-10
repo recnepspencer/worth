@@ -1,6 +1,9 @@
 use super::*;
 
-pub(super) fn certify_mixed_read_write_frame_churn_window(suite: &'static str) {
+pub(super) fn certify_mixed_read_write_frame_churn_window(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    suite: &'static str,
+) {
     let mixed_frame_churn_samples = capture_perf_samples(
         suite,
         "mixed_read_write_frame_churn_window",
@@ -66,7 +69,11 @@ pub(super) fn certify_mixed_read_write_frame_churn_window(suite: &'static str) {
                             .read_truth()
                             .plan_query_packet(&snapshot, propagation_packet)
                             .expect("scene frame propagation plan"),
+                        execution,
+                        crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                     )
+                    .expect("request remains live")
+                    .map(|read| read.outcome)
                     .expect("scene frame propagation outcome");
                 let propagation_micros = propagation_started_at.elapsed().as_micros();
                 total_propagation_micros += propagation_micros;
@@ -93,7 +100,11 @@ pub(super) fn certify_mixed_read_write_frame_churn_window(suite: &'static str) {
                             .read_truth()
                             .plan_query_packet(&snapshot, explicit_packet)
                             .expect("scene frame explicit plan"),
+                        execution,
+                        crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                     )
+                    .expect("request remains live")
+                    .map(|read| read.outcome)
                     .expect("scene frame explicit outcome");
                 let explicit_micros = explicit_started_at.elapsed().as_micros();
                 total_explicit_query_micros += explicit_micros;

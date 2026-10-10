@@ -5,10 +5,13 @@ use worth_foundational::facade::{AspectValue, InternedString};
 use worth_relational::facade::history::BranchId;
 #[test]
 fn delegation_child_identity_records_absence_and_taken_values_once() {
+    let host_request = crate::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = MergeWorld::new();
-    let held = world.create("main", "held-child", 7);
+    let held = world.create(execution, "main", "held-child", 7);
     let unique = world.unique(Some(world.index));
-    world.mutate(|runtime| {
+    world.mutate(execution, |runtime| {
         let identity = runtime.branch_identity(&BranchId("main".to_owned())).unwrap();
         let (_, basis) = runtime.observe_branch(&identity).unwrap();
         let snapshot = runtime.snapshots().snapshot_for_observation(&basis.observation()).unwrap();
@@ -22,7 +25,7 @@ fn delegation_child_identity_records_absence_and_taken_values_once() {
             let mut calls = 0;
             let facts = observe_created_values(&[], unique.fields(), &[effect(), effect()], |index, kind, locator, value| {
                 calls += 1;
-                observe_indexed_entity_selection(runtime, &snapshot, index, kind, locator, value, CHILD_IDENTITY_CANDIDATE_LIMIT)
+                observe_indexed_entity_selection(runtime,execution,  &snapshot, index, kind, locator, value, CHILD_IDENTITY_CANDIDATE_LIMIT)
             }).unwrap();
             assert_eq!(calls, 1, "one distinct created identity has one lookup");
             assert_eq!(facts.len(), 1);

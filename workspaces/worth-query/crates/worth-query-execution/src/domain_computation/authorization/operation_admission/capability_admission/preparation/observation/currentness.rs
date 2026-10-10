@@ -1,4 +1,8 @@
 //! Exact-snapshot currentness observation for one prepared capability admission.
+mod approval_currentness;
+use approval_currentness::{
+    validate_approval_lifecycle, validate_approval_support, validate_approved_use,
+};
 
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest;
 use worth_query_declaration::facade::authentication::WorthQueryExternalPrincipalIdentityBinding;
@@ -55,6 +59,7 @@ pub(super) fn observe_and_admit<
     Operation,
     Input,
 >(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     mut prepared: PreparedCapabilityAdmission<
         'a,
         Schema,
@@ -82,42 +87,10 @@ where
 {
     validate_approval_lifecycle(&prepared)?;
     let principal = capture_current_principal(&prepared)?;
-    let observation = observe_relational_truth(&prepared, &principal)?;
+    let observation = observe_relational_truth(execution, &prepared, &principal)?;
     validate_admission(&prepared, &observation)?;
     prepared.record_admission_decisions();
     Ok(finish_admission(prepared, principal, observation))
-}
-
-fn validate_approval_lifecycle<Schema, Principal, Identity, Capability, Operation, Input>(
-    prepared: &PreparedCapabilityAdmission<
-        '_,
-        Schema,
-        Principal,
-        Identity,
-        Capability,
-        Operation,
-        Input,
-    >,
-) -> Result<(), WorthQueryOperationAuthorizationDenial>
-where
-    Input: ApplicationCapabilityRequest<Schema, Capability>,
-{
-    let Some(approved) = prepared.approved() else {
-        return Ok(());
-    };
-    let capability = prepared.capability();
-    if !approved.belongs_to_lifecycle(
-        prepared.runtime().runtime.authority_identity(),
-        prepared.graph_work().branch().relational(),
-        *capability.identity().bytes(),
-        prepared.installed().capability_authority_identity(),
-    ) {
-        return Err(denial::authorization_denial(
-            WorthQueryOperationAuthorizationDenialKind::ElevationApprovalRejected,
-            capability.contract().name(),
-        ));
-    }
-    Ok(())
 }
 
 fn capture_current_principal<Schema, Principal, Identity, Capability, Operation, Input>(
@@ -154,6 +127,7 @@ where
 }
 
 fn observe_relational_truth<Schema, Principal, Identity, Capability, Operation, Input>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     prepared: &PreparedCapabilityAdmission<
         '_,
         Schema,
@@ -183,16 +157,18 @@ where
         .primary_graph()
         .unwrap()
         .retain_entity_resolution_context();
-    handle.with_runtime_mut(|relational| {
-        validate_principal_freshness(prepared, principal, relational, &snapshot)?;
+    handle.with_runtime_mut(execution, |relational| {
+        validate_principal_freshness(execution, prepared, principal, relational, &snapshot)?;
         let truth = resolution
             .at_snapshot(
+                execution,
                 relational,
                 &snapshot,
                 WorthQueryPrincipalResolutionMode::Ordinary,
             )
             .map_err(|_| denial::projection_rejected(prepared.capability().contract().name()))?;
         let resolved = resolve_capability_request(
+            execution,
             &truth,
             &prepared.runtime().installed_schema,
             prepared.projection(),
@@ -203,7 +179,7 @@ where
             prepared.projection(),
             &resolved,
         );
-        validate_approval_support(prepared, relational, &snapshot)?;
+        validate_approval_support(execution, prepared, relational, &snapshot)?;
         let observation =
             WorthQueryCurrentCapabilityObservation::from_axes(CurrentCapabilityObservationAxes {
                 session: prepared.graph_work().identity(),
@@ -215,6 +191,7 @@ where
                 sample: prepared.sample(),
             });
         let observed = observation.observe_active_capability(
+            execution,
             None,
             prepared
                 .approved()
@@ -229,6 +206,7 @@ where
 }
 
 fn validate_principal_freshness<Schema, Principal, Identity, Capability, Operation, Input>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     prepared: &PreparedCapabilityAdmission<
         '_,
         Schema,
@@ -250,6 +228,7 @@ where
     )
     .map_err(|_| denial::stale_principal(prepared.principal().binding()))?;
     validate_freshness_at_snapshot(
+        execution,
         relational,
         snapshot,
         prepared.principal(),
@@ -257,37 +236,6 @@ where
         &expected,
     )
     .map_err(|_| denial::stale_principal(prepared.principal().binding()))
-}
-
-fn validate_approval_support<Schema, Principal, Identity, Capability, Operation, Input>(
-    prepared: &PreparedCapabilityAdmission<
-        '_,
-        Schema,
-        Principal,
-        Identity,
-        Capability,
-        Operation,
-        Input,
-    >,
-    relational: &worth_relational::facade::runtime::RelationalRuntime,
-    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-) -> Result<(), WorthQueryOperationAuthorizationDenial>
-where
-    Input: ApplicationCapabilityRequest<Schema, Capability>,
-{
-    if prepared.approved().is_some_and(|approved| {
-        !approved.support_remains_current_in(
-            relational,
-            snapshot,
-            prepared.runtime().authorization.bridge(),
-        )
-    }) {
-        return Err(denial::authorization_denial(
-            WorthQueryOperationAuthorizationDenialKind::StaleAuthorization,
-            prepared.capability().contract().name(),
-        ));
-    }
-    Ok(())
 }
 
 fn validate_admission<Schema, Principal, Identity, Capability, Operation, Input>(
@@ -318,52 +266,6 @@ where
         return Err(denial::authorization_denial(
             WorthQueryOperationAuthorizationDenialKind::ExpiredAuthentication,
             prepared.principal().binding(),
-        ));
-    }
-    Ok(())
-}
-
-fn validate_approved_use<Schema, Principal, Identity, Capability, Operation, Input>(
-    prepared: &PreparedCapabilityAdmission<
-        '_,
-        Schema,
-        Principal,
-        Identity,
-        Capability,
-        Operation,
-        Input,
-    >,
-    observed: &RelationalCapabilityObservation<
-        Schema,
-        <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
-    >,
-) -> Result<(), WorthQueryOperationAuthorizationDenial>
-where
-    Schema: ApplicationSchema,
-    Input: ApplicationCapabilityRequest<Schema, Capability>,
-{
-    let Some(approved) = prepared.approved() else {
-        return Ok(());
-    };
-    let elevation = observed.resolved.elevation().ok_or_else(|| {
-        denial::authorization_denial(
-            WorthQueryOperationAuthorizationDenialKind::ElevationProjectionRejected,
-            prepared.capability().contract().name(),
-        )
-    })?;
-    let admitted = approved.admits_active_use(
-        WorthQueryRuntimeAuthorityIdentity::clone(&prepared.runtime().runtime.authority_identity()),
-        prepared.graph_work().branch().relational(),
-        *prepared.capability().identity().bytes(),
-        prepared.installed().capability_authority_identity(),
-        &observed.revalidation,
-        elevation,
-        observed.observed.grant(),
-    );
-    if !admitted {
-        return Err(denial::authorization_denial(
-            WorthQueryOperationAuthorizationDenialKind::ElevationApprovalRejected,
-            prepared.capability().contract().name(),
         ));
     }
     Ok(())

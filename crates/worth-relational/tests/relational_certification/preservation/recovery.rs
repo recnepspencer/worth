@@ -12,9 +12,12 @@ use worth_relational::facade::history::BranchId;
 /// handle, fresh-process, or durable-owner lifecycle contract.
 #[test]
 fn phase5_checkpoint_preserves_shared_and_rewired_root_shape() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let scale = SupplyChainScale::court();
-    let (world, baseline) = certified_supply_chain_world(scale);
-    assert_oracle_matches(&world, &baseline);
+    let (world, baseline) = certified_supply_chain_world(execution, scale);
+    assert_oracle_matches(execution, &world, &baseline);
     for branch in ["storm", "rewire"] {
         let (_, source) = world
             .runtime
@@ -28,6 +31,7 @@ fn phase5_checkpoint_preserves_shared_and_rewired_root_shape() {
 
     let delta = DeltaId::RewireAuroraPortCall;
     let batch = lower_supply_chain_production_delta(
+        execution,
         &world.runtime,
         &world.program,
         &world.handles,
@@ -50,7 +54,7 @@ fn phase5_checkpoint_preserves_shared_and_rewired_root_shape() {
     let mut recovered = canonical_empty_supply_chain_runtime(scale);
     recovered
         .durability_recovery()
-        .recover(plan)
+        .recover(execution, plan)
         .expect("in-memory preservation recovery succeeds");
 
     let storm = recovered
@@ -69,7 +73,8 @@ fn phase5_checkpoint_preserves_shared_and_rewired_root_shape() {
     assert_eq!(sharing.unique_root_count(), 2);
     assert_eq!(sharing.unique_canonical_commit_artifacts(), 2);
 
-    let rewire_observed = observe_recovered_branch(&world, &recovered, &rewire, "rewire");
+    let rewire_observed =
+        observe_recovered_branch(execution, &world, &recovered, &rewire, "rewire");
     compare(
         &expected_supply_chain_branch(&world.program, BranchLabel::Rewire, Some(delta)),
         &rewire_observed,
@@ -78,6 +83,7 @@ fn phase5_checkpoint_preserves_shared_and_rewired_root_shape() {
 }
 
 fn observe_recovered_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &super::world::supply_chain::ProductionSeededSupplyChainWorld,
     recovered: &worth_relational::facade::runtime::RelationalRuntime,
     identity: &worth_relational::facade::branch::RelationalBranchIdentity,
@@ -85,6 +91,7 @@ fn observe_recovered_branch(
 ) -> super::world::supply_chain::ObservedSupplyChainState {
     let snapshot = snapshot_for_supply_chain_identity(recovered, identity);
     observe_supply_chain_snapshot(
+        execution,
         &world.program,
         &world.handles.for_snapshot(snapshot.clone()),
         recovered,

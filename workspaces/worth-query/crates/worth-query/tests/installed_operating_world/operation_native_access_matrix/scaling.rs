@@ -8,9 +8,30 @@ const TARGET_FIELD: usize = 15;
 
 #[test]
 fn native_access_work_is_invariant_to_unrelated_rows_facts_views_and_domains() {
-    let baseline = run_case("installed-native-scale-baseline", 1, false, false);
-    let world_scaled = run_case("installed-native-scale-world-pressure", 64, false, true);
-    let scaled = run_case("installed-native-scale-pressure", 64, true, true);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let baseline = run_case(
+        request_execution,
+        "installed-native-scale-baseline",
+        1,
+        false,
+        false,
+    );
+    let world_scaled = run_case(
+        request_execution,
+        "installed-native-scale-world-pressure",
+        64,
+        true,
+        false,
+    );
+    let scaled = run_case(
+        request_execution,
+        "installed-native-scale-pressure",
+        64,
+        true,
+        true,
+    );
 
     assert_eq!(baseline.journey, world_scaled.journey);
     assert_eq!(baseline.access, scaled.access);
@@ -67,10 +88,16 @@ struct CaseCounters {
     resolution_lookups: usize,
 }
 
-fn run_case(name: &str, rows: usize, unrelated_facts: bool, unrelated_world: bool) -> CaseCounters {
-    let mut workspace = matrix_workspace(name, rows, unrelated_world);
+fn run_case(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    name: &str,
+    rows: usize,
+    unrelated_facts: bool,
+    unrelated_world: bool,
+) -> CaseCounters {
+    let mut workspace = matrix_workspace(request_execution, name, rows, unrelated_world);
     let unrelated_views = if unrelated_world {
-        install_unrelated_views(&mut workspace, name)
+        install_unrelated_views(request_execution, &mut workspace, name)
     } else {
         Default::default()
     };
@@ -197,6 +224,7 @@ fn assert_constant_access(counters: domain::WorthQueryNativeAccessCounters) {
 }
 
 fn install_unrelated_views(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace: &mut runtime::WorthQueryWorkspace,
     prefix: &str,
 ) -> Vec<runtime::WorthQueryLiveView<runtime::WorthQueryUnrefinedLiveShape>> {
@@ -208,6 +236,7 @@ fn install_unrelated_views(
         let identity_field = worth_foundational::facade::FieldKey::new("id").unwrap();
         let view = workspace
             .live_view::<runtime::WorthQueryUnrefinedLiveShape>(
+                request_execution,
                 format!("{prefix}.unrelated-view-{index}"),
                 |view| {
                     view.from(COLLECTION)

@@ -53,6 +53,9 @@ pub enum WorthQueryExternalDispatchAttemptDenial {
 /// Exact failure before an initial post-commit transport call could be made.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryExternalDispatchPreparationDenial {
+    CompletionExecutionRequest(
+        crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
+    ),
     OwnerReadDenied(WorthQueryCommittedDispatchOutboxReadDenial),
     AttemptAdmissionDenied(WorthQueryExternalDispatchAttemptDenial),
     AlreadyCompleted,
@@ -84,6 +87,9 @@ pub enum WorthQueryExternalDispatchPreparationDenial {
 /// Why an admitted re-dispatch could not run.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryExternalRedispatchDenial {
+    CompletionExecutionRequest(
+        crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
+    ),
     /// Fresh effect authority for the handle failed before transport: the
     /// handle already ended, it expired, or the authority is not its own.
     FreshAuthority(WorthQueryRecoveryHandleDenialKind),
@@ -139,6 +145,9 @@ impl From<WorthQueryExternalRedispatchDenial> for WorthQueryRecoveryHandleDenial
         use WorthQueryExternalRedispatchDenial as Redispatch;
         use WorthQueryRecoveryHandleDenialKind as Kind;
         WorthQueryRecoveryHandleDenial::new(match denial {
+            Redispatch::CompletionExecutionRequest(cause) => {
+                Kind::CompletionExecutionRequest(cause)
+            }
             Redispatch::FreshAuthority(kind) => kind,
             Redispatch::AdmissionCancelled => Kind::AdmissionCancelled,
             Redispatch::AdmissionDeadlineExceeded => Kind::AdmissionDeadlineExceeded,
@@ -240,6 +249,10 @@ pub(super) fn redispatch_preparation(
     use WorthQueryExternalDispatchPreparationDenial as Preparation;
     use WorthQueryExternalRedispatchDenial as Redispatch;
     match denial {
+        Preparation::CompletionExecutionRequest(cause) => {
+            Redispatch::CompletionExecutionRequest(cause)
+        }
+
         Preparation::AttemptAdmissionDenied(attempt) => Redispatch::AttemptAdmissionDenied(attempt),
         Preparation::AlreadyCompleted => Redispatch::AlreadyCompleted,
         Preparation::CompletionPublicationPending => Redispatch::CompletionPublicationPending,
@@ -282,6 +295,7 @@ impl InstalledTransportPendingReason {
         use InstalledTransportPendingReason as Pending;
         use WorthQueryExternalDispatchPreparationDenial as Preparation;
         match self {
+            Pending::ExecutionRequest(cause) => Preparation::CompletionExecutionRequest(cause),
             Pending::ExecutionDenied { stage, kind } => {
                 Preparation::CompletionExecutionDenied { stage, kind }
             }
@@ -320,32 +334,5 @@ impl WorthQueryExternalDispatchPreparationDenial {
         self,
     ) -> WorthQueryExternalRedispatchDenial {
         redispatch_preparation(self)
-    }
-}
-
-impl WorthQueryExternalRedispatchDenial {
-    pub(super) fn advancement(
-        cause: crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
-    ) -> Self {
-        let stage = Stage::ResourceAdmission;
-        use crate::domain_computation::primary_graph::{
-            WorthQueryAdvancementDenial as Advancement,
-            WorthQueryManagedComputationInterruption as Interruption,
-        };
-        match cause {
-            Advancement::Interrupted(Interruption::Cancelled) => return Self::AdmissionCancelled,
-            Advancement::Interrupted(Interruption::DeadlineExceeded) => {
-                return Self::AdmissionDeadlineExceeded;
-            }
-            Advancement::Resource(_)
-            | Advancement::NestedOpening
-            | Advancement::ForeignPhase
-            | Advancement::NestedStopped
-            | Advancement::Panicked => {}
-        }
-        match cause.provider_denial_cause() {
-            Ok(kind) => Self::CompletionExecutionDenied { stage, kind },
-            Err(kind) => Self::CompletionExecutionControlStopped { stage, kind },
-        }
     }
 }

@@ -29,6 +29,9 @@ use worth_relational::facade::transactions::{
 
 #[test]
 fn custom_invariant_structural_reads_stay_on_child_root_after_main_rewire() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let expectation = Arc::new(Mutex::new(None));
     let evidence = Arc::new(Mutex::new(ProbeEvidence::default()));
     let registration = CustomInvariantRegistration::new(StructuralSelectionProbe {
@@ -55,7 +58,7 @@ fn custom_invariant_structural_reads_stay_on_child_root_after_main_rewire() {
     let moved_target = world.handles.entities
         [&super::world::supply_chain::EntityKey::new(EntityKind::Voyage, 1)]
         .id;
-    let baseline = observe_supply_chain(&world).expect("baseline remains observable");
+    let baseline = observe_supply_chain(execution, &world).expect("baseline remains observable");
     compare(
         &expected_supply_chain_branch(&world.program, BranchLabel::Operating, None),
         &baseline,
@@ -96,13 +99,19 @@ fn custom_invariant_structural_reads_stay_on_child_root_after_main_rewire() {
     });
 
     let child_before = observe_branch_snapshot(
+        execution,
         &world.program,
         &world.runtime,
         &world.handles,
         "medical-hold",
     );
-    let main_after =
-        observe_branch_snapshot(&world.program, &world.runtime, &world.handles, "main");
+    let main_after = observe_branch_snapshot(
+        execution,
+        &world.program,
+        &world.runtime,
+        &world.handles,
+        "main",
+    );
     assert_eq!(
         child_before.relations
             [&super::world::supply_chain::RelationKey::new(RelationKind::CargoBookedOnVoyage, 0,)]
@@ -118,6 +127,7 @@ fn custom_invariant_structural_reads_stay_on_child_root_after_main_rewire() {
     assert_ne!(child_before.relations, main_after.relations);
 
     let child_batch = lower_supply_chain_production_delta(
+        execution,
         &world.runtime,
         &world.program,
         &world.handles,
@@ -133,6 +143,7 @@ fn custom_invariant_structural_reads_stay_on_child_root_after_main_rewire() {
     );
 
     let child_after = observe_branch_snapshot(
+        execution,
         &world.program,
         &world.runtime,
         &world.handles,
@@ -187,56 +198,6 @@ fn custom_invariant_structural_reads_stay_on_child_root_after_main_rewire() {
         evidence.last_traversal_steps >= 2,
         "both bounded structural walks must charge at least the selected relation"
     );
-}
-
-fn observe_branch_snapshot(
-    program: &CompiledSupplyChainProgram,
-    runtime: &RelationalRuntime,
-    handles: &super::world::supply_chain::SupplyChainSemanticHandles,
-    branch: &str,
-) -> super::world::supply_chain::ObservedSupplyChainState {
-    let identity = runtime
-        .branch_identity(&BranchId(branch.to_owned()))
-        .expect("branch identity is owner-issued");
-    let snapshot = snapshot_for_supply_chain_identity(runtime, &identity);
-    observe_supply_chain_snapshot(
-        program,
-        &handles.for_snapshot(snapshot.clone()),
-        runtime,
-        &snapshot,
-    )
-    .expect("branch snapshot remains observable")
-}
-
-fn commit_branch_batch_result(
-    runtime: &RelationalRuntime,
-    branch_id: BranchId,
-    batch: WorkerIntentBatch,
-) -> worth_relational::facade::transactions::CommitResult {
-    let identity = runtime
-        .branch_identity(&branch_id)
-        .expect("branch identity is owner-issued");
-    let options = runtime
-        .admit_branch_basis(&identity)
-        .expect("transaction options are owner-issued");
-    let mut transaction = runtime
-        .begin_branch_transaction(
-            &options,
-            worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
-        )
-        .expect("owner-admitted transaction context");
-    transaction
-        .push_batch(
-            batch,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    transaction
-        .commit(
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("branch batch commits through production publication")
 }
 
 #[derive(Clone, Copy)]
@@ -391,3 +352,8 @@ impl CustomInvariantRule for StructuralSelectionProbe {
         Ok(CustomInvariantVerdict::Pass)
     }
 }
+
+#[path = "structural_selection/selection_fixture.rs"]
+mod selection_fixture;
+use selection_fixture::commit_branch_batch_result;
+use selection_fixture::observe_branch_snapshot;

@@ -11,6 +11,9 @@ use super::super::installed_operation_fixture::{
 
 #[test]
 fn dependency_outside_operation_graph_scope_fails_package_installation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let dependency = dependency_for_role(
         "foreign-model",
         domain::WorthQuerySemanticLocality::SourceRecord,
@@ -27,11 +30,16 @@ fn dependency_outside_operation_graph_scope_fails_package_installation() {
     )
     .unwrap();
 
-    assert!(conditional_workspace("foreign-conditional-read-role", node).is_err());
+    assert!(
+        conditional_workspace(request_execution, "foreign-conditional-read-role", node).is_err()
+    );
 }
 
 #[test]
 fn undeclared_operation_output_role_fails_package_installation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let dependency = dependency(domain::WorthQuerySemanticLocality::SourceRecord);
     let node = conditional_declaration(
         "foreign-output-role",
@@ -45,11 +53,16 @@ fn undeclared_operation_output_role_fails_package_installation() {
     )
     .unwrap();
 
-    assert!(conditional_workspace("foreign-conditional-output-role", node).is_err());
+    assert!(
+        conditional_workspace(request_execution, "foreign-conditional-output-role", node).is_err()
+    );
 }
 
 #[test]
 fn derived_consequence_cannot_invent_touch_authority() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let dependency = dependency(domain::WorthQuerySemanticLocality::SourceRecord);
     let touch = domain::WorthQueryConditionalTouchRole::new("model", "geometry").unwrap();
     let node = conditional_declaration(
@@ -71,11 +84,16 @@ fn derived_consequence_cannot_invent_touch_authority() {
     )
     .unwrap();
 
-    assert!(conditional_workspace("foreign-conditional-touch-role", node).is_err());
+    assert!(
+        conditional_workspace(request_execution, "foreign-conditional-touch-role", node).is_err()
+    );
 }
 
 #[test]
 fn conditional_role_and_attachment_are_one_installed_meaning() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let dependency = dependency(domain::WorthQuerySemanticLocality::SourceRecord);
     let stage_node = conditional_declaration(
         "publish-when-changed",
@@ -91,9 +109,12 @@ fn conditional_role_and_attachment_are_one_installed_meaning() {
     )
     .unwrap();
 
-    let workspace =
-        conditional_workflow_workspace("conditional-workflow-stage", stage_node.clone())
-            .expect("workflow-stage conditional installs through the ordinary package path");
+    let workspace = conditional_workflow_workspace(
+        request_execution,
+        "conditional-workflow-stage",
+        stage_node.clone(),
+    )
+    .expect("workflow-stage conditional installs through the ordinary package path");
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let operating_world = workspace
         .observe_operating_world(workspace.current_world())
@@ -118,7 +139,9 @@ fn conditional_role_and_attachment_are_one_installed_meaning() {
         vec![stage_node.clone()]
     );
 
-    assert!(conditional_workspace("stage-role-at-operation", stage_node).is_err());
+    assert!(
+        conditional_workspace(request_execution, "stage-role-at-operation", stage_node).is_err()
+    );
 }
 
 #[test]

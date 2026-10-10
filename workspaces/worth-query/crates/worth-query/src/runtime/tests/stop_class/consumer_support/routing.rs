@@ -2,6 +2,12 @@ use super::super::super::support::*;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in super::super) enum ConsumerStopRoute {
+    Advancement(
+        worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
+    ),
+    ForeignPhase(
+        worth_query_execution::facade::application_contribution::WorthQueryForeignAdvancementPhase,
+    ),
     InstalledDomainAuthorityDenied(crate::domain_installation::WorthQueryDomainHandleDenialKind),
     MissingRuntimeComponent(WorthQueryRuntimeMissingComponent),
     ExistingTruthAssertionDenied(WorthQueryExistingTruthAssertionDenialKind),
@@ -39,6 +45,10 @@ pub(in super::super) fn route_consumer_stop_class(
     error: &WorthQueryRuntimeError,
 ) -> ConsumerStopRoute {
     match error.stop_class() {
+        WorthQueryStopClass::Advancement { denial } => {
+            ConsumerStopRoute::Advancement(denial.clone())
+        }
+        WorthQueryStopClass::ForeignPhase { denial } => ConsumerStopRoute::ForeignPhase(*denial),
         WorthQueryStopClass::InstalledDomainAuthorityDenied { denial } => {
             ConsumerStopRoute::InstalledDomainAuthorityDenied(denial.kind())
         }

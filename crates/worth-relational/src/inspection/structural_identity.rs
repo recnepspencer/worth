@@ -10,6 +10,7 @@ use super::access::{InspectionAccess, PartitionScopeFilter};
 impl<'runtime> InspectionAccess<'runtime> {
     pub fn structural_identity(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         scope: InspectionScope,
         target: RecordRef,
     ) -> Option<StructuralIdentityEvidence> {
@@ -17,7 +18,7 @@ impl<'runtime> InspectionAccess<'runtime> {
         let version_id = self.scope_version_id(&scope);
         match target {
             RecordRef::Entity(entity_id) => {
-                let read = self.scoped_authoritative_entity_record(&scope, entity_id)?;
+                let read = self.scoped_authoritative_entity_record(execution, &scope, entity_id)?;
                 let (lineage_id, structural_fingerprint) =
                     self.entity_structural_sidecars(entity_id);
                 let mut degradations = Vec::new();
@@ -43,7 +44,8 @@ impl<'runtime> InspectionAccess<'runtime> {
                 })
             }
             RecordRef::Relation(relation_id) => {
-                let read = self.scoped_authoritative_relation_record(&scope, relation_id)?;
+                let read =
+                    self.scoped_authoritative_relation_record(execution, &scope, relation_id)?;
                 Some(StructuralIdentityEvidence {
                     target,
                     record_class: InspectionRecordClass::Relation,
@@ -67,12 +69,13 @@ impl<'runtime> InspectionAccess<'runtime> {
 
     pub fn compare_structural_identity(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         scope: InspectionScope,
         left: RecordRef,
         right: RecordRef,
     ) -> StructuralIdentityComparison {
-        let left_evidence = self.structural_identity(scope.clone(), left);
-        let right_evidence = self.structural_identity(scope, right);
+        let left_evidence = self.structural_identity(execution, scope.clone(), left);
+        let right_evidence = self.structural_identity(execution, scope, right);
         let verdict = match (&left_evidence, &right_evidence) {
             (Some(left), Some(right)) => {
                 match (left.structural_fingerprint, right.structural_fingerprint) {
@@ -101,11 +104,12 @@ impl<'runtime> InspectionAccess<'runtime> {
 
     pub fn query_structural_identity(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: &StructuralIdentityQueryRequest,
     ) -> Vec<StructuralIdentityEvidence> {
         self.count_structural_identity_query_scan();
         let version_id = self.scope_version_id(&request.scope);
-        let Some(read_view) = self.read_view_for_scope(&request.scope) else {
+        let Some(read_view) = self.read_view_for_scope(execution, &request.scope) else {
             return Vec::new();
         };
         let partition_scope = PartitionScopeFilter::from_scope(request.partition_scope.as_ref());
@@ -115,6 +119,7 @@ impl<'runtime> InspectionAccess<'runtime> {
             .filter(|record| partition_scope.allows(record.entity_id.partition_id))
             .filter_map(|record| {
                 let evidence = self.structural_identity(
+                    execution,
                     InspectionScope::Version(version_id),
                     RecordRef::Entity(record.entity_id),
                 )?;

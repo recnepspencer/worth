@@ -19,10 +19,13 @@ static COUNTING_GEOMETRY_TEST_LOCK: Mutex<()> = Mutex::new(());
 
 #[test]
 fn grouped_contributions_reuse_member_progression_after_group_admission() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let _guard = COUNTING_GEOMETRY_TEST_LOCK
         .lock()
         .expect("counting grouped test lock should remain available");
-    let handle = admitted_handle("main");
+    let handle = admitted_handle(request_execution, "main");
     reset_counting_geometry_canonicalization_count();
 
     let result = handle.grouped_contributions_checked(
@@ -49,10 +52,13 @@ fn grouped_contributions_reuse_member_progression_after_group_admission() {
 #[test]
 fn grouped_contributions_from_admitted_declaration_reuse_grouped_authority_without_recanonicalizing(
 ) {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let _guard = COUNTING_GEOMETRY_TEST_LOCK
         .lock()
         .expect("counting grouped test lock should remain available");
-    let handle = admitted_handle("main");
+    let handle = admitted_handle(request_execution, "main");
     let declaration = match worth_query_grouped_declaration_checked_on_handle(
         &handle,
         handle
@@ -88,7 +94,10 @@ fn grouped_contributions_from_admitted_declaration_reuse_grouped_authority_witho
 
 #[test]
 fn grouped_contributions_from_admitted_declaration_match_direct_grouped_path_identity() {
-    let handle = admitted_handle("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "main");
     let member_explanation = WorthQueryContributionIntent::explanation(
         WorthQueryExplanationContributionAuthoring::explains_fallback(
             "explain.member",
@@ -163,11 +172,14 @@ fn grouped_contributions_from_admitted_declaration_match_direct_grouped_path_ide
 
 #[test]
 fn grouped_contributions_from_admitted_declaration_reject_wrong_world_before_member_lowering() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let _guard = COUNTING_GEOMETRY_TEST_LOCK
         .lock()
         .expect("counting grouped test lock should remain available");
-    let left = admitted_handle("main");
-    let right = admitted_handle("other");
+    let left = admitted_handle(request_execution, "main");
+    let right = admitted_handle(request_execution, "other");
     let declaration = match worth_query_grouped_declaration_checked_on_handle(
         &left,
         left.geometry_helpers()
@@ -200,11 +212,14 @@ fn grouped_contributions_from_admitted_declaration_reject_wrong_world_before_mem
 
 #[test]
 fn grouped_contributions_from_admitted_declaration_reject_wrong_handle_before_member_lowering() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let _guard = COUNTING_GEOMETRY_TEST_LOCK
         .lock()
         .expect("counting grouped test lock should remain available");
-    let left = admitted_handle("main");
-    let right = admitted_handle_with_shifted_relational_digest("main");
+    let left = admitted_handle(request_execution, "main");
+    let right = admitted_handle_with_shifted_relational_digest(request_execution, "main");
     let declaration = match worth_query_grouped_declaration_checked_on_handle(
         &left,
         left.geometry_helpers()

@@ -78,9 +78,10 @@ impl WorthQueryRuntime {
 
     pub fn inspect_intent_receipt(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         receipt: &WorthQueryIntentReceipt,
     ) -> Result<WorthQueryIntentReceiptInspection, WorthQueryRuntimeError> {
-        match self.inspect(receipt)? {
+        match self.inspect(execution, receipt)? {
             WorthQueryInspection::IntentReceipt(inspection) => Ok(inspection),
             other => panic!("expected intent receipt inspection, got {other:?}"),
         }
@@ -88,9 +89,10 @@ impl WorthQueryRuntime {
 
     pub fn inspect_effect_intent_receipt(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         receipt: &WorthQueryEffectIntentReceipt,
     ) -> Result<WorthQueryEffectIntentReceiptInspection, WorthQueryRuntimeError> {
-        match self.inspect(receipt)? {
+        match self.inspect(execution, receipt)? {
             WorthQueryInspection::EffectIntentReceipt(inspection) => Ok(inspection),
             other => panic!("expected effect intent receipt inspection, got {other:?}"),
         }
@@ -98,9 +100,10 @@ impl WorthQueryRuntime {
 
     pub fn inspect_intent_denial(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         evidence: &WorthQueryIntentDenialEvidence,
     ) -> Result<WorthQueryIntentDenialInspection, WorthQueryRuntimeError> {
-        match self.inspect(evidence)? {
+        match self.inspect(execution, evidence)? {
             WorthQueryInspection::IntentDenial(inspection) => Ok(inspection),
             other => panic!("expected intent denial inspection, got {other:?}"),
         }
@@ -108,9 +111,10 @@ impl WorthQueryRuntime {
 
     pub fn inspect_preview_binding(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: &WorthQueryPreviewHandleBindingEvidence,
     ) -> Result<WorthQueryPreviewBindingInspection, WorthQueryRuntimeError> {
-        match self.inspect(binding)? {
+        match self.inspect(execution, binding)? {
             WorthQueryInspection::PreviewBinding(inspection) => Ok(inspection),
             other => panic!("expected preview binding inspection, got {other:?}"),
         }
@@ -118,9 +122,10 @@ impl WorthQueryRuntime {
 
     pub fn inspect_preview_outcome(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         outcome: &WorthQueryPreviewOutcome,
     ) -> Result<WorthQueryPreviewOutcomeInspection, WorthQueryRuntimeError> {
-        match self.inspect(outcome)? {
+        match self.inspect(execution, outcome)? {
             WorthQueryInspection::PreviewOutcome(inspection) => Ok(inspection),
             other => panic!("expected preview outcome inspection, got {other:?}"),
         }
@@ -128,9 +133,10 @@ impl WorthQueryRuntime {
 
     pub fn inspect_preview_intent_receipt(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         receipt: &WorthQueryPreviewIntentReceipt,
     ) -> Result<WorthQueryPreviewIntentReceiptInspection, WorthQueryRuntimeError> {
-        match self.inspect(receipt)? {
+        match self.inspect(execution, receipt)? {
             WorthQueryInspection::PreviewIntentReceipt(inspection) => Ok(inspection),
             other => panic!("expected preview intent receipt inspection, got {other:?}"),
         }
@@ -138,9 +144,10 @@ impl WorthQueryRuntime {
 
     pub fn inspect_branch_intent_receipt(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         receipt: &WorthQueryBranchIntentReceipt,
     ) -> Result<WorthQueryBranchIntentReceiptInspection, WorthQueryRuntimeError> {
-        match self.inspect(receipt)? {
+        match self.inspect(execution, receipt)? {
             WorthQueryInspection::BranchIntentReceipt(inspection) => Ok(inspection),
             other => panic!("expected branch intent receipt inspection, got {other:?}"),
         }
@@ -174,6 +181,7 @@ impl WorthQueryRuntime {
 
     pub fn inspect<'a, T>(
         &'a self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         target: T,
     ) -> Result<WorthQueryInspection, WorthQueryRuntimeError>
     where
@@ -214,7 +222,8 @@ impl WorthQueryRuntime {
                 let review = self.review_runtime_derived_inspection(name.to_string())?;
                 let handoff = self.resolve_reviewed_admitted_derived_inspection_handoff(review)?;
                 let binding = self.prepare_derived_inspection_execution_binding(handoff);
-                let result = self.execute_derived_inspection_execution_binding(binding)?;
+                let result =
+                    self.execute_derived_inspection_execution_binding(execution, binding)?;
                 Ok(WorthQueryInspection::DerivedView(result.evidence().clone()))
             }
             target => {
@@ -223,7 +232,8 @@ impl WorthQueryRuntime {
                 let review = self.review_unified_inspection(seed)?;
                 let handoff = self.resolve_reviewed_admitted_unified_inspection_handoff(review)?;
                 let binding = self.prepare_unified_inspection_execution_binding(handoff);
-                let result = self.execute_unified_inspection_execution_binding(binding)?;
+                let result =
+                    self.execute_unified_inspection_execution_binding(execution, binding)?;
                 Ok(result.inspection().clone())
             }
         }

@@ -33,13 +33,15 @@ impl WorthQueryBranchMergeContextStop {
 }
 
 pub fn branch_merge(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace: &WorthQueryWorkspace,
     declaration: &WorthQueryBranchMergeDeclaration,
 ) -> Result<WorthQueryBranchMergeContext, WorthQueryBranchMergeContextStop> {
     let authority = workspace
         .capture_ordinary_merge_authority(
-            declaration.admitted_target_branch(),
+            execution,
             declaration.admitted_source_branch(),
+            declaration.admitted_target_branch(),
         )
         .map_err(|error| WorthQueryBranchMergeContextStop {
             error,

@@ -57,17 +57,26 @@ pub(super) fn republish(application: &Application<false, TOTALS_WORK, 1, 2>, tot
         .unwrap()
         .rows()[0]
         .value;
-    let suspended = application
-        .on_branch(application.current_world())
-        .select()
-        .unwrap()
-        .suspend_current_generated_output::<RegionOutputProducer<CheckpointSchema, false, 2>>(
-            &scope, source,
-        )
-        .unwrap_or_else(|_| panic!("the generated region output suspends"));
+    let suspended = crate::checkpoint_recovery::support::host_call(&application, |phase| {
+        application
+            .on_branch(application.current_world())
+            .select(phase)
+    })
+    .unwrap()
+    .suspend_current_generated_output::<RegionOutputProducer<CheckpointSchema, false, 2>>(
+        &scope, source,
+    )
+    .unwrap_or_else(|_| panic!("the generated region output suspends"));
     let mut reconstruction = application
-        .reconstruct_generated_output::<RegionOutputProducer<CheckpointSchema, false, 2>>(suspended)
-        .unwrap_or_else(|_| panic!("the region output reconstructs"));
+        .with_host_advancement(|host_phase| {
+            application
+                .reconstruct_generated_output::<RegionOutputProducer<CheckpointSchema, false, 2>>(
+                    &host_phase,
+                    suspended,
+                )
+                .unwrap_or_else(|_| panic!("the region output reconstructs"))
+        })
+        .expect("installed host call opens");
     use worth_query_host::facade::primary_graph::WorthQueryReconstructedOutputEntity;
     let keys = [
         format!("region:{SCOPE}:{total}:a"),

@@ -51,12 +51,19 @@ pub(in crate::domain_computation) struct AuthorizationWorld {
 impl AuthorizationWorld {
     pub(in crate::domain_computation) fn selected_product(
         &self,
+        phase: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     ) -> crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<
         '_,
         IdentityExecutionSchema,
     > {
+        let execution = phase
+            .execution_request_for(self.application.product_runtime())
+            .expect("fixture lends its installed phase");
         self.application
-            .select_product_branch(self.application.product_runtime().default_branch())
+            .select_product_branch(
+                &execution,
+                self.application.product_runtime().default_branch(),
+            )
             .expect("the fixture product branch remains admitted")
     }
 }
@@ -87,7 +94,7 @@ pub(super) fn install_authorization_world_with_product_resources(
 
 /// Fixture installation borrows the test's active request when setup is a phase.
 pub(super) fn install_authorization_world_in_advancement(
-    phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    phase: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     spec: AuthorizationWorldSpec<'_>,
     product_resources: crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldResources,
 ) -> AuthorizationWorld {

@@ -7,7 +7,10 @@ use super::support::{
 
 #[test]
 fn deferred_and_incompatible_families_stay_typed() {
-    let handle = handle("non-success");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = handle(request_execution, "non-success");
 
     match handle.signal_compatibility_checked(
         crate::application::WorthQueryDeclarationSignalCompatibilityInput::envelope_checked(

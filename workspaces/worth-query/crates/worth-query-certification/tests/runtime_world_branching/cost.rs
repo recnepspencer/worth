@@ -141,15 +141,20 @@ fn with_branches(size: usize) -> (QueryWork, Population) {
         .map(|_| {
             world
                 .application
-                .branches()
-                .fork(root)
-                .components(|components| {
-                    components
-                        .reuse_exact_relational_basis()
-                        .reuse_exact_signal_basis()
+                .with_host_advancement(|host_phase| {
+                    world
+                        .application
+                        .branches()
+                        .fork(root)
+                        .components(|components| {
+                            components
+                                .reuse_exact_relational_basis()
+                                .reuse_exact_signal_basis()
+                        })
+                        .create(&host_phase)
+                        .expect("the configured branch population must be admitted")
                 })
-                .create()
-                .expect("the configured branch population must be admitted")
+                .expect("installed host call opens")
         })
         .collect::<Vec<_>>();
     let population = Population::capture(&world);
@@ -157,10 +162,13 @@ fn with_branches(size: usize) -> (QueryWork, Population) {
     for branch in branches {
         assert!(world
             .application
-            .on_branch(branch)
-            .close()
-            .unwrap()
-            .is_complete());
+            .with_host_advancement(|host_phase| world
+                .application
+                .on_branch(branch)
+                .close(&host_phase)
+                .unwrap()
+                .is_complete())
+            .expect("installed host call opens"));
     }
     (work, population)
 }
@@ -170,7 +178,16 @@ fn with_history(size: usize) -> (QueryWork, Population) {
     let root = world.application.current_world();
     // A held observation keeps the publication commit, and each caller receipt
     // keeps its own commit installed for as long as it lives.
-    let publication = world.application.on_branch(root).select().unwrap();
+    let publication = world
+        .application
+        .with_host_advancement(|host_phase| {
+            world
+                .application
+                .on_branch(root)
+                .select(&host_phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     let receipts = (1..size)
         .map(|ordinal| {
             world
@@ -192,7 +209,16 @@ fn with_history(size: usize) -> (QueryWork, Population) {
 fn with_component_pins(size: usize) -> (QueryWork, Population) {
     let world = CourtroomWorld::publish("ready");
     let root = world.application.current_world();
-    let source = world.application.on_branch(root).select().unwrap();
+    let source = world
+        .application
+        .with_host_advancement(|host_phase| {
+            world
+                .application
+                .on_branch(root)
+                .select(&host_phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     let branches = (1..size)
         .map(|ordinal| {
             fork_relational_product(
@@ -205,7 +231,18 @@ fn with_component_pins(size: usize) -> (QueryWork, Population) {
         .collect::<Vec<_>>();
     let observations = branches
         .iter()
-        .map(|branch| world.application.on_branch(*branch).select().unwrap())
+        .map(|branch| {
+            world
+                .application
+                .with_host_advancement(|host_phase| {
+                    world
+                        .application
+                        .on_branch(*branch)
+                        .select(&host_phase)
+                        .unwrap()
+                })
+                .expect("installed host call opens")
+        })
         .collect::<Vec<_>>();
     let population = Population::capture(&world);
     let work = read(&world, root).work;
@@ -214,10 +251,13 @@ fn with_component_pins(size: usize) -> (QueryWork, Population) {
     for branch in branches {
         assert!(world
             .application
-            .on_branch(branch)
-            .close()
-            .unwrap()
-            .is_complete());
+            .with_host_advancement(|host_phase| world
+                .application
+                .on_branch(branch)
+                .close(&host_phase)
+                .unwrap()
+                .is_complete())
+            .expect("installed host call opens"));
     }
     (work, population)
 }
@@ -226,7 +266,18 @@ fn with_observations(size: usize) -> (QueryWork, Population) {
     let world = CourtroomWorld::publish("ready");
     let root = world.application.current_world();
     let observations = (0..size)
-        .map(|_| world.application.on_branch(root).select().unwrap())
+        .map(|_| {
+            world
+                .application
+                .with_host_advancement(|host_phase| {
+                    world
+                        .application
+                        .on_branch(root)
+                        .select(&host_phase)
+                        .unwrap()
+                })
+                .expect("installed host call opens")
+        })
         .collect::<Vec<_>>();
     let population = Population::capture(&world);
     let work = read(&world, root).work;

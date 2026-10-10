@@ -230,25 +230,36 @@ where
             crate::domain_computation::primary_graph::handler::DecisionContextUse::default(),
         );
         let mut handler_contacted = false;
+        let phase_request = match phase.execution_request_for(&self.product_runtime) {
+            Ok(request) => request,
+            Err(_) => {
+                return WorthQueryMutationHandlerExecutionReport::new(
+                    Err(MutationHandlerExecutionDenial::ForeignAdvancementPhase),
+                    WorthQueryMutationHandlerWork::NotStarted,
+                )
+            }
+        };
         let projected = {
-            self.mutation_projection.project_admitted_operation(
-                &admission,
-                |reader, scope| {
-                    let mut decision_reader = DecisionReader::<Schema, Binding>::new(
-                        reader,
-                        scope,
-                        principal_identity,
-                        &operation_scope_binding,
-                        identities,
-                        execution,
-                        &context_use,
-                    );
-                    on_contact();
-                    handler_contacted = true;
-                    handler.decide(input, &mut decision_reader)
-                },
-                allocation_control.policy(),
-            )
+            self.mutation_projection
+                .project_admitted_operation_with_request(
+                    &phase_request,
+                    &admission,
+                    |reader, scope| {
+                        let mut decision_reader = DecisionReader::<Schema, Binding>::new(
+                            reader,
+                            scope,
+                            principal_identity,
+                            &operation_scope_binding,
+                            identities,
+                            execution,
+                            &context_use,
+                        );
+                        on_contact();
+                        handler_contacted = true;
+                        handler.decide(input, &mut decision_reader)
+                    },
+                    allocation_control.policy(),
+                )
         };
         let projected = match projected {
             Ok(projected) => projected,
@@ -266,6 +277,9 @@ where
         };
         let (decision, projection, work) = projected.into_parts();
         let outcome = (|| {
+            let request = phase
+                .execution_request_for(&self.product_runtime)
+                .map_err(|_| MutationHandlerExecutionDenial::ForeignAdvancementPhase)?;
             let decision = match decision {
                 HandlerResult::Completed(decision) => decision,
                 HandlerResult::DomainDenied(denial) => {
@@ -280,13 +294,14 @@ where
             let mut admission = admission;
             admission.record_decision_context_use(context_use.get());
             let reads = self
-                .begin_projected_application_read_attempt(
+                .begin_projected_application_read_attempt_with_request(
+                    &request,
                     admission,
                     projection,
                     allocation_control.policy(),
                 )
                 .map_err(MutationHandlerExecutionDenial::Attempt)?
-                .complete_projected_dependencies(allocation_control.policy())
+                .complete_projected_dependencies_with_request(&request, allocation_control.policy())
                 .map_err(MutationHandlerExecutionDenial::Attempt)?;
             let requirements = handler.candidate_requirements(input, &decision);
             let mut candidate = reads

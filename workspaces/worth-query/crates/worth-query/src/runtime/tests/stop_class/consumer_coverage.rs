@@ -4,9 +4,12 @@ use super::consumer_support::routing::{route_consumer_stop_class, ConsumerStopRo
 
 #[test]
 fn consumer_router_handles_all_representative_runtime_stop_errors() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     use super::completeness_support::representative_runtime_stop_errors;
 
-    for error in representative_runtime_stop_errors() {
+    for error in representative_runtime_stop_errors(request_execution) {
         let _route = route_consumer_stop_class(&error);
     }
 }

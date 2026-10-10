@@ -37,67 +37,69 @@ fn moments(max: usize) -> (Vec<f64>, Vec<f64>) {
 
 #[test]
 fn mean_reported_update_nodes_obey_the_random_treap_depth_law() {
-    let (means, variances) = moments(*SIZES.last().unwrap());
-    let mut union_risk = 0.0;
-    for n in SIZES {
-        let nf = f64::from(u32::try_from(n).unwrap());
-        let expected = means[n] / nf + 1.0;
-        let threshold = 2.0 * nf.ln();
-        assert!(threshold - expected > 1.8);
-        assert!(variances[n] / (nf * nf) < 0.5);
-        union_risk += variances[n]
-            / (nf * nf)
-            / f64::from(u32::try_from(SETS).unwrap())
-            / (threshold - expected).powi(2);
-    }
-    assert!(
-        union_risk < 0.0037,
-        "derive threshold before execution: {union_risk}"
-    );
-    let template = template();
-    for n in SIZES {
-        let mut total = 0_u128;
-        for sample in 0..SETS {
-            let mut keys: Vec<_> = (0..n)
-                .map(|leaf| {
-                    let mut hash = Sha256::new();
-                    hash.update(SEED);
-                    hash.update(u64::try_from(n).unwrap().to_le_bytes());
-                    hash.update(u64::try_from(sample).unwrap().to_le_bytes());
-                    hash.update(u64::try_from(leaf).unwrap().to_le_bytes());
-                    let digest = hash.finalize();
-                    Id::new(u64::from_le_bytes(digest[..8].try_into().unwrap()))
-                })
-                .collect();
-            keys.sort();
-            assert!(
-                keys.windows(2).all(|pair| pair[0] != pair[1]),
-                "unique sampled identities"
-            );
-            let retained = retained(&template, &keys);
-            reset_counts();
-            let next = run(
-                &retained,
-                &keys,
-                keys.iter().map(|id| (*id, 2)).collect(),
-                u64::MAX,
-            );
-            reconcile(next.report);
-            let TreeRun::Edited(metrics) = next.report else {
-                panic!("mean workload must edit")
-            };
-            assert_eq!(
-                *next.outcome.unwrap().result(),
-                u64::try_from(2 * n).unwrap()
-            );
-            total += metrics.recombined_nodes;
+    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+        let (means, variances) = moments(*SIZES.last().unwrap());
+        let mut union_risk = 0.0;
+        for n in SIZES {
+            let nf = f64::from(u32::try_from(n).unwrap());
+            let expected = means[n] / nf + 1.0;
+            let threshold = 2.0 * nf.ln();
+            assert!(threshold - expected > 1.8);
+            assert!(variances[n] / (nf * nf) < 0.5);
+            union_risk += variances[n]
+                / (nf * nf)
+                / f64::from(u32::try_from(SETS).unwrap())
+                / (threshold - expected).powi(2);
         }
-        let mean =
-            f64::from(u32::try_from(total).unwrap()) / f64::from(u32::try_from(SETS * n).unwrap());
-        let ceiling = 2.0 * f64::from(u32::try_from(n).unwrap()).ln();
         assert!(
-            mean <= ceiling,
-            "P={n}, mean={mean}, analytically derived ceiling={ceiling}"
+            union_risk < 0.0037,
+            "derive threshold before execution: {union_risk}"
         );
-    }
+        let template = template(&host_custody);
+        for n in SIZES {
+            let mut total = 0_u128;
+            for sample in 0..SETS {
+                let mut keys: Vec<_> = (0..n)
+                    .map(|leaf| {
+                        let mut hash = Sha256::new();
+                        hash.update(SEED);
+                        hash.update(u64::try_from(n).unwrap().to_le_bytes());
+                        hash.update(u64::try_from(sample).unwrap().to_le_bytes());
+                        hash.update(u64::try_from(leaf).unwrap().to_le_bytes());
+                        let digest = hash.finalize();
+                        Id::new(u64::from_le_bytes(digest[..8].try_into().unwrap()))
+                    })
+                    .collect();
+                keys.sort();
+                assert!(
+                    keys.windows(2).all(|pair| pair[0] != pair[1]),
+                    "unique sampled identities"
+                );
+                let retained = retained(&template, &keys);
+                reset_counts();
+                let next = run(
+                    &retained,
+                    &keys,
+                    keys.iter().map(|id| (*id, 2)).collect(),
+                    u64::MAX,
+                );
+                reconcile(next.report);
+                let TreeRun::Edited(metrics) = next.report else {
+                    panic!("mean workload must edit")
+                };
+                assert_eq!(
+                    *next.outcome.unwrap().result(),
+                    u64::try_from(2 * n).unwrap()
+                );
+                total += metrics.recombined_nodes;
+            }
+            let mean = f64::from(u32::try_from(total).unwrap())
+                / f64::from(u32::try_from(SETS * n).unwrap());
+            let ceiling = 2.0 * f64::from(u32::try_from(n).unwrap()).ln();
+            assert!(
+                mean <= ceiling,
+                "P={n}, mean={mean}, analytically derived ceiling={ceiling}"
+            );
+        }
+    })
 }

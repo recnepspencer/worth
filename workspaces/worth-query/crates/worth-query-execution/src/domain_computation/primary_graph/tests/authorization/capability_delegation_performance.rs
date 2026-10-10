@@ -19,65 +19,92 @@ struct DelegationAdmissionWork {
 
 #[test]
 fn warm_work_has_an_exact_per_link_slope() {
-    let root = admission_work(installed_delegated_capability_world_at_depth(0));
-    let one_link = admission_work(installed_delegated_capability_world_at_depth(1));
-    let two_links = admission_work(installed_delegated_capability_world_at_depth(2));
+    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+        let root = admission_work(
+            &host_custody,
+            installed_delegated_capability_world_at_depth(0),
+        );
+        let one_link = admission_work(
+            &host_custody,
+            installed_delegated_capability_world_at_depth(1),
+        );
+        let two_links = admission_work(
+            &host_custody,
+            installed_delegated_capability_world_at_depth(2),
+        );
 
-    assert_eq!(
-        root.relational,
-        RelationalAuthorizationObservationCounters {
-            paths_evaluated: 6,
-            adjacency_lists_read: 11,
-            adjacency_edges_inspected: 10,
-            relation_records_inspected: 12,
-            entity_records_inspected: 36,
-            predicate_fields_inspected: 19,
-            relation_join_index_lookups: 1,
-            relation_join_candidates_inspected: 1,
-            maximum_frontier_width: 1,
+        assert_eq!(
+            root.relational,
+            RelationalAuthorizationObservationCounters {
+                paths_evaluated: 6,
+                adjacency_lists_read: 11,
+                adjacency_edges_inspected: 10,
+                relation_records_inspected: 12,
+                entity_records_inspected: 36,
+                predicate_fields_inspected: 19,
+                relation_join_index_lookups: 1,
+                relation_join_candidates_inspected: 1,
+                maximum_frontier_width: 1,
+            }
+        );
+        assert_eq!(one_link.relational.paths_evaluated, 13);
+        assert_eq!(two_links.relational.paths_evaluated, 20);
+        assert_same_link_delta(root, one_link, two_links);
+        assert_eq!(
+            [
+                root.relational.maximum_frontier_width,
+                one_link.relational.maximum_frontier_width,
+                two_links.relational.maximum_frontier_width,
+            ],
+            [1, 1, 1],
+        );
+        for work in [root, one_link, two_links] {
+            assert_eq!(work.relational.relation_join_index_lookups, 1);
+            assert_eq!(work.relational.relation_join_candidates_inspected, 1);
+            // The only canonical work is the governed input the admission encoded
+            // once, however many links the delegation has.
+            assert_eq!(work.canonical.basis_preparations(), 0);
+            assert_eq!(work.canonical.digest_derivations(), 1);
+            assert_eq!(work.canonical.canonical_entries(), 1);
+            assert_eq!(work.canonical.canonical_encoded_bytes(), 289);
+            assert_eq!(work.canonical.canonical_material_allocation_bytes(), 0);
+            assert_eq!(work.canonical.sha256_input_bytes(), 377);
+            assert_eq!(work.canonical.sha256_compression_blocks(), 7);
+            assert_eq!(work.canonical.digest_text_materializations(), 0);
         }
-    );
-    assert_eq!(one_link.relational.paths_evaluated, 13);
-    assert_eq!(two_links.relational.paths_evaluated, 20);
-    assert_same_link_delta(root, one_link, two_links);
-    assert_eq!(
-        [
-            root.relational.maximum_frontier_width,
-            one_link.relational.maximum_frontier_width,
-            two_links.relational.maximum_frontier_width,
-        ],
-        [1, 1, 1],
-    );
-    for work in [root, one_link, two_links] {
-        assert_eq!(work.relational.relation_join_index_lookups, 1);
-        assert_eq!(work.relational.relation_join_candidates_inspected, 1);
-        // The only canonical work is the governed input the admission encoded
-        // once, however many links the delegation has.
-        assert_eq!(work.canonical.basis_preparations(), 0);
-        assert_eq!(work.canonical.digest_derivations(), 1);
-        assert_eq!(work.canonical.canonical_entries(), 1);
-        assert_eq!(work.canonical.canonical_encoded_bytes(), 289);
-        assert_eq!(work.canonical.canonical_material_allocation_bytes(), 0);
-        assert_eq!(work.canonical.sha256_input_bytes(), 377);
-        assert_eq!(work.canonical.sha256_compression_blocks(), 7);
-        assert_eq!(work.canonical.digest_text_materializations(), 0);
-    }
+    })
 }
 
 #[test]
 fn complete_unrelated_grants_do_not_enter_warm_admission_work() {
-    let baseline = admission_work(installed_delegated_capability_world_with_unrelated(0));
-    let populated = admission_work(installed_delegated_capability_world_with_unrelated(256));
+    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+        let baseline = admission_work(
+            &host_custody,
+            installed_delegated_capability_world_with_unrelated(0),
+        );
+        let populated = admission_work(
+            &host_custody,
+            installed_delegated_capability_world_with_unrelated(256),
+        );
 
-    assert_eq!(populated, baseline);
+        assert_eq!(populated, baseline);
+    })
 }
 
 #[test]
 fn same_resource_unrelated_grants_do_not_enter_exact_grant_selection() {
-    let baseline = admission_work(installed_capability_world_with_same_resource_unrelated(0));
-    let populated = admission_work(installed_capability_world_with_same_resource_unrelated(256));
+    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+        let baseline = admission_work(
+            &host_custody,
+            installed_capability_world_with_same_resource_unrelated(0),
+        );
+        let populated = admission_work(
+            &host_custody,
+            installed_capability_world_with_same_resource_unrelated(256),
+        );
 
-    assert_eq!(populated, baseline);
+        assert_eq!(populated, baseline);
+    })
 }
 
 #[test]
@@ -85,9 +112,28 @@ fn exact_pair_population_overflow_denies_before_authority() {
     let world = installed_capability_world_with_exact_pair_population(65);
     world.authorization_time.script([time(100)]);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
 
-    let Err(denial) = admitted_capability_access(&world, &principal, &request, 100) else {
+    let Err(denial) = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            admitted_capability_access(
+                &(phase).test_host_request(),
+                &world,
+                &principal,
+                &request,
+                100,
+            )
+        })
+        .expect("the fixture read owns its installed host call")
+    else {
         panic!("an over-budget exact grant population must deny");
     };
 
@@ -97,11 +143,15 @@ fn exact_pair_population_overflow_denies_before_authority() {
     );
 }
 
-fn admission_work(world: AuthorizationWorld) -> DelegationAdmissionWork {
+fn admission_work(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
+    world: AuthorizationWorld,
+) -> DelegationAdmissionWork {
     world.authorization_time.script([time(100)]);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let access = admitted_capability_access(&world, &principal, &request, 100).unwrap();
+    let principal = authenticated_principal(&(phase_custody).test_host_request(), &world, &request);
+    let access =
+        admitted_capability_access(phase_custody, &world, &principal, &request, 100).unwrap();
     DelegationAdmissionWork {
         relational: access.relational_counters(),
         signal_dependencies: access.signal_dependency_count(),

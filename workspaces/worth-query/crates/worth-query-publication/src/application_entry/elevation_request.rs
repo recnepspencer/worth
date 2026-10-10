@@ -140,10 +140,10 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
                 let selected = self
                     .application
                     .on_branch(self.branch)
-                    .select()
+                    .select(&phase, )
                     .map_err(Denial::ProductSelection)?;
                 let principal = selected
-                    .resolve_authenticated_principal(
+                    .resolve_authenticated_principal(&phase,
                         &principal_binding,
                         self.principal,
                         self.scope,
@@ -163,7 +163,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
                 let idempotency = workflow.binding();
                 let publication = program_publication_access();
                 let mut access = selected
-                    .admit_encoded_capability_access(
+                    .admit_encoded_capability_access(&phase,
                         &publication,
                         &principal,
                         &capability,
@@ -179,18 +179,18 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
                     .map_err(Denial::OperationInstallation)?;
                 let admission = self
                     .application
-                    .authorize_elevation_request(access, &operation, preconditions)
+                    .authorize_elevation_request(&phase, access, &operation, preconditions)
                     .map_err(Denial::Authorization)?;
                 let projected = invariant_projection
-                    .project_admitted_operation(&admission, project, worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
+                    .project_admitted_operation(&phase, &admission, project, worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
                     .map_err(Denial::Projection)?;
                 let (decision, projection, _) = projected.into_parts();
                 decision.map_err(Denial::Decision)?;
                 let program = self
                     .application
-                    .begin_projected_application_read_attempt(admission, projection, worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
+                    .begin_projected_application_read_attempt(&phase, admission, projection, worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
                     .map_err(Denial::Attempt)?
-                    .complete_projected_dependencies(worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
+                    .complete_projected_dependencies(&phase, worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
                     .map_err(Denial::Attempt)?
                     .materialize_elevation_request_program()
                     .map_err(Denial::Attempt)?;

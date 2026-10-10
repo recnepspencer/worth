@@ -96,7 +96,7 @@ fn retained_artifact_is_the_only_pending_axis_and_retry_observes_its_release() {
 }
 
 fn workflow_recovery_cleanup(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     yielded: crate::domain_computation::WorthQueryYieldedWorkflowRun,
     runtime: &WorthQueryExecutionRuntime,
@@ -104,7 +104,7 @@ fn workflow_recovery_cleanup(
 ) -> crate::domain_computation::WorthQueryWorkflowReadmissionCleanupRequired {
     let active_request = execution;
 
-    match yielded.readmit_same_runtime(active_request, runtime, bridge) {
+    match { let installed_fixture_phase = yielded.fixture_phase(active_request); yielded.readmit_same_runtime(&installed_fixture_phase, runtime, bridge) } {
         crate::domain_computation::WorthQueryWorkflowReadmissionOutcome::RecoveryRequired(
             crate::domain_computation::WorthQueryWorkflowReadmissionRecoveryRequired::TerminalCleanup(
                 recovery,

@@ -23,12 +23,16 @@ use providers::{domain_condition_node, CapturingCompute, CountedCompute, StaticC
 
 #[test]
 fn changed_signal_decision_reenters_before_the_ordinary_executor() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let node = super::conditional_node_contract::node(
         "geometry",
         domain::WorthQueryComparatorRequirement::ExactCanonicalValue,
         domain::WorthQuerySemanticLocality::SourceRecord,
     );
-    let mut workspace = conditional_workspace("conditional-changed", node).unwrap();
+    let mut workspace =
+        conditional_workspace(request_execution, "conditional-changed", node).unwrap();
     let domain = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
         .observe_operating_world(workspace.current_world())
@@ -72,6 +76,9 @@ fn changed_signal_decision_reenters_before_the_ordinary_executor() {
 
 #[test]
 fn extra_condition_provider_is_rejected_during_runtime_construction() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let dependency = dependency(domain::WorthQuerySemanticLocality::SourceRecord);
     let node = conditional_node_result(
         "conditional-extra-provider",
@@ -88,6 +95,7 @@ fn extra_condition_provider_is_rejected_during_runtime_construction() {
         ));
     let contacts = Arc::new(AtomicUsize::new(0));
     let result = conditional_workspace_with(
+        request_execution,
         "conditional-extra-provider",
         node,
         installation,
@@ -100,13 +108,20 @@ fn extra_condition_provider_is_rejected_during_runtime_construction() {
 
 #[test]
 fn missing_conditional_lowering_is_rejected_during_runtime_construction() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let node = super::conditional_node_contract::node(
         "missing-lowering",
         domain::WorthQueryComparatorRequirement::ExactCanonicalValue,
         domain::WorthQuerySemanticLocality::SourceRecord,
     );
 
-    let result = conditional_workspace_without_lowering("conditional-missing-lowering", node);
+    let result = conditional_workspace_without_lowering(
+        request_execution,
+        "conditional-missing-lowering",
+        node,
+    );
 
     assert!(
         matches!(&result, Err(error) if error.message().contains("require 1 conditional registrations, found 0"))
@@ -115,6 +130,9 @@ fn missing_conditional_lowering_is_rejected_during_runtime_construction() {
 
 #[test]
 fn compute_receives_the_exact_bound_query_context() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let node = super::conditional_node_contract::node(
         "conditional-context",
         domain::WorthQueryComparatorRequirement::ExactCanonicalValue,
@@ -123,6 +141,7 @@ fn compute_receives_the_exact_bound_query_context() {
     let installation = conditional_installation(&node);
     let captured = Arc::new(Mutex::new(None));
     let mut workspace = conditional_workspace_with(
+        request_execution,
         "conditional-context",
         node,
         installation,
@@ -161,6 +180,9 @@ fn compute_receives_the_exact_bound_query_context() {
 
 #[test]
 fn workflow_stage_retains_the_same_signal_decision_in_its_receipt() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let dependency = dependency(domain::WorthQuerySemanticLocality::SourceRecord);
     let stage_node = domain::WorthQueryPortableConditionalNodeDeclaration::declare(
         "publish-when-changed",
@@ -189,8 +211,12 @@ fn workflow_stage_retains_the_same_signal_decision_in_its_receipt() {
     .output_relationship(domain::WorthQueryOutputRelationship::IsWorkflowStageOutput)
     .finish()
     .unwrap();
-    let mut workspace =
-        conditional_workflow_workspace("conditional-workflow-execution", stage_node).unwrap();
+    let mut workspace = conditional_workflow_workspace(
+        request_execution,
+        "conditional-workflow-execution",
+        stage_node,
+    )
+    .unwrap();
     let domain = workspace.domain(GeometryDomain).unwrap();
     let run = workspace
         .observe_operating_world(workspace.current_world())
@@ -243,6 +269,9 @@ fn workflow_stage_retains_the_same_signal_decision_in_its_receipt() {
 
 #[test]
 fn suppressed_decision_runs_no_query_graph_or_domain_work() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let node = domain_condition_node("conditional-suppressed");
     let mut installation = conditional_installation(&node);
     installation.providers = worth_runtime_bridge::facade::BridgeConditionalProviderSet::new()
@@ -251,6 +280,7 @@ fn suppressed_decision_runs_no_query_graph_or_domain_work() {
         ));
     let compute_contacts = Arc::new(AtomicUsize::new(0));
     let mut workspace = conditional_workspace_with(
+        request_execution,
         "conditional-suppressed",
         node,
         installation,
@@ -293,6 +323,9 @@ fn suppressed_decision_runs_no_query_graph_or_domain_work() {
 
 #[test]
 fn reverted_clean_retains_compute_cost_but_mints_no_query_consequence() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let dependency = dependency(domain::WorthQuerySemanticLocality::SourceRecord);
     let node = conditional_node_result(
         "conditional-reverted-clean",
@@ -305,6 +338,7 @@ fn reverted_clean_retains_compute_cost_but_mints_no_query_consequence() {
     let installation = conditional_installation(&node);
     let compute_contacts = Arc::new(AtomicUsize::new(0));
     let mut workspace = conditional_workspace_with(
+        request_execution,
         "conditional-reverted-clean",
         node,
         installation,

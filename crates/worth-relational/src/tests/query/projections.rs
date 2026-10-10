@@ -69,17 +69,22 @@ impl EntityRecordProjection for UndeclaredAspectProjection {
 
 #[test]
 fn entity_projections_collapse_kind_and_partition_threading() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     let left = create_entity_in_partition(&runtime, "left-a", PartitionId(7));
     let _other_left = create_entity_in_partition(&runtime, "left-b", PartitionId(7));
     let right = create_entity_in_partition(&runtime, "right-a", PartitionId(11));
     let view = runtime
         .read_truth()
-        .project_historical_version(runtime.current_version_id());
+        .project_historical_version(execution, runtime.current_version_id());
 
-    let projected = view.entities::<NamedEntityProjection>();
-    let scoped = view.entities_in::<NamedEntityProjection>(PartitionId(7));
-    let single = view.entity::<NamedEntityProjection>(right).unwrap();
+    let projected = view.entities::<NamedEntityProjection>(execution);
+    let scoped = view.entities_in::<NamedEntityProjection>(execution, PartitionId(7));
+    let single = view
+        .entity::<NamedEntityProjection>(execution, right)
+        .unwrap();
 
     assert_eq!(projected.len(), 3);
     assert_eq!(
@@ -98,14 +103,17 @@ fn entity_projections_collapse_kind_and_partition_threading() {
 
 #[test]
 fn snapshot_projection_resolves_version_without_manual_kind_scan_parameters() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     let created = create_entity_outcome(&runtime, "visible");
 
     let projected = runtime
         .read_truth()
-        .project_snapshot(&created.snapshot)
+        .project_snapshot(&created.snapshot, execution)
         .unwrap()
-        .entities::<NamedEntityProjection>();
+        .entities::<NamedEntityProjection>(execution);
 
     assert_eq!(projected.len(), 1);
     assert_eq!(projected[0].name, "visible");
@@ -121,6 +129,8 @@ fn snapshot_projection_resolves_version_without_manual_kind_scan_parameters() {
 
 #[test]
 fn projection_record_refuses_aspect_reads_outside_declared_scope() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     #[derive(Debug, Clone, PartialEq, Eq)]
     struct EmptyScopeProjection {
         entity_id: EntityId,
@@ -145,8 +155,8 @@ fn projection_record_refuses_aspect_reads_outside_declared_scope() {
 
     let projected = runtime
         .read_truth()
-        .project_historical_version(runtime.current_version_id())
-        .entities::<EmptyScopeProjection>();
+        .project_historical_version(execution, runtime.current_version_id())
+        .entities::<EmptyScopeProjection>(execution);
 
     assert_eq!(projected[0].entity_id, entity_id);
     assert!(!projected[0].name_was_visible);
@@ -154,14 +164,18 @@ fn projection_record_refuses_aspect_reads_outside_declared_scope() {
 
 #[test]
 fn dynamic_projection_scope_reads_aspects_without_raw_record_escape() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     let entity_id = create_entity(&runtime, "scope-carried");
     let view = runtime
         .read_truth()
-        .project_historical_version(runtime.current_version_id());
+        .project_historical_version(execution, runtime.current_version_id());
     let name_key = AspectKey::new("name").unwrap();
 
     let projected = view.entity_records_with_projection_scope(
+        execution,
         KindId(1),
         ProjectionAspectScope::whole_aspects([name_key.clone()]),
         |record| {
@@ -177,6 +191,9 @@ fn dynamic_projection_scope_reads_aspects_without_raw_record_escape() {
 
 #[test]
 fn snapshot_projection_uses_authoritative_published_binding_version() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     let created = create_entity_outcome(&runtime, "visible");
     let entity = changed_entities(&created)[0];
@@ -186,9 +203,9 @@ fn snapshot_projection_uses_authoritative_published_binding_version() {
 
     let projected = runtime
         .read_truth()
-        .project_snapshot(&stale_handle)
+        .project_snapshot(&stale_handle, execution)
         .unwrap()
-        .entities::<NamedEntityProjection>();
+        .entities::<NamedEntityProjection>(execution);
 
     assert_eq!(projected.len(), 1);
     assert_eq!(projected[0].name, "updated");
@@ -196,16 +213,21 @@ fn snapshot_projection_uses_authoritative_published_binding_version() {
 
 #[test]
 fn projection_raw_record_escape_hatches_preserve_full_visible_record_sets() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let left = create_entity_in_partition(&runtime, "left", PartitionId(7));
     let right = create_entity_in_partition(&runtime, "right", PartitionId(11));
     let relation = create_relation(&runtime, left, right, "r0");
     let version_id = runtime.current_version_id();
-    let view = runtime.read_truth().project_historical_version(version_id);
-    let read = runtime.read_truth().read_version(version_id);
+    let view = runtime
+        .read_truth()
+        .project_historical_version(execution, version_id);
+    let read = runtime.read_truth().read_version(execution, version_id);
 
     assert_eq!(
-        view.all_authoritative_entity_records()
+        view.all_authoritative_entity_records(execution,)
             .into_iter()
             .map(|record| record.entity_id)
             .collect::<Vec<_>>(),
@@ -215,7 +237,7 @@ fn projection_raw_record_escape_hatches_preserve_full_visible_record_sets() {
             .collect::<Vec<_>>()
     );
     assert_eq!(
-        view.all_authoritative_relation_records()
+        view.all_authoritative_relation_records(execution,)
             .into_iter()
             .map(|record| record.relation_id)
             .collect::<Vec<_>>(),
@@ -226,10 +248,13 @@ fn projection_raw_record_escape_hatches_preserve_full_visible_record_sets() {
 #[test]
 #[should_panic(expected = "requires undeclared aspect")]
 fn projection_rejects_undeclared_required_aspects() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     create_entity_outcome(&runtime, "visible");
     let _ = runtime
         .read_truth()
-        .project_historical_version(runtime.current_version_id())
-        .entities::<UndeclaredAspectProjection>();
+        .project_historical_version(execution, runtime.current_version_id())
+        .entities::<UndeclaredAspectProjection>(execution);
 }

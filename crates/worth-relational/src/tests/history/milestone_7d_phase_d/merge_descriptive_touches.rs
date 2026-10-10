@@ -5,6 +5,9 @@ use crate::storage::data::AuthoritativeFieldComparisonKey;
 
 #[test]
 fn native_merge_touches_only_changed_revision_and_both_index_membership_keys() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = runtime_with_aspect_field_merge_policy(
         AspectKey::new("status").unwrap(),
         field_key("status"),
@@ -58,14 +61,17 @@ fn native_merge_touches_only_changed_revision_and_both_index_membership_keys() {
         .expect("source status commit");
 
     let prepared = runtime
-        .prepare_merge_execution(MergeExecutionRequest {
-            target_branch: BranchId("main".to_string()),
-            source_branch: BranchId("feature".to_string()),
-            merge_intent: MergeIntent::ReconcileIntoTarget,
-        })
+        .prepare_merge_execution(
+            execution,
+            MergeExecutionRequest {
+                target_branch: BranchId("main".to_string()),
+                source_branch: BranchId("feature".to_string()),
+                merge_intent: MergeIntent::ReconcileIntoTarget,
+            },
+        )
         .expect("native merge preparation");
     let merged = runtime
-        .execute_prepared_merge(prepared)
+        .execute_prepared_merge(execution, prepared)
         .expect("native merge commit");
     let envelope = runtime
         .replay()

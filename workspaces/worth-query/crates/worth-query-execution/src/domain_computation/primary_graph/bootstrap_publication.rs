@@ -24,44 +24,50 @@ use super::{
 };
 
 pub(super) fn commit_bootstrap_rows(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     graph: &WorthQueryPrimaryGraph,
     first_principal_ordinal: usize,
     rows: Vec<WorthQueryPrincipalBootstrapRow>,
     entity_rows: Vec<WorthQueryTypedEntityBootstrapRow>,
     relation_rows: Vec<WorthQueryTypedRelationBootstrapRow>,
 ) -> Result<worth_relational::facade::history::CommitId, WorthQueryPrimaryGraphInstallationDenial> {
-    graph.integration_handle().with_runtime_mut(|runtime| {
-        let main_identity = runtime.main_branch_identity();
-        let options = runtime
-            .admit_branch_basis(&main_identity)
-            .map_err(map_bootstrap_basis_denial)?;
-        let mut transaction = runtime
-            .begin_branch_transaction(
-                &options,
-                worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
-            )
-            .map_err(map_bootstrap_transaction_admission_denial)?;
-        let mut batch = WorkerIntentBatch::new("application-principal-bootstrap");
-        for (ordinal, row) in rows.into_iter().enumerate() {
-            batch = append_principal_row(batch, first_principal_ordinal + ordinal, row);
-        }
-        batch = append_typed_rows(batch, entity_rows, relation_rows);
-        transaction
-            .push_batch(
-                batch,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .map_err(map_bootstrap_staging_denial)?;
-        let committed = transaction
-            .commit(
+    graph
+        .integration_handle()
+        .with_runtime_mut(execution, |runtime| {
+            let main_identity = runtime.main_branch_identity();
+            let options = runtime
+                .admit_branch_basis(&main_identity)
+                .map_err(map_bootstrap_basis_denial)?;
+            let mut transaction = runtime
+                .begin_branch_transaction(
+                    &options,
+                    worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+                )
+                .map_err(map_bootstrap_transaction_admission_denial)?;
+            let mut batch = WorkerIntentBatch::new("application-principal-bootstrap");
+            for (ordinal, row) in rows.into_iter().enumerate() {
+                batch = append_principal_row(batch, first_principal_ordinal + ordinal, row);
+            }
+            batch = append_typed_rows(batch, entity_rows, relation_rows);
+            transaction
+                .push_batch(
+                    batch,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .map_err(map_bootstrap_staging_denial)?;
+            let committed = transaction
+                .commit(
+                    runtime,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .map_err(map_bootstrap_commit_denial)?;
+            let commit_id = committed.commit.commit_id;
+            crate::relational_snapshot_release::release_query_snapshot(
                 runtime,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .map_err(map_bootstrap_commit_denial)?;
-        let commit_id = committed.commit.commit_id;
-        crate::relational_snapshot_release::release_query_snapshot(runtime, &committed.snapshot);
-        Ok(commit_id)
-    })
+                &committed.snapshot,
+            );
+            Ok(commit_id)
+        })
 }
 
 pub(super) fn map_bootstrap_basis_denial(
@@ -244,20 +250,24 @@ fn append_principal_row(
 }
 
 pub(super) fn build_identity_indexes(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     graph: &WorthQueryPrimaryGraph,
     source_commit_id: worth_relational::facade::history::CommitId,
     index_ids: &[DerivedIndexId],
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-    graph.integration_handle().with_runtime_mut(|runtime| {
-        let build = runtime
-            .index_authority()
-            .build_for_commit(DerivedIndexBuildRequest {
-                source_commit_id,
-                branch_id: primary_relational_branch_id(),
-                index_ids: index_ids.to_vec(),
-            });
-        identity_indexes_built(build, index_ids.len())
-    })
+    graph
+        .integration_handle()
+        .with_runtime_mut(execution, |runtime| {
+            let build = runtime.index_authority().build_for_commit(
+                execution,
+                DerivedIndexBuildRequest {
+                    source_commit_id,
+                    branch_id: primary_relational_branch_id(),
+                    index_ids: index_ids.to_vec(),
+                },
+            );
+            identity_indexes_built(build, index_ids.len())
+        })
 }
 
 fn identity_indexes_built(

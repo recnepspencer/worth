@@ -10,8 +10,11 @@ use worth_relational::facade::history::BranchId;
 use worth_relational::facade::transactions::WorkerIntentBatch;
 #[test]
 fn supply_chain_fork_shares_one_source_artifact_and_starts_a_new_reference_line() {
-    let (world, expected) = certified_supply_chain_world(SupplyChainScale::court());
-    assert_oracle_matches(&world, &expected);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (world, expected) = certified_supply_chain_world(execution, SupplyChainScale::court());
+    assert_oracle_matches(execution, &world, &expected);
     let source_catalog_count = world.runtime.history().immutable_commit_count();
     let before = capture_reference_evidence(
         &world.runtime,
@@ -29,7 +32,7 @@ fn supply_chain_fork_shares_one_source_artifact_and_starts_a_new_reference_line(
         .runtime
         .fork_branch(BranchId("storm".to_owned()), source_basis)
         .expect("fork source is consumed by the owner fork transition");
-    assert_oracle_matches(&world, &expected);
+    assert_oracle_matches(execution, &world, &expected);
 
     assert_eq!(
         outcome.target_identity().branch_id(),
@@ -132,8 +135,11 @@ fn supply_chain_fork_shares_one_source_artifact_and_starts_a_new_reference_line(
 
 #[test]
 fn source_observation_is_foreign_after_runtime_clone() {
-    let (world, expected) = certified_supply_chain_world(SupplyChainScale::court());
-    assert_oracle_matches(&world, &expected);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (world, expected) = certified_supply_chain_world(execution, SupplyChainScale::court());
+    assert_oracle_matches(execution, &world, &expected);
     let (_, source_basis) = world
         .runtime
         .observe_fork_source(&BranchId("main".to_owned()))
@@ -173,13 +179,16 @@ fn source_observation_is_foreign_after_runtime_clone() {
         .fork_branch(BranchId("clone-storm".to_owned()), clone_basis)
         .expect("the clone can fork from its rebound source");
     assert_eq!(outcome.fork_provenance(), outcome.source_observation());
-    assert_oracle_matches(&world, &expected);
+    assert_oracle_matches(execution, &world, &expected);
 }
 
 #[test]
 fn malformed_fork_target_denies_before_reference_installation() {
-    let (world, expected) = certified_supply_chain_world(SupplyChainScale::court());
-    assert_oracle_matches(&world, &expected);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (world, expected) = certified_supply_chain_world(execution, SupplyChainScale::court());
+    assert_oracle_matches(execution, &world, &expected);
     let (_, basis) = world
         .runtime
         .observe_fork_source(&BranchId("main".to_owned()))
@@ -207,11 +216,14 @@ fn malformed_fork_target_denies_before_reference_installation() {
         world.commit.commit_id,
     );
     assert_denial_left_no_reference_residue(&before, &after);
-    assert_oracle_matches(&world, &expected);
+    assert_oracle_matches(execution, &world, &expected);
 }
 
 #[test]
 fn empty_and_duplicate_fork_denials_preserve_catalog_and_existing_reference() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let empty_runtime = canonical_empty_supply_chain_runtime(SupplyChainScale::court());
     let empty_before = capture_reference_evidence(
         &empty_runtime,
@@ -240,8 +252,8 @@ fn empty_and_duplicate_fork_denials_preserve_catalog_and_existing_reference() {
         &worth_foundational::FoundationalBranchTarget::Empty
     );
 
-    let (world, expected) = certified_supply_chain_world(SupplyChainScale::court());
-    assert_oracle_matches(&world, &expected);
+    let (world, expected) = certified_supply_chain_world(execution, SupplyChainScale::court());
+    assert_oracle_matches(execution, &world, &expected);
     let (_, source_basis) = world
         .runtime
         .observe_fork_source(&BranchId("main".to_owned()))
@@ -296,13 +308,16 @@ fn empty_and_duplicate_fork_denials_preserve_catalog_and_existing_reference() {
         world.commit.commit_id,
     );
     assert_denial_left_no_reference_residue(&before, &after);
-    assert_oracle_matches(&world, &expected);
+    assert_oracle_matches(execution, &world, &expected);
 }
 
 #[test]
 fn stale_fork_source_denial_does_not_install_a_target_reference() {
-    let (world, expected) = certified_supply_chain_world(SupplyChainScale::court());
-    assert_oracle_matches(&world, &expected);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (world, expected) = certified_supply_chain_world(execution, SupplyChainScale::court());
+    assert_oracle_matches(execution, &world, &expected);
     let (_, stale_basis) = world
         .runtime
         .observe_fork_source(&BranchId("main".to_owned()))
@@ -364,5 +379,5 @@ fn stale_fork_source_denial_does_not_install_a_target_reference() {
         world.commit.commit_id,
     );
     assert_denial_left_no_reference_residue(&before, &after);
-    assert_oracle_matches(&world, &expected);
+    assert_oracle_matches(execution, &world, &expected);
 }

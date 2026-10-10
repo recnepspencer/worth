@@ -34,6 +34,7 @@ fn exact_invariant_progression_is_consumed_by_provider_commit() {
         };
 
         let outcome = candidate.compare_and_commit(
+            &phase.borrowed_request_for_test(),
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         );
         let WorthQueryProviderCompareAndCommitOutcome::Committed(committed) = outcome else {
@@ -88,6 +89,7 @@ fn relevant_drift_stales_before_provider_commit() {
         state.lock().unwrap().decision_version = Some("base-v2".to_owned());
 
         let outcome = candidate.compare_and_commit(
+            &phase.borrowed_request_for_test(),
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         );
         let WorthQueryProviderCompareAndCommitOutcome::Stale(stale) = outcome else {
@@ -135,7 +137,7 @@ fn equivalent_proposal_from_another_session_rejects_foreign_progression() {
 }
 
 fn proposed_inspection<'run>(
-    execution: &'run crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &'run crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     running: &'run mut crate::domain_computation::WorthQueryRunningDirectRun,
     graph: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
@@ -182,7 +184,7 @@ fn provider_state() -> Arc<Mutex<ProvisionalProviderState>> {
 }
 
 fn committed_provider_session(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 ) -> crate::domain_computation::WorthQueryCommittedProviderSession {
     let state = provider_state();
     let (mut running, graph) = invariant_run(Arc::clone(&state), blocking_requirements());
@@ -192,8 +194,11 @@ fn committed_provider_session(
     let candidate = inspection
         .bind_invariant_progression(progression)
         .unwrap_or_else(|_| panic!("exact progression must bind"));
-    let WorthQueryProviderCompareAndCommitOutcome::Committed(committed) =
-        candidate.compare_and_commit(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+    let WorthQueryProviderCompareAndCommitOutcome::Committed(committed) = candidate
+        .compare_and_commit(
+            &execution.borrowed_request_for_test(),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("fresh invariant-approved state must commit")
     };

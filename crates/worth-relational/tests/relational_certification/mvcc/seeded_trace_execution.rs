@@ -18,6 +18,7 @@ use worth_relational::facade::mvcc::{
 use worth_relational::facade::transactions::WorkerIntentBatch;
 
 pub(super) fn execute_trace(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &mut ProductionSeededSupplyChainWorld,
     trace: &ProductionModelTrace,
 ) {
@@ -32,6 +33,7 @@ pub(super) fn execute_trace(
             .fork(scenario.delta.branch(), parent_oracle.ancestry.branch)
             .unwrap_or_else(|error| trace_panic(trace, scenario_index, "oracle fork", error));
         let branch = fork_and_observe(
+            execution,
             world,
             trace,
             scenario_index,
@@ -43,6 +45,7 @@ pub(super) fn execute_trace(
             .apply(scenario.delta)
             .unwrap_or_else(|error| trace_panic(trace, scenario_index, "oracle apply", error));
         commit_evolve_and_probe(
+            execution,
             world,
             trace,
             scenario_index,
@@ -68,6 +71,7 @@ pub(super) fn execute_trace(
         })
         .expect("validated trace owns one archive scenario");
     let retained = super::seeded_trace_lifecycle::archive_and_observe(
+        execution,
         world,
         trace,
         archive_index,
@@ -79,7 +83,13 @@ pub(super) fn execute_trace(
         .iter()
         .position(|state| state.scenario.lifecycle == ScenarioLifecycle::DeleteAfterCommit)
         .expect("validated trace owns one delete scenario");
-    super::seeded_trace_lifecycle::delete_and_prove_absence(world, trace, delete_index, &branches);
+    super::seeded_trace_lifecycle::delete_and_prove_absence(
+        execution,
+        world,
+        trace,
+        delete_index,
+        &branches,
+    );
     for state in &branches {
         if let Some(snapshot) = &state.retained_snapshot {
             world
@@ -130,6 +140,7 @@ fn expected_outcome(probe: OutcomeProbe) -> ProbeOutcome {
 }
 
 fn fork_and_observe(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &mut ProductionSeededSupplyChainWorld,
     trace: &ProductionModelTrace,
     scenario_index: usize,
@@ -162,6 +173,7 @@ fn fork_and_observe(
         );
     }
     observe_branch_against_oracle(
+        execution,
         world,
         trace,
         scenario_index,
@@ -173,6 +185,7 @@ fn fork_and_observe(
 }
 
 fn commit_evolve_and_probe(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &mut ProductionSeededSupplyChainWorld,
     trace: &ProductionModelTrace,
     scenario_index: usize,
@@ -188,6 +201,7 @@ fn commit_evolve_and_probe(
         .map(|event| event.delta)
         .collect::<BTreeSet<_>>();
     let batch = lower_supply_chain_production_delta(
+        execution,
         &world.runtime,
         &world.program,
         &world.handles,
@@ -204,6 +218,7 @@ fn commit_evolve_and_probe(
         batch,
     );
     super::seeded_trace_observation::observe_snapshot_against_oracle(
+        execution,
         world,
         trace,
         scenario_index,
@@ -231,6 +246,7 @@ fn commit_evolve_and_probe(
         WorkerIntentBatch::new(format!("seeded-successor-{scenario_index}")),
     );
     super::seeded_trace_observation::observe_snapshot_against_oracle(
+        execution,
         world,
         trace,
         scenario_index,
@@ -239,6 +255,7 @@ fn commit_evolve_and_probe(
         "successor oracle",
     );
     run_expected_probe(
+        execution,
         world,
         trace,
         scenario_index,
@@ -265,6 +282,7 @@ fn commit_evolve_and_probe(
 
 #[allow(clippy::too_many_arguments)]
 fn run_expected_probe(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &mut ProductionSeededSupplyChainWorld,
     trace: &ProductionModelTrace,
     scenario_index: usize,
@@ -277,6 +295,7 @@ fn run_expected_probe(
 ) {
     match scenario.probe {
         OutcomeProbe::ObserveCurrentBranch => observe_branch_against_oracle(
+            execution,
             world,
             trace,
             scenario_index,
@@ -310,6 +329,7 @@ fn run_expected_probe(
             let mut applied = prior_applied.clone();
             applied.insert(scenario.delta);
             let denial = lower_supply_chain_production_delta(
+                execution,
                 &world.runtime,
                 &world.program,
                 &world.handles,
@@ -329,6 +349,7 @@ fn run_expected_probe(
 }
 
 fn observe_branch_against_oracle(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &mut ProductionSeededSupplyChainWorld,
     trace: &ProductionModelTrace,
     scenario_index: usize,
@@ -350,6 +371,7 @@ fn observe_branch_against_oracle(
         .snapshot_for_observation(&basis.observation())
         .unwrap_or_else(|error| trace_panic(trace, scenario_index, operation, error));
     super::seeded_trace_observation::observe_snapshot_against_oracle(
+        execution,
         world,
         trace,
         scenario_index,

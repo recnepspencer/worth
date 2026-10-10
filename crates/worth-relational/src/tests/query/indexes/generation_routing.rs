@@ -2,6 +2,9 @@ use super::*;
 
 #[test]
 fn generation_routing_respects_declared_branch_scope_without_history_inventory() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for branch_scoped in [true, false] {
         let runtime = runtime_with_index_field_aspects();
         let created = create_entity_outcome(&runtime, "alpha");
@@ -15,13 +18,14 @@ fn generation_routing_respects_declared_branch_scope_without_history_inventory()
             },
             branch_scoped,
         });
-        let main_build = runtime
-            .index_authority()
-            .build_for_commit(DerivedIndexBuildRequest {
+        let main_build = runtime.index_authority().build_for_commit(
+            execution,
+            DerivedIndexBuildRequest {
                 source_commit_id: created.commit.commit_id,
                 branch_id: created.commit.branch_id.clone(),
                 index_ids: vec![index.index_id],
-            });
+            },
+        );
         assert!(main_build.failed_indexes.is_empty());
         let sibling = BranchId("same-root-sibling".into());
         runtime
@@ -31,6 +35,7 @@ fn generation_routing_respects_declared_branch_scope_without_history_inventory()
         let identity = runtime.branch_identity(&sibling).unwrap();
         let (_, basis) = runtime.observe_branch(&identity).unwrap();
         let foreign_build = runtime.index_authority().build_for_basis(
+            execution,
             DerivedIndexBuildRequest {
                 source_commit_id: created.commit.commit_id,
                 branch_id: sibling,
@@ -71,7 +76,12 @@ fn generation_routing_respects_declared_branch_scope_without_history_inventory()
         let before = runtime.index_access().generation_selection_counters();
         let observed = runtime
             .index_access()
-            .execute_query_plan_with_index_parity(plan, IndexParityMode::CertificationParity)
+            .execute_query_plan_with_index_parity(
+                plan,
+                IndexParityMode::CertificationParity,
+                execution,
+            )
+            .expect("request remains live")
             .unwrap();
         let expected = if branch_scoped {
             &main_build

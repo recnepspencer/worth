@@ -97,6 +97,9 @@ fn missing_owner_binding_is_typed_and_cannot_fall_back_to_a_raw_id() {
 
 #[test]
 fn foreign_snapshot_observation_is_typed_and_does_not_cross_runtime() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let program = court_program();
     let mut world = compile_supply_chain_baseline(program).expect("Court world compiles");
     let foreign_runtime = RelationalRuntimeApi::builder().build();
@@ -119,11 +122,12 @@ fn foreign_snapshot_observation_is_typed_and_does_not_cross_runtime() {
     assert!(world
         .runtime
         .read_truth()
-        .read_snapshot(&foreign_snapshot)
+        .read_snapshot(&foreign_snapshot, execution)
         .is_none());
     world.handles.snapshot = foreign_snapshot;
 
     let error = super::world::supply_chain::observe_supply_chain_snapshot(
+        execution,
         &world.program,
         &world.handles,
         &world.runtime,
@@ -164,6 +168,9 @@ fn relation_binding_rejects_a_snapshot_from_another_runtime() {
 
 #[test]
 fn oracle_failure_is_distinct_from_production_observation_and_comparison() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut world = compile_supply_chain_baseline(court_program()).expect("Court world compiles");
     let edge = world
         .program
@@ -174,7 +181,7 @@ fn oracle_failure_is_distinct_from_production_observation_and_comparison() {
         .expect("Court world has a relation");
     edge.source = EntityKey::new(EntityKind::Port, u32::MAX);
 
-    let error = match audit_supply_chain_baseline(world) {
+    let error = match audit_supply_chain_baseline(execution, world) {
         Ok(_) => panic!("invalid oracle topology is rejected"),
         Err(error) => error,
     };
@@ -183,6 +190,9 @@ fn oracle_failure_is_distinct_from_production_observation_and_comparison() {
 
 #[test]
 fn comparison_failure_is_distinct_after_an_oracle_only_value_drift() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut world = compile_supply_chain_baseline(court_program()).expect("Court world compiles");
     let port = world
         .program
@@ -195,7 +205,7 @@ fn comparison_failure_is_distinct_after_an_oracle_only_value_drift() {
         other => panic!("expected a Port record, got {other:?}"),
     }
 
-    let error = match audit_supply_chain_baseline(world) {
+    let error = match audit_supply_chain_baseline(execution, world) {
         Ok(_) => panic!("oracle drift must fail comparison"),
         Err(error) => error,
     };
@@ -347,52 +357,5 @@ fn semantic_relation_binding_rejects_duplicate_correspondence() {
     ));
 }
 
-#[test]
-fn observation_rejects_missing_snapshot_and_unbound_record_identities() {
-    let missing_snapshot =
-        compile_supply_chain_baseline(court_program()).expect("Court world compiles");
-    let released_snapshot = missing_snapshot.handles.snapshot.clone();
-    assert!(missing_snapshot
-        .runtime
-        .snapshots()
-        .release_snapshot(&released_snapshot)
-        .is_ok());
-    let missing_error = super::world::supply_chain::observe_supply_chain_snapshot(
-        &missing_snapshot.program,
-        &missing_snapshot.handles,
-        &missing_snapshot.runtime,
-        &released_snapshot,
-    )
-    .expect_err("an unknown snapshot must not fall back to current state");
-    assert!(matches!(
-        missing_error,
-        super::world::supply_chain::ObservationError::SnapshotUnavailable
-    ));
-
-    let mut unknown_entity =
-        compile_supply_chain_baseline(court_program()).expect("Court world compiles");
-    let entity_key = *unknown_entity
-        .handles
-        .entities
-        .keys()
-        .next()
-        .expect("Court has an entity");
-    unknown_entity.handles.entities.remove(&entity_key);
-    let entity_error = super::world::supply_chain::observe_supply_chain(&unknown_entity)
-        .expect_err("an unbound production entity must not be ignored");
-    assert!(matches!(
-        entity_error,
-        super::world::supply_chain::ObservationError::UnknownEntityIdentity(_)
-    ));
-
-    let mut unknown_relation =
-        compile_supply_chain_baseline(court_program()).expect("Court world compiles");
-    let relation_key = *unknown_relation.handles.relations.keys().next().unwrap();
-    unknown_relation.handles.relations.remove(&relation_key);
-    let relation_error = super::world::supply_chain::observe_supply_chain(&unknown_relation)
-        .expect_err("an unbound production relation must not be ignored");
-    assert!(matches!(
-        relation_error,
-        super::world::supply_chain::ObservationError::UnknownRelationIdentity(_)
-    ));
-}
+#[path = "production_failures/unbound_observation.rs"]
+mod unbound_observation;

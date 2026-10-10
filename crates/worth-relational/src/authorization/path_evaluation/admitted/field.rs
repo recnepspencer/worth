@@ -10,6 +10,7 @@ use worth_foundational::facade::{
 };
 
 pub(super) fn live<A: RelationalAuthorizationObservationAdmission>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     context: &Context<'_, '_, '_>,
     entity: EntityId,
     kind: KindId,
@@ -19,7 +20,7 @@ pub(super) fn live<A: RelationalAuthorizationObservationAdmission>(
     state.counters.entity_records_inspected += 1;
     Ok(context
         .view
-        .with_exact_entity_state(entity, |metadata, _| {
+        .with_exact_entity_state(execution, entity, |metadata, _| {
             metadata.kind_id == kind && metadata.lifecycle == RecordLifecycleState::Live
         })
         .map_err(|_| RelationalAuthorizationBudgetedObservationStop::ExactBasisRequired)?
@@ -27,6 +28,7 @@ pub(super) fn live<A: RelationalAuthorizationObservationAdmission>(
 }
 
 pub(super) fn observe<A: RelationalAuthorizationObservationAdmission>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     context: &Context<'_, '_, '_>,
     entity: EntityId,
     kind: KindId,
@@ -96,7 +98,7 @@ pub(super) fn observe<A: RelationalAuthorizationObservationAdmission>(
     admission::prepare(state.admission, 1, 0)?;
     let value = context
         .view
-        .with_exact_entity_state(entity, |metadata, authoritative| {
+        .with_exact_entity_state(execution, entity, |metadata, authoritative| {
             if metadata.kind_id != kind || metadata.lifecycle != RecordLifecycleState::Live {
                 return Ok(None);
             }

@@ -53,6 +53,7 @@ where
         Family,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
@@ -76,6 +77,7 @@ where
         let mut pass = AdvancePass::Initial;
         loop {
             let result = self.advance_caller_pass(
+                execution,
                 phase,
                 demand,
                 principal,
@@ -106,6 +108,7 @@ where
 
     fn advance_caller_pass<Family>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
@@ -137,12 +140,15 @@ where
         if let Some(publication) = publication {
             #[cfg(feature = "test-query-execution-observer")]
             super::caller_pass_observation::run_interleaving();
-            let selected = self.on_branch(delivery_branch).select().map_err(|stop| {
-                WorthQueryOutputDemandDenial::product_selection(
-                    stop,
-                    "own publication continuation",
-                )
-            })?;
+            let selected = self
+                .on_branch(delivery_branch)
+                .select_with_request(execution)
+                .map_err(|stop| {
+                    WorthQueryOutputDemandDenial::product_selection(
+                        stop,
+                        "own publication continuation",
+                    )
+                })?;
             if !publication
                 .0
                 .is_selected_at(selected.product().observation())
@@ -202,6 +208,7 @@ where
             AdvancePass::Initial | AdvancePass::Refreshed(_) | AdvancePass::RetryDisclosure
         ) {
             if let Some(advance) = required_wave::advance_required_before_caller(
+                execution,
                 phase,
                 self,
                 demand,
@@ -226,6 +233,7 @@ where
                         ));
                     };
                     let disclosed = validate_disclosure(
+                        execution,
                         self,
                         demand,
                         principal,
@@ -239,6 +247,7 @@ where
                         entry.edition,
                     )?;
                     let answer = self.advance_validated_output_demand(
+                        execution,
                         phase,
                         demand,
                         principal,
@@ -266,6 +275,7 @@ where
                 }
                 AdvancePass::Refreshed(disclosed) => {
                     let answer = self.advance_validated_output_demand(
+                        execution,
                         phase,
                         demand,
                         principal,
@@ -294,6 +304,7 @@ where
                         ));
                     };
                     let disclosed = validate_disclosure(
+                        execution,
                         self,
                         demand,
                         principal,
@@ -307,6 +318,7 @@ where
                         entry.edition,
                     )?;
                     let answer = self.advance_validated_output_demand(
+                        execution,
                         phase,
                         demand,
                         principal,
@@ -329,6 +341,7 @@ where
                 }
                 AdvancePass::Final(disclosed, _receipt) => {
                     let answer = self.advance_validated_output_demand(
+                        execution,
                         phase,
                         demand,
                         principal,
@@ -350,6 +363,7 @@ where
         })()
         .or_else(|mut stop| {
             match required_wave::advance_requested_output(
+                execution,
                 phase,
                 self,
                 demand,

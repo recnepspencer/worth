@@ -2,6 +2,9 @@ use super::*;
 
 #[test]
 fn replay_contract_preserves_aspect_bearing_patch_and_history_surfaces() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     let created = create_entity_outcome(&runtime, "before");
     let entity = changed_entities(&created)[0];
@@ -27,14 +30,15 @@ fn replay_contract_preserves_aspect_bearing_patch_and_history_surfaces() {
         .relation_aspect_history_with_trace(&BranchId("main".to_string()), relation, None)
         .aspect_history_digest();
 
-    let replay = runtime
-        .replay_authority()
-        .replay_commit(RelationalReplayRequest {
+    let replay = runtime.replay_authority().replay_commit(
+        RelationalReplayRequest {
             commit_id: relation_outcome.commit.commit_id,
             branch_id: BranchId("main".to_string()),
             execution_mode: ReplayExecutionMode::SerialDeterministic,
             verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-        });
+        },
+        execution,
+    );
 
     assert!(runtime.replay().compare_outcome(&replay));
     assert!(replay

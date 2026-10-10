@@ -7,20 +7,21 @@ impl WorthQueryApplicationObservedFact {
     pub(crate) fn remains_equal_in(
         &self,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     ) -> bool {
         match self {
             Self::RetiredOutputEntity { entity_id, kind, created_at, deleted_at, .. } => runtime
-                .read_truth().project_snapshot(snapshot)
-                .and_then(|view| view.entity_retirement(*entity_id))
+                .read_truth().project_snapshot(snapshot, execution)
+                .and_then(|view| view.entity_retirement(execution, *entity_id))
                 .is_some_and(|record| record.kind_id() == *kind
                     && record.created_at_version() == *created_at
                     && record.deleted_at_version() == *deleted_at),
             Self::SourceEntity { entity_id } => runtime
                 .read_truth()
-                .project_snapshot(snapshot)
+                .project_snapshot(snapshot, execution)
                 .is_some_and(|view| {
-                    view.entity_record_with_projection_scope(
+                    view.entity_record_with_projection_scope(execution,
                         *entity_id,
                         worth_relational::facade::runtime::ProjectionAspectScope::empty(),
                         |record| {
@@ -41,8 +42,8 @@ impl WorthQueryApplicationObservedFact {
                 == Some(*native_revision),
             Self::SourceFieldRevision { entity_id, locator, native_revision } =>
                 native_revision.is_some_and(|expected| {
-                    runtime.read_truth().project_snapshot(snapshot)
-                        .and_then(|view| view.entity_field_revision(*entity_id, locator)) == Some(expected)
+                    runtime.read_truth().project_snapshot(snapshot, execution)
+                        .and_then(|view| view.entity_field_revision(execution, *entity_id, locator)) == Some(expected)
                 }),
             Self::SourceAdjacencyRevision {
                 relation_kind,
@@ -53,9 +54,9 @@ impl WorthQueryApplicationObservedFact {
                 ..
             } => runtime
                 .read_truth()
-                .project_snapshot(snapshot)
+                .project_snapshot(snapshot, execution)
                 .is_some_and(|view| {
-                    match view.bounded_adjacency_structural_revision(
+                    match view.bounded_adjacency_structural_revision(execution,
                         *anchor,
                         *relation_kind,
                         *direction,
@@ -84,7 +85,7 @@ impl WorthQueryApplicationObservedFact {
                 value,
                 ..
             } => super::super::observation::observe_field_value(
-                runtime, snapshot, *entity_id, *kind, locator,
+                runtime, execution, snapshot, *entity_id, *kind, locator,
             )
             .is_some_and(|current| current == *value),
             Self::AbsentField {
@@ -92,7 +93,7 @@ impl WorthQueryApplicationObservedFact {
                 kind,
                 locator,
             } => matches!(
-                super::super::observation::observe_field(runtime, snapshot, *entity_id, *kind, locator),
+                super::super::observation::observe_field(runtime, execution, snapshot, *entity_id, *kind, locator),
                 Some(super::super::observation::WorthQueryApplicationFieldObservation::Absent)
             ),
             Self::Relation {
@@ -103,6 +104,7 @@ impl WorthQueryApplicationObservedFact {
                 ..
             } => super::super::observation::exact_relations(
                 runtime,
+                execution,
                 snapshot,
                 *relation_kind,
                 *from,
@@ -118,6 +120,7 @@ impl WorthQueryApplicationObservedFact {
                 ..
             } => adjacency::remains_equal(
                 runtime,
+                execution,
                 snapshot,
                 *relation_kind,
                 *anchor,
@@ -135,6 +138,7 @@ impl WorthQueryApplicationObservedFact {
                 candidates,
             } => indexed_entity_selection::remains_equal(
                 runtime,
+                execution,
                 snapshot,
                 *index_id,
                 definition,
@@ -151,6 +155,7 @@ impl WorthQueryApplicationObservedFact {
                 maximum_work_units,
             } => workflow_definition_predecessor::remains_equal(
                 runtime,
+                execution,
                 snapshot,
                 *relation_kind,
                 *lineage,
@@ -164,6 +169,7 @@ impl WorthQueryApplicationObservedFact {
                 maximum_work_units,
             } => workflow_definition_predecessor::remains_equal(
                 runtime,
+                execution,
                 snapshot,
                 *relation_kind,
                 Some(*lineage),
@@ -177,6 +183,7 @@ impl WorthQueryApplicationObservedFact {
                 instances,
             } => workflow_instance_capacity::remains_equal(
                 runtime,
+                execution,
                 snapshot,
                 *relation_kind,
                 *lineage,
@@ -190,6 +197,7 @@ impl WorthQueryApplicationObservedFact {
                 ..
             } => workflow_history_basis::remains_equal(
                 runtime,
+                execution,
                 snapshot,
                 observed,
                 *maximum_transitions,

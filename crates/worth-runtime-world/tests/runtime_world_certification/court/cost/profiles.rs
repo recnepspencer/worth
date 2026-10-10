@@ -11,7 +11,13 @@ fn distribution(profile: &str, axis: &str, posture: &str, samples: &mut [u128]) 
     let percentile = |percent: usize| samples[((samples.len() - 1) * percent).div_ceil(100)];
     println!("profile={profile} axis={axis} posture={posture} n={} variance_ns2={variance:.1} p50_ns={} p95_ns={} p99_ns={}", samples.len(), percentile(50), percentile(95), percentile(99));
 }
-fn profile(name: &str, sizes: [usize; 3], repetitions: usize, warm: usize) {
+fn profile(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    name: &str,
+    sizes: [usize; 3],
+    repetitions: usize,
+    warm: usize,
+) {
     println!("profile={name} config=branches128/history512/observations512/attempts128/partials128/pins1024/inflight256/custody256 metadata=16MiB sizes={sizes:?} repetitions={repetitions} warm_probes={warm}; cold=first probe after fresh population; warm=repeated probe same owner; bytes=World charges only");
     for axis in Axis::ALL {
         let mut baseline = None;
@@ -21,7 +27,7 @@ fn profile(name: &str, sizes: [usize; 3], repetitions: usize, warm: usize) {
             let mut warmed = vec![];
             let mut publications = vec![];
             for _ in 0..repetitions {
-                let mut population = Population::build(axis, size);
+                let mut population = Population::build(request_execution, axis, size);
                 println!(
                     "profile={name} requested={axis:?}/{size} actual_B_H_U_A_P_O={:?}",
                     population.axes()
@@ -59,7 +65,7 @@ fn profile(name: &str, sizes: [usize; 3], repetitions: usize, warm: usize) {
     for width in [1, 4, 16] {
         let mut times = vec![];
         for _ in 0..repetitions {
-            let (time, cost) = writers::run(width);
+            let (time, cost) = writers::run(request_execution, width);
             times.push(time);
             assert_eq!(*baseline.get_or_insert(cost), cost);
         }
@@ -75,16 +81,25 @@ fn profile(name: &str, sizes: [usize; 3], repetitions: usize, warm: usize) {
 #[test]
 #[ignore = "scheduled Court scale profile"]
 fn court_profile() {
-    profile("Court", [1, 4, 8], 3, 4);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    profile(request_execution, "Court", [1, 4, 8], 3, 4);
 }
 #[test]
 #[ignore = "scheduled Standard scale profile"]
 fn standard_profile() {
-    profile("Standard", [1, 8, 32], 3, 6);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    profile(request_execution, "Standard", [1, 8, 32], 3, 6);
 }
 #[test]
 #[ignore = "scheduled Scale profile and longer model sequence"]
 fn scale_profile() {
-    profile("Scale", [1, 32, 96], 3, 8);
-    super::super::model::driver::run(0x9172cafe, 32);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    profile(request_execution, "Scale", [1, 32, 96], 3, 8);
+    super::super::model::driver::run(request_execution, 0x9172cafe, 32);
 }

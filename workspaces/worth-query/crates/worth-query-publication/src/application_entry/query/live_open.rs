@@ -37,7 +37,7 @@ where
 
     pub(in crate::application_entry) fn subscribe_in_advancement(
         self,
-        _phase: &AdvancementPhase<'_>,
+        phase: &AdvancementPhase<'_>,
         live_limits: super::super::WorthQueryApplicationLiveLimits,
     ) -> Result<
         super::super::WorthQueryApplicationLiveSubscription<'application, Schema, Intent>,
@@ -91,12 +91,14 @@ where
         binding_limits
             .narrow(maximum_results, maximum_work)
             .map_err(super::super::WorthQueryApplicationLiveOpenRequestDenial::Limit)?;
-        let selected =
-            self.application.on_branch(self.branch).select().map_err(
-                super::super::WorthQueryApplicationLiveOpenRequestDenial::ProductSelection,
-            )?;
+        let selected = self
+            .application
+            .on_branch(self.branch)
+            .select(phase)
+            .map_err(super::super::WorthQueryApplicationLiveOpenRequestDenial::ProductSelection)?;
         let principal = selected
             .resolve_authenticated_principal(
+                phase,
                 binding.principal_binding(),
                 self.principal,
                 self.scope,
@@ -109,6 +111,7 @@ where
             scope_binding.into_field_parts(principal.principal_identity());
         let scope = selected
             .resolve_entity(
+                phase,
                 scope_field,
                 scope_value,
                 self.scope,
@@ -125,7 +128,7 @@ where
                 <<Intent::Binding as ApplicationQueryBinding<Schema>>::ScopeBinding as worth_query_declaration::facade::application_query::ApplicationQueryScopeBinding<Schema>>::Scope,
                 Intent::Target,
                 Intent::LiveCause,
-            >(binding.into_query(), &principal, scope, parameters, controls)
+            >(phase, binding.into_query(), &principal, scope, parameters, controls)
             .map_err(super::super::WorthQueryApplicationLiveOpenRequestDenial::Open)?;
         Ok(super::super::WorthQueryApplicationLiveSubscription::new(
             self.application,

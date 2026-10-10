@@ -9,6 +9,9 @@ use worth_foundational::facade::{
 
 #[test]
 fn native_struct_reference_and_clear_state_survive_checkpoint_readmission() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let summary_binding = entity_summary_struct_aspect(aspect_key("summary"), field_key("summary"));
     let summary_contract = summary_binding.contract.clone();
     let mut fixture = AspectSchemaFixture::with_default_declared_aspects(
@@ -94,7 +97,7 @@ fn native_struct_reference_and_clear_state_survive_checkpoint_readmission() {
     let (expected_entity_state, expected_relation_state) = {
         let read = runtime
             .read_truth()
-            .read_snapshot(&cleared.snapshot)
+            .read_snapshot(&cleared.snapshot, execution)
             .unwrap();
         (
             read.get_entity(source)
@@ -108,9 +111,12 @@ fn native_struct_reference_and_clear_state_survive_checkpoint_readmission() {
         )
     };
     let recovery_fixture = fixture.clone();
-    let (_, recovered) =
-        checkpoint_and_recover_with(&runtime, move || recovery_fixture.build_runtime());
-    let read = recovered.read_truth().read_version(cleared.version_id);
+    let (_, recovered) = checkpoint_and_recover_with(execution, &runtime, move || {
+        recovery_fixture.build_runtime()
+    });
+    let read = recovered
+        .read_truth()
+        .read_version(execution, cleared.version_id);
 
     assert_eq!(
         read.get_entity(source).unwrap().authoritative_aspect_state,

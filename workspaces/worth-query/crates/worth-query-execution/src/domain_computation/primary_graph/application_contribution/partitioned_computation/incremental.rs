@@ -146,6 +146,7 @@ pub(super) struct IncrementalRun<Key, Item, Reduced> {
 /// summed worst-case observation passes what that work still admits, or has
 /// a fact nothing bounds, is not compared, and runs in full.
 pub(super) fn begin<Key, Item, Reduced, Schema, Operation>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     reader: &mut Reader<'_, '_, Schema, Operation>,
     installation: &ComputationInstallation,
     input_digest: [u8; 32],
@@ -205,7 +206,7 @@ where
         partitions: BTreeMap::new(),
     };
     for (key, fact, readers) in retained.facts.facts() {
-        let movement = match reader.observe_retained(&COMPARATOR, key) {
+        let movement = match reader.observe_retained(execution, &COMPARATOR, key) {
             Ok(observed) => match FactMovement::between(fact, &observed).movement() {
                 Movement::Unmoved => KeyMovement::Unchanged,
                 Movement::Moved => KeyMovement::Changed,

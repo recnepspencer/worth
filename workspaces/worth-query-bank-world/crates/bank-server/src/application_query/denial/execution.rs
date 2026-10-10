@@ -20,6 +20,7 @@ pub enum BankApplicationPreviewSessionDenialKind {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankProductSelectionDenialKind {
+    ForeignPhase,
     ObservationStatePoisoned,
     OwnerUnavailable,
     ForeignOwner,
@@ -58,6 +59,7 @@ pub enum BankApplicationProjectionDenialKind {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankApplicationOneShotDenialKind {
+    ExecutionRequest(worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind),
     ForeignPlan,
     StaleInstalledQuery,
     StalePrincipal,
@@ -86,6 +88,7 @@ pub enum BankApplicationOneShotDenialKind {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankApplicationContinuationDenialKind {
+    ExecutionRequest(worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind),
     ForeignPlan,
     StaleInstalledQuery,
     StalePrincipal,
@@ -133,6 +136,7 @@ pub(super) const fn product_selection(
 ) -> BankProductSelectionDenialKind {
     use BankProductSelectionDenialKind as Bank;
     match kind {
+        QueryProductSelection::ForeignPhase => Bank::ForeignPhase,
         QueryProductSelection::ObservationStatePoisoned => Bank::ObservationStatePoisoned,
         QueryProductSelection::OwnerUnavailable => Bank::OwnerUnavailable,
         QueryProductSelection::ForeignOwner => Bank::ForeignOwner,
@@ -164,6 +168,7 @@ pub(super) const fn product_selection(
 pub(super) const fn one_shot(kind: QueryOneShot) -> BankApplicationOneShotDenialKind {
     use BankApplicationOneShotDenialKind as Bank;
     match kind {
+        QueryOneShot::ExecutionRequest(cause) => Bank::ExecutionRequest(cause),
         QueryOneShot::ForeignPlan => Bank::ForeignPlan,
         QueryOneShot::StaleInstalledQuery => Bank::StaleInstalledQuery,
         QueryOneShot::StalePrincipal => Bank::StalePrincipal,
@@ -198,6 +203,7 @@ pub(super) const fn one_shot(kind: QueryOneShot) -> BankApplicationOneShotDenial
 pub(super) const fn continuation(kind: QueryContinuation) -> BankApplicationContinuationDenialKind {
     use BankApplicationContinuationDenialKind as Bank;
     match kind {
+        QueryContinuation::ExecutionRequest(cause) => Bank::ExecutionRequest(cause),
         QueryContinuation::ForeignPlan => Bank::ForeignPlan,
         QueryContinuation::StaleInstalledQuery => Bank::StaleInstalledQuery,
         QueryContinuation::StalePrincipal => Bank::StalePrincipal,

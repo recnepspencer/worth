@@ -1,6 +1,7 @@
 use super::*;
 
 pub(super) fn certify_hundred_k_nodes_geometry_profile_narrow_round_trip(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     suite: &'static str,
     node_count: usize,
     query_target_count: usize,
@@ -55,7 +56,13 @@ pub(super) fn certify_hundred_k_nodes_geometry_profile_narrow_round_trip(
             let hot_query_execution_started_at = Instant::now();
             let outcome = runtime
                 .read_truth()
-                .execute_query_plan(planned)
+                .execute_query_plan(
+                    planned,
+                    execution,
+                    crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
+                )
+                .expect("request remains live")
+                .map(|read| read.outcome)
                 .expect("rocketship explicit rich query outcome");
             let hot_query_execution_micros = hot_query_execution_started_at.elapsed().as_micros();
             let counters = runtime.performance_access().counters();

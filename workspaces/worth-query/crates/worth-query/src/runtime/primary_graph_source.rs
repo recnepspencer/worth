@@ -16,6 +16,7 @@ use crate::schema_view::QuerySchemaView;
 pub trait WorthQueryPrimaryGraphSourceProjection: 'static {
     fn project_live_target(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         graph: &worth_query_execution::facade::integration::WorthQueryPrimaryGraphIntegrationHandle,
         target: &WorthQueryLiveArtifactTarget,
     ) -> Vec<WorthQueryEntity>;
@@ -82,9 +83,11 @@ where
 
     fn live_entities_for_target(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         target: &WorthQueryLiveArtifactTarget,
     ) -> Vec<WorthQueryEntity> {
-        self.projection.project_live_target(&self.graph, target)
+        self.projection
+            .project_live_target(request_execution, &self.graph, target)
     }
 
     fn live_entities_for_granular_scope(

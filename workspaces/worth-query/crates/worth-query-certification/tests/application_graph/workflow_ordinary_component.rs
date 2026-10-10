@@ -169,19 +169,23 @@ fn public_component_ports_validate_and_compile_into_ordinary_progression() {
     let scope = request_scope();
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
     let published = runtime
-        .request(&principal, &scope)
-        .mutate(WorkflowDefinitionAuthoringIntent {
-            input: WorkflowDefinitionAuthoringInput {
-                identity: DOCUMENT_IDENTITY.to_owned(),
-                retention_days: 8,
-            },
+        .with_host_advancement(|host_phase| {
+            runtime
+                .request(&principal, &scope)
+                .mutate(WorkflowDefinitionAuthoringIntent {
+                    input: WorkflowDefinitionAuthoringInput {
+                        identity: DOCUMENT_IDENTITY.to_owned(),
+                        retention_days: 8,
+                    },
+                })
+                .workflow(&host_phase, &application, reviewed_component_draft())
+                .expect("the component binds to installed vocabulary")
+                .publish(WorkflowDefinitionExpectedPredecessor::Absent)
+                .idempotency(&918_300)
+                .execute()
+                .expect("the ordinary publication prepares")
         })
-        .workflow(&application, reviewed_component_draft())
-        .expect("the component binds to installed vocabulary")
-        .publish(WorkflowDefinitionExpectedPredecessor::Absent)
-        .idempotency(&918_300)
-        .execute()
-        .expect("the ordinary publication prepares");
+        .expect("installed host call opens");
     let definition = match published {
         WorkflowDefinitionPublicationOutcome::Published(performed) => {
             performed.definition().clone()

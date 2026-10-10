@@ -58,6 +58,9 @@ fn schema_transition_for_subscriber_impact(
 
 #[test]
 fn schema_evolution_cdc_contract_test() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = persisted_runtime_with_test_schema();
     let baseline = create_entity_outcome(&runtime, "anchor");
     let baseline_checkpoint =
@@ -122,7 +125,7 @@ fn schema_evolution_cdc_contract_test() {
     );
     let descriptor_semantics_version = committed.envelope().descriptor_semantics_version;
 
-    let (_recovery, recovered) = checkpoint_and_recover_with(&runtime, || {
+    let (_recovery, recovered) = checkpoint_and_recover_with(execution, &runtime, || {
         let registry = AspectSchemaFixture {
             schema_version_id: SchemaVersionId(2),
             ..AspectSchemaFixture::default()

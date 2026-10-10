@@ -127,7 +127,7 @@ where
         if !application.contains_output_root::<Root>() {
             return Err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::UndeclaredOutputRoot);
         }
-        let observation = self.retain_read().map_err(
+        let observation = self.retain_read(phase).map_err(
             crate::application_entry::WorthQueryRequiredOutputPreparationDenial::ReadObservation,
         )?;
         let (root, retained) = self

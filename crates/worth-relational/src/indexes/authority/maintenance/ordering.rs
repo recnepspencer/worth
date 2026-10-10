@@ -20,6 +20,7 @@ struct OrderingContract<'a> {
 }
 
 pub(super) fn refresh(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     entries: &mut DerivedIndexEntryMap<EntityId, RelatedEntityOrderingEntry>,
     contract: (
         KindId,
@@ -46,16 +47,21 @@ pub(super) fn refresh(
     }
     for child in changes.entities(contract.child_kind, work)? {
         work.charge(1)?;
-        let old = child_values(before, child.id, &contract, work)?;
-        let new = child_values(Some(after), child.id, &contract, work)?;
+        let old = child_values(execution, before, child.id, &contract, work)?;
+        let new = child_values(execution, Some(after), child.id, &contract, work)?;
         if old == new {
             continue;
         }
         for view in before.into_iter().chain(std::iter::once(after)) {
             let outgoing = contract.parent_endpoint == RelatedEntityEndpoint::TargetParent;
-            for relation in
-                reads::adjacency(view, child.id, contract.relation_kind, outgoing, work)?
-            {
+            for relation in reads::adjacency(
+                execution,
+                view,
+                child.id,
+                contract.relation_kind,
+                outgoing,
+                work,
+            )? {
                 work.charge(1)?;
                 work.ordered::<RelationId, ()>(affected.len(), 1, 0)?;
                 affected.insert(relation.relation_id);
@@ -63,8 +69,8 @@ pub(super) fn refresh(
         }
     }
     for relation in affected {
-        let old = row(before, relation, &contract, work)?;
-        let new = row(Some(after), relation, &contract, work)?;
+        let old = row(execution, before, relation, &contract, work)?;
+        let new = row(execution, Some(after), relation, &contract, work)?;
         if old == new {
             continue;
         }
@@ -82,12 +88,13 @@ pub(super) fn refresh(
 }
 
 fn child_values(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     view: Option<&VisibilityProjectionView<'_>>,
     child: EntityId,
     contract: &OrderingContract<'_>,
     work: &mut MaintenanceWork,
 ) -> Result<Option<Vec<worth_foundational::facade::AspectValue>>, Denial> {
-    let Some(record) = reads::entity(view, child, work)? else {
+    let Some(record) = reads::entity(execution, view, child, work)? else {
         return Ok(None);
     };
     if record.kind.kind_id != contract.child_kind {
@@ -109,12 +116,13 @@ fn child_values(
 }
 
 fn row(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     view: Option<&VisibilityProjectionView<'_>>,
     id: RelationId,
     contract: &OrderingContract<'_>,
     work: &mut MaintenanceWork,
 ) -> Result<Option<(EntityId, RelatedEntityOrderingEntry)>, Denial> {
-    let Some(relation) = record_metadata::relation(view, id, work)? else {
+    let Some(relation) = record_metadata::relation(execution, view, id, work)? else {
         return Ok(None);
     };
     if relation.kind != contract.relation_kind {
@@ -124,10 +132,12 @@ fn row(
         RelatedEntityEndpoint::SourceParent => (relation.source, relation.target),
         RelatedEntityEndpoint::TargetParent => (relation.target, relation.source),
     };
-    Ok(child_values(view, child, contract, work)?.map(|values| {
-        (
-            parent,
-            RelatedEntityOrderingEntry::new(values, child, relation.id),
-        )
-    }))
+    Ok(
+        child_values(execution, view, child, contract, work)?.map(|values| {
+            (
+                parent,
+                RelatedEntityOrderingEntry::new(values, child, relation.id),
+            )
+        }),
+    )
 }

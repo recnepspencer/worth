@@ -16,9 +16,12 @@ use crate::tests::support::*;
 
 #[test]
 fn cdc_certification_seeded_matrix_is_deterministic_and_resume_exact() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for seed in 0_u64..16 {
-        let left = run_seeded_cdc_scenario(seed, 96);
-        let right = run_seeded_cdc_scenario(seed, 96);
+        let left = run_seeded_cdc_scenario(execution, seed, 96);
+        let right = run_seeded_cdc_scenario(execution, seed, 96);
 
         let full_left =
             collect_subscriber_patches(&left.runtime, left.baseline_checkpoint.clone(), 512);
@@ -70,11 +73,14 @@ fn cdc_certification_seeded_matrix_is_deterministic_and_resume_exact() {
 #[test]
 #[ignore = "scheduled hostile CDC certification; run explicitly in the scheduled relational lane"]
 fn cdc_certification_thousand_step_random_resume_matrix_converges() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for seed in 0_u64..3 {
-        let world = run_seeded_scenario(SeededScenarioConfig::geometry_kernel(
-            seed,
-            CertificationPressureProfile::ThousandStep,
-        ));
+        let world = run_seeded_scenario(
+            execution,
+            SeededScenarioConfig::geometry_kernel(seed, CertificationPressureProfile::ThousandStep),
+        );
         assert!(
             !world.trace.operations.is_empty(),
             "seed {seed} produced no operations"
@@ -178,10 +184,16 @@ fn cdc_certification_rewrite_storm_preserves_exact_suffix_under_tiny_windows() {
 
 #[test]
 fn cdc_certification_restart_loops_do_not_leak_resume_state_across_sessions() {
-    let world = run_seeded_scenario(SeededScenarioConfig::hostile_geometry(
-        0xABCD1234,
-        CertificationPressureProfile::HistoryPressure,
-    ));
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let world = run_seeded_scenario(
+        execution,
+        SeededScenarioConfig::hostile_geometry(
+            0xABCD1234,
+            CertificationPressureProfile::HistoryPressure,
+        ),
+    );
     let head = collect_subscriber_patches_from_head(&world.runtime, 4096);
     let checkpoints = random_checkpoints_from_patches(&head, 0xD15C0C7, 20);
 

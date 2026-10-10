@@ -2,6 +2,9 @@ use super::*;
 
 #[test]
 fn one_large_index_packet_stops_at_its_declared_ceiling_without_publication() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let _serial = TEST_SERIAL.lock().unwrap();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(support::demo_schema_registry())
@@ -51,7 +54,9 @@ fn one_large_index_packet_stops_at_its_declared_ceiling_without_publication() {
         branch_id: BranchId("main".to_owned()),
         index_ids: vec![index.index_id],
     };
-    let serial = runtime.index_authority().build_for_commit(request.clone());
+    let serial = runtime
+        .index_authority()
+        .build_for_commit(execution, request.clone());
     assert!(serial.execution_denial.is_none());
     let published = serial.generations[0].generation_id;
     // One worker's map reservation fits this policy; projection growth
@@ -66,9 +71,11 @@ fn one_large_index_packet_stops_at_its_declared_ceiling_without_publication() {
     let lease = authority()
         .request_lease(request_lease)
         .expect("tight lease is admitted");
-    let stopped = runtime
-        .index_authority()
-        .build_for_commit_with_lease(request.clone(), &lease);
+    let stopped = runtime.index_authority().build_for_commit_with_lease(
+        &worth_execution::ExecutionRequest::leased(&lease),
+        request.clone(),
+        &lease,
+    );
     assert_eq!(
         stopped.execution_denial.map(|denial| denial.kind),
         Some(DerivedIndexExecutionDenialKind::Cause(

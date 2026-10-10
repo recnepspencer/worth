@@ -137,6 +137,7 @@ impl BoundedEntityFieldLookupOutcome {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BoundedEntityFieldLookupDenialKind {
+    Execution(crate::execution::RelationalExecutionDenialCause),
     InvalidCandidateLimit,
     SnapshotUnavailable,
     IndexNotInstalled,

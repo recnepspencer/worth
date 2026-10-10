@@ -24,7 +24,8 @@ pub use reader::{
     FrontierAdjacencyTruthReadLimitExceeded, FrontierFieldEqualityTruthReadLimitExceeded,
     PositionedRelationalSnapshot, QueryLeasedReadOutcome, QueryReadExecutionStop,
     QueryReadPacketDenial, RelationKindTruthReadDenial, RelationKindTruthReadLimitExceeded,
-    RelationalSnapshotPositionAdmissionStop, SnapshotPositionDenial, VisibilityReadContext,
+    RelationalQueryReadStrategy, RelationalSnapshotPositionAdmissionStop, SnapshotPositionDenial,
+    VisibilityReadContext,
 };
 
 use crate::runtime::RelationalRuntime;

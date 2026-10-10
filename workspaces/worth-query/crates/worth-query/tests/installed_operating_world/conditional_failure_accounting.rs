@@ -12,6 +12,9 @@ use super::installed_operation_fixture::{
 
 #[test]
 fn failed_conditional_compute_retains_exact_lower_runtime_work() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let declaration = node(
         "failed-compute-accounting",
         domain::WorthQueryComparatorRequirement::ExactCanonicalValue,
@@ -20,6 +23,7 @@ fn failed_conditional_compute_retains_exact_lower_runtime_work() {
     let installation = conditional_installation(&declaration);
     let contacts = Arc::new(AtomicUsize::new(0));
     let mut workspace = conditional_workspace_with(
+        request_execution,
         "failed-compute-accounting",
         declaration,
         installation,

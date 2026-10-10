@@ -2,6 +2,9 @@ use super::*;
 
 #[test]
 fn durability_contract_recovery_rebuilds_branch_head_root_obligations() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
     let source = create_entity_outcome(&runtime, "source");
     let source_entity = changed_entities(&source)[0];
@@ -21,7 +24,10 @@ fn durability_contract_recovery_rebuilds_branch_head_root_obligations() {
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
     );
     let mut recovered = persisted_runtime_with_test_schema();
-    recovered.durability_recovery().recover(plan).unwrap();
+    recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
 
     let retention = recovered.retention().inspect_plan();
     assert_eq!(retention.active_snapshot_count, 0);
@@ -33,7 +39,7 @@ fn durability_contract_recovery_rebuilds_branch_head_root_obligations() {
     let (_, feature_basis) = recovered.observe_branch(&feature).unwrap();
     let feature_truth = recovered
         .read_truth()
-        .read_observation(&feature_basis.observation())
+        .read_observation(execution, &feature_basis.observation())
         .unwrap();
     assert!(feature_truth.get_entity(source_entity).is_some());
     assert!(feature_truth
@@ -44,6 +50,9 @@ fn durability_contract_recovery_rebuilds_branch_head_root_obligations() {
 
 #[test]
 fn durability_contract_recovery_preserves_inspection_truth_bundle() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
     let created = create_entity_outcome(&runtime, "source");
     let entity = changed_entities(&created)[0];
@@ -82,6 +91,7 @@ fn durability_contract_recovery_preserves_inspection_truth_bundle() {
     };
     runtime.durability_authority().checkpoint().unwrap();
     let expected = capture_inspection_truth_bundle(
+        execution,
         &runtime,
         &BranchId("feature".to_string()),
         entity,
@@ -92,8 +102,12 @@ fn durability_contract_recovery_preserves_inspection_truth_bundle() {
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
     );
     let mut recovered = persisted_runtime_with_test_schema();
-    recovered.durability_recovery().recover(plan).unwrap();
+    recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
     let actual = capture_inspection_truth_bundle(
+        execution,
         &recovered,
         &BranchId("feature".to_string()),
         entity,
@@ -160,6 +174,9 @@ fn durability_contract_branch_heads_do_not_mutate_legacy_record_pins() {
 
 #[test]
 fn invalid_store_path_does_not_relabel_performed_in_memory_publication() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let root_path = unique_test_store_path("worth-relational-bad-store");
     std::fs::write(&root_path, b"not-a-directory").unwrap();
     let runtime = RelationalRuntimeApi::builder()
@@ -221,7 +238,7 @@ fn invalid_store_path_does_not_relabel_performed_in_memory_publication() {
         .expect("the performed branch basis remains admissible");
     let truth = runtime
         .read_truth()
-        .read_observation(&basis.observation())
+        .read_observation(execution, &basis.observation())
         .expect("the finalized performed root is readable");
     assert_eq!(truth.entities().len(), 1);
     assert_eq!(

@@ -114,8 +114,9 @@ impl RelationalRuntime {
     pub fn capture_authorization_durable_dependencies(
         &self,
         evidence: &RelationalAuthorizationObservationEvidence,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<RelationalAuthorizationDurableDependencies, RelationalAuthorizationDependencyDenial>
     {
-        capture::capture(self, evidence)
+        capture::capture(self, execution, evidence)
     }
 }

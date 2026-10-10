@@ -12,29 +12,57 @@ use super::{
 fn world_unwind_retains_and_releases_the_exact_query_idempotency_slot() {
     let world = installed_authorization_world(true);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
-    let program = admitted_program(
-        &world,
-        &principal,
-        &account,
-        &request,
-        "post-relational-unwind",
-    );
-    let retry_while_retained = admitted_program(
-        &world,
-        &principal,
-        &account,
-        &request,
-        "post-relational-unwind",
-    );
-    let retry_after_cleanup = admitted_program(
-        &world,
-        &principal,
-        &account,
-        &request,
-        "post-relational-unwind",
-    );
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            authenticated_principal(&phase.test_host_request(), &world, &request)
+        })
+        .expect("installed host call opens");
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            resolved_account(&phase.test_host_request(), &world, "open", &request)
+        })
+        .expect("installed host call opens");
+    let program = world
+        .application
+        .with_host_advancement(|phase| {
+            admitted_program(
+                &phase,
+                &world,
+                &principal,
+                &account,
+                &request,
+                "post-relational-unwind",
+            )
+        })
+        .expect("installed host call opens");
+    let retry_while_retained = world
+        .application
+        .with_host_advancement(|phase| {
+            admitted_program(
+                &phase,
+                &world,
+                &principal,
+                &account,
+                &request,
+                "post-relational-unwind",
+            )
+        })
+        .expect("installed host call opens");
+    let retry_after_cleanup = world
+        .application
+        .with_host_advancement(|phase| {
+            admitted_program(
+                &phase,
+                &world,
+                &principal,
+                &account,
+                &request,
+                "post-relational-unwind",
+            )
+        })
+        .expect("installed host call opens");
     let before_inspections =
         crate::domain_computation::primary_graph::provider::unwind_recovery_inspection_count();
     world

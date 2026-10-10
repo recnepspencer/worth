@@ -17,6 +17,7 @@ where
 {
     fn advance_validated_output_demand_with_schedule<Family>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
 
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
@@ -53,6 +54,7 @@ where
         )? {
             // Decided before the row is begun, so nothing is claimed.
             return self.leave_replaced_source(
+                execution,
                 demand,
                 disclosure,
                 schedule_progression.is_selected(),
@@ -117,6 +119,7 @@ where
                 Admission::Schedule(performed_source) => {
                     let mut result = match &schedule_progression {
                         ScheduleProgression::Ordinary => self.schedule_selected_output_producer(
+                            execution,
                             phase,
                             &demand.selected,
                             delivery_branch,
@@ -165,6 +168,7 @@ where
                 Admission::AdvanceCheckpoint { claim, checkpoint } => {
                     return Ok(
                         if self.advance_output_checkpoint(
+                            execution,
                             phase,
                             interest,
                             &demand.selected.identity,
@@ -179,6 +183,7 @@ where
                 }
                 Admission::Ready(completion) => {
                     return self.advance_validated_ready::<Family>(
+                        execution,
                         phase,
                         demand,
                         disclosure,

@@ -176,6 +176,9 @@ fn chip_profile_declared_aspect_fanout_preserves_endpoint_history_for_netlist_li
 
 #[test]
 fn chip_profile_branch_local_topology_pressure_preserves_relation_history_isolation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema_profile(
         RelationalRuntimeProfile::ChipSimulation,
         CascadeDeletePolicy::RetainDanglingForAudit,
@@ -216,8 +219,8 @@ fn chip_profile_branch_local_topology_pressure_preserves_relation_history_isolat
     );
     let main_view = runtime
         .read_truth()
-        .project_historical_version(main_commit.version_id)
-        .all_authoritative_relation_records();
+        .project_historical_version(execution, main_commit.version_id)
+        .all_authoritative_relation_records(execution);
     let feature_commit = runtime
         .history()
         .branch_head(&BranchId("feature".to_string()))
@@ -225,8 +228,8 @@ fn chip_profile_branch_local_topology_pressure_preserves_relation_history_isolat
         .clone();
     let feature_view = runtime
         .read_truth()
-        .project_historical_version(feature_commit.version_id)
-        .all_authoritative_relation_records();
+        .project_historical_version(execution, feature_commit.version_id)
+        .all_authoritative_relation_records(execution);
     let feature_artifact = runtime
         .compiled_artifacts_authority()
         .compile_execution_artifact(

@@ -24,6 +24,9 @@ fn request(bytes: u64, cancellation: CancellationToken) -> LeaseRequest {
 
 #[test]
 fn native_checkpoint_admits_exact_backing_retains_clones_and_restores_editable_truth() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
     let committed = create_entity_outcome(&runtime, "native-custody-source");
     let head = runtime.history().branch_head(&BranchId("main".into()));
@@ -100,7 +103,7 @@ fn native_checkpoint_admits_exact_backing_retains_clones_and_restores_editable_t
     let prior_owner = recovered.runtime_instance_id();
     let restored = recovered
         .durability_recovery()
-        .restore_native_checkpoint(&retained)
+        .restore_native_checkpoint(execution, &retained)
         .unwrap();
     assert_eq!(restored.latest_commit.as_ref(), Some(&committed.commit));
     assert_ne!(recovered.runtime_instance_id(), prior_owner);

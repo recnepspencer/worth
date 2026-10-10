@@ -43,9 +43,14 @@ pub(super) fn performed_source_discovers_required_root(
         .expect("the authored source is readable")
         .observed_sources()[0]
         .clone();
-    let prior = request
-        .retain_read()
-        .expect("the prior source remains readable");
+    let prior = world
+        .application
+        .with_host_advancement(|host_phase| {
+            request
+                .retain_read(&host_phase)
+                .expect("the prior source remains readable")
+        })
+        .expect("installed host call opens");
     let outcome = request
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-a".to_owned(),

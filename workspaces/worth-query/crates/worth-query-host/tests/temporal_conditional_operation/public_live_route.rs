@@ -4,23 +4,31 @@ use worth_query_host::facade::{
 
 use super::{courtroom_support, product_query_support, schema, world, CourtroomWorld};
 
-pub fn world_no_effect_retains_conditional_provenance() {
+pub fn world_no_effect_retains_conditional_provenance(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) {
     let world = CourtroomWorld::publish_with_world_history_limit("ready", 1);
     let request = world::request_scope();
     let principal = product_query_support::principal(&world, &request);
     let branch = world.application.current_world();
     let scope = world
         .application
-        .on_branch(branch)
-        .select()
-        .unwrap()
-        .resolve_entity(
-            schema::IntentIdentityField::reference(),
-            "intent-1".to_owned(),
-            &request,
-            primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .on_branch(branch)
+                .select(&phase)
+                .unwrap()
+                .resolve_entity(
+                    &phase,
+                    schema::IntentIdentityField::reference(),
+                    "intent-1".to_owned(),
+                    &request,
+                    primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("installed host call opens");
     let query = world
         .application
         .installed_schema()
@@ -28,8 +36,11 @@ pub fn world_no_effect_retains_conditional_provenance() {
         .unwrap();
     let live = world
         .application
+        .with_host_advancement(|phase| {
+            world
+        .application
         .on_branch(branch)
-        .select()
+        .select(&phase)
         .unwrap()
         .open_application_query_live::<
             schema::TemporalIntentLiveQuery,
@@ -41,7 +52,7 @@ pub fn world_no_effect_retains_conditional_provenance() {
             schema::TemporalIntent,
             schema::TemporalIntentLiveCause,
         >(
-            query,
+            &phase, query,
             &principal,
             scope,
             ApplicationQueryParameterSet::new(),
@@ -53,7 +64,9 @@ pub fn world_no_effect_retains_conditional_provenance() {
             )
             .unwrap(),
         )
-        .unwrap();
+        .unwrap()
+        })
+        .expect("installed host call opens");
 
     let transaction = world.change_input_on_branch(branch, "history-pressure");
     let Err(transaction) = transaction.require_committed() else {
@@ -74,7 +87,7 @@ pub fn world_no_effect_retains_conditional_provenance() {
         "a no-effect diagnostic must not traverse retained graph storage"
     );
 
-    let no_effect = courtroom_support::observe(&world);
+    let no_effect = courtroom_support::observe(request_execution, &world);
     assert_eq!(no_effect.committed_operation_count(), 0);
     let [provenance] = no_effect.execution_provenance() else {
         panic!("one due operation must retain its exact NoEffect provenance");
@@ -100,23 +113,31 @@ pub fn world_no_effect_retains_conditional_provenance() {
     ));
 }
 
-pub fn live_query_receives_conditional_world_publication() {
+pub fn live_query_receives_conditional_world_publication(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) {
     let world = CourtroomWorld::publish("ready");
     let request = world::request_scope();
     let principal = product_query_support::principal(&world, &request);
     let branch = world.application.current_world();
     let scope = world
         .application
-        .on_branch(branch)
-        .select()
-        .unwrap()
-        .resolve_entity(
-            schema::IntentIdentityField::reference(),
-            "intent-1".to_owned(),
-            &request,
-            primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .on_branch(branch)
+                .select(&phase)
+                .unwrap()
+                .resolve_entity(
+                    &phase,
+                    schema::IntentIdentityField::reference(),
+                    "intent-1".to_owned(),
+                    &request,
+                    primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("installed host call opens");
     let query = world
         .application
         .installed_schema()
@@ -124,8 +145,11 @@ pub fn live_query_receives_conditional_world_publication() {
         .unwrap();
     let mut live = world
         .application
+        .with_host_advancement(|phase| {
+            world
+        .application
         .on_branch(branch)
-        .select()
+        .select(&phase)
         .unwrap()
         .open_application_query_live::<
             schema::TemporalIntentLiveQuery,
@@ -137,7 +161,7 @@ pub fn live_query_receives_conditional_world_publication() {
             schema::TemporalIntent,
             schema::TemporalIntentLiveCause,
         >(
-            query,
+            &phase, query,
             &principal,
             scope,
             ApplicationQueryParameterSet::new(),
@@ -149,12 +173,17 @@ pub fn live_query_receives_conditional_world_publication() {
             )
             .unwrap(),
         )
-        .unwrap();
+        .unwrap()
+        })
+        .expect("installed host call opens");
 
-    let committed = courtroom_support::observe(&world);
+    let committed = courtroom_support::observe(request_execution, &world);
     assert_eq!(committed.committed_operation_count(), 1);
     assert!(matches!(
-        live.next(&principal, &request),
+        world
+            .application
+            .with_host_advancement(|phase| live.next(&phase, &principal, &request))
+            .expect("installed host call opens"),
         primary_graph::WorthQueryApplicationLiveOutcome::Delivered(_)
     ));
     assert!(matches!(

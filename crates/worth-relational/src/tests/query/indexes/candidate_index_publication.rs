@@ -56,6 +56,9 @@ fn budget(cold_slots: usize) -> DerivedIndexMaintenanceBudget {
 
 #[test]
 fn expired_candidate_denies_index_preflight_with_lifetime_not_missing_generation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(declared_aspect_schema_registry(
             CascadeDeletePolicy::CascadeDeleteRelations,
@@ -87,7 +90,7 @@ fn expired_candidate_denies_index_preflight_with_lifetime_not_missing_generation
 
     let denied = runtime
         .index_authority()
-        .prepare_for_candidate(&mut candidate, &[index_id], None, budget(100))
+        .prepare_for_candidate(&mut candidate, &[index_id], None, budget(100), execution)
         .unwrap_err();
     assert_eq!(
         denied.kind,
@@ -101,6 +104,9 @@ fn expired_candidate_denies_index_preflight_with_lifetime_not_missing_generation
 
 #[test]
 fn candidate_indexes_deny_before_effect_then_publish_exact_cold_generation_on_settlement() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_index_field_aspects();
     let first = create_entity_outcome(&runtime, "before");
     let entity = changed_entities(&first)[0];
@@ -119,6 +125,7 @@ fn candidate_indexes_deny_before_effect_then_publish_exact_cold_generation_on_se
             &[index_id],
             Some(&first.snapshot),
             budget(0),
+            execution,
         )
         .unwrap_err();
     assert_eq!(
@@ -137,6 +144,7 @@ fn candidate_indexes_deny_before_effect_then_publish_exact_cold_generation_on_se
             &[index_id],
             Some(&first.snapshot),
             budget(100),
+            execution,
         )
         .unwrap();
     assert_eq!(work.generation_publications_reserved, 1);
@@ -152,6 +160,7 @@ fn candidate_indexes_deny_before_effect_then_publish_exact_cold_generation_on_se
             &[index_id],
             Some(&first.snapshot),
             budget(100),
+            execution,
         )
         .unwrap_err();
     assert_eq!(
@@ -193,6 +202,9 @@ fn candidate_indexes_deny_before_effect_then_publish_exact_cold_generation_on_se
 
 #[test]
 fn candidate_index_work_exhaustion_leaves_the_candidate_unpublished_and_retryable() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_index_field_aspects();
     let first = create_entity_outcome(&runtime, "before");
     let entity = changed_entities(&first)[0];
@@ -215,6 +227,7 @@ fn candidate_index_work_exhaustion_leaves_the_candidate_unpublished_and_retryabl
                 maximum_cold_record_slots: 0,
                 maximum_derived_rows: 0,
             },
+            execution,
         )
         .unwrap_err();
     assert_eq!(
@@ -232,6 +245,7 @@ fn candidate_index_work_exhaustion_leaves_the_candidate_unpublished_and_retryabl
             &[index_id],
             Some(&first.snapshot),
             budget(100),
+            execution,
         )
         .unwrap();
     let crate::mvcc::RelationalPublicationOutcome::Performed(performed) =
@@ -255,6 +269,9 @@ fn candidate_index_work_exhaustion_leaves_the_candidate_unpublished_and_retryabl
 
 #[test]
 fn discarded_prepared_candidate_does_not_expose_index_generation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_index_field_aspects();
     let first = create_entity_outcome(&runtime, "before");
     let entity = changed_entities(&first)[0];
@@ -273,6 +290,7 @@ fn discarded_prepared_candidate_does_not_expose_index_generation() {
             &[index_id],
             Some(&first.snapshot),
             budget(100),
+            execution,
         )
         .unwrap();
     runtime.discard_prepared_candidate(candidate).unwrap();
@@ -285,17 +303,21 @@ fn discarded_prepared_candidate_does_not_expose_index_generation() {
 
 #[test]
 fn candidate_patch_refresh_uses_prior_generation_without_cold_scan() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_index_field_aspects();
     let first = create_entity_outcome(&runtime, "before");
     let entity = changed_entities(&first)[0];
     let index_id = index(&runtime);
-    let initial = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    let initial = runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id: first.commit.commit_id,
             branch_id: BranchId("main".into()),
             index_ids: vec![index_id],
-        });
+        },
+    );
     assert!(initial.failed_indexes.is_empty());
     let mut candidate = candidate_for_update(&runtime, entity, "after");
     let commit_id = candidate
@@ -311,6 +333,7 @@ fn candidate_patch_refresh_uses_prior_generation_without_cold_scan() {
             &[index_id],
             Some(&first.snapshot),
             budget(0),
+            execution,
         )
         .unwrap();
     assert_eq!(work.cold_record_slots, 0);

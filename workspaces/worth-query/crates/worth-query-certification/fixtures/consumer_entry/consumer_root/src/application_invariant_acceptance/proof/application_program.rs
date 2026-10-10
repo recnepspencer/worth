@@ -66,11 +66,16 @@ fn secondary_root_settles_independently(
     let request = world.application.request(&principal, &scope);
     let secondary_branch = world
         .application
-        .branches()
-        .fork(world.application.current_world())
-        .components(|components| components.fork_relational().reuse_exact_signal_basis())
-        .create()
-        .expect("the sibling root receives a real product branch");
+        .with_host_advancement(|host_phase| {
+            world
+                .application
+                .branches()
+                .fork(world.application.current_world())
+                .components(|components| components.fork_relational().reuse_exact_signal_basis())
+                .create(&host_phase)
+                .expect("the sibling root receives a real product branch")
+        })
+        .expect("installed host call opens");
     let secondary_request = world
         .application
         .request(&principal, &scope)
@@ -185,9 +190,14 @@ fn secondary_root_settles_independently(
     drop(primary_started);
     world
         .application
-        .on_branch(secondary_branch)
-        .close()
-        .expect("the sibling root branch closes after both roots settle");
+        .with_host_advancement(|host_phase| {
+            world
+                .application
+                .on_branch(secondary_branch)
+                .close(&host_phase)
+                .expect("the sibling root branch closes after both roots settle")
+        })
+        .expect("installed host call opens");
 }
 
 pub(super) fn caller_disposal_before_progress_recovers(

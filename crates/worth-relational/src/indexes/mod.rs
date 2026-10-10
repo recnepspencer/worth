@@ -1,5 +1,8 @@
 mod access;
-pub use access::{DerivedIndexDefinitionLookup, PreparedEntityFieldLookup};
+pub use access::{
+    BoundedEntityFieldLookupRead, BoundedEntityFieldSelectedLookup, DerivedIndexDefinitionLookup,
+    PreparedEntityFieldLookup,
+};
 mod authority;
 pub(crate) use authority::PreparedCandidateIndexPublication;
 pub mod data;

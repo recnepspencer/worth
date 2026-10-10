@@ -10,6 +10,7 @@ pub(crate) fn create_branch_from_main(runtime: &RelationalRuntime, branch_name: 
 }
 
 pub(crate) fn checkpoint_and_recover_with<F>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     recovered_factory: F,
 ) -> (crate::runtime::RecoveryOutcome, RelationalRuntime)
@@ -17,10 +18,11 @@ where
     F: FnOnce() -> RelationalRuntime,
 {
     runtime.durability_authority().checkpoint().unwrap();
-    recover_with(runtime, recovered_factory)
+    recover_with(execution, runtime, recovered_factory)
 }
 
 pub(crate) fn recover_with<F>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     recovered_factory: F,
 ) -> (crate::runtime::RecoveryOutcome, RelationalRuntime)
@@ -31,6 +33,9 @@ where
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
     );
     let mut recovered = recovered_factory();
-    let outcome = recovered.durability_recovery().recover(plan).unwrap();
+    let outcome = recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
     (outcome, recovered)
 }

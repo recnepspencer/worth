@@ -10,6 +10,9 @@ use crate::suite::installed_operation_fixture::{
 
 #[test]
 fn changed_request_mints_a_new_plan_and_session_without_mutating_prior_admission() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let installed_envelope = envelope(
         100,
         100,
@@ -18,6 +21,7 @@ fn changed_request_mints_a_new_plan_and_session_without_mutating_prior_admission
         safe_point("identity-chunk"),
     );
     let (mut workspace, contacts) = resource_admission_workspace(
+        request_execution,
         "resource-attempt-identity",
         contract([strategy("bounded", installed_envelope.clone())]),
         support(installed_envelope),
@@ -120,7 +124,11 @@ fn changed_request_mints_a_new_plan_and_session_without_mutating_prior_admission
 
 #[test]
 fn workflow_stage_receipts_retain_stage_local_plans_and_one_attempt_session() {
-    let mut workspace = workflow_workspace("resource-workflow-attempt-evidence").unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace =
+        workflow_workspace(request_execution, "resource-workflow-attempt-evidence").unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let admitted = workspace
         .observe_operating_world(workspace.current_world())

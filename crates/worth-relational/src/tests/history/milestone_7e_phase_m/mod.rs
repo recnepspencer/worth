@@ -20,15 +20,21 @@ use fixtures::{
 
 #[test]
 fn merge_collaboration_truth_replay_equivalence_survives_live_publication_and_recovery() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_collaboration_merge_history();
-    let outcome = execute_feature_merge(&runtime);
+    let outcome = execute_feature_merge(execution, &runtime);
     let live = snapshot_from_summary(&runtime, &outcome.execution_summary);
     let published = snapshot_from_authority(
         &runtime,
         published_merge_authority(&runtime, outcome.commit.commit.commit_id),
     );
-    let (_recovery, recovered) =
-        checkpoint_and_recover_with(&runtime, runtime_with_collaboration_merge_history);
+    let (_recovery, recovered) = checkpoint_and_recover_with(
+        execution,
+        &runtime,
+        runtime_with_collaboration_merge_history,
+    );
     let recovered_snapshot = snapshot_from_authority(
         &recovered,
         published_merge_authority(&recovered, outcome.commit.commit.commit_id),
@@ -88,8 +94,11 @@ fn merge_collaboration_truth_replay_equivalence_survives_live_publication_and_re
 
 #[test]
 fn merge_collaboration_support_surface_reflects_correspondence_posture_over_real_history() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_collaboration_merge_history();
-    let outcome = execute_feature_merge(&runtime);
+    let outcome = execute_feature_merge(execution, &runtime);
     let snapshot = snapshot_from_authority(
         &runtime,
         published_merge_authority(&runtime, outcome.commit.commit.commit_id),
@@ -149,8 +158,11 @@ fn merge_collaboration_support_surface_reflects_correspondence_posture_over_real
 
 #[test]
 fn merge_collaboration_truth_localizes_single_family_drift() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_collaboration_merge_history();
-    let outcome = execute_feature_merge(&runtime);
+    let outcome = execute_feature_merge(execution, &runtime);
     let baseline = published_merge_authority(&runtime, outcome.commit.commit.commit_id);
 
     assert_eq!(
@@ -180,8 +192,11 @@ fn merge_collaboration_truth_localizes_single_family_drift() {
 
 #[test]
 fn merge_collaboration_truth_denies_cross_family_witness_mismatch() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_collaboration_merge_history();
-    let outcome = execute_feature_merge(&runtime);
+    let outcome = execute_feature_merge(execution, &runtime);
     let baseline = published_merge_authority(&runtime, outcome.commit.commit.commit_id);
 
     for drifted in [
@@ -232,7 +247,10 @@ fn merge_collaboration_truth_denies_cross_family_witness_mismatch() {
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
     );
     let mut recovered = runtime_with_collaboration_merge_history();
-    let error = recovered.durability_recovery().recover(plan).unwrap_err();
+    let error = recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap_err();
 
     assert_eq!(error.class, RecoveryFailureClass::ReplayFailure);
     assert_eq!(error.history_drift_class, None);
@@ -243,8 +261,11 @@ fn merge_collaboration_truth_denies_cross_family_witness_mismatch() {
 
 #[test]
 fn merge_collaboration_truth_denies_summary_only_and_planner_shortcuts() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_collaboration_merge_history();
-    let outcome = execute_feature_merge(&runtime);
+    let outcome = execute_feature_merge(execution, &runtime);
     let segment_path = runtime
         .durability()
         .recovery_plan(
@@ -277,7 +298,10 @@ fn merge_collaboration_truth_denies_summary_only_and_planner_shortcuts() {
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
     );
     let mut recovered = runtime_with_collaboration_merge_history();
-    let error = recovered.durability_recovery().recover(plan).unwrap_err();
+    let error = recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap_err();
 
     assert_eq!(error.class, RecoveryFailureClass::ReplayFailure);
     assert_eq!(error.history_drift_class, None);

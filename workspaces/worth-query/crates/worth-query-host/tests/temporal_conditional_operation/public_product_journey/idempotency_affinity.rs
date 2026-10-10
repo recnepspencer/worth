@@ -5,11 +5,16 @@ use super::super::world::CourtroomWorld;
 
 pub(crate) fn shared_component_sibling_cannot_claim_another_product_commit() {
     let world = CourtroomWorld::publish("ready");
-    let source = world
+    let source = &world
         .application
-        .on_branch(world.application.current_world())
-        .select()
-        .unwrap();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .on_branch(world.application.current_world())
+                .select(&phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     let source_identity = source.product().product_branch();
     drop(source);
 
@@ -27,9 +32,14 @@ pub(crate) fn shared_component_sibling_cannot_claim_another_product_commit() {
 
     let committed_source = world
         .application
-        .on_branch(source_identity)
-        .select()
-        .expect("the committed source remains selectable");
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .on_branch(source_identity)
+                .select(&phase)
+                .expect("the committed source remains selectable")
+        })
+        .expect("installed host call opens");
     let sibling_identity = reuse_exact_product(
         &world,
         &committed_source,
@@ -37,13 +47,17 @@ pub(crate) fn shared_component_sibling_cannot_claim_another_product_commit() {
     );
     assert_eq!(
         committed_source.product().relational_basis_descriptor(),
-        world
+        &world
             .application
-            .on_branch(sibling_identity)
-            .select()
-            .unwrap()
-            .product()
-            .relational_basis_descriptor(),
+            .with_host_advancement(|phase| world
+                .application
+                .on_branch(sibling_identity)
+                .select(&phase)
+                .unwrap()
+                .product()
+                .relational_basis_descriptor()
+                .clone())
+            .expect("installed host call opens"),
         "the adversarial sibling must inherit the Relational row containing the source key",
     );
     drop(committed_source);
@@ -66,9 +80,14 @@ pub(crate) fn shared_component_sibling_revalidates_its_own_security() {
     let world = CourtroomWorld::publish("ready");
     let source = world
         .application
-        .on_branch(world.application.current_world())
-        .select()
-        .unwrap();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .on_branch(world.application.current_world())
+                .select(&phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     let sibling_identity = reuse_exact_product(&world, &source, "security-reuse-sibling");
     drop(source);
 

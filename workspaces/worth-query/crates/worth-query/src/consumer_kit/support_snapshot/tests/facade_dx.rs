@@ -4,7 +4,10 @@ use super::support_snapshot_workspace;
 
 #[test]
 fn public_consumer_kit_facade_projects_exports_loads_and_compares_snapshot() {
-    let workspace = support_snapshot_workspace();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let workspace = support_snapshot_workspace(request_execution);
     let matrix = workspace.public_support_matrix();
 
     let snapshot = facade::consumer_kit::project_workspace_support_snapshot(&workspace);

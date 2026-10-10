@@ -74,6 +74,7 @@ pub(in crate::domain_computation::primary_graph::tests) fn installed_world_with_
 
         let application = bootstrap
             .publish_application_runtime(
+                &phase.borrowed_request_for_test(),
                 &phase.bootstrap_for_test(),
                 runtime,
                 authority,
@@ -128,6 +129,7 @@ pub(in crate::domain_computation::primary_graph::tests) fn restored_world(
         super::handler_installation::install_fixture_handlers(&schema, &mut bootstrap);
         let application = bootstrap
             .publish_application_runtime(
+                &phase.borrowed_request_for_test(),
                 &phase.bootstrap_for_test(),
                 runtime,
                 authority,

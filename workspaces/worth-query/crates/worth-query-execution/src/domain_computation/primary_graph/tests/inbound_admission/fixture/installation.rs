@@ -60,6 +60,7 @@ pub(in crate::domain_computation::primary_graph::tests::inbound_admission) fn in
         let invariant = bootstrap.retain_invariant_projection_authority();
         let application = bootstrap
             .publish_application_runtime(
+                &phase.borrowed_request_for_test(),
                 &phase.bootstrap_for_test(),
                 runtime,
                 authority,

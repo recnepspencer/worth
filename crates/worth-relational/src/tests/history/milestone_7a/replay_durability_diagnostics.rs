@@ -2,7 +2,10 @@ use super::certification_bundle::run_merge_ready_history_shape_certification;
 
 #[test]
 fn merge_ready_history_replay_durability_and_diagnostics_are_authoritative() {
-    let certification = run_merge_ready_history_shape_certification();
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let certification = run_merge_ready_history_shape_certification(execution);
 
     assert!(certification.replay_acceptance.failure_absent);
     assert_eq!(

@@ -10,6 +10,7 @@ use super::super::WorthQueryApplicationProjectionDenialKind;
 /// be used: admit the query again.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationOneShotDenialKind {
+    ExecutionRequest(crate::domain_computation::WorthQueryProviderSessionDenialKind),
     /// The plan belongs to a different runtime or is not a one-shot plan.
     ForeignPlan,
     /// The installed query changed since the plan was admitted.
@@ -27,7 +28,9 @@ pub enum WorthQueryApplicationOneShotDenialKind {
     /// The basis selected for the read is not available.
     BasisUnavailable,
     /// The installed limit on concurrently active snapshots was reached.
-    ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
+    ActiveSnapshotCapacityExhausted {
+        maximum_active_snapshots: usize,
+    },
     /// No capacity remains to retain the basis.
     RetentionCapacityExhausted,
     /// The runtime ran out of basis-retention identities.

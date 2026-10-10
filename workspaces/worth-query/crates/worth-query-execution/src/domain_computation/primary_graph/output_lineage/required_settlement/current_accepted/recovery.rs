@@ -5,6 +5,7 @@ use super::*;
 impl AcceptedCurrentCandidate {
     pub(super) fn recover_registration<'basis>(
         &'basis self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         computation: super::super::super::CurrentComputation,
         owner: &SourceInvalidationOwner,
         runtime: &RelationalRuntime,
@@ -20,6 +21,7 @@ impl AcceptedCurrentCandidate {
         };
         let requirement = Some(FullVerificationReason::RegistrationIncomplete);
         let verified = ConsumedOutputEvidence::verify_at_observation(
+            execution,
             &recorded.settlement_identity,
             &facts,
             &[],

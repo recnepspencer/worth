@@ -153,7 +153,7 @@ enum Stage {
 }
 
 fn discard_at_stage(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     stage: Stage,
 ) {
     let state = state();
@@ -179,7 +179,7 @@ fn discard_at_stage(
 }
 
 fn abandon_at_stage(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     stage: Stage,
 ) {
     let state = state();

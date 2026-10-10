@@ -44,20 +44,22 @@ impl WorthServerQueryWorkspaceProvider for RemaskWorkspaceProvider {
         &self,
         request: &WorthServerQueryWorkspaceBindingRequest,
     ) -> Result<WorthQueryWorkspace, WorthServerQueryWorkspaceBindingError> {
-        let workspace_id = request
-            .resolved_request_context()
-            .request_context()
-            .workspace_target()
-            .workspace_id();
-        let resources = worth_query::facade::consumer_kit::in_memory_test_product_world_resources();
-        let (product_source, product_bridge) =
-            worth_query::facade::consumer_kit::in_memory_test_product_world_installation(
-                &resources,
-            )
-            .map_err(|error| {
-                WorthServerQueryWorkspaceBindingError::new("product_world", error.to_string())
-            })?;
-        let mut workspace = WorthQueryRuntime::builder(resources)
+        crate::test_execution_policy::with_bootstrap(|request_execution| {
+            let workspace_id = request
+                .resolved_request_context()
+                .request_context()
+                .workspace_target()
+                .workspace_id();
+            let resources =
+                worth_query::facade::consumer_kit::in_memory_test_product_world_resources();
+            let (product_source, product_bridge) =
+                worth_query::facade::consumer_kit::in_memory_test_product_world_installation(
+                    &resources,
+                )
+                .map_err(|error| {
+                    WorthServerQueryWorkspaceBindingError::new("product_world", error.to_string())
+                })?;
+            let mut workspace = WorthQueryRuntime::builder(resources)
             .backend(RemaskRuntimeBackend::new(
                 self.support_profile.clone(),
                 self.projection.clone(),
@@ -68,7 +70,7 @@ impl WorthServerQueryWorkspaceProvider for RemaskWorkspaceProvider {
                 worth_query::facade::runtime::WorthQueryConditionalExecutionResources::development(
                 ),
             )
-            .build()
+            .build(request_execution)
             .map_err(|error| {
                 WorthServerQueryWorkspaceBindingError::new("runtime_build", format!("{error:?}"))
             })?
@@ -76,8 +78,9 @@ impl WorthServerQueryWorkspaceProvider for RemaskWorkspaceProvider {
             .map_err(|error| {
                 WorthServerQueryWorkspaceBindingError::new("workspace_bind", format!("{error:?}"))
             })?;
-        install_requested_named_read(&mut workspace, request)?;
-        Ok(workspace)
+            install_requested_named_read(request_execution, &mut workspace, request)?;
+            Ok(workspace)
+        })
     }
 }
 
@@ -111,15 +114,16 @@ impl worth_query::facade::runtime::WorthQueryMergeSnapshotOwner for RemaskRuntim
 impl WorthQueryRuntimeBackend for RemaskRuntimeBackend {
     fn prepare_product_source(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
         worth_query::facade::runtime::WorthQueryProductRelationalInstallation,
         worth_query::facade::runtime::WorthQueryProductSourceDenial,
     > {
         let branch = self
             .product_source
-            .with_runtime(|runtime| runtime.main_branch_identity());
+            .with_runtime(request_execution, |runtime| runtime.main_branch_identity());
         self.product_source
-            .prepare_product_source(&branch)
+            .prepare_product_source(request_execution, &branch)
             .map_err(worth_query::facade::runtime::WorthQueryProductSourceDenial::Basis)
     }
 
@@ -153,6 +157,7 @@ impl WorthQueryRuntimeBackend for RemaskRuntimeBackend {
 
     fn write(
         &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         _command: WorthQueryBackendAdmissibleMutation,
     ) -> Result<worth_query::facade::foundation::WorthQueryMutationReceipt, WorthQueryWorkspaceError>
     {
@@ -161,6 +166,7 @@ impl WorthQueryRuntimeBackend for RemaskRuntimeBackend {
 
     fn write_batch(
         &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         _commands: Vec<WorthQueryBackendAdmissibleMutation>,
     ) -> Result<
         Vec<worth_query::facade::foundation::WorthQueryMutationReceipt>,
@@ -171,6 +177,7 @@ impl WorthQueryRuntimeBackend for RemaskRuntimeBackend {
 
     fn execute_intent(
         &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         _declaration: &worth_query::facade::runtime::WorthQueryIntentDeclaration,
     ) -> Result<worth_query::facade::runtime::WorthQueryIntentExecution, WorthQueryRuntimeError>
     {
@@ -179,6 +186,7 @@ impl WorthQueryRuntimeBackend for RemaskRuntimeBackend {
 
     fn live_entities_for_target(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         target: &WorthQueryLiveArtifactTarget,
     ) -> Vec<WorthQueryEntity> {
         if self
@@ -221,7 +229,10 @@ impl WorthQueryRuntimeBackend for RemaskRuntimeBackend {
         Vec::new()
     }
 
-    fn current_snapshot_identity(&self) -> WorthQuerySnapshotIdentity {
+    fn current_snapshot_identity(
+        &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> WorthQuerySnapshotIdentity {
         WorthQuerySnapshotIdentity::from_bridge_snapshot_projection(
             worth_runtime_bridge::facade::TruthSnapshotIdentity::from_relational_snapshot(
                 RelationalBridgeSnapshotIdentityParts::new(1, 1),
@@ -269,6 +280,7 @@ impl WorthQueryRuntimeBackend for RemaskRuntimeBackend {
 }
 
 fn install_requested_named_read(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace: &mut WorthQueryWorkspace,
     request: &WorthServerQueryWorkspaceBindingRequest,
 ) -> Result<(), WorthServerQueryWorkspaceBindingError> {
@@ -281,7 +293,7 @@ fn install_requested_named_read(
     };
 
     workspace
-        .live_view::<serde_json::Value>(binding_label, |q| {
+        .live_view::<serde_json::Value>(request_execution, binding_label, |q| {
             q.from("User")
                 .select([
                     aspect_field_key("identity", "id"),

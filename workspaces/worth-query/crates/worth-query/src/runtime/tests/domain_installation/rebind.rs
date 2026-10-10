@@ -2,8 +2,11 @@ use super::*;
 
 #[test]
 fn rebind_reissues_current_authority_only_for_equivalent_package_meaning() {
-    let prior_runtime = installed_runtime();
-    let current_runtime = installed_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let prior_runtime = installed_runtime(request_execution);
+    let current_runtime = installed_runtime(request_execution);
     let prior = prior_runtime.domain(InstalledDomain).unwrap();
     let rebound = current_runtime
         .rebind_domain(prior.rebind_request())
@@ -19,7 +22,7 @@ fn rebind_reissues_current_authority_only_for_equivalent_package_meaning() {
     current_runtime
         .validate_installed_domain_handle(rebound.handle())
         .unwrap();
-    let changed = changed_package_runtime();
+    let changed = changed_package_runtime(request_execution);
     let denial = changed.rebind_domain(prior.rebind_request()).unwrap_err();
     assert_eq!(
         denial.kind(),
@@ -40,11 +43,14 @@ fn rebind_reissues_current_authority_only_for_equivalent_package_meaning() {
 
 #[test]
 fn rebind_to_runtime_without_the_domain_prescribes_installation() {
-    let prior_runtime = installed_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let prior_runtime = installed_runtime(request_execution);
     let prior = prior_runtime.domain(InstalledDomain).unwrap();
     let empty_runtime = complete_backend_from_parts_builder()
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .unwrap();
     let denial = empty_runtime
         .rebind_domain(prior.rebind_request())
@@ -61,7 +67,10 @@ fn rebind_to_runtime_without_the_domain_prescribes_installation() {
 
 #[test]
 fn generation_turnover_rebinds_to_the_current_runtime_witness() {
-    let mut runtime = installed_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = installed_runtime(request_execution);
     let prior = runtime.domain(InstalledDomain).unwrap();
     let prior_generation = prior.installation_generation();
     let source = runtime.domain_installation_registry.retain_portable_index();

@@ -17,17 +17,40 @@ fn governed_upper_bound_support_is_revalidated_at_request_commit() {
         .authorization_time
         .script(std::iter::repeat_n(time(100), 8));
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let program = super::request_transition::request_reads(
-        &world,
-        &principal,
-        &request,
-        super::request_transition::honest_input(),
-    )
-    .materialize_elevation_request_program()
-    .unwrap();
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let program = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            super::request_transition::request_reads(
+                &(phase).test_host_request(),
+                &world,
+                &principal,
+                &request,
+                super::request_transition::honest_input(),
+            )
+            .materialize_elevation_request_program()
+            .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
 
-    revoke_current_capability(&world);
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            revoke_current_capability(
+                &(phase).test_host_request(),
+                &host_custody.borrowed_request_for_test(),
+                &world,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
 
     let WorthQueryElevationRequestOutcome::Denied(denial) = world
         .application
@@ -52,15 +75,28 @@ fn provider_time_rejects_a_request_program_after_its_exact_window_expires() {
         .authorization_time
         .script(std::iter::repeat_n(time(100), 8));
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let program = super::request_transition::request_reads(
-        &world,
-        &principal,
-        &request,
-        super::request_transition::honest_input(),
-    )
-    .materialize_elevation_request_program()
-    .unwrap();
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let program = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            super::request_transition::request_reads(
+                &(phase).test_host_request(),
+                &world,
+                &principal,
+                &request,
+                super::request_transition::honest_input(),
+            )
+            .materialize_elevation_request_program()
+            .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
 
     world
         .authorization_time
@@ -82,30 +118,50 @@ fn provider_time_rejects_a_request_program_after_its_exact_window_expires() {
 
     let elevation = world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
-        .expect("the selected product branch remains admitted")
-        .resolve_entity(
-            CapabilityElevationIdentity::reference(),
-            "elevation-2".to_owned(),
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap_err();
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .select_product_branch(
+                    &host_custody.borrowed_request_for_test(),
+                    world.application.product_runtime().default_branch(),
+                )
+                .expect("the selected product branch remains admitted")
+                .resolve_entity(
+                    &phase,
+                    CapabilityElevationIdentity::reference(),
+                    "elevation-2".to_owned(),
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap_err()
+        })
+        .expect("the fixture read owns its installed host call");
     assert_eq!(
         elevation.kind(),
         WorthQueryEntityResolutionDenialKind::UnknownEntity
     );
     let review = world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
-        .expect("the selected product branch remains admitted")
-        .resolve_entity(
-            CapabilityReviewIdentity::reference(),
-            "review-2".to_owned(),
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap_err();
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .select_product_branch(
+                    &host_custody.borrowed_request_for_test(),
+                    world.application.product_runtime().default_branch(),
+                )
+                .expect("the selected product branch remains admitted")
+                .resolve_entity(
+                    &phase,
+                    CapabilityReviewIdentity::reference(),
+                    "review-2".to_owned(),
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap_err()
+        })
+        .expect("the fixture read owns its installed host call");
     assert_eq!(
         review.kind(),
         WorthQueryEntityResolutionDenialKind::UnknownEntity

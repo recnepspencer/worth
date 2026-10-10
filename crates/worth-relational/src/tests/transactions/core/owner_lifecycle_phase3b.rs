@@ -137,6 +137,9 @@ fn phase3b_settlement_admitted_after_owner_drop_is_denied() {
 /// instance rather than addressing the runtime that took its place.
 #[test]
 fn phase3b_recovery_replacement_closes_the_prior_runtimes_ports() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = persisted_runtime_with_test_schema();
     let seeded = create_entity_outcome(&runtime, "phase3b-recovery-anchor");
     let seeded_commit_id = seeded.commit.commit_id;
@@ -150,7 +153,7 @@ fn phase3b_recovery_replacement_closes_the_prior_runtimes_ports() {
     );
     runtime
         .durability_recovery()
-        .recover(plan)
+        .recover(execution, plan)
         .expect("the persisted runtime recovers from its own plan");
 
     assert_ne!(

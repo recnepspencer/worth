@@ -26,11 +26,23 @@ use crate::domain_computation::primary_graph::{
 fn optional_result_field_distinguishes_present_value_from_lawful_absence() {
     let world = installed_authorization_world(true);
 
-    let present = execute(&world, "account-1");
+    let present = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            execute(&phase, &world, "account-1")
+        })
+        .expect("the fixture read owns its installed host call");
     assert_eq!(present.note(), Some("reviewed"));
     assert_eq!(present.score(), None);
     assert_eq!(present.annotation(), None);
-    let absent = execute(&world, "account-2");
+    let absent = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            execute(&phase, &world, "account-2")
+        })
+        .expect("the fixture read owns its installed host call");
     assert_eq!(absent.note(), None);
     assert_eq!(absent.score(), None);
     assert_eq!(absent.annotation(), None);
@@ -39,7 +51,18 @@ fn optional_result_field_distinguishes_present_value_from_lawful_absence() {
 #[test]
 fn absent_optional_source_stays_current_across_sibling_edit_but_not_presence_change() {
     let world = installed_authorization_world(true);
-    let (_, absent_fact, account) = execute_with_note_fact(&world, "account-2");
+    let (_, absent_fact, account) = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            execute_with_note_fact(
+                &phase,
+                &host_custody.borrowed_request_for_test(),
+                &world,
+                "account-2",
+            )
+        })
+        .expect("the fixture read owns its installed host call");
     let WorthQueryApplicationObservedFact::SourceFieldRevision {
         native_revision: Some(absent),
         ..
@@ -51,7 +74,18 @@ fn absent_optional_source_stays_current_across_sibling_edit_but_not_presence_cha
         absent.presence(),
         worth_relational::facade::runtime::RelationalFieldPresence::Absent
     );
-    assert!(current(&world, &absent_fact));
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            assert!(current(
+                &phase,
+                &host_custody.borrowed_request_for_test(),
+                &world,
+                &absent_fact
+            ))
+        })
+        .expect("the fixture read owns its installed host call");
 
     let graph = world.application.runtime.primary_graph().unwrap();
     let label = AccountLabel::reference();
@@ -60,11 +94,34 @@ fn absent_optional_source_stays_current_across_sibling_edit_but_not_presence_cha
         .field_locator(label.entity(), label.aspect(), label.field())
         .unwrap()
         .clone();
-    set_string_field(&world, account, label_locator, "renamed");
-    assert!(
-        current(&world, &absent_fact),
-        "another field of the same aspect cannot stale native absence"
-    );
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            set_string_field(
+                &host_custody.borrowed_request_for_test(),
+                &world,
+                account,
+                label_locator,
+                "renamed",
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            assert!(
+                current(
+                    &phase,
+                    &host_custody.borrowed_request_for_test(),
+                    &world,
+                    &absent_fact
+                ),
+                "another field of the same aspect cannot stale native absence"
+            )
+        })
+        .expect("the fixture read owns its installed host call");
 
     let note = AccountNote::reference();
     let note_locator = graph
@@ -72,17 +129,51 @@ fn absent_optional_source_stays_current_across_sibling_edit_but_not_presence_cha
         .field_locator(note.entity(), note.aspect(), note.field())
         .unwrap()
         .clone();
-    set_string_field(&world, account, note_locator, "temporary");
-    assert!(
-        !current(&world, &absent_fact),
-        "an absent-to-present edit must stale the source"
-    );
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            set_string_field(
+                &host_custody.borrowed_request_for_test(),
+                &world,
+                account,
+                note_locator,
+                "temporary",
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            assert!(
+                !current(
+                    &phase,
+                    &host_custody.borrowed_request_for_test(),
+                    &world,
+                    &absent_fact
+                ),
+                "an absent-to-present edit must stale the source"
+            )
+        })
+        .expect("the fixture read owns its installed host call");
 }
 
 #[test]
 fn present_optional_source_denies_equal_value_after_aba() {
     let world = installed_authorization_world(true);
-    let (before, fact, account) = execute_with_note_fact(&world, "account-1");
+    let (before, fact, account) = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            execute_with_note_fact(
+                &phase,
+                &host_custody.borrowed_request_for_test(),
+                &world,
+                "account-1",
+            )
+        })
+        .expect("the fixture read owns its installed host call");
     assert_eq!(before.note(), Some("reviewed"));
     let graph = world.application.runtime.primary_graph().unwrap();
     let note = AccountNote::reference();
@@ -91,28 +182,85 @@ fn present_optional_source_denies_equal_value_after_aba() {
         .field_locator(note.entity(), note.aspect(), note.field())
         .unwrap()
         .clone();
-    set_string_field(&world, account, locator.clone(), "temporary");
-    set_string_field(&world, account, locator, "reviewed");
-    assert_eq!(execute(&world, "account-1").note(), Some("reviewed"));
-    assert!(
-        !current(&world, &fact),
-        "returning to the same value cannot restore the old native revision"
-    );
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            set_string_field(
+                &host_custody.borrowed_request_for_test(),
+                &world,
+                account,
+                locator.clone(),
+                "temporary",
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            set_string_field(
+                &host_custody.borrowed_request_for_test(),
+                &world,
+                account,
+                locator,
+                "reviewed",
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            assert_eq!(
+                execute(&phase, &world, "account-1").note(),
+                Some("reviewed")
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            assert!(
+                !current(
+                    &phase,
+                    &host_custody.borrowed_request_for_test(),
+                    &world,
+                    &fact
+                ),
+                "returning to the same value cannot restore the old native revision"
+            )
+        })
+        .expect("the fixture read owns its installed host call");
 }
 
-fn current(world: &AuthorizationWorld, fact: &WorthQueryApplicationObservedFact) -> bool {
-    let selected = world.selected_product();
+fn current(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    world: &AuthorizationWorld,
+    fact: &WorthQueryApplicationObservedFact,
+) -> bool {
+    let selected = world.selected_product(&(phase_custody).test_host_request());
     let graph = world.application.runtime.primary_graph().unwrap();
-    graph.integration_handle().with_runtime(|runtime| {
-        fact.source_currentness_within(runtime, selected.application_basis().snapshot_handle(), 1)
+    graph
+        .integration_handle()
+        .with_runtime(execution, |runtime| {
+            fact.source_currentness_within(
+                runtime,
+                execution,
+                selected.application_basis().snapshot_handle(),
+                1,
+            )
             .unwrap()
             .0
             .movement()
-            == Movement::Unmoved
-    })
+                == Movement::Unmoved
+        })
 }
 
 fn set_string_field(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &AuthorizationWorld,
     entity: worth_relational::facade::identity::EntityId,
     locator: AspectFieldLocator,
@@ -123,6 +271,7 @@ fn set_string_field(
         StringApplicationValueBinding::encode(&value.to_owned()).unwrap(),
     )]));
     super::super::fixture::publish_relational_mutation(
+        execution,
         world,
         WorkerIntentBatch::new("optional-field-revision").push(MutationIntent::Entity(
             EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
@@ -133,11 +282,23 @@ fn set_string_field(
     );
 }
 
-fn execute(world: &AuthorizationWorld, account: &str) -> OptionalAccountFieldResult {
-    execute_with_note_fact(world, account).0
+fn execute(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    world: &AuthorizationWorld,
+    account: &str,
+) -> OptionalAccountFieldResult {
+    execute_with_note_fact(
+        phase_custody,
+        &phase_custody.borrowed_request_for_test(),
+        world,
+        account,
+    )
+    .0
 }
 
 fn execute_with_note_fact(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &AuthorizationWorld,
     account: &str,
 ) -> (
@@ -149,9 +310,13 @@ fn execute_with_note_fact(
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
+        .select_product_branch(
+            execution,
+            world.application.product_runtime().default_branch(),
+        )
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
+            phase_custody,
             &world.binding,
             &external,
             &request,
@@ -160,9 +325,13 @@ fn execute_with_note_fact(
         .unwrap();
     let scope = world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
+        .select_product_branch(
+            execution,
+            world.application.product_runtime().default_branch(),
+        )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
+            phase_custody,
             AccountIdentity::reference(),
             account.to_owned(),
             &request,
@@ -176,8 +345,9 @@ fn execute_with_note_fact(
         .unwrap();
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &scope);
     let plan = world
-        .selected_product()
+        .selected_product(&(phase_custody).test_host_request())
         .admit_application_query(
+            phase_custody,
             &query,
             &access,
             ApplicationQueryParameterSet::<OptionalAccountFieldQuery>::new(),
@@ -190,7 +360,7 @@ fn execute_with_note_fact(
         .unwrap();
     let result = world
         .application
-        .execute_application_query_one_shot(plan)
+        .execute_application_query_one_shot(phase_custody, plan)
         .unwrap();
     assert_eq!(result.rows().len(), 1);
     assert_eq!(result.rows()[0].account(), account);

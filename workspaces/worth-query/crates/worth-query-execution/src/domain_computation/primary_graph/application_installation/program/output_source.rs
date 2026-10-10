@@ -83,6 +83,7 @@ where
     /// unless it is the program this occurrence runs.
     fn compare_and_commit_output_source<Source>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
 
         access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
@@ -137,7 +138,7 @@ where
         };
         match self
             .runtime
-            .compare_and_commit_application_for_required_output_source(phase,
+            .compare_and_commit_application_for_required_output_source(execution, phase,
                 &presented,
                 program,
                 idempotency,

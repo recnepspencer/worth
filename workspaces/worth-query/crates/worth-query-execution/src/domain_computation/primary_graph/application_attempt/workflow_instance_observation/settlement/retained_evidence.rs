@@ -11,6 +11,7 @@ use worth_query_admission::facade::authenticated_principal::WorthQueryRequestSco
 use super::super::ObservedWorkflowAssessmentEvidence;
 
 pub(in crate::domain_computation::primary_graph::application_attempt) fn observe_retained_assessment_evidence(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
@@ -25,8 +26,11 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
 > {
     let transition = locator.transition();
     let mut facts = Vec::new();
-    super::observe_retained_transition(runtime, snapshot, layout, transition, &mut facts)?;
+    super::observe_retained_transition(
+        execution, runtime, snapshot, layout, transition, &mut facts,
+    )?;
     let evidence = super::observe_assessment_evidence(
+        execution,
         runtime,
         snapshot,
         layout,

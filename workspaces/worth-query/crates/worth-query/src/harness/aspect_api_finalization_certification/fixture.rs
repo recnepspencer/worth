@@ -54,16 +54,19 @@ fn retained_field_path(path: &str) -> WorthQueryRetainedFieldPath {
     WorthQueryRetainedFieldPath::from_canonical_field_path(path)
 }
 
-pub(super) fn stateful_bridge_task_runtime() -> WorthQueryRuntime {
-    build_stateful_bridge_task_runtime()
+pub(super) fn stateful_bridge_task_runtime(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryRuntime {
+    build_stateful_bridge_task_runtime(request_execution)
 }
 
 pub(super) fn task_live_view<T>(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace: &mut WorthQueryWorkspace,
     name: &str,
 ) -> WorthQueryLiveView<T> {
     workspace
-        .live_view(name, |q| {
+        .live_view(request_execution, name, |q| {
             q.from("Task")
                 .select([
                     crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")

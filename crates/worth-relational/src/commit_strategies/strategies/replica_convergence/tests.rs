@@ -37,6 +37,9 @@ fn replicas_patch_target() -> AspectFieldLocator {
 
 #[test]
 fn replica_convergence_strategy_updates_replicas_and_preserves_other_fields() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let descriptor = ReplicaConvergenceStrategy::descriptor(
         crate::commit_strategies::data::CommitStrategyId(601),
     );
@@ -69,7 +72,7 @@ fn replica_convergence_strategy_updates_replicas_and_preserves_other_fields() {
     let snapshot = runtime.visibility_authority().snapshot();
     let execution = runtime
         .commit_strategies()
-        .execute(&request, &snapshot)
+        .execute(&request, &snapshot, request_execution)
         .expect("strategy execution");
     let output = ReplicaConvergenceOutput::decode(execution.output().canonical_bytes())
         .expect("output decode");
@@ -87,6 +90,9 @@ fn replica_convergence_strategy_updates_replicas_and_preserves_other_fields() {
 
 #[test]
 fn replica_convergence_strategy_noops_when_authoritative_replicas_match() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let descriptor = ReplicaConvergenceStrategy::descriptor(
         crate::commit_strategies::data::CommitStrategyId(602),
     );
@@ -142,7 +148,7 @@ fn replica_convergence_strategy_noops_when_authoritative_replicas_match() {
     let snapshot = runtime.visibility_authority().snapshot();
     let execution = runtime
         .commit_strategies()
-        .execute(&request, &snapshot)
+        .execute(&request, &snapshot, request_execution)
         .expect("strategy execution");
     let output = ReplicaConvergenceOutput::decode(execution.output().canonical_bytes())
         .expect("output decode");

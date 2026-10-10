@@ -139,6 +139,7 @@ pub(super) fn reenter_temporal_operation<
     Authorization,
     Clock,
 >(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     phase: &WorthQueryAdvancementPhase<'_>,
 
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -251,6 +252,7 @@ where
         };
     let admission_canonical_work = idempotency.canonical_work();
     let result = attempt_progression::try_reentry(
+        request_execution,
         phase,
         runtime,
         product,

@@ -1,6 +1,9 @@
 use super::*;
 
-pub(super) fn certify_geometry_commit_downstream_mixed_locality_wave(suite: &'static str) {
+pub(super) fn certify_geometry_commit_downstream_mixed_locality_wave(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    suite: &'static str,
+) {
     let mixed_locality_samples = capture_perf_samples(
         suite,
         "geometry_commit_downstream_wave_mixed_locality_operational",
@@ -50,7 +53,11 @@ pub(super) fn certify_geometry_commit_downstream_mixed_locality_wave(suite: &'st
                         .read_truth()
                         .plan_query_packet(&snapshot, traversal_packet)
                         .expect("downstream mixed traversal plan"),
+                    execution,
+                    crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                 )
+                .expect("request remains live")
+                .map(|read| read.outcome)
                 .expect("downstream mixed traversal outcome");
             let explicit_hits = query_targets
                 .iter()
@@ -70,7 +77,11 @@ pub(super) fn certify_geometry_commit_downstream_mixed_locality_wave(suite: &'st
                                     ),
                                 )
                                 .expect("downstream mixed explicit plan"),
+                            execution,
+                            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                         )
+                        .expect("request remains live")
+                        .map(|read| read.outcome)
                         .expect("downstream mixed explicit outcome")
                         .result
                         .entities

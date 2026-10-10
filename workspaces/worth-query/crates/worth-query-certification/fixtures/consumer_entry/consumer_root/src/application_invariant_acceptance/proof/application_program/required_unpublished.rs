@@ -54,7 +54,16 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
     };
     let key = 10_062;
     reset_planar_source_adjustment_contacts(&intent);
-    world.application.fail_next_durable_append_for_test();
+    world
+        .application
+        .with_host_advancement(|phase| {
+            world.application.fail_next_durable_append_for_test(
+                &phase
+                    .execution_request_for(world.application.product_runtime())
+                    .expect("matching installed phase"),
+            )
+        })
+        .expect("installed host call opens");
     let outcome = request
         .mutate(intent.clone())
         .expect_source(source.clone())
@@ -97,8 +106,17 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
     );
     cancellation.cancel();
     assert!(matches!(
-        original_request!(&stopped, intent.clone(), &key)
-            .recover_unpublished_required_in_program(&mut recovery, &world.application),
+        world
+            .application
+            .with_host_advancement(
+                |host_phase| original_request!(&stopped, intent.clone(), &key)
+                    .recover_unpublished_required_in_program(
+                        &host_phase,
+                        &mut recovery,
+                        &world.application
+                    )
+            )
+            .expect("installed host call opens"),
         Err(WorthQueryApplicationRecoveryRequestDenial::Interrupted(
             WorthQueryRequestInterruption::Cancelled
         ))
@@ -110,26 +128,42 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
         ..intent.clone()
     };
     for (input, request_key) in [(wrong_input, &key), (intent.clone(), &wrong_key)] {
-        assert!(original_request!(&fresh_scope, input, request_key)
-            .recover_unpublished_required_in_program(&mut recovery, &world.application)
-            .is_err());
+        assert!(world
+            .application
+            .with_host_advancement(
+                |host_phase| original_request!(&fresh_scope, input, request_key)
+                    .recover_unpublished_required_in_program(
+                        &host_phase,
+                        &mut recovery,
+                        &world.application
+                    )
+                    .is_err()
+            )
+            .expect("installed host call opens"));
         assert!(recovery.performed().is_none());
         assert_eq!(planar_source_adjustment_contacts(&intent), (1, 1));
     }
     assert!(
         world
             .application
-            .request(&principal, &fresh_scope)
-            .mutate(intent.clone())
-            .expect_result_set(
-                original
-                    .result_set_observation()
-                    .expect("completed query retains full result-set proof")
-                    .clone()
-            )
-            .idempotency(&key)
-            .recover_unpublished_required_in_program(&mut recovery, &world.application)
-            .is_err(),
+            .with_host_advancement(|host_phase| world
+                .application
+                .request(&principal, &fresh_scope)
+                .mutate(intent.clone())
+                .expect_result_set(
+                    original
+                        .result_set_observation()
+                        .expect("completed query retains full result-set proof")
+                        .clone()
+                )
+                .idempotency(&key)
+                .recover_unpublished_required_in_program(
+                    &host_phase,
+                    &mut recovery,
+                    &world.application
+                )
+                .is_err())
+            .expect("installed host call opens"),
         "the same query's complete result set cannot replace its original row proof"
     );
     assert!(recovery.performed().is_none());
@@ -143,12 +177,15 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
     .unwrap();
     assert!(other
         .application
-        .request(&other_principal, &fresh_scope)
-        .mutate(intent.clone())
-        .expect_source(source.clone())
-        .idempotency(&key)
-        .recover_unpublished_required_in_program(&mut recovery, &other.application)
-        .is_err());
+        .with_host_advancement(|host_phase| other
+            .application
+            .request(&other_principal, &fresh_scope)
+            .mutate(intent.clone())
+            .expect_source(source.clone())
+            .idempotency(&key)
+            .recover_unpublished_required_in_program(&host_phase, &mut recovery, &other.application)
+            .is_err())
+        .expect("installed host call opens"));
     assert!(recovery.performed().is_none());
 
     let controls = WorthQueryOutputDemandControls::new(
@@ -156,10 +193,15 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
         NonZeroUsize::new(8_192).unwrap(),
     );
     // Promotion cannot synthesize a performed witness from an unpublished owner.
-    let (denial, retained) = original_request!(&fresh_scope, intent.clone(), &key)
-        .promote_recovered_required_outputs(recovery, &world.application)
-        .err()
-        .expect("unpublished output promotion must refuse and return custody");
+    let (denial, retained) = world
+        .application
+        .with_host_advancement(|host_phase| {
+            original_request!(&fresh_scope, intent.clone(), &key)
+                .promote_recovered_required_outputs(&host_phase, recovery, &world.application)
+                .err()
+                .expect("unpublished output promotion must refuse and return custody")
+        })
+        .expect("installed host call opens");
     assert!(matches!(
         denial,
         WorthQueryApplicationRecoveryRequestDenial::Recovery(
@@ -168,18 +210,30 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
     ));
     recovery = retained;
     assert_eq!(
-        original_request!(&fresh_scope, intent.clone(), &key)
-            .recover_unpublished_required_in_program(&mut recovery, &world.application)
-            .unwrap(),
+        world
+            .application
+            .with_host_advancement(|host_phase| original_request!(
+                &fresh_scope,
+                intent.clone(),
+                &key
+            )
+            .recover_unpublished_required_in_program(&host_phase, &mut recovery, &world.application)
+            .unwrap())
+            .expect("installed host call opens"),
         WorthQueryDiscoveredRecoveryProgress::Performed
     );
     assert!(recovery.performed().is_some());
     assert_eq!(planar_source_adjustment_contacts(&intent), (1, 1));
     // A refused fresh keyed read must return the complete performed phase too.
-    let (_, retained) = original_request!(&fresh_scope, intent.clone(), &wrong_key)
-        .promote_recovered_required_outputs(recovery, &world.application)
-        .err()
-        .expect("wrong-key promotion must preserve the actual performed owner");
+    let (_, retained) = world
+        .application
+        .with_host_advancement(|host_phase| {
+            original_request!(&fresh_scope, intent.clone(), &wrong_key)
+                .promote_recovered_required_outputs(&host_phase, recovery, &world.application)
+                .err()
+                .expect("wrong-key promotion must preserve the actual performed owner")
+        })
+        .expect("installed host call opens");
     recovery = retained;
     assert!(recovery.performed().is_some());
     let changed = world
@@ -191,26 +245,36 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
         .execute()
         .unwrap();
     assert_eq!(changed.rows()[0].y, length(2));
-    let (_, retained) = world
+    let (_, retained) =
+        world
+            .application
+            .with_host_advancement(|host_phase| {
+                world
         .application
         .request(&principal, &fresh_scope)
         .mutate(intent.clone())
         .expect_source(changed.observed_sources()[0].clone())
         .idempotency(&key)
-        .promote_recovered_required_outputs(recovery, &world.application)
+        .promote_recovered_required_outputs(&host_phase, recovery, &world.application)
         .err()
-        .expect("the newly observed current source cannot replace the original source proof");
+        .expect("the newly observed current source cannot replace the original source proof")
+            })
+            .expect("installed host call opens");
     recovery = retained;
     assert!(recovery.performed().is_some());
     assert_eq!(
         world.application.retained_source_custody_count_for_test(),
         0
     );
-    let (preparation, initial_cause, performed, prior_cleanup) =
-        original_request!(&fresh_scope, intent.clone(), &key)
-            .promote_recovered_required_outputs(recovery, &world.application)
-            .unwrap_or_else(|(denial, _)| panic!("original output promotion: {denial:?}"))
-            .into_parts();
+    let (preparation, initial_cause, performed, prior_cleanup) = world
+        .application
+        .with_host_advancement(|host_phase| {
+            original_request!(&fresh_scope, intent.clone(), &key)
+                .promote_recovered_required_outputs(&host_phase, recovery, &world.application)
+                .unwrap_or_else(|(denial, _)| panic!("original output promotion: {denial:?}"))
+                .into_parts()
+        })
+        .expect("installed host call opens");
     assert_eq!(initial_cause, ProductUnpublishedCause::SettlementPending);
     assert!(prior_cleanup.is_empty());
     let (read, publication_failure, cleanup_failure) = performed.into_parts();

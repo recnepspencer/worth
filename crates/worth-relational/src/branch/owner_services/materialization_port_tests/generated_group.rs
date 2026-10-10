@@ -2,13 +2,16 @@ use super::*;
 
 #[test]
 fn generated_group_suspends_and_rematerializes_with_exact_identity() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let (created, entity_fields, relation_fields) = create_generated_group(&runtime);
     let entities = changed_entities(&created);
     let relation = changed_relations(&created)[0];
     let original = runtime
         .read_truth()
-        .read_snapshot(&created.snapshot)
+        .read_snapshot(&created.snapshot, execution)
         .expect("the source publication remains readable");
     let source_records = original.entities().to_vec();
     let source_relation = original.relations()[0].clone();
@@ -27,11 +30,11 @@ fn generated_group_suspends_and_rematerializes_with_exact_identity() {
     assert_eq!(suspended.custody.records().len(), 3);
     assert!(runtime
         .read_truth()
-        .read_snapshot(&suspended.commit.snapshot)
+        .read_snapshot(&suspended.commit.snapshot, execution)
         .is_none());
     let retained = runtime
         .read_truth()
-        .read_snapshot(&created.snapshot)
+        .read_snapshot(&created.snapshot, execution)
         .expect("the retained source root remains independently readable");
     assert_eq!(retained.entities(), original.entities());
     assert_eq!(retained.relations(), original.relations());
@@ -44,13 +47,13 @@ fn generated_group_suspends_and_rematerializes_with_exact_identity() {
     assert!(matches!(
         runtime
             .read_truth()
-            .read_observation(&unavailable_basis.observation()),
+            .read_observation(execution, &unavailable_basis.observation()),
         Err(crate::branch::RelationalBranchBasisDenial::MaterializationUnavailable)
     ));
     assert!(matches!(
         runtime
             .read_truth()
-            .project_observation(&unavailable_basis.observation()),
+            .project_observation(execution, &unavailable_basis.observation()),
         Err(crate::branch::RelationalBranchBasisDenial::MaterializationUnavailable)
     ));
     assert!(matches!(
@@ -97,7 +100,7 @@ fn generated_group_suspends_and_rematerializes_with_exact_identity() {
         .expect("the exact complete group rematerializes through owner authority");
     let restored_read = runtime
         .read_truth()
-        .read_snapshot(&restored.snapshot)
+        .read_snapshot(&restored.snapshot, execution)
         .expect("ordinary reads resume after complete reconstruction");
 
     assert_eq!(restored_read.entities(), source_records);

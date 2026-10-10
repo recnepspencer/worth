@@ -11,27 +11,36 @@ use worth_relational::facade::{
 
 #[test]
 fn neutral_native_population_keeps_logical_marking_local_and_matches_revision_oracle() {
-    let mut expected_counts = None;
-    for population in [1, 10, 100, 1000] {
-        let counts = run_population(population);
-        assert_eq!(counts.marked_fact_ordinals, 1);
-        assert_eq!(counts.visited_vertices, 2);
-        assert_eq!(counts.downstream_edges, 1);
-        assert!(counts.matched_fact_postings >= counts.marked_fact_ordinals);
-        if let Some(expected) = expected_counts {
-            assert_eq!(
-                counts, expected,
-                "neutral population {population} changed logical work"
-            );
-        } else {
-            expected_counts = Some(counts);
+    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+        let host_request = crate::test_request_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+        let mut expected_counts = None;
+        for population in [1, 10, 100, 1000] {
+            let counts = run_population(&host_custody, execution, population);
+            assert_eq!(counts.marked_fact_ordinals, 1);
+            assert_eq!(counts.visited_vertices, 2);
+            assert_eq!(counts.downstream_edges, 1);
+            assert!(counts.matched_fact_postings >= counts.marked_fact_ordinals);
+            if let Some(expected) = expected_counts {
+                assert_eq!(
+                    counts, expected,
+                    "neutral population {population} changed logical work"
+                );
+            } else {
+                expected_counts = Some(counts);
+            }
         }
-    }
+    })
 }
 
-fn run_population(population: usize) -> LogicalMarkingCounts {
+fn run_population(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    population: usize,
+) -> LogicalMarkingCounts {
     let world = installed_authorization_world(true);
-    let selected = world.selected_product();
+    let selected = world.selected_product(&(phase_custody).test_host_request());
     let (_, product, _) = selected.into_parts();
     let coordinate = ProductCoordinate {
         occurrence: product.observation().lifecycle_incarnation(),
@@ -64,7 +73,7 @@ fn run_population(population: usize) -> LogicalMarkingCounts {
     );
     let status = locator(status_ref.entity(), status_ref.aspect(), status_ref.field());
     let label = locator(label_ref.entity(), label_ref.aspect(), label_ref.field());
-    handle.with_runtime_mut(|runtime| {
+    handle.with_runtime_mut(execution, |runtime| {
         let references: Vec<_> = (0..population).map(|ordinal| CreatedEntityRef {
             partition_id: PartitionId::main(), kind_id: kind,
             client_key: ClientKey::raw(format!("logical-marking-{ordinal}")),
@@ -100,14 +109,14 @@ fn run_population(population: usize) -> LogicalMarkingCounts {
         // This oracle reads Native revisions directly; it does not call the
         // marking verifier or derive expected ordinals from actor postings.
         let old_revisions: Vec<_> = entities.iter().map(|entity| {
-            let truth = runtime.read_truth().project_snapshot(&before_handle).unwrap();
-            [truth.entity_field_revision(*entity, &label).unwrap(),
-             truth.entity_field_revision(*entity, &status).unwrap()]
+            let truth = runtime.read_truth().project_snapshot(&before_handle, execution).unwrap();
+            [truth.entity_field_revision(execution, *entity, &label).unwrap(),
+             truth.entity_field_revision(execution, *entity, &status).unwrap()]
         }).collect();
         for (entity, output) in entities.iter().zip(&identities) {
             register(owner, output.clone(), Arc::from([
-                field_fact(runtime, &before_handle, *entity, label.clone()),
-                field_fact(runtime, &before_handle, *entity, status.clone()),
+                field_fact(execution, runtime, &before_handle, *entity, label.clone()),
+                field_fact(execution, runtime, &before_handle, *entity, status.clone()),
             ]), &before, OrdSet::new());
             assert!(owner.resources.retained_capacity_bytes()
                 <= owner.resources.installation().maximum_retained_bytes,
@@ -126,9 +135,9 @@ fn run_population(population: usize) -> LogicalMarkingCounts {
             panic!("the actual declared field change must have exact logical counts");
         };
         for ((entity, output), old) in entities.iter().zip(&identities).zip(old_revisions) {
-            let truth = runtime.read_truth().project_snapshot(&after_handle).unwrap();
-            let now = [truth.entity_field_revision(*entity, &label).unwrap(),
-                truth.entity_field_revision(*entity, &status).unwrap()];
+            let truth = runtime.read_truth().project_snapshot(&after_handle, execution).unwrap();
+            let now = [truth.entity_field_revision(execution, *entity, &label).unwrap(),
+                truth.entity_field_revision(execution, *entity, &status).unwrap()];
             let changed: OrdSet<_> = old.iter().zip(now).enumerate()
                 .filter_map(|(ordinal, (old, now))| (*old != now).then_some(ordinal)).collect();
             match currentness(owner, &after, output) {
@@ -147,7 +156,7 @@ fn run_population(population: usize) -> LogicalMarkingCounts {
         let late = RecordedSettlementIdentity::retain(
             &source(entities[0], TypeId::of::<LateOutput>()), coordinate, 0,
         );
-        register(owner, late, Arc::from([field_fact(runtime, &after_handle, entities[0], label.clone())]),
+        register(owner, late, Arc::from([field_fact(execution, runtime, &after_handle, entities[0], label.clone())]),
             &after, OrdSet::new());
         assert_eq!(owner.native_marking_report(&after, &mut owner.edit_admission()).unwrap(), Some(report),
             "a derived registration preserves the original delivery report");

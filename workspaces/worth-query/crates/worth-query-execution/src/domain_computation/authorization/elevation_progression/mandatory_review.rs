@@ -71,6 +71,49 @@ where
 {
     pub fn authorize_mandatory_review<Capability, Operation, Input>(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        mandatory: WorthQueryMandatoryReview,
+        access: WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
+        operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
+        preconditions: TypedMutationPreconditions<
+            Schema,
+            Operation,
+            <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
+        >,
+    ) -> Result<
+        WorthQueryAdmittedApplicationOperation<
+            Schema,
+            Operation,
+            Input,
+            <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
+        >,
+        WorthQueryMandatoryReviewAuthorizationDenial,
+    >
+    where
+        Operation: ApplicationOperationMarkerIdentity<Schema>,
+        Input: ApplicationCapabilityRequest<Schema, Capability>,
+        Input: 'static,
+    {
+        let execution = match phase.execution_request_for(&self.product_runtime) {
+            Ok(execution) => execution,
+            Err(_) => return Err(review_denial(mandatory, crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::ForeignPhase, "phase-custody"))),
+        };
+        self.authorize_mandatory_review_with_request(
+            &execution,
+            mandatory,
+            access,
+            operation,
+            preconditions,
+        )
+    }
+
+    pub(in crate::domain_computation) fn authorize_mandatory_review_with_request<
+        Capability,
+        Operation,
+        Input,
+    >(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         mandatory: WorthQueryMandatoryReview,
         access: WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
         operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
@@ -98,6 +141,7 @@ where
             Err(denial) => return Err(review_denial(mandatory, denial)),
         };
         let admission = match progress_capability_operation(
+            execution,
             self,
             access,
             operation,

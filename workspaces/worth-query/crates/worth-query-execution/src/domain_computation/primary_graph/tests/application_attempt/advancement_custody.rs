@@ -24,9 +24,24 @@ fn product_transaction_refuses_zero_budgets_before_revalidation() {
         let _placement = Restore(place(placement), bound(None));
         let control = installed_authorization_world(true);
         let scope = live_scope();
-        let principal = authenticated_principal(&control, &scope);
-        let account = resolved_account(&control, "open", &scope);
-        let candidate = admitted_program(&control, &principal, &account, &scope, "closed");
+        let principal = control
+            .application
+            .with_host_advancement(|phase| {
+                authenticated_principal(&phase.test_host_request(), &control, &scope)
+            })
+            .expect("installed host call opens");
+        let account = control
+            .application
+            .with_host_advancement(|phase| {
+                resolved_account(&phase.test_host_request(), &control, "open", &scope)
+            })
+            .expect("installed host call opens");
+        let candidate = control
+            .application
+            .with_host_advancement(|phase| {
+                admitted_program(&phase, &control, &principal, &account, &scope, "closed")
+            })
+            .expect("installed host call opens");
         let before = reads();
         let outcome = control
             .application
@@ -51,10 +66,31 @@ fn product_transaction_refuses_zero_budgets_before_revalidation() {
         for zero_memory in [false, true] {
             let world = installed_authorization_world(true);
             let request = live_scope();
-            let principal = authenticated_principal(&world, &request);
-            let account = resolved_account(&world, "open", &request);
-            let program = admitted_program(&world, &principal, &account, &request, "closed");
-            let before_commit = world.selected_product().product().selected_commit().clone();
+            let principal = world
+                .application
+                .with_host_advancement(|phase| {
+                    authenticated_principal(&phase.test_host_request(), &world, &request)
+                })
+                .expect("installed host call opens");
+            let account = world
+                .application
+                .with_host_advancement(|phase| {
+                    resolved_account(&phase.test_host_request(), &world, "open", &request)
+                })
+                .expect("installed host call opens");
+            let program = world
+                .application
+                .with_host_advancement(|phase| {
+                    admitted_program(&phase, &world, &principal, &account, &request, "closed")
+                })
+                .expect("installed host call opens");
+            let before_commit = world
+                .application
+                .with_host_advancement(|phase| world.selected_product(&phase.test_host_request()))
+                .expect("installed host call opens")
+                .product()
+                .selected_commit()
+                .clone();
             let _restore = Restore(
                 place(placement),
                 bound(Some(worth_foundational::ExecutionBudget::new(
@@ -120,7 +156,14 @@ fn product_transaction_refuses_zero_budgets_before_revalidation() {
             );
             assert_eq!(reports(), vec![Err(Denial::Resource(cause))]);
             assert_eq!(
-                world.selected_product().product().selected_commit(),
+                world
+                    .application
+                    .with_host_advancement(
+                        |phase| world.selected_product(&phase.test_host_request())
+                    )
+                    .expect("installed host call opens")
+                    .product()
+                    .selected_commit(),
                 &before_commit
             );
         }

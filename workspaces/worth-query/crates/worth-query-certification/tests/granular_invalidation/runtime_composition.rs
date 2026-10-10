@@ -10,27 +10,30 @@ use worth_query::facade::domain::{
 };
 use worth_query_host::facade::primary_graph::WorthQueryConditionalClockObservationOutcome;
 
-pub fn assert_primary_runtime_composition() {
+pub fn assert_primary_runtime_composition(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) {
     let mut world = CourtroomWorld::publish("blocked");
-    let mut query = build_primary_query_world(&world);
+    let mut query = build_primary_query_world(request_execution, &world);
     assert_eq!(query.observations.full_target_reads(), 1);
     assert_eq!(query.observations.exact_record_reads(), 0);
-    let mut suppressed = observe(&mut world);
+    let mut suppressed = observe(request_execution, &mut world);
     assert_eq!(suppressed.committed_operation_count(), 0);
     assert!(suppressed.take_granular_invalidation_batch().is_empty());
 
     world.amend_intent(1, "active", "ready");
-    let mut reconsidered = observe(&mut world);
+    let mut reconsidered = observe(request_execution, &mut world);
     assert_eq!(reconsidered.committed_operation_count(), 1);
     let binding = bind_primary_runtime_granular_invalidations(
         &query.live,
         world.application.granular_invalidation_installation(),
     );
     let foreign_host = CourtroomWorld::publish("blocked");
-    let mut foreign_query = build_primary_query_world(&foreign_host);
+    let mut foreign_query = build_primary_query_world(request_execution, &foreign_host);
     let foreign_exact_reads = foreign_query.observations.exact_record_reads();
     assert!(matches!(
         maintain_primary_runtime_granular_invalidations(
+            request_execution,
             &foreign_query.live,
             &mut foreign_query.workspace,
             &binding,
@@ -55,9 +58,14 @@ pub fn assert_primary_runtime_composition() {
             .value(worth_signal::facade::adapters::InvalidationPerformedCounter::NodesEvaluated),
         1
     );
-    let performed =
-        maintain_primary_runtime_granular_batch(&query.live, &mut query.workspace, &binding, batch)
-            .expect("the exact primary delivery must maintain the Query projection");
+    let performed = maintain_primary_runtime_granular_batch(
+        request_execution,
+        &query.live,
+        &mut query.workspace,
+        &binding,
+        batch,
+    )
+    .expect("the exact primary delivery must maintain the Query projection");
     let WorthQueryPrimaryGranularMaintenanceOutcome::Performed(performed) = performed else {
         panic!("the changed primary record must perform Query maintenance")
     };
@@ -97,15 +105,17 @@ pub fn assert_primary_runtime_composition() {
     assert_eq!(query.observations.exact_record_reads(), 1);
     assert_eq!(query.observations.full_target_reads(), 1);
 
-    assert_reinstallation_revokes_captured_delivery();
+    assert_reinstallation_revokes_captured_delivery(request_execution);
 }
 
-pub fn assert_head_advance_preserves_admitted_granular_read() {
+pub fn assert_head_advance_preserves_admitted_granular_read(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) {
     let mut world = CourtroomWorld::publish("blocked");
-    let mut query = build_primary_query_world(&world);
+    let mut query = build_primary_query_world(request_execution, &world);
     drop(world.conditional_clock());
     world.amend_intent(1, "active", "ready");
-    let mut receipt = observe(&mut world);
+    let mut receipt = observe(request_execution, &mut world);
     let batch = receipt.take_granular_invalidation_batch();
     let binding = bind_primary_runtime_granular_invalidations(
         &query.live,
@@ -115,9 +125,14 @@ pub fn assert_head_advance_preserves_admitted_granular_read() {
 
     world.amend_gate_only("blocked");
 
-    let outcome =
-        maintain_primary_runtime_granular_batch(&query.live, &mut query.workspace, &binding, batch)
-            .expect("the retained exact basis must survive a later primary head advance");
+    let outcome = maintain_primary_runtime_granular_batch(
+        request_execution,
+        &query.live,
+        &mut query.workspace,
+        &binding,
+        batch,
+    )
+    .expect("the retained exact basis must survive a later primary head advance");
     assert!(matches!(
         outcome,
         WorthQueryPrimaryGranularMaintenanceOutcome::Performed(_)
@@ -125,15 +140,18 @@ pub fn assert_head_advance_preserves_admitted_granular_read() {
     assert_eq!(query.observations.exact_record_reads(), reads_before + 1);
 }
 
-pub fn assert_granular_receipt_uses_execution_snapshot_basis() {
+pub fn assert_granular_receipt_uses_execution_snapshot_basis(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) {
     let mut world = CourtroomWorld::publish("blocked");
     let mut ambient_snapshot_world = CourtroomWorld::publish("blocked");
-    let mut query = build_with_foreign_snapshot_adapter(&world, &ambient_snapshot_world);
+    let mut query =
+        build_with_foreign_snapshot_adapter(request_execution, &world, &ambient_snapshot_world);
     drop(world.conditional_clock());
     ambient_snapshot_world.amend_intent(8, "active", "ready");
 
     world.amend_intent(1, "active", "ready");
-    let mut receipt = observe(&mut world);
+    let mut receipt = observe(request_execution, &mut world);
     let batch = receipt.take_granular_invalidation_batch();
     let expected_bridge_snapshot = batch
         .source_read_basis()
@@ -149,9 +167,14 @@ pub fn assert_granular_receipt_uses_execution_snapshot_basis() {
         &query.live,
         world.application.granular_invalidation_installation(),
     );
-    let outcome =
-        maintain_primary_runtime_granular_batch(&query.live, &mut query.workspace, &binding, batch)
-            .expect("the current primary batch must perform against its own source basis");
+    let outcome = maintain_primary_runtime_granular_batch(
+        request_execution,
+        &query.live,
+        &mut query.workspace,
+        &binding,
+        batch,
+    )
+    .expect("the current primary batch must perform against its own source basis");
     let WorthQueryPrimaryGranularMaintenanceOutcome::Performed(performed) = outcome else {
         panic!("the exact primary change must perform maintenance")
     };
@@ -167,9 +190,13 @@ pub fn assert_granular_receipt_uses_execution_snapshot_basis() {
     );
 }
 
-pub fn assert_unrelated_bridge_mapping_slope() {
-    let baseline = observe_scaled_primary_world(0, PrimaryQueryScale::default(), false);
+pub fn assert_unrelated_bridge_mapping_slope(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) {
+    let baseline =
+        observe_scaled_primary_world(request_execution, 0, PrimaryQueryScale::default(), false);
     let wide = observe_scaled_primary_world(
+        request_execution,
         0,
         PrimaryQueryScale {
             unrelated_bridge_mappings: 64,
@@ -180,15 +207,23 @@ pub fn assert_unrelated_bridge_mapping_slope() {
     assert_eq!(wide, baseline);
 }
 
-pub fn assert_unrelated_result_row_slope() {
-    let baseline = observe_scaled_primary_world(0, PrimaryQueryScale::default(), false);
-    let wide = observe_scaled_primary_world(64, PrimaryQueryScale::default(), false);
+pub fn assert_unrelated_result_row_slope(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) {
+    let baseline =
+        observe_scaled_primary_world(request_execution, 0, PrimaryQueryScale::default(), false);
+    let wide =
+        observe_scaled_primary_world(request_execution, 64, PrimaryQueryScale::default(), false);
     assert_eq!(wide, baseline);
 }
 
-pub fn assert_unrelated_signal_subscriber_slope() {
-    let baseline = observe_scaled_primary_world(0, PrimaryQueryScale::default(), false);
+pub fn assert_unrelated_signal_subscriber_slope(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) {
+    let baseline =
+        observe_scaled_primary_world(request_execution, 0, PrimaryQueryScale::default(), false);
     let wide = observe_scaled_primary_world(
+        request_execution,
         0,
         PrimaryQueryScale {
             unrelated_signal_subscribers: 64,
@@ -199,9 +234,13 @@ pub fn assert_unrelated_signal_subscriber_slope() {
     assert_eq!(wide, baseline);
 }
 
-pub fn assert_unrelated_installed_query_slope() {
-    let baseline = observe_scaled_primary_world(0, PrimaryQueryScale::default(), false);
+pub fn assert_unrelated_installed_query_slope(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) {
+    let baseline =
+        observe_scaled_primary_world(request_execution, 0, PrimaryQueryScale::default(), false);
     let wide = observe_scaled_primary_world(
+        request_execution,
         0,
         PrimaryQueryScale {
             install_unrelated_query: true,
@@ -212,9 +251,13 @@ pub fn assert_unrelated_installed_query_slope() {
     assert_eq!(wide, baseline);
 }
 
-pub fn assert_returned_bridge_candidate_rejection_slope() {
-    let baseline = observe_scaled_primary_world(0, PrimaryQueryScale::default(), false);
-    let noisy = observe_scaled_primary_world(0, PrimaryQueryScale::default(), true);
+pub fn assert_returned_bridge_candidate_rejection_slope(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) {
+    let baseline =
+        observe_scaled_primary_world(request_execution, 0, PrimaryQueryScale::default(), false);
+    let noisy =
+        observe_scaled_primary_world(request_execution, 0, PrimaryQueryScale::default(), true);
     assert_eq!(noisy.signal, baseline.signal);
     assert_eq!(noisy.query_admission, baseline.query_admission);
     assert_eq!(noisy.query_maintenance, baseline.query_maintenance);
@@ -247,6 +290,7 @@ struct ObservedCompositionWork {
 }
 
 fn observe_scaled_primary_world(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     unrelated_result_rows: usize,
     scale: PrimaryQueryScale,
     rejected_bridge_candidates: bool,
@@ -254,8 +298,12 @@ fn observe_scaled_primary_world(
     use crate::query_runtime_world::ConsumerProfile;
 
     let mut host = CourtroomWorld::publish_with_unrelated_rows("blocked", unrelated_result_rows);
-    let mut query =
-        build_primary_query_world_with_dimensions(&host, ConsumerProfile::ValuePatch, scale);
+    let mut query = build_primary_query_world_with_dimensions(
+        request_execution,
+        &host,
+        ConsumerProfile::ValuePatch,
+        scale,
+    );
     let binding = bind_primary_runtime_granular_invalidations(
         &query.live,
         host.application.granular_invalidation_installation(),
@@ -266,12 +314,17 @@ fn observe_scaled_primary_world(
     } else {
         host.amend_gate_only("ready");
     }
-    let mut observation = observe(&mut host);
+    let mut observation = observe(request_execution, &mut host);
     let batch = observation.take_granular_invalidation_batch();
     let lower = batch.observation();
-    let outcome =
-        maintain_primary_runtime_granular_batch(&query.live, &mut query.workspace, &binding, batch)
-            .unwrap();
+    let outcome = maintain_primary_runtime_granular_batch(
+        request_execution,
+        &query.live,
+        &mut query.workspace,
+        &binding,
+        batch,
+    )
+    .unwrap();
     let WorthQueryPrimaryGranularMaintenanceOutcome::Performed(performed) = outcome else {
         panic!("the exact scaled world must perform maintenance")
     };
@@ -284,18 +337,21 @@ fn observe_scaled_primary_world(
     }
 }
 
-fn assert_reinstallation_revokes_captured_delivery() {
+fn assert_reinstallation_revokes_captured_delivery(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) {
     let mut host = CourtroomWorld::publish("blocked");
-    let mut query = build_primary_query_world(&host);
+    let mut query = build_primary_query_world(request_execution, &host);
     let binding = bind_primary_runtime_granular_invalidations(
         &query.live,
         host.application.granular_invalidation_installation(),
     );
     host.amend_intent(1, "active", "ready");
-    let mut receipt = observe(&mut host);
+    let mut receipt = observe(request_execution, &mut host);
     host.reinstall_conditional_runtime().unwrap();
     assert!(matches!(
         maintain_primary_runtime_granular_invalidations(
+            request_execution,
             &query.live,
             &mut query.workspace,
             &binding,
@@ -307,11 +363,12 @@ fn assert_reinstallation_revokes_captured_delivery() {
 }
 
 fn observe(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &mut CourtroomWorld,
 ) -> worth_query_host::facade::primary_graph::WorthQueryConditionalClockObservationReceipt<
     crate::adapters::CourtroomClock,
 > {
-    match world.conditional_clock().observe() {
+    match world.conditional_clock().observe(request_execution) {
         WorthQueryConditionalClockObservationOutcome::Accepted(receipt) => receipt,
         _ => panic!("the due courtroom observation must be accepted"),
     }

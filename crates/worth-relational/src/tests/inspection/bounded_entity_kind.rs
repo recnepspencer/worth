@@ -8,6 +8,9 @@ const RELATION_KIND: crate::facade::identity::KindId = crate::facade::identity::
 
 #[test]
 fn a_bounded_kind_read_admits_exactly_the_work_the_live_kind_costs() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let mut live = Vec::new();
     for ordinal in 0..8 {
@@ -21,7 +24,7 @@ fn a_bounded_kind_read_admits_exactly_the_work_the_live_kind_costs() {
     // record it materialized into.
     let exact = runtime
         .read_truth()
-        .bounded_visible_entities_of_kind(ENTITY_KIND, version, 14)
+        .bounded_visible_entities_of_kind(execution, ENTITY_KIND, version, 14)
         .expect("fourteen units pay for seven live entities of the kind");
     assert_eq!(exact.entity_slots_examined(), 7);
     assert_eq!(exact.entity_records_reserved(), 7);
@@ -45,7 +48,7 @@ fn a_bounded_kind_read_admits_exactly_the_work_the_live_kind_costs() {
 
     let refused = runtime
         .read_truth()
-        .bounded_visible_entities_of_kind(ENTITY_KIND, version, 13)
+        .bounded_visible_entities_of_kind(execution, ENTITY_KIND, version, 13)
         .expect_err("one unit short cannot enumerate the whole kind");
     assert_eq!(refused.consumed_work_units(), 13);
     assert_eq!(refused.entity_slots_examined(), 7);
@@ -54,6 +57,9 @@ fn a_bounded_kind_read_admits_exactly_the_work_the_live_kind_costs() {
 
 #[test]
 fn a_kind_with_no_entities_still_costs_the_slots_it_had_to_look_at() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     for ordinal in 0..5 {
         create_entity(&runtime, &format!("part-{ordinal}"));
@@ -65,7 +71,7 @@ fn a_kind_with_no_entities_still_costs_the_slots_it_had_to_look_at() {
     // the answer is empty: cost follows the state that exists, not the answer.
     let empty = runtime
         .read_truth()
-        .bounded_visible_entities_of_kind(RELATION_KIND, version, 5)
+        .bounded_visible_entities_of_kind(execution, RELATION_KIND, version, 5)
         .expect("five units pay for looking at five entity slots");
     assert_eq!(empty.entity_slots_examined(), 5);
     assert_eq!(empty.entity_records_reserved(), 0);
@@ -73,7 +79,7 @@ fn a_kind_with_no_entities_still_costs_the_slots_it_had_to_look_at() {
 
     let refused = runtime
         .read_truth()
-        .bounded_visible_entities_of_kind(RELATION_KIND, version, 4)
+        .bounded_visible_entities_of_kind(execution, RELATION_KIND, version, 4)
         .expect_err("four units cannot look at five slots");
     assert_eq!(refused.entity_slots_examined(), 4);
     assert_eq!(refused.entity_records_reserved(), 0);
@@ -81,12 +87,15 @@ fn a_kind_with_no_entities_still_costs_the_slots_it_had_to_look_at() {
 
 #[test]
 fn a_maximum_of_zero_refuses_before_examining_anything() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     create_entity(&runtime, "part");
 
     let refused = runtime
         .read_truth()
-        .bounded_visible_entities_of_kind(ENTITY_KIND, runtime.current_version_id(), 0)
+        .bounded_visible_entities_of_kind(execution, ENTITY_KIND, runtime.current_version_id(), 0)
         .expect_err("a budget of zero admits no work at all");
     assert_eq!(refused.entity_slots_examined(), 0);
     assert_eq!(refused.entity_records_reserved(), 0);
@@ -95,13 +104,16 @@ fn a_maximum_of_zero_refuses_before_examining_anything() {
 
 #[test]
 fn current_kind_read_refuses_before_materializing_an_unadmitted_record() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     create_entity(&runtime, "part");
 
     runtime.performance_access().reset_counters();
     let refused = runtime
         .read_truth()
-        .bounded_visible_entities_of_kind(ENTITY_KIND, runtime.current_version_id(), 1)
+        .bounded_visible_entities_of_kind(execution, ENTITY_KIND, runtime.current_version_id(), 1)
         .expect_err("one unit pays for the slot but not its record");
     let counters = runtime.performance_access().counters();
 
@@ -115,6 +127,9 @@ fn current_kind_read_refuses_before_materializing_an_unadmitted_record() {
 
 #[test]
 fn historical_kind_read_refuses_before_materializing_an_unadmitted_record() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     create_entity(&runtime, "early");
     let historical_version = runtime.current_version_id();
@@ -123,7 +138,7 @@ fn historical_kind_read_refuses_before_materializing_an_unadmitted_record() {
     runtime.performance_access().reset_counters();
     let refused = runtime
         .read_truth()
-        .bounded_visible_entities_of_kind(ENTITY_KIND, historical_version, 1)
+        .bounded_visible_entities_of_kind(execution, ENTITY_KIND, historical_version, 1)
         .expect_err("one unit pays for the historical slot but not its record");
     let counters = runtime.performance_access().counters();
 
@@ -137,6 +152,9 @@ fn historical_kind_read_refuses_before_materializing_an_unadmitted_record() {
 
 #[test]
 fn the_unbounded_kind_read_answers_exactly_as_the_bounded_one() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     for ordinal in 0..6 {
         create_entity(&runtime, &format!("part-{ordinal}"));
@@ -146,13 +164,13 @@ fn the_unbounded_kind_read_answers_exactly_as_the_bounded_one() {
 
     let unbounded = runtime
         .read_truth()
-        .visible_entities_of_kind(ENTITY_KIND, version)
+        .visible_entities_of_kind(execution, ENTITY_KIND, version)
         .into_iter()
         .map(|record| record.entity_id)
         .collect::<Vec<_>>();
     let bounded = runtime
         .read_truth()
-        .bounded_visible_entities_of_kind(ENTITY_KIND, version, usize::MAX)
+        .bounded_visible_entities_of_kind(execution, ENTITY_KIND, version, usize::MAX)
         .expect("an unbounded budget cannot be exhausted")
         .into_records()
         .into_iter()
@@ -164,6 +182,9 @@ fn the_unbounded_kind_read_answers_exactly_as_the_bounded_one() {
 
 #[test]
 fn a_bounded_kind_read_answers_the_version_it_was_asked_for() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let early = create_entity(&runtime, "early");
     let before = runtime.current_version_id();
@@ -171,7 +192,7 @@ fn a_bounded_kind_read_answers_the_version_it_was_asked_for() {
 
     let historical = runtime
         .read_truth()
-        .bounded_visible_entities_of_kind(ENTITY_KIND, before, usize::MAX)
+        .bounded_visible_entities_of_kind(execution, ENTITY_KIND, before, usize::MAX)
         .expect("an unbounded budget cannot be exhausted")
         .into_records()
         .into_iter()
@@ -185,7 +206,12 @@ fn a_bounded_kind_read_answers_the_version_it_was_asked_for() {
 
     let current = runtime
         .read_truth()
-        .bounded_visible_entities_of_kind(ENTITY_KIND, runtime.current_version_id(), usize::MAX)
+        .bounded_visible_entities_of_kind(
+            execution,
+            ENTITY_KIND,
+            runtime.current_version_id(),
+            usize::MAX,
+        )
         .expect("an unbounded budget cannot be exhausted")
         .into_records()
         .into_iter()
@@ -197,6 +223,9 @@ fn a_bounded_kind_read_answers_the_version_it_was_asked_for() {
 
 #[test]
 fn a_refused_historical_kind_read_charges_only_slots_it_examined() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let _early = create_entity(&runtime, "early");
     let historical_version = runtime.current_version_id();
@@ -205,7 +234,7 @@ fn a_refused_historical_kind_read_charges_only_slots_it_examined() {
     runtime.performance_access().reset_counters();
     let refused = runtime
         .read_truth()
-        .bounded_visible_entities_of_kind(RELATION_KIND, historical_version, 1)
+        .bounded_visible_entities_of_kind(execution, RELATION_KIND, historical_version, 1)
         .expect_err("one work unit cannot examine the whole historical arena");
     let counters = runtime.performance_access().counters();
 

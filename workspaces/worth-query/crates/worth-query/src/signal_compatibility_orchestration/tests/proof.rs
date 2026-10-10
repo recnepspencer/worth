@@ -21,18 +21,21 @@ use super::support::{orchestration_input, SignalDomain, SignalFamily, SignalWorl
 mod outcome_tests;
 
 fn proof_handle(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &'static str,
 ) -> crate::application::WorthQueryInstalledDomainDeclarationContext<SignalDomain, SignalWorld> {
-    proof_signal_context(SignalWorld(world))
+    proof_signal_context(request_execution, SignalWorld(world))
 }
 
 fn proof_signal_context<C>(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     context: C,
 ) -> crate::application::WorthQueryInstalledDomainDeclarationContext<SignalDomain, C>
 where
     C: WorthQueryDomainOperatingContext<SignalDomain>,
 {
     crate::application::domain_test_support::installed_declaration_context(
+        request_execution,
         SignalDomain,
         context,
         [
@@ -260,17 +263,19 @@ impl WorthQueryDeclarationInput<SignalDomain> for HistoricalBasisSignalInput {
 }
 
 fn admitted_basis_mismatch_handle(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> crate::application::WorthQueryInstalledDomainDeclarationContext<SignalDomain, BasisMismatchWorld>
 {
-    proof_signal_context(BasisMismatchWorld)
+    proof_signal_context(request_execution, BasisMismatchWorld)
 }
 
 fn admitted_same_world_different_handle(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> crate::application::WorthQueryInstalledDomainDeclarationContext<
     SignalDomain,
     SharedIdentityDifferentHandleWorld,
 > {
-    proof_signal_context(SharedIdentityDifferentHandleWorld)
+    proof_signal_context(request_execution, SharedIdentityDifferentHandleWorld)
 }
 
 fn local_input<I>(

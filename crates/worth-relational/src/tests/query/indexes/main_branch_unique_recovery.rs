@@ -4,6 +4,9 @@ use crate::validation::data::{InvariantCatalog, InvariantRegistration, Invariant
 
 #[test]
 fn unique_index_rebuild_uses_main_head_when_a_feature_commit_is_globally_newer() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema_and_invariants(InvariantCatalog {
         registrations: vec![InvariantRegistration::mutation_sensitive_blocking(
             InvariantRule::unique_entity_aspect_field(aspect_key("name"), field_key("name")),
@@ -23,7 +26,7 @@ fn unique_index_rebuild_uses_main_head_when_a_feature_commit_is_globally_newer()
 
     runtime
         .index_authority()
-        .rebuild_unique_entity_aspect_field_indexes()
+        .rebuild_unique_entity_aspect_field_indexes(execution)
         .expect("rebuild admits the configured main branch head");
 
     let name_field = aspect_field_locator(aspect_key("name"), field_key("name"));

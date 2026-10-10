@@ -13,6 +13,7 @@ use worth_relational::facade::runtime::{RelationalAdjacencyDirection, Relational
 use worth_relational::facade::storage::RecordLifecycleState;
 
 pub(super) fn observe(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
@@ -24,11 +25,12 @@ pub(super) fn observe(
     check_request_live(policy, subject)?;
     let view = runtime
         .read_truth()
-        .project_snapshot(snapshot)
+        .project_snapshot(snapshot, execution)
         .ok_or_else(|| super::denial(subject))?;
     let mut relations = Vec::new();
     let mut examined = 0usize;
     view.try_visit_adjacency_ids(
+        execution,
         evidence,
         layout.evidence_dependency_relation,
         RelationalAdjacencyDirection::Outgoing,
@@ -39,7 +41,7 @@ pub(super) fn observe(
                     .checked_add(1)
                     .ok_or_else(|| StoreDenial::Representability.into_attempt_denial(subject))?;
                 let Some(relation) = view
-                    .exact_relation_metadata(id)
+                    .exact_relation_metadata(execution, id)
                     .map_err(|_| super::denial(subject))?
                 else {
                     return Ok(());

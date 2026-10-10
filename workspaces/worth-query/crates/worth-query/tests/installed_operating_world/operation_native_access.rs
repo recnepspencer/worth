@@ -8,7 +8,10 @@ use super::installed_operation_fixture::{
 
 #[test]
 fn installed_projection_key_borrows_the_exact_foundational_value_in_constant_work() {
-    let mut workspace = workspace("installed-native-access", false).unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = workspace(request_execution, "installed-native-access", false).unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
         .observe_operating_world(workspace.current_world())
@@ -48,7 +51,10 @@ fn installed_projection_key_borrows_the_exact_foundational_value_in_constant_wor
 
 #[test]
 fn key_from_an_equivalent_distinct_capability_is_denied_before_indexing() {
-    let mut workspace = workspace("installed-native-affinity", false).unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = workspace(request_execution, "installed-native-affinity", false).unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let owner = workspace
         .observe_operating_world(workspace.current_world())
@@ -98,7 +104,10 @@ fn key_from_an_equivalent_distinct_capability_is_denied_before_indexing() {
 
 #[test]
 fn out_of_bounds_row_is_distinct_and_does_no_fact_access() {
-    let mut workspace = workspace("installed-native-row-bound", false).unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = workspace(request_execution, "installed-native-row-bound", false).unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
         .observe_operating_world(workspace.current_world())
@@ -133,7 +142,11 @@ fn out_of_bounds_row_is_distinct_and_does_no_fact_access() {
 
 #[test]
 fn access_key_requires_the_bound_native_layout() {
-    let mut workspace = workspace("installed-native-layout-required", false).unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace =
+        workspace(request_execution, "installed-native-layout-required", false).unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let owner = workspace
         .observe_operating_world(workspace.current_world())
@@ -177,7 +190,11 @@ fn access_key_requires_the_bound_native_layout() {
 
 #[test]
 fn workflow_publication_uses_the_same_bound_native_access_contract() {
-    let mut workspace = workflow_workspace("installed-workflow-native-access").unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace =
+        workflow_workspace(request_execution, "installed-workflow-native-access").unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
         .observe_operating_world(workspace.current_world())

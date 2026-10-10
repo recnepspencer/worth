@@ -2,6 +2,9 @@ use super::*;
 
 #[test]
 fn downstream_refresh_fallback_seeds_retained_derived_and_live_rows_during_declaration() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     struct MixedUpstreamSnapshotMaintainer;
 
     impl WorthQueryDerivedViewMaintainer for MixedUpstreamSnapshotMaintainer {
@@ -68,9 +71,10 @@ fn downstream_refresh_fallback_seeds_retained_derived_and_live_rows_during_decla
         }
     }
 
-    let mut runtime = stateful_bridge_task_issue_runtime();
+    let mut runtime = stateful_bridge_task_issue_runtime(request_execution);
     let tasks = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "tasks.table",
             task_live_request(),
             task_schema(),
@@ -78,6 +82,7 @@ fn downstream_refresh_fallback_seeds_retained_derived_and_live_rows_during_decla
         .expect("task live view should declare");
     let issues = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "issues.table",
             issue_live_request(),
             issue_schema(),
@@ -85,32 +90,39 @@ fn downstream_refresh_fallback_seeds_retained_derived_and_live_rows_during_decla
         .expect("issue live view should declare");
 
     runtime
-        .write(insert_command(
-            "Issue",
-            [
-                ("identity.id", test_string_aspect_value("")),
-                (
-                    "summary.value",
-                    test_string_aspect_value("Retained issue sibling"),
-                ),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Issue",
+                [
+                    ("identity.id", test_string_aspect_value("")),
+                    (
+                        "summary.value",
+                        test_string_aspect_value("Retained issue sibling"),
+                    ),
+                ],
+            ),
+        )
         .expect("issue insert should retain live sibling before declaration");
     runtime
-        .write(insert_command(
-            "Task",
-            [
-                ("identity.id", test_string_aspect_value("")),
-                (
-                    "title.value",
-                    test_string_aspect_value("Retained task upstream"),
-                ),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [
+                    ("identity.id", test_string_aspect_value("")),
+                    (
+                        "title.value",
+                        test_string_aspect_value("Retained task upstream"),
+                    ),
+                ],
+            ),
+        )
         .expect("task insert should retain live upstream before declaration");
 
     let refresh = runtime
         .declare_maintained_derived_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             WorthQueryDerivedView::new("computed.refresh.seed.count", touches(["title"]))
                 .depends_on_live(&tasks)
                 .produces(touches(["summary.count"]))
@@ -120,6 +132,7 @@ fn downstream_refresh_fallback_seeds_retained_derived_and_live_rows_during_decla
         .expect("upstream refresh maintainer should seed during declaration");
     let downstream = runtime
         .declare_maintained_derived_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             WorthQueryDerivedView::new(
                 "computed.refresh.seed.mixed",
                 touches(["summary.count", "summary"]),
@@ -133,7 +146,7 @@ fn downstream_refresh_fallback_seeds_retained_derived_and_live_rows_during_decla
         .expect("downstream mixed refresh maintainer should seed during declaration");
 
     assert_eq!(
-        read_derived_value_aspects(&runtime, &downstream),
+        read_derived_value_aspects(request_execution, &runtime, &downstream),
         vec![test_string_aspect_value("derived:1|live:1".to_string())]
     );
     assert!(

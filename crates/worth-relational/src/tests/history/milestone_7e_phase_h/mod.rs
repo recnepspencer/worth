@@ -129,6 +129,9 @@ fn retained_schema_reconciliation_witness_rejects_forged_or_rehashed_truth() {
 #[test]
 fn retained_schema_reconciliation_witness_preserves_runtime_additive_truth_across_authority_lanes()
 {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime =
         persisted_runtime_with_schema_declared_entity_policy(AspectMergePolicyKind::PreferRicher);
     create_named_entity_on_branch(&runtime, "main-shared", "shared-name", None, "main");
@@ -143,7 +146,7 @@ fn retained_schema_reconciliation_witness_preserves_runtime_additive_truth_acros
 
     let prepared = runtime
         .merge()
-        .prepare_merge_execution(merge_request())
+        .prepare_merge_execution(execution, merge_request())
         .expect("prepared merge");
     let planning_witness = prepared.artifact().schema_reconciliation_witness.clone();
     let additive_row = planning_witness
@@ -152,10 +155,10 @@ fn retained_schema_reconciliation_witness_preserves_runtime_additive_truth_acros
         .find(|row| row.classification() == SchemaReconciliationClassification::Additive)
         .expect("runtime additive schema witness row");
     let outcome = runtime
-        .execute_prepared_merge(prepared)
+        .execute_prepared_merge(execution, prepared)
         .expect("executed merge");
     let live_authority = published_merge_authority(&runtime, outcome.commit.commit.commit_id);
-    let (_recovery, recovered) = checkpoint_and_recover_with(&runtime, || {
+    let (_recovery, recovered) = checkpoint_and_recover_with(execution, &runtime, || {
         persisted_runtime_with_schema_declared_entity_policy(AspectMergePolicyKind::PreferRicher)
     });
     let recovered_authority =
@@ -199,6 +202,9 @@ fn retained_schema_reconciliation_witness_preserves_runtime_additive_truth_acros
 
 #[test]
 fn retained_schema_reconciliation_witness_preserves_runtime_narrowing_truth() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_schema_declared_entity_policy(AspectMergePolicyKind::LastWriterWins);
     create_named_entity_on_branch(
         &runtime,
@@ -212,7 +218,7 @@ fn retained_schema_reconciliation_witness_preserves_runtime_narrowing_truth() {
 
     let prepared = runtime
         .merge()
-        .prepare_merge_execution(merge_request())
+        .prepare_merge_execution(execution, merge_request())
         .expect("prepared merge");
     let row = prepared
         .artifact()
@@ -236,6 +242,9 @@ fn retained_schema_reconciliation_witness_preserves_runtime_narrowing_truth() {
 
 #[test]
 fn retained_schema_reconciliation_witness_keeps_runtime_type_denial_typed() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_schema_declared_entity_policy(AspectMergePolicyKind::FailOnConflict);
     create_named_entity_on_branch(
         &runtime,
@@ -255,7 +264,7 @@ fn retained_schema_reconciliation_witness_keeps_runtime_type_denial_typed() {
 
     let artifact = runtime
         .merge()
-        .inspect_planning_scope(merge_planning_request())
+        .inspect_planning_scope(execution, merge_planning_request())
         .expect("planning artifact");
     let row = artifact
         .schema_reconciliation_witness
@@ -280,6 +289,9 @@ fn retained_schema_reconciliation_witness_keeps_runtime_type_denial_typed() {
 
 #[test]
 fn retained_schema_reconciliation_witness_keeps_runtime_structural_denial_typed() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_relation_identity_registry(unique_test_store_path(
         "worth-relational-7e-phase-h-topology",
     ));
@@ -315,7 +327,7 @@ fn retained_schema_reconciliation_witness_keeps_runtime_structural_denial_typed(
 
     let artifact = runtime
         .merge()
-        .inspect_planning_scope(merge_planning_request())
+        .inspect_planning_scope(execution, merge_planning_request())
         .expect("planning artifact");
     let row = artifact
         .schema_reconciliation_witness

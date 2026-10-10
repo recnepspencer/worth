@@ -16,6 +16,7 @@ impl<'a> WorthQueryGraphReadMaterializationRuntime<'a> {
 
     pub fn admit(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: WorthQueryGraphReadMaterializationRequest,
     ) -> Result<WorthQueryGraphReadMaterializationAdmittedJob, WorthQueryRuntimeError> {
         self.runtime
@@ -23,7 +24,7 @@ impl<'a> WorthQueryGraphReadMaterializationRuntime<'a> {
         Ok(WorthQueryGraphReadMaterializationAdmittedJob {
             snapshot_identity: self
                 .runtime
-                .current_snapshot_identity()
+                .current_snapshot_identity_with_request(execution)
                 .evidence_identity()
                 .as_str()
                 .to_string(),

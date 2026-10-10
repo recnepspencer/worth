@@ -44,6 +44,7 @@ where
 {
     pub(super) fn commit_projected_temporal_effect<Clock>(
         &self,
+execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
 
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -62,10 +63,10 @@ where
         LifecycleValue: Clone,
     {
         let reads = runtime
-            .begin_projected_application_read_attempt(projected.admission, projected.projection, worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+            .begin_projected_application_read_attempt_with_request(execution, projected.admission, projected.projection, worth_execution::ExecutionAllocationPolicy::SystemAllocation)
             .map_err(|denial| denial.to_string())?;
         let mut effects = reads
-            .complete_projected_dependencies(crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
+            .complete_projected_dependencies_with_request(execution, crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
             .map_err(|denial| denial.to_string())?
             .begin_effect_program();
         isolate_invoker(|| {
@@ -94,7 +95,7 @@ where
             .map_err(|denial| denial.to_string())?;
         let program = effects.finish().map_err(|denial| denial.to_string())?;
         Ok(classify_commit(
-            runtime.compare_and_commit_conditional_operation(phase, program, idempotency.binding()),
+            runtime.compare_and_commit_conditional_operation(execution, phase, program, idempotency.binding()),
         ))
     }
 }

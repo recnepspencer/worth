@@ -20,6 +20,9 @@ use super::support::{
 
 #[test]
 fn mutation_execution_mints_receipt_first_envelope_and_diagnostics() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = relational_runtime_with_intent_strategy();
     let entity_id = create_entity(&mut runtime, "before", BranchId("main".to_string()));
     crate::runtime::fork_branch_from_exact_source(
@@ -38,7 +41,10 @@ fn mutation_execution_mints_receipt_first_envelope_and_diagnostics() {
     ))
     .lower()
     .expect("mutation should lower")
-    .execute_receipt_with(EffectExecutionAuthority::relational(&mut runtime))
+    .execute_receipt_with(
+        request_execution,
+        EffectExecutionAuthority::relational(&mut runtime),
+    )
     .expect("mutation should execute to receipt");
 
     assert_eq!(
@@ -119,6 +125,9 @@ fn mutation_execution_mints_receipt_first_envelope_and_diagnostics() {
 
 #[test]
 fn receipt_only_mutations_release_each_bounded_published_snapshot() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = relational_runtime_with_intent_strategy();
     let entity_id = create_entity(&mut runtime, "before", BranchId("main".to_string()));
     crate::runtime::fork_branch_from_exact_source(
@@ -144,7 +153,10 @@ fn receipt_only_mutations_release_each_bounded_published_snapshot() {
         ))
         .lower()
         .unwrap()
-        .execute_receipt_with(EffectExecutionAuthority::relational(&mut runtime))
+        .execute_receipt_with(
+            request_execution,
+            EffectExecutionAuthority::relational(&mut runtime),
+        )
         .unwrap();
         assert!(matches!(
             receipt.target_evidence(),
@@ -162,11 +174,14 @@ fn receipt_only_mutations_release_each_bounded_published_snapshot() {
 
 #[test]
 fn writeback_execution_mints_write_receipt_family() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let bridge = test_bridge_with_writeback_authority();
     let receipt = scope_admitted_effect_plan(admitted_tenant_writeback_effect())
         .lower()
         .expect("writeback should lower")
-        .execute_receipt_with(EffectExecutionAuthority::bridge(&bridge))
+        .execute_receipt_with(request_execution, EffectExecutionAuthority::bridge(&bridge))
         .expect("writeback should execute to receipt");
 
     assert_eq!(
@@ -198,7 +213,7 @@ fn writeback_execution_mints_write_receipt_family() {
     let executed = scope_admitted_effect_plan(admitted_tenant_writeback_effect())
         .lower()
         .expect("writeback should lower")
-        .execute_with(EffectExecutionAuthority::bridge(&bridge))
+        .execute_with(request_execution, EffectExecutionAuthority::bridge(&bridge))
         .expect("writeback should still execute");
     let (_, truth_receipt) = executed
         .as_writeback()
@@ -211,6 +226,9 @@ fn writeback_execution_mints_write_receipt_family() {
 
 #[test]
 fn batch_execution_mints_batch_write_receipt_family() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = relational_runtime_with_intent_strategy();
     let left = create_entity(&mut runtime, "left", BranchId("main".to_string()));
     let right = create_entity(&mut runtime, "right", BranchId("main".to_string()));
@@ -245,7 +263,10 @@ fn batch_execution_mints_batch_write_receipt_family() {
         .expect("batch should admit")
         .lower()
         .expect("batch should lower")
-        .execute_receipt_with(EffectExecutionAuthority::relational(&mut runtime))
+        .execute_receipt_with(
+            request_execution,
+            EffectExecutionAuthority::relational(&mut runtime),
+        )
         .expect("batch should execute to receipt");
 
     assert_eq!(
@@ -273,6 +294,9 @@ fn batch_execution_mints_batch_write_receipt_family() {
 
 #[test]
 fn receipt_only_batches_release_each_bounded_published_snapshot() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = relational_runtime_with_intent_strategy();
     let left = create_entity(&mut runtime, "left", BranchId("main".to_string()));
     let right = create_entity(&mut runtime, "right", BranchId("main".to_string()));
@@ -314,7 +338,10 @@ fn receipt_only_batches_release_each_bounded_published_snapshot() {
             .unwrap()
             .lower()
             .unwrap()
-            .execute_receipt_with(EffectExecutionAuthority::relational(&mut runtime))
+            .execute_receipt_with(
+                request_execution,
+                EffectExecutionAuthority::relational(&mut runtime),
+            )
             .unwrap();
         assert!(matches!(
             receipt.target_evidence(),

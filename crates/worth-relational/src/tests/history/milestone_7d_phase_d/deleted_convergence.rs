@@ -2,6 +2,9 @@ use super::*;
 
 #[test]
 fn deleted_on_both_sides_merge_commit_has_replay_and_recovery_parity() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
     let entity = create_entity(&runtime, "shared");
     create_branch_from_main(&runtime, "feature");
@@ -9,14 +12,17 @@ fn deleted_on_both_sides_merge_commit_has_replay_and_recovery_parity() {
     delete_entity_on_branch(&runtime, entity, BranchId("feature".to_string()));
 
     let prepared = runtime
-        .prepare_merge_execution(MergeExecutionRequest {
-            target_branch: BranchId("main".to_string()),
-            source_branch: BranchId("feature".to_string()),
-            merge_intent: MergeIntent::ReconcileIntoTarget,
-        })
+        .prepare_merge_execution(
+            execution,
+            MergeExecutionRequest {
+                target_branch: BranchId("main".to_string()),
+                source_branch: BranchId("feature".to_string()),
+                merge_intent: MergeIntent::ReconcileIntoTarget,
+            },
+        )
         .expect("prepared deleted-on-both-sides merge");
     let merge = runtime
-        .execute_prepared_merge(prepared)
+        .execute_prepared_merge(execution, prepared)
         .expect("executed deleted-on-both-sides merge");
 
     assert_eq!(merge.structural_summary.executed_record_count, 1);
@@ -38,30 +44,30 @@ fn deleted_on_both_sides_merge_commit_has_replay_and_recovery_parity() {
         .replay()
         .canonical_commit_envelope(merge.commit.commit.commit_id)
         .expect("live merge envelope");
-    let live_truth = capture_aspect_truth_bundle(&runtime, &[entity], &[], &[]);
+    let live_truth = capture_aspect_truth_bundle(execution, &runtime, &[entity], &[], &[]);
 
-    let replay =
-        runtime
-            .replay_authority()
-            .replay_commit(crate::facade::replay::RelationalReplayRequest {
-                commit_id: merge.commit.commit.commit_id,
-                branch_id: BranchId("main".to_string()),
-                execution_mode: crate::facade::replay::ReplayExecutionMode::SerialDeterministic,
-                verification_mode:
-                    crate::facade::replay::ReplayVerificationMode::AuditRecoveryVerification,
-            });
+    let replay = runtime.replay_authority().replay_commit(
+        crate::facade::replay::RelationalReplayRequest {
+            commit_id: merge.commit.commit.commit_id,
+            branch_id: BranchId("main".to_string()),
+            execution_mode: crate::facade::replay::ReplayExecutionMode::SerialDeterministic,
+            verification_mode:
+                crate::facade::replay::ReplayVerificationMode::AuditRecoveryVerification,
+        },
+        execution,
+    );
     assert!(
         replay.failure.is_none(),
         "replay certification failure: {replay:?}"
     );
 
     let (_recovery, recovered) =
-        checkpoint_and_recover_with(&runtime, persisted_runtime_with_test_schema);
+        checkpoint_and_recover_with(execution, &runtime, persisted_runtime_with_test_schema);
     let recovered_envelope = recovered
         .replay()
         .canonical_commit_envelope(merge.commit.commit.commit_id)
         .expect("recovered merge envelope");
-    let recovered_truth = capture_aspect_truth_bundle(&recovered, &[entity], &[], &[]);
+    let recovered_truth = capture_aspect_truth_bundle(execution, &recovered, &[entity], &[], &[]);
 
     assert_eq!(live_envelope, recovered_envelope);
     assert_eq!(live_truth.visible_truth, recovered_truth.visible_truth);

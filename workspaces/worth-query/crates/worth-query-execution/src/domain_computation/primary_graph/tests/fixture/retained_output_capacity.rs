@@ -54,7 +54,9 @@ impl WorthQueryProducerOutputFamily<IdentityExecutionSchema> for RetainedFamily 
     }
 }
 
-pub(in crate::domain_computation::primary_graph) fn project_at_full_ledger() -> (
+pub(in crate::domain_computation::primary_graph) fn project_at_full_ledger(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
+) -> (
     WorthQueryCurrentOutputDenialKind,
     WorthQueryOperationProjectionDenial,
 ) {
@@ -63,9 +65,10 @@ pub(in crate::domain_computation::primary_graph) fn project_at_full_ledger() -> 
     let resources = product_resources.invalidation_resources();
     let world = installed_authorization_world_with_product_resources(product_resources);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
+    let principal = authenticated_principal(phase_custody, &world, &request);
+    let account = resolved_account(phase_custody, &world, "open", &request);
     let program = retained_status_program(
+        phase_custody,
         &world,
         &principal,
         &account,
@@ -101,16 +104,17 @@ pub(in crate::domain_computation::primary_graph) fn project_at_full_ledger() -> 
                 "retained-account".to_owned(),
             )],
         )]));
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
+    let principal = authenticated_principal(phase_custody, &world, &request);
+    let account = resolved_account(phase_custody, &world, "open", &request);
     let operation = world
         .application
         .installed_schema()
         .installed_operation(ReadRetainedAccount::reference())
         .unwrap();
     let admitted = world
-        .selected_product()
+        .selected_product(phase_custody)
         .authorize_operation(
+            &phase_custody.phase_for_application(&world.application),
             &principal,
             &account,
             &operation,
@@ -124,6 +128,7 @@ pub(in crate::domain_computation::primary_graph) fn project_at_full_ledger() -> 
         .unwrap();
     let mut seen = None;
     let projected = world.invariant.project_admitted_operation(
+        &phase_custody.phase_for_application(&world.application),
         &admitted,
         |reader, root| {
             let denied = reader

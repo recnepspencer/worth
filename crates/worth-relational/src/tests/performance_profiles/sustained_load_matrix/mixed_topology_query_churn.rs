@@ -1,6 +1,9 @@
 use super::*;
 
-pub(super) fn certify_mixed_topology_query_churn_stability(suite: &'static str) {
+pub(super) fn certify_mixed_topology_query_churn_stability(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    suite: &'static str,
+) {
     let mixed_topology_churn_samples = capture_perf_samples(
         suite,
         "mixed_topology_query_churn_stability",
@@ -72,7 +75,11 @@ pub(super) fn certify_mixed_topology_query_churn_stability(suite: &'static str) 
                             .read_truth()
                             .plan_query_packet(&snapshot, explicit_packet)
                             .expect("planned mixed topology explicit query"),
+                        execution,
+                        crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                     )
+                    .expect("request remains live")
+                    .map(|read| read.outcome)
                     .expect("mixed topology explicit query outcome");
                 total_explicit_query_micros += explicit_started_at.elapsed().as_micros();
 
@@ -107,7 +114,11 @@ pub(super) fn certify_mixed_topology_query_churn_stability(suite: &'static str) 
                             .read_truth()
                             .plan_query_packet(&snapshot, traversal_packet)
                             .expect("planned mixed topology traversal query"),
+                        execution,
+                        crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                     )
+                    .expect("request remains live")
+                    .map(|read| read.outcome)
                     .expect("mixed topology traversal outcome");
                 total_traversal_micros += traversal_started_at.elapsed().as_micros();
 

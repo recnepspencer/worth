@@ -33,46 +33,56 @@ macro_rules! admit {
         let runtime = $runtime;
         let scope = request_scope();
         let external = authenticate_operator(runtime.installed_schema(), &scope);
-        let selected = runtime.on_branch($branch).select().expect("branch selects");
-        let principal_binding = runtime
-            .installed_schema()
-            .principal_binding(DocumentPrincipalBinding::reference())
-            .expect("principal binding installs");
-        let principal = selected
-            .resolve_authenticated_principal(
-                &principal_binding,
-                &external,
-                &scope,
-                WorthQueryPrincipalResolutionMode::Ordinary,
-            )
-            .expect("operator resolves");
-        let document = selected
-            .resolve_entity(
-                DocumentIdentityField::reference(),
-                DOCUMENT_IDENTITY.to_owned(),
-                &scope,
-                WorthQueryPrincipalResolutionMode::Ordinary,
-            )
-            .expect("document resolves");
-        let operation = runtime
-            .installed_schema()
-            .installed_operation(SetRetention::reference())
-            .expect("operation installs");
-        let admission = selected
-            .authorize_operation(
-                &principal,
-                &document,
-                &operation,
-                Default::default(),
-                &scope,
-            )
-            .expect("the operation admits");
-        let identities =
-            ApplicationMutationIdentities::<DocumentRetentionSchema, $binding>::encode(
-                &$key, &$input,
-            )
-            .expect("key and input encode");
-        (principal, admission, identities)
+        runtime
+            .with_host_advancement(|phase| {
+                let selected = runtime
+                    .on_branch($branch)
+                    .select(&phase)
+                    .expect("branch selects");
+                let principal_binding = runtime
+                    .installed_schema()
+                    .principal_binding(DocumentPrincipalBinding::reference())
+                    .expect("principal binding installs");
+                let principal = selected
+                    .resolve_authenticated_principal(
+                        &phase,
+                        &principal_binding,
+                        &external,
+                        &scope,
+                        WorthQueryPrincipalResolutionMode::Ordinary,
+                    )
+                    .expect("operator resolves");
+                let document = selected
+                    .resolve_entity(
+                        &phase,
+                        DocumentIdentityField::reference(),
+                        DOCUMENT_IDENTITY.to_owned(),
+                        &scope,
+                        WorthQueryPrincipalResolutionMode::Ordinary,
+                    )
+                    .expect("document resolves");
+                let operation = runtime
+                    .installed_schema()
+                    .installed_operation(SetRetention::reference())
+                    .expect("operation installs");
+                let admission = selected
+                    .authorize_operation(
+                        &phase,
+                        &principal,
+                        &document,
+                        &operation,
+                        Default::default(),
+                        &scope,
+                    )
+                    .expect("the operation admits");
+                let identities =
+                    ApplicationMutationIdentities::<DocumentRetentionSchema, $binding>::encode(
+                        &$key, &$input,
+                    )
+                    .expect("key and input encode");
+                (principal, admission, identities)
+            })
+            .expect("admission host call opens")
     }};
 }
 
@@ -201,10 +211,14 @@ fn one_key_and_input_do_not_replay_across_bindings() {
 
     let (_, admission, _) = admit!(runtime, branch, SetRetentionBinding, key, request);
     let resolve = |binding: WorthQueryApplicationIdempotencyBinding| {
-        runtime
-            .resolve_admitted_application_idempotency(&admission, binding)
-            .expect("the key resolves")
-            .into_resolution()
+        application
+            .with_host_advancement(|host_phase| {
+                runtime
+                    .resolve_admitted_application_idempotency(&host_phase, &admission, binding)
+                    .expect("the key resolves")
+                    .into_resolution()
+            })
+            .expect("installed host call opens")
     };
     assert!(
         matches!(

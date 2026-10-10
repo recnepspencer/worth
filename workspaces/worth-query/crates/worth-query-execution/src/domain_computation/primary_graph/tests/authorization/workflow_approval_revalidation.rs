@@ -109,8 +109,25 @@ fn durable_approval_readmission_rejects_changed_lineage_shape() {
     let world = installed_capability_authorization_world();
     world.authorization_time.hold(time(100));
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let admission = admitted_capability_operation(&world, &principal, &request);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let admission = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            admitted_capability_operation(
+                &(phase).test_host_request(),
+                &world,
+                &principal,
+                &request,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
     let original = admission
         .workflow_approval_lineage_snapshot()
         .unwrap()
@@ -120,8 +137,18 @@ fn durable_approval_readmission_rejects_changed_lineage_shape() {
     let basis = durable_approval_basis_with_snapshots(&admission, None, Some(changed));
     let denial = world
         .application
-        .readmit_workflow_approval_authority(&basis, &admission)
-        .unwrap_err();
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .readmit_workflow_approval_authority(
+                    &host_custody.borrowed_request_for_test(),
+                    &basis,
+                    &admission,
+                )
+                .unwrap_err()
+        })
+        .expect("the fixture read owns its installed host call");
     assert_eq!(
         denial.kind(),
         WorthQueryOperationAuthorizationDenialKind::StaleAuthorization
@@ -133,251 +160,207 @@ fn durable_approval_readmission_denies_revoked_grant() {
     let world = installed_capability_authorization_world();
     world.authorization_time.hold(time(100));
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let admission = admitted_capability_operation(&world, &principal, &request);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let admission = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            admitted_capability_operation(
+                &(phase).test_host_request(),
+                &world,
+                &principal,
+                &request,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
     let basis = durable_approval_basis(&admission);
     world
         .application
-        .readmit_workflow_approval_authority(&basis, &admission)
-        .expect("unchanged durable approval authority must readmit");
-    revoke_grant(&world);
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .readmit_workflow_approval_authority(
+                    &host_custody.borrowed_request_for_test(),
+                    &basis,
+                    &admission,
+                )
+                .expect("unchanged durable approval authority must readmit")
+        })
+        .expect("the fixture read owns its installed host call");
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            revoke_grant(&phase, &world)
+        })
+        .expect("the fixture read owns its installed host call");
     let denial = world
         .application
-        .readmit_workflow_approval_authority(&basis, &admission)
-        .unwrap_err();
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .readmit_workflow_approval_authority(
+                    &host_custody.borrowed_request_for_test(),
+                    &basis,
+                    &admission,
+                )
+                .unwrap_err()
+        })
+        .expect("the fixture read owns its installed host call");
     assert_eq!(
         denial.kind(),
         WorthQueryOperationAuthorizationDenialKind::CapabilityGrantMissing
     );
 }
 
-#[test]
-fn grant_reactivation_does_not_revive_older_approval() {
-    let world = installed_capability_authorization_world();
-    world.authorization_time.hold(time(100));
-    let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let admission = admitted_capability_operation(&world, &principal, &request);
-    let basis = durable_approval_basis(&admission);
-    revoke_grant(&world);
-    update_grant_field(
-        &world,
-        "capability-1",
-        field(
-            &world,
-            super::super::fixture::capability::CapabilityStatusField::reference(),
-        ),
-        super::super::fixture::CapabilityStatusBinding::encode(
-            &super::super::fixture::CapabilityStatus::Active,
-        )
-        .unwrap(),
-    );
-    let denial = world
-        .application
-        .readmit_workflow_approval_authority(&basis, &admission)
-        .unwrap_err();
-    assert_eq!(
-        denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::StaleAuthorization
-    );
-}
+#[path = "workflow_approval_revalidation/grant_reactivation_does_not_revive_older_approval.rs"]
+mod grant_reactivation_does_not_revive_older_approval;
 
-#[test]
-fn durable_approval_readmission_denies_disabled_approver() {
-    let world = installed_capability_authorization_world();
-    world.authorization_time.hold(time(100));
-    let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let admission = admitted_capability_operation(&world, &principal, &request);
-    let basis = durable_approval_basis(&admission);
-    world
-        .application
-        .readmit_workflow_approval_authority(&basis, &admission)
-        .expect("unchanged durable approval authority must readmit");
-    disable_mapping(&world, principal.mapping_entity_id());
-    let denial = world
-        .application
-        .readmit_workflow_approval_authority(&basis, &admission)
-        .unwrap_err();
-    assert_eq!(
-        denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::StalePrincipal
-    );
-}
+#[path = "workflow_approval_revalidation/durable_approval_readmission_denies_disabled_approver.rs"]
+mod durable_approval_readmission_denies_disabled_approver;
 
-#[test]
-fn approver_reenable_does_not_revive_older_approval() {
-    let world = installed_capability_authorization_world();
-    world.authorization_time.hold(time(100));
-    let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let admission = admitted_capability_operation(&world, &principal, &request);
-    let basis = durable_approval_basis(&admission);
-    disable_mapping(&world, principal.mapping_entity_id());
-    enable_mapping(&world, principal.mapping_entity_id());
-    let denial = world
-        .application
-        .readmit_workflow_approval_authority(&basis, &admission)
-        .unwrap_err();
-    assert_eq!(
-        denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::StalePrincipal
-    );
-}
+#[path = "workflow_approval_revalidation/approver_reenable_does_not_revive_older_approval.rs"]
+mod approver_reenable_does_not_revive_older_approval;
 
-#[test]
-fn principal_target_retarget_aba_does_not_revive_older_approval() {
-    let world = installed_capability_live_world();
-    world.authorization_time.hold(time(100));
-    let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let admission = admitted_capability_operation(&world, &principal, &request);
-    let basis = durable_approval_basis(&admission);
-    let binding = world
-        .application
-        .runtime
-        .primary_graph()
-        .unwrap()
-        .layout()
-        .principal_binding(world.binding.binding())
-        .unwrap();
-    let other = world
-        .selected_product()
-        .resolve_entity(
-            super::super::fixture::PrincipalIdentityField::reference(),
-            2_u64,
-            &request,
-            crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap()
-        .entity_id();
-    retarget_relation_without_replacing_id(
-        &world,
-        principal.target_relation_id(),
-        binding.relation_kind,
-        principal.mapping_entity_id(),
-        other,
-    );
-    retarget_relation_without_replacing_id(
-        &world,
-        principal.target_relation_id(),
-        binding.relation_kind,
-        principal.mapping_entity_id(),
-        principal.principal_entity_id(),
-    );
-    let denial = world
-        .application
-        .readmit_workflow_approval_authority(&basis, &admission)
-        .unwrap_err();
-    assert_eq!(
-        denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::StalePrincipal
-    );
-}
+#[path = "workflow_approval_revalidation/principal_target_retarget_aba_does_not_revive_older_approval.rs"]
+mod principal_target_retarget_aba_does_not_revive_older_approval;
 
 #[test]
 fn durable_approval_readmission_denies_expired_grant() {
     let world = installed_capability_authorization_world();
     world.authorization_time.hold(time(100));
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let admission = admitted_capability_operation(&world, &principal, &request);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let admission = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            admitted_capability_operation(
+                &(phase).test_host_request(),
+                &world,
+                &principal,
+                &request,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
     let basis = durable_approval_basis(&admission);
     world
         .application
-        .readmit_workflow_approval_authority(&basis, &admission)
-        .expect("unchanged durable approval authority must readmit");
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .readmit_workflow_approval_authority(
+                    &host_custody.borrowed_request_for_test(),
+                    &basis,
+                    &admission,
+                )
+                .expect("unchanged durable approval authority must readmit")
+        })
+        .expect("the fixture read owns its installed host call");
     world.authorization_time.hold(time(300));
     let denial = world
         .application
-        .readmit_workflow_approval_authority(&basis, &admission)
-        .unwrap_err();
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .readmit_workflow_approval_authority(
+                    &host_custody.borrowed_request_for_test(),
+                    &basis,
+                    &admission,
+                )
+                .unwrap_err()
+        })
+        .expect("the fixture read owns its installed host call");
     assert_eq!(
         denial.kind(),
         WorthQueryOperationAuthorizationDenialKind::CapabilityExpired
     );
 }
 
-#[test]
-fn later_grant_extension_cannot_extend_the_original_approval() {
-    let world = installed_capability_authorization_world();
-    world.authorization_time.hold(time(100));
-    let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let admission = admitted_capability_operation(&world, &principal, &request);
-    let basis = durable_approval_basis(&admission);
-    update_grant_field(
-        &world,
-        "capability-1",
-        field(
-            &world,
-            super::super::fixture::capability::CapabilityNotAfterField::reference(),
-        ),
-        worth_foundational::facade::AspectValue::UInt64(500),
-    );
-    world.authorization_time.hold(time(120));
-    let principal = authenticated_principal(&world, &request);
-    let fresh = admitted_capability_operation(&world, &principal, &request);
-    let denial = world
-        .application
-        .readmit_workflow_approval_authority(&basis, &fresh)
-        .unwrap_err();
-    assert_eq!(
-        denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::CapabilityExpired
-    );
-}
+#[path = "workflow_approval_revalidation/later_grant_extension_cannot_extend_the_original_approval.rs"]
+mod later_grant_extension_cannot_extend_the_original_approval;
 
 #[test]
 fn durable_approval_readmission_denies_revoked_delegation_parent() {
     let world = installed_delegated_capability_world();
     world.authorization_time.hold(time(100));
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let admission = admitted_capability_operation(&world, &principal, &request);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let admission = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            admitted_capability_operation(
+                &(phase).test_host_request(),
+                &world,
+                &principal,
+                &request,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
     let basis = durable_approval_basis(&admission);
     world
         .application
-        .readmit_workflow_approval_authority(&basis, &admission)
-        .expect("unchanged delegated approval authority must readmit");
-    revoke_parent(&world);
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .readmit_workflow_approval_authority(
+                    &host_custody.borrowed_request_for_test(),
+                    &basis,
+                    &admission,
+                )
+                .expect("unchanged delegated approval authority must readmit")
+        })
+        .expect("the fixture read owns its installed host call");
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            revoke_parent(&phase, &world)
+        })
+        .expect("the fixture read owns its installed host call");
     let denial = world
         .application
-        .readmit_workflow_approval_authority(&basis, &admission)
-        .unwrap_err();
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .readmit_workflow_approval_authority(
+                    &host_custody.borrowed_request_for_test(),
+                    &basis,
+                    &admission,
+                )
+                .unwrap_err()
+        })
+        .expect("the fixture read owns its installed host call");
     assert_eq!(
         denial.kind(),
         WorthQueryOperationAuthorizationDenialKind::DelegationRejected
     );
 }
 
-#[test]
-fn parent_reactivation_does_not_revive_delegated_approval() {
-    let world = installed_delegated_capability_world();
-    world.authorization_time.hold(time(100));
-    let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let admission = admitted_capability_operation(&world, &principal, &request);
-    let basis = durable_approval_basis(&admission);
-    revoke_parent(&world);
-    update_grant_field(
-        &world,
-        "capability-parent",
-        field(
-            &world,
-            super::super::fixture::capability::CapabilityStatusField::reference(),
-        ),
-        super::super::fixture::CapabilityStatusBinding::encode(
-            &super::super::fixture::CapabilityStatus::Active,
-        )
-        .unwrap(),
-    );
-    let denial = world
-        .application
-        .readmit_workflow_approval_authority(&basis, &admission)
-        .unwrap_err();
-    assert_eq!(
-        denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::StaleAuthorization
-    );
-}
+#[path = "workflow_approval_revalidation/parent_reactivation_does_not_revive_delegated_approval.rs"]
+mod parent_reactivation_does_not_revive_delegated_approval;

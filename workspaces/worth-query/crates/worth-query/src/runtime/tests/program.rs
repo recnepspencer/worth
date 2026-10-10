@@ -2,7 +2,10 @@ use super::support::*;
 
 #[test]
 fn compiled_typed_program_installs_runs_and_emits_trace() {
-    let mut runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let program =
         WorthQueryProgram::compile(FakeDsl, &FakeSchemaAdapter).expect("fake DSL should compile");
     let installed = runtime
@@ -13,7 +16,8 @@ fn compiled_typed_program_installs_runs_and_emits_trace() {
         .expect("operation ref should build");
 
     let run = runtime
-        .run_operation(
+        .run_operation_with_request(
+            request_execution,
             operation,
             vec![WorthQueryOperationInput::new(
                 "title",
@@ -50,7 +54,10 @@ fn compiled_typed_program_installs_runs_and_emits_trace() {
 
 #[test]
 fn compiled_typed_program_rejects_type_mismatch_before_execution() {
-    let mut runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let program =
         WorthQueryProgram::compile(FakeDsl, &FakeSchemaAdapter).expect("fake DSL should compile");
     let installed = runtime
@@ -61,7 +68,8 @@ fn compiled_typed_program_rejects_type_mismatch_before_execution() {
         .expect("operation ref should build");
 
     let error = runtime
-        .run_operation(
+        .run_operation_with_request(
+            request_execution,
             operation,
             vec![WorthQueryOperationInput::new(
                 "title",

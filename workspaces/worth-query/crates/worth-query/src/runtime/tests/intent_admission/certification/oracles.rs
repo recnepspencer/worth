@@ -2,7 +2,10 @@ use super::*;
 
 #[test]
 fn intent_admission_certification_reports_oracle_parity_and_slope_evidence() {
-    let bundle = certify_intent_admission();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let bundle = certify_intent_admission(request_execution);
     let comparison_rows = bundle.oracle_report().comparison_rows();
     let support_rows = bundle.support_traceability_report().rows();
     let comparison_lanes = comparison_rows

@@ -79,6 +79,7 @@ pub(super) fn commit(
     let _ = mint;
     let product = attempt.affinity().product_publication().clone();
     let before = precommit_snapshot::WorthQueryPrecommitSnapshot::acquire(
+        &execution,
         provider.graph.clone(),
         product.observation().basis().relational_basis(),
     )
@@ -93,7 +94,7 @@ pub(super) fn commit(
     let consumed_output::VerifiedConsumedOutputPublication {
         mut publication_admission,
         mut required_prerequisites,
-    } = consumed_output::verify(provider, &mut attempt, before.as_snapshot())?;
+    } = consumed_output::verify(&execution, provider, &mut attempt, before.as_snapshot())?;
     let prepared_output_witness =
         crate::domain_computation::primary_graph::output_lineage::PreparedNativeOutputWitness::prepare(
             &attempt,
@@ -106,7 +107,9 @@ pub(super) fn commit(
     provider.fault_port.candidate_ready_for_native_preparation();
     let mut candidate = provider
         .graph
-        .with_runtime_mut(|runtime| runtime.prepare_validated_proposal(candidate))
+        .with_runtime_mut(&execution, |runtime| {
+            runtime.prepare_validated_proposal(candidate)
+        })
         .map_err(transaction_commit_stop)?;
     let prepared_touched_records = touched_records::PreparedTouchedRecords::prepare(
         &candidate,
@@ -126,8 +129,8 @@ pub(super) fn commit(
     };
     let index_maintenance_work = provider
         .graph
-        .with_runtime(|runtime| {
-            crate::domain_computation::primary_graph::index_maintenance_budget::prepare_candidate_with_cold_fallback(
+        .with_runtime(&execution, |runtime| {
+            crate::domain_computation::primary_graph::index_maintenance_budget::prepare_candidate_with_cold_fallback(&execution,
                 runtime,
                 &mut candidate,
                 &provider.graph.primary_index_ids,
@@ -136,8 +139,13 @@ pub(super) fn commit(
             )
         })
         .map_err(index_preparation_stop)?;
-    let managed_views =
-        managed_views::prepare(provider, &product, before.as_snapshot(), &candidate);
+    let managed_views = managed_views::prepare(
+        &execution,
+        provider,
+        &product,
+        before.as_snapshot(),
+        &candidate,
+    );
     #[cfg(feature = "test-world-operation-control")]
     provider.after_application_candidate_preparation_for_test();
     let performed = product_publication::publish(
@@ -309,6 +317,7 @@ impl WorthQueryCommittedApplicationSession {
 
     pub(super) fn publish_and_encode(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         provider: &WorthQueryPrimaryGraphProvider,
         runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
         evidence: super::WorthQueryPrimaryGraphCommitEvidence,
@@ -316,7 +325,7 @@ impl WorthQueryCommittedApplicationSession {
         crate::domain_computation::WorthQueryProviderTerminalDescription,
         WorthQueryProviderSessionFailure,
     > {
-        let published = publication::publish(provider, runtime, self, evidence)?;
+        let published = publication::publish(execution, provider, runtime, self, evidence)?;
         publication::encode(provider, published)
     }
 }

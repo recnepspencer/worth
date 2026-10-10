@@ -78,7 +78,9 @@ impl ReceiptSurfaceEvidence {
     }
 }
 
-pub(super) fn mutation_receipt_surface() -> ReceiptSurfaceEvidence {
+pub(super) fn mutation_receipt_surface(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> ReceiptSurfaceEvidence {
     let branch = "cert-phase6-branch";
     let mut runtime = relational_runtime_with_intent_strategy();
     let entity_id = create_entity(&mut runtime, "before", BranchId("main".to_string()));
@@ -93,13 +95,16 @@ pub(super) fn mutation_receipt_surface() -> ReceiptSurfaceEvidence {
         "after".to_string(),
     );
     scalar_surface_evidence(
+        execution,
         &basis,
         raw,
         EffectExecutionAuthority::relational(&mut runtime),
     )
 }
 
-pub(super) fn writeback_receipt_surface() -> ReceiptSurfaceEvidence {
+pub(super) fn writeback_receipt_surface(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> ReceiptSurfaceEvidence {
     let basis = EffectAuthoringBasis::from(scenarios::tenant_mutation_basis("tenant-a"));
     let raw = RawEffectIntent::Writeback {
         binding: scenarios::runtime_workflow_binding(),
@@ -110,10 +115,17 @@ pub(super) fn writeback_receipt_surface() -> ReceiptSurfaceEvidence {
         input: WritebackLoweringInput::projected_state_diff(),
     };
     let bridge = test_bridge_with_writeback_authority();
-    scalar_surface_evidence(&basis, raw, EffectExecutionAuthority::bridge(&bridge))
+    scalar_surface_evidence(
+        execution,
+        &basis,
+        raw,
+        EffectExecutionAuthority::bridge(&bridge),
+    )
 }
 
-pub(super) fn batch_receipt_surface() -> ReceiptSurfaceEvidence {
+pub(super) fn batch_receipt_surface(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> ReceiptSurfaceEvidence {
     let branch = "cert-phase6-batch";
     let mut runtime = relational_runtime_with_intent_strategy();
     let main = BranchId("main".to_string());
@@ -141,7 +153,10 @@ pub(super) fn batch_receipt_surface() -> ReceiptSurfaceEvidence {
         .expect("closeout batch should admit")
         .lower()
         .expect("closeout batch should lower")
-        .execute_receipt_with(EffectExecutionAuthority::relational(&mut runtime))
+        .execute_receipt_with(
+            execution,
+            EffectExecutionAuthority::relational(&mut runtime),
+        )
         .expect("closeout batch should execute");
     let envelope = receipt.effect_envelope();
     let diagnostics = receipt.materialize_diagnostics(EffectDiagnosticsRequest::forensic());
@@ -206,6 +221,7 @@ pub(super) fn batch_receipt_surface() -> ReceiptSurfaceEvidence {
 }
 
 fn scalar_surface_evidence(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     basis: &EffectAuthoringBasis,
     raw: RawEffectIntent,
     authority: EffectExecutionAuthority<'_>,
@@ -267,7 +283,7 @@ fn scalar_surface_evidence(
         .lowered_effect_execution_plan_for_reporting()
         .to_string();
     let receipt = lowered
-        .execute_receipt_with(authority)
+        .execute_receipt_with(execution, authority)
         .expect("closeout receipt surface should execute");
     let envelope = receipt.effect_envelope();
     let diagnostics = receipt.materialize_diagnostics(EffectDiagnosticsRequest::forensic());

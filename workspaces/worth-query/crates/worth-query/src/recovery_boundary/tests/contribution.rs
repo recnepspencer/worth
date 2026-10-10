@@ -121,11 +121,14 @@ impl WorthQueryDeclarationInput<ContributionRecoveryDomain> for ContributionReco
     }
 }
 
-fn contribution_handle() -> crate::application::WorthQueryInstalledDomainDeclarationContext<
+fn contribution_handle(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> crate::application::WorthQueryInstalledDomainDeclarationContext<
     ContributionRecoveryDomain,
     ContributionRecoveryWorld,
 > {
     crate::application::domain_test_support::installed_declaration_context(
+        request_execution,
         ContributionRecoveryDomain,
         ContributionRecoveryWorld,
         [crate::application::domain_test_support::family::<
@@ -152,7 +155,10 @@ fn denied_traceability_input() -> WorthQueryContributionComposedOrchestrationInp
 
 #[test]
 fn contribution_proof_preserves_intent_level_aspect_context_for_contribution_denial() {
-    let handle = contribution_handle();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = contribution_handle(request_execution);
     let proof =
         handle.orchestrate_declaration_with_contributions_proof(denied_traceability_input());
 
@@ -186,7 +192,10 @@ fn contribution_proof_preserves_intent_level_aspect_context_for_contribution_den
 
 #[test]
 fn contribution_checked_and_proof_recovery_stay_aligned_for_same_denial() {
-    let handle = contribution_handle();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = contribution_handle(request_execution);
     let checked =
         handle.orchestrate_declaration_with_contributions_checked(denied_traceability_input());
     let proof =

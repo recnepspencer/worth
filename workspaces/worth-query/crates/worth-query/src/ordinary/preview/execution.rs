@@ -12,6 +12,7 @@ use crate::runtime::{WorthQueryOrdinaryAuthorityDrift, WorthQueryWorkspace};
 impl WorthQueryReadOnlyPreviewRequest {
     pub fn open_and_close(
         self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         workspace: &mut WorthQueryWorkspace,
     ) -> WorthQueryPreviewJourneyOutcome {
         let counters = WorthQueryWorkflowCounters::context_checked();
@@ -21,7 +22,7 @@ impl WorthQueryReadOnlyPreviewRequest {
                 counters,
             ));
         }
-        match workspace.ordinary_authority_drift(&self.context.authority) {
+        match workspace.ordinary_authority_drift(request_execution, &self.context.authority) {
             WorthQueryOrdinaryAuthorityDrift::ForeignOwner => {
                 return WorthQueryPreviewJourneyOutcome::Stopped(WorthQueryWorkflowStop::denied(
                     WorthQueryWorkflowStopSource::ForeignAuthority,
@@ -58,6 +59,7 @@ impl WorthQueryReadOnlyPreviewRequest {
             .expect("read-only context must carry its admitted preview basis");
         let counters = counters.execution_attempted();
         let execution = match workspace.execute_ordinary_read_only_preview(
+            request_execution,
             basis_admission,
             &self.declaration.identity,
             materialize_inspection,
@@ -90,6 +92,8 @@ impl WorthQueryReadOnlyPreviewRequest {
 impl WorthQueryPromotionEligiblePreviewRequest {
     pub fn open_and_close(
         self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         workspace: &mut WorthQueryWorkspace,
     ) -> WorthQueryPreviewJourneyOutcome {
         let request = WorthQueryWorkflowRequest {
@@ -98,7 +102,7 @@ impl WorthQueryPromotionEligiblePreviewRequest {
                 authority: self.context.authority,
             },
         };
-        match request.run(workspace) {
+        match request.run(execution, workspace) {
             WorthQueryWorkflowOutcome::Completed(completion) => {
                 WorthQueryPreviewJourneyOutcome::PromotionCompleted(completion)
             }

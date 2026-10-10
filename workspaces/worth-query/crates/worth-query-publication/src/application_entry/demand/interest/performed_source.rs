@@ -18,7 +18,7 @@ where
 {
     pub(in crate::application_entry) fn start_performed<Program, Root>(
         self,
-        _phase: &AdvancementPhase<'_>,
+        phase: &AdvancementPhase<'_>,
         application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
         prepared: &worth_query_execution::facade::primary_graph::WorthQueryPreparedRequiredOutputSource,
         source_result: WorthQueryApplicationOutputDemandSource<
@@ -39,6 +39,7 @@ where
         let limits = self.resolved_limits();
         let admitted = application
             .admit_performed_program_root_output::<Root>(
+                phase,
                 &worth_query_execution::publication_boundary::program_publication_access(),
                 source_result,
                 limits,

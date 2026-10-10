@@ -4,6 +4,8 @@ pub(in crate::runtime::tests::stop_class) fn runtime_error_variant_key(
     error: &WorthQueryRuntimeError,
 ) -> &'static str {
     match error {
+        WorthQueryRuntimeError::Advancement(_) => "advancement",
+        WorthQueryRuntimeError::ForeignPhase(_) => "foreign_phase",
         WorthQueryRuntimeError::InstalledDomainAuthorityDenied(_) => {
             "installed_domain_authority_denied"
         }
@@ -84,6 +86,8 @@ pub(in crate::runtime::tests::stop_class) fn stop_class_variant_key(
     stop_class: WorthQueryStopClass<'_>,
 ) -> &'static str {
     match stop_class {
+        WorthQueryStopClass::Advancement { .. } => "advancement",
+        WorthQueryStopClass::ForeignPhase { .. } => "foreign_phase",
         WorthQueryStopClass::InstalledDomainAuthorityDenied { .. } => {
             "installed_domain_authority_denied"
         }

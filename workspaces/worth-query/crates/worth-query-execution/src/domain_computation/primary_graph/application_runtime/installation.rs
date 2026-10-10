@@ -42,6 +42,7 @@ where
     }
 }
 pub(super) fn publish_application_runtime_with_clock<Schema>(
+    _execution: &worth_execution::ExecutionRequest<'_, '_>,
     phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
     input: ApplicationRuntimePublication<Schema>,
 ) -> Result<
@@ -77,6 +78,7 @@ where
     )?;
     let graph = seal_application_graph(graph)?;
     assemble_application_runtime(
+        phase,
         graph,
         installed_schema,
         authorization,
@@ -91,6 +93,7 @@ where
 pub(in crate::domain_computation::primary_graph) fn publish_application_runtime_with_conditionals<
     Schema,
 >(
+    _execution: &worth_execution::ExecutionRequest<'_, '_>,
     phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
     input: ApplicationRuntimePublication<Schema>,
     bindings: Vec<
@@ -185,6 +188,7 @@ where
     let graph = seal_application_graph(graph)
         .map_err(super::super::conditional_operation::publication_denial)?;
     let mut application = assemble_application_runtime(
+        phase,
         graph,
         installed_schema,
         authorization,
@@ -267,6 +271,8 @@ fn publish_application_graph<Schema>(
 where
     Schema: ApplicationSchema,
 {
+    let execution_request = phase.execution_request();
+    let execution = &execution_request;
     let bridge_layout = std::sync::Arc::clone(&bootstrap.graph.layout);
     let product_world_resources = bootstrap.product_world_resources.clone();
     let recovered_relational_authority = bootstrap.take_recovered_relational_authority();
@@ -278,7 +284,7 @@ where
         .expect("publishing the primary graph installs its integration authority");
     let relational_source = graph.relational_bridge_source();
     graph
-        .bind_current_truth_head(&super::super::application_branch::primary_relational_branch_id())
+        .bind_current_truth_head(execution, &super::super::application_branch::primary_relational_branch_id())
         .map_err(|denial| {
             let kind = match denial {
                 worth_relational::facade::branch::RelationalBranchBasisDenial::RetentionCapacityExhausted => {
@@ -294,7 +300,7 @@ where
             };
             WorthQueryPrimaryGraphInstallationDenial::new(kind, format!("{denial:?}"))
         })?;
-    let relational_branch_identity = graph.with_runtime(|runtime| {
+    let relational_branch_identity = graph.with_runtime(execution, |runtime| {
         runtime
             .branch_identity(&super::super::application_branch::primary_relational_branch_id())
             .expect("the published primary application branch remains owner registered")

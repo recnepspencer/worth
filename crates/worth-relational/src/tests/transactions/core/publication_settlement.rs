@@ -3,6 +3,9 @@ use worth_execution::ExecutionAllocationPolicy as AllocationPolicy;
 
 #[test]
 fn direct_publication_settles_before_a_child_can_acknowledge() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
     create_entity(&runtime, "settlement-anchor");
     runtime
@@ -94,7 +97,7 @@ fn direct_publication_settles_before_a_child_can_acknowledge() {
     let mut recovered = persisted_runtime_with_test_schema();
     recovered
         .durability_recovery()
-        .recover(plan)
+        .recover(execution, plan)
         .expect("fresh runtime recovers the baseline checkpoint plus exact tail");
     assert_eq!(
         recovered
@@ -126,6 +129,9 @@ fn direct_publication_settles_before_a_child_can_acknowledge() {
 /// Both axes are asserted: the published handle registry and the capacity owner.
 #[test]
 fn failed_durable_append_returns_an_idempotent_owner_repair_capability() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
     create_entity(&runtime, "repair-anchor");
     runtime
@@ -245,7 +251,7 @@ fn failed_durable_append_returns_an_idempotent_owner_repair_capability() {
     let mut recovered = persisted_runtime_with_test_schema();
     recovered
         .durability_recovery()
-        .recover(plan)
+        .recover(execution, plan)
         .expect("fresh runtime recovers repaired parent and child");
     assert_eq!(
         recovered

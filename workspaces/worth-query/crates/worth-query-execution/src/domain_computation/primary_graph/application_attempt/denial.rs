@@ -12,6 +12,10 @@
 /// and approvals.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationAttemptDenialKind {
+    ForeignPhase,
+    ExecutionRequest(crate::domain_computation::WorthQueryProviderSessionDenialKind),
+    Cancelled,
+    DeadlineExceeded,
     ForeignApplication,
     ProjectionAdmissionMismatch,
     CurrentAuthorityDenied,
@@ -306,3 +310,23 @@ impl std::error::Error for WorthQueryApplicationAttemptDenial {
 
 #[cfg(test)]
 mod allocation_error_source_tests;
+
+impl WorthQueryApplicationAttemptDenial {
+    pub(super) fn query_read_denial(
+        stop: &worth_relational::facade::runtime::QueryReadExecutionStop,
+        subject: &str,
+    ) -> Self {
+        use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
+        use WorthQueryApplicationAttemptDenialKind as Kind;
+        let kind =
+            match super::super::provider::relational_execution_denial::query_read_execution_kind(
+                stop,
+            ) {
+                Ok(Some(kind)) => Kind::ExecutionRequest(kind),
+                Ok(None) => Kind::MissingAuthoritativeFact,
+                Err(Control::Cancelled) => Kind::Cancelled,
+                Err(Control::TimedOut) => Kind::DeadlineExceeded,
+            };
+        Self::new(kind, subject)
+    }
+}

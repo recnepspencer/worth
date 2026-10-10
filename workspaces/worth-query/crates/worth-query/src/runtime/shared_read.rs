@@ -227,9 +227,12 @@ impl WorthQuerySharedReadContext {
         }
     }
     #[cfg(test)]
-    pub(in crate::runtime) fn from_runtime(runtime: &WorthQueryRuntime) -> Self {
+    pub(in crate::runtime) fn from_runtime(
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &WorthQueryRuntime,
+    ) -> Self {
         runtime
-            .mint_shared_read_context()
+            .mint_shared_read_context(request_execution)
             .expect("runtime-owned shared read context should mint")
     }
 }
@@ -244,8 +247,9 @@ impl WorthQueryRuntime {
 
     pub(in crate::runtime) fn mint_shared_read_context(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<WorthQuerySharedReadContext, WorthQueryRuntimeError> {
-        let snapshot_identity = self.current_snapshot_identity();
+        let snapshot_identity = self.current_snapshot_identity_with_request(execution);
         if !self.shared_read_pins.has_current_generation() {
             self.capture_shared_read_generation_for_current_snapshot(snapshot_identity);
         }

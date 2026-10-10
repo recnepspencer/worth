@@ -2,6 +2,9 @@ use crate::tests::support::*;
 
 #[test]
 fn subscriber_cdc_is_snapshot_stable_under_hot_rewrite_pressure() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let pinned_runtime = runtime_with_test_schema_profile(RelationalRuntimeProfile::GeometryKernel);
     let unpinned_runtime =
         runtime_with_test_schema_profile(RelationalRuntimeProfile::GeometryKernel);
@@ -44,11 +47,11 @@ fn subscriber_cdc_is_snapshot_stable_under_hot_rewrite_pressure() {
 
     let pinned_snapshot_read = pinned_runtime
         .read_truth()
-        .read_snapshot(&pinned_snapshot)
+        .read_snapshot(&pinned_snapshot, execution)
         .unwrap();
     let pinned_latest_read = pinned_runtime
         .read_truth()
-        .read_snapshot(&pinned_latest.snapshot)
+        .read_snapshot(&pinned_latest.snapshot, execution)
         .unwrap();
 
     assert_eq!(

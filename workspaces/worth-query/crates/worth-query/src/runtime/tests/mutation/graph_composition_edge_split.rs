@@ -4,8 +4,12 @@ fn edge_split_verified_profile() -> WorthQueryRuntimeSupportProfile {
     bridge_verified_direct_relation_profile("update_existing_verified")
 }
 
-fn edge_split_runtime(binding: &WorthQueryExistingTruthTargetBinding) -> WorthQueryRuntime {
+fn edge_split_runtime(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    binding: &WorthQueryExistingTruthTargetBinding,
+) -> WorthQueryRuntime {
     bridge_runtime_with_support_and_existing_truth_verification(
+        request_execution,
         edge_split_verified_profile(),
         TestExistingTruthVerificationAdapter::default()
             .with_value(
@@ -21,9 +25,12 @@ fn edge_split_runtime(binding: &WorthQueryExistingTruthTargetBinding) -> WorthQu
     )
 }
 
-fn declare_edge_split_live_views(workspace: &mut WorthQueryWorkspace) {
+fn declare_edge_split_live_views(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    workspace: &mut WorthQueryWorkspace,
+) {
     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("topology.edge-split-vertices", |q| {
+        .live_view(request_execution, "topology.edge-split-vertices", |q| {
             q.from("Vertex")
                 .select([
                     crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
@@ -39,7 +46,7 @@ fn declare_edge_split_live_views(workspace: &mut WorthQueryWorkspace) {
         })
         .expect("vertex live view should declare");
     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("topology.edge-split-edges", |q| {
+        .live_view(request_execution, "topology.edge-split-edges", |q| {
             q.from("Edge")
                 .select([
                     crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
@@ -57,7 +64,7 @@ fn declare_edge_split_live_views(workspace: &mut WorthQueryWorkspace) {
         })
         .expect("edge live view should declare");
     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("topology.edge-split-adjacencies", |q| {
+        .live_view(request_execution, "topology.edge-split-adjacencies", |q| {
             q.from("VertexEdgeAdjacency")
                 .select([
                     crate::authoring::AspectFieldKey::from_authoring_parts("vertex", "id").unwrap(),
@@ -75,11 +82,12 @@ fn declare_edge_split_live_views(workspace: &mut WorthQueryWorkspace) {
 }
 
 fn compose_verified_edge_split(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace: &mut WorthQueryWorkspace,
     binding: WorthQueryExistingTruthTargetBinding,
 ) -> WorthQueryBatchWriteReceipt {
     workspace
-        .compose_graph(|graph| {
+        .compose_graph(request_execution, |graph| {
             let split_vertex = graph.insert_entity("split-vertex", "Vertex", |vertex| {
                 vertex
                     .set_aspect(test_aspect_touch("identity.id"), test_authored_string_aspect_value("vertex-split"))

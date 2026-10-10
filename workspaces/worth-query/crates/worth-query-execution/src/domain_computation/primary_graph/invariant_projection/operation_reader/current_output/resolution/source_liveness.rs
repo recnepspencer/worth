@@ -15,6 +15,7 @@ where
 {
     pub(super) fn current_source_is_live<Producer>(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         producer: &WorthQueryInvariantEntityIdentity<Schema, Producer>,
     ) -> Result<bool, WorthQueryCurrentOutputDenial>
     where
@@ -26,9 +27,10 @@ where
             .reader
             .runtime
             .read_truth()
-            .project_snapshot(self.reader.snapshot)
+            .project_snapshot(self.reader.snapshot, execution)
             .and_then(|view| {
                 view.entity_record_with_projection_scope(
+                    execution,
                     producer.entity_id(),
                     ProjectionAspectScope::empty(),
                     |record| Some((record.kind_id(), record.lifecycle())),

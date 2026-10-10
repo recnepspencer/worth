@@ -47,7 +47,7 @@ fn workflow_terminal_cleanup_pending_retries_the_same_epoch_after_artifact_relea
 }
 
 fn workflow_terminal_with_live_cleanup_artifact(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 ) -> (
     WorthQueryWorkflowConvergenceTerminal<WorthQueryConverged>,
     Receiver<WorthQueryMoveOnlyArtifactHandle>,
@@ -66,21 +66,29 @@ fn workflow_terminal_with_live_cleanup_artifact(
         .unwrap_or_else(|_| panic!("artifact workflow authorities must admit"))
         .start()
         .unwrap_or_else(|_| panic!("artifact workflow convergence must start"));
-    let started = epoch
-        .begin_stage_iteration(
-            execution,
+    let started = {
+        let installed_fixture_phase = epoch.fixture_phase(execution);
+        epoch.begin_stage_iteration(
+            &installed_fixture_phase,
             WORKFLOW_STAGE,
             WorthQueryManagedGraphCallRequest::new(
                 WorthQueryGraphProviderCallKind::Observe,
                 "workflow-terminal-cleanup-pending",
             ),
         )
-        .unwrap_or_else(|_| panic!("artifact workflow iteration must start"));
-    let paused = match started.advance(execution) {
+    }
+    .unwrap_or_else(|_| panic!("artifact workflow iteration must start"));
+    let paused = match {
+        let installed_fixture_phase = started.fixture_phase(execution);
+        started.advance(&installed_fixture_phase)
+    } {
         WorthQueryWorkflowConvergenceStepOutcome::Continue(paused) => paused,
         _ => panic!("artifact workflow must expose its retained safe point"),
     };
-    let terminal = match paused.advance(execution) {
+    let terminal = match {
+        let installed_fixture_phase = paused.fixture_phase(execution);
+        paused.advance(&installed_fixture_phase)
+    } {
         WorthQueryWorkflowConvergenceStepOutcome::Completed(
             WorthQueryWorkflowConvergenceIterationOutcome::Converged(terminal),
         ) => terminal,

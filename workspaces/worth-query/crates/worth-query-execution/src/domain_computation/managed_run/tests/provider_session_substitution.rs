@@ -128,11 +128,14 @@ fn token_minted_for_an_earlier_plan_cannot_open_a_later_plan() {
         );
         let mut first = start_run(&world.runtime, &first_operation, first_plan);
         let first_identity = first.identity().to_owned();
-        let first_failure = first
-            .admit_provider_execution_plan(&world.graph)
-            .expect("first plan should admit")
-            .readmit(execution)
-            .expect_err("provider intentionally retains the first token");
+        let first_failure = {
+            let installed_fixture_phase = first.fixture_phase(execution);
+            first
+                .admit_provider_execution_plan(&world.graph)
+                .expect("first plan should admit")
+                .readmit(&installed_fixture_phase)
+        }
+        .expect_err("provider intentionally retains the first token");
         assert_eq!(
             first_failure.kind(),
             WorthQueryProviderSessionDenialKind::ProviderRejected
@@ -148,11 +151,14 @@ fn token_minted_for_an_earlier_plan_cannot_open_a_later_plan() {
         );
         let mut second = start_run(&world.runtime, &second_operation, second_plan);
         assert_ne!(second.identity(), first_identity);
-        let substitution = second
-            .admit_provider_execution_plan(&world.graph)
-            .expect("second plan should admit")
-            .readmit(execution)
-            .expect_err("token minted for the first plan must not substitute");
+        let substitution = {
+            let installed_fixture_phase = second.fixture_phase(execution);
+            second
+                .admit_provider_execution_plan(&world.graph)
+                .expect("second plan should admit")
+                .readmit(&installed_fixture_phase)
+        }
+        .expect_err("token minted for the first plan must not substitute");
         assert_eq!(
             substitution.kind(),
             WorthQueryProviderSessionDenialKind::TokenNotMintedForPlan

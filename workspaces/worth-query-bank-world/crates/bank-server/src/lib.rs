@@ -121,3 +121,6 @@ pub use principal_seed::BankPrincipalSeed;
 pub use program_adoption::{BankProgramAdoptionPreparationDenial, BankProgramInspectionDenial};
 pub use world_seed::{BankBusinessOwnerSeed, BankEmployeeAssignmentSeed, BankWorldSeed};
 mod approved_payment_workflow;
+
+#[cfg(test)]
+mod test_host_policy;

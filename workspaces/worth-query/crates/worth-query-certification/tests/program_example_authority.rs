@@ -1,5 +1,7 @@
 #[path = "../examples/product_workflow_support/mod.rs"]
 pub mod product_workflow_support;
+#[path = "support/execution_policy.rs"]
+mod test_request_policy;
 
 mod execution_memory;
 mod mutation_attempt_report;
@@ -143,44 +145,67 @@ fn program_example_denies_plain_commit_and_conditional_client_admission() {
 
     let selected = application
         .runtime
-        .on_branch(branch)
-        .select()
-        .expect("the published branch remains selectable");
+        .with_host_advancement(|host_phase| {
+            application
+                .runtime
+                .on_branch(branch)
+                .select(&host_phase)
+                .expect("the published branch remains selectable")
+        })
+        .expect("installed host call opens");
     let principal_binding = application
         .runtime
         .installed_schema()
         .principal_binding(TemporalPrincipalBinding::reference())
         .expect("the temporal principal binding must be installed");
-    let resolved_principal = selected
-        .resolve_authenticated_principal(
-            &principal_binding,
-            &principal,
-            &scope,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .expect("the external principal must resolve through the installed binding");
-    let entity = selected
-        .resolve_entity(
-            IntentIdentityField::reference(),
-            intent.identity.clone(),
-            &scope,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .expect("the temporal intent must resolve");
+    let resolved_principal = application
+        .runtime
+        .with_host_advancement(|host_phase| {
+            selected
+                .resolve_authenticated_principal(
+                    &host_phase,
+                    &principal_binding,
+                    &principal,
+                    &scope,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .expect("the external principal must resolve through the installed binding")
+        })
+        .expect("installed host call opens");
+    let entity = application
+        .runtime
+        .with_host_advancement(|host_phase| {
+            selected
+                .resolve_entity(
+                    &host_phase,
+                    IntentIdentityField::reference(),
+                    intent.identity.clone(),
+                    &scope,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .expect("the temporal intent must resolve")
+        })
+        .expect("installed host call opens");
     let operation = application
         .runtime
         .installed_schema()
         .installed_operation(AmendTemporal::reference())
         .expect("the temporal amendment must be installed");
-    let admission = selected
-        .authorize_operation(
-            &resolved_principal,
-            &entity,
-            &operation,
-            Default::default(),
-            &scope,
-        )
-        .expect("the low-level public chain may prepare the installed operation");
+    let admission = application
+        .runtime
+        .with_host_advancement(|host_phase| {
+            selected
+                .authorize_operation(
+                    &host_phase,
+                    &resolved_principal,
+                    &entity,
+                    &operation,
+                    Default::default(),
+                    &scope,
+                )
+                .expect("the low-level public chain may prepare the installed operation")
+        })
+        .expect("installed host call opens");
     let identities =
         ApplicationMutationIdentities::<TemporalHostSchema, AmendTemporalBinding>::encode(
             &idempotency_key,

@@ -2,6 +2,9 @@ use super::*;
 
 #[test]
 fn complexity_budget_unique_entity_invariant_scans_the_selected_state() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema_and_invariants(InvariantCatalog {
         registrations: vec![InvariantRegistration::mutation_sensitive_blocking(
             InvariantRule::unique_entity_aspect_field(aspect_key("name"), field_key("name")),
@@ -11,7 +14,7 @@ fn complexity_budget_unique_entity_invariant_scans_the_selected_state() {
     let _other = create_entity(&runtime, "other");
     runtime
         .index_authority()
-        .rebuild_unique_entity_aspect_field_indexes()
+        .rebuild_unique_entity_aspect_field_indexes(execution)
         .expect("main-branch unique index rebuild admits its exact basis");
 
     runtime.performance_access().reset_counters();
@@ -55,6 +58,9 @@ fn complexity_budget_unique_entity_invariant_scans_the_selected_state() {
 
 #[test]
 fn complexity_budget_commit_boundary_unique_invariant_applies_the_selected_plan() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema_and_invariants(InvariantCatalog {
         registrations: vec![InvariantRegistration::commit_boundary_blocking(
             InvariantRule::unique_entity_aspect_field(aspect_key("name"), field_key("name")),
@@ -64,7 +70,7 @@ fn complexity_budget_commit_boundary_unique_invariant_applies_the_selected_plan(
     let _other = create_entity(&runtime, "other");
     runtime
         .index_authority()
-        .rebuild_unique_entity_aspect_field_indexes()
+        .rebuild_unique_entity_aspect_field_indexes(execution)
         .expect("main-branch unique index rebuild admits its exact basis");
 
     runtime.performance_access().reset_counters();

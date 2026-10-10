@@ -12,7 +12,13 @@ use crate::domain_computation::primary_graph::{
 #[test]
 fn equal_contract_on_another_operation_cannot_claim_the_original_dispatch() {
     let world = installed_world();
-    let receipt = world.commit_other_dispatch(117, "second-operation-original");
+    let receipt = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world.commit_other_dispatch(&phase, 117, "second-operation-original")
+        })
+        .expect("the fixture read owns its installed host call");
     let outbox = receipt
         .dispatch_outbox()
         .expect("the second operation really committed");
@@ -55,8 +61,20 @@ fn equal_contract_on_another_operation_cannot_claim_the_original_dispatch() {
 #[test]
 fn workflow_settlement_joins_the_original_committed_operation_to_world_terminal() {
     let world = installed_world();
-    let original = world.commit_dispatch(118, "workflow-original");
-    let other = world.commit_dispatch(119, "workflow-other");
+    let original = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world.commit_dispatch(&phase, 118, "workflow-original")
+        })
+        .expect("the fixture read owns its installed host call");
+    let other = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world.commit_dispatch(&phase, 119, "workflow-other")
+        })
+        .expect("the fixture read owns its installed host call");
     let record = original
         .dispatch_outbox()
         .expect("original dispatch outbox");
@@ -110,16 +128,37 @@ fn workflow_settlement_joins_the_original_committed_operation_to_world_terminal(
 
 #[test]
 fn duplicate_callback_keeps_the_original_terminal_out_of_a_sibling_fork() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = installed_world();
-    let original = world.commit_dispatch(120, "same-meaning-on-two-branches");
+    let original = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world.commit_dispatch(&phase, 120, "same-meaning-on-two-branches")
+        })
+        .expect("the fixture read owns its installed host call");
     let fork = world
         .application
-        .branches()
-        .fork(world.application.current_world())
-        .components(|components| components.fork_relational().fork_signal())
-        .create()
-        .expect("the sibling product branch publishes");
-    let sibling = world.commit_dispatch_on(fork, 121, "same-meaning-on-two-branches");
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .branches()
+                .fork(world.application.current_world())
+                .components(|components| components.fork_relational().fork_signal())
+                .create(&phase)
+                .expect("the sibling product branch publishes")
+        })
+        .expect("the fixture read owns its installed host call");
+    let sibling = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world.commit_dispatch_on(&phase, fork, 121, "same-meaning-on-two-branches")
+        })
+        .expect("the fixture read owns its installed host call");
     let original_record = original.dispatch_outbox().unwrap();
     let sibling_record = sibling.dispatch_outbox().unwrap();
     assert_eq!(original_record.payload(), sibling_record.payload());
@@ -136,7 +175,7 @@ fn duplicate_callback_keeps_the_original_terminal_out_of_a_sibling_fork() {
         .receive_inbound_occurrence(&world.verifier, &envelope, &request)
         .expect("the original installed callback completes");
     assert_eq!(first.posture(), WorthQueryInboundReceiptPosture::Performed);
-    let commits_after_first = super::tests::owner_commits(&world);
+    let commits_after_first = super::tests::owner_commits(request_execution, &world);
     let duplicate = world
         .application
         .receive_inbound_occurrence(&world.verifier, &envelope, &request)
@@ -145,7 +184,10 @@ fn duplicate_callback_keeps_the_original_terminal_out_of_a_sibling_fork() {
         duplicate.posture(),
         WorthQueryInboundReceiptPosture::Performed
     );
-    assert_eq!(super::tests::owner_commits(&world), commits_after_first);
+    assert_eq!(
+        super::tests::owner_commits(request_execution, &world),
+        commits_after_first
+    );
 
     assert!(world
         .application

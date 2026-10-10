@@ -17,6 +17,7 @@ impl WorthQueryPrimaryGraphProvider {
 
     pub(in crate::domain_computation::primary_graph) fn recover_application_settlement(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         settlement: &worth_relational::facade::publication::DeferredPublicationSettlement,
         branch: &worth_relational::facade::history::BranchId,
         product: &super::WorthQueryProductIdempotencyAffinity,
@@ -31,22 +32,28 @@ impl WorthQueryPrimaryGraphProvider {
                 WorthQueryApplicationSettlementRecoveryError::RetentionCapacityExhausted
             })?;
         let _coordination = commit_lane.enter();
-        let repaired = self.graph.with_runtime_mut_unwind_isolated(|runtime| {
-            let repaired = runtime
-                .repair_deferred_publication_settlement(settlement)
-                .map_err(WorthQueryApplicationSettlementRecoveryError::Durability)?;
-            if &repaired.branch_id != branch
-                || &repaired != settlement.commit()
-                || repaired != settlement.performed_result().commit
-            {
-                return Err(WorthQueryApplicationSettlementRecoveryError::Publication(
-                    "deferred application settlement does not match its performed publication",
-                ));
-            }
-            self.resume_pending_application_publication(runtime, product.incarnation())
+        let repaired = self
+            .graph
+            .with_runtime_mut_unwind_isolated(execution, |runtime| {
+                let repaired = runtime
+                    .repair_deferred_publication_settlement(settlement)
+                    .map_err(WorthQueryApplicationSettlementRecoveryError::Durability)?;
+                if &repaired.branch_id != branch
+                    || &repaired != settlement.commit()
+                    || repaired != settlement.performed_result().commit
+                {
+                    return Err(WorthQueryApplicationSettlementRecoveryError::Publication(
+                        "deferred application settlement does not match its performed publication",
+                    ));
+                }
+                self.resume_pending_application_publication(
+                    execution,
+                    runtime,
+                    product.incarnation(),
+                )
                 .map_err(settlement_publication_denial)?;
-            Ok(repaired)
-        })?;
+                Ok(repaired)
+            })?;
         match self.resolve_completed_application_idempotency(product, idempotency) {
             Some(WorthQueryProviderIdempotencyResolution::Equivalent(_)) => Ok(repaired),
             None | Some(WorthQueryProviderIdempotencyResolution::Absent) => {

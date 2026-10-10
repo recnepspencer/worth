@@ -39,16 +39,18 @@ impl CloseoutOracleEvidence {
     }
 }
 
-pub(super) fn build_closeout_oracles() -> CloseoutOracleEvidence {
+pub(super) fn build_closeout_oracles(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> CloseoutOracleEvidence {
     CloseoutOracleEvidence::new(
-        relational_oracle_digest().to_string(),
-        bridge_oracle_digest().to_string(),
+        relational_oracle_digest(execution).to_string(),
+        bridge_oracle_digest(execution).to_string(),
     )
 }
 
-fn relational_oracle_digest() -> String {
-    let mutation_digest = scalar_mutation_oracle_digest();
-    let batch_digest = batch_mutation_oracle_digest();
+fn relational_oracle_digest(execution: &worth_execution::ExecutionRequest<'_, '_>) -> String {
+    let mutation_digest = scalar_mutation_oracle_digest(execution);
+    let batch_digest = batch_mutation_oracle_digest(execution);
     crate::identity::hash_parts(&[
         "effect_closeout_relational_oracles_v1".to_string(),
         format!("scalar:{mutation_digest}"),
@@ -56,7 +58,7 @@ fn relational_oracle_digest() -> String {
     ])
 }
 
-fn scalar_mutation_oracle_digest() -> String {
+fn scalar_mutation_oracle_digest(execution: &worth_execution::ExecutionRequest<'_, '_>) -> String {
     let branch = "closeout-oracle-branch";
     let mut runtime = relational_runtime_with_intent_strategy();
     let entity_id = create_entity(&mut runtime, "before", BranchId("main".to_string()));
@@ -85,7 +87,10 @@ fn scalar_mutation_oracle_digest() -> String {
         .expect("closeout oracle mutation should lower");
 
     lowered
-        .execute_with(EffectExecutionAuthority::relational(&mut runtime))
+        .execute_with(
+            execution,
+            EffectExecutionAuthority::relational(&mut runtime),
+        )
         .expect("closeout oracle mutation should execute")
         .verify_against_relational_runtime(&runtime)
         .expect("closeout oracle mutation should verify")
@@ -94,7 +99,7 @@ fn scalar_mutation_oracle_digest() -> String {
         .to_string()
 }
 
-fn batch_mutation_oracle_digest() -> String {
+fn batch_mutation_oracle_digest(execution: &worth_execution::ExecutionRequest<'_, '_>) -> String {
     let branch = "closeout-oracle-batch";
     let mut runtime = relational_runtime_with_intent_strategy();
     let left = create_entity(&mut runtime, "left", BranchId("main".to_string()));
@@ -123,7 +128,10 @@ fn batch_mutation_oracle_digest() -> String {
         .expect("closeout oracle batch should admit")
         .lower()
         .expect("closeout oracle batch should lower")
-        .execute_with(EffectExecutionAuthority::relational(&mut runtime))
+        .execute_with(
+            execution,
+            EffectExecutionAuthority::relational(&mut runtime),
+        )
         .expect("closeout oracle batch should execute");
 
     executed
@@ -134,7 +142,7 @@ fn batch_mutation_oracle_digest() -> String {
         .to_string()
 }
 
-fn bridge_oracle_digest() -> String {
+fn bridge_oracle_digest(execution: &worth_execution::ExecutionRequest<'_, '_>) -> String {
     let bridge = test_bridge_with_writeback_authority();
     let basis = EffectAuthoringBasis::from(tenant_mutation_basis("tenant-a"));
     let raw = RawEffectIntent::Writeback {
@@ -154,7 +162,7 @@ fn bridge_oracle_digest() -> String {
     let executed = scope_admitted_effect_plan(admitted)
         .lower()
         .expect("closeout bridge oracle writeback should lower")
-        .execute_with(EffectExecutionAuthority::bridge(&bridge))
+        .execute_with(execution, EffectExecutionAuthority::bridge(&bridge))
         .expect("closeout bridge oracle writeback should execute");
 
     executed

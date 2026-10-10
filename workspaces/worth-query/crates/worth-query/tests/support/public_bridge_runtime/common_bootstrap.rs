@@ -6,22 +6,28 @@ impl PublicBridgeRuntimeHarness {
             state: Rc::new(RefCell::new(PublicBridgeRuntimeState::default())),
         }
     }
-    pub fn bridge_backed_runtime(&self) -> WorthQueryRuntime {
-        self.bridge_backed_runtime_with_support(public_graph_support_profile())
+    pub fn bridge_backed_runtime(
+        &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> WorthQueryRuntime {
+        self.bridge_backed_runtime_with_support(request_execution, public_graph_support_profile())
     }
 
     pub fn bridge_backed_runtime_with_support(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         profile: WorthQueryRuntimeSupportProfile,
     ) -> WorthQueryRuntime {
-        self.bridge_backed_runtime_with_support_and_relational(profile, None)
+        self.bridge_backed_runtime_with_support_and_relational(request_execution, profile, None)
     }
 
     pub fn bridge_backed_runtime_with_relational(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         relational_runtime: worth_relational::facade::runtime::RelationalRuntime,
     ) -> WorthQueryRuntime {
         self.bridge_backed_runtime_with_support_and_relational(
+            request_execution,
             public_graph_support_profile(),
             Some(relational_runtime),
         )
@@ -29,6 +35,7 @@ impl PublicBridgeRuntimeHarness {
 
     fn bridge_backed_runtime_with_support_and_relational(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         profile: WorthQueryRuntimeSupportProfile,
         relational_runtime: Option<worth_relational::facade::runtime::RelationalRuntime>,
     ) -> WorthQueryRuntime {
@@ -65,7 +72,7 @@ impl PublicBridgeRuntimeHarness {
             .inspector_evidence(PublicInspectorEvidenceAdapter)
             .support_profile(profile)
             .build_backend_from_parts()
-            .build()
+            .build(request_execution)
             .expect("public bridge-backed runtime should build")
     }
     pub fn seed_backend_authoritative_truth(

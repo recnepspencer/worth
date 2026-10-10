@@ -91,11 +91,12 @@ pub(super) struct CloseoutDxEvidence {
 }
 
 pub(super) fn build_closeout_dx(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     public_surface: &EffectLifecyclePublicSurfaceInventory,
 ) -> CloseoutDxEvidence {
-    let mutation = mutation_receipt_surface();
-    let writeback = writeback_receipt_surface();
-    let batch = batch_receipt_surface();
+    let mutation = mutation_receipt_surface(execution);
+    let writeback = writeback_receipt_surface(execution);
+    let batch = batch_receipt_surface(execution);
     let common_path = common_path_story(&mutation);
     let writeback_common_path = writeback_common_path_story(&writeback);
     let inspectable = inspectable_lowered_story();

@@ -4,6 +4,9 @@ use crate::tests::support::*;
 
 #[test]
 fn bulk_create_entities_match_equivalent_singular_creates() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let bulk_runtime = runtime_with_test_schema();
     let mut bulk_txn = crate::tests::support::test_owner_begin_transaction_for_main(&bulk_runtime);
     bulk_txn
@@ -43,7 +46,7 @@ fn bulk_create_entities_match_equivalent_singular_creates() {
     let singular_runtime = apply_batches(vec![batch_create("a"), batch_create("b")]);
     let bulk_read = bulk_runtime
         .read_truth()
-        .read_snapshot(&bulk_outcome.snapshot)
+        .read_snapshot(&bulk_outcome.snapshot, execution)
         .unwrap();
     let singular_read = singular_runtime
         .read_truth()
@@ -53,6 +56,7 @@ fn bulk_create_entities_match_equivalent_singular_creates() {
                 .latest_bundle()
                 .unwrap()
                 .snapshot,
+            execution,
         )
         .unwrap();
 
@@ -74,7 +78,11 @@ fn bulk_create_entities_match_equivalent_singular_creates() {
 
 #[test]
 fn staged_parallel_bulk_entity_import_matches_serial_reference() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     fn bulk_commit(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         leased: bool,
     ) -> (
         crate::facade::transactions::CommitResult,
@@ -125,7 +133,7 @@ fn staged_parallel_bulk_entity_import_matches_serial_reference() {
         .unwrap();
         let read = runtime
             .read_truth()
-            .read_snapshot(&outcome.snapshot)
+            .read_snapshot(&outcome.snapshot, execution)
             .unwrap();
         let names = read
             .entities()
@@ -135,8 +143,8 @@ fn staged_parallel_bulk_entity_import_matches_serial_reference() {
         (outcome, names)
     }
 
-    let (serial_outcome, serial_names) = bulk_commit(false);
-    let (staged_outcome, staged_names) = bulk_commit(true);
+    let (serial_outcome, serial_names) = bulk_commit(execution, false);
+    let (staged_outcome, staged_names) = bulk_commit(execution, true);
 
     assert_eq!(
         staged_outcome.changed_records.len(),
@@ -148,13 +156,19 @@ fn staged_parallel_bulk_entity_import_matches_serial_reference() {
 
 #[test]
 fn cross_context_relations_preserve_partitioned_endpoints() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let source = create_entity_in_partition(&runtime, "left", PartitionId(7));
     let target = create_entity_in_partition(&runtime, "right", PartitionId(11));
     let relation =
         create_relation_in_partition(&runtime, source, target, "bridge", PartitionId(29));
     let snapshot = runtime.visibility_authority().snapshot();
-    let read = runtime.read_truth().read_snapshot(&snapshot).unwrap();
+    let read = runtime
+        .read_truth()
+        .read_snapshot(&snapshot, execution)
+        .unwrap();
     let relation_record = read.get_relation(relation).unwrap();
 
     assert_eq!(relation.partition_id, PartitionId(29));

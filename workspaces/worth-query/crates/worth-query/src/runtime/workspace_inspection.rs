@@ -18,20 +18,25 @@ impl<'a> WorthQueryWorkspaceInspectionLane<'a> {
 
     pub fn inspect_live_target(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         target: &WorthQueryLiveArtifactTarget,
     ) -> Result<WorthQueryUnifiedInspectionResult, WorthQueryRuntimeError> {
         let resolved = self
             .runtime
             .resolve_live_artifact_target(target.terminal_view_name_projection())?;
         self.runtime
-            .inspect_live_view_name_result(resolved.terminal_view_name_projection())
+            .inspect_live_view_name_result(execution, resolved.terminal_view_name_projection())
     }
 
-    pub fn inspect<T>(&self, target: T) -> Result<WorthQueryInspection, WorthQueryRuntimeError>
+    pub fn inspect<T>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        target: T,
+    ) -> Result<WorthQueryInspection, WorthQueryRuntimeError>
     where
         T: Into<WorthQueryInspectionTarget<'a>>,
     {
-        self.runtime.inspect(target)
+        self.runtime.inspect(execution, target)
     }
 
     pub fn inspect_intent<T>(&self, target: T) -> WorthQueryRuntimeInspectionIntentAuthoring<'a>

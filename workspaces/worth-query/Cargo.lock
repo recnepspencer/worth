@@ -702,6 +702,7 @@ name = "worth-query-certification"
 version = "0.1.0"
 dependencies = [
  "serde",
+ "worth-execution",
  "worth-foundational",
  "worth-proof",
  "worth-query",
@@ -758,6 +759,7 @@ dependencies = [
 name = "worth-query-host"
 version = "0.1.0"
 dependencies = [
+ "worth-execution",
  "worth-foundational",
  "worth-query-admission",
  "worth-query-decl",

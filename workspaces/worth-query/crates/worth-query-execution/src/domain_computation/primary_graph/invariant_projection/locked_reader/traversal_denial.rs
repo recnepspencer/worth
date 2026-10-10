@@ -2,6 +2,7 @@
 /// projection was refused.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryInvariantProjectionTraversalDenialKind {
+    ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
     /// The relation is not installed.
     RelationNotInstalled,
     /// The operation does not declare this target as a decision read.

@@ -1,6 +1,9 @@
 use super::*;
 
-pub(super) fn certify_chip_hot_compile_vs_recovery_compile(suite: &'static str) {
+pub(super) fn certify_chip_hot_compile_vs_recovery_compile(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    suite: &'static str,
+) {
     let chip_hot_vs_recovery_samples = capture_perf_samples(
         suite,
         "chip_hot_compile_vs_recovery_compile",
@@ -79,19 +82,20 @@ pub(super) fn certify_chip_hot_compile_vs_recovery_compile(suite: &'static str) 
             let recover_started_at = Instant::now();
             recovered
                 .durability_recovery()
-                .recover(plan)
+                .recover(execution, plan)
                 .expect("chip hot/cold recovery");
             let recover_micros = recover_started_at.elapsed().as_micros();
 
             let replay_started_at = Instant::now();
-            let replay = recovered
-                .replay_authority()
-                .replay_commit(RelationalReplayRequest {
+            let replay = recovered.replay_authority().replay_commit(
+                RelationalReplayRequest {
                     commit_id: hot_commit.commit.commit_id,
                     branch_id: BranchId("main".to_string()),
                     execution_mode: ReplayExecutionMode::SerialDeterministic,
                     verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-                });
+                },
+                execution,
+            );
             let replay_commit_micros = replay_started_at.elapsed().as_micros();
 
             let recovered_commit = recovered

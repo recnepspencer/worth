@@ -230,7 +230,7 @@ where
     }
 
     pub(super) fn prepare_workflow_request_in_advancement<Spec>(
-        mut self, _phase: &AdvancementPhase<'_>,
+        mut self, phase: &AdvancementPhase<'_>,
         workflow: WorthQueryWorkflowVocabulary<'application, Schema, Spec>,
         instance: PublishedWorkflowInstanceRef,
         action: WorkflowRequestedAction,
@@ -245,14 +245,14 @@ where
         }
         let selected = application
             .on_branch(self.product_branch())
-            .select()
+            .select(phase, )
             .map_err(WorthQueryApplicationRequestMutationDenial::ProductSelection)
             .map_err(WorthQueryWorkflowAdvancePreparationDenial::RequestAdmission)?;
         let staged = self.stage().map_err(WorthQueryWorkflowAdvancePreparationDenial::RequestAdmission)?;
         let identities = self
             .identities()
             .map_err(WorthQueryWorkflowAdvancePreparationDenial::RequestAdmission)?;
-        let mutation = match authorization::prepare_capability_selected(
+        let mutation = match authorization::prepare_capability_selected(phase,
             &self,
             &identities,
             staged,
@@ -289,7 +289,7 @@ where
                 MutationInput<Schema, Intent>,
                 MutationScope<Schema, IntentBinding<Schema, Intent>>,
                 Spec,
-            >(&selected, workflow.workflow_spec_for(&selected), instance, mutation.admission),
+            >(phase, &selected, workflow.workflow_spec_for(&selected), instance, mutation.admission),
             WorkflowRequestedAction::NavigateBack => WorthQueryWorkflowAdvanceAdapter::prepare_navigate_back::<
             Schema,
             <IntentBinding<Schema, Intent> as ApplicationCapabilityMutationBinding<Schema>>::Capability,
@@ -297,7 +297,7 @@ where
             MutationInput<Schema, Intent>,
             MutationScope<Schema, IntentBinding<Schema, Intent>>,
             Spec,
-        >(&selected, workflow.workflow_spec_for(&selected), instance, mutation.admission),
+        >(phase, &selected, workflow.workflow_spec_for(&selected), instance, mutation.admission),
             WorkflowRequestedAction::CollectAssessment { node_path } => WorthQueryWorkflowAdvanceAdapter::prepare_collect_assessment::<
                 Schema,
                 <IntentBinding<Schema, Intent> as ApplicationCapabilityMutationBinding<Schema>>::Capability,
@@ -305,7 +305,7 @@ where
                 MutationInput<Schema, Intent>,
                 MutationScope<Schema, IntentBinding<Schema, Intent>>,
                 Spec,
-            >(&selected, workflow.workflow_spec_for(&selected), instance, node_path, mutation.admission),
+            >(phase, &selected, workflow.workflow_spec_for(&selected), instance, node_path, mutation.admission),
         }
         .map_err(WorthQueryWorkflowAdvancePreparationDenial::TransitionPreparation)?;
         Ok(WorthQueryWorkflowAdvanceRequest {

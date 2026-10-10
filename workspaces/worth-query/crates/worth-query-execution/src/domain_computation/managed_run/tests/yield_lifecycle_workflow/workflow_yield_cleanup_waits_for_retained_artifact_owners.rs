@@ -52,6 +52,8 @@ fn workflow_yield_cleanup_waits_for_retained_artifact_owners() {
         let running = super::super::workflow_provider_steps::admitted_workflow(
             &runtime, &operation, resources,
         );
+        let installed_running_phase = execution.phase_for_workflow(&running);
+
         let production = running
             .artifacts()
             .production_authority("producer")
@@ -78,7 +80,7 @@ fn workflow_yield_cleanup_waits_for_retained_artifact_owners() {
             .expect("installed artifact contract should allow read borrow");
         let active = running
             .begin_stage_graph_execution(
-                execution,
+                &installed_running_phase,
                 "producer",
                 &graph,
                 WorthQueryManagedGraphCallRequest::new(
@@ -87,7 +89,7 @@ fn workflow_yield_cleanup_waits_for_retained_artifact_owners() {
                 ),
             )
             .unwrap();
-        let paused = match active.advance(execution) {
+        let paused = match active.advance(&installed_running_phase) {
             WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused,
             _ => panic!("workflow provider did not pause"),
         };

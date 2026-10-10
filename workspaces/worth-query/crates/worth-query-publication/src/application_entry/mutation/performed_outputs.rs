@@ -244,9 +244,9 @@ where
         }
         let access = worth_query_execution::publication_boundary::program_publication_access();
         match (&self.source_receipt, &self.source_preparation) {
-            (Some(receipt), Some(prepared)) => application.validate_required_program_source::<Root>(
+            (Some(receipt), Some(prepared)) => application.validate_required_program_source::<Root>(phase,
                 &access, prepared, receipt, &self.source_observation.retained, request.principal, request.scope, request.branch),
-            (None, None) => application.validate_initial_program_source::<Root>(&access, &self.source_observation.retained, request.branch),
+            (None, None) => application.validate_initial_program_source::<Root>(phase, &access, &self.source_observation.retained, request.branch),
             _ => return Err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::MissingPerformedDelivery),
         }.map_err(|denial| crate::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand(
             if denial.kind() == worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::Superseded {

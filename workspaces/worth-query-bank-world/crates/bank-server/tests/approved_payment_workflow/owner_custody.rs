@@ -59,16 +59,24 @@ fn owner_remains_pending(ready: &ReadyPaymentWorld, command_key: &str) {
         .world
         .runtime
         .approved_business_payment(&ready.principal, &ready.scope);
-    let denied = workflow
-        .accept_applied(
-            ready.instance.clone(),
-            &ready.operation,
-            ready.authority.clone(),
-            ready.authority.clone(),
-            &key("approved-payment:operation:perform"),
-            &key(command_key),
-        )
-        .expect_err("the rail response is not an authenticated inbound terminal");
+    let denied = ready
+        .fixture
+        .world
+        .runtime
+        .with_application_advancement(&ready.scope, |phase| {
+            workflow
+                .accept_applied(
+                    &phase,
+                    ready.instance.clone(),
+                    &ready.operation,
+                    ready.authority.clone(),
+                    ready.authority.clone(),
+                    &key("approved-payment:operation:perform"),
+                    &key(command_key),
+                )
+                .expect_err("the rail response is not an authenticated inbound terminal")
+        })
+        .expect("installed host call opens");
     assert!(matches!(
         denied,
         BankApprovedPaymentWorkflowError::OperationOwnerAcceptance(

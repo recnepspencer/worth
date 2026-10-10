@@ -12,21 +12,35 @@ use std::sync::Arc;
 
 #[test]
 fn registration_recovery_does_not_certify_an_output_computed_before_its_own_write() {
-    check_own_write_recovery(false);
+    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+        let host_request = crate::test_request_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+        check_own_write_recovery(&host_custody, execution, false);
+    })
 }
 
 #[test]
 fn accepted_current_cannot_bypass_own_write_evidence_after_index_loss() {
-    check_own_write_recovery(true);
+    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+        let host_request = crate::test_request_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+        check_own_write_recovery(&host_custody, execution, true);
+    })
 }
 
-fn check_own_write_recovery(index_loss: bool) {
+fn check_own_write_recovery(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    index_loss: bool,
+) {
     crate::domain_computation::primary_graph::output_lineage::own_write_fixture::with_committed_own_write(|world, receipt, cell, resources| {
     let graph = world.application.runtime.primary_graph().unwrap();
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
-    let retained_product = world.selected_product();
-    let retained_snapshot = handle.with_runtime(|runtime| {
+    let retained_product = world.selected_product(phase_custody, );
+    let retained_snapshot = handle.with_runtime(execution, |runtime| {
         let basis = runtime.admit_branch_basis(&runtime.main_branch_identity()).unwrap();
         runtime.snapshots().snapshot_for_observation(&basis.observation()).unwrap()
     });
@@ -34,7 +48,7 @@ fn check_own_write_recovery(index_loss: bool) {
     let completed = world.application.primary_provider.observe_completed_application(receipt.commit_reference()).unwrap();
     let recorded = cell.get().unwrap();
     if index_loss {
-        crate::domain_computation::primary_graph::output_lineage::own_write_fixture::evict_index_with_unrelated_write(world, &resources);
+        crate::domain_computation::primary_graph::output_lineage::own_write_fixture::evict_index_with_unrelated_write(&phase_custody.phase_for_application(&world.application), world, &resources);
     } else {
     // Release only the derived row, preserving the actual performed lineage.
     // Re-registering under an exhausted ledger now follows the genuine stop
@@ -49,10 +63,10 @@ fn check_own_write_recovery(index_loss: bool) {
     let held = resources
         .reserve_retained_capacity(maximum - resources.retained_capacity_bytes())
         .unwrap();
-    handle.with_runtime(|runtime| {
+    handle.with_runtime(execution, |runtime| {
         let basis = runtime.admit_branch_basis(&runtime.main_branch_identity()).unwrap();
         let snapshot = runtime.snapshots().snapshot_for_observation(&basis.observation()).unwrap();
-        let reason = crate::domain_computation::primary_graph::output_lineage::invalidation::register_completed(
+        let reason = crate::domain_computation::primary_graph::output_lineage::invalidation::register_completed(execution,
             owner, &completed, recorded.computation_source, &[], runtime, &snapshot, Arc::clone(&recorded.settlement_identity), None,
             recorded.native_output_witness(), &mut owner.edit_admission()).unwrap_err();
         assert_eq!(reason, FullVerificationReason::RegistrationIncomplete);
@@ -71,11 +85,11 @@ fn check_own_write_recovery(index_loss: bool) {
     });
     let candidate = AcceptedCurrentCandidate { selected, ready };
     let (_, product, _) = retained_product.into_parts();
-    handle.with_runtime(|runtime| {
+    handle.with_runtime(execution, |runtime| {
         let snapshot = retained_snapshot;
         let selected = runtime.read_truth().positioned_snapshot(&snapshot).unwrap();
         let answer = candidate
-            .certify_current(
+            .certify_current(execution,
                 owner,
                 runtime,
                 product.read_lease_ref(),
@@ -91,7 +105,7 @@ fn check_own_write_recovery(index_loss: bool) {
         drop(answer);
         runtime.snapshots().release_snapshot(&snapshot).unwrap();
     });
-    resolved_account(world, "2", &live_scope());
+    resolved_account(&(phase_custody).test_host_request(), world, "2", &live_scope());
     });
 }
 

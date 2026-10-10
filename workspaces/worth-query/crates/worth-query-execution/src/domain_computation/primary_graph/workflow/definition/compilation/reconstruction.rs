@@ -1,3 +1,7 @@
+mod scalar_observation;
+use scalar_observation::{
+    observed_bool, observed_optional_text, observed_optional_u64, observed_text, observed_u64,
+};
 use worth_foundational::facade::{AspectFieldLocator, AspectValue, InternedString};
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
 use worth_relational::facade::identity::{EntityId, KindId};
@@ -31,6 +35,7 @@ pub(in crate::domain_computation::primary_graph) enum WorkflowDefinitionCompilat
 }
 
 pub(in crate::domain_computation::primary_graph) fn reconstruct_compiled_definition(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     handle: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
@@ -62,8 +67,9 @@ pub(in crate::domain_computation::primary_graph) fn reconstruct_compiled_definit
         },
     );
     if let Some(reused) = reused {
-        let facts = handle.with_runtime(|runtime| {
+        let facts = handle.with_runtime(execution, |runtime| {
             observe_publication_header(
+                execution,
                 runtime,
                 snapshot,
                 layout,
@@ -76,6 +82,7 @@ pub(in crate::domain_computation::primary_graph) fn reconstruct_compiled_definit
             .and_then(|observed| {
                 let mut facts = observed.facts;
                 observe_publication_revisions(
+                    execution,
                     runtime,
                     snapshot,
                     layout,
@@ -96,8 +103,9 @@ pub(in crate::domain_computation::primary_graph) fn reconstruct_compiled_definit
             .map_err(binding_denial)?;
         return Ok((compiled, facts));
     }
-    let (cold, facts) = handle.with_runtime(|runtime| {
+    let (cold, facts) = handle.with_runtime(execution, |runtime| {
         reconstruct_cold_definition(
+            execution,
             runtime,
             snapshot,
             layout,
@@ -165,6 +173,7 @@ fn reuse_denial(
 }
 
 fn exact_adjacent(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     relation_kind: KindId,
@@ -174,6 +183,7 @@ fn exact_adjacent(
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<EntityId, WorthQueryApplicationAttemptDenial> {
     let adjacent = adjacency(
+        execution,
         runtime,
         snapshot,
         relation_kind,
@@ -189,6 +199,7 @@ fn exact_adjacent(
 }
 
 fn adjacency(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     relation_kind: KindId,
@@ -197,8 +208,16 @@ fn adjacency(
     limit: usize,
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<Vec<EntityId>, WorthQueryApplicationAttemptDenial> {
-    let relations = observe_adjacency(runtime, snapshot, relation_kind, anchor, direction, limit)
-        .ok_or_else(|| denial("workflow definition relation is unavailable"))?;
+    let relations = observe_adjacency(
+        runtime,
+        execution,
+        snapshot,
+        relation_kind,
+        anchor,
+        direction,
+        limit,
+    )
+    .ok_or_else(|| denial("workflow definition relation is unavailable"))?;
     let adjacent = relations
         .iter()
         .map(|relation| match direction {
@@ -217,6 +236,7 @@ fn adjacency(
 }
 
 fn exact_text(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     entity: EntityId,
@@ -225,7 +245,7 @@ fn exact_text(
     expected: &str,
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<(), WorthQueryApplicationAttemptDenial> {
-    let value = observed_text(runtime, snapshot, entity, kind, locator, facts)?;
+    let value = observed_text(execution, runtime, snapshot, entity, kind, locator, facts)?;
     if value == expected {
         Ok(())
     } else {
@@ -236,6 +256,7 @@ fn exact_text(
 }
 
 fn exact_u64(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     entity: EntityId,
@@ -244,7 +265,7 @@ fn exact_u64(
     expected: u64,
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<(), WorthQueryApplicationAttemptDenial> {
-    let value = observe_field_value(runtime, snapshot, entity, kind, locator)
+    let value = observe_field_value(runtime, execution, snapshot, entity, kind, locator)
         .ok_or_else(|| denial("workflow definition field is unavailable"))?;
     if value != AspectValue::UInt64(expected) {
         return Err(denial("workflow definition protocol is unsupported"));
@@ -256,130 +277,6 @@ fn exact_u64(
         value,
     });
     Ok(())
-}
-
-fn observed_u64(
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
-    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    entity: EntityId,
-    kind: KindId,
-    locator: &AspectFieldLocator,
-    facts: &mut Vec<WorthQueryApplicationObservedFact>,
-) -> Result<u64, WorthQueryApplicationAttemptDenial> {
-    let value = observe_field_value(runtime, snapshot, entity, kind, locator)
-        .ok_or_else(|| denial("workflow definition field is unavailable"))?;
-    let AspectValue::UInt64(value) = value else {
-        return Err(denial("workflow definition field has invalid type"));
-    };
-    facts.push(WorthQueryApplicationObservedFact::Field {
-        entity_id: entity,
-        kind,
-        locator: locator.clone(),
-        value: AspectValue::UInt64(value),
-    });
-    Ok(value)
-}
-
-fn observed_optional_u64(
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
-    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    entity: EntityId,
-    kind: KindId,
-    locator: &AspectFieldLocator,
-    facts: &mut Vec<WorthQueryApplicationObservedFact>,
-) -> Result<Option<u64>, WorthQueryApplicationAttemptDenial> {
-    let Some(value) = observe_field_value(runtime, snapshot, entity, kind, locator) else {
-        facts.push(WorthQueryApplicationObservedFact::AbsentField {
-            entity_id: entity,
-            kind,
-            locator: locator.clone(),
-        });
-        return Ok(None);
-    };
-    let AspectValue::UInt64(number) = value else {
-        return Err(denial("workflow definition field has invalid type"));
-    };
-    facts.push(WorthQueryApplicationObservedFact::Field {
-        entity_id: entity,
-        kind,
-        locator: locator.clone(),
-        value: AspectValue::UInt64(number),
-    });
-    Ok(Some(number))
-}
-
-fn observed_bool(
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
-    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    entity: EntityId,
-    kind: KindId,
-    locator: &AspectFieldLocator,
-    facts: &mut Vec<WorthQueryApplicationObservedFact>,
-) -> Result<bool, WorthQueryApplicationAttemptDenial> {
-    let value = observe_field_value(runtime, snapshot, entity, kind, locator)
-        .ok_or_else(|| denial("workflow definition field is unavailable"))?;
-    let AspectValue::Bool(value) = value else {
-        return Err(denial("workflow definition field has invalid type"));
-    };
-    facts.push(WorthQueryApplicationObservedFact::Field {
-        entity_id: entity,
-        kind,
-        locator: locator.clone(),
-        value: AspectValue::Bool(value),
-    });
-    Ok(value)
-}
-
-fn observed_optional_text(
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
-    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    entity: EntityId,
-    kind: KindId,
-    locator: &AspectFieldLocator,
-    facts: &mut Vec<WorthQueryApplicationObservedFact>,
-) -> Result<Option<String>, WorthQueryApplicationAttemptDenial> {
-    let Some(value) = observe_field_value(runtime, snapshot, entity, kind, locator) else {
-        facts.push(WorthQueryApplicationObservedFact::AbsentField {
-            entity_id: entity,
-            kind,
-            locator: locator.clone(),
-        });
-        return Ok(None);
-    };
-    let AspectValue::String(InternedString::Raw(text)) = &value else {
-        return Err(denial("workflow definition field has invalid type"));
-    };
-    let text = text.clone();
-    facts.push(WorthQueryApplicationObservedFact::Field {
-        entity_id: entity,
-        kind,
-        locator: locator.clone(),
-        value,
-    });
-    Ok(Some(text))
-}
-
-fn observed_text(
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
-    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    entity: EntityId,
-    kind: KindId,
-    locator: &AspectFieldLocator,
-    facts: &mut Vec<WorthQueryApplicationObservedFact>,
-) -> Result<String, WorthQueryApplicationAttemptDenial> {
-    let value = observe_field_value(runtime, snapshot, entity, kind, locator)
-        .ok_or_else(|| denial("workflow definition field is unavailable"))?;
-    let AspectValue::String(InternedString::Raw(text)) = &value else {
-        return Err(denial("workflow definition field has invalid type"));
-    };
-    let text = text.clone();
-    facts.push(WorthQueryApplicationObservedFact::Field {
-        entity_id: entity,
-        kind,
-        locator: locator.clone(),
-        value,
-    });
-    Ok(text)
 }
 
 fn denial(subject: &str) -> WorthQueryApplicationAttemptDenial {

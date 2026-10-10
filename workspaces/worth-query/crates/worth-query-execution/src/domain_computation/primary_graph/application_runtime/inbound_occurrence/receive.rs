@@ -33,6 +33,7 @@ pub(in crate::domain_computation) enum WorthQueryInboundAdmission {
 /// Why an authenticated completion could not enter or finish owner custody.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryInboundAdmissionDenial {
+    ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
     ForeignVerifier,
     Oversized,
     Verification(WorthQueryInboundVerificationDenial),
@@ -103,6 +104,7 @@ where
     /// custody before the original dispatch lease is released.
     pub fn receive_inbound_occurrence(
         &self,
+
         handle: &WorthQueryInboundVerifierHandle,
         envelope: &[u8],
         request: &WorthQueryRequestScope,
@@ -122,6 +124,7 @@ where
 
     fn execute_inbound_admission(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         admitted: WorthQueryInboundAdmission,
         envelope: &[u8],
@@ -193,8 +196,12 @@ where
             }
             WorthQueryInboundAdmission::New(accepted, true) => accepted,
         };
-        let result =
-            self.progress_accepted_inbound_occurrence(phase, Arc::clone(&accepted), request);
+        let result = self.progress_accepted_inbound_occurrence(
+            execution,
+            phase,
+            Arc::clone(&accepted),
+            request,
+        );
         self.accepted_progress_result(&accepted, envelope, result)
     }
 

@@ -24,6 +24,7 @@ where
 {
     pub(in crate::domain_computation::authorization) fn resolve_elevation_identity(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         capability_identity: [u8; 32],
         installed: &WorthQueryInstalledCapabilityPlan,
         value: worth_foundational::facade::AspectValue,
@@ -36,12 +37,13 @@ where
             .definition()
             .ok_or_else(|| rejected(installed))?
             .identity();
-        self.resolve_lifecycle_field(field, value)
+        self.resolve_lifecycle_field(execution, field, value)
             .map(|resolved| resolved.entity_id())
     }
 
     pub(in crate::domain_computation::authorization) fn resolve_review_identity(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         capability_identity: [u8; 32],
         installed: &WorthQueryInstalledCapabilityPlan,
         value: worth_foundational::facade::AspectValue,
@@ -55,7 +57,7 @@ where
             .ok_or_else(|| rejected(installed))?
             .review()
             .identity();
-        self.resolve_lifecycle_field(field, value)
+        self.resolve_lifecycle_field(execution, field, value)
             .map(|resolved| resolved.entity_id())
     }
 
@@ -64,14 +66,15 @@ where
         Context,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         capability_identity: [u8; 32],
         installed: &WorthQueryInstalledCapabilityPlan,
         proposed: &ApplicationCapabilityElevationRequestProjection<Schema, Scope, Context>,
         sample: &WorthQueryRuntimeTimeSample,
     ) -> Result<WorthQueryObservedElevationSupport, WorthQueryOperationAuthorizationDenial> {
         self.validate_plan(capability_identity, installed)?;
-        let target = self.resolve_request(proposed.target())?;
-        let grant = self.resolve_selector(proposed.grant())?;
+        let target = self.resolve_request(execution, proposed.target())?;
+        let grant = self.resolve_selector(execution, proposed.grant())?;
         if grant.entity_kind() != installed.grant_kind() {
             return Err(rejected(installed));
         }
@@ -82,7 +85,8 @@ where
             &target,
         );
         let observation = self.bind_capability_observation(installed, &retained, sample)?;
-        let observed = observation.observe_upper_bound_capability(grant.entity_id(), None)?;
+        let observed =
+            observation.observe_upper_bound_capability(execution, grant.entity_id(), None)?;
         let (decision, expiry) = observed
             .into_refresh_for_grant(grant.entity_id())
             .map_err(|()| rejected(installed))?;
@@ -107,6 +111,7 @@ where
 
     pub(in crate::domain_computation::authorization) fn observe_current_elevation_support(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &WorthQueryInstalledCapabilityPlan,
         supporting: &WorthQueryRetainedCapabilitySupport,
     ) -> Result<WorthQueryCurrentElevationSupport, WorthQueryOperationAuthorizationDenial> {
@@ -114,6 +119,7 @@ where
         let sample = self.runtime.sample_capability_time(installed)?;
         let expected = supporting.decision();
         if !expected.remains_current_in(
+            execution,
             self.relational,
             self.snapshot,
             self.runtime.authorization.bridge(),
@@ -122,8 +128,11 @@ where
         }
         let observation =
             self.bind_capability_observation(installed, supporting.request(), &sample)?;
-        let observed =
-            observation.observe_upper_bound_capability(supporting.grant(), Some(expected))?;
+        let observed = observation.observe_upper_bound_capability(
+            execution,
+            supporting.grant(),
+            Some(expected),
+        )?;
         Ok(WorthQueryCurrentElevationSupport::new(sample, observed))
     }
 

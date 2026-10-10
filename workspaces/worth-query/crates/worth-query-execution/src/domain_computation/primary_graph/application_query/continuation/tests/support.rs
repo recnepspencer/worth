@@ -57,33 +57,53 @@ impl ContinuationTestContext {
         let world = installed_authorization_world(true);
         let request = crate::domain_computation::primary_graph::tests::fixture::live_scope();
         let external = world.authenticate("alice", authentication_lifetime, &request);
-        let principal = world
+        let (principal, account, query) = world
             .application
-            .select_product_branch(world.application.product_runtime().default_branch())
-            .expect("the selected product branch remains admitted")
-            .resolve_authenticated_principal(
-                &world.binding,
-                &external,
-                &request,
-                WorthQueryPrincipalResolutionMode::Ordinary,
-            )
-            .unwrap();
-        let account = world
-            .application
-            .select_product_branch(world.application.product_runtime().default_branch())
-            .expect("the selected product branch remains admitted")
-            .resolve_entity(
-                AccountIdentity::reference(),
-                "account-1".to_owned(),
-                &request,
-                WorthQueryPrincipalResolutionMode::Ordinary,
-            )
-            .unwrap();
-        let query = world
-            .application
-            .installed_schema()
-            .certification_query(LiveAccountActivityQuery::reference())
-            .unwrap();
+            .with_host_advancement(|phase| {
+                let phase_custody = &phase;
+                let borrowed_execution = phase
+                    .execution_request_for(world.application.product_runtime())
+                    .expect("the installed fixture lends its own phase");
+                let execution = &borrowed_execution;
+                let principal = world
+                    .application
+                    .select_product_branch(
+                        execution,
+                        world.application.product_runtime().default_branch(),
+                    )
+                    .expect("the selected product branch remains admitted")
+                    .resolve_authenticated_principal(
+                        phase_custody,
+                        &world.binding,
+                        &external,
+                        &request,
+                        WorthQueryPrincipalResolutionMode::Ordinary,
+                    )
+                    .unwrap();
+                let account = world
+                    .application
+                    .select_product_branch(
+                        execution,
+                        world.application.product_runtime().default_branch(),
+                    )
+                    .expect("the selected product branch remains admitted")
+                    .resolve_entity(
+                        phase_custody,
+                        AccountIdentity::reference(),
+                        "account-1".to_owned(),
+                        &request,
+                        WorthQueryPrincipalResolutionMode::Ordinary,
+                    )
+                    .unwrap();
+                let query = world
+                    .application
+                    .installed_schema()
+                    .certification_query(LiveAccountActivityQuery::reference())
+                    .unwrap();
+
+                (principal, account, query)
+            })
+            .expect("the fixture host admits its identity reads");
         Self {
             world,
             principal,
@@ -92,13 +112,17 @@ impl ContinuationTestContext {
         }
     }
 
-    pub(super) fn issue(&self) -> TestContinuation {
+    pub(super) fn issue(
+        &self,
+        phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
+    ) -> TestContinuation {
         let request = crate::domain_computation::primary_graph::tests::fixture::live_scope();
         let access = WorthQueryApplicationQueryAccessContext::new(&self.principal, &self.account);
         let plan = self
             .world
-            .selected_product()
+            .selected_product(&phase_custody)
             .admit_application_query_continuation(
+                &phase_custody.phase_for_application(&self.world.application),
                 &self.query,
                 &access,
                 parameters("account-1"),
@@ -118,7 +142,10 @@ impl ContinuationTestContext {
         > = self
             .world
             .application
-            .execute_application_query_continuation_page(plan)
+            .execute_application_query_continuation_page(
+                &phase_custody.phase_for_application(&self.world.application),
+                plan,
+            )
             .unwrap();
         let (_, continuation, receipt) = page.into_parts();
         assert!(receipt.basis_released());
@@ -129,6 +156,7 @@ impl ContinuationTestContext {
 
     pub(super) fn readmit_denial(
         &self,
+        phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
         continuation: TestContinuation,
         parameter: &str,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
@@ -139,6 +167,7 @@ impl ContinuationTestContext {
         self.world
             .application
             .readmit_application_query_continuation(
+                &phase_custody.phase_for_application(&self.world.application),
                 &self.query,
                 &access,
                 parameters(parameter),
@@ -196,7 +225,10 @@ impl ContinuationTestContext {
             .unwrap();
     }
 
-    pub(super) fn stale_principal_mapping(&self) {
+    pub(super) fn stale_principal_mapping(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) {
         let graph = self
             .world
             .application
@@ -209,6 +241,7 @@ impl ContinuationTestContext {
             .expect("test principal binding is installed")
             .clone();
         mutate_field(
+            execution,
             &self.world,
             self.principal.mapping_entity_id(),
             layout.status_locator,
@@ -220,7 +253,10 @@ impl ContinuationTestContext {
         );
     }
 
-    pub(super) fn stale_scope_identity(&self) {
+    pub(super) fn stale_scope_identity(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) {
         let graph = self
             .world
             .application
@@ -234,6 +270,7 @@ impl ContinuationTestContext {
             .expect("account identity is installed")
             .clone();
         mutate_field(
+            execution,
             &self.world,
             self.account.entity_id(),
             locator,
@@ -248,6 +285,7 @@ fn parameters(account: &str) -> ApplicationQueryParameterSet<LiveAccountActivity
 }
 
 fn mutate_field(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &AuthorizationWorld,
     entity_id: worth_relational::facade::identity::EntityId,
     locator: worth_relational::facade::transactions::AspectFieldLocator,
@@ -256,6 +294,7 @@ fn mutate_field(
 ) {
     let fields = AspectFieldPatch::from(BTreeMap::from([(locator, value)]));
     crate::domain_computation::primary_graph::tests::fixture::publish_relational_mutation(
+        execution,
         world,
         WorkerIntentBatch::new(batch).push(MutationIntent::Entity(
             EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent { entity_id, fields }),

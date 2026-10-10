@@ -2,7 +2,10 @@ use super::*;
 
 #[test]
 fn read_execution_eligibility_admits_runtime_current_route() {
-    let runtime = read_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = read_runtime(request_execution);
     let mut workspace = WorthQueryWorkspace::new("read-intent-eligibility", runtime)
         .expect("workspace should build");
     let family = identity_read_family(&mut workspace, "tasks");
@@ -40,12 +43,16 @@ fn read_execution_eligibility_admits_runtime_current_route() {
 
 #[test]
 fn read_execution_basis_context_mismatch_stops_as_phase_two_violation() {
-    let runtime = read_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = read_runtime(request_execution);
     let mut workspace = WorthQueryWorkspace::new("read-intent-basis-mismatch", runtime)
         .expect("workspace should build");
     let family = identity_read_family(&mut workspace, "tasks");
-    let mut unrelated_workspace = WorthQueryWorkspace::new("read-intent-unrelated", read_runtime())
-        .expect("workspace should build");
+    let mut unrelated_workspace =
+        WorthQueryWorkspace::new("read-intent-unrelated", read_runtime(request_execution))
+            .expect("workspace should build");
     let unrelated_family = profile_read_family(&mut unrelated_workspace, "other-tasks");
     let mismatched_context = current_context_for_family(&unrelated_family, "snapshot:mismatch");
     let request =

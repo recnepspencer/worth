@@ -25,6 +25,7 @@ where
 {
     fn prepare_workflow_definition_retirement<Capability, Operation, Input, Scope, Spec>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         definition: PublishedWorkflowDefinitionRef,
         admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
@@ -57,7 +58,8 @@ where
         let (_, projection, _) = self
             .application()
             .mutation_projection
-            .project_admitted_operation(
+            .project_admitted_operation_with_request(
+                execution,
                 &admission,
                 |_, _| {},
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -66,18 +68,21 @@ where
             .into_parts();
         let read_set = self
             .application()
-            .begin_projected_application_read_attempt(
+            .begin_projected_application_read_attempt_with_request(
+                execution,
                 admission,
                 projection,
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )
             .map_err(WorkflowDefinitionPreparationDenial::Attempt)?
-            .complete_projected_dependencies(
+            .complete_projected_dependencies_with_request(
+                execution,
                 crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
             .map_err(WorkflowDefinitionPreparationDenial::Attempt)?;
         read_set
             .materialize_workflow_definition_retirement::<Capability, Spec>(
+                execution,
                 installed,
                 definition,
                 &selected_occurrence,
@@ -94,6 +99,7 @@ pub struct WorthQueryWorkflowDefinitionRetirementAdapter;
 impl WorthQueryWorkflowDefinitionRetirementAdapter {
     #[doc(hidden)]
     pub fn prepare<Schema, Capability, Operation, Input, Scope, Spec>(
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         selected: &WorthQuerySelectedProductOperation<'_, Schema>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         definition: PublishedWorkflowDefinitionRef,
@@ -108,9 +114,15 @@ impl WorthQueryWorkflowDefinitionRetirementAdapter {
         Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
+        let phase_request = match phase.execution_request_for(&selected.application().product_runtime) {
+            Ok(request) => request,
+            Err(_) => return Err(WorkflowDefinitionPreparationDenial::Attempt(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::ForeignPhase, "workflow-phase"))),
+        };
+        let execution = &phase_request;
+
         selected
             .prepare_workflow_definition_retirement::<Capability, Operation, Input, Scope, Spec>(
-                installed, definition, admission,
+                execution, installed, definition, admission,
             )
     }
 
@@ -127,6 +139,22 @@ impl WorthQueryWorkflowDefinitionRetirementAdapter {
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        runtime.compare_and_commit_workflow_definition_retirement(phase, prepared, idempotency)
+        let phase_request = match phase.execution_request_for(&runtime.product_runtime) {
+            Ok(request) => request,
+            Err(_) => return WorkflowDefinitionRetirementOutcome::Application(
+                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase
+                    .into_commit_outcome()
+                    .landed()
+                    .expect_err("a foreign phase cannot commit"),
+            ),
+        };
+        let execution = &phase_request;
+
+        runtime.compare_and_commit_workflow_definition_retirement(
+            execution,
+            phase,
+            prepared,
+            idempotency,
+        )
     }
 }

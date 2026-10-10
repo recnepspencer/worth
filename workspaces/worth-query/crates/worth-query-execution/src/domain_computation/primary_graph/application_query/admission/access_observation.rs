@@ -26,6 +26,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         QueryResult,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         graph_work: &mut crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
         query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
         access: &WorthQueryApplicationQueryAccessContext<
@@ -76,54 +77,59 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             &principal_layout,
         );
         let entity_resolution = graph.retain_entity_resolution_context();
-        let policy = graph.integration_handle().with_runtime_mut(|runtime| {
-            let snapshot = security.snapshot_handle();
-            if !graph_work.admits_authorization_snapshot(snapshot) {
-                Err(denial(
+        let policy = graph
+            .integration_handle()
+            .with_runtime_mut(execution, |runtime| {
+                let snapshot = security.snapshot_handle();
+                if !graph_work.admits_authorization_snapshot(snapshot) {
+                    Err(denial(
                     WorthQueryApplicationQueryAdmissionDenialKind::GraphWorkAdmissionUnavailable,
                     query.name(),
                 ))
-            } else {
-                validate_freshness_at_snapshot(
-                    runtime,
-                    snapshot,
-                    principal,
-                    &principal_layout,
-                    &expected_external_identity,
-                )
-                .map_err(|_| {
-                    denial(
-                        WorthQueryApplicationQueryAdmissionDenialKind::StalePrincipal,
-                        principal.binding(),
-                    )
-                })
-                .and_then(|()| {
-                    entity_resolution
-                        .at_snapshot(
-                            runtime,
-                            snapshot,
-                            WorthQueryPrincipalResolutionMode::Ordinary,
-                        )
-                        .and_then(|truth| truth.validate_entity_freshness(scope))
-                        .map_err(|_| {
-                            denial(
-                                WorthQueryApplicationQueryAdmissionDenialKind::StaleScope,
-                                query.name(),
-                            )
-                        })
-                })
-                .and_then(|()| {
-                    self.observe_query_authorization(
-                        session_identity,
+                } else {
+                    validate_freshness_at_snapshot(
+                        execution,
                         runtime,
-                        snapshot.clone(),
-                        query,
-                        access,
+                        snapshot,
+                        principal,
+                        &principal_layout,
+                        &expected_external_identity,
                     )
-                    .map_err(map_authorization_denial)
-                })
-            }
-        })?;
+                    .map_err(|_| {
+                        denial(
+                            WorthQueryApplicationQueryAdmissionDenialKind::StalePrincipal,
+                            principal.binding(),
+                        )
+                    })
+                    .and_then(|()| {
+                        entity_resolution
+                            .at_snapshot(
+                                execution,
+                                runtime,
+                                snapshot,
+                                WorthQueryPrincipalResolutionMode::Ordinary,
+                            )
+                            .and_then(|truth| truth.validate_entity_freshness(execution, scope))
+                            .map_err(|_| {
+                                denial(
+                                    WorthQueryApplicationQueryAdmissionDenialKind::StaleScope,
+                                    query.name(),
+                                )
+                            })
+                    })
+                    .and_then(|()| {
+                        self.observe_query_authorization(
+                            execution,
+                            session_identity,
+                            runtime,
+                            snapshot.clone(),
+                            query,
+                            access,
+                        )
+                        .map_err(map_authorization_denial)
+                    })
+                }
+            })?;
         let work = WorthQueryApplicationAuthorizationWorkEvidence::from_dependencies(&policy);
         let work = work.with_admission_security_product_resolution();
         let authorization = if policy.is_empty() {

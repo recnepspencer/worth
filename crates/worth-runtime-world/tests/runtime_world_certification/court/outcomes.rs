@@ -174,6 +174,9 @@ fn foreign_candidate_denial_has_a_healthy_candidate_twin() {
 
 #[test]
 fn signal_denial_before_movement_has_no_partial_and_healthy_twin() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut court = CompositeSupplyChainCourt::compile();
     let policy = match court.world.execution_placement() {
         worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy)
@@ -211,7 +214,7 @@ fn signal_denial_before_movement_has_no_partial_and_healthy_twin() {
     let RuntimeWorldPublicationOutcome::NoEffect(denied) = port.execute_with_signal(
         execution,
         prepared,
-        &mut court.context(&root),
+        &mut court.context(request_execution, &root),
         &token,
         |_| {
             Err(SignalError::InvalidInput {
@@ -250,7 +253,7 @@ fn signal_denial_before_movement_has_no_partial_and_healthy_twin() {
     let RuntimeWorldPublicationOutcome::Performed(done) = port.execute_with_signal(
         execution,
         prepared,
-        &mut court.context(&root),
+        &mut court.context(request_execution, &root),
         &token,
         |_| Ok(()),
     ) else {

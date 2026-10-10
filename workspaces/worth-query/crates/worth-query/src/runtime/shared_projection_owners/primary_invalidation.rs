@@ -58,6 +58,7 @@ impl super::super::WorthQueryWorkspace {
         L: BasisOperationLane,
     >(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         capability: &Arc<super::super::WorthQueryManagedLiveWorkspaceCapability>,
         readmission: WorthQuerySharedProjectionLeaseReadmission<'_>,
         source: &WorthQuerySettledDomainProjection<D, O, F, L>,
@@ -79,6 +80,7 @@ impl super::super::WorthQueryWorkspace {
             .take_shared_owner_for_primary_delivery(readmission, &mut counters)
             .map_err(WorthQuerySharedPrimaryOwnerRefreshStop::Runtime)?;
         let refreshed = crate::domain_installation::refresh_granular_source(
+            execution,
             source,
             owner.handle(),
             scope,

@@ -6,7 +6,12 @@ use super::installed_operation_fixture::{
 
 #[test]
 fn workflow_executor_consumes_execution_bound_separate_graph_projection() {
-    let mut workspace = workflow_graph_projection_workspace("workflow-graph-projection").unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace =
+        workflow_graph_projection_workspace(request_execution, "workflow-graph-projection")
+            .unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
         .observe_operating_world(workspace.current_world())

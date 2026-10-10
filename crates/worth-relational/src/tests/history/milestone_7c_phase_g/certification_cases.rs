@@ -12,7 +12,9 @@ use super::artifacts::MergeExecutionCertificationArtifacts;
 use super::recovery_certification::certify_merge_execution_with_recovery;
 use super::schema_fixtures::{persisted_runtime_with_registry, prefer_richer_registry};
 
-pub(super) fn certify_exact_shared_merge_execution() -> MergeExecutionCertificationArtifacts {
+pub(super) fn certify_exact_shared_merge_execution(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> MergeExecutionCertificationArtifacts {
     let runtime = persisted_runtime_with_test_schema();
     let shared = create_entity(&runtime, "shared");
     create_branch_from_main(&runtime, "feature");
@@ -20,47 +22,66 @@ pub(super) fn certify_exact_shared_merge_execution() -> MergeExecutionCertificat
     update_entity_on_branch(&runtime, shared, "same", BranchId("feature".to_string()));
 
     let prepared = runtime
-        .prepare_merge_execution(MergeExecutionRequest {
-            target_branch: BranchId("main".to_string()),
-            source_branch: BranchId("feature".to_string()),
-            merge_intent: MergeIntent::ReconcileIntoTarget,
-        })
+        .prepare_merge_execution(
+            execution,
+            MergeExecutionRequest {
+                target_branch: BranchId("main".to_string()),
+                source_branch: BranchId("feature".to_string()),
+                merge_intent: MergeIntent::ReconcileIntoTarget,
+            },
+        )
         .expect("prepared exact-shared merge");
     let merge = runtime
-        .execute_prepared_merge(prepared)
+        .execute_prepared_merge(execution, prepared)
         .expect("executed exact-shared merge");
 
     assert_eq!(merge.structural_summary.preserved_shared_record_count, 1);
     assert_eq!(merge.structural_summary.emitted_mutation_intent_count, 0);
 
-    certify_merge_execution_with_recovery(&runtime, &merge, persisted_runtime_with_test_schema)
+    certify_merge_execution_with_recovery(
+        execution,
+        &runtime,
+        &merge,
+        persisted_runtime_with_test_schema,
+    )
 }
 
-pub(super) fn certify_source_only_addition_merge_execution() -> MergeExecutionCertificationArtifacts
-{
+pub(super) fn certify_source_only_addition_merge_execution(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> MergeExecutionCertificationArtifacts {
     let runtime = persisted_runtime_with_test_schema();
     create_entity(&runtime, "root");
     create_branch_from_main(&runtime, "feature");
     create_entity_outcome_on_branch(&runtime, "feature-only", BranchId("feature".to_string()));
 
     let prepared = runtime
-        .prepare_merge_execution(MergeExecutionRequest {
-            target_branch: BranchId("main".to_string()),
-            source_branch: BranchId("feature".to_string()),
-            merge_intent: MergeIntent::ReconcileIntoTarget,
-        })
+        .prepare_merge_execution(
+            execution,
+            MergeExecutionRequest {
+                target_branch: BranchId("main".to_string()),
+                source_branch: BranchId("feature".to_string()),
+                merge_intent: MergeIntent::ReconcileIntoTarget,
+            },
+        )
         .expect("prepared source-only merge");
     let merge = runtime
-        .execute_prepared_merge(prepared)
+        .execute_prepared_merge(execution, prepared)
         .expect("executed source-only merge");
 
     assert_eq!(merge.structural_summary.adopted_source_record_count, 1);
     assert_eq!(merge.structural_summary.emitted_entity_create_count, 1);
 
-    certify_merge_execution_with_recovery(&runtime, &merge, persisted_runtime_with_test_schema)
+    certify_merge_execution_with_recovery(
+        execution,
+        &runtime,
+        &merge,
+        persisted_runtime_with_test_schema,
+    )
 }
 
-pub(super) fn certify_prefer_richer_merge_execution() -> MergeExecutionCertificationArtifacts {
+pub(super) fn certify_prefer_richer_merge_execution(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> MergeExecutionCertificationArtifacts {
     let store_path = unique_test_store_path("worth-relational-7c-phase-g");
     let registry = prefer_richer_registry();
     let runtime = persisted_runtime_with_registry(registry.clone(), store_path.clone());
@@ -104,21 +125,24 @@ pub(super) fn certify_prefer_richer_merge_execution() -> MergeExecutionCertifica
         .expect("feature branch seed");
 
     let prepared = runtime
-        .prepare_merge_execution(MergeExecutionRequest {
-            target_branch: BranchId("main".to_string()),
-            source_branch: BranchId("feature".to_string()),
-            merge_intent: MergeIntent::ReconcileIntoTarget,
-        })
+        .prepare_merge_execution(
+            execution,
+            MergeExecutionRequest {
+                target_branch: BranchId("main".to_string()),
+                source_branch: BranchId("feature".to_string()),
+                merge_intent: MergeIntent::ReconcileIntoTarget,
+            },
+        )
         .expect("prepared prefer-richer merge");
     let merge = runtime
-        .execute_prepared_merge(prepared)
+        .execute_prepared_merge(execution, prepared)
         .expect("executed prefer-richer merge");
 
     assert_eq!(merge.structural_summary.reconciled_record_count, 1);
     assert_eq!(merge.structural_summary.emitted_entity_update_count, 1);
     let current = runtime
         .read_truth()
-        .read_snapshot(&merge.commit.snapshot)
+        .read_snapshot(&merge.commit.snapshot, execution)
         .expect("current merge snapshot");
     let current_record = current
         .get_entity(main_entity)
@@ -129,7 +153,7 @@ pub(super) fn certify_prefer_richer_merge_execution() -> MergeExecutionCertifica
         Some("active".into())
     );
 
-    certify_merge_execution_with_recovery(&runtime, &merge, move || {
+    certify_merge_execution_with_recovery(execution, &runtime, &merge, move || {
         persisted_runtime_with_registry(registry.clone(), store_path.clone())
     })
 }

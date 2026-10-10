@@ -14,11 +14,14 @@ type SettledProjection = domain::WorthQuerySettledDomainProjection<
 
 #[test]
 fn cancellation_terminates_while_disposal_detaches_and_stale_cleanup_still_closes() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = configured_runtime()
-        .controlled_workspace("projection-lifecycle-terminal-causes")
+        .controlled_workspace(request_execution, "projection-lifecycle-terminal-causes")
         .unwrap();
     let cancelled = settle(&mut workspace);
-    let cancelled_live = promote(cancelled, &mut workspace);
+    let cancelled_live = promote(request_execution, cancelled, &mut workspace);
     let cancelled_resource = cancelled_live.resource_name().to_string();
     let cancelled = match cancelled_live.cancel(&mut workspace) {
         domain::WorthQueryProjectionCancellationOutcome::Cancelled(cancelled) => cancelled,
@@ -52,7 +55,7 @@ fn cancellation_terminates_while_disposal_detaches_and_stale_cleanup_still_close
     );
 
     let disposed = settle(&mut workspace);
-    let disposed_live = promote(disposed, &mut workspace);
+    let disposed_live = promote(request_execution, disposed, &mut workspace);
     let disposed_resource = disposed_live.resource_name().to_string();
     workspace.advance_domain_installation_generation().unwrap();
     let disposed = match disposed_live.dispose(&mut workspace) {
@@ -78,15 +81,18 @@ fn cancellation_terminates_while_disposal_detaches_and_stale_cleanup_still_close
 
 #[test]
 fn replacement_readmits_the_exact_pair_and_preserves_the_old_owner_on_wrong_pair() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = configured_runtime()
-        .workspace("projection-lifecycle-replacement")
+        .workspace(request_execution, "projection-lifecycle-replacement")
         .unwrap();
     let settled = settle(&mut workspace);
-    let live = promote(settled, &mut workspace);
+    let live = promote(request_execution, settled, &mut workspace);
     let old_resource = live.resource_name().to_string();
     let candidate = settle(&mut workspace).into_lifecycle();
     let witness = live.replacement_witness_for(&candidate).unwrap();
-    let replaced = match live.replace_with(candidate, witness, &mut workspace) {
+    let replaced = match live.replace_with(request_execution, candidate, witness, &mut workspace) {
         domain::WorthQueryProjectionReplacementOutcome::Replaced(replaced) => replaced,
         _ => panic!("exact replacement pair did not converge"),
     };
@@ -106,7 +112,7 @@ fn replacement_readmits_the_exact_pair_and_preserves_the_old_owner_on_wrong_pair
     assert!(workspace
         .resolve_live_artifact_target(&old_resource)
         .is_err());
-    replaced.refresh(&mut workspace).unwrap();
+    replaced.refresh(request_execution, &mut workspace).unwrap();
     let disposed = match replaced.dispose(&mut workspace) {
         domain::WorthQueryTransitionedProjectionDisposalOutcome::Disposed(disposed) => disposed,
         domain::WorthQueryTransitionedProjectionDisposalOutcome::Stopped(_) => {
@@ -119,11 +125,12 @@ fn replacement_readmits_the_exact_pair_and_preserves_the_old_owner_on_wrong_pair
     ));
 
     let settled = settle(&mut workspace);
-    let live = promote(settled, &mut workspace);
+    let live = promote(request_execution, settled, &mut workspace);
     let candidate = settle(&mut workspace).into_lifecycle();
     let wrong_candidate = settle(&mut workspace).into_lifecycle();
     let wrong_witness = live.replacement_witness_for(&wrong_candidate).unwrap();
-    let stop = match live.replace_with(candidate, wrong_witness, &mut workspace) {
+    let stop = match live.replace_with(request_execution, candidate, wrong_witness, &mut workspace)
+    {
         domain::WorthQueryProjectionReplacementOutcome::Stopped(stop) => stop,
         _ => panic!("wrong-pair replacement witness was accepted"),
     };
@@ -135,22 +142,25 @@ fn replacement_readmits_the_exact_pair_and_preserves_the_old_owner_on_wrong_pair
     assert_eq!(stop.work().candidate().planning_attempts, 0);
     assert_eq!(stop.work().candidate().lower_runtime_contacts, 0);
     let (live, _) = stop.into_retry_parts();
-    live.refresh(&mut workspace).unwrap();
+    live.refresh(request_execution, &mut workspace).unwrap();
     drop(live);
     drop(wrong_candidate);
 }
 
 #[test]
 fn close_failure_owns_both_resources_until_retry_or_rollback() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = configured_runtime()
         .fail_next_live_closes(1)
-        .workspace("projection-lifecycle-cleanup-retry")
+        .workspace(request_execution, "projection-lifecycle-cleanup-retry")
         .unwrap();
     let settled = settle(&mut workspace);
-    let live = promote(settled, &mut workspace);
+    let live = promote(request_execution, settled, &mut workspace);
     let candidate = settle(&mut workspace).into_lifecycle();
     let witness = live.replacement_witness_for(&candidate).unwrap();
-    let pending = match live.replace_with(candidate, witness, &mut workspace) {
+    let pending = match live.replace_with(request_execution, candidate, witness, &mut workspace) {
         domain::WorthQueryProjectionReplacementOutcome::CleanupPending(pending) => pending,
         _ => panic!("injected predecessor close failure did not retain cleanup ownership"),
     };
@@ -170,18 +180,18 @@ fn close_failure_owns_both_resources_until_retry_or_rollback() {
     };
     assert_eq!(replaced.cleanup_work().predecessor_close_attempts(), 2);
     assert_eq!(replaced.cleanup_work().predecessor_close_completions(), 1);
-    replaced.refresh(&mut workspace).unwrap();
+    replaced.refresh(request_execution, &mut workspace).unwrap();
     drop(replaced);
 
     let mut workspace = configured_runtime()
         .fail_next_live_closes(1)
-        .workspace("projection-lifecycle-cleanup-rollback")
+        .workspace(request_execution, "projection-lifecycle-cleanup-rollback")
         .unwrap();
     let settled = settle(&mut workspace);
-    let live = promote(settled, &mut workspace);
+    let live = promote(request_execution, settled, &mut workspace);
     let candidate = settle(&mut workspace).into_lifecycle();
     let witness = live.replacement_witness_for(&candidate).unwrap();
-    let pending = match live.replace_with(candidate, witness, &mut workspace) {
+    let pending = match live.replace_with(request_execution, candidate, witness, &mut workspace) {
         domain::WorthQueryProjectionReplacementOutcome::CleanupPending(pending) => pending,
         _ => panic!("injected close failure did not enter cleanup pending"),
     };
@@ -208,18 +218,21 @@ fn close_failure_owns_both_resources_until_retry_or_rollback() {
     assert!(workspace
         .resolve_live_artifact_target(&successor_resource)
         .is_err());
-    restored.refresh(&mut workspace).unwrap();
+    restored.refresh(request_execution, &mut workspace).unwrap();
     drop(restored);
 }
 
 #[test]
 fn rebind_requires_the_stale_current_pair_and_refreshes_the_successor() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = configured_runtime()
-        .controlled_workspace("projection-lifecycle-rebind")
+        .controlled_workspace(request_execution, "projection-lifecycle-rebind")
         .unwrap();
     let prior_domain = workspace.domain(GeometryDomain).unwrap();
     let settled = settle(&mut workspace);
-    let live = promote(settled, &mut workspace);
+    let live = promote(request_execution, settled, &mut workspace);
     let old_resource = live.resource_name().to_string();
     workspace.advance_domain_installation_generation().unwrap();
     let (_, rebind_receipt) = workspace
@@ -228,7 +241,7 @@ fn rebind_requires_the_stale_current_pair_and_refreshes_the_successor() {
         .into_parts();
     let candidate = settle(&mut workspace).into_lifecycle();
     let witness = live.rebind_witness_for(&candidate, rebind_receipt).unwrap();
-    let rebound = match live.rebind_with(candidate, witness, &mut workspace) {
+    let rebound = match live.rebind_with(request_execution, candidate, witness, &mut workspace) {
         domain::WorthQueryProjectionRebindOutcome::Rebound(rebound) => rebound,
         _ => panic!("exact stale/current rebind pair did not converge"),
     };
@@ -242,7 +255,7 @@ fn rebind_requires_the_stale_current_pair_and_refreshes_the_successor() {
     assert!(workspace
         .resolve_live_artifact_target(&old_resource)
         .is_err());
-    rebound.refresh(&mut workspace).unwrap();
+    rebound.refresh(request_execution, &mut workspace).unwrap();
     let cancelled = match rebound.cancel(&mut workspace) {
         domain::WorthQueryTransitionedProjectionCancellationOutcome::Cancelled(cancelled) => {
             cancelled
@@ -259,13 +272,19 @@ fn rebind_requires_the_stale_current_pair_and_refreshes_the_successor() {
 
 #[test]
 fn lifecycle_rebind_carries_required_domain_owner_receipts() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = required_domain_runtime(true)
-        .controlled_workspace("projection-lifecycle-required-domain-rebind")
+        .controlled_workspace(
+            request_execution,
+            "projection-lifecycle-required-domain-rebind",
+        )
         .unwrap();
     let prior_geometry = workspace.domain(GeometryDomain).unwrap();
     let prior_auxiliary = workspace.domain(AuxiliaryDomain).unwrap();
     let settled = settle(&mut workspace);
-    let live = promote(settled, &mut workspace);
+    let live = promote(request_execution, settled, &mut workspace);
     workspace.advance_domain_installation_generation().unwrap();
     let geometry = workspace
         .rebind_domain(prior_geometry.rebind_request())
@@ -284,7 +303,7 @@ fn lifecycle_rebind_carries_required_domain_owner_receipts() {
             vec![auxiliary.receipt().clone()],
         )
         .unwrap();
-    let rebound = match live.rebind_with(candidate, witness, &mut workspace) {
+    let rebound = match live.rebind_with(request_execution, candidate, witness, &mut workspace) {
         domain::WorthQueryProjectionRebindOutcome::Rebound(rebound) => rebound,
         _ => panic!("required-domain lifecycle rebind did not converge"),
     };
@@ -298,6 +317,7 @@ fn lifecycle_rebind_carries_required_domain_owner_receipts() {
 }
 
 fn promote(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     settled: SettledProjection,
     workspace: &mut worth_query::facade::runtime::WorthQueryWorkspace,
 ) -> domain::WorthQueryLiveBoundDomainProjection<
@@ -306,7 +326,10 @@ fn promote(
     ReadFamily,
     foundation::ObservationLaneWitness,
 > {
-    match settled.into_lifecycle().promote(workspace) {
+    match settled
+        .into_lifecycle()
+        .promote(request_execution, workspace)
+    {
         domain::WorthQueryProjectionPromotionOutcome::Promoted(live) => live,
         _ => panic!("settled projection did not promote"),
     }

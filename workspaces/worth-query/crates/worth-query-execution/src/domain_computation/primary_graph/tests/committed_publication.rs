@@ -22,9 +22,15 @@ fn receipt_recovery_and_dispatch_observation_share_the_exact_world_terminal() {
 
     let observation = world
         .application
-        .observe_committed_dispatch_outbox(&receipt)
-        .unwrap()
-        .expect("the committed operation carries its outbox");
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .observe_committed_dispatch_outbox(&phase, &receipt)
+                .unwrap()
+                .expect("the committed operation carries its outbox")
+        })
+        .expect("the fixture read owns its installed host call");
     assert_eq!(observation.committed_product_publication(), committed);
 
     let handle = world
@@ -52,39 +58,70 @@ fn same_world_publications_retain_distinct_commit_and_attempt_occurrences() {
         first_world.publication_attempt(),
         second_world.publication_attempt()
     );
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
 
-    let first_observed = world
-        .application
-        .observe_committed_dispatch_outbox(&first)
-        .unwrap()
-        .unwrap();
-    let second_observed = world
-        .application
-        .observe_committed_dispatch_outbox(&second)
-        .unwrap()
-        .unwrap();
-    assert_eq!(first_observed.committed_product_publication(), first_world);
-    assert_eq!(
-        second_observed.committed_product_publication(),
-        second_world
-    );
+            let first_observed = world
+                .application
+                .observe_committed_dispatch_outbox(
+                    &host_custody.phase_for_application(&world.application),
+                    &first,
+                )
+                .unwrap()
+                .unwrap();
+            let second_observed = world
+                .application
+                .observe_committed_dispatch_outbox(
+                    &host_custody.phase_for_application(&world.application),
+                    &second,
+                )
+                .unwrap()
+                .unwrap();
+            assert_eq!(first_observed.committed_product_publication(), first_world);
+            assert_eq!(
+                second_observed.committed_product_publication(),
+                second_world
+            );
+        })
+        .expect("the fixture block owns its installed host call")
 }
 
 #[test]
 fn idempotent_recovery_reuses_the_original_world_terminal() {
     let world = installed_authorization_world(true);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+        })
+        .expect("the fixture read owns its installed host call");
     let program = || {
-        super::application_attempt::preimage_evidence::retained_status_program(
-            &world,
-            &principal,
-            &account,
-            &request,
-            "recovered-world-terminal",
-            super::application_attempt::preimage_evidence::RetentionMutationBreadth::Narrow,
-        )
+        world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+                super::application_attempt::preimage_evidence::retained_status_program(
+                    &(phase).test_host_request(),
+                    &world,
+                    &principal,
+                    &account,
+                    &request,
+                    "recovered-world-terminal",
+                    super::application_attempt::preimage_evidence::RetentionMutationBreadth::Narrow,
+                )
+            })
+            .expect("the fixture invocation owns its installed host call")
     };
     let first = program();
     let retry = program();

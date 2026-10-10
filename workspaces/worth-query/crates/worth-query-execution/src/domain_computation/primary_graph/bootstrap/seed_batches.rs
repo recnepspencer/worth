@@ -24,21 +24,25 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphBootstrap<Schema> {
         if self.rows.is_empty() && self.entity_rows.is_empty() && self.relation_rows.is_empty() {
             return Ok(());
         }
-        let result = self.commit_seed_batch_once();
+        let result = self.commit_seed_batch_once(&_phase.execution_request());
         if result.is_err() {
             self.seed_batch_failed = true;
         }
         result
     }
 
-    fn commit_seed_batch_once(&mut self) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+    fn commit_seed_batch_once(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         if let Some(seed) = self.program_activation_seed.take() {
-            commit_initial_program_activation(&self.graph, seed)?;
+            commit_initial_program_activation(execution, &self.graph, seed)?;
         }
         let principal_count = self.rows.len();
         let entity_count = self.entity_rows.len();
         let relation_count = self.relation_rows.len();
         let commit_id = commit_bootstrap_rows(
+            execution,
             &self.graph,
             self.committed_principal_count,
             std::mem::take(&mut self.rows),

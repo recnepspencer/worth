@@ -118,6 +118,9 @@ fn unsupported_request_posture_denies_before_history_or_planning_work() {
 
 #[test]
 fn planning_execution_and_publication_consume_normalized_request_authority() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = merge_ready_runtime();
     let planning_request = planning_request();
     let execution_request = execution_request();
@@ -128,7 +131,7 @@ fn planning_execution_and_publication_consume_normalized_request_authority() {
 
     let artifact = runtime
         .merge()
-        .inspect_planning_scope(planning_request)
+        .inspect_planning_scope(execution, planning_request)
         .expect("planning artifact");
     assert_eq!(artifact.request, normalized);
     assert_eq!(
@@ -158,7 +161,7 @@ fn planning_execution_and_publication_consume_normalized_request_authority() {
     assert_eq!(artifact.inspection_input().request(), &normalized);
 
     let prepared = runtime
-        .prepare_merge_execution(execution_request)
+        .prepare_merge_execution(execution, execution_request)
         .expect("prepared merge");
     assert_eq!(prepared.request(), &normalized);
     assert_eq!(prepared.artifact().request, normalized);
@@ -172,7 +175,7 @@ fn planning_execution_and_publication_consume_normalized_request_authority() {
     );
 
     let outcome = runtime
-        .execute_prepared_merge(prepared)
+        .execute_prepared_merge(execution, prepared)
         .expect("executed merge");
     assert_eq!(outcome.execution_summary.request, normalized);
     assert_eq!(

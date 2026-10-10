@@ -3,6 +3,9 @@ use crate::facade::indexes::{BoundedEntityFieldLookupRequest, BoundedIndexParity
 
 #[test]
 fn bounded_generation_selection_does_not_enumerate_retained_builds() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_index_field_aspects();
     let created = create_entity_outcome(&runtime, "selected");
     let entity = changed_entities(&created)[0];
@@ -23,13 +26,14 @@ fn bounded_generation_selection_does_not_enumerate_retained_builds() {
     // Repeated cold rebuilds are real native publications. The measured action
     // is the unchanged bounded consumer, not index construction or graph history.
     for retained in 1..=1_000 {
-        let build = runtime
-            .index_authority()
-            .build_for_commit(DerivedIndexBuildRequest {
+        let build = runtime.index_authority().build_for_commit(
+            execution,
+            DerivedIndexBuildRequest {
                 source_commit_id: receipt.commit_id,
                 branch_id: receipt.branch_id.clone(),
                 index_ids: vec![index.index_id],
-            });
+            },
+        );
         assert!(build.failed_indexes.is_empty());
         if ![100, 1_000].contains(&retained) {
             continue;
@@ -52,6 +56,7 @@ fn bounded_generation_selection_does_not_enumerate_retained_builds() {
                 )
                 .unwrap(),
                 BoundedIndexParityMode::Production,
+                execution,
             )
             .unwrap();
         let after = runtime.index_access().generation_selection_counters();

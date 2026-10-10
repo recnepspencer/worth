@@ -19,11 +19,12 @@ impl WorthQueryPrimaryGraphProvider {
     /// Relational commit. Every record consumes caller-declared work.
     pub(in crate::domain_computation::primary_graph) fn completion_row_from_commit_patch(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         identity: &RelationalCommitIdentity,
         maximum_changed_records: NonZeroUsize,
     ) -> Result<Option<WorthQueryCanonicalCompletionRow>, Denial> {
         let layout = self.graph.layout.provider_inbound_completion().clone();
-        self.graph.with_runtime(|runtime| {
+        self.graph.with_runtime(execution, |runtime| {
             let receipt = runtime
                 .history()
                 .immutable_commit_receipt(identity.commit_id())

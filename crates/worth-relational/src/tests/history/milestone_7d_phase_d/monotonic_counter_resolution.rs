@@ -2,6 +2,9 @@ use super::*;
 
 #[test]
 fn built_in_monotonic_counter_merge_is_auto_resolved_with_inline_value_and_recovery_parity() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = runtime_with_aspect_field_merge_policy(
         AspectKey::new("value").unwrap(),
         field_key("value"),
@@ -17,6 +20,7 @@ fn built_in_monotonic_counter_merge_is_auto_resolved_with_inline_value_and_recov
         )]),
     );
     update_entity_aspect_fields_on_branch(
+        execution,
         &mut runtime,
         entity,
         crate::tests::support::aspect_field_patch_from_values([(
@@ -28,6 +32,7 @@ fn built_in_monotonic_counter_merge_is_auto_resolved_with_inline_value_and_recov
     );
     create_branch_from_main(&runtime, "feature");
     update_entity_aspect_fields_on_branch(
+        execution,
         &mut runtime,
         entity,
         crate::tests::support::aspect_field_patch_from_values([(
@@ -38,6 +43,7 @@ fn built_in_monotonic_counter_merge_is_auto_resolved_with_inline_value_and_recov
         BranchId("main".to_string()),
     );
     update_entity_aspect_fields_on_branch(
+        execution,
         &mut runtime,
         entity,
         crate::tests::support::aspect_field_patch_from_values([(
@@ -51,6 +57,7 @@ fn built_in_monotonic_counter_merge_is_auto_resolved_with_inline_value_and_recov
     let live_artifact = runtime
         .merge()
         .inspect_planning_scope(
+            execution,
             MergeExecutionRequest {
                 target_branch: BranchId("main".to_string()),
                 source_branch: BranchId("feature".to_string()),
@@ -87,19 +94,23 @@ fn built_in_monotonic_counter_merge_is_auto_resolved_with_inline_value_and_recov
     );
 
     let prepared = runtime
-        .prepare_merge_execution(MergeExecutionRequest {
-            target_branch: BranchId("main".to_string()),
-            source_branch: BranchId("feature".to_string()),
-            merge_intent: MergeIntent::ReconcileIntoTarget,
-        })
+        .prepare_merge_execution(
+            execution,
+            MergeExecutionRequest {
+                target_branch: BranchId("main".to_string()),
+                source_branch: BranchId("feature".to_string()),
+                merge_intent: MergeIntent::ReconcileIntoTarget,
+            },
+        )
         .expect("prepared counter merge");
     let merge = runtime
-        .execute_prepared_merge(prepared)
+        .execute_prepared_merge(execution, prepared)
         .expect("executed counter merge");
     let live_commit_id = merge.commit.commit.commit_id;
 
     assert_eq!(
         read_entity_aspect_field_display(
+            execution,
             &runtime,
             &BranchId("main".to_string()),
             entity,
@@ -113,7 +124,7 @@ fn built_in_monotonic_counter_merge_is_auto_resolved_with_inline_value_and_recov
         .canonical_commit_envelope(merge.commit.commit.commit_id)
         .expect("live merge envelope");
 
-    let (_recovery, recovered) = checkpoint_and_recover_with(&runtime, || {
+    let (_recovery, recovered) = checkpoint_and_recover_with(execution, &runtime, || {
         runtime_with_aspect_field_merge_policy(
             AspectKey::new("value").unwrap(),
             field_key("value"),
@@ -126,6 +137,7 @@ fn built_in_monotonic_counter_merge_is_auto_resolved_with_inline_value_and_recov
         .expect("recovered merge envelope");
     assert_eq!(
         read_entity_aspect_field_display(
+            execution,
             &recovered,
             &BranchId("main".to_string()),
             entity,

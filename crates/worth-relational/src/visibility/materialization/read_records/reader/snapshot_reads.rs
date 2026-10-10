@@ -6,7 +6,26 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         resolve_snapshot_inspection(self.runtime, handle)
     }
 
-    pub fn read_snapshot(&self, handle: &SnapshotHandle) -> Option<RelationalReadView> {
+    /// A snapshot read requires the caller's borrowed execution custody.
+    /// ```compile_fail,E0061
+    /// use worth_relational::facade::{runtime::RelationalRuntime, snapshots::SnapshotHandle};
+    /// use worth_execution::ExecutionRequest;
+    /// fn read(runtime: &RelationalRuntime, snapshot: &SnapshotHandle, request: &ExecutionRequest<'_, '_>) {
+    ///     let _ = runtime.read_truth().read_snapshot(snapshot);
+    /// }
+    /// ```
+    /// ```
+    /// use worth_relational::facade::{runtime::RelationalRuntime, snapshots::SnapshotHandle};
+    /// use worth_execution::ExecutionRequest;
+    /// fn read(runtime: &RelationalRuntime, snapshot: &SnapshotHandle, request: &ExecutionRequest<'_, '_>) {
+    ///     let _ = runtime.read_truth().read_snapshot(snapshot, request);
+    /// }
+    /// ```
+    pub fn read_snapshot(
+        &self,
+        handle: &SnapshotHandle,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Option<RelationalReadView> {
         let resolved = resolve_snapshot_state(self.runtime, handle)?;
         if resolved
             .state
@@ -25,14 +44,16 @@ impl<'runtime> VisibilityReadContext<'runtime> {
 
     pub(crate) fn read_version(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         version_id: crate::identity::data::VersionId,
     ) -> RelationalReadView {
-        self.try_read_version(version_id)
+        self.try_read_version(execution, version_id)
             .expect("internal historical read requires retained MVCC coverage")
     }
 
     pub(crate) fn try_read_version(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         version_id: crate::identity::data::VersionId,
     ) -> Result<RelationalReadView, crate::visibility::snapshot_states::HistoricalVisibilityDenial>
     {
@@ -74,6 +95,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
     /// Read the immutable root carried by one owner-admitted observation.
     pub fn read_observation(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         observation: &crate::mvcc::RelationalBranchObservation,
     ) -> Result<RelationalReadView, crate::branch::RelationalBranchBasisDenial> {
         self.require_local_observation(observation)?;

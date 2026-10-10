@@ -35,10 +35,11 @@ pub(super) fn prepare<const REUSE: bool, const MODE: u8, const WORKFLOW: bool>(
             let selected = application
                 .runtime()
                 .on_branch(application.current_world())
-                .select()
+                .select(&phase)
                 .unwrap();
             let resolved = selected
                 .resolve_authenticated_principal(
+                    &phase,
                     binding.principal_binding(),
                     principal,
                     scope,
@@ -51,6 +52,7 @@ pub(super) fn prepare<const REUSE: bool, const MODE: u8, const WORKFLOW: bool>(
                 .into_field_parts(resolved.principal_identity());
             let target = selected
                 .resolve_entity(
+                    &phase,
                     field,
                     value,
                     scope,
@@ -69,6 +71,7 @@ pub(super) fn prepare<const REUSE: bool, const MODE: u8, const WORKFLOW: bool>(
                 .unwrap();
             let access = selected
                 .admit_capability_access(
+                    &phase,
                     &resolved,
                     &capability,
                     identities.mutation_input().clone(),
@@ -78,6 +81,7 @@ pub(super) fn prepare<const REUSE: bool, const MODE: u8, const WORKFLOW: bool>(
             let admission = application
                 .runtime()
                 .authorize_capability_operation(
+                    &phase,
                     access,
                     binding.operation(),
                     TypedMutationPreconditions::new(),

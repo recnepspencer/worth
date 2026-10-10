@@ -11,7 +11,10 @@ use super::support::{
 
 #[test]
 fn execution_stays_separate_from_preparation_and_produces_runtime_artifact() {
-    let handle = admitted_handle("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "main");
     let prepared = match handle.prepare_continuation_from_target(target_request::<RuntimeFamily>(
         &handle,
         "face-a",
@@ -39,7 +42,10 @@ fn execution_stays_separate_from_preparation_and_produces_runtime_artifact() {
 
 #[test]
 fn preparation_and_execution_both_preserve_wrong_world_when_world_changes() {
-    let (workspace, left) = admitted_workspace("left");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (workspace, left) = admitted_workspace(request_execution, "left");
     let right = continuation_handle_in(&workspace, "right");
 
     let wrong_world = right.prepare_continuation_from_target(target_request::<RuntimeFamily>(
@@ -71,7 +77,10 @@ fn preparation_and_execution_both_preserve_wrong_world_when_world_changes() {
 
 #[test]
 fn continuation_ordinary_outcome_keeps_execution_topology_honest() {
-    let (workspace, handle) = admitted_workspace("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (workspace, handle) = admitted_workspace(request_execution, "main");
     let prepared =
         match handle.prepare_continuation_from_target_outcome(target_request::<RuntimeFamily>(
             &handle,
@@ -111,7 +120,10 @@ fn continuation_ordinary_outcome_keeps_execution_topology_honest() {
 
 #[test]
 fn execution_readmission_preserves_basis_identity_for_equivalent_runtime_meaning() {
-    let handle = admitted_handle("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "main");
     let prepared = match handle.prepare_continuation_from_target(target_request::<RuntimeFamily>(
         &handle,
         "face-a",
@@ -139,7 +151,10 @@ fn execution_readmission_preserves_basis_identity_for_equivalent_runtime_meaning
 
 #[test]
 fn continuation_ordinary_outcome_keeps_new_execution_denials_visible() {
-    let (workspace, handle) = admitted_workspace("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (workspace, handle) = admitted_workspace(request_execution, "main");
     let prepared = match handle.prepare_continuation_from_target(target_request::<RuntimeFamily>(
         &handle,
         "face-a",
@@ -167,7 +182,10 @@ fn continuation_ordinary_outcome_keeps_new_execution_denials_visible() {
 
 #[test]
 fn continuation_ordinary_outcome_keeps_execution_drift_topology_visible() {
-    let (workspace, handle) = admitted_workspace("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (workspace, handle) = admitted_workspace(request_execution, "main");
     let prepared = match handle.prepare_continuation_from_target(target_request::<RuntimeFamily>(
         &handle,
         "face-a",

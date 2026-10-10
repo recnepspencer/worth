@@ -8,22 +8,28 @@ use crate::tests::support::{
 
 #[test]
 fn execute_prepared_merge_reports_execution_counters_and_structural_summary() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
     create_entity_outcome(&runtime, "root");
     create_branch_from_main(&runtime, "feature");
     create_entity_outcome_on_branch(&runtime, "feature-only", BranchId("feature".to_string()));
 
     let prepared = runtime
-        .prepare_merge_execution(MergeExecutionRequest {
-            target_branch: BranchId("main".to_string()),
-            source_branch: BranchId("feature".to_string()),
-            merge_intent: MergeIntent::ReconcileIntoTarget,
-        })
+        .prepare_merge_execution(
+            execution,
+            MergeExecutionRequest {
+                target_branch: BranchId("main".to_string()),
+                source_branch: BranchId("feature".to_string()),
+                merge_intent: MergeIntent::ReconcileIntoTarget,
+            },
+        )
         .expect("prepared merge execution");
     runtime.performance_access().reset_counters();
 
     let merge = runtime
-        .execute_prepared_merge(prepared)
+        .execute_prepared_merge(execution, prepared)
         .expect("executed prepared merge");
     let counters = runtime.performance_access().counters();
 

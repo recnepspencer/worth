@@ -99,10 +99,34 @@ pub(in crate::domain_computation::primary_graph) use decision_currentness::{
 fn concurrent_equivalent_attempts_publish_one_transaction() {
     let world = installed_authorization_world(true);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
-    let first = admitted_program(&world, &principal, &account, &request, "once");
-    let second = admitted_program(&world, &principal, &account, &request, "once");
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let first = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            admitted_program(&phase, &world, &principal, &account, &request, "once")
+        })
+        .expect("the fixture read owns its installed host call");
+    let second = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            admitted_program(&phase, &world, &principal, &account, &request, "once")
+        })
+        .expect("the fixture read owns its installed host call");
 
     let (left, right) = std::thread::scope(|scope| {
         let left = scope.spawn(|| {
@@ -138,77 +162,55 @@ fn concurrent_equivalent_attempts_publish_one_transaction() {
     assert!(terminal_kinds.contains(&WorthQueryApplicationCommitTerminalKind::Recovered));
 }
 
-#[test]
-fn response_loss_resolves_the_published_commit_before_returning() {
-    let world = installed_authorization_world(true);
-    let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
-    let first = admitted_program_with_expected_status(
-        &world,
-        &principal,
-        &account,
-        &request,
-        ("open", "published"),
-    );
-    let retry = admitted_program_with_expected_status(
-        &world,
-        &principal,
-        &account,
-        &request,
-        ("open", "published"),
-    );
-
-    world.faults.lose_next_commit_response();
-    let WorthQueryApplicationCommitOutcome::Committed(first_receipt) =
-        world.application.compare_and_commit_application(
-            first,
-            idempotency(15, 15),
-            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
-    else {
-        panic!("authoritative idempotency must prove the response-lost commit");
-    };
-    let WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt) =
-        world.application.compare_and_commit_application(
-            retry,
-            idempotency(15, 15),
-            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
-    else {
-        panic!("retry must recover the transaction published before response loss");
-    };
-    assert!(receipt.is_same_authoritative_commit(&first_receipt));
-    assert_eq!(receipt.outcome_identity(), first_receipt.outcome_identity());
-    assert_eq!(
-        first_receipt.terminal().kind(),
-        WorthQueryApplicationCommitTerminalKind::Executed
-    );
-    assert_eq!(
-        first_receipt.terminal().attempt_resources_released(),
-        Some(true)
-    );
-    assert_eq!(
-        receipt.terminal().kind(),
-        WorthQueryApplicationCommitTerminalKind::Recovered
-    );
-    assert_eq!(
-        receipt.precondition_comparison().expected_version_count(),
-        0
-    );
-    assert_eq!(receipt.precondition_comparison().expected_fact_count(), 1);
-    assert!(receipt.changed_record_count() >= 2);
-}
+mod response_loss_resolves_the_published_commit_before_returning;
 
 #[test]
 fn preparation_commit_recovery_and_retry_perform_no_execution_digest_derivation() {
     let world = installed_authorization_world(true);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+        })
+        .expect("the fixture read owns its installed host call");
     let before = crate::execution_digest::test_hash_parts_call_count();
-    let first = admitted_program(&world, &principal, &account, &request, "digest-free");
-    let retry = admitted_program(&world, &principal, &account, &request, "digest-free");
+    let first = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            admitted_program(
+                &phase,
+                &world,
+                &principal,
+                &account,
+                &request,
+                "digest-free",
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    let retry = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            admitted_program(
+                &phase,
+                &world,
+                &principal,
+                &account,
+                &request,
+                "digest-free",
+            )
+        })
+        .expect("the fixture read owns its installed host call");
 
     world.faults.lose_next_commit_response();
     assert!(matches!(
@@ -250,6 +252,7 @@ pub(in crate::domain_computation::primary_graph) fn idempotency(
 }
 
 pub(in crate::domain_computation::primary_graph) fn world_issued_unpublished_material(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     seed: u8,
 ) -> (
     worth_runtime_world::facade::ProductBranchObservation,
@@ -258,17 +261,25 @@ pub(in crate::domain_computation::primary_graph) fn world_issued_unpublished_mat
 ) {
     let world = installed_authorization_world(true);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
+    let principal = authenticated_principal(&(phase_custody).test_host_request(), &world, &request);
+    let account = resolved_account(
+        &(phase_custody).test_host_request(),
+        &world,
+        "open",
+        &request,
+    );
     let binding = idempotency(seed, seed);
     let program = admitted_program(
+        &phase_custody.phase_for_application(&world.application),
         &world,
         &principal,
         &account,
         &request,
         "bounded-unpublished-material",
     );
-    world.application.fail_next_durable_append_for_test();
+    world
+        .application
+        .fail_next_durable_append_for_test(&phase_custody.borrowed_request_for_test());
     let outcome = world.application.compare_and_commit_application(
         program,
         binding,
@@ -283,6 +294,7 @@ pub(in crate::domain_computation::primary_graph) fn world_issued_unpublished_mat
 }
 
 pub(in crate::domain_computation::primary_graph) fn authenticated_principal(
+    phase: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     world: &super::fixture::AuthorizationWorld,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
 ) -> crate::domain_computation::primary_graph::WorthQueryAuthenticatedPrincipal<
@@ -291,11 +303,18 @@ pub(in crate::domain_computation::primary_graph) fn authenticated_principal(
     u64,
 > {
     let external = world.authenticate("alice", Duration::from_secs(60), request);
+    let execution = phase
+        .execution_request_for(world.application.product_runtime())
+        .expect("fixture lends its installed phase");
     world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
+        .select_product_branch(
+            &execution,
+            world.application.product_runtime().default_branch(),
+        )
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
+            &phase.phase_for_application(&world.application),
             &world.binding,
             &external,
             request,
@@ -305,6 +324,7 @@ pub(in crate::domain_computation::primary_graph) fn authenticated_principal(
 }
 
 pub(in crate::domain_computation::primary_graph) fn resolved_account(
+    phase: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     world: &super::fixture::AuthorizationWorld,
     status: &str,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
@@ -312,11 +332,18 @@ pub(in crate::domain_computation::primary_graph) fn resolved_account(
     super::fixture::IdentityExecutionSchema,
     super::fixture::Account,
 > {
+    let execution = phase
+        .execution_request_for(world.application.product_runtime())
+        .expect("fixture lends its installed phase");
     world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
+        .select_product_branch(
+            &execution,
+            world.application.product_runtime().default_branch(),
+        )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
+            &phase.phase_for_application(&world.application),
             AccountStatus::reference(),
             status.to_string(),
             request,

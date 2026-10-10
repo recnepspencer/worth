@@ -8,14 +8,50 @@ fn foreign_runtime_phase_refuses_query_and_commit_before_source_read() {
         let a = installed_authorization_world(true);
         let b = installed_authorization_world(true);
         let request = live_scope();
-        let a_principal = authenticated_principal(&a, &request);
-        let b_principal = authenticated_principal(&b, &request);
-        let a_account = resolved_account(&a, "open", &request);
-        let b_account = resolved_account(&b, "open", &request);
-        let a_program = admitted_program(&a, &a_principal, &a_account, &request, "closed");
-        let b_program = admitted_program(&b, &b_principal, &b_account, &request, "closed");
-        let a_product = a.selected_product();
-        let b_product = b.selected_product();
+        let a_principal = a
+            .application
+            .with_host_advancement(|phase| {
+                authenticated_principal(&phase.test_host_request(), &a, &request)
+            })
+            .expect("installed host call opens");
+        let b_principal = b
+            .application
+            .with_host_advancement(|phase| {
+                authenticated_principal(&phase.test_host_request(), &b, &request)
+            })
+            .expect("installed host call opens");
+        let a_account = a
+            .application
+            .with_host_advancement(|phase| {
+                resolved_account(&phase.test_host_request(), &a, "open", &request)
+            })
+            .expect("installed host call opens");
+        let b_account = b
+            .application
+            .with_host_advancement(|phase| {
+                resolved_account(&phase.test_host_request(), &b, "open", &request)
+            })
+            .expect("installed host call opens");
+        let a_program = a
+            .application
+            .with_host_advancement(|phase| {
+                admitted_program(&phase, &a, &a_principal, &a_account, &request, "closed")
+            })
+            .expect("installed host call opens");
+        let b_program = b
+            .application
+            .with_host_advancement(|phase| {
+                admitted_program(&phase, &b, &b_principal, &b_account, &request, "closed")
+            })
+            .expect("installed host call opens");
+        let a_product = a
+            .application
+            .with_host_advancement(|phase| a.selected_product(&phase.test_host_request()))
+            .expect("installed host call opens");
+        let b_product = b
+            .application
+            .with_host_advancement(|phase| b.selected_product(&phase.test_host_request()))
+            .expect("installed host call opens");
         reports();
         a.application.with_application_advancement(&request, |phase| {
             let before = reads();
@@ -74,13 +110,16 @@ fn mutable_principal_reader_moves_the_installed_source_counter() {
     let world = installed_authorization_world(true);
     let request = live_scope();
     let external = world.authenticate("alice", std::time::Duration::from_secs(60), &request);
-    let selected = world.selected_product();
+    let selected = world
+        .application
+        .with_host_advancement(|phase| world.selected_product(&phase.test_host_request()))
+        .expect("installed host call opens");
     world
         .application
         .with_application_advancement(&request, |_phase| {
             let before = reads();
             selected.resolve_authenticated_principal(
-            &world.binding, &external, &request,
+            &_phase, &world.binding, &external, &request,
             crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
         ).unwrap();
             assert_eq!(

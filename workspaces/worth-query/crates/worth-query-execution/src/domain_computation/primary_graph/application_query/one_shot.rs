@@ -77,6 +77,7 @@ where
         Scope,
     >(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         plan: WorthQueryAdmittedApplicationQueryPlan<
             '_,
             Schema,
@@ -94,7 +95,42 @@ where
     where
         QueryResult: WorthQueryApplicationProjection<Schema, Query>,
     {
-        self.execute_application_query_one_shot_core(plan, None, None, None)
+        let request = match phase.execution_request_for(&self.product_runtime) {
+            Ok(request) => request,
+            Err(_) => return Err(authorization_denial(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::ForeignPhase, "phase-custody"), plan.query.name())),
+        };
+        let execution = &request;
+        self.execute_application_query_one_shot_with_request(execution, plan)
+    }
+
+    pub(in crate::domain_computation) fn execute_application_query_one_shot_with_request<
+        Query,
+        Parameters,
+        QueryResult,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+    >(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        plan: WorthQueryAdmittedApplicationQueryPlan<
+            '_,
+            Schema,
+            Query,
+            Parameters,
+            QueryResult,
+            Principal,
+            PrincipalIdentity,
+            Scope,
+        >,
+    ) -> Result<
+        WorthQueryApplicationOneShotResult<Query, QueryResult>,
+        WorthQueryApplicationOneShotDenial,
+    >
+    where
+        QueryResult: WorthQueryApplicationProjection<Schema, Query>,
+    {
+        self.execute_application_query_one_shot_core(execution, plan, None, None, None)
     }
 
     fn execute_application_query_one_shot_core<
@@ -106,6 +142,7 @@ where
         Scope,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         mut plan: WorthQueryAdmittedApplicationQueryPlan<
             '_,
             Schema,
@@ -126,14 +163,15 @@ where
     where
         QueryResult: WorthQueryApplicationProjection<Schema, Query>,
     {
-        validate_one_shot_plan(self, &plan)?;
-        refresh_governed_authorization(self, &mut plan)
+        validate_one_shot_plan(execution, self, &plan)?;
+        refresh_governed_authorization(execution, self, &mut plan)
             .map_err(|read| map_authorized_read_denial(read, plan.query.name()))?;
         let result_buffer = reserve_one_shot_result_buffer_in_batch(self, &plan, batch)?;
         let (raw, authorization_work, read_proof) =
-            execute_authorized_read(self, &plan, |runtime, graph, plan| {
+            execute_authorized_read(execution, self, &plan, |runtime, graph, plan| {
                 read_bounded_root_rows(
                     runtime,
+                    execution,
                     graph,
                     plan,
                     result_buffer,
@@ -165,6 +203,9 @@ pub(super) fn map_authorized_read_denial(
         }
         WorthQueryAuthorizedApplicationReadDenial::Read(read) => {
             let kind = match read.kind() {
+                WorthQueryApplicationReadExecutionDenialKind::ExecutionRequest(kind) => {
+                    WorthQueryApplicationOneShotDenialKind::ExecutionRequest(kind)
+                }
                 WorthQueryApplicationReadExecutionDenialKind::Cancelled => {
                     WorthQueryApplicationOneShotDenialKind::Cancelled
                 }

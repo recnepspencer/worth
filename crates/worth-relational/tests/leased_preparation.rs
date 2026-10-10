@@ -160,6 +160,9 @@ fn commit_preparation_spends_validation_and_later_packet_work_from_one_lease() {
 
 #[test]
 fn leased_index_and_commit_preparation_preserve_parity_and_stop_before_publication() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let _serial = TEST_SERIAL.lock().unwrap();
     let authority = authority();
     let runtime = RelationalRuntimeApi::builder()
@@ -179,14 +182,18 @@ fn leased_index_and_commit_preparation_preserve_parity_and_stop_before_publicati
         branch_id: BranchId("main".to_owned()),
         index_ids: vec![index.index_id],
     };
-    let serial = runtime.index_authority().build_for_commit(request.clone());
+    let serial = runtime
+        .index_authority()
+        .build_for_commit(execution, request.clone());
     assert!(serial.execution_denial.is_none());
     let lease = authority
         .request_lease(lease_request(32 * 1024 * 1024, CancellationToken::new()))
         .expect("generous lease is admitted");
-    let parallel = runtime
-        .index_authority()
-        .build_for_commit_with_lease(request.clone(), &lease);
+    let parallel = runtime.index_authority().build_for_commit_with_lease(
+        &worth_execution::ExecutionRequest::leased(&lease),
+        request.clone(),
+        &lease,
+    );
     assert!(parallel.execution_denial.is_none());
     assert_eq!(serial.generations.len(), 1);
     assert_eq!(
@@ -202,9 +209,11 @@ fn leased_index_and_commit_preparation_preserve_parity_and_stop_before_publicati
     let cancelled_lease = authority
         .request_lease(lease_request(32 * 1024 * 1024, cancelled.token()))
         .expect("cancelled request still receives a lease for typed execution stop");
-    let stopped_index = runtime
-        .index_authority()
-        .build_for_commit_with_lease(request.clone(), &cancelled_lease);
+    let stopped_index = runtime.index_authority().build_for_commit_with_lease(
+        &worth_execution::ExecutionRequest::leased(&cancelled_lease),
+        request.clone(),
+        &cancelled_lease,
+    );
     assert_eq!(
         stopped_index.execution_denial.map(|denial| denial.kind),
         Some(DerivedIndexExecutionDenialKind::Cause(Cause::Cancelled))
@@ -230,9 +239,11 @@ fn leased_index_and_commit_preparation_preserve_parity_and_stop_before_publicati
     let small_lease = authority
         .request_lease(small_request)
         .expect("zero-memory policy is admitted");
-    let exhausted_index = runtime
-        .index_authority()
-        .build_for_commit_with_lease(request, &small_lease);
+    let exhausted_index = runtime.index_authority().build_for_commit_with_lease(
+        &worth_execution::ExecutionRequest::leased(&small_lease),
+        request,
+        &small_lease,
+    );
     let Some(DerivedIndexExecutionDenialKind::Cause(Cause::PolicyMemoryExhausted {
         requested,
         admitted: 0,
@@ -288,3 +299,6 @@ fn leased_index_and_commit_preparation_preserve_parity_and_stop_before_publicati
 
 #[path = "leased_preparation/bulk_creation.rs"]
 mod bulk_creation;
+
+#[path = "relational_certification/test_execution_policy.rs"]
+mod test_execution_policy;

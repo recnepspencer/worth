@@ -9,6 +9,7 @@ pub(super) trait EntityFieldCollectionRead<E> {
     fn prepare_results(&mut self, examined: usize) -> Result<(), Stop<E>>;
     fn compare(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity: EntityId,
         previous: usize,
     ) -> Result<Option<(KindId, bool)>, Stop<E>>;
@@ -17,6 +18,7 @@ pub(super) trait EntityFieldCollectionRead<E> {
 /// Collect the complete bounded prefix without promoting corrupt or duplicate
 /// index entries into candidates. Overflow remains separate from that prefix.
 pub(super) fn collect<E>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     rows: Option<&DerivedIndexRows<EntityId>>,
     index: DerivedIndexId,
     kind: KindId,
@@ -30,7 +32,7 @@ pub(super) fn collect<E>(
     let mut candidates = Vec::with_capacity(examined);
     if let Some(rows) = rows {
         for (ordinal, entity) in rows.iter().take(limit).enumerate() {
-            let Some((actual_kind, matches)) = read.compare(*entity, seen.len())? else {
+            let Some((actual_kind, matches)) = read.compare(execution, *entity, seen.len())? else {
                 return Err(corrupt(index, ordinal + 1));
             };
             if seen.contains(entity) || !matches {

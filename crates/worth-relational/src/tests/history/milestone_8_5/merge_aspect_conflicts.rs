@@ -1,11 +1,13 @@
 use super::*;
 
 pub(super) fn certify_overlapping_aspect_strategy_conflict(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     aspect_overlap_entity: crate::facade::identity::EntityId,
     aspect_overlap_branch: &BranchId,
 ) {
     let _aspect_overlap_main_commit = execute_strategy_commit(
+        execution,
         runtime,
         AspectFieldReconciliationInput {
             entity_id: aspect_overlap_entity,
@@ -24,6 +26,7 @@ pub(super) fn certify_overlapping_aspect_strategy_conflict(
         None,
     );
     let _aspect_overlap_feature_commit = execute_strategy_commit(
+        execution,
         runtime,
         AspectFieldReconciliationInput {
             entity_id: aspect_overlap_entity,
@@ -43,11 +46,14 @@ pub(super) fn certify_overlapping_aspect_strategy_conflict(
     );
     let aspect_overlap_planning = runtime
         .merge()
-        .inspect_planning_scope(MergePlanningRequest::new(
-            BranchId("main".to_string()),
-            aspect_overlap_branch.clone(),
-            MergeIntent::ReconcileIntoTarget,
-        ))
+        .inspect_planning_scope(
+            execution,
+            MergePlanningRequest::new(
+                BranchId("main".to_string()),
+                aspect_overlap_branch.clone(),
+                MergeIntent::ReconcileIntoTarget,
+            ),
+        )
         .expect("aspect overlap merge planning");
     let aspect_overlap_classification = aspect_overlap_planning
         .conflict_classification
@@ -65,11 +71,13 @@ pub(super) fn certify_overlapping_aspect_strategy_conflict(
 }
 
 pub(super) fn certify_disjoint_aspect_strategy_truth(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     aspect_disjoint_entity: crate::facade::identity::EntityId,
     aspect_disjoint_branch: &BranchId,
 ) {
     let _aspect_disjoint_main_commit = execute_strategy_commit(
+        execution,
         runtime,
         AspectFieldReconciliationInput {
             entity_id: aspect_disjoint_entity,
@@ -88,6 +96,7 @@ pub(super) fn certify_disjoint_aspect_strategy_truth(
         None,
     );
     let _aspect_disjoint_feature_commit = execute_strategy_commit(
+        execution,
         runtime,
         ReplicaConvergenceInput {
             entity_id: aspect_disjoint_entity,
@@ -103,11 +112,14 @@ pub(super) fn certify_disjoint_aspect_strategy_truth(
     );
     let aspect_disjoint_planning = runtime
         .merge()
-        .inspect_planning_scope(MergePlanningRequest::new(
-            BranchId("main".to_string()),
-            aspect_disjoint_branch.clone(),
-            MergeIntent::ReconcileIntoTarget,
-        ))
+        .inspect_planning_scope(
+            execution,
+            MergePlanningRequest::new(
+                BranchId("main".to_string()),
+                aspect_disjoint_branch.clone(),
+                MergeIntent::ReconcileIntoTarget,
+            ),
+        )
         .expect("aspect disjoint merge planning");
     let aspect_disjoint_classification = aspect_disjoint_planning
         .conflict_classification

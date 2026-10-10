@@ -21,6 +21,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     Schema,
     Family,
 >(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     phase: &WorthQueryAdvancementPhase<'_>,
 
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -42,7 +43,7 @@ where
         .interest
         .as_ref()
         .expect("caller admission checked its live Interest");
-    let Some(wave) = select_required_wave(runtime, interest, branch, admission)? else {
+    let Some(wave) = select_required_wave(execution, runtime, interest, branch, admission)? else {
         return Ok(None);
     };
     // A restored output takes its mode here, before any wave can select it.
@@ -97,8 +98,9 @@ where
         // else demands it.
         let snapshot = wave.shared.selected().application_basis().snapshot_handle();
         let graph = &runtime.primary_provider.graph;
-        let pending = graph.with_runtime(|relational| {
+        let pending = graph.with_runtime(execution, |relational| {
             candidate.pending_consumed_output(
+                execution,
                 &graph.source_owner.invalidation_owner,
                 relational,
                 snapshot,
@@ -153,6 +155,7 @@ where
     // unfinished successors go to registry custody when the wave ends.
     let mut frame_custody = RequiredContinuations::default();
     let result = drive_required_wave(
+        execution,
         phase,
         runtime,
         demand,

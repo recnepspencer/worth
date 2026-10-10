@@ -14,7 +14,17 @@ fn ready_output_reopens_and_only_its_exact_restored_predecessor_refreshes_it() {
         crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
             true,
         );
-    let observation = world.selected_product().product().observation().clone();
+    let observation = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .selected_product(&(phase).test_host_request())
+                .product()
+                .observation()
+                .clone()
+        })
+        .expect("the fixture read owns its installed host call");
     let correspondence = WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
         std::any::TypeId::of::<()>(),
         std::any::TypeId::of::<()>(),

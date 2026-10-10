@@ -61,8 +61,16 @@ pub(super) fn branch_local_inventory_drives_real_publications(
         );
     }
     oversized_family_is_denied_before_publication(application, principal, scope, source_branch);
-    application.on_branch(child).close().unwrap();
-    application.on_branch(sibling).close().unwrap();
+    application
+        .with_host_advancement(|host_phase| {
+            application.on_branch(child).close(&host_phase).unwrap()
+        })
+        .expect("installed host call opens");
+    application
+        .with_host_advancement(|host_phase| {
+            application.on_branch(sibling).close(&host_phase).unwrap()
+        })
+        .expect("installed host call opens");
 }
 
 fn absent_family_is_a_domain_outcome(
@@ -158,7 +166,11 @@ fn oversized_family_is_denied_before_publication(
     direct_member_fits_where_whole_inventory_does_not(&request, application);
     missing_member_is_a_denial_not_initial_absence(&request, application, "absent", 957);
     missing_member_is_a_denial_not_initial_absence(&request, application, "", 958);
-    application.on_branch(branch).close().unwrap();
+    application
+        .with_host_advancement(|host_phase| {
+            application.on_branch(branch).close(&host_phase).unwrap()
+        })
+        .expect("installed host call opens");
 }
 
 /// The same six-member correspondence that exceeded the installed sixteen-work
@@ -309,9 +321,13 @@ fn fork(
     source: worth_query_host::facade::product::WorthQueryProductBranch,
 ) -> worth_query_host::facade::product::WorthQueryProductBranch {
     application
-        .branches()
-        .fork(source)
-        .components(|components| components.fork_relational().reuse_exact_signal_basis())
-        .create()
-        .unwrap()
+        .with_host_advancement(|host_phase| {
+            application
+                .branches()
+                .fork(source)
+                .components(|components| components.fork_relational().reuse_exact_signal_basis())
+                .create(&host_phase)
+                .unwrap()
+        })
+        .expect("installed host call opens")
 }

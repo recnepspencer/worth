@@ -52,6 +52,7 @@ impl<D: 'static, O, F, L: BasisOperationLane> WorthQueryLiveBoundDomainProjectio
 
     pub fn replace_with(
         self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         candidate: WorthQueryCurrentDomainProjection<D, O, F, L>,
         witness: WorthQueryReplacementWitness,
         workspace: &mut WorthQueryWorkspace,
@@ -63,6 +64,7 @@ impl<D: 'static, O, F, L: BasisOperationLane> WorthQueryLiveBoundDomainProjectio
                 .take()
                 .expect("host call retains its projection before admission");
             current.replace_with_in_advancement(
+                request_execution,
                 phase
                     .execution_request_for(&owner)
                     .expect("the opener lent this owner its phase"),
@@ -89,6 +91,7 @@ impl<D: 'static, O, F, L: BasisOperationLane> WorthQueryLiveBoundDomainProjectio
 
     fn replace_with_in_advancement(
         self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         execution: worth_execution::ExecutionRequest<'_, '_>,
         candidate: WorthQueryCurrentDomainProjection<D, O, F, L>,
         witness: WorthQueryReplacementWitness,
@@ -141,6 +144,7 @@ impl<D: 'static, O, F, L: BasisOperationLane> WorthQueryLiveBoundDomainProjectio
             }
         };
         let admitted = match open_transition_successor(
+            request_execution,
             execution,
             candidate,
             workspace,

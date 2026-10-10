@@ -16,6 +16,7 @@ pub(crate) struct WorthQueryWriteAdmissionExecutionRecord {
 impl WorthQueryRuntime {
     pub(crate) fn build_authoritative_mutation_intent_seed(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         command: WorthQueryWriteCommand,
     ) -> crate::intent_admission::WorthQueryAuthoritativeMutationIntentSeed {
         use crate::intent_admission::WorthQueryAuthoritativeMutationPreflight as Preflight;
@@ -42,10 +43,12 @@ impl WorthQueryRuntime {
                 } else if let Some(binding) = command.existing_truth_binding() {
                     match self.backend.admit_existing_truth_binding(binding) {
                         Err(denial) => Preflight::BindingDenied(denial),
-                        Ok(()) => self.scalar_mutation_post_binding_preflight(&command),
+                        Ok(()) => {
+                            self.scalar_mutation_post_binding_preflight(request_execution, &command)
+                        }
                     }
                 } else {
-                    self.scalar_mutation_post_binding_preflight(&command)
+                    self.scalar_mutation_post_binding_preflight(request_execution, &command)
                 };
                 let successor =
                     matches!(preflight, Preflight::Admitted { .. }).then_some(admitted_mutation);
@@ -62,6 +65,7 @@ impl WorthQueryRuntime {
 
     fn scalar_mutation_post_binding_preflight(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         command: &WorthQueryWriteCommand,
     ) -> crate::intent_admission::WorthQueryAuthoritativeMutationPreflight {
         use crate::intent_admission::WorthQueryAuthoritativeMutationPreflight as Preflight;
@@ -70,21 +74,24 @@ impl WorthQueryRuntime {
             Err(denial) => Preflight::ContinuityDenied(denial),
             Ok(()) => match admit_naming_intent(command) {
                 Err(denial) => Preflight::NamingDenied(denial),
-                Ok(()) => match self.verified_existing_assertion_for_command(command) {
-                    Ok(verified_existing_truth_assertion) => Preflight::Admitted {
-                        verified_existing_truth_assertion,
-                    },
-                    Err(WorthQueryRuntimeError::ExistingTruthAssertionDenied(denial)) => {
-                        Preflight::AssertionDenied(denial)
+                Ok(()) => {
+                    match self.verified_existing_assertion_for_command(request_execution, command) {
+                        Ok(verified_existing_truth_assertion) => Preflight::Admitted {
+                            verified_existing_truth_assertion,
+                        },
+                        Err(WorthQueryRuntimeError::ExistingTruthAssertionDenied(denial)) => {
+                            Preflight::AssertionDenied(denial)
+                        }
+                        Err(other) => panic!("unexpected scalar mutation preflight error: {other}"),
                     }
-                    Err(other) => panic!("unexpected scalar mutation preflight error: {other}"),
-                },
+                }
             },
         }
     }
 
     pub(super) fn verified_existing_assertion_for_command(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         command: &WorthQueryWriteCommand,
     ) -> Result<Option<WorthQueryVerifiedExistingTruthAssertion>, WorthQueryRuntimeError> {
         match command {
@@ -102,7 +109,7 @@ impl WorthQueryRuntime {
                 ..
             } => Ok(Some(
                 self.backend
-                    .verify_existing_truth_assertion(binding, aspects)
+                    .verify_existing_truth_assertion(execution, binding, aspects)
                     .map_err(WorthQueryRuntimeError::ExistingTruthAssertionDenied)?,
             )),
             _ => Ok(None),
@@ -170,17 +177,19 @@ impl WorthQueryRuntime {
 
     pub fn probe_existing(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: WorthQueryExistingTruthProbeRequest,
     ) -> Result<WorthQueryExistingTruthProbe, WorthQueryRuntimeError> {
         Ok(self
             .probe_existing_intent(request)
-            .execute()?
+            .execute(execution)?
             .probe()
             .clone())
     }
 
     pub(crate) fn execute_authoritative_write_command_direct(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         command: WorthQueryWriteCommand,
         admitted_mutation: WorthQueryBackendAdmissibleMutation,
         verified_existing_truth_assertion: Option<WorthQueryVerifiedExistingTruthAssertion>,
@@ -192,6 +201,7 @@ impl WorthQueryRuntime {
             verified_existing_truth_assertion,
         );
         let receipt = self.execute_backend_or_synthetic_write(
+            execution,
             command,
             admitted_mutation,
             prepared_routing.declared_aspect_value_digest(),
@@ -209,19 +219,23 @@ impl WorthQueryRuntime {
             prepared_routing.mutation_family(),
             &receipt,
         );
-        let receipt = self.route_authoritative_mutation_receipt(prepared_routing.complete(
-            receipt,
-            WorthQueryAuthoritativeMutationExecutionEvidence {
-                decision_trace_envelope,
-                execution_provenance,
-            },
-        ))?;
+        let receipt = self.route_authoritative_mutation_receipt(
+            execution,
+            prepared_routing.complete(
+                receipt,
+                WorthQueryAuthoritativeMutationExecutionEvidence {
+                    decision_trace_envelope,
+                    execution_provenance,
+                },
+            ),
+        )?;
         self.journal_replay.record_write_receipt(&receipt);
         Ok(receipt)
     }
 
     fn execute_backend_or_synthetic_write(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         command: WorthQueryWriteCommand,
         admitted_mutation: WorthQueryBackendAdmissibleMutation,
         declared_aspect_value_digest: Option<&crate::evidence_identity::WorthQueryEvidenceIdentity>,
@@ -231,11 +245,14 @@ impl WorthQueryRuntime {
             | WorthQueryWriteCommand::VerifyExistingAspects { binding, .. } => {
                 Ok(synthetic_existing_assertion_receipt(
                     binding,
-                    &self.current_snapshot_identity(),
+                    &self.current_snapshot_identity_with_request(execution),
                     declared_aspect_value_digest,
                 ))
             }
-            _ => self.backend.write(admitted_mutation).map_err(Into::into),
+            _ => self
+                .backend
+                .write(execution, admitted_mutation)
+                .map_err(Into::into),
         }
     }
 
@@ -357,8 +374,9 @@ impl WorthQueryRuntime {
 
     pub fn write(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         command: WorthQueryWriteCommand,
     ) -> Result<WorthQueryWriteReceipt, WorthQueryRuntimeError> {
-        self.write_intent(command).execute()
+        self.write_intent(command).execute(execution)
     }
 }

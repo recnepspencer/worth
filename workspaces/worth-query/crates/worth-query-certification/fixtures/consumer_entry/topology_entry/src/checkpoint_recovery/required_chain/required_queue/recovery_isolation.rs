@@ -28,55 +28,59 @@ fn scenario(direct: bool) {
             use worth_query_decl::facade::application_query::{
                 ApplicationQueryIntent, ApplicationQueryScopeResolution,
             };
-            let intent = PlanarRead {
-                body_key: "anchor-a".into(),
-            };
-            let parameters =
-                <PlanarRead as ApplicationQueryIntent<CheckpointSchema>>::parameters(&intent);
-            let scope_binding =
-                <PlanarRead as ApplicationQueryIntent<CheckpointSchema>>::into_scope(intent);
-            let runtime = application.runtime();
-            let binding = runtime
-                .installed_schema()
-                .installed_query_binding::<crate::PlanarReadBinding<CheckpointSchema>>()
-                .unwrap();
-            let limits = runtime.resolve_application_query_limits(binding.limits());
-            let selected = runtime
-                .on_branch(application.current_world())
-                .select()
-                .unwrap();
-            let actor = selected
-                .resolve_authenticated_principal(
-                    binding.principal_binding(),
-                    &principal,
+            crate::checkpoint_recovery::support::host_call(&application, |phase| {
+                let intent = PlanarRead {
+                    body_key: "anchor-a".into(),
+                };
+                let parameters =
+                    <PlanarRead as ApplicationQueryIntent<CheckpointSchema>>::parameters(&intent);
+                let scope_binding =
+                    <PlanarRead as ApplicationQueryIntent<CheckpointSchema>>::into_scope(intent);
+                let runtime = application.runtime();
+                let binding = runtime
+                    .installed_schema()
+                    .installed_query_binding::<crate::PlanarReadBinding<CheckpointSchema>>()
+                    .unwrap();
+                let limits = runtime.resolve_application_query_limits(binding.limits());
+                let selected = runtime
+                    .on_branch(application.current_world())
+                    .select(phase)
+                    .unwrap();
+                let actor = selected
+                    .resolve_authenticated_principal(
+                        phase,
+                        binding.principal_binding(),
+                        &principal,
+                        &scope,
+                        primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
+                    )
+                    .unwrap();
+                let (field, value) = scope_binding.into_field_parts(actor.principal_identity());
+                let entity = selected
+                    .resolve_entity(
+                        phase,
+                        field,
+                        value,
+                        &scope,
+                        primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
+                    )
+                    .unwrap();
+                let access =
+                    primary_graph::WorthQueryApplicationQueryAccessContext::new(&actor, &entity);
+                let controls = primary_graph::WorthQueryProductQueryControls::new(
+                    limits.maximum_results(),
+                    limits.maximum_work(),
                     &scope,
-                    primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
-                )
-                .unwrap();
-            let (field, value) = scope_binding.into_field_parts(actor.principal_identity());
-            let entity = selected
-                .resolve_entity(
-                    field,
-                    value,
-                    &scope,
-                    primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
-                )
-                .unwrap();
-            let access =
-                primary_graph::WorthQueryApplicationQueryAccessContext::new(&actor, &entity);
-            let controls = primary_graph::WorthQueryProductQueryControls::new(
-                limits.maximum_results(),
-                limits.maximum_work(),
-                &scope,
-            );
-            let plan = selected
-                .admit_application_query(binding.query(), &access, parameters, controls)
-                .unwrap();
-            runtime
-                .execute_application_query_one_shot(plan)
-                .unwrap()
-                .into_admitted_disclosed()
-                .into_output_demand_source()
+                );
+                let plan = selected
+                    .admit_application_query(phase, binding.query(), &access, parameters, controls)
+                    .unwrap();
+                runtime
+                    .execute_application_query_one_shot(phase, plan)
+                    .unwrap()
+                    .into_admitted_disclosed()
+                    .into_output_demand_source()
+            })
         }};
     }
     let source = request
@@ -166,19 +170,22 @@ fn scenario(direct: bool) {
     if direct {
         let current = read_source!();
         let redisclosed = read_source!();
-        let stop = application
-            .runtime()
-            .attempt_recovery_refresh_for_test::<crate::PlanarOutputFamily>(
-                retained_source,
-                current,
-                redisclosed,
-                application
-                    .runtime()
-                    .output_demand_resource_profile()
-                    .limits(),
-                &receipt,
-            )
-            .expect_err("the direct refresh door refuses a genuinely admitted Recovery");
+        let stop = crate::checkpoint_recovery::support::host_call(&application, |phase| {
+            application
+                .runtime()
+                .attempt_recovery_refresh_for_test::<crate::PlanarOutputFamily>(
+                    phase,
+                    retained_source,
+                    current,
+                    redisclosed,
+                    application
+                        .runtime()
+                        .output_demand_resource_profile()
+                        .limits(),
+                    &receipt,
+                )
+        })
+        .expect_err("the direct refresh door refuses a genuinely admitted Recovery");
         assert_eq!(stop.kind(), WorthQueryOutputDemandDenialKind::Superseded);
     } else {
         let stop = (0..64)

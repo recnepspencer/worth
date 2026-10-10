@@ -12,6 +12,7 @@ where
 {
     pub(super) fn live_current_identity<Entity>(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         role: &str,
         entity_id: worth_relational::facade::identity::EntityId,
     ) -> Result<WorthQueryInvariantEntityIdentity<Schema, Entity>, WorthQueryCurrentOutputDenial>
@@ -22,9 +23,10 @@ where
             .reader
             .runtime
             .read_truth()
-            .project_snapshot(self.reader.snapshot)
+            .project_snapshot(self.reader.snapshot, execution)
             .and_then(|view| {
                 view.entity_record_with_projection_scope(
+                    execution,
                     entity_id,
                     ProjectionAspectScope::empty(),
                     |record| Some((record.kind_id(), record.lifecycle())),

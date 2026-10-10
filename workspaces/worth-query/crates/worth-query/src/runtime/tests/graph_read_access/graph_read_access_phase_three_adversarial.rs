@@ -19,8 +19,11 @@ use support::public_bridge_runtime::PublicBridgeRuntimeHarness;
 
 #[test]
 fn built_in_operation_resolution_is_stable_across_equivalent_read_declarations() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let harness = PublicBridgeRuntimeHarness::new();
-    let runtime = harness.bridge_backed_runtime();
+    let runtime = harness.bridge_backed_runtime(request_execution);
     let mut workspace = runtime
         .workspace("graph-read-access.phase-three.built-in-parity")
         .expect("runtime should open workspace");
@@ -59,8 +62,11 @@ fn built_in_operation_resolution_is_stable_across_equivalent_read_declarations()
 
 #[test]
 fn declared_domain_operation_matches_registered_reference_order_once() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let harness = PublicBridgeRuntimeHarness::new();
-    let runtime = harness.bridge_backed_runtime();
+    let runtime = harness.bridge_backed_runtime(request_execution);
     let mut workspace = runtime
         .workspace("graph-read-access.phase-three.order-equivalence")
         .expect("runtime should open workspace");

@@ -85,14 +85,14 @@ where
     > {
         let request_scope = self.programs.scope.clone();
         let runtime = self.programs.application;
-        runtime.with_application_advancement(&request_scope, |_phase| {
+        runtime.with_application_advancement(&request_scope, |phase| {
 
         self.programs
             .application
             .on_branch(self.programs.branch)
-            .select()
+            .select(&phase, )
             .map_err(WorthQueryApplicationProgramAdoptionPreparationDenial::ProductSelection)?
-            .workflow_adoption_inventory(
+            .workflow_adoption_inventory(&phase,
                 self.requirements.target(),
                 self.requirements,
                 maximum_work_units,
@@ -123,7 +123,7 @@ where
         self.programs
             .application
             .on_branch(self.programs.branch)
-            .select()
+            .select(&phase, )
             .map_err(WorthQueryApplicationProgramAdoptionPreparationDenial::ProductSelection)?
             .prepare_branch_adoption_in_advancement(
                 &phase,

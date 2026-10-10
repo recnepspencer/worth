@@ -48,6 +48,9 @@ fn basis_admissions_emit_canonical_evidence_tokens() {
 
 #[test]
 fn preview_and_branch_receipts_compose_from_basis_admissions() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
@@ -60,11 +63,12 @@ fn preview_and_branch_receipts_compose_from_basis_admissions() {
         .intent_authority(TestIntentAuthority)
         .support_profile(intent_support_profile())
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("intent-capable runtime should build");
 
     let mut preview = runtime
         .preview_with_options(
+            request_execution,
             test_session_label("preview identity punctuation | : test"),
             WorthQueryPreviewOptions::sandboxed_write_intent(),
         )
@@ -154,6 +158,7 @@ fn preview_and_branch_receipts_compose_from_basis_admissions() {
 
     let mut branch = runtime
         .branch_with_options(
+            request_execution,
             test_session_label("branch identity composition"),
             WorthQueryBranchOptions::sandboxed_write_intent(),
         )
@@ -239,7 +244,10 @@ fn preview_and_branch_receipts_compose_from_basis_admissions() {
 
     let denied = {
         let mut preview = runtime
-            .preview(test_session_label("derive-only denial punctuation"))
+            .preview(
+                request_execution,
+                test_session_label("derive-only denial punctuation"),
+            )
             .expect("preview session should be admitted");
         preview
             .execute_intent(WorthQueryIntentDeclaration::strategy_commit(

@@ -24,6 +24,7 @@ impl worth_query::facade::runtime::WorthQueryRuntimeExistingTruthVerificationAda
 {
     fn verify_existing_truth_assertion(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: &WorthQueryExistingTruthTargetBinding,
         aspects: &[WorthQueryAuthoredAspectMutation],
     ) -> Result<(), WorthQueryExistingTruthAssertionDenial> {

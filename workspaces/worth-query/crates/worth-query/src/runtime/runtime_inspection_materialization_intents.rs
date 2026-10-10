@@ -18,25 +18,34 @@ use std::collections::BTreeMap;
 impl WorthQueryWorkspace {
     pub fn materialize_batch_write_artifact_binding(
         &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         receipt: &WorthQueryBatchWriteReceipt,
         artifact_name: impl Into<String>,
         targets: impl IntoIterator<Item = WorthQueryDerivedMaterializationTarget>,
     ) -> Result<WorthQueryBatchWriteRetainedArtifact, WorthQueryRuntimeError> {
-        WorthQueryBatchWriteRetainedArtifact::build(self, receipt, artifact_name, targets)
+        WorthQueryBatchWriteRetainedArtifact::build(
+            request_execution,
+            self,
+            receipt,
+            artifact_name,
+            targets,
+        )
     }
 
     pub fn materialize_derived_artifact_binding(
         &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         artifact_name: impl Into<String>,
         targets: impl IntoIterator<Item = WorthQueryDerivedMaterializationTarget>,
     ) -> Result<crate::runtime::WorthQueryDerivedArtifactBinding, WorthQueryRuntimeError> {
         let retained_targets = targets.into_iter().collect::<Vec<_>>();
-        self.materialize_derived_artifact_bundle(retained_targets.clone())?
+        self.materialize_derived_artifact_bundle(request_execution, retained_targets.clone())?
             .bind_retained_artifact(artifact_name, retained_targets)
     }
 
     pub fn materialize_derived_artifact_bundle(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         targets: impl IntoIterator<Item = WorthQueryDerivedMaterializationTarget>,
     ) -> Result<WorthQueryDerivedMaterializationBundle, WorthQueryRuntimeError> {
         let mut retained_targets = targets.into_iter().collect::<Vec<_>>();
@@ -45,7 +54,7 @@ impl WorthQueryWorkspace {
 
         let mut materializations = BTreeMap::new();
         for target in retained_targets {
-            let result = self.materialize_derived_target(&target)?;
+            let result = self.materialize_derived_target(execution, &target)?;
             materializations.insert(target, result);
         }
         let snapshot_identity = bundle_snapshot_identity(&materializations)?;
@@ -109,10 +118,11 @@ impl WorthQueryWorkspace {
 
     pub(crate) fn execute_bound_derived_materialization(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: WorthQueryDerivedMaterializationExecutionBinding,
     ) -> Result<WorthQueryDerivedMaterializationResult, WorthQueryRuntimeError> {
         self.runtime
-            .execute_derived_materialization_execution_binding(binding)
+            .execute_derived_materialization_execution_binding(execution, binding)
     }
 
     pub(crate) fn review_derived_inspection(
@@ -147,21 +157,23 @@ impl WorthQueryWorkspace {
 
     pub(crate) fn execute_bound_derived_inspection(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: WorthQueryDerivedInspectionExecutionBinding,
     ) -> Result<WorthQueryDerivedInspectionResult, WorthQueryRuntimeError> {
         self.runtime
-            .execute_derived_inspection_execution_binding(binding)
+            .execute_derived_inspection_execution_binding(execution, binding)
     }
 
     fn materialize_derived_target(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         target: &WorthQueryDerivedMaterializationTarget,
     ) -> Result<WorthQueryDerivedMaterializationResult, WorthQueryRuntimeError> {
         let review = self
             .review_derived_materialization(target.terminal_view_name_projection().to_string())?;
         let handoff = self.resolve_reviewed_admitted_derived_materialization_handoff(review)?;
         let binding = self.into_runtime_derived_materialization_binding(handoff);
-        self.execute_bound_derived_materialization(binding)
+        self.execute_bound_derived_materialization(execution, binding)
     }
 }
 
@@ -258,6 +270,7 @@ impl WorthQueryRuntime {
 
     pub(crate) fn execute_derived_materialization_execution_binding(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: WorthQueryDerivedMaterializationExecutionBinding,
     ) -> Result<WorthQueryDerivedMaterializationResult, WorthQueryRuntimeError> {
         let evidence = self.derived_view_evidence(binding.view_name())?;
@@ -270,7 +283,7 @@ impl WorthQueryRuntime {
             .ok_or_else(|| {
                 WorthQueryRuntimeError::MissingDerivedView(binding.view_name().to_string())
             })?;
-        let snapshot_identity = self.current_snapshot_identity();
+        let snapshot_identity = self.current_snapshot_identity_with_request(execution);
         let receipt = WorthQueryDerivedMaterializationReceipt::from_evidence(
             &evidence,
             snapshot_identity.clone(),
@@ -308,10 +321,11 @@ impl WorthQueryRuntime {
 
     pub(crate) fn execute_derived_inspection_execution_binding(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: WorthQueryDerivedInspectionExecutionBinding,
     ) -> Result<WorthQueryDerivedInspectionResult, WorthQueryRuntimeError> {
         let evidence = self.derived_view_evidence(binding.view_name())?;
-        let snapshot_identity = self.current_snapshot_identity();
+        let snapshot_identity = self.current_snapshot_identity_with_request(execution);
         let receipt =
             WorthQueryDerivedInspectionReceipt::from_evidence(&evidence, snapshot_identity.clone());
         let mut result = WorthQueryDerivedInspectionResult::new(evidence, receipt);

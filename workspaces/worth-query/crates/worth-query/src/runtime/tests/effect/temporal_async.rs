@@ -2,13 +2,17 @@ use super::super::support::*;
 
 #[test]
 fn time_only_pending_write_intent_retains_write_adjacent_trigger_through_delivery_and_inspection() {
-    let mut runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let origin_identity = test_write_adjacent_origin_identity(
         WorthQueryEffectWriteAdjacentTriggerClass::TimeOnlyWake,
         "time-only:cause:task-title",
     );
     let live = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "tasks.time-follow-on",
             task_live_request(),
             task_schema(),
@@ -29,23 +33,26 @@ fn time_only_pending_write_intent_retains_write_adjacent_trigger_through_deliver
         .expect("time-only write-intent effect should declare");
 
     let write = runtime
-        .write(insert_command(
-            "Task",
-            [
-                (
-                    "identity.id",
-                    test_string_aspect_value("time-only-follow-on-1"),
-                ),
-                (
-                    "title.value",
-                    test_string_aspect_value("title from time-only wake"),
-                ),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [
+                    (
+                        "identity.id",
+                        test_string_aspect_value("time-only-follow-on-1"),
+                    ),
+                    (
+                        "title.value",
+                        test_string_aspect_value("title from time-only wake"),
+                    ),
+                ],
+            ),
+        )
         .expect("write should queue time-only follow-on");
 
     let inspection = runtime
-        .inspect_effect(&effect)
+        .inspect_effect(request_execution, &effect)
         .expect("effect inspection should succeed");
     let deliveries = runtime
         .drain_effect_deliveries(&effect)

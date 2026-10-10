@@ -9,7 +9,10 @@ use worth_relational::facade::history::BranchId;
 
 #[test]
 fn transported_descriptor_requires_owner_readmission() {
-    let (world, _) = certified_supply_chain_world(SupplyChainScale::court());
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
     let encoded =
         rmp_serde::to_vec_named(world.basis.descriptor()).expect("descriptor serializes safely");
     let restored = rmp_serde::from_slice(&encoded).expect("descriptor restores descriptively");
@@ -20,7 +23,7 @@ fn transported_descriptor_requires_owner_readmission() {
         .expect("the original owner recognizes the retained exact basis");
     assert_eq!(readmitted.descriptor(), world.basis.descriptor());
 
-    let (foreign, _) = certified_supply_chain_world(SupplyChainScale::court());
+    let (foreign, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
     assert!(matches!(
         foreign.runtime.readmit_branch_basis(&restored),
         Err(RelationalBranchBasisDenial::ForeignRuntime { .. })
@@ -29,7 +32,10 @@ fn transported_descriptor_requires_owner_readmission() {
 
 #[test]
 fn unretained_descriptor_cannot_follow_a_moved_reference() {
-    let (world, _) = certified_supply_chain_world(SupplyChainScale::court());
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
     let runtime = world.runtime;
     let program = world.program;
     let handles = world.handles;
@@ -41,6 +47,7 @@ fn unretained_descriptor_cannot_follow_a_moved_reference() {
     drop(basis);
 
     let batch = lower_supply_chain_production_delta(
+        execution,
         &runtime,
         &program,
         &handles,

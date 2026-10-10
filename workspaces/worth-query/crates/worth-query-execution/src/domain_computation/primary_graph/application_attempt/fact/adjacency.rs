@@ -4,6 +4,7 @@ use super::{WorthQueryApplicationAdjacencyDirection, WorthQueryApplicationObserv
 
 pub(super) fn remains_equal(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     relation_kind: KindId,
     anchor: EntityId,
@@ -13,6 +14,7 @@ pub(super) fn remains_equal(
 ) -> bool {
     observe_adjacency(
         runtime,
+        execution,
         snapshot,
         relation_kind,
         anchor,
@@ -24,6 +26,7 @@ pub(super) fn remains_equal(
 
 pub(in crate::domain_computation::primary_graph) fn observe_adjacency(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     relation_kind: KindId,
     anchor: EntityId,
@@ -32,6 +35,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_adjacency(
 ) -> Option<Vec<WorthQueryApplicationObservedRelation>> {
     observe_adjacency_checked(
         runtime,
+        execution,
         snapshot,
         relation_kind,
         anchor,
@@ -49,6 +53,7 @@ pub(in crate::domain_computation::primary_graph) enum AdjacencyObservationDenial
 
 pub(in crate::domain_computation::primary_graph) fn observe_adjacency_checked(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     relation_kind: KindId,
     anchor: EntityId,
@@ -57,6 +62,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_adjacency_checked(
 ) -> Result<Vec<WorthQueryApplicationObservedRelation>, AdjacencyObservationDenial> {
     observe_adjacency_with_work(
         runtime,
+        execution,
         snapshot,
         relation_kind,
         anchor,
@@ -68,6 +74,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_adjacency_checked(
 
 pub(super) fn observe_adjacency_with_work(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     relation_kind: KindId,
     anchor: EntityId,
@@ -76,7 +83,7 @@ pub(super) fn observe_adjacency_with_work(
 ) -> Result<(Vec<WorthQueryApplicationObservedRelation>, usize), AdjacencyObservationDenial> {
     let view = runtime
         .read_truth()
-        .project_snapshot(snapshot)
+        .project_snapshot(snapshot, execution)
         .ok_or(AdjacencyObservationDenial::SnapshotUnavailable)?;
     let frontier = std::collections::BTreeSet::from([anchor]);
     // This scalar API budgets examined relations plus returned endpoints. The
@@ -84,15 +91,14 @@ pub(super) fn observe_adjacency_with_work(
     let work = maximum_work_units
         .checked_add(1)
         .ok_or(AdjacencyObservationDenial::WorkBudgetExceeded)?;
-    let read = match direction {
-        WorthQueryApplicationAdjacencyDirection::Outgoing => {
-            view.bounded_outgoing_relations_for_frontier(&frontier, relation_kind, work)
+    let read =
+        match direction {
+            WorthQueryApplicationAdjacencyDirection::Outgoing => view
+                .bounded_outgoing_relations_for_frontier(execution, &frontier, relation_kind, work),
+            WorthQueryApplicationAdjacencyDirection::Incoming => view
+                .bounded_incoming_relations_for_frontier(execution, &frontier, relation_kind, work),
         }
-        WorthQueryApplicationAdjacencyDirection::Incoming => {
-            view.bounded_incoming_relations_for_frontier(&frontier, relation_kind, work)
-        }
-    }
-    .map_err(|_| AdjacencyObservationDenial::WorkBudgetExceeded)?;
+        .map_err(|_| AdjacencyObservationDenial::WorkBudgetExceeded)?;
     let work_units = read.work_units();
     let relations = read
         .into_records()

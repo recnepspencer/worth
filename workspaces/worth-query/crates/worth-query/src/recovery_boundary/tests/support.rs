@@ -136,9 +136,11 @@ impl WorthQueryDeclarationInput<RecoveryDomain> for RecoveryInput<SignalReceiptF
 }
 
 pub(super) fn recovery_admitted_handle(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     regime: &'static str,
 ) -> WorthQueryInstalledDomainDeclarationContext<RecoveryDomain, RecoveryWorld> {
     crate::application::domain_test_support::installed_declaration_context(
+        request_execution,
         RecoveryDomain,
         RecoveryWorld::named(regime),
         [

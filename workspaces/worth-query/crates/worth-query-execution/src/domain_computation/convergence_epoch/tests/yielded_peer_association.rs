@@ -27,79 +27,9 @@ struct WorkflowYieldedPeer {
     yielded: WorthQueryYieldedWorkflowConvergenceIteration,
 }
 
-#[test]
-fn same_scope_direct_peers_deny_cross_owners_then_complete_rightfully() {
-    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
-        let phase = &active_phase;
-        let execution = phase;
+mod same_scope_direct_peers_deny_cross_owners_then_complete_rightful;
 
-        let DirectYieldedPeer {
-            runtime: runtime_a,
-            bridge: bridge_a,
-            yielded: yielded_a,
-        } = direct_yielded_peer(execution);
-        let DirectYieldedPeer {
-            runtime: runtime_b,
-            bridge: bridge_b,
-            yielded: yielded_b,
-        } = direct_yielded_peer(execution);
-
-        assert_ne!(yielded_a.epoch_identity(), yielded_b.epoch_identity());
-        assert_ne!(
-            yielded_a.graph_authority_identity(),
-            yielded_b.graph_authority_identity()
-        );
-        let yielded_a =
-            deny_cross_direct_owners(execution, yielded_a, &runtime_a, &runtime_b, &bridge_b);
-        let yielded_b =
-            deny_cross_direct_owners(execution, yielded_b, &runtime_b, &runtime_a, &bridge_a);
-
-        let completed_a = complete_direct_peer(execution, yielded_a, &runtime_a, &bridge_a);
-        let completed_b = complete_direct_peer(execution, yielded_b, &runtime_b, &bridge_b);
-        assert_eq!(completed_a.state_identity, completed_b.state_identity);
-        assert_ne!(
-            completed_a.occurrence_identity,
-            completed_b.occurrence_identity
-        );
-    });
-}
-
-#[test]
-fn same_stage_workflow_peers_deny_cross_owners_then_complete_rightfully() {
-    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
-        let phase = &active_phase;
-        let execution = phase;
-
-        let WorkflowYieldedPeer {
-            runtime: runtime_a,
-            bridge: bridge_a,
-            yielded: yielded_a,
-        } = workflow_yielded_peer(execution);
-        let WorkflowYieldedPeer {
-            runtime: runtime_b,
-            bridge: bridge_b,
-            yielded: yielded_b,
-        } = workflow_yielded_peer(execution);
-
-        assert_ne!(yielded_a.epoch_identity(), yielded_b.epoch_identity());
-        assert_ne!(
-            yielded_a.graph_authority_identity(),
-            yielded_b.graph_authority_identity()
-        );
-        let yielded_a =
-            deny_cross_workflow_owners(execution, yielded_a, &runtime_a, &runtime_b, &bridge_b);
-        let yielded_b =
-            deny_cross_workflow_owners(execution, yielded_b, &runtime_b, &runtime_a, &bridge_a);
-
-        let completed_a = complete_workflow_peer(execution, yielded_a, &runtime_a, &bridge_a);
-        let completed_b = complete_workflow_peer(execution, yielded_b, &runtime_b, &bridge_b);
-        assert_eq!(completed_a.state_identity, completed_b.state_identity);
-        assert_ne!(
-            completed_a.occurrence_identity,
-            completed_b.occurrence_identity
-        );
-    });
-}
+mod same_stage_workflow_peers_deny_cross_owners_then_complete_rightf;
 
 struct CompletedPeer {
     state_identity: String,
@@ -107,7 +37,7 @@ struct CompletedPeer {
 }
 
 fn deny_cross_direct_owners(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     yielded: WorthQueryYieldedDirectConvergenceIteration,
     owner_runtime: &WorthQueryExecutionRuntime,
@@ -118,8 +48,10 @@ fn deny_cross_direct_owners(
 
     let epoch_identity = yielded.epoch_identity().to_owned();
     let graph_identity = yielded.graph_authority_identity().to_owned();
-    let denied = match yielded.readmit_same_runtime(active_request, foreign_runtime, foreign_bridge)
-    {
+    let denied = match {
+        let installed_fixture_phase = yielded.fixture_phase(active_request);
+        yielded.readmit_same_runtime(&installed_fixture_phase, foreign_runtime, foreign_bridge)
+    } {
         WorthQueryDirectConvergenceReadmissionOutcome::Denied(denied) => denied,
         _ => panic!("foreign direct peer must not readmit the yielded owner"),
     };
@@ -128,7 +60,10 @@ fn deny_cross_direct_owners(
     assert_eq!(yielded.epoch_identity(), epoch_identity);
     assert_eq!(yielded.graph_authority_identity(), graph_identity);
 
-    let denied = match yielded.readmit_same_runtime(active_request, owner_runtime, foreign_bridge) {
+    let denied = match {
+        let installed_fixture_phase = yielded.fixture_phase(active_request);
+        yielded.readmit_same_runtime(&installed_fixture_phase, owner_runtime, foreign_bridge)
+    } {
         WorthQueryDirectConvergenceReadmissionOutcome::Denied(denied) => denied,
         _ => panic!("foreign Bridge peer must not readmit the direct yielded owner"),
     };
@@ -140,7 +75,7 @@ fn deny_cross_direct_owners(
 }
 
 fn deny_cross_workflow_owners(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     yielded: WorthQueryYieldedWorkflowConvergenceIteration,
     owner_runtime: &WorthQueryExecutionRuntime,
@@ -151,8 +86,10 @@ fn deny_cross_workflow_owners(
 
     let epoch_identity = yielded.epoch_identity().to_owned();
     let graph_identity = yielded.graph_authority_identity().to_owned();
-    let denied = match yielded.readmit_same_runtime(active_request, foreign_runtime, foreign_bridge)
-    {
+    let denied = match {
+        let installed_fixture_phase = yielded.fixture_phase(active_request);
+        yielded.readmit_same_runtime(&installed_fixture_phase, foreign_runtime, foreign_bridge)
+    } {
         WorthQueryWorkflowConvergenceReadmissionOutcome::Denied(denied) => denied,
         _ => panic!("foreign workflow peer must not readmit the yielded owner"),
     };
@@ -161,7 +98,10 @@ fn deny_cross_workflow_owners(
     assert_eq!(yielded.epoch_identity(), epoch_identity);
     assert_eq!(yielded.graph_authority_identity(), graph_identity);
 
-    let denied = match yielded.readmit_same_runtime(active_request, owner_runtime, foreign_bridge) {
+    let denied = match {
+        let installed_fixture_phase = yielded.fixture_phase(active_request);
+        yielded.readmit_same_runtime(&installed_fixture_phase, owner_runtime, foreign_bridge)
+    } {
         WorthQueryWorkflowConvergenceReadmissionOutcome::Denied(denied) => denied,
         _ => panic!("foreign Bridge peer must not readmit the workflow yielded owner"),
     };
@@ -173,7 +113,7 @@ fn deny_cross_workflow_owners(
 }
 
 fn complete_direct_peer(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     yielded: WorthQueryYieldedDirectConvergenceIteration,
     runtime: &WorthQueryExecutionRuntime,
@@ -182,7 +122,10 @@ fn complete_direct_peer(
     let active_request = execution;
 
     let epoch_identity = yielded.epoch_identity().to_owned();
-    let started = match yielded.readmit_same_runtime(active_request, runtime, bridge) {
+    let started = match {
+        let installed_fixture_phase = yielded.fixture_phase(active_request);
+        yielded.readmit_same_runtime(&installed_fixture_phase, runtime, bridge)
+    } {
         WorthQueryDirectConvergenceReadmissionOutcome::Readmitted(readmitted) => {
             let evidence = readmitted.readmission_evidence();
             assert_committed_owner_readmission(evidence, 0);
@@ -190,7 +133,10 @@ fn complete_direct_peer(
         }
         _ => panic!("rightful direct peer must readmit"),
     };
-    let terminal = match started.advance(execution) {
+    let terminal = match {
+        let installed_fixture_phase = started.fixture_phase(execution);
+        started.advance(&installed_fixture_phase)
+    } {
         WorthQueryDirectConvergenceStepOutcome::Completed(
             WorthQueryDirectConvergenceIterationOutcome::Converged(terminal),
         ) => terminal,
@@ -210,7 +156,7 @@ fn complete_direct_peer(
 }
 
 fn complete_workflow_peer(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     yielded: WorthQueryYieldedWorkflowConvergenceIteration,
     runtime: &WorthQueryExecutionRuntime,
@@ -219,7 +165,10 @@ fn complete_workflow_peer(
     let active_request = execution;
 
     let epoch_identity = yielded.epoch_identity().to_owned();
-    let started = match yielded.readmit_same_runtime(active_request, runtime, bridge) {
+    let started = match {
+        let installed_fixture_phase = yielded.fixture_phase(active_request);
+        yielded.readmit_same_runtime(&installed_fixture_phase, runtime, bridge)
+    } {
         WorthQueryWorkflowConvergenceReadmissionOutcome::Readmitted(readmitted) => {
             let evidence = readmitted.readmission_evidence();
             assert_committed_owner_readmission(evidence, 1);
@@ -227,7 +176,10 @@ fn complete_workflow_peer(
         }
         _ => panic!("rightful workflow peer must readmit"),
     };
-    let terminal = match started.advance(execution) {
+    let terminal = match {
+        let installed_fixture_phase = started.fixture_phase(execution);
+        started.advance(&installed_fixture_phase)
+    } {
         WorthQueryWorkflowConvergenceStepOutcome::Completed(
             WorthQueryWorkflowConvergenceIterationOutcome::Converged(terminal),
         ) => terminal,
@@ -248,7 +200,7 @@ fn complete_workflow_peer(
 }
 
 fn direct_yielded_peer(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 ) -> DirectYieldedPeer {
     let DirectAdmissionFixture {
         runtime,
@@ -263,10 +215,15 @@ fn direct_yielded_peer(
         .admit_direct_convergence_epoch(&operation, contract, managed, graph)
         .unwrap_or_else(|_| panic!("direct peer must admit"))
         .start();
-    let started = epoch
-        .begin_iteration(execution, call())
-        .unwrap_or_else(|_| panic!("direct peer iteration must start"));
-    let paused = match started.advance(execution) {
+    let started = {
+        let installed_fixture_phase = epoch.fixture_phase(execution);
+        epoch.begin_iteration(&installed_fixture_phase, call())
+    }
+    .unwrap_or_else(|_| panic!("direct peer iteration must start"));
+    let paused = match {
+        let installed_fixture_phase = started.fixture_phase(execution);
+        started.advance(&installed_fixture_phase)
+    } {
         WorthQueryDirectConvergenceStepOutcome::Continue(paused) => paused,
         _ => panic!("direct peer must reach the yield safe point"),
     };
@@ -282,7 +239,7 @@ fn direct_yielded_peer(
 }
 
 fn workflow_yielded_peer(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 ) -> WorkflowYieldedPeer {
     let WorkflowAdmissionFixture {
         runtime,
@@ -298,10 +255,15 @@ fn workflow_yielded_peer(
     let epoch = admitted
         .start()
         .unwrap_or_else(|_| panic!("workflow peer epoch must start"));
-    let started = epoch
-        .begin_stage_iteration(execution, WORKFLOW_STAGE, call())
-        .unwrap_or_else(|_| panic!("workflow peer iteration must start"));
-    let paused = match started.advance(execution) {
+    let started = {
+        let installed_fixture_phase = epoch.fixture_phase(execution);
+        epoch.begin_stage_iteration(&installed_fixture_phase, WORKFLOW_STAGE, call())
+    }
+    .unwrap_or_else(|_| panic!("workflow peer iteration must start"));
+    let paused = match {
+        let installed_fixture_phase = started.fixture_phase(execution);
+        started.advance(&installed_fixture_phase)
+    } {
         WorthQueryWorkflowConvergenceStepOutcome::Continue(paused) => paused,
         _ => panic!("workflow peer must reach the yield safe point"),
     };

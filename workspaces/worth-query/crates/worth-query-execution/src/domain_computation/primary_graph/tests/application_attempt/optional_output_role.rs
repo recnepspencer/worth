@@ -34,99 +34,111 @@ use worth_query_declaration::facade::application_schema::TypedMutationPreconditi
 
 #[test]
 fn an_unbound_at_most_one_role_commits_without_that_output() {
-    let committed = committed_outputs(OptionalOutputPlan::RequiredOnly);
-    let outputs = committed.outputs_of::<OptionalOutputs>().unwrap();
+    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+        let committed = committed_outputs(&host_custody, OptionalOutputPlan::RequiredOnly);
+        let outputs = committed.outputs_of::<OptionalOutputs>().unwrap();
 
-    assert!(outputs.entity::<OptionalSubject>().is_ok());
-    assert!(
-        outputs
-            .entity::<OptionalCompanion>()
-            .expect("an absent optional output is a value, not a denial")
-            .is_none(),
-        "the unbound optional role reads as None"
-    );
-    assert_eq!(
-        committed.workflow_content_identity(),
-        committed_outputs(OptionalOutputPlan::RequiredOnly).workflow_content_identity(),
-        "an absent optional output has one stable canonical form"
-    );
+        assert!(outputs.entity::<OptionalSubject>().is_ok());
+        assert!(
+            outputs
+                .entity::<OptionalCompanion>()
+                .expect("an absent optional output is a value, not a denial")
+                .is_none(),
+            "the unbound optional role reads as None"
+        );
+        assert_eq!(
+            committed.workflow_content_identity(),
+            committed_outputs(&host_custody, OptionalOutputPlan::RequiredOnly)
+                .workflow_content_identity(),
+            "an absent optional output has one stable canonical form"
+        );
+    })
 }
 
 #[test]
 fn a_bound_at_most_one_role_commits_with_that_output() {
-    let committed = committed_outputs(OptionalOutputPlan::RequiredAndOptional);
-    let outputs = committed.outputs_of::<OptionalOutputs>().unwrap();
+    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+        let committed = committed_outputs(&host_custody, OptionalOutputPlan::RequiredAndOptional);
+        let outputs = committed.outputs_of::<OptionalOutputs>().unwrap();
 
-    assert_eq!(
-        outputs
-            .entity::<OptionalCompanion>()
-            .unwrap()
-            .map(|companion| companion.entity_id()),
-        Some(outputs.entity::<OptionalSubject>().unwrap().entity_id())
-    );
-    assert_ne!(
-        committed.workflow_content_identity(),
-        committed_outputs(OptionalOutputPlan::RequiredOnly).workflow_content_identity(),
-        "a present optional output is distinct from an absent one"
-    );
+        assert_eq!(
+            outputs
+                .entity::<OptionalCompanion>()
+                .unwrap()
+                .map(|companion| companion.entity_id()),
+            Some(outputs.entity::<OptionalSubject>().unwrap().entity_id())
+        );
+        assert_ne!(
+            committed.workflow_content_identity(),
+            committed_outputs(&host_custody, OptionalOutputPlan::RequiredOnly)
+                .workflow_content_identity(),
+            "a present optional output is distinct from an absent one"
+        );
+    })
 }
 
 #[test]
 fn a_second_binding_of_an_at_most_one_role_is_refused() {
-    let Err(MutationHandlerExecutionDenial::Handler(denial)) =
-        executed(OptionalOutputPlan::RequiredAndOptionalTwice)
-    else {
-        panic!("a second binding of an at-most-one role must be refused");
-    };
-    let denial = denial
-        .downcast::<WorthQueryApplicationAttemptDenial>()
-        .expect("the refusal is the attempt's typed denial");
+    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+        let Err(MutationHandlerExecutionDenial::Handler(denial)) =
+            executed(&host_custody, OptionalOutputPlan::RequiredAndOptionalTwice)
+        else {
+            panic!("a second binding of an at-most-one role must be refused");
+        };
+        let denial = denial
+            .downcast::<WorthQueryApplicationAttemptDenial>()
+            .expect("the refusal is the attempt's typed denial");
 
-    assert_eq!(
-        denial.kind(),
-        WorthQueryApplicationAttemptDenialKind::DuplicateOutputRole
-    );
-    assert_eq!(denial.subject(), "companion");
+        assert_eq!(
+            denial.kind(),
+            WorthQueryApplicationAttemptDenialKind::DuplicateOutputRole
+        );
+        assert_eq!(denial.subject(), "companion");
+    })
 }
 
 #[test]
 fn an_optional_role_read_as_exactly_one_is_refused() {
-    let companion_as_required = OutputRoleUse {
-        name: "companion".to_owned(),
-        posture: ApplicationMutationOutputPosture::Preserve,
-        cardinality: ApplicationMutationOutputRoleCardinality::ExactlyOne,
-        entity_name:
-            <Account as ApplicationEntityMarkerIdentity<IdentityExecutionSchema>>::IDENTIFIER,
-        entity_type: std::any::TypeId::of::<Account>(),
-        contract_type: std::any::TypeId::of::<OptionalOutputs>(),
-    };
-    for plan in [
-        OptionalOutputPlan::RequiredOnly,
-        OptionalOutputPlan::RequiredAndOptional,
-    ] {
-        assert_eq!(
-            committed_outputs(plan)
-                .bound_entity(&companion_as_required)
-                .err(),
-            Some(WorthQueryApplicationOutputProjectionDenial::CardinalityMismatch),
-            "{plan:?}"
-        );
-    }
+    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+        let companion_as_required = OutputRoleUse {
+            name: "companion".to_owned(),
+            posture: ApplicationMutationOutputPosture::Preserve,
+            cardinality: ApplicationMutationOutputRoleCardinality::ExactlyOne,
+            entity_name:
+                <Account as ApplicationEntityMarkerIdentity<IdentityExecutionSchema>>::IDENTIFIER,
+            entity_type: std::any::TypeId::of::<Account>(),
+            contract_type: std::any::TypeId::of::<OptionalOutputs>(),
+        };
+        for plan in [
+            OptionalOutputPlan::RequiredOnly,
+            OptionalOutputPlan::RequiredAndOptional,
+        ] {
+            assert_eq!(
+                committed_outputs(&host_custody, plan)
+                    .bound_entity(&companion_as_required)
+                    .err(),
+                Some(WorthQueryApplicationOutputProjectionDenial::CardinalityMismatch),
+                "{plan:?}"
+            );
+        }
+    })
 }
 
 #[test]
 fn an_unbound_exactly_one_role_is_still_missing() {
-    let Err(MutationHandlerExecutionDenial::Attempt(denial)) =
-        executed(OptionalOutputPlan::OptionalOnly)
-    else {
-        panic!("a completed candidate must bind every exactly-one role");
-    };
+    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+        let Err(MutationHandlerExecutionDenial::Attempt(denial)) =
+            executed(&host_custody, OptionalOutputPlan::OptionalOnly)
+        else {
+            panic!("a completed candidate must bind every exactly-one role");
+        };
 
-    assert_eq!(
-        denial.kind(),
-        WorthQueryApplicationAttemptDenialKind::MissingOutputRole
-    );
-    assert_eq!(denial.subject(), "subject");
+        assert_eq!(
+            denial.kind(),
+            WorthQueryApplicationAttemptDenialKind::MissingOutputRole
+        );
+        assert_eq!(denial.subject(), "subject");
+    })
 }
 
 type Execution = Result<
@@ -140,9 +152,12 @@ type Execution = Result<
     MutationHandlerExecutionDenial,
 >;
 
-fn committed_outputs(plan: OptionalOutputPlan) -> WorthQueryApplicationOutputCorrespondence {
+fn committed_outputs(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
+    plan: OptionalOutputPlan,
+) -> WorthQueryApplicationOutputCorrespondence {
     let world = installed_authorization_world(true);
-    let (execution, idempotency) = execute(&world, plan);
+    let (execution, idempotency) = execute(phase_custody, &world, plan);
     let Ok(HandlerResult::Completed(completed)) = execution else {
         panic!("the handler completes its candidate");
     };
@@ -159,27 +174,33 @@ fn committed_outputs(plan: OptionalOutputPlan) -> WorthQueryApplicationOutputCor
     committed.output_correspondence().clone()
 }
 
-fn executed(plan: OptionalOutputPlan) -> Execution {
-    execute(&installed_authorization_world(true), plan).0
+fn executed(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
+    plan: OptionalOutputPlan,
+) -> Execution {
+    execute(phase_custody, &installed_authorization_world(true), plan).0
 }
 
 fn execute(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     world: &AuthorizationWorld,
     plan: OptionalOutputPlan,
 ) -> (Execution, WorthQueryApplicationIdempotencyBinding) {
-    execute_with_key(world, plan, "optional-output")
+    execute_with_key(phase_custody, world, plan, "optional-output")
 }
 
 fn execute_with_key(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     world: &AuthorizationWorld,
     plan: OptionalOutputPlan,
     key: &str,
 ) -> (Execution, WorthQueryApplicationIdempotencyBinding) {
-    let (report, key) = execute_report_with_key(world, plan, key);
+    let (report, key) = execute_report_with_key(phase_custody, world, plan, key);
     (report.into_outcome(), key)
 }
 
 fn execute_report_with_key(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     world: &AuthorizationWorld,
     plan: OptionalOutputPlan,
     key: &str,
@@ -194,6 +215,7 @@ fn execute_report_with_key(
     WorthQueryApplicationIdempotencyBinding,
 ) {
     execute_report_for_input(
+        &(phase_custody.phase_for_application(&world.application)).test_host_request(),
         world,
         OptionalOutputInput {
             status: "open".to_owned(),
@@ -204,6 +226,7 @@ fn execute_report_with_key(
 }
 
 fn execute_report_for_input(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     world: &AuthorizationWorld,
     input: OptionalOutputInput,
     key: &str,
@@ -218,16 +241,22 @@ fn execute_report_for_input(
     WorthQueryApplicationIdempotencyBinding,
 ) {
     let request = live_scope();
-    let principal = authenticated_principal(world, &request);
-    let account = resolved_account(world, &input.status, &request);
+    let principal = authenticated_principal(&(phase_custody).test_host_request(), world, &request);
+    let account = resolved_account(
+        &(phase_custody).test_host_request(),
+        world,
+        &input.status,
+        &request,
+    );
     let operation = world
         .application
         .installed_schema()
         .installed_operation(OptionalOutputOperation::reference())
         .unwrap();
     let admission = world
-        .selected_product()
+        .selected_product(&(phase_custody).test_host_request())
         .authorize_operation(
+            &phase_custody.phase_for_application(&world.application),
             &principal,
             &account,
             &operation,

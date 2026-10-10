@@ -71,7 +71,7 @@ where
         FamilySourceValue<Schema, Family>: 'static,
         FamilySourceQuery<Schema, Family>: 'static,
     {
-        phase
+        let execution = phase
             .execution_request_for(&self.product_runtime)
             .map_err(|cause| {
                 denial(
@@ -81,6 +81,7 @@ where
             })?;
         self.advance_as_caller(demand, |demand, admission| {
             self.advance_output_demand_with_commit_authority(
+                &execution,
                 phase,
                 demand,
                 principal,
@@ -113,7 +114,7 @@ where
                 > + 'static,
         FamilySourceQuery<Schema, Family>: 'static,
     {
-        phase
+        let execution = phase
             .execution_request_for(&self.product_runtime)
             .map_err(|cause| {
                 denial(
@@ -123,6 +124,7 @@ where
             })?;
         self.advance_as_caller(demand, |demand, admission| {
             self.advance_retained_with_commit_authority(
+                &execution,
                 phase,
                 demand,
                 principal,
@@ -138,6 +140,7 @@ where
     /// issued with, on the caller's request meter.
     pub(super) fn advance_retained_with_commit_authority<Family>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
 
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
@@ -158,6 +161,7 @@ where
     {
         let limits = demand.limits;
         self.advance_output_demand_with_prepared_source(
+            execution,
             phase,
             demand,
             principal,
@@ -165,6 +169,7 @@ where
             delivery_branch,
             |retained, admission| {
                 retained_read::read_retained_source::<Schema, Family>(
+                    execution,
                     self,
                     retained,
                     principal,
@@ -182,6 +187,7 @@ where
 
     pub(in crate::domain_computation::primary_graph) fn advance_program_output_demand<Family>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
 
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
@@ -208,6 +214,7 @@ where
             })?;
         self.advance_as_caller(demand, |demand, admission| {
             self.advance_output_demand_with_commit_authority(
+                execution,
                 phase,
                 demand,
                 principal,
@@ -264,6 +271,7 @@ where
         Family,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
 
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
@@ -284,6 +292,7 @@ where
     {
         let mut disclosure = Some(disclosure);
         self.advance_output_demand_with_prepared_source(
+            execution,
             phase,
             demand,
             principal,

@@ -117,6 +117,9 @@ impl RelationRecordProjection for RelationSummaryTitleFieldProjection {
 
 #[test]
 fn entity_field_mask_projection_reads_only_declared_struct_field() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = entity_summary_projection_runtime();
     let entity_id = create_entity_with_summary_fields(
         &runtime,
@@ -127,8 +130,8 @@ fn entity_field_mask_projection_reads_only_declared_struct_field() {
 
     let projected = runtime
         .read_truth()
-        .project_historical_version(runtime.current_version_id())
-        .entities::<SummaryTitleFieldProjection>();
+        .project_historical_version(execution, runtime.current_version_id())
+        .entities::<SummaryTitleFieldProjection>(execution);
 
     assert_eq!(projected.len(), 1);
     assert_eq!(projected[0].entity_id, entity_id);
@@ -139,6 +142,9 @@ fn entity_field_mask_projection_reads_only_declared_struct_field() {
 
 #[test]
 fn whole_aspect_projection_still_reads_full_struct_aspect() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = entity_summary_projection_runtime();
     create_entity_with_summary_fields(
         &runtime,
@@ -149,8 +155,8 @@ fn whole_aspect_projection_still_reads_full_struct_aspect() {
 
     let projected = runtime
         .read_truth()
-        .project_historical_version(runtime.current_version_id())
-        .entities::<SummaryWholeAspectProjection>();
+        .project_historical_version(execution, runtime.current_version_id())
+        .entities::<SummaryWholeAspectProjection>(execution);
 
     assert_eq!(projected.len(), 1);
     assert_eq!(projected[0].title, "whole-title");
@@ -159,17 +165,23 @@ fn whole_aspect_projection_still_reads_full_struct_aspect() {
 #[test]
 #[should_panic(expected = "projection mask rejected by aspect contract")]
 fn scalar_aspect_rejects_field_mask_projection_at_use_boundary() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     create_entity(&runtime, "scalar-field-mask");
 
     let _ = runtime
         .read_truth()
-        .project_historical_version(runtime.current_version_id())
-        .entities::<NameFieldMaskProjection>();
+        .project_historical_version(execution, runtime.current_version_id())
+        .entities::<NameFieldMaskProjection>(execution);
 }
 
 #[test]
 fn relation_field_mask_projection_reads_only_declared_struct_field() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = relation_summary_projection_runtime();
     let source = create_entity(&runtime, "source");
     let target = create_entity(&runtime, "target");
@@ -184,8 +196,8 @@ fn relation_field_mask_projection_reads_only_declared_struct_field() {
 
     let projected = runtime
         .read_truth()
-        .project_historical_version(runtime.current_version_id())
-        .relations::<RelationSummaryTitleFieldProjection>();
+        .project_historical_version(execution, runtime.current_version_id())
+        .relations::<RelationSummaryTitleFieldProjection>(execution);
 
     assert_eq!(projected.len(), 1);
     assert_eq!(projected[0].title, "relation-title");

@@ -11,6 +11,9 @@ use worth_relational::facade::history::BranchId;
 
 #[test]
 fn workflow_certification_conflict_inspection_preserves_lower_authority_merge_class() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let preflight = execution_preflights::direct_runtime_preflight();
     let binding = bind_workflow_context(WorkflowBindingSource::RuntimePreflight(&preflight))
         .expect("runtime binding should admit");
@@ -48,7 +51,7 @@ fn workflow_certification_conflict_inspection_preserves_lower_authority_merge_cl
     let inspection = inspect_merge_conflicts(
         &inspection_declaration,
         &lowered,
-        &deleted_vs_modified_inspection_artifact(),
+        &deleted_vs_modified_inspection_artifact(request_execution),
     )
     .expect("inspection should succeed");
     let deletion_row = inspection

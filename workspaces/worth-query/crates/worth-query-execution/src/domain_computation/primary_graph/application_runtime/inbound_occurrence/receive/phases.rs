@@ -144,9 +144,13 @@ impl<'a, Schema: ApplicationSchema> WorthQueryAuthenticatedInboundOccurrence<'a,
     /// The phase witnesses admission before verifier, provenance, or custody access.
     pub(super) fn correlate_in_advancement(
         self,
-        _phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     ) -> Result<WorthQueryCorrelatedInboundOccurrence<'a, Schema>, Denial> {
-        self.runtime.correlate_authenticated_inbound(self)
+        let execution = phase
+            .execution_request_for(&self.runtime.product_runtime)
+            .map_err(|cause| Denial::advancement(cause.into()))?;
+        self.runtime
+            .correlate_authenticated_inbound(&execution, self)
     }
 }
 
@@ -195,11 +199,14 @@ impl<Schema: ApplicationSchema> WorthQueryAdmittedInboundOccurrence<'_, Schema> 
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryInboundReceipt, Denial> {
+        let execution = phase
+            .execution_request_for(&self.runtime.product_runtime)
+            .map_err(|cause| Denial::advancement(cause.into()))?;
         // Progression owns settlement of this claim. Disarm Drop before it can
         // become retryable and another caller can claim the same custody slot.
         let admission = self.admission.take().expect("sealed admitted phase");
         self.runtime
-            .execute_inbound_admission(phase, admission, self.envelope, request)
+            .execute_inbound_admission(&execution, phase, admission, self.envelope, request)
     }
 
     #[cfg(test)]

@@ -40,10 +40,13 @@ fn request_entry_replays_exact_input_and_denies_changed_reason() {
         panic!("the first request must publish: {first:?}");
     };
     assert_eq!(requested.request_changed_record_count(), 8);
-    let first_commit = fixture
-        .runtime
-        .request(&principal, &scope)
-        .retain_read()
+    let first_commit =
+        crate::test_host_policy::with_phase(fixture.runtime.application_runtime(), |phase| {
+            fixture
+                .runtime
+                .request(&principal, &scope)
+                .retain_read(phase)
+        })
         .unwrap()
         .selected_commit()
         .clone();
@@ -79,12 +82,14 @@ fn request_entry_replays_exact_input_and_denies_changed_reason() {
         }
     ));
     assert_eq!(
-        fixture
-            .runtime
-            .request(&principal, &scope)
-            .retain_read()
-            .unwrap()
-            .selected_commit(),
+        crate::test_host_policy::with_phase(fixture.runtime.application_runtime(), |phase| {
+            fixture
+                .runtime
+                .request(&principal, &scope)
+                .retain_read(phase)
+        })
+        .unwrap()
+        .selected_commit(),
         &first_commit,
         "replay and drift must leave the first publication as the only effect"
     );

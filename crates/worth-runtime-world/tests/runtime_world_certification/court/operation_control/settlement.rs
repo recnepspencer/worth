@@ -1,6 +1,9 @@
 use super::*;
 #[test]
 fn pending_relational_settlement_never_calls_signal_or_republishes_product() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut court = CompositeSupplyChainCourt::compile();
     let policy = match court.world.execution_placement() {
         worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy)
@@ -36,7 +39,7 @@ fn pending_relational_settlement_never_calls_signal_or_republishes_product() {
     let RuntimeWorldPublicationOutcome::ProductUnpublished(effects) = port.execute_with_signal(
         worth_execution::ExecutionRequest::serial(&super::serial_request(policy)),
         prepared,
-        &mut court.context(&root),
+        &mut court.context(request_execution, &root),
         &token,
         |_| panic!("unsettled Relational cannot invoke Signal"),
     ) else {

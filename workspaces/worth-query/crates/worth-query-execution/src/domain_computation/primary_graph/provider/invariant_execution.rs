@@ -95,6 +95,7 @@ impl WorthQueryInvariantExecutionProvider for Arc<WorthQueryPrimaryGraphProvider
 impl WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph) fn admit_primary_candidate(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         session: WorthQueryProviderSessionView<'_>,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<(), WorthQueryInvariantExecutionFailure> {
@@ -102,7 +103,7 @@ impl WorthQueryPrimaryGraphProvider {
             return Err(owner_failure());
         }
         let material = self.invariant_candidate_material(session)?;
-        self.validate_and_retain_candidate(session, material, allocation_policy)
+        self.validate_and_retain_candidate(execution, session, material, allocation_policy)
     }
 
     fn invariant_candidate_material(
@@ -145,6 +146,7 @@ impl WorthQueryPrimaryGraphProvider {
 
     fn validate_and_retain_candidate(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         session: WorthQueryProviderSessionView<'_>,
         material: ApplicationInvariantCandidateMaterial,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
@@ -153,6 +155,7 @@ impl WorthQueryPrimaryGraphProvider {
             closure_failure("candidate semantic cardinality exceeds work representation")
         })?;
         let candidate = self.validate_relational_candidate(
+            execution,
             material.batch,
             &material.branch,
             &material.product,

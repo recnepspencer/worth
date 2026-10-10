@@ -6,6 +6,9 @@ use crate::tests::support::*;
 
 #[test]
 fn checkpoint_reconstruction_does_not_exclude_publication_after_capture() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let baseline = create_entity_outcome(&runtime, "checkpoint-concurrency-anchor");
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
@@ -97,7 +100,7 @@ fn checkpoint_reconstruction_does_not_exclude_publication_after_capture() {
     let mut recovered = runtime_with_test_schema();
     let outcome = recovered
         .durability_recovery()
-        .recover(plan)
+        .recover(execution, plan)
         .expect("fresh recovery replays the concurrent publication as checkpoint tail");
     assert_eq!(outcome.coverage.replayed_tail_commits, 1);
     assert_eq!(

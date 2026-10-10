@@ -6,6 +6,9 @@ use worth_runtime_bridge::facade::{RelationalCommittedPatchRequest, TruthCommitI
 
 #[test]
 fn committed_patch_delivery_changes_the_installed_graph_before_world_sealing() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let records = CargoRecords::install(true);
     let mut graph = SignalGraph::new();
     let nodes = RouteGraph::install(&mut graph);
@@ -92,7 +95,7 @@ fn committed_patch_delivery_changes_the_installed_graph_before_world_sealing() {
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
     let root = court.bootstrap();
-    let mut context = court.context(&root);
+    let mut context = court.context(request_execution, &root);
     assert_eq!(context.records.get().unwrap(), &oracle.records);
     let token = RuntimeWorldCancellationSource::new().token();
     let port = court.world.publication_port();

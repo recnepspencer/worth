@@ -19,6 +19,7 @@ enum Visit<'a> {
 
 impl ConsumedOutputEvidence {
     pub(in crate::domain_computation::primary_graph) fn establish_missing(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         owner: &SourceInvalidationOwner,
         roots: &[ConsumedOutputEvidence],
         runtime: &RelationalRuntime,
@@ -53,6 +54,7 @@ impl ConsumedOutputEvidence {
                     // Postconditions cannot prove the original computation. This
                     // compares its original source facts and sealed output here.
                     if ConsumedOutputEvidence::verify_many_with_admission(
+                        execution,
                         std::slice::from_ref(evidence),
                         owner,
                         runtime,

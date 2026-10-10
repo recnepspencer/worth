@@ -38,6 +38,7 @@ pub(in crate::domain_computation::primary_graph) fn collect_consumed_output_upst
 /// performed effect into a no-effect refusal. A commit whose facts
 /// could not be rebased retains none, so no settlement is registered for it.
 pub(in crate::domain_computation::primary_graph) fn register_completed(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     owner: &SourceInvalidationOwner,
     application: &WorthQueryPrimaryGraphCommittedApplication,
     computation_source: super::super::ComputationSourceEvidence,
@@ -68,7 +69,7 @@ pub(in crate::domain_computation::primary_graph) fn register_completed(
     // A publication may have evicted its full index. The consumed Native
     // evidence remains authoritative: compare it after the effect, then
     // establish its missing rows upstream-first before posting this consumer.
-    crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence::establish_missing(
+    crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence::establish_missing(execution,
         owner, consumed_outputs, runtime, snapshot, &read_basis, admission,
     )?;
     let stale_at_read_basis = own_effect_stale_ordinals(application, admission).map_err(stopped)?;

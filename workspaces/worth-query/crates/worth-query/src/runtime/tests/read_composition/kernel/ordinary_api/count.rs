@@ -22,13 +22,16 @@ use worth_foundational::facade::{CanonicalFieldPath, FieldKey};
 
 #[test]
 fn ordinary_count_materializes_real_collection_rows_and_exact_work_evidence() {
-    let mut workspace = count_runtime(["ada", "grace", "linus"])
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = count_runtime(request_execution, ["ada", "grace", "linus"])
         .workspace("ordinary-count-real-rows")
         .expect("count workspace should open");
     let result = declare_count(local_identity_collection_read)
         .expect("collection count should declare")
         .using(current())
-        .run(&mut workspace)
+        .run(request_execution, &mut workspace)
         .into_result()
         .expect("collection count should execute")
         .into_result();
@@ -58,13 +61,16 @@ fn ordinary_count_materializes_real_collection_rows_and_exact_work_evidence() {
 
 #[test]
 fn ordinary_count_preserves_zero_for_an_empty_authoritative_collection() {
-    let mut workspace = count_runtime(std::iter::empty::<&str>())
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = count_runtime(request_execution, std::iter::empty::<&str>())
         .workspace("ordinary-count-empty")
         .expect("empty count workspace should open");
     let result = declare_count(local_identity_collection_read)
         .expect("empty collection count should declare")
         .using(current())
-        .run(&mut workspace)
+        .run(request_execution, &mut workspace)
         .into_result()
         .expect("empty collection count should execute")
         .into_result();
@@ -85,11 +91,17 @@ fn ordinary_count_preserves_zero_for_an_empty_authoritative_collection() {
 
 #[test]
 fn ordinary_count_applies_declared_predicates_before_aggregation() {
-    let mut workspace = count_runtime_from_rows(vec![
-        profile_row("ada", "Ada Lovelace"),
-        profile_row("grace", "Grace Hopper"),
-        profile_row("adam", "Adam Smith"),
-    ])
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = count_runtime_from_rows(
+        request_execution,
+        vec![
+            profile_row("ada", "Ada Lovelace"),
+            profile_row("grace", "Grace Hopper"),
+            profile_row("adam", "Adam Smith"),
+        ],
+    )
     .workspace("ordinary-count-filtered")
     .expect("filtered count workspace should open");
     let result = declare_count(|read| {
@@ -121,7 +133,7 @@ fn ordinary_count_applies_declared_predicates_before_aggregation() {
     })
     .expect("filtered count should declare")
     .using(current())
-    .run(&mut workspace)
+    .run(request_execution, &mut workspace)
     .into_result()
     .expect("filtered count should execute")
     .into_result();
@@ -142,13 +154,16 @@ fn ordinary_count_applies_declared_predicates_before_aggregation() {
 
 #[test]
 fn ordinary_count_matches_the_internal_admitted_phase_chain_exactly() {
-    let mut workspace = count_runtime(["ada", "grace", "linus", "margaret"])
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = count_runtime(request_execution, ["ada", "grace", "linus", "margaret"])
         .workspace("ordinary-count-parity")
         .expect("count parity workspace should open");
     let ordinary = declare_count(local_identity_collection_read)
         .expect("ordinary count should declare")
         .using(current())
-        .run(&mut workspace)
+        .run(request_execution, &mut workspace)
         .into_result()
         .expect("ordinary count should execute")
         .into_result();
@@ -171,7 +186,7 @@ fn ordinary_count_matches_the_internal_admitted_phase_chain_exactly() {
         .read_family_intent_in_graph_read_authority(&oracle_family, &authority)
         .admit()
         .expect("oracle count should admit")
-        .execute_count()
+        .execute_count(request_execution)
         .expect("oracle count should execute");
 
     assert_eq!(ordinary.count(), oracle.count());
@@ -198,19 +213,25 @@ fn detail_shape_is_denied_before_count_planning_or_runtime_contact() {
     );
 }
 
-fn count_runtime(labels: impl IntoIterator<Item = &'static str>) -> WorthQueryRuntime {
+fn count_runtime(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    labels: impl IntoIterator<Item = &'static str>,
+) -> WorthQueryRuntime {
     let rows = labels.into_iter().map(identity_row).collect();
-    count_runtime_from_rows(rows)
+    count_runtime_from_rows(request_execution, rows)
 }
 
-fn count_runtime_from_rows(rows: Vec<WorthQueryEntity>) -> WorthQueryRuntime {
+fn count_runtime_from_rows(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    rows: Vec<WorthQueryEntity>,
+) -> WorthQueryRuntime {
     complete_backend_from_parts_builder()
         .source_adapter(CountCollectionSourceAdapter {
             rows,
             declared_targets: BTreeSet::new(),
         })
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("complete count runtime should build")
 }
 
@@ -239,6 +260,7 @@ impl WorthQueryRuntimeSourceAdapter for CountCollectionSourceAdapter {
 
     fn live_entities_for_target(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         target: &WorthQueryLiveArtifactTarget,
     ) -> Vec<WorthQueryEntity> {
         if self.declared_targets.contains(target) {

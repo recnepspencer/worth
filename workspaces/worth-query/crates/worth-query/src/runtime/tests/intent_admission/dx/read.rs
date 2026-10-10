@@ -2,14 +2,17 @@ use super::*;
 
 #[test]
 fn read_family_intent_common_path_helper_executes_through_canonical_handoff() {
-    let runtime = read_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = read_runtime(request_execution);
     let mut workspace = WorthQueryWorkspace::new("intent-admission-read-dx", runtime)
         .expect("workspace should build");
     let family = identity_read_family(&mut workspace, "tasks");
 
     let result = workspace
         .read_family_intent(&family)
-        .execute()
+        .execute(request_execution)
         .expect("read common-path helper should execute");
 
     assert_eq!(
@@ -33,7 +36,10 @@ fn read_family_intent_common_path_helper_executes_through_canonical_handoff() {
 
 #[test]
 fn read_family_intent_advanced_path_helper_exposes_request_eligibility_decision_and_handoff() {
-    let runtime = read_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = read_runtime(request_execution);
     let mut workspace = WorthQueryWorkspace::new("intent-admission-read-advanced", runtime)
         .expect("workspace should build");
     let family = identity_read_family(&mut workspace, "tasks");
@@ -70,11 +76,14 @@ fn read_family_intent_advanced_path_helper_exposes_request_eligibility_decision_
 
 #[test]
 fn live_read_intent_common_path_helper_executes_through_canonical_handoff() {
-    let runtime = read_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = read_runtime(request_execution);
     let mut workspace = WorthQueryWorkspace::new("intent-admission-live-read-dx", runtime)
         .expect("workspace should build");
     let live_view: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.table", |q| {
+        .live_view(request_execution, "tasks.table", |q| {
             q.from("Task")
                 .select([
                     crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
@@ -92,7 +101,7 @@ fn live_read_intent_common_path_helper_executes_through_canonical_handoff() {
 
     let result = workspace
         .read_live_intent(&live_view)
-        .execute()
+        .execute(request_execution)
         .expect("live read common-path helper should execute");
 
     assert_eq!(
@@ -116,11 +125,14 @@ fn live_read_intent_common_path_helper_executes_through_canonical_handoff() {
 
 #[test]
 fn live_read_intent_advanced_path_helper_exposes_request_eligibility_decision_and_handoff() {
-    let runtime = read_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = read_runtime(request_execution);
     let mut workspace = WorthQueryWorkspace::new("intent-admission-live-read-advanced", runtime)
         .expect("workspace should build");
     let live_view: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.table", |q| {
+        .live_view(request_execution, "tasks.table", |q| {
             q.from("Task")
                 .select([
                     crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")

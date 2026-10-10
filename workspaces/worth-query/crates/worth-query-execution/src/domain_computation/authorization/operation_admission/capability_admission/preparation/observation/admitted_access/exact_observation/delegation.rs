@@ -81,6 +81,7 @@ where
         Context,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         target_capability: &WorthQueryInstalledApplicationCapability<
             Schema,
             TargetCapability,
@@ -94,15 +95,15 @@ where
             .authorization
             .capability_plan(target_capability)
             .ok_or_else(|| stale(target_capability.contract().name()))?;
-        let target = self.resolve_request(proposed.target())?;
-        let parent = self.resolve_selector(proposed.parent())?;
-        let grantee = self.resolve_selector(proposed.grantee())?;
+        let target = self.resolve_request(execution, proposed.target())?;
+        let parent = self.resolve_selector(execution, proposed.parent())?;
+        let grantee = self.resolve_selector(execution, proposed.grantee())?;
         if parent.entity_kind() != installed.grant_kind()
             || grantee.entity_kind() != installed.principal_kind()
         {
             return Err(rejected(installed));
         }
-        let activation_context = self.resolve_activation_context(installed, proposed)?;
+        let activation_context = self.resolve_activation_context(execution, installed, proposed)?;
         Ok(WorthQueryDelegationResolvedRequest {
             parent: parent.entity_id(),
             grantor: self.principal,
@@ -121,6 +122,7 @@ where
         Context,
     >(
         &self,
+execution: &worth_execution::ExecutionRequest<'_, '_>,
         target_capability: &WorthQueryInstalledApplicationCapability<
             Schema,
             TargetCapability,
@@ -135,15 +137,15 @@ where
             .capability_plan(target_capability)
             .ok_or_else(|| stale(target_capability.contract().name()))?;
         let sample = self.runtime.sample_capability_time(installed)?;
-        let target = self.resolve_request(proposed.target())?;
-        let parent = self.resolve_selector(proposed.parent())?;
-        let grantee = self.resolve_selector(proposed.grantee())?;
+        let target = self.resolve_request(execution, proposed.target())?;
+        let parent = self.resolve_selector(execution, proposed.parent())?;
+        let grantee = self.resolve_selector(execution, proposed.grantee())?;
         if parent.entity_kind() != installed.grant_kind()
             || grantee.entity_kind() != installed.principal_kind()
         {
             return Err(rejected(installed));
         }
-        let activation_context = self.resolve_activation_context(installed, proposed)?;
+        let activation_context = self.resolve_activation_context(execution, installed, proposed)?;
         let retained = WorthQueryRetainedCapabilityRequest::capture(
             *target_capability.identity().bytes(),
             self.principal,
@@ -160,13 +162,13 @@ where
         };
         let observation = self.bind_capability_observation(installed, &retained, &sample)?;
         let (mut decision, expiry) = observation
-            .observe_active_capability(Some(resolved.parent), None)?
+            .observe_active_capability(execution, Some(resolved.parent), None)?
             .into_refresh_for_grant(resolved.parent)
             .map_err(|()| rejected(installed))?;
-        let narrowing = self.observe_narrowing(installed, proposed, &resolved)?;
+        let narrowing = self.observe_narrowing(execution, installed, proposed, &resolved)?;
         decision
             .attach_delegation_activation(
-                crate::domain_computation::authorization::decision_facts::WorthQueryDelegationActivationDecisionFact::new(
+                crate::domain_computation::authorization::decision_facts::WorthQueryDelegationActivationDecisionFact::new(execution,
                     self.session,
                     self.relational,
                     narrowing,
@@ -186,6 +188,7 @@ where
 
     fn resolve_activation_context<Scope, Context>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &WorthQueryInstalledCapabilityPlan,
         proposed: &ApplicationCapabilityDelegationRequestProjection<Schema, Scope, Context>,
     ) -> Result<Vec<WorthQueryResolvedActivationContext>, WorthQueryOperationAuthorizationDenial>
@@ -214,7 +217,7 @@ where
             {
                 return Err(rejected(installed));
             }
-            let entity = self.resolve_selector(selected.selector())?;
+            let entity = self.resolve_selector(execution, selected.selector())?;
             if entity.entity_kind() != traversal.to_kind() {
                 return Err(rejected(installed));
             }
@@ -229,6 +232,7 @@ where
 
     fn observe_narrowing<Scope, Context>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &WorthQueryInstalledCapabilityPlan,
         proposed: &ApplicationCapabilityDelegationRequestProjection<Schema, Scope, Context>,
         resolved: &WorthQueryDelegationResolvedRequest,
@@ -262,7 +266,7 @@ where
         .map_err(|_| rejected(installed))?;
         let evidence = self
             .relational
-            .observe_authorization(plan)
+            .observe_authorization(plan, execution)
             .map_err(|_| rejected(installed))?;
         let [path] = evidence.paths() else {
             return Err(rejected(installed));

@@ -48,6 +48,8 @@ fn dropping_yielded_workflow_closes_artifacts_despite_surviving_production_autho
         );
         let running =
             super::workflow_provider_steps::admitted_workflow(&runtime, &operation, resources);
+        let installed_running_phase = execution.phase_for_workflow(&running);
+
         let production = running
             .artifacts()
             .production_authority("producer")
@@ -58,7 +60,7 @@ fn dropping_yielded_workflow_closes_artifacts_despite_surviving_production_autho
             .expect("pre-yield artifact should register");
         let active = running
             .begin_stage_graph_execution(
-                execution,
+                &installed_running_phase,
                 "producer",
                 &graph,
                 WorthQueryManagedGraphCallRequest::new(
@@ -67,7 +69,7 @@ fn dropping_yielded_workflow_closes_artifacts_despite_surviving_production_autho
                 ),
             )
             .unwrap();
-        let paused = match active.advance(execution) {
+        let paused = match active.advance(&installed_running_phase) {
             WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused,
             _ => panic!("yield abandonment provider did not pause"),
         };

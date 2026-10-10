@@ -25,6 +25,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
 use validated::{AdmittedDisclosure, RetainedProgramOutputDisclosure};
 
 pub(super) fn validate_disclosure<Schema, Family>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     demand: &WorthQueryAdmittedOutputDemand<Schema, Family>,
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
@@ -45,6 +46,7 @@ where
     Family: WorthQueryProducerOutputFamily<Schema>,
 {
     validate_source(
+        execution,
         runtime,
         &demand.observed_source,
         principal,
@@ -65,6 +67,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     Query,
     Value,
 >(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     retained: &WorthQueryObservedSource<Query>,
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
@@ -79,6 +82,7 @@ where
     Schema: ApplicationSchema + 'static,
 {
     match validate_source(
+        execution,
         runtime,
         retained,
         principal,
@@ -105,6 +109,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     Query,
     Value,
 >(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     retained: &WorthQueryObservedSource<Query>,
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
@@ -140,6 +145,7 @@ where
         ));
     }
     match validate_source(
+        execution,
         runtime,
         retained,
         principal,
@@ -171,6 +177,7 @@ enum DisclosureSelection<'a> {
 }
 
 fn validate_source<Schema, Query, Value>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     retained: &WorthQueryObservedSource<Query>,
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
@@ -254,14 +261,17 @@ where
         found.ok_or_else(|| denial(WorthQueryOutputDemandDenialKind::Superseded, subject))?;
     let selected = match &selection {
         DisclosureSelection::RetainedSelected(_, _) => None,
-        DisclosureSelection::Single | DisclosureSelection::RetainedRoot(_) => {
-            Some(runtime.on_branch(branch).select().map_err(|error| {
-                WorthQueryOutputDemandDenial::product_selection(
-                    error,
-                    format!("{subject}: disclosure product selection"),
-                )
-            })?)
-        }
+        DisclosureSelection::Single | DisclosureSelection::RetainedRoot(_) => Some(
+            runtime
+                .on_branch(branch)
+                .select_with_request(execution)
+                .map_err(|error| {
+                    WorthQueryOutputDemandDenial::product_selection(
+                        error,
+                        format!("{subject}: disclosure product selection"),
+                    )
+                })?,
+        ),
     };
     let selected_current = match &selection {
         DisclosureSelection::RetainedSelected(_, current) => Some(*current),

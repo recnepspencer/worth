@@ -2,6 +2,9 @@ use super::*;
 
 #[test]
 fn tail_created_lineage_allocator_exhaustion_denies_before_replay() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
     create_entity_outcome(&runtime, "lineage-overflow-checkpoint");
     runtime.durability_authority().checkpoint().unwrap();
@@ -21,7 +24,7 @@ fn tail_created_lineage_allocator_exhaustion_denies_before_replay() {
     let mut recovered = persisted_runtime_with_test_schema();
     let error = recovered
         .durability_recovery()
-        .recover(plan)
+        .recover(execution, plan)
         .expect_err("tail lineage allocator exhaustion must deny");
 
     assert_eq!(error.class, RecoveryFailureClass::CorruptSegment);

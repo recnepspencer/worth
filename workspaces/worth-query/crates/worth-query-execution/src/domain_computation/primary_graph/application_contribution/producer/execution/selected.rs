@@ -141,6 +141,11 @@ where
     ) -> Result<super::required_cue::RequiredCueProgress<'basis, Schema>, ProducerExecutionStop>
     {
         use super::required_cue::RequiredCueProgress;
+        let execution = phase.execution_request_for(&runtime.product_runtime)
+            .map_err(|_| denial(WorthQueryOutputDemandDenialKind::ExecutionRequest(
+                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase),
+                "producer advancement phase"))?;
+
         // The registry selects this entry by the exact Ready producer, and
         // cold registration seals its sole typed executor to that entry.
         request_admission
@@ -169,6 +174,7 @@ where
             })?
             .source();
         source_readmission::certify_ready_on_selected_with_disclosure::<Schema, Binding>(
+            &execution,
             runtime,
             &self.source_query,
             &self.principal_validation,
@@ -205,6 +211,7 @@ where
                         )
                     })?;
                 let fresh = source_readmission::disclose_prepared_on_selected::<Schema, Binding>(
+                    &execution,
                     runtime,
                     permission,
                     principal,
@@ -217,6 +224,7 @@ where
                 )?;
                 let progress = runtime
                     .continue_required_fresh::<Binding::OutputFamily>(
+                        &execution,
                         phase,
                         fresh,
                         shared,
@@ -257,6 +265,11 @@ where
         producer_contacts: &mut usize,
     ) -> Result<PreparedProducerExecutionOutcome, ProducerExecutionStop> {
         use super::super::demand::disclosure::FreshDisclosureAdmissionStop;
+        let execution = phase.execution_request_for(&runtime.product_runtime)
+            .map_err(|_| denial(WorthQueryOutputDemandDenialKind::ExecutionRequest(
+                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase),
+                "producer advancement phase"))?;
+
         // Fund the typed edition/type checks and the move-only execution split
         // before any early refusal. Producer subjects are borrowed statics.
         let entry_work = u64::try_from(
@@ -329,6 +342,7 @@ where
         super::super::demand::validate_retained_resources(resources, Binding::IDENTITY, limits)?;
         let input = self.provider.operation_input(&source);
         let prepared = super::selected_public::prepare_selected_public_mutation::<Schema, Binding>(
+            &execution,
             self,
             runtime,
             shared,
@@ -339,6 +353,7 @@ where
         )
         .map_err(|stop| super::selected_public::preparation_stop::<Schema, Binding>(stop))?;
         let outcome = super::post_authorization::execute_authorized::<Schema, Binding>(
+            &execution,
             phase,
             runtime,
             shared.selected(),

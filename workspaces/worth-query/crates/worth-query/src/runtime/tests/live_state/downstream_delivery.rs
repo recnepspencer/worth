@@ -9,7 +9,10 @@ use worth_runtime_bridge::facade::{
     BridgeMixedCauseOrderingRequest, BridgeSubscriptionDeliveryFamilyKind,
 };
 
-fn remasked_runtime(projection: WorthQueryRuntimeRemaskProjection) -> WorthQueryRuntime {
+fn remasked_runtime(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    projection: WorthQueryRuntimeRemaskProjection,
+) -> WorthQueryRuntime {
     test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
@@ -20,15 +23,19 @@ fn remasked_runtime(projection: WorthQueryRuntimeRemaskProjection) -> WorthQuery
         .preview_basis(TestPreviewBasis)
         .inspector_evidence(TestInspectorEvidence)
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("bridge-backed runtime should build")
 }
 
 #[test]
 fn runtime_downstream_delivery_projects_time_only_contract_with_explicit_resume_posture() {
-    let mut runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let view: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = runtime
         .declare_live_view(
+            request_execution,
             "tasks.downstream-time-only",
             task_live_request(),
             task_schema(),
@@ -100,6 +107,9 @@ fn runtime_downstream_delivery_projects_time_only_contract_with_explicit_resume_
 
 #[test]
 fn runtime_downstream_delivery_projects_mixed_cause_and_async_truth_without_reclassification() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let bridge = test_bridge();
     let truth_patch = canonical_truth_patch("truth-main", "snapshot-a", "commit-a", "patch-a");
     let truth_plus_time = authoritative_truth_plus_time_cause(&bridge, &truth_patch);
@@ -128,9 +138,10 @@ fn runtime_downstream_delivery_projects_mixed_cause_and_async_truth_without_recl
         )
         .expect("coalesced mixed-cause delivery should plan");
 
-    let mut runtime = stateful_bridge_task_runtime();
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let view: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = runtime
         .declare_live_view(
+            request_execution,
             "tasks.downstream-mixed-cause",
             task_live_request(),
             task_schema(),
@@ -176,16 +187,23 @@ fn runtime_downstream_delivery_projects_mixed_cause_and_async_truth_without_recl
 
 #[test]
 fn runtime_downstream_delivery_fails_closed_for_stale_basis_and_preserves_remask_denial() {
-    let mut runtime = remasked_runtime(WorthQueryRuntimeRemaskProjection::denied(
-        WorthQueryRuntimeRemaskReasonKind::SchemaContextDrift,
-        "policy:stable",
-        "tenant-truth:stable",
-        "tenant-schema:stable",
-        "relationship-proof:stable",
-        "schema-context:drifted",
-    ));
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = remasked_runtime(
+        request_execution,
+        WorthQueryRuntimeRemaskProjection::denied(
+            WorthQueryRuntimeRemaskReasonKind::SchemaContextDrift,
+            "policy:stable",
+            "tenant-truth:stable",
+            "tenant-schema:stable",
+            "relationship-proof:stable",
+            "schema-context:drifted",
+        ),
+    );
     let view: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = runtime
         .declare_live_view(
+            request_execution,
             "tasks.downstream-remask-denied",
             task_live_request(),
             task_schema(),

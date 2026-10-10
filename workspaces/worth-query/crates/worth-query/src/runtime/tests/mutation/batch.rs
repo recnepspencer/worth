@@ -2,11 +2,14 @@ use super::super::support::*;
 
 #[test]
 fn workspace_batch_aggregates_touched_surfaces_and_remains_inspectable() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("tasks.aspect-batch")
         .expect("task runtime should open a named workspace");
     let live: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.batch-table", |q| {
+        .live_view(request_execution, "tasks.batch-table", |q| {
             q.from("Task")
                 .select([
                     crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
@@ -23,6 +26,7 @@ fn workspace_batch_aggregates_touched_surfaces_and_remains_inspectable() {
         .expect("live view should declare");
     let computed: WorthQueryDerivedViewHandle<WorthQueryUnrefinedLiveShape> = workspace
         .computed(
+            request_execution,
             "tasks.batch-summary",
             |c| {
                 c.depends_on_live(&live)
@@ -34,7 +38,7 @@ fn workspace_batch_aggregates_touched_surfaces_and_remains_inspectable() {
         .expect("computed view should declare");
 
     let receipt = workspace
-        .batch(|batch| {
+        .batch(request_execution, |batch| {
             batch
                 .insert("Task", |task| {
                     task.set_aspect(
@@ -60,13 +64,13 @@ fn workspace_batch_aggregates_touched_surfaces_and_remains_inspectable() {
         .expect("aspect-native batch should execute");
     let patches = workspace.observe(&live);
     let materialized = workspace
-        .materialize_result(&computed)
+        .materialize_result(request_execution, &computed)
         .expect("computed materialization should execute");
     let inspection = workspace
-        .inspect(&receipt)
+        .inspect(request_execution, &receipt)
         .expect("batch receipt should inspect");
     let state = workspace
-        .state(&receipt)
+        .state(request_execution, &receipt)
         .expect("batch receipt should expose state posture");
 
     assert_eq!(
@@ -249,18 +253,22 @@ fn workspace_batch_aggregates_touched_surfaces_and_remains_inspectable() {
 
 #[test]
 fn preview_batch_stages_multiple_aspect_native_writes_in_preview_lane() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("tasks.preview-batch")
         .expect("task runtime should open a named workspace");
     let mut preview = workspace
         .preview_with_options(
+            request_execution,
             test_session_label("task-preview-batch"),
             WorthQueryPreviewOptions::sandboxed_write_intent(),
         )
         .expect("preview should open");
 
     let receipt = preview
-        .batch(|batch| {
+        .batch(request_execution, |batch| {
             batch
                 .insert("Task", |task| {
                     task.set_aspect(
@@ -302,18 +310,22 @@ fn preview_batch_stages_multiple_aspect_native_writes_in_preview_lane() {
 
 #[test]
 fn preview_batch_uses_batch_target_evidence_without_authority_bundles() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("tasks.preview-batch-evidence")
         .expect("task runtime should open a named workspace");
     let mut preview = workspace
         .preview_with_options(
+            request_execution,
             test_session_label("task-preview-batch-evidence"),
             WorthQueryPreviewOptions::sandboxed_write_intent(),
         )
         .expect("preview should open");
 
     let receipt = preview
-        .batch(|batch| {
+        .batch(request_execution, |batch| {
             batch
                 .insert("Task", |task| {
                     task.set_aspect(

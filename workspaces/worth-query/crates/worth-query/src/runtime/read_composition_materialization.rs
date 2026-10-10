@@ -38,6 +38,7 @@ impl WorthQueryMaterializedReadRows {
 }
 
 pub(in crate::runtime) fn materialize_read_rows(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut WorthQueryRuntime,
     read_graph: &WorthQueryReadGraph,
 ) -> Result<WorthQueryMaterializedReadRows, WorthQueryReadDenial> {
@@ -45,7 +46,7 @@ pub(in crate::runtime) fn materialize_read_rows(
     let target = WorthQueryLiveArtifactTarget::from_view_name(view_name.clone());
     let request = read_graph.declarative_request().clone();
     ensure_materialized_read_view(runtime, &target, &view_name, read_graph)?;
-    let source_rows = runtime.backend.live_entities_for_target(&target);
+    let source_rows = runtime.backend.live_entities_for_target(execution, &target);
     let records_examined_count = source_rows.len();
     let maintenance_source_rows =
         select_source_rows_for_read_graph(read_graph, &request, &source_rows);

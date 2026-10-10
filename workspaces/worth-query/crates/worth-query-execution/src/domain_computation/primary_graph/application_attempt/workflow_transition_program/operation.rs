@@ -45,6 +45,7 @@ where
     #[allow(clippy::too_many_arguments)]
     pub(super) fn materialize_operation_requirement(
         mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         layout: &crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
         compiled: &CompiledWorkflowDefinition,
         instance: super::super::PublishedWorkflowInstanceRef,
@@ -82,8 +83,9 @@ where
         let source_transition = progress
             .latest_transition(source.entity())
             .ok_or_else(|| mismatch(selected.node_path()))?;
-        let source_settlement = self.lease.handle().with_runtime(|runtime| {
+        let source_settlement = self.lease.handle().with_runtime(execution, |runtime| {
             observe_retained_transition(
+                execution,
                 runtime,
                 self.lease.snapshot(),
                 layout,
@@ -99,19 +101,21 @@ where
         }
         check_request_live(self.admission.publication_request(), selected.node_path())?;
         let input_request = self.admission.publication_request();
-        let (input_identity, mut input_facts) = self.lease.handle().with_runtime(|runtime| {
-            observe_workflow_operation_input(
-                runtime,
-                self.lease.snapshot(),
-                layout,
-                source_transition.entity(),
-                source_identity,
-                source_operation,
-                source_input_type,
-                source.path(),
-                input_request,
-            )
-        })?;
+        let (input_identity, mut input_facts) =
+            self.lease.handle().with_runtime(execution, |runtime| {
+                observe_workflow_operation_input(
+                    execution,
+                    runtime,
+                    self.lease.snapshot(),
+                    layout,
+                    source_transition.entity(),
+                    source_identity,
+                    source_operation,
+                    source_input_type,
+                    source.path(),
+                    input_request,
+                )
+            })?;
         facts.append(&mut input_facts);
         let mut approval_sources = compiled.approval_authority_sources(selected.node());
         let approval = approval_sources
@@ -125,8 +129,9 @@ where
         let approval_transition = progress
             .latest_transition(approval.entity())
             .ok_or_else(|| mismatch(selected.node_path()))?;
-        let settlement = self.lease.handle().with_runtime(|runtime| {
+        let settlement = self.lease.handle().with_runtime(execution, |runtime| {
             observe_retained_transition(
+                execution,
                 runtime,
                 self.lease.snapshot(),
                 layout,
@@ -144,8 +149,9 @@ where
         // advance cannot see the operation's own external posture, so the
         // reading is pinned for every operation; only an external commit
         // ever writes the field, so a local operation is never staled by it.
-        let (_, custody) = self.lease.handle().with_runtime(|runtime| {
+        let (_, custody) = self.lease.handle().with_runtime(execution, |runtime| {
             instance_binding::owner_custody(
+                execution,
                 runtime,
                 self.lease.snapshot(),
                 layout,
@@ -158,7 +164,7 @@ where
             self.admission.operation(),
         )?;
         let observation_request = self.admission.publication_request();
-        let approval_authority = match super::approval_decision::observe_operation_approval_inputs(
+        let approval_authority = match super::approval_decision::observe_operation_approval_inputs(execution,
             compiled,
             layout,
             &self.lease.layout,

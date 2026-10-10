@@ -60,7 +60,7 @@ where
     {
         let application = self.application;
         let request_scope = self.scope;
-        application.with_application_advancement(request_scope, |_phase| {
+        application.with_application_advancement(request_scope, |phase| {
 
         if self.retained.is_some() {
             return Err(WorthQueryApplicationLiveOpenRequestDenial::RetainedBasis);
@@ -99,7 +99,7 @@ where
         let selected = self
             .application
             .on_branch(self.branch)
-            .select()
+            .select(&phase, )
             .map_err(WorthQueryApplicationLiveOpenRequestDenial::ProductSelection)?;
         let installed_capability = self
             .application
@@ -107,7 +107,7 @@ where
             .capability(capability, operation)
             .map_err(WorthQueryApplicationLiveOpenRequestDenial::CapabilityInstallation)?;
         let principal = selected
-            .resolve_authenticated_principal(
+            .resolve_authenticated_principal(&phase,
                 binding.principal_binding(),
                 self.principal,
                 self.scope,
@@ -115,7 +115,7 @@ where
             )
             .map_err(WorthQueryApplicationLiveOpenRequestDenial::PrincipalResolution)?;
         let capability_access = selected
-            .admit_approved_elevation_access(
+            .admit_approved_elevation_access(&phase,
                 approved,
                 &principal,
                 &installed_capability,
@@ -126,7 +126,7 @@ where
         let (scope_field, scope_value) =
             scope_binding.into_field_parts(principal.principal_identity());
         let scope = selected
-            .resolve_entity(
+            .resolve_entity(&phase,
                 scope_field,
                 scope_value,
                 self.scope,
@@ -146,7 +146,7 @@ where
                 Capability,
                 Operation,
                 Input,
-            >(
+            >(&phase,
                 binding.into_query(),
                 &principal,
                 scope,

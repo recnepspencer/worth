@@ -18,7 +18,12 @@ pub(in crate::domain_computation) fn commit_observe_and_admit_fixture(
     let (world, receipt) = recoverable_application_world(seed, &format!("dispatch-fixture-{seed}"));
     let observation = world
         .application
-        .observe_committed_dispatch_outbox(&receipt)
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .observe_committed_dispatch_outbox(&phase, &receipt)
+        })
+        .expect("the dispatch fixture opens its observation call")
         .expect("the exact World commit remains owner-readable")
         .expect("the real operation co-committed an outbox");
     let commit = observation.commit_reference().clone();
@@ -40,12 +45,22 @@ pub(in crate::domain_computation) fn commit_observe_and_admit_twice_fixture(
     let (world, receipt) = recoverable_application_world(seed, &format!("dispatch-twice-{seed}"));
     let first = world
         .application
-        .observe_committed_dispatch_outbox(&receipt)
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .observe_committed_dispatch_outbox(&phase, &receipt)
+        })
+        .expect("the dispatch fixture opens its observation call")
         .expect("first exact owner read succeeds")
         .expect("the real operation co-committed an outbox");
     let second = world
         .application
-        .observe_committed_dispatch_outbox(&receipt)
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .observe_committed_dispatch_outbox(&phase, &receipt)
+        })
+        .expect("the dispatch fixture opens its observation call")
         .expect("second exact owner read succeeds")
         .expect("the real operation co-committed an outbox");
     (
@@ -69,12 +84,22 @@ pub(in crate::domain_computation) fn commit_distinct_records_and_admit_fixture()
     let (world, first_receipt, second_receipt) = two_recoverable_application_commits(231, 232);
     let first = world
         .application
-        .observe_committed_dispatch_outbox(&first_receipt)
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .observe_committed_dispatch_outbox(&phase, &first_receipt)
+        })
+        .expect("the dispatch fixture opens its observation call")
         .expect("the retained first commit remains owner-readable")
         .expect("the first operation co-committed an outbox");
     let second = world
         .application
-        .observe_committed_dispatch_outbox(&second_receipt)
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .observe_committed_dispatch_outbox(&phase, &second_receipt)
+        })
+        .expect("the dispatch fixture opens its observation call")
         .expect("the second commit remains owner-readable")
         .expect("the second operation co-committed an outbox");
     let first_ref = first.record_ref().clone();

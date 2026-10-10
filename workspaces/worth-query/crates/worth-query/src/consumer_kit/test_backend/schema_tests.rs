@@ -9,6 +9,9 @@ use worth_foundational::facade::{
 
 #[test]
 fn in_memory_test_runtime_validates_schema_denials_before_workspace_creation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     assert_schema_error(
         title_schema()
             .aspect("title.value", "title.value")
@@ -50,16 +53,17 @@ fn in_memory_test_runtime_validates_schema_denials_before_workspace_creation() {
         WorthQueryTestBackendErrorKind::UndeclaredAspectField,
     );
     assert_eq!(
-        workspace_build_error_kind(
-            in_memory_test_runtime().workspace("consumer-kit.test-backend.missing-schema")
-        ),
+        workspace_build_error_kind(in_memory_test_runtime().workspace(
+            request_execution,
+            "consumer-kit.test-backend.missing-schema"
+        )),
         WorthQueryTestBackendErrorKind::MissingSchema
     );
     assert_eq!(
         workspace_build_error_kind(
             in_memory_test_runtime()
                 .with_schema(WorthQueryTestBackendSchema::single_collection("Task"))
-                .workspace("consumer-kit.test-backend.empty-schema")
+                .workspace(request_execution, "consumer-kit.test-backend.empty-schema")
         ),
         WorthQueryTestBackendErrorKind::EmptyAspectSet
     );

@@ -16,9 +16,15 @@ impl BankIdentityRuntime {
     /// Fails the next durable append of the installed owner, once.
     #[doc(hidden)]
     pub fn fail_next_durable_append_for_test(&self) {
-        self.application_program()
-            .runtime()
-            .fail_next_durable_append_for_test();
+        let application = self.application_program().runtime();
+        application
+            .with_host_advancement(|phase| {
+                let execution = phase
+                    .execution_request_for(application.product_runtime())
+                    .expect("control borrows its installed phase");
+                application.fail_next_durable_append_for_test(&execution);
+            })
+            .expect("certification control opens its host call");
     }
 
     /// Delays the next output-readiness delivery, once.

@@ -271,7 +271,7 @@ impl<'run> WorthQueryAdmittedProviderExecutionPlan<'run> {
 
     pub fn readmit(
         mut self,
-        phase: &'run crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'run>,
     ) -> Result<WorthQueryProviderPlanReadmission<'run>, WorthQueryProviderSessionFailure> {
         let (source_instance, owner_identity) = match &self.run {
             WorthQueryProviderRunBorrow::Direct(run) => (

@@ -12,6 +12,7 @@ use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkfl
 
 /// The identity of the one successor a migrated source links from.
 pub(super) fn successor_identity(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
@@ -19,6 +20,7 @@ pub(super) fn successor_identity(
 ) -> Option<String> {
     let successors = observe_adjacency(
         runtime,
+        execution,
         snapshot,
         layout.instance_migrated_from_relation,
         source,
@@ -30,6 +32,7 @@ pub(super) fn successor_identity(
     };
     match observe_field_value(
         runtime,
+        execution,
         snapshot,
         successor.from,
         layout.instance.entity_kind,

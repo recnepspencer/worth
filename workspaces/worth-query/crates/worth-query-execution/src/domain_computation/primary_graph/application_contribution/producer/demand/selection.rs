@@ -29,6 +29,7 @@ where
 {
     pub fn select_output_producer<Family>(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         source: &WorthQueryObservedSource<
             <<Family as WorthQueryProducerOutputFamily<Schema>>::Source as worth_query_declaration::facade::application_query::ApplicationQueryBinding<Schema>>::Query,
         >,
@@ -38,6 +39,9 @@ where
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
+        let execution = phase
+            .execution_request_for(&self.product_runtime)
+            .map_err(|cause| WorthQueryOutputDemandDenial::request_admission(cause.into()))?;
         // The selection's meter is the caller's declared maximum.
         let maximum_work = std::num::NonZeroUsize::new(
             maximum_work.min(
@@ -54,6 +58,7 @@ where
             .invalidation_owner
             .edit_admission_within(maximum_work);
         self.select_output_producer_with_remaining::<Family>(
+            &execution,
             source,
             profile_kind,
             &mut admission,
@@ -65,6 +70,7 @@ where
     /// The admitted demand continues on this request's meter.
     pub(super) fn select_output_producer_with_remaining<Family>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         source: &WorthQueryObservedSource<
             <<Family as WorthQueryProducerOutputFamily<Schema>>::Source as worth_query_declaration::facade::application_query::ApplicationQueryBinding<Schema>>::Query,
         >,
@@ -78,6 +84,7 @@ where
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
         self.select_output_producer_with_remaining_core::<Family>(
+            execution,
             source,
             profile_kind,
             admission,
@@ -88,6 +95,7 @@ where
 
     fn select_output_producer_with_remaining_core<Family>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         source: &WorthQueryObservedSource<
             <<Family as WorthQueryProducerOutputFamily<Schema>>::Source as worth_query_declaration::facade::application_query::ApplicationQueryBinding<Schema>>::Query,
         >,
@@ -142,7 +150,7 @@ where
                 }
             } else {
                 let retained = self
-                    .select_application_read_observation(retained_basis)
+                    .select_application_read_observation_with_request(execution, retained_basis)
                     .map_err(|_| {
                         WorthQueryOutputDemandDenial::new(
                             WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
@@ -217,7 +225,7 @@ where
             let newly_selected = if selected_override.is_none() {
                 Some(
                     self.on_branch(observation.product_branch())
-                        .select()
+                        .select_with_request(execution)
                         .map_err(|denial| {
                             WorthQueryOutputDemandDenial::product_selection(
                                 denial,
@@ -256,10 +264,10 @@ where
                 )
                 .with_recovery_posture(WorthQueryOutputDemandRecoveryPosture::Retryable));
             }
-            let current = self.primary_provider.graph.with_runtime(|runtime| {
+            let current = self.primary_provider.graph.with_runtime(execution, |runtime| {
                 let truth = runtime.read_truth();
                 let view = truth
-                    .project_snapshot(selected.application_basis().snapshot_handle())
+                    .project_snapshot(selected.application_basis().snapshot_handle(), execution)
                     .ok_or_else(|| {
                         WorthQueryOutputDemandDenial::new(
                             WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
@@ -269,7 +277,7 @@ where
                 let mut current = Vec::with_capacity(live_candidates.len());
                 use crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity;
                 for (candidate, entity) in &live_candidates {
-                    let live = view.entity_record_with_projection_scope(
+                    let live = view.entity_record_with_projection_scope(execution,
                         *entity,
                         ProjectionAspectScope::empty(),
                         |record| Some(record.lifecycle()),
@@ -310,7 +318,7 @@ where
                         };
                     let facts_current = proven
                         && matches!(
-                            compare_retained_output_dependencies(
+                            compare_retained_output_dependencies(execution,
                                 runtime,
                                 selected.application_basis().snapshot_handle(),
                                 identity_current,
@@ -320,7 +328,7 @@ where
                             OutputDependencySelection::Reuse
                         )
                         && matches!(
-                            compare_retained_output_witness(
+                            compare_retained_output_witness(execution,
                                 runtime,
                                 selected.application_basis().snapshot_handle(),
                                 witness,

@@ -2,13 +2,16 @@ use super::fixtures::*;
 
 #[test]
 fn publication_snapshot_handle_reads_without_becoming_a_pinned_snapshot() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let outcome = create_entity_outcome(&runtime, "first");
 
     let retention = runtime.retention().inspect_plan();
     let read = runtime
         .read_truth()
-        .read_snapshot(&outcome.snapshot)
+        .read_snapshot(&outcome.snapshot, execution)
         .unwrap();
     let inspection = runtime
         .read_truth()
@@ -33,6 +36,7 @@ fn publication_snapshot_handle_reads_without_becoming_a_pinned_snapshot() {
         .is_some());
     assert_eq!(
         execute_explicit_query(
+            execution,
             &runtime,
             &outcome.snapshot,
             "entities",
@@ -49,19 +53,25 @@ fn publication_snapshot_handle_reads_without_becoming_a_pinned_snapshot() {
         .is_ok());
     assert!(runtime
         .read_truth()
-        .read_snapshot(&outcome.snapshot)
+        .read_snapshot(&outcome.snapshot, execution)
         .is_none());
 }
 
 #[test]
 fn publication_snapshot_reads_use_authoritative_published_binding_version() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let created = create_entity_outcome(&runtime, "first");
     let updated = update_entity(&runtime, changed_entities(&created)[0], "second");
     let mut stale_handle = updated.snapshot.clone();
     stale_handle.version_id = created.snapshot.version_id;
 
-    let read = runtime.read_truth().read_snapshot(&stale_handle).unwrap();
+    let read = runtime
+        .read_truth()
+        .read_snapshot(&stale_handle, execution)
+        .unwrap();
     let inspection = runtime
         .read_truth()
         .inspect_snapshot(&stale_handle)
@@ -78,6 +88,9 @@ fn publication_snapshot_reads_use_authoritative_published_binding_version() {
 
 #[test]
 fn released_publication_handles_stop_counting_as_readable_runtime_state() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let first = create_entity_outcome(&runtime, "first");
     let second = create_entity_outcome(&runtime, "second");
@@ -93,11 +106,11 @@ fn released_publication_handles_stop_counting_as_readable_runtime_state() {
     assert_eq!(after_first_release.published_snapshot_handle_count, 1);
     assert!(runtime
         .read_truth()
-        .read_snapshot(&first.snapshot)
+        .read_snapshot(&first.snapshot, execution)
         .is_none());
     assert!(runtime
         .read_truth()
-        .read_snapshot(&second.snapshot)
+        .read_snapshot(&second.snapshot, execution)
         .is_some());
 
     assert!(runtime
@@ -110,6 +123,9 @@ fn released_publication_handles_stop_counting_as_readable_runtime_state() {
 
 #[test]
 fn publication_handle_retention_is_bounded_by_policy() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(test_schema_registry())
         .publication(PublicationConfig {
@@ -153,11 +169,11 @@ fn publication_handle_retention_is_bounded_by_policy() {
     assert_eq!(stats.published_snapshot_handle_count, 2);
     assert!(runtime
         .read_truth()
-        .read_snapshot(&first.snapshot)
+        .read_snapshot(&first.snapshot, execution)
         .is_some());
     assert!(runtime
         .read_truth()
-        .read_snapshot(&second.snapshot)
+        .read_snapshot(&second.snapshot, execution)
         .is_some());
     assert_eq!(
         crate::tests::support::test_owner_main_basis(&runtime)
@@ -169,6 +185,9 @@ fn publication_handle_retention_is_bounded_by_policy() {
 
 #[test]
 fn published_handle_and_admitted_observation_remain_exact_until_release() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(test_schema_registry())
         .publication(PublicationConfig {
@@ -192,18 +211,24 @@ fn published_handle_and_admitted_observation_remain_exact_until_release() {
 
     assert!(runtime
         .read_truth()
-        .read_snapshot(&first.snapshot)
+        .read_snapshot(&first.snapshot, execution)
         .is_some());
     let observed = runtime
         .snapshots()
         .snapshot_for_observation(&first_observation)
         .expect("admitted observation carries its selected root independently");
     assert_eq!(observed.version_id, first.version_id);
-    assert!(runtime.read_truth().read_snapshot(&observed).is_some());
+    assert!(runtime
+        .read_truth()
+        .read_snapshot(&observed, execution)
+        .is_some());
 }
 
 #[test]
 fn leased_commit_preparation_preserves_publication_surfaces() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let serial = RelationalRuntimeApi::builder()
         .schema_registry(test_schema_registry())
         .publication(PublicationConfig {
@@ -251,11 +276,11 @@ fn leased_commit_preparation_preserves_publication_surfaces() {
     assert_eq!(parallel_stats.published_snapshot_handle_count, 3);
     assert!(parallel
         .read_truth()
-        .read_snapshot(&parallel_second.snapshot)
+        .read_snapshot(&parallel_second.snapshot, execution)
         .is_some());
     assert!(parallel
         .read_truth()
-        .read_snapshot(&parallel_third.snapshot)
+        .read_snapshot(&parallel_third.snapshot, execution)
         .is_some());
     assert!(diagnostics
         .minimal_summaries()

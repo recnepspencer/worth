@@ -11,6 +11,9 @@ fn cold_budget() -> DerivedIndexMaintenanceBudget {
 
 #[test]
 fn reused_slot_cold_and_retained_generations_match_rebuild_then_accept_local_edit() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema_profile(
         RelationalRuntimeProfile::AiWorkflow,
         CascadeDeletePolicy::CascadeDeleteRelations,
@@ -56,11 +59,14 @@ fn reused_slot_cold_and_retained_generations_match_rebuild_then_accept_local_edi
             &basis,
             None,
             cold_budget(),
+            execution,
         )
         .unwrap();
-    let rebuilt_cold = runtime
-        .index_authority()
-        .build_for_basis(request(cold_id, replacement.commit.commit_id), &basis);
+    let rebuilt_cold = runtime.index_authority().build_for_basis(
+        execution,
+        request(cold_id, replacement.commit.commit_id),
+        &basis,
+    );
     assert_eq!(
         cold.generations[0].entries,
         rebuilt_cold.generations[0].entries
@@ -81,23 +87,28 @@ fn reused_slot_cold_and_retained_generations_match_rebuild_then_accept_local_edi
             &basis,
             Some(&replacement.snapshot),
             cold_budget(),
+            execution,
         )
         .unwrap();
     assert_eq!(local.work.cold_record_slots, 0);
-    let rebuilt = runtime
-        .index_authority()
-        .build_for_basis(request(cold_id, changed.commit.commit_id), &basis);
+    let rebuilt = runtime.index_authority().build_for_basis(
+        execution,
+        request(cold_id, changed.commit.commit_id),
+        &basis,
+    );
     assert_eq!(local.generations[0].entries, rebuilt.generations[0].entries);
     let retained = runtime
         .index_authority()
         .reconstruct_for_commit(
+            execution,
             request(retained_id, replacement.commit.commit_id),
             cold_budget(),
         )
         .unwrap();
-    let rebuilt_retained = runtime
-        .index_authority()
-        .build_for_commit(request(retained_id, replacement.commit.commit_id));
+    let rebuilt_retained = runtime.index_authority().build_for_commit(
+        execution,
+        request(retained_id, replacement.commit.commit_id),
+    );
     assert_eq!(
         retained.generations[0].entries,
         rebuilt_retained.generations[0].entries

@@ -46,22 +46,23 @@ fn dependency_collection_mechanism_does_not_change_authorization_meaning() {
 
 #[test]
 fn exact_authorization_observation_stales_after_membership_revocation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let fixture = authorization_fixture();
     let admitted_snapshot = fixture.runtime.visibility_authority().snapshot();
     let admitted = fixture
         .runtime
-        .observe_authorization(allow_plan(
-            admitted_snapshot,
-            fixture.principal,
-            fixture.scope,
-            [],
-        ))
+        .observe_authorization(
+            allow_plan(admitted_snapshot, fixture.principal, fixture.scope, []),
+            execution,
+        )
         .unwrap();
     let unchanged = fixture.runtime.visibility_authority().snapshot();
     assert_eq!(
         fixture
             .runtime
-            .compare_authorization_observation(&admitted, unchanged),
+            .compare_authorization_observation(&admitted, unchanged, execution),
         RelationalAuthorizationObservationFreshness::Fresh
     );
 
@@ -71,25 +72,28 @@ fn exact_authorization_observation_stales_after_membership_revocation() {
         BranchId("main".to_string()),
     );
     assert_eq!(
-        fixture
-            .runtime
-            .compare_authorization_observation(&admitted, revoked.snapshot.clone()),
+        fixture.runtime.compare_authorization_observation(
+            &admitted,
+            revoked.snapshot.clone(),
+            execution
+        ),
         RelationalAuthorizationObservationFreshness::Stale
     );
 }
 
 #[test]
 fn unrelated_relation_kind_does_not_widen_authorization_causality() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let fixture = authorization_fixture();
     let admitted_snapshot = fixture.runtime.visibility_authority().snapshot();
     let admitted = fixture
         .runtime
-        .observe_authorization(allow_plan(
-            admitted_snapshot,
-            fixture.principal,
-            fixture.scope,
-            [],
-        ))
+        .observe_authorization(
+            allow_plan(admitted_snapshot, fixture.principal, fixture.scope, []),
+            execution,
+        )
         .unwrap();
     let unrelated = create_entity(&fixture.runtime, "unrelated-kind-target");
     create_relation_of_kind(&fixture.runtime, fixture.principal, unrelated, KindId(99));
@@ -98,22 +102,24 @@ fn unrelated_relation_kind_does_not_widen_authorization_causality() {
     assert_eq!(
         fixture
             .runtime
-            .compare_authorization_observation(&admitted, current),
+            .compare_authorization_observation(&admitted, current, execution),
         RelationalAuthorizationObservationFreshness::Fresh
     );
 }
 
 #[test]
 fn newly_matching_parallel_path_stales_the_exact_observation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let fixture = authorization_fixture();
     let admitted_snapshot = fixture.runtime.visibility_authority().snapshot();
     let admitted = fixture
         .runtime
-        .observe_authorization(role_and_direct_path_plan(
-            admitted_snapshot,
-            fixture.principal,
-            fixture.scope,
-        ))
+        .observe_authorization(
+            role_and_direct_path_plan(admitted_snapshot, fixture.principal, fixture.scope),
+            execution,
+        )
         .unwrap();
     assert!(!admitted.paths()[1].matched());
 
@@ -127,7 +133,7 @@ fn newly_matching_parallel_path_stales_the_exact_observation() {
     assert_eq!(
         fixture
             .runtime
-            .compare_authorization_observation(&admitted, current),
+            .compare_authorization_observation(&admitted, current, execution),
         RelationalAuthorizationObservationFreshness::Stale
     );
 }

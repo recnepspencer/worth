@@ -1,6 +1,9 @@
 use super::*;
 
-pub(super) fn certify_topology_identity_survival_recovery_round_trip(suite: &'static str) {
+pub(super) fn certify_topology_identity_survival_recovery_round_trip(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    suite: &'static str,
+) {
     let topology_identity_samples = capture_perf_samples(
         suite,
         "topology_identity_survival_recovery_round_trip",
@@ -56,7 +59,7 @@ pub(super) fn certify_topology_identity_survival_recovery_round_trip(suite: &'st
             let recover_started_at = Instant::now();
             recovered
                 .durability_recovery()
-                .recover(plan)
+                .recover(execution, plan)
                 .expect("geometry topology recovery");
             let recover_micros = recover_started_at.elapsed().as_micros();
 

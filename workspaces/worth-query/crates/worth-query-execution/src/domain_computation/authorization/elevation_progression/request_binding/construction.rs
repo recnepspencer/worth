@@ -21,6 +21,7 @@ pub(in crate::domain_computation::authorization::elevation_progression) fn bind_
     Operation,
     Input,
 >(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     capability_identity: [u8; 32],
     installed: &WorthQueryInstalledCapabilityPlan,
@@ -51,8 +52,9 @@ where
             )
         })?;
     let observed = access
-        .with_exact_observation(runtime, |observation| {
+        .with_exact_observation(execution, runtime, |observation| {
             observation.resolve_elevation_upper_bound(
+                execution,
                 capability_identity,
                 installed,
                 proposed,

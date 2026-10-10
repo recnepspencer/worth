@@ -47,16 +47,24 @@ fn pending_rail_dispatch_remains_under_the_committed_outbox_owner() {
         .world
         .runtime
         .approved_business_payment(&ready.principal, &ready.scope);
-    let denied = workflow
-        .accept_applied(
-            ready.instance.clone(),
-            &ready.operation,
-            ready.authority.clone(),
-            ready.authority.clone(),
-            &key("approved-payment:operation:perform"),
-            &key("approved-payment:operation:accept:pending"),
-        )
-        .expect_err("pending rail settlement cannot complete the workflow operation");
+    let denied = ready
+        .fixture
+        .world
+        .runtime
+        .with_application_advancement(&ready.scope, |phase| {
+            workflow
+                .accept_applied(
+                    &phase,
+                    ready.instance.clone(),
+                    &ready.operation,
+                    ready.authority.clone(),
+                    ready.authority.clone(),
+                    &key("approved-payment:operation:perform"),
+                    &key("approved-payment:operation:accept:pending"),
+                )
+                .expect_err("pending rail settlement cannot complete the workflow operation")
+        })
+        .expect("installed host call opens");
     assert!(matches!(
         denied,
         bank_server::BankApprovedPaymentWorkflowError::OperationOwnerAcceptance(
@@ -91,16 +99,24 @@ fn lost_dispatch_recovery_remains_pending_until_authenticated_inbound() {
         .world
         .runtime
         .approved_business_payment(&ready.principal, &ready.scope);
-    let denied = workflow
-        .accept_applied(
-            ready.instance.clone(),
-            &ready.operation,
-            ready.authority.clone(),
-            ready.authority.clone(),
-            &key("approved-payment:operation:perform"),
-            &key("approved-payment:operation:accept:lost-dispatch"),
-        )
-        .expect_err("an unresolved dispatch cannot complete the workflow operation");
+    let denied = ready
+        .fixture
+        .world
+        .runtime
+        .with_application_advancement(&ready.scope, |phase| {
+            workflow
+                .accept_applied(
+                    &phase,
+                    ready.instance.clone(),
+                    &ready.operation,
+                    ready.authority.clone(),
+                    ready.authority.clone(),
+                    &key("approved-payment:operation:perform"),
+                    &key("approved-payment:operation:accept:lost-dispatch"),
+                )
+                .expect_err("an unresolved dispatch cannot complete the workflow operation")
+        })
+        .expect("installed host call opens");
     assert!(matches!(
         denied,
         bank_server::BankApprovedPaymentWorkflowError::OperationOwnerAcceptance(
@@ -128,26 +144,44 @@ fn lost_dispatch_recovery_remains_pending_until_authenticated_inbound() {
     ready
         .rail
         .under(FaultScript::Succeed, Duration::from_millis(150));
-    let recovery = workflow
-        .prepare_apply_recovery(
-            &required,
-            ready.authority.clone(),
-            &key("approved-payment:operation:perform"),
-        )
-        .expect("the exact operation opens recovery")
-        .safe_retry()
-        .expect("recovery re-dispatches the retained outbox request");
-    let denied = workflow
-        .accept_recovered_applied(
-            ready.instance.clone(),
-            &required,
-            ready.authority.clone(),
-            ready.authority.clone(),
-            &key("approved-payment:operation:perform"),
-            &recovery,
-            &key("approved-payment:operation:accept:lost-dispatch:recovered"),
-        )
-        .expect_err("rail-local recovery does not publish the authenticated inbound terminal");
+    let recovery = ready
+        .fixture
+        .world
+        .runtime
+        .with_application_advancement(&ready.scope, |phase| {
+            workflow
+                .prepare_apply_recovery(
+                    &phase,
+                    &required,
+                    ready.authority.clone(),
+                    &key("approved-payment:operation:perform"),
+                )
+                .expect("the exact operation opens recovery")
+                .safe_retry(&phase)
+                .expect("recovery re-dispatches the retained outbox request")
+        })
+        .expect("installed host call opens");
+    let denied = ready
+        .fixture
+        .world
+        .runtime
+        .with_application_advancement(&ready.scope, |phase| {
+            workflow
+                .accept_recovered_applied(
+                    &phase,
+                    ready.instance.clone(),
+                    &required,
+                    ready.authority.clone(),
+                    ready.authority.clone(),
+                    &key("approved-payment:operation:perform"),
+                    &recovery,
+                    &key("approved-payment:operation:accept:lost-dispatch:recovered"),
+                )
+                .expect_err(
+                    "rail-local recovery does not publish the authenticated inbound terminal",
+                )
+        })
+        .expect("installed host call opens");
     assert!(matches!(
         denied,
         bank_server::BankApprovedPaymentWorkflowError::OperationOwnerAcceptance(_)
@@ -198,14 +232,22 @@ fn unpublished_product_retains_owner_recovery_and_never_dispatches_the_rail() {
         .world
         .runtime
         .approved_business_payment(&ready.principal, &ready.scope);
-    let denied = workflow
-        .prepare_apply_recovery(
-            &ready.operation,
-            ready.authority.clone(),
-            &key("approved-payment:operation:perform"),
-        )
-        .err()
-        .expect("outbox recovery cannot precede owner product publication");
+    let denied = ready
+        .fixture
+        .world
+        .runtime
+        .with_application_advancement(&ready.scope, |phase| {
+            workflow
+                .prepare_apply_recovery(
+                    &phase,
+                    &ready.operation,
+                    ready.authority.clone(),
+                    &key("approved-payment:operation:perform"),
+                )
+                .err()
+                .expect("outbox recovery cannot precede owner product publication")
+        })
+        .expect("installed host call opens");
     assert!(matches!(
         denied,
         bank_server::BankApprovedPaymentWorkflowError::OperationRecoveryPreparation(

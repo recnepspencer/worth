@@ -11,6 +11,9 @@ use crate::runtime::{
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryReadDenialKind {
+    ForeignPhase(
+        worth_query_execution::facade::application_contribution::WorthQueryForeignAdvancementPhase,
+    ),
     InvalidRoot,
     BuiltInOperatorDenied,
     RelationshipProofAdmissionDenied,
@@ -28,6 +31,7 @@ pub enum WorthQueryReadDenialKind {
 impl WorthQueryReadDenialKind {
     pub fn as_str(&self) -> &'static str {
         match self {
+            Self::ForeignPhase(_) => "foreign_advancement_phase",
             Self::InvalidRoot => "invalid_root",
             Self::BuiltInOperatorDenied => "built_in_operator_denied",
             Self::RelationshipProofAdmissionDenied => "relationship_proof_admission_denied",
@@ -320,3 +324,17 @@ impl std::fmt::Display for WorthQueryReadDenial {
 }
 
 impl std::error::Error for WorthQueryReadDenial {}
+
+impl
+    From<worth_query_execution::facade::application_contribution::WorthQueryForeignAdvancementPhase>
+    for WorthQueryReadDenial
+{
+    fn from(
+        cause: worth_query_execution::facade::application_contribution::WorthQueryForeignAdvancementPhase,
+    ) -> Self {
+        Self::new(
+            WorthQueryReadDenialKind::ForeignPhase(cause),
+            "foreign advancement phase",
+        )
+    }
+}

@@ -13,6 +13,7 @@ use super::RelationalEffectExecutionFailure;
 
 pub(super) fn execute_lowered_mutation(
     runtime: &mut RelationalRuntime,
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     declaration: &LoweredMutationIntentDeclaration,
 ) -> Result<CommitResult, RelationalEffectExecutionFailure> {
     let target_branch = mutation_target_branch(declaration)?;
@@ -31,7 +32,7 @@ pub(super) fn execute_lowered_mutation(
         open_exact_basis_snapshot(runtime, &target_branch, &transaction_validation_input)?;
     let execution = runtime
         .commit_strategies()
-        .execute(&canonical, &snapshot)
+        .execute(&canonical, &snapshot, request_execution)
         .map_err(|error| {
             lower_runtime_error(
                 error,

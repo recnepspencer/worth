@@ -59,6 +59,7 @@ pub trait WorthQueryTemporalQueryAuthorization<
 {
     fn admit<'a>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         query: &'a WorthQueryInstalledApplicationQuery<
             Schema,
@@ -110,6 +111,7 @@ where
 {
     fn admit<'a>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         query: &'a WorthQueryInstalledApplicationQuery<
             Schema,
@@ -141,7 +143,7 @@ where
         WorthQueryTemporalQueryAuthorizationDenial,
     > {
         runtime
-            .admit_application_query(query, access, parameters, controls)
+            .admit_application_query(execution, query, access, parameters, controls)
             .map_err(WorthQueryTemporalQueryAuthorizationDenial::Query)
     }
 }
@@ -232,6 +234,7 @@ where
 {
     fn admit<'a>(
         &self,
+execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         query: &'a WorthQueryInstalledApplicationQuery<
             Schema,
@@ -265,7 +268,7 @@ where
         let product = controls
             .publication_product_branch()
             .expect("temporal query authorization retains its selected product lease");
-        let capability = crate::domain_computation::authorization::admit_capability_access(
+        let capability = crate::domain_computation::authorization::admit_capability_access(execution,
             runtime,
             product,
             access.principal(),
@@ -276,7 +279,7 @@ where
         )
         .map_err(WorthQueryTemporalQueryAuthorizationDenial::Authorization)?;
         runtime
-            .admit_governed_application_query(query, access, capability, parameters, controls)
+            .admit_governed_application_query(execution, query, access, capability, parameters, controls)
             .map_err(WorthQueryTemporalQueryAuthorizationDenial::Query)
     }
 }

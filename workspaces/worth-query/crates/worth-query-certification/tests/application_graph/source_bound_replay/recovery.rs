@@ -32,15 +32,25 @@ use worth_query_host::facade::{
 
 #[test]
 fn original_row_recovers_unpublished_effects_without_handler_reexecution() {
-    recover_original_source(false, 8);
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    recover_original_source(request_execution, false, 8);
 }
 
 #[test]
 fn original_result_set_recovers_unpublished_effects_without_becoming_a_row() {
-    recover_original_source(true, 9);
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    recover_original_source(request_execution, true, 9);
 }
 
-fn recover_original_source(result_set: bool, retention: u64) {
+fn recover_original_source(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    result_set: bool,
+    retention: u64,
+) {
     // These two ordinary-assessment input values are reserved for these contact
     // observers; the handler follows exactly the same path for every input.
     reset_ordinary_counts(retention);
@@ -118,7 +128,7 @@ fn recover_original_source(result_set: bool, retention: u64) {
         }};
     }
 
-    runtime.fail_next_durable_append_for_test();
+    runtime.fail_next_durable_append_for_test(request_execution);
     let outcome = request!(&principal, &scope, intent.clone(), &key, result_set)
         .execute_in_program(&host, ExecutionAllocationPolicy::SystemAllocation)
         .unwrap();
@@ -140,8 +150,15 @@ fn recover_original_source(result_set: bool, retention: u64) {
     );
     cancellation.cancel();
     assert!(matches!(
-        request!(&principal, &stopped, intent.clone(), &key, result_set)
-            .recover_unpublished_in_program(&recovery, &host),
+        host.with_host_advancement(|host_phase| request!(
+            &principal,
+            &stopped,
+            intent.clone(),
+            &key,
+            result_set
+        )
+        .recover_unpublished_in_program(&host_phase, &recovery, &host))
+            .expect("installed host call opens"),
         Err(WorthQueryApplicationRecoveryRequestDenial::Interrupted(
             WorthQueryRequestInterruption::Cancelled
         ))
@@ -158,8 +175,15 @@ fn recover_original_source(result_set: bool, retention: u64) {
         (intent.clone(), &key, !result_set),
     ] {
         assert!(matches!(
-            request!(&fresh_principal, &fresh_scope, input, request_key, as_set)
-                .recover_unpublished_in_program(&recovery, &host),
+            host.with_host_advancement(|host_phase| request!(
+                &fresh_principal,
+                &fresh_scope,
+                input,
+                request_key,
+                as_set
+            )
+            .recover_unpublished_in_program(&host_phase, &recovery, &host))
+                .expect("installed host call opens"),
             Err(WorthQueryApplicationRecoveryRequestDenial::Recovery(
                 WorthQueryManagedApplicationRecoveryDenial::BindingMismatch
             ))
@@ -168,15 +192,19 @@ fn recover_original_source(result_set: bool, retention: u64) {
         assert_eq!(ordinary_counts(retention), (1, 1));
     }
 
-    let outcome = request!(
-        &fresh_principal,
-        &fresh_scope,
-        intent.clone(),
-        &key,
-        result_set
-    )
-    .recover_unpublished_in_program(&recovery, &host)
-    .unwrap();
+    let outcome = host
+        .with_host_advancement(|host_phase| {
+            request!(
+                &fresh_principal,
+                &fresh_scope,
+                intent.clone(),
+                &key,
+                result_set
+            )
+            .recover_unpublished_in_program(&host_phase, &recovery, &host)
+            .unwrap()
+        })
+        .expect("installed host call opens");
     let WorthQueryManagedApplicationRecoveryOutcome::Performed(performed) = outcome else {
         panic!("original source must recover its retained performed effects");
     };
@@ -229,11 +257,15 @@ fn recover_original_source(result_set: bool, retention: u64) {
     } else {
         changed_request.expect_source(changed.observed_sources()[0].clone())
     };
-    let changed_resolution = changed_request
-        .idempotency(&key)
-        .resolve_idempotency_in_program(&host)
-        .unwrap()
-        .into_resolution();
+    let changed_resolution = host
+        .with_host_advancement(|host_phase| {
+            changed_request
+                .idempotency(&key)
+                .resolve_idempotency_in_program(&host_phase, &host)
+                .unwrap()
+                .into_resolution()
+        })
+        .expect("installed host call opens");
     if result_set {
         let Resolution::AlreadyCommitted(unchanged_membership) = changed_resolution else {
             panic!("unchanged set membership resolved as {changed_resolution:?}");
@@ -249,9 +281,13 @@ fn recover_original_source(result_set: bool, retention: u64) {
         );
     }
     let final_head = observe_head(runtime, branch).selected_commit().clone();
-    let resolved = request!(&fresh_principal, &fresh_scope, intent, &key, result_set)
-        .resolve_idempotency_in_program(&host)
-        .unwrap();
+    let resolved = host
+        .with_host_advancement(|host_phase| {
+            request!(&fresh_principal, &fresh_scope, intent, &key, result_set)
+                .resolve_idempotency_in_program(&host_phase, &host)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     let Resolution::AlreadyCommitted(replayed) = resolved.into_resolution() else {
         panic!("original source remains the exact keyed historical request");
     };

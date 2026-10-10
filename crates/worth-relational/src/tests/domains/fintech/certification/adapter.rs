@@ -141,10 +141,13 @@ impl WorkflowCertificationAdapter for RelationalFintechWorkflowCertificationAdap
 
     fn execute_step(
         &self,
+
         session: &mut Self::Session,
         step: &WorkflowStep<Self::Step>,
         _injection: Option<&FailureInjectionPoint>,
     ) -> Result<WorkflowStepOutcome, Self::Error> {
+        let host_request = crate::test_execution_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
         session.executed_steps.push(step.name.clone());
         match &step.operation {
             FintechWorkflowStep::CaptureMainSnapshot { alias } => {
@@ -219,7 +222,7 @@ impl WorkflowCertificationAdapter for RelationalFintechWorkflowCertificationAdap
                 read_alias,
             } => {
                 let snapshot = session.snapshot(snapshot_alias)?;
-                let summary = read_summary(session, snapshot)?;
+                let summary = read_summary(execution, session, snapshot)?;
                 session
                     .named_reads
                     .insert((*read_alias).to_string(), summary);
@@ -229,7 +232,7 @@ impl WorkflowCertificationAdapter for RelationalFintechWorkflowCertificationAdap
                 let workflow_case = Self::case_for(session, *case);
                 session.named_reads.insert(
                     (*read_alias).to_string(),
-                    case_read_summary(session, workflow_case.role),
+                    case_read_summary(execution, session, workflow_case.role),
                 );
                 Ok(WorkflowStepOutcome::applied())
             }
@@ -252,6 +255,7 @@ impl WorkflowCertificationAdapter for RelationalFintechWorkflowCertificationAdap
                         execution_mode: ReplayExecutionMode::SerialDeterministic,
                         verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
                     },
+                    execution,
                 );
                 session.named_replays.insert((*alias).to_string(), replay);
                 Ok(WorkflowStepOutcome::applied())

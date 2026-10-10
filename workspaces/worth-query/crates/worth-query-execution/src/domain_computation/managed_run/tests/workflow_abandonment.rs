@@ -82,9 +82,11 @@ fn workflow_pending_and_paused_abandonment_release_output_and_queue() {
         let execution = phase;
 
         let (running, graph) = workflow_abandon_world();
+        let installed_running_phase = execution.phase_for_workflow(&running);
+
         let active =
             begin_workflow_projection(execution, running, &graph, "workflow-pending-abandon");
-        let pending = match active.advance(execution) {
+        let pending = match active.advance(&installed_running_phase) {
             WorthQueryWorkflowGraphStepOutcome::ChunkReady(pending) => pending,
             _ => panic!("workflow provider did not expose its first bounded chunk"),
         };
@@ -96,7 +98,7 @@ fn workflow_pending_and_paused_abandonment_release_output_and_queue() {
         let (running, graph) = workflow_abandon_world();
         let active =
             begin_workflow_projection(execution, running, &graph, "workflow-paused-abandon");
-        let pending = match active.advance(execution) {
+        let pending = match active.advance(&installed_running_phase) {
             WorthQueryWorkflowGraphStepOutcome::ChunkReady(pending) => pending,
             _ => panic!("workflow provider did not expose its first bounded chunk"),
         };
@@ -152,15 +154,16 @@ fn workflow_abandon_world() -> (
 }
 
 fn begin_workflow_projection(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     running: crate::domain_computation::WorthQueryRunningWorkflowRun,
     graph: &WorthQueryInstalledGraphParticipationAuthority,
     identity: &str,
 ) -> crate::domain_computation::WorthQueryActiveWorkflowGraphExecution {
-    running
-        .begin_stage_graph_execution(
-            execution,
+    {
+        let installed_fixture_phase = running.fixture_phase(execution);
+        running.begin_stage_graph_execution(
+            &installed_fixture_phase,
             "stage",
             graph,
             WorthQueryManagedGraphCallRequest::new(
@@ -168,7 +171,8 @@ fn begin_workflow_projection(
                 identity,
             ),
         )
-        .expect("workflow abandonment provider should start")
+    }
+    .expect("workflow abandonment provider should start")
 }
 
 fn failed_terminal(

@@ -315,6 +315,7 @@ where
 
     pub(super) fn resolve_fresh_operation_access(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         product: &crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<
             '_,
             Schema,
@@ -332,7 +333,7 @@ where
             .map_err(|failure| format!("{:?}: {}", failure.kind(), failure.detail()))?
             .into_parts();
         let principal = product
-            .resolve_authenticated_principal(
+            .resolve_authenticated_principal_with_request(execution,
                 &self.principal_binding,
                 &external,
                 &request,
@@ -340,7 +341,8 @@ where
             )
             .map_err(super::application_operation_reentry::WorthQueryTemporalReentryDenial::from_principal)?;
         let scope = product
-            .resolve_entity(
+            .resolve_entity_with_request(
+                execution,
                 self.scope_field,
                 self.scope_value.clone(),
                 &request,

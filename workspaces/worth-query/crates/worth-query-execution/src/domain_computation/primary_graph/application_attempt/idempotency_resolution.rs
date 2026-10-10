@@ -75,6 +75,7 @@ where
         Scope,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         binding: WorthQueryApplicationIdempotencyBinding,
         transition_identity: &[u8; 32],
@@ -114,12 +115,12 @@ where
             .map_err(|_| WorthQueryApplicationIdempotencyResolutionDenial::branch_coordination_capacity_exhausted())?;
         let coordination = commit_lane.enter();
         let proof = self
-            .authorize_idempotency_inspection(admission, &coordination)
+            .authorize_idempotency_inspection(execution, admission, &coordination)
             .map_err(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization)?;
         let custody = proof
             .govern((), |()| {
                 self.primary_provider
-                    .resolve_guarded_workflow_operation_custody(bound, &product)
+                    .resolve_guarded_workflow_operation_custody(execution, bound, &product)
             })
             .map_err(|(_, denial)| {
                 WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(denial)
@@ -182,13 +183,38 @@ where
 
     pub fn resolve_admitted_application_idempotency<Operation, Input, Scope>(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         binding: WorthQueryApplicationIdempotencyBinding,
     ) -> Result<WorthQueryAdmittedIdempotencyRead, WorthQueryApplicationIdempotencyResolutionDenial>
     where
         Input: Clone + Send + Sync + 'static,
     {
-        self.resolve_admitted_application_idempotencies(admission, [binding])
+        let execution = phase.execution_request_for(&self.product_runtime).map_err(|_| {
+            WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(
+                crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(
+                    crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::ForeignPhase,
+                    "idempotency-resolution",
+                ),
+            )
+        })?;
+        self.resolve_admitted_application_idempotency_with_request(&execution, admission, binding)
+    }
+
+    pub(in crate::domain_computation) fn resolve_admitted_application_idempotency_with_request<
+        Operation,
+        Input,
+        Scope,
+    >(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+        binding: WorthQueryApplicationIdempotencyBinding,
+    ) -> Result<WorthQueryAdmittedIdempotencyRead, WorthQueryApplicationIdempotencyResolutionDenial>
+    where
+        Input: Clone + Send + Sync + 'static,
+    {
+        self.resolve_admitted_application_idempotencies(execution, admission, [binding])
             .map(|mut reads| {
                 reads
                     .pop()
@@ -202,6 +228,7 @@ where
         Scope,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         bindings: impl IntoIterator<Item = WorthQueryApplicationIdempotencyBinding>,
     ) -> Result<
@@ -243,7 +270,7 @@ where
             .map_err(|_| WorthQueryApplicationIdempotencyResolutionDenial::branch_coordination_capacity_exhausted())?;
         let coordination = commit_lane.enter();
         let proof = self
-            .authorize_idempotency_inspection(admission, &coordination)
+            .authorize_idempotency_inspection(execution, admission, &coordination)
             .map_err(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization)?;
         let resolutions = proof
             .govern((), |()| {
@@ -251,7 +278,7 @@ where
                     .iter()
                     .map(|(_, binding)| {
                         self.primary_provider
-                            .resolve_idempotency_binding_at_product(*binding, &product)
+                            .resolve_idempotency_binding_at_product(execution, *binding, &product)
                     })
                     .collect::<Vec<_>>()
             })

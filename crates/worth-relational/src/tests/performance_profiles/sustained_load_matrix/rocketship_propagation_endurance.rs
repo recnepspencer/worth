@@ -1,6 +1,9 @@
 use super::*;
 
-pub(super) fn certify_rocketship_propagation_endurance(suite: &'static str) {
+pub(super) fn certify_rocketship_propagation_endurance(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    suite: &'static str,
+) {
     let rocketship_endurance_node_count = rocketship_node_count();
     let rocketship_propagation_endurance_samples = capture_perf_samples(
         suite,
@@ -21,6 +24,7 @@ pub(super) fn certify_rocketship_propagation_endurance(suite: &'static str) {
                     rocketship_endurance_node_count * 2
             });
             let seeded = seed_pseudorealistic_rocketship_world(
+                execution,
                 &runtime,
                 rocketship_endurance_node_count,
                 query_target_count,
@@ -84,7 +88,11 @@ pub(super) fn certify_rocketship_propagation_endurance(suite: &'static str) {
                             .read_truth()
                             .plan_query_packet(&snapshot, propagation_packet)
                             .expect("planned rocketship endurance propagation query"),
+                        execution,
+                        crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                     )
+                    .expect("request remains live")
+                    .map(|read| read.outcome)
                     .expect("rocketship endurance propagation outcome");
                 let propagation_micros = propagation_started_at.elapsed().as_micros();
                 total_propagation_micros += propagation_micros;
@@ -111,7 +119,11 @@ pub(super) fn certify_rocketship_propagation_endurance(suite: &'static str) {
                             .read_truth()
                             .plan_query_packet(&snapshot, explicit_packet)
                             .expect("planned rocketship endurance explicit broad query"),
+                        execution,
+                        crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                     )
+                    .expect("request remains live")
+                    .map(|read| read.outcome)
                     .expect("rocketship endurance explicit broad outcome");
                 let explicit_query_micros = explicit_started_at.elapsed().as_micros();
                 total_explicit_query_micros += explicit_query_micros;

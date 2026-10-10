@@ -3,6 +3,9 @@ use crate::WorthQueryEvidenceScope;
 
 #[test]
 fn preview_local_intent_is_policy_admitted_without_authoritative_execution() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let attempted = std::rc::Rc::new(std::cell::Cell::new(0));
     let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
@@ -18,12 +21,13 @@ fn preview_local_intent_is_policy_admitted_without_authoritative_execution() {
         })
         .support_profile(intent_support_profile())
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("intent-capable runtime should build");
 
     let (receipt, outcome) = {
         let mut preview = runtime
             .preview_with_options(
+                request_execution,
                 test_session_label("preview local intent"),
                 WorthQueryPreviewOptions::sandboxed_write_intent(),
             )
@@ -84,7 +88,7 @@ fn preview_local_intent_is_policy_admitted_without_authoritative_execution() {
     assert_eq!(outcome.authoritative_residue_count(), 0);
 
     let receipt_inspection = runtime
-        .inspect_preview_intent_receipt(&receipt)
+        .inspect_preview_intent_receipt(request_execution, &receipt)
         .expect("preview intent inspection should succeed");
     assert_eq!(receipt_inspection.intent_name(), "preview-reconcile");
     assert_eq!(
@@ -127,7 +131,7 @@ fn preview_local_intent_is_policy_admitted_without_authoritative_execution() {
     );
 
     let outcome_inspection = runtime
-        .inspect_preview_outcome(&outcome)
+        .inspect_preview_outcome(request_execution, &outcome)
         .expect("preview outcome inspection should succeed");
     assert_eq!(outcome_inspection.subscription_residue_count(), 0);
     assert_eq!(outcome_inspection.derived_runtime_residue_count(), 0);
@@ -139,6 +143,9 @@ fn preview_local_intent_is_policy_admitted_without_authoritative_execution() {
 
 #[test]
 fn derive_only_preview_intent_denies_before_authoritative_execution() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let attempted = std::rc::Rc::new(std::cell::Cell::new(0));
     let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
@@ -154,12 +161,15 @@ fn derive_only_preview_intent_denies_before_authoritative_execution() {
         })
         .support_profile(intent_support_profile())
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("intent-capable runtime should build");
 
     let error = {
         let mut preview = runtime
-            .preview(test_session_label("derive-only preview intent"))
+            .preview(
+                request_execution,
+                test_session_label("derive-only preview intent"),
+            )
             .expect("preview session should be admitted");
         preview
             .execute_intent(WorthQueryIntentDeclaration::strategy_commit(
@@ -195,6 +205,9 @@ fn derive_only_preview_intent_denies_before_authoritative_execution() {
 
 #[test]
 fn preview_local_intent_requires_intent_support_for_preview_lane() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let attempted = std::rc::Rc::new(std::cell::Cell::new(0));
     let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
@@ -222,12 +235,13 @@ fn preview_local_intent_requires_intent_support_for_preview_lane() {
             )),
         )
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("runtime can support authoritative-only intents");
 
     let error = {
         let mut preview = runtime
             .preview_with_options(
+                request_execution,
                 test_session_label("preview lane unsupported"),
                 WorthQueryPreviewOptions::sandboxed_write_intent(),
             )

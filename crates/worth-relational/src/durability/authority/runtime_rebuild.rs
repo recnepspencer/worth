@@ -45,6 +45,7 @@ fn unshared_state(
 }
 
 pub(super) fn rebuild_runtime_from_plan(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     admitted: super::recovery::admission::AdmittedRecoveryPlan,
 ) -> Result<
     (
@@ -149,7 +150,7 @@ pub(super) fn rebuild_runtime_from_plan(
     refresh_checkpoint_counters(&mut restored)?;
     restored.durability.set_log(finalized_tail);
 
-    finalize_restored_runtime(&mut restored, original_durability_mode)?;
+    finalize_restored_runtime(execution, &mut restored, original_durability_mode)?;
     recovered_roots.finish();
     Ok((restored, plan, checkpoint_work))
 }

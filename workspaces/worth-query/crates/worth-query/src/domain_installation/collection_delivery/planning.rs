@@ -98,6 +98,7 @@ pub(super) fn prepare_granular<D, O, F, L: crate::basis_lifecycle::BasisOperatio
 }
 
 pub(super) fn plan(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     state: &mut WorthQueryCollectionConsumerWindow,
     admitted: &WorthQueryAdmittedConsumerInvalidation<'_>,
     workspace: &crate::runtime::WorthQueryWorkspace,
@@ -142,6 +143,7 @@ pub(super) fn plan(
         );
     }
     plan_incremental(
+        execution,
         state,
         IncrementalPlan {
             delta,
@@ -160,6 +162,7 @@ struct IncrementalPlan<'a> {
 }
 
 fn plan_incremental(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     state: &mut WorthQueryCollectionConsumerWindow,
     request: IncrementalPlan<'_>,
 ) -> WorthQueryCollectionDeliveryOutcome {
@@ -175,6 +178,7 @@ fn plan_incremental(
         .cloned()
         .collect::<BTreeSet<_>>();
     let preview = match preview_or_reset(
+        execution,
         state,
         PreviewContext {
             affected: &affected,
@@ -269,6 +273,7 @@ struct PreviewContext<'a> {
 }
 
 fn preview_or_reset(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     state: &mut WorthQueryCollectionConsumerWindow,
     context: PreviewContext<'_>,
     counters: &mut WorthQueryCollectionDeliveryCounters,
@@ -276,6 +281,7 @@ fn preview_or_reset(
     let preview = state
         .index
         .preview(
+            execution,
             super::index::WorthQueryCollectionPreviewRequest {
                 window: &state.window,
                 affected: context.affected,

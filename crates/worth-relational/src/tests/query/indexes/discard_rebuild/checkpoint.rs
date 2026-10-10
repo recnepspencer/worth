@@ -3,12 +3,16 @@ use worth_execution::ExecutionAllocationPolicy;
 
 #[test]
 fn discarded_ordering_stays_cold_after_native_checkpoint_restore_then_rebuilds() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let fixture = OrderingFixture::new();
     let runtime = &fixture.runtime;
     let basis = fixture.basis();
-    let built = runtime
-        .index_authority()
-        .build_for_basis(fixture.request(&basis), &basis);
+    let built =
+        runtime
+            .index_authority()
+            .build_for_basis(execution, fixture.request(&basis), &basis);
     assert!(built.failed_indexes.is_empty());
     let committed = runtime.history().latest_commit().unwrap();
     let envelope = runtime
@@ -37,7 +41,7 @@ fn discarded_ordering_stays_cold_after_native_checkpoint_restore_then_rebuilds()
     let mut restored = persisted_runtime_with_index_field_aspects();
     let recovered = restored
         .durability_recovery()
-        .restore_native_checkpoint(&checkpoint)
+        .restore_native_checkpoint(execution, &checkpoint)
         .unwrap();
     assert_eq!(recovered.latest_commit, Some(committed));
     assert_eq!(
@@ -68,6 +72,7 @@ fn discarded_ordering_stays_cold_after_native_checkpoint_restore_then_rebuilds()
             )
             .unwrap(),
             BoundedIndexParityMode::Certification,
+            execution,
         )
         .unwrap_err();
     assert_eq!(
@@ -75,6 +80,7 @@ fn discarded_ordering_stays_cold_after_native_checkpoint_restore_then_rebuilds()
         BoundedRelatedEntityOrderedLookupDenialKind::ExactGenerationUnavailable
     );
     let rebuilt = restored.index_authority().build_for_basis_with_lease(
+        execution,
         fixture.request(&restored_basis),
         &restored_basis,
         &test_execution_lease(),
@@ -95,6 +101,7 @@ fn discarded_ordering_stays_cold_after_native_checkpoint_restore_then_rebuilds()
             )
             .unwrap(),
             BoundedIndexParityMode::Certification,
+            execution,
         )
         .unwrap();
     assert_eq!(page.child_entity_ids(), fixture.expected);

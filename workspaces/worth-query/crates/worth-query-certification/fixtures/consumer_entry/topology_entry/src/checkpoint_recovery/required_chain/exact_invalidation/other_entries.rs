@@ -8,25 +8,30 @@ use super::*;
 macro_rules! native_write {
     ($application:expr, $scope:expr, $body:expr, $field:ident, $value:expr) => {{
         let branch = $application.current_world();
-        let record = $application
-            .on_branch(branch)
-            .select()
-            .unwrap()
-            .resolve_entity(
-                BodyKey::reference::<CheckpointSchema>(),
-                $body,
+        let record = crate::checkpoint_recovery::support::host_call(&$application, |phase| {
+            $application
+                .on_branch(branch)
+                .select(phase)
+                .unwrap()
+                .resolve_entity(
+                    phase,
+                    BodyKey::reference::<CheckpointSchema>(),
+                    $body,
+                    &$scope,
+                    primary_graph::WorthQueryPrincipalResolutionMode::Certification,
+                )
+                .unwrap()
+                .relational_record_identity_parts()
+        });
+        $application
+            .publish_native_field_write_for_test(
+                branch,
+                record,
+                $field::reference::<CheckpointSchema>(),
+                length($value),
                 &$scope,
-                primary_graph::WorthQueryPrincipalResolutionMode::Certification,
             )
-            .unwrap()
-            .relational_record_identity_parts();
-        $application.publish_native_field_write_for_test(
-            branch,
-            record,
-            $field::reference::<CheckpointSchema>(),
-            length($value),
-            &$scope,
-        );
+            .expect("the fixture native writer host policy admits its call");
     }};
 }
 

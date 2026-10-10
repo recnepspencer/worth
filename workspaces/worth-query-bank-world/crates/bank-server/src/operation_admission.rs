@@ -1,6 +1,7 @@
 impl crate::BankIdentityRuntime {
     pub(crate) fn select_current_product(
         &self,
+        phase: &worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
     ) -> Result<
         worth_query_host::facade::primary_graph::WorthQuerySelectedProductOperation<
             '_,
@@ -9,7 +10,9 @@ impl crate::BankIdentityRuntime {
         worth_query_host::facade::product::WorthQueryProductBranchAdmissionDenial,
     > {
         let application = self.application_runtime();
-        application.on_branch(application.current_world()).select()
+        application
+            .on_branch(application.current_world())
+            .select(phase)
     }
 }
 

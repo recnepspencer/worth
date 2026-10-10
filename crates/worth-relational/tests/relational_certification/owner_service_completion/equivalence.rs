@@ -223,9 +223,12 @@ fn movement_through_either_route_is_immediately_visible_through_the_other() {
 
 #[test]
 fn basis_and_lifecycle_routes_share_exact_artifacts_on_one_owner() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     use super::super::world::supply_chain::{certified_supply_chain_world, SupplyChainScale};
 
-    let (mut world, _baseline) = certified_supply_chain_world(SupplyChainScale::court());
+    let (mut world, _baseline) = certified_supply_chain_world(execution, SupplyChainScale::court());
     let services = world.runtime.owner_component_services();
     let main = world.runtime.main_branch_identity();
     let (direct_descriptor, direct_basis) = world

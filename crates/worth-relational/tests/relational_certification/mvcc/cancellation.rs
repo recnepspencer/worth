@@ -10,7 +10,10 @@ use worth_relational::facade::publication::PatchStreamRequest;
 
 #[test]
 fn cancellation_before_observation_or_transaction_acquires_no_obligation() {
-    let (world, _) = certified_supply_chain_world(SupplyChainScale::court());
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
     let identity = world.runtime.main_branch_identity();
     let source = RelationalCancellationSource::new();
     source.cancel();
@@ -71,7 +74,10 @@ fn cancellation_before_observation_or_transaction_acquires_no_obligation() {
 
 #[test]
 fn cancellation_during_preparation_releases_the_transaction_once() {
-    let (world, _) = certified_supply_chain_world(SupplyChainScale::court());
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
     let identity = world.runtime.main_branch_identity();
     let (_, basis) = world.runtime.observe_branch(&identity).unwrap();
     let source = RelationalCancellationSource::new();
@@ -122,7 +128,10 @@ fn cancellation_during_preparation_releases_the_transaction_once() {
 
 #[test]
 fn cancellation_after_candidate_creation_wins_before_branch_movement() {
-    let (world, _) = certified_supply_chain_world(SupplyChainScale::court());
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
     let identity = world.runtime.main_branch_identity();
     let (_, basis) = world.runtime.observe_branch(&identity).unwrap();
     let source = RelationalCancellationSource::new();
@@ -195,7 +204,10 @@ fn cancellation_after_candidate_creation_wins_before_branch_movement() {
 
 #[test]
 fn cancellation_after_snapshot_pin_preserves_and_releases_the_exact_observation() {
-    let (world, _) = certified_supply_chain_world(SupplyChainScale::court());
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
     let identity = world.runtime.main_branch_identity();
     let (_, basis) = world.runtime.observe_branch(&identity).unwrap();
     let snapshot = world
@@ -232,7 +244,10 @@ fn cancellation_after_snapshot_pin_preserves_and_releases_the_exact_observation(
 
 #[test]
 fn cancellation_after_linearization_preserves_performed_commit_and_settles_once() {
-    let (world, _) = certified_supply_chain_world(SupplyChainScale::court());
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
     let identity = world.runtime.main_branch_identity();
     let (_, basis) = world.runtime.observe_branch(&identity).unwrap();
     let source = RelationalCancellationSource::new();
@@ -296,7 +311,10 @@ fn cancellation_after_linearization_preserves_performed_commit_and_settles_once(
 
 #[test]
 fn elapsed_deadline_is_distinct_from_cancellation() {
-    let (world, _) = certified_supply_chain_world(SupplyChainScale::court());
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
     let control = RelationalOperationControl::uninterrupted()
         .with_deadline(std::time::Instant::now() - std::time::Duration::from_millis(1));
     assert_eq!(

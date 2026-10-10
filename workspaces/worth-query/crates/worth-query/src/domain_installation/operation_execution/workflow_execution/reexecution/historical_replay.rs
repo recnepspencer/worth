@@ -126,6 +126,7 @@ pub fn replay_installed_workflow_historical<
     LO: BasisOperationLane,
     LR: BasisOperationLane,
 >(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     admission: WorthQueryHistoricalReplayAdmission,
     original: &WorthQueryCompletedWorkflowTrace<D, O, F, LO>,
     bound: WorthQueryBoundDomainOperation<D, O, F, LR>,
@@ -155,7 +156,9 @@ where
             if admission.historical_workspace_name != workspace.name()
                 || !admission
                     .historical_snapshot_identity
-                    .is_same_current_identity_as(&workspace.snapshot_identity())
+                    .is_same_current_identity_as(
+                        &workspace.snapshot_identity_with_request(execution),
+                    )
             {
                 return TransitionOutcome::Denied(
                     super::certification_replay::WorthQueryCertificationReplayStop::Admission(

@@ -48,6 +48,7 @@ impl ElevatedQueryContext {
 
     pub(super) fn elevated_access(
         &self,
+        phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     ) -> crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationCapabilityAccess<
         IdentityExecutionSchema,
         super::super::ElevatedTouchAccountCapability,
@@ -55,6 +56,7 @@ impl ElevatedQueryContext {
         super::super::ElevatedCapabilityTouchInput,
     > {
         super::super::admit(
+            &(phase_custody).test_host_request(),
             &self.world,
             self.approved.as_ref().unwrap(),
             &self.principal,
@@ -65,7 +67,11 @@ impl ElevatedQueryContext {
     }
 }
 
-pub(super) fn context(live: bool) -> ElevatedQueryContext {
+pub(super) fn context(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    live: bool,
+) -> ElevatedQueryContext {
     let world = if live {
         installed_elevated_capability_live_world(CapabilityElevationScenario::Active)
     } else {
@@ -75,17 +81,34 @@ pub(super) fn context(live: bool) -> ElevatedQueryContext {
         .authorization_time
         .script(std::iter::repeat_n(time(100), 64));
     let request = live_scope();
-    let requested = super::super::request_support::commit_exact_request(&world, &request);
-    super::super::request_support::resolve_exact_request_identities(&world, &request);
-    let approved =
-        super::super::approval_transition::approve_exact_request(&world, &request, requested);
-    let principal = authenticated_principal(&world, &request);
-    let committer = super::super::approval_transition::authenticated(&world, "carol", &request);
+    let requested = super::super::request_support::commit_exact_request(
+        &phase_custody.phase_for_application(&world.application),
+        &world,
+        &request,
+    );
+    super::super::request_support::resolve_exact_request_identities(
+        &(phase_custody.phase_for_application(&world.application)).test_host_request(),
+        &world,
+        &request,
+    );
+    let approved = super::super::approval_transition::approve_exact_request(
+        phase_custody,
+        &world,
+        &request,
+        requested,
+    );
+    let principal = authenticated_principal(&(phase_custody).test_host_request(), &world, &request);
+    let committer =
+        super::super::approval_transition::authenticated(phase_custody, &world, "carol", &request);
     let account = world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
+        .select_product_branch(
+            execution,
+            world.application.product_runtime().default_branch(),
+        )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
+            &phase_custody.phase_for_application(&world.application),
             AccountIdentity::reference(),
             "account-1".to_owned(),
             &request,

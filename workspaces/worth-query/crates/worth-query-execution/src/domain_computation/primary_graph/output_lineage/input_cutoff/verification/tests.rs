@@ -19,17 +19,27 @@ fn currentness(work: u64) -> InvalidationEditAdmission {
 
 #[test]
 fn exhausted_currentness_while_reverifying_a_marked_fact_selects_fresh_without_stopping() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = installed_authorization_world(true);
     let entity = world
-        .selected_product()
-        .resolve_entity(
-            AccountStatus::reference(),
-            "open".to_owned(),
-            &live_scope(),
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap()
-        .entity_id();
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .selected_product(&(phase).test_host_request())
+                .resolve_entity(
+                    &phase,
+                    AccountStatus::reference(),
+                    "open".to_owned(),
+                    &live_scope(),
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+                .entity_id()
+        })
+        .expect("the fixture read owns its installed host call");
     let graph = world.application.runtime.primary_graph().unwrap();
     let status_ref = AccountStatus::reference();
     let status = graph
@@ -45,60 +55,83 @@ fn exhausted_currentness_while_reverifying_a_marked_fact_selects_fresh_without_s
 
     world
         .application
-        .primary_provider
-        .graph
-        .with_runtime(|runtime| {
-            let basis = runtime
-                .admit_branch_basis(&runtime.main_branch_identity())
-                .unwrap();
-            let snapshot = runtime
-                .snapshots()
-                .snapshot_for_observation(&basis.observation())
-                .unwrap();
-            let revision = runtime
-                .read_truth()
-                .project_snapshot(&snapshot)
-                .unwrap()
-                .entity_field_revision(entity, &locator)
-                .unwrap();
-            let facts = [WorthQueryApplicationObservedFact::SourceFieldRevision {
-                entity_id: entity,
-                locator: locator.clone(),
-                native_revision: Some(revision),
-            }];
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .primary_provider
+                .graph
+                .with_runtime(request_execution, |runtime| {
+                    let basis = runtime
+                        .admit_branch_basis(&runtime.main_branch_identity())
+                        .unwrap();
+                    let snapshot = runtime
+                        .snapshots()
+                        .snapshot_for_observation(&basis.observation())
+                        .unwrap();
+                    let revision = runtime
+                        .read_truth()
+                        .project_snapshot(&snapshot, &host_custody.borrowed_request_for_test())
+                        .unwrap()
+                        .entity_field_revision(
+                            &host_custody.borrowed_request_for_test(),
+                            entity,
+                            &locator,
+                        )
+                        .unwrap();
+                    let facts = [WorthQueryApplicationObservedFact::SourceFieldRevision {
+                        entity_id: entity,
+                        locator: locator.clone(),
+                        native_revision: Some(revision),
+                    }];
 
-            // An ample allowance proves the marked fact current, so any `false`
-            // below comes from exhaustion alone, never from a changed source.
-            let mut ample = currentness(1 << 20);
-            let full = ample.remaining_work();
-            assert!(matches!(
-                marked_facts_permit_reuse(&facts, runtime, &snapshot, &mut ample),
-                Ok(true)
-            ));
-            let required = u64::try_from(full - ample.remaining_work()).unwrap();
-            assert!(required > 1, "re-verification costs a visit plus its probe");
-
-            // Every smaller allowance runs out inside re-verification. Each one
-            // selects Fresh and leaves the demand running instead of returning
-            // a terminal stop.
-            for work in 1..required {
-                assert!(
-                    matches!(
+                    // An ample allowance proves the marked fact current, so any `false`
+                    // below comes from exhaustion alone, never from a changed source.
+                    let mut ample = currentness(1 << 20);
+                    let full = ample.remaining_work();
+                    assert!(matches!(
                         marked_facts_permit_reuse(
+                            &host_custody.borrowed_request_for_test(),
                             &facts,
                             runtime,
                             &snapshot,
-                            &mut currentness(work)
+                            &mut ample
                         ),
-                        Ok(false)
-                    ),
-                    "currentness work {work} of {required} must select Fresh"
-                );
-            }
-            assert!(matches!(
-                marked_facts_permit_reuse(&facts, runtime, &snapshot, &mut currentness(required)),
-                Ok(true)
-            ));
-            runtime.snapshots().release_snapshot(&snapshot).unwrap();
-        });
+                        Ok(true)
+                    ));
+                    let required = u64::try_from(full - ample.remaining_work()).unwrap();
+                    assert!(required > 1, "re-verification costs a visit plus its probe");
+
+                    // Every smaller allowance runs out inside re-verification. Each one
+                    // selects Fresh and leaves the demand running instead of returning
+                    // a terminal stop.
+                    for work in 1..required {
+                        assert!(
+                            matches!(
+                                marked_facts_permit_reuse(
+                                    &host_custody.borrowed_request_for_test(),
+                                    &facts,
+                                    runtime,
+                                    &snapshot,
+                                    &mut currentness(work)
+                                ),
+                                Ok(false)
+                            ),
+                            "currentness work {work} of {required} must select Fresh"
+                        );
+                    }
+                    assert!(matches!(
+                        marked_facts_permit_reuse(
+                            &host_custody.borrowed_request_for_test(),
+                            &facts,
+                            runtime,
+                            &snapshot,
+                            &mut currentness(required)
+                        ),
+                        Ok(true)
+                    ));
+                    runtime.snapshots().release_snapshot(&snapshot).unwrap();
+                })
+        })
+        .expect("the fixture read owns its installed host call");
 }

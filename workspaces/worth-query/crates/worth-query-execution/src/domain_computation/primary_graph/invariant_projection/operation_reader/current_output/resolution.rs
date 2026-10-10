@@ -53,6 +53,7 @@ where
     #[allow(clippy::type_complexity)]
     pub fn current_output<Family, Producer>(
         &mut self,
+
         producer: &WorthQueryInvariantEntityIdentity<Schema, Producer>,
     ) -> Result<
         WorthQueryCurrentOutputSelection<Schema, Family::Entity>,
@@ -66,6 +67,7 @@ where
         Producer: ApplicationEntityMarkerIdentity<Schema> + OperationReads<Operation> + 'static,
         Family::Entity: OperationReads<Operation>,
     {
+        let execution = self.reader.execution;
         let subject = Family::IDENTITY;
         self.require_decision_entity(
             producer,
@@ -82,10 +84,11 @@ where
                 subject,
             )
         })?;
-        if !self.current_source_is_live(producer)? {
+        if !self.current_source_is_live(execution, producer)? {
             return Ok(WorthQueryCurrentOutputSelection::ObsoleteSource);
         }
-        let correspondences = self.current_correspondences::<Family, Producer>(producer)?;
+        let correspondences =
+            self.current_correspondences::<Family, Producer>(execution, producer)?;
         let mut entities = Vec::new();
         for (correspondence, output_role) in correspondences {
             self.require_current_output_budget(1, &output_role)?;
@@ -106,13 +109,15 @@ where
         Ok(match classify_current_entities(entities) {
             CurrentOutputCardinality::Missing => WorthQueryCurrentOutputSelection::Missing,
             CurrentOutputCardinality::Unique(entity) => WorthQueryCurrentOutputSelection::Unique(
-                self.live_current_identity::<Family::Entity>(subject, entity)?,
+                self.live_current_identity::<Family::Entity>(execution, subject, entity)?,
             ),
             CurrentOutputCardinality::Ambiguous(entities) => {
                 WorthQueryCurrentOutputSelection::Ambiguous(
                     entities
                         .into_iter()
-                        .map(|entity| self.live_current_identity::<Family::Entity>(subject, entity))
+                        .map(|entity| {
+                            self.live_current_identity::<Family::Entity>(execution, subject, entity)
+                        })
                         .collect::<Result<Vec<_>, _>>()?,
                 )
             }
@@ -121,6 +126,7 @@ where
 
     fn current_correspondences<Family, Producer>(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         producer: &WorthQueryInvariantEntityIdentity<Schema, Producer>,
     ) -> Result<
         Vec<(
@@ -218,8 +224,12 @@ where
         for candidate in resolution.candidates {
             self.require_current_output_budget(1, Family::IDENTITY)?;
             self.reader.work_budget.consume(1);
-            let Some(verification) =
-                self.verify_current_candidate(&candidate, &selected_native_root, Family::IDENTITY)?
+            let Some(verification) = self.verify_current_candidate(
+                execution,
+                &candidate,
+                &selected_native_root,
+                Family::IDENTITY,
+            )?
             else {
                 stale = true;
                 continue;

@@ -30,6 +30,7 @@ impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C>
 {
     pub(super) fn admit(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
         root: EntityId,
         context: &mut MapKernelContext<'_, '_>,
@@ -75,18 +76,19 @@ impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C>
         context
             .checkpoint(work)
             .map_err(|stop| super::denial::kernel(stop, None))?;
-        validate_one_shot_plan(application, &self.first)
+        validate_one_shot_plan(execution, application, &self.first)
             .map_err(|denial| Denial::ReadDenied { root, denial })?;
-        validate_one_shot_plan(application, &self.second)
+        validate_one_shot_plan(execution, application, &self.second)
             .map_err(|denial| Denial::ReadDenied { root, denial })?;
-        refresh_governed_authorization(application, &mut self.first)
+        refresh_governed_authorization(execution, application, &mut self.first)
             .map_err(|read| Self::read_denial(root, read, self.first.query.name()))?;
-        refresh_governed_authorization(application, &mut self.second)
+        refresh_governed_authorization(execution, application, &mut self.second)
             .map_err(|read| Self::read_denial(root, read, self.second.query.name()))?;
-        let (_, first, _) = execute_authorized_read(application, &self.first, |_, _, _| Ok(()))
-            .map_err(|read| Self::read_denial(root, read, self.first.query.name()))?;
+        let (_, first, _) =
+            execute_authorized_read(execution, application, &self.first, |_, _, _| Ok(()))
+                .map_err(|read| Self::read_denial(root, read, self.first.query.name()))?;
         let (_, second, _) =
-            execute_authorized_read(application, &self.second, |_, _, _| Ok(()))
+            execute_authorized_read(execution, application, &self.second, |_, _, _| Ok(()))
                 .map_err(|read| Self::read_denial(root, read, self.second.query.name()))?;
         Ok((first, second))
     }

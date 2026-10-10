@@ -24,6 +24,9 @@ use super::support::{
 
 #[test]
 fn mutation_execution_verifies_against_independent_relational_runtime_state() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = relational_runtime_with_intent_strategy();
     let entity_id = create_entity(&mut runtime, "before", BranchId("main".to_string()));
     crate::runtime::fork_branch_from_exact_source(
@@ -44,7 +47,10 @@ fn mutation_execution_verifies_against_independent_relational_runtime_state() {
     .expect("mutation should lower");
 
     let executed = lowered
-        .execute_with(EffectExecutionAuthority::relational(&mut runtime))
+        .execute_with(
+            request_execution,
+            EffectExecutionAuthority::relational(&mut runtime),
+        )
         .expect("mutation should execute");
     let verification = executed
         .verify_against_relational_runtime(&runtime)
@@ -60,6 +66,9 @@ fn mutation_execution_verifies_against_independent_relational_runtime_state() {
 
 #[test]
 fn merge_execution_verifies_against_independent_relational_runtime_state() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = relational_runtime_with_intent_strategy();
     create_entity(&mut runtime, "main", BranchId("main".to_string()));
     crate::runtime::fork_branch_from_exact_source(
@@ -79,6 +88,7 @@ fn merge_execution_verifies_against_independent_relational_runtime_state() {
 
     let executed = lowered
         .execute_with(
+            request_execution,
             EffectExecutionAuthority::crate_relational_without_application_schema(&mut runtime),
         )
         .expect("merge should execute");
@@ -96,13 +106,16 @@ fn merge_execution_verifies_against_independent_relational_runtime_state() {
 
 #[test]
 fn writeback_execution_verifies_against_independent_bridge_authority_record() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let bridge = test_bridge_with_writeback_authority();
     let lowered = scope_admitted_effect_plan(admitted_tenant_writeback_effect())
         .lower()
         .expect("writeback should lower");
 
     let executed = lowered
-        .execute_with(EffectExecutionAuthority::bridge(&bridge))
+        .execute_with(request_execution, EffectExecutionAuthority::bridge(&bridge))
         .expect("writeback should execute");
     let verification = executed
         .verify_against_bridge_runtime(&bridge)
@@ -140,6 +153,9 @@ fn writeback_execution_verifies_against_independent_bridge_authority_record() {
 
 #[test]
 fn mutation_batch_verifies_against_independent_relational_runtime_state() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = relational_runtime_with_intent_strategy();
     let left = create_entity(&mut runtime, "left", BranchId("main".to_string()));
     let right = create_entity(&mut runtime, "right", BranchId("main".to_string()));
@@ -167,7 +183,10 @@ fn mutation_batch_verifies_against_independent_relational_runtime_state() {
         .expect("batch should admit")
         .lower()
         .expect("batch should lower")
-        .execute_with(EffectExecutionAuthority::relational(&mut runtime))
+        .execute_with(
+            request_execution,
+            EffectExecutionAuthority::relational(&mut runtime),
+        )
         .expect("batch should execute");
     let verification = executed
         .verify_against_relational_runtime(&runtime)
@@ -183,6 +202,9 @@ fn mutation_batch_verifies_against_independent_relational_runtime_state() {
 
 #[test]
 fn relational_oracle_rejects_independent_commit_mismatch() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = relational_runtime_with_intent_strategy();
     let entity_id = create_entity(&mut runtime, "before", BranchId("main".to_string()));
     crate::runtime::fork_branch_from_exact_source(
@@ -202,7 +224,10 @@ fn relational_oracle_rejects_independent_commit_mismatch() {
     .lower()
     .expect("mutation should lower");
     let executed = lowered
-        .execute_with(EffectExecutionAuthority::relational(&mut runtime))
+        .execute_with(
+            request_execution,
+            EffectExecutionAuthority::relational(&mut runtime),
+        )
         .expect("mutation should execute");
 
     let denial = executed
@@ -222,12 +247,15 @@ fn relational_oracle_rejects_independent_commit_mismatch() {
 
 #[test]
 fn bridge_oracle_rejects_independent_receipt_mismatch() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let bridge = test_bridge_with_writeback_authority();
     let lowered = scope_admitted_effect_plan(admitted_tenant_writeback_effect())
         .lower()
         .expect("writeback should lower");
     let executed = lowered
-        .execute_with(EffectExecutionAuthority::bridge(&bridge))
+        .execute_with(request_execution, EffectExecutionAuthority::bridge(&bridge))
         .expect("writeback should execute");
     let (outcome, receipt) = executed
         .as_writeback()
@@ -273,6 +301,9 @@ fn bridge_oracle_rejects_independent_receipt_mismatch() {
 
 #[test]
 fn bridge_runtime_verification_matches_the_executed_record_not_just_the_latest_record() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let bridge = test_bridge_with_writeback_authority();
     let lowered = scope_admitted_effect_plan(admitted_tenant_writeback_effect())
         .lower()
@@ -280,10 +311,10 @@ fn bridge_runtime_verification_matches_the_executed_record_not_just_the_latest_r
 
     let first = lowered
         .clone()
-        .execute_with(EffectExecutionAuthority::bridge(&bridge))
+        .execute_with(request_execution, EffectExecutionAuthority::bridge(&bridge))
         .expect("first writeback should execute");
     let second = lowered
-        .execute_with(EffectExecutionAuthority::bridge(&bridge))
+        .execute_with(request_execution, EffectExecutionAuthority::bridge(&bridge))
         .expect("second writeback should execute");
 
     let first_verification = first

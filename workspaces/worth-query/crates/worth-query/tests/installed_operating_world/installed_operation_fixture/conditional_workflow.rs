@@ -16,6 +16,7 @@ use super::{
 };
 
 pub fn conditional_workflow_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
     node: domain::WorthQueryPortableConditionalNodeDeclaration,
 ) -> Result<
@@ -23,6 +24,7 @@ pub fn conditional_workflow_workspace(
     worth_query::facade::consumer_kit::WorthQueryTestBackendError,
 > {
     configured_conditional_workflow_workspace(
+        request_execution,
         name,
         node,
         "publish",
@@ -33,6 +35,7 @@ pub fn conditional_workflow_workspace(
 }
 
 pub fn reverted_conditional_lineage_workflow_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
     node: domain::WorthQueryPortableConditionalNodeDeclaration,
 ) -> Result<
@@ -40,6 +43,7 @@ pub fn reverted_conditional_lineage_workflow_workspace(
     worth_query::facade::consumer_kit::WorthQueryTestBackendError,
 > {
     configured_conditional_workflow_workspace(
+        request_execution,
         name,
         node,
         "publish",
@@ -50,6 +54,7 @@ pub fn reverted_conditional_lineage_workflow_workspace(
 }
 
 pub(crate) fn operation_conditional_workflow_workspace_with<P>(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
     node: domain::WorthQueryPortableConditionalNodeDeclaration,
     installation: ConditionalInstallation,
@@ -120,10 +125,11 @@ where
         ReadFamily,
         WorkflowParallelProvider,
     )
-    .workspace(name)
+    .workspace(request_execution, name)
 }
 
 pub(crate) fn stage_conditional_workflow_workspace_with<P>(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
     node: domain::WorthQueryPortableConditionalNodeDeclaration,
     conditional_stage: &str,
@@ -137,6 +143,7 @@ where
     P: domain::WorthQueryConditionalNodeComputeProvider<GeometryDomain, WorkflowRead, ReadFamily>,
 {
     configured_conditional_workflow_workspace(
+        request_execution,
         name,
         node,
         conditional_stage,
@@ -147,6 +154,7 @@ where
 }
 
 fn configured_conditional_workflow_workspace<P>(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
     node: domain::WorthQueryPortableConditionalNodeDeclaration,
     conditional_stage: &str,
@@ -244,7 +252,7 @@ where
         ReadFamily,
         WorkflowParallelProvider,
     )
-    .workspace(name)
+    .workspace(request_execution, name)
 }
 
 struct WorkflowConditionalCompute(u64);

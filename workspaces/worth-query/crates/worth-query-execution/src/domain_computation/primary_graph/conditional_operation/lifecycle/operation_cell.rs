@@ -53,6 +53,7 @@ impl<Schema> WorthQueryConditionalOperationCell<Schema> {
 
     pub(in crate::domain_computation::primary_graph::conditional_operation) fn observe_clock(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
 
         bridge: &BridgeSealedRuntimeAssembly,
@@ -60,7 +61,7 @@ impl<Schema> WorthQueryConditionalOperationCell<Schema> {
         truth: &WorthQueryConditionalTruthBasis,
     ) -> ErasedClockObservationOutcome {
         let mut operation = self.lock_operation();
-        if let Err(denial) = operation.select_product_binding(bridge, runtime, truth) {
+        if let Err(denial) = operation.select_product_binding(execution, bridge, runtime, truth) {
             return ErasedClockObservationOutcome::Failed {
                 kind: installation_denial_observation_kind(denial.kind()),
                 detail: denial.subject().to_string(),
@@ -71,13 +72,14 @@ impl<Schema> WorthQueryConditionalOperationCell<Schema> {
 
     pub(in crate::domain_computation::primary_graph::conditional_operation) fn admit_product_binding(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         bridge: &BridgeSealedRuntimeAssembly,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         truth: &WorthQueryConditionalTruthBasis,
     ) -> Result<(), super::super::installation::WorthQueryConditionalRuntimeInstallationDenial>
     {
         self.lock_operation()
-            .select_product_binding(bridge, runtime, truth)
+            .select_product_binding(execution, bridge, runtime, truth)
     }
 }
 

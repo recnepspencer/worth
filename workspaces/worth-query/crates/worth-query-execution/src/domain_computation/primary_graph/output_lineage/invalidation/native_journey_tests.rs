@@ -155,6 +155,7 @@ fn write_batch(
 }
 
 fn field_fact(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     handle: &SnapshotHandle,
     entity: EntityId,
@@ -167,9 +168,9 @@ fn field_fact(
     );
     let revision = runtime
         .read_truth()
-        .project_snapshot(handle)
+        .project_snapshot(handle, execution)
         .unwrap()
-        .entity_field_revision(entity, &locator)
+        .entity_field_revision(execution, entity, &locator)
         .unwrap();
     WorthQueryApplicationObservedFact::SourceFieldRevision {
         entity_id: entity,
@@ -214,17 +215,33 @@ fn currentness(
 
 #[test]
 fn ordinary_native_writer_marks_only_matched_fields_and_actual_downstream_edges() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = installed_authorization_world(true);
-    let selected = world.selected_product();
-    let entity = selected
-        .resolve_entity(
-            AccountStatus::reference(),
-            "open".to_owned(),
-            &live_scope(),
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap()
-        .entity_id();
+    let selected = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world.selected_product(&(phase).test_host_request())
+        })
+        .expect("the fixture read owns its installed host call");
+    let entity = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            selected
+                .resolve_entity(
+                    &phase,
+                    AccountStatus::reference(),
+                    "open".to_owned(),
+                    &live_scope(),
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+                .entity_id()
+        })
+        .expect("the fixture read owns its installed host call");
     let (_, product, _) = selected.into_parts();
     let coordinate = ProductCoordinate {
         occurrence: product.observation().lifecycle_incarnation(),
@@ -263,86 +280,105 @@ fn ordinary_native_writer_marks_only_matched_fields_and_actual_downstream_edges(
     );
     let late =
         RecordedSettlementIdentity::retain(&source(TypeId::of::<LateOutput>()), coordinate, 0);
-    handle.with_runtime_mut(|runtime| {
-        // Ensure the real companion has a selected cell even if fixture
-        // installation happened before its subscription became active.
-        write_field(runtime, entity, label.clone(), "prime");
-        let (before_handle, before) = snapshot(runtime);
-        let status_facts: Arc<[_]> =
-            Arc::from([field_fact(runtime, &before_handle, entity, status.clone())]);
-        register(
-            owner,
-            a.clone(),
-            status_facts.clone(),
-            &before,
-            OrdSet::new(),
-        );
-        register(
-            owner,
-            b.clone(),
-            Arc::from([field_fact(runtime, &before_handle, entity, label.clone())]),
-            &before,
-            OrdSet::new(),
-        );
-        register(
-            owner,
-            c.clone(),
-            Arc::from([]),
-            &before,
-            OrdSet::unit(a.clone()),
-        );
-        assert!(matches!(
-            currentness(owner, &before, &a),
-            SourceSettlementCurrentness::Clean
-        ));
-        write_field(runtime, entity, label, "changed-label");
-        let (label_handle, label_basis) = snapshot(runtime);
-        assert!(
-            matches!(
-                currentness(owner, &label_basis, &a),
-                SourceSettlementCurrentness::Clean
-            ),
-            "the sibling aspect touch must not dirty a field-local settlement"
-        );
-        assert!(matches!(
-            currentness(owner, &label_basis, &c),
-            SourceSettlementCurrentness::Clean
-        ));
-        match currentness(owner, &label_basis, &b) {
-            SourceSettlementCurrentness::Dirty(ordinals) => assert_eq!(ordinals, OrdSet::unit(0)),
-            _ => panic!("the matching label fact must be dirty before its head is read"),
-        }
-        assert!(
-            matches!(
-                currentness(owner, &before, &b),
-                SourceSettlementCurrentness::Clean
-            ),
-            "newer marks cannot leak into the retained earlier snapshot"
-        );
-        write_field(runtime, entity, status, "closed");
-        let (after_handle, after) = snapshot(runtime);
-        assert!(matches!(
-            currentness(owner, &after, &a),
-            SourceSettlementCurrentness::Dirty(_)
-        ));
-        match currentness(owner, &after, &c) {
-            SourceSettlementCurrentness::PendingUpstream(upstream) => {
-                assert_eq!(upstream, OrdSet::unit(a))
-            }
-            _ => panic!("only the actual downstream edge must be pending"),
-        }
-        register(owner, late.clone(), status_facts, &before, OrdSet::new());
-        assert!(
-            matches!(
-                currentness(owner, &after, &late),
-                SourceSettlementCurrentness::Dirty(_)
-            ),
-            "late registration must replay actual intervening deliveries"
-        );
-        for snapshot in [before_handle, label_handle, after_handle] {
-            runtime.snapshots().release_snapshot(&snapshot).unwrap();
-        }
-    });
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            handle.with_runtime_mut(request_execution, |runtime| {
+                // Ensure the real companion has a selected cell even if fixture
+                // installation happened before its subscription became active.
+                write_field(runtime, entity, label.clone(), "prime");
+                let (before_handle, before) = snapshot(runtime);
+                let status_facts: Arc<[_]> = Arc::from([field_fact(
+                    &host_custody.borrowed_request_for_test(),
+                    runtime,
+                    &before_handle,
+                    entity,
+                    status.clone(),
+                )]);
+                register(
+                    owner,
+                    a.clone(),
+                    status_facts.clone(),
+                    &before,
+                    OrdSet::new(),
+                );
+                register(
+                    owner,
+                    b.clone(),
+                    Arc::from([field_fact(
+                        &host_custody.borrowed_request_for_test(),
+                        runtime,
+                        &before_handle,
+                        entity,
+                        label.clone(),
+                    )]),
+                    &before,
+                    OrdSet::new(),
+                );
+                register(
+                    owner,
+                    c.clone(),
+                    Arc::from([]),
+                    &before,
+                    OrdSet::unit(a.clone()),
+                );
+                assert!(matches!(
+                    currentness(owner, &before, &a),
+                    SourceSettlementCurrentness::Clean
+                ));
+                write_field(runtime, entity, label, "changed-label");
+                let (label_handle, label_basis) = snapshot(runtime);
+                assert!(
+                    matches!(
+                        currentness(owner, &label_basis, &a),
+                        SourceSettlementCurrentness::Clean
+                    ),
+                    "the sibling aspect touch must not dirty a field-local settlement"
+                );
+                assert!(matches!(
+                    currentness(owner, &label_basis, &c),
+                    SourceSettlementCurrentness::Clean
+                ));
+                match currentness(owner, &label_basis, &b) {
+                    SourceSettlementCurrentness::Dirty(ordinals) => {
+                        assert_eq!(ordinals, OrdSet::unit(0))
+                    }
+                    _ => panic!("the matching label fact must be dirty before its head is read"),
+                }
+                assert!(
+                    matches!(
+                        currentness(owner, &before, &b),
+                        SourceSettlementCurrentness::Clean
+                    ),
+                    "newer marks cannot leak into the retained earlier snapshot"
+                );
+                write_field(runtime, entity, status, "closed");
+                let (after_handle, after) = snapshot(runtime);
+                assert!(matches!(
+                    currentness(owner, &after, &a),
+                    SourceSettlementCurrentness::Dirty(_)
+                ));
+                match currentness(owner, &after, &c) {
+                    SourceSettlementCurrentness::PendingUpstream(upstream) => {
+                        assert_eq!(upstream, OrdSet::unit(a))
+                    }
+                    _ => panic!("only the actual downstream edge must be pending"),
+                }
+                register(owner, late.clone(), status_facts, &before, OrdSet::new());
+                assert!(
+                    matches!(
+                        currentness(owner, &after, &late),
+                        SourceSettlementCurrentness::Dirty(_)
+                    ),
+                    "late registration must replay actual intervening deliveries"
+                );
+                for snapshot in [before_handle, label_handle, after_handle] {
+                    runtime.snapshots().release_snapshot(&snapshot).unwrap();
+                }
+            })
+        })
+        .expect("the fixture read owns its installed host call");
 }
 
 #[cfg(feature = "certification-invalidation-equivalence")]

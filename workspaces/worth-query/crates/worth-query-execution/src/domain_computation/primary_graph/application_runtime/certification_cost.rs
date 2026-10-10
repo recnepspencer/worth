@@ -94,18 +94,17 @@ pub trait WorthQueryCertificationCostRuntimeExt<Schema: ApplicationSchema> {
     /// cannot be admitted.
     fn capture_certification_cost_scope(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         branch: crate::basis::WorthQueryProductBranch,
-    ) -> Result<
-        WorthQueryCertificationCostScope,
-        crate::basis::WorthQueryProductBranchAdmissionDenial,
-    >;
+    ) -> Result<WorthQueryCertificationCostScope, WorthQueryCertificationCostDenial>;
 
     /// Observes the cost accrued since `scope` was captured. Refused when the
     /// branch's storage cost cannot be inspected.
     fn observe_certification_cost(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         scope: &WorthQueryCertificationCostScope,
-    ) -> Result<WorthQueryCertificationCostObservation, RelationalBranchSharingInspectionDenial>;
+    ) -> Result<WorthQueryCertificationCostObservation, WorthQueryCertificationCostDenial>;
 }
 
 impl<Schema: ApplicationSchema> WorthQueryCertificationCostRuntimeExt<Schema>
@@ -113,19 +112,21 @@ impl<Schema: ApplicationSchema> WorthQueryCertificationCostRuntimeExt<Schema>
 {
     fn capture_certification_cost_scope(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         branch: crate::basis::WorthQueryProductBranch,
-    ) -> Result<
-        WorthQueryCertificationCostScope,
-        crate::basis::WorthQueryProductBranchAdmissionDenial,
-    > {
+    ) -> Result<WorthQueryCertificationCostScope, WorthQueryCertificationCostDenial> {
         let lease = self
             .product_runtime
             .integration_admit_product_branch(branch)?;
         let relational_identity = lease.relational_basis().identity().clone();
         drop(lease);
-        let relational = self.primary_provider.graph.with_runtime(|runtime| {
-            RelationalMvccCostScope::capture(runtime, vec![relational_identity])
-        });
+        let execution = phase.execution_request_for(&self.product_runtime)?;
+        let relational = self
+            .primary_provider
+            .graph
+            .with_runtime(&execution, |runtime| {
+                RelationalMvccCostScope::capture(runtime, vec![relational_identity])
+            });
         Ok(WorthQueryCertificationCostScope {
             relational,
             application_work: self.primary_provider.application_attempt_work(),
@@ -137,13 +138,16 @@ impl<Schema: ApplicationSchema> WorthQueryCertificationCostRuntimeExt<Schema>
 
     fn observe_certification_cost(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         scope: &WorthQueryCertificationCostScope,
-    ) -> Result<WorthQueryCertificationCostObservation, RelationalBranchSharingInspectionDenial>
-    {
+    ) -> Result<WorthQueryCertificationCostObservation, WorthQueryCertificationCostDenial> {
+        let execution = phase.execution_request_for(&self.product_runtime)?;
         let relational = self
             .primary_provider
             .graph
-            .with_runtime(|runtime| runtime.observe_mvcc_cost(&scope.relational))?;
+            .with_runtime(&execution, |runtime| {
+                runtime.observe_mvcc_cost(&scope.relational)
+            })?;
         let application_work = WorthQueryCertificationApplicationWork::from(
             self.primary_provider
                 .application_attempt_work()
@@ -272,5 +276,33 @@ impl From<WorthQueryApplicationAttemptWorkSnapshot> for WorthQueryCertificationA
             managed_cleanups: value.managed_cleanups,
             external_dispatch_admissions: value.external_dispatch_admissions,
         }
+    }
+}
+
+#[derive(Debug)]
+pub enum WorthQueryCertificationCostDenial {
+    Branch(crate::basis::WorthQueryProductBranchAdmissionDenial),
+    Sharing(RelationalBranchSharingInspectionDenial),
+    ForeignPhase(crate::domain_computation::primary_graph::WorthQueryForeignAdvancementPhase),
+}
+impl From<crate::basis::WorthQueryProductBranchAdmissionDenial>
+    for WorthQueryCertificationCostDenial
+{
+    fn from(cause: crate::basis::WorthQueryProductBranchAdmissionDenial) -> Self {
+        Self::Branch(cause)
+    }
+}
+impl From<RelationalBranchSharingInspectionDenial> for WorthQueryCertificationCostDenial {
+    fn from(cause: RelationalBranchSharingInspectionDenial) -> Self {
+        Self::Sharing(cause)
+    }
+}
+impl From<crate::domain_computation::primary_graph::WorthQueryForeignAdvancementPhase>
+    for WorthQueryCertificationCostDenial
+{
+    fn from(
+        cause: crate::domain_computation::primary_graph::WorthQueryForeignAdvancementPhase,
+    ) -> Self {
+        Self::ForeignPhase(cause)
     }
 }

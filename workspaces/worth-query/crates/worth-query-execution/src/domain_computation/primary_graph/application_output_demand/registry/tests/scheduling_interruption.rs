@@ -13,6 +13,7 @@ use crate::domain_computation::primary_graph::{
 };
 use std::sync::atomic::Ordering;
 
+mod checkpoint;
 mod fixture;
 use fixture::Fixture;
 
@@ -68,6 +69,21 @@ fn both_scheduling_finishes_preserve_claims_and_custody_on_interruption() {
         for kind in [
             WorthQueryOutputDemandDenialKind::Cancelled,
             WorthQueryOutputDemandDenialKind::TimedOut,
+            WorthQueryOutputDemandDenialKind::ExecutionRequest(
+                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(
+                    crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::WorkExhausted,
+                ),
+            ),
+            WorthQueryOutputDemandDenialKind::ExecutionRequest(
+                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(
+                    crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::RetainedBytesExhausted,
+                ),
+            ),
+            WorthQueryOutputDemandDenialKind::ExecutionRequest(
+                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(
+                    crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ScratchCapacityExceeded,
+                ),
+            ),
         ] {
             for reopened in [false, true] {
                 let fixture = Fixture::new(reopened);
@@ -173,6 +189,21 @@ fn interrupted_execution_reports_the_same_retryable_posture() {
         for kind in [
             WorthQueryOutputDemandDenialKind::Cancelled,
             WorthQueryOutputDemandDenialKind::TimedOut,
+            WorthQueryOutputDemandDenialKind::ExecutionRequest(
+                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(
+                    crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::WorkExhausted,
+                ),
+            ),
+            WorthQueryOutputDemandDenialKind::ExecutionRequest(
+                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(
+                    crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::RetainedBytesExhausted,
+                ),
+            ),
+            WorthQueryOutputDemandDenialKind::ExecutionRequest(
+                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(
+                    crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ScratchCapacityExceeded,
+                ),
+            ),
         ] {
             let fixture = Fixture::new(false);
             assert!(matches!(
@@ -204,5 +235,38 @@ fn interrupted_execution_reports_the_same_retryable_posture() {
             }
             assert_eq!(denial.recovery_posture(), Posture::Retryable);
         }
+    }
+}
+
+#[test]
+fn a_new_key_stays_claimable_after_a_caller_resource_stop() {
+    use crate::domain_computation::primary_graph::{
+        WorthQueryAdvancementDenial as Advance,
+        WorthQueryManagedComputationResourceDenial as Resource,
+    };
+    for finish in [Finish::Ordinary, Finish::Selected] {
+        let fixture = Fixture::new(false);
+        fixture
+            .registry
+            .state
+            .lock()
+            .unwrap()
+            .records
+            .get_mut(&fixture.interest.key)
+            .unwrap()
+            .successor_of = None;
+        let before = fixture.custody();
+        let kind = WorthQueryOutputDemandDenialKind::ExecutionRequest(Advance::Resource(
+            Resource::WorkExhausted,
+        ));
+        let denial = finish.stop(&fixture, kind);
+        assert_eq!(denial.kind(), kind);
+        assert_eq!(denial.recovery_posture(), Posture::Retryable);
+        assert_eq!(fixture.custody(), before);
+        let peer = fixture.next_interest(false);
+        assert!(matches!(
+            fixture.registry.begin(&peer),
+            WorthQueryOutputDemandAdvanceAdmission::Schedule(_)
+        ));
     }
 }

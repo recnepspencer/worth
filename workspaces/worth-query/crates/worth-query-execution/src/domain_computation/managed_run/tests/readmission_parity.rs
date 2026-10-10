@@ -181,7 +181,10 @@ fn readmission_transfers_saturated_capacity_without_a_second_reservation() {
             reserve_execution_resource_plan(saturation_probe).is_none(),
             "arrival pressure must saturate every capacity pool"
         );
-        let active = match yielded.readmit_same_runtime(active_request, &runtime, &bridge) {
+        let active = match {
+            let installed_fixture_phase = yielded.fixture_phase(active_request);
+            yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+        } {
             crate::domain_computation::WorthQueryDirectReadmissionOutcome::Readmitted(
                 readmitted,
             ) => readmitted.into_active(),
@@ -196,7 +199,10 @@ fn readmission_transfers_saturated_capacity_without_a_second_reservation() {
             "readmission must not release or duplicate the retained reservation"
         );
 
-        let completion = match active.advance(execution) {
+        let completion = match {
+            let installed_fixture_phase = active.fixture_phase(execution);
+            active.advance(&installed_fixture_phase)
+        } {
             WorthQueryDirectGraphStepOutcome::Completed(completion) => completion,
             _ => panic!("restored provider should complete"),
         };
@@ -271,7 +277,7 @@ struct ProviderWorkEvidence {
 }
 
 fn execute_repeated_yield_world(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     resume_every_safe_point: bool,
 ) -> ParityEvidence {
     let active_request = execution;
@@ -280,9 +286,11 @@ fn execute_repeated_yield_world(
         WorthQueryOperationGraphAccess::Observe,
         RepeatedYieldProvider { step_count: 3 },
     );
+    let installed_running_phase = execution.phase_for_direct(&running);
+
     let active = running
         .begin_graph_execution(
-            execution,
+            &installed_running_phase,
             &graph,
             WorthQueryManagedGraphCallRequest::new(
                 WorthQueryGraphProviderCallKind::Observe,
@@ -295,7 +303,7 @@ fn execute_repeated_yield_world(
     let mut bridge_requests = BTreeSet::from([active.bridge_request_identity().to_owned()]);
     let capacity_reservation_count = active.retained_capacity_reservation_count();
     let mut readmission_count = 0;
-    let mut outcome = active.advance(execution);
+    let mut outcome = active.advance(&installed_running_phase);
 
     loop {
         outcome = match outcome {
@@ -306,7 +314,10 @@ fn execute_repeated_yield_world(
                     }
                     _ => panic!("parity safe point should yield"),
                 };
-                let active = match yielded.readmit_same_runtime(active_request, &runtime, &bridge) {
+                let active = match {
+                    let installed_fixture_phase = yielded.fixture_phase(active_request);
+                    yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+                } {
                     crate::domain_computation::WorthQueryDirectReadmissionOutcome::Readmitted(
                         readmitted,
                     ) => readmitted.into_active(),
@@ -320,9 +331,11 @@ fn execute_repeated_yield_world(
                     active.retained_capacity_reservation_count(),
                     capacity_reservation_count
                 );
-                active.advance(execution)
+                active.advance(&installed_running_phase)
             }
-            WorthQueryDirectGraphStepOutcome::Continue(paused) => paused.advance(execution),
+            WorthQueryDirectGraphStepOutcome::Continue(paused) => {
+                paused.advance(&installed_running_phase)
+            }
             WorthQueryDirectGraphStepOutcome::Completed(completion) => {
                 return parity_evidence(
                     completion,

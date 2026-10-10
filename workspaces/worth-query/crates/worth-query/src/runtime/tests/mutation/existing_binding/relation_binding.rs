@@ -2,12 +2,15 @@ use super::*;
 
 #[test]
 fn delete_existing_relation_preserves_relation_binding_family() {
-    let runtime = stateful_bridge_task_relation_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = stateful_bridge_task_relation_runtime(request_execution);
     let mut workspace = runtime
         .workspace("tasks.delete-existing-relation")
         .expect("workspace should open");
     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.relation-table", |q| {
+        .live_view(request_execution, "tasks.relation-table", |q| {
             q.from("TaskRelation")
                 .select([
                     crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
@@ -24,7 +27,7 @@ fn delete_existing_relation_preserves_relation_binding_family() {
         .expect("relation live view should declare");
 
     let seed = workspace
-        .insert("TaskRelation", |relation| {
+        .insert(request_execution, "TaskRelation", |relation| {
             relation
                 .set_aspect(
                     test_aspect_touch("identity.id"),
@@ -55,7 +58,7 @@ fn delete_existing_relation_preserves_relation_binding_family() {
         .expect("relation binding should build");
 
     let receipt = workspace
-        .delete_existing(binding)
+        .delete_existing(request_execution, binding)
         .expect("existing relation delete should execute");
     let evidence = receipt
         .existing_truth_binding_evidence()

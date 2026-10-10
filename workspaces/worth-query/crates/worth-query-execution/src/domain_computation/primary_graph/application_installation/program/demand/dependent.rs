@@ -7,6 +7,7 @@ where
 {
     pub fn admit_program_dependent_output<ParentDemand, Connection>(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         parent: &WorthQuerySettledProgramOutput<Schema, Program, ParentDemand>,
         basis: &crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
@@ -26,6 +27,12 @@ where
         ConnectionBinding<Schema, Connection>:
             WorthQueryApplicationDependentOutputConnection<Schema, RootDemand = ParentDemand>,
     {
+        let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
+            Ok(request) => request,
+            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase), "output-demand-phase")),
+        };
+        let execution = &phase_request;
+
         if !self.contains_connection_type::<Connection>() {
             return Err(WorthQueryOutputDemandDenial::new(
                 crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignDemand,
@@ -68,11 +75,13 @@ where
         let parent_commit = parent_observation.selected_commit();
         let parent_occurrence = parent_observation.branch_incarnation();
         let parent_branch = parent_observation.branch_identity();
-        let retained_basis = self.runtime.select_application_read_observation(basis);
+        let retained_basis = self
+            .runtime
+            .select_application_read_observation_with_request(execution, basis);
         if retained_basis.is_err()
             || self
                 .runtime
-                .select_application_read_observation(minimum_observation)
+                .select_application_read_observation_with_request(execution, minimum_observation)
                 .is_err()
             || basis.branch_identity() != parent_branch
             || minimum_observation.branch_identity() != parent_branch
@@ -95,6 +104,7 @@ where
         }
         self.runtime
             .admit_dependent_output_demand::<Family<Schema, ConnectionDemand<Schema, Connection>>>(
+                execution,
                 source,
                 limits,
                 retained_basis

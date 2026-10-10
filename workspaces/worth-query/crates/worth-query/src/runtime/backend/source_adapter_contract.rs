@@ -34,6 +34,7 @@ pub trait WorthQueryRuntimeSourceAdapter {
 
     fn live_entities_for_target(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         target: &WorthQueryLiveArtifactTarget,
     ) -> Vec<WorthQueryEntity>;
 

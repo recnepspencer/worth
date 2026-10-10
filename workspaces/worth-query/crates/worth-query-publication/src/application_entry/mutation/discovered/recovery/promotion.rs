@@ -62,6 +62,7 @@ where
     /// Every refusal returns the complete move-only recovery owner.
     pub fn promote_recovered_discovered_outputs<Program, Root>(
         mut self,
+phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
         recovery: WorthQueryUnpublishedDiscoveredApplicationMutation<Schema, Intent, Program, Root>,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
         controls: WorthQueryOutputDemandControls,
@@ -85,7 +86,7 @@ where
         <RootSource<Schema, Root> as ApplicationQueryBinding<Schema>>::ScopeBinding:
             ApplicationQueryScopeResolution<Schema, <RootSource<Schema, Root> as ApplicationQueryBinding<Schema>>::PrincipalIdentity>,
     {
-        let receipt = match self.published_discovered_receipt(application, &recovery) {
+        let receipt = match self.published_discovered_receipt(phase, application, &recovery) {
             Ok(receipt) => receipt,
             Err(denial) => return Err((denial, recovery)),
         };
@@ -161,6 +162,9 @@ where
 
     fn published_discovered_receipt<Program, Root>(
         &mut self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
         recovery: &WorthQueryUnpublishedDiscoveredApplicationMutation<
             Schema,
@@ -182,12 +186,19 @@ where
         if !matches!(recovery.phase, DiscoveredRecoveryPhase::Performed { .. }) {
             return Err(binding_mismatch());
         }
-        let prepared =
-            self.authorize_discovered_source::<Program, Root>(application, &recovery.source)?;
+        let prepared = self.authorize_discovered_source::<Program, Root>(
+            phase,
+            application,
+            &recovery.source,
+        )?;
         let read = self
             .request
             .application
-            .resolve_admitted_application_idempotency(&prepared.admission, prepared.idempotency)
+            .resolve_admitted_application_idempotency(
+                phase,
+                &prepared.admission,
+                prepared.idempotency,
+            )
             .map_err(WorthQueryApplicationRecoveryRequestDenial::Idempotency)?;
         self.check_discovered_recovery_liveness()?;
         match read.into_resolution() {

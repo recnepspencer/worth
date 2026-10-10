@@ -3,6 +3,9 @@ use crate::indexes::data::DerivedIndexGenerationId;
 
 #[test]
 fn repeated_global_same_basis_builds_reclaim_duplicates_but_keep_pinned_root() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
     let first = create_entity_outcome(&runtime, "global-duplicate-first");
     let index = runtime.index_authority().register(DerivedIndexDefinition {
@@ -13,13 +16,14 @@ fn repeated_global_same_basis_builds_reclaim_duplicates_but_keep_pinned_root() {
         },
         branch_scoped: false,
     });
-    let built = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    let built = runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id: first.commit.commit_id,
             branch_id: BranchId("main".into()),
             index_ids: vec![index.index_id],
-        });
+        },
+    );
     assert!(built.failed_indexes.is_empty());
     let original = built.generations[0].generation_id;
     let template = runtime.indexes.generation(original).unwrap();
@@ -34,13 +38,14 @@ fn repeated_global_same_basis_builds_reclaim_duplicates_but_keep_pinned_root() {
     }
     let selected_pinned = *duplicates.last().unwrap();
     let next = create_entity_outcome(&runtime, "global-duplicate-next");
-    let next_built = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    let next_built = runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id: next.commit.commit_id,
             branch_id: BranchId("main".into()),
             index_ids: vec![index.index_id],
-        });
+        },
+    );
     assert!(next_built.failed_indexes.is_empty());
     let current = next_built.generations[0].generation_id;
     release_test_commit_snapshot(&runtime, &next);

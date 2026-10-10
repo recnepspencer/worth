@@ -302,7 +302,7 @@ fn every_installed_provider_family_mismatch_denies_before_epoch_construction() {
 }
 
 fn finish(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     runtime: crate::domain_computation::WorthQueryExecutionRuntime,
     operation: crate::domain_computation::WorthQueryExecutionBoundOperationAuthority,
@@ -328,9 +328,11 @@ fn admit(
 }
 
 fn finish_epoch(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     epoch: crate::domain_computation::WorthQueryIteratingDirectConvergenceEpoch,
 ) {
+    let installed_phase = epoch.fixture_phase(execution);
+    let execution = &installed_phase;
     let started = match epoch.begin_iteration(execution, call("substitution-recovery")) {
         Ok(started) => started,
         Err(_) => panic!("recovered exact graph authority must start"),

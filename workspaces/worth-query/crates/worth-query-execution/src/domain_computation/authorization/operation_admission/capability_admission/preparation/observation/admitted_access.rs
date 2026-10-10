@@ -298,6 +298,7 @@ where
 
     pub(in crate::domain_computation::authorization) fn transition_operation(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         operation: &worth_query_installation::facade::WorthQueryInstalledApplicationOperation<
             Schema,
@@ -318,6 +319,7 @@ where
         Schema: ApplicationSchema,
     {
         operation_progression::transition_capability_operation(
+            execution,
             runtime,
             self,
             operation,
@@ -345,6 +347,7 @@ where
 
     pub(in crate::domain_computation::authorization) fn with_exact_observation<Output>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         observe: impl FnOnce(
             &exact_observation::WorthQueryExactCapabilityObservation<'_, Schema>,
@@ -353,7 +356,7 @@ where
     where
         Schema: ApplicationSchema,
     {
-        exact_observation::with_exact_observation(self, runtime, observe)
+        exact_observation::with_exact_observation(execution, self, runtime, observe)
     }
 
     pub(in crate::domain_computation::authorization) fn retain_observed_support(

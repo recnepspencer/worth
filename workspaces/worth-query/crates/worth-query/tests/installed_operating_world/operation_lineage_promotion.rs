@@ -6,7 +6,11 @@ use super::operation_lineage::execute;
 
 #[test]
 fn promotion_mints_query_admitted_graph_identity_and_rejects_the_wrong_publication() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = lineage_workflow_workspace(
+        request_execution,
         "lineage-promotion",
         domain::WorthQueryOperationLineageContract::Evolve,
         true,
@@ -57,7 +61,11 @@ fn promotion_mints_query_admitted_graph_identity_and_rejects_the_wrong_publicati
 
 #[test]
 fn plural_lineage_cannot_invent_authority_to_entity_correspondence_by_position() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = lineage_workflow_workspace(
+        request_execution,
         "lineage-plural-promotion",
         domain::WorthQueryOperationLineageContract::Evolve,
         true,

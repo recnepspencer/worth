@@ -214,6 +214,7 @@ where
                         Scope,
                         Binding,
                     >(
+                        &phase,
                         self.application,
                         &self.prepared,
                         required,

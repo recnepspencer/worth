@@ -5,100 +5,19 @@ use super::intent_receipt_preview_identity_fixtures::*;
 use super::support::*;
 use crate::WorthQueryEvidenceScope;
 
-#[test]
-fn authoritative_intent_receipt_identity_keeps_typed_scope_under_delimiter_pressure() {
-    let mut runtime = bridge_backed_runtime_with_support(intent_support_profile());
-
-    let left = runtime
-        .execute_intent(WorthQueryIntentDeclaration::strategy_commit(
-            "intent|receipt",
-            "strategy.intent.reconcile",
-            "1.0",
-            "intent.reconcile.input.v1",
-            test_intent_input([("entity", "task|1"), ("title", "alpha:beta")]),
-        ))
-        .expect("left intent should execute");
-    let right = runtime
-        .execute_intent(WorthQueryIntentDeclaration::strategy_commit(
-            "intent",
-            "strategy.intent.reconcile",
-            "1.0",
-            "intent.reconcile.input.v1",
-            test_intent_input([("entity", "receipt|task"), ("title", "alpha:beta")]),
-        ))
-        .expect("right intent should execute");
-
-    assert_eq!(
-        left.receipt_identity().scope(),
-        WorthQueryEvidenceScope::AuthoritativeIntentReceipt
-    );
-    assert_eq!(
-        left.execution_provenance()
-            .execution_provenance_chain_identity()
-            .scope(),
-        WorthQueryEvidenceScope::IntentExecutionProvenanceChain
-    );
-    assert_ne!(
-        left.receipt_identity(),
-        right.receipt_identity(),
-        "intent receipt identity must not collapse delimiter-shaped field boundaries"
-    );
-    assert_ne!(
-        left.execution_provenance()
-            .execution_provenance_chain_identity(),
-        right
-            .execution_provenance()
-            .execution_provenance_chain_identity(),
-        "provenance chain identity must not collapse delimiter-shaped field boundaries"
-    );
-    assert_eq!(
-        left.receipt_identity(),
-        &compose_authoritative_intent_receipt_identity(&left),
-        "runtime authoritative intent receipt identity must match independent typed composition"
-    );
-    assert_eq!(
-        left.execution_provenance()
-            .execution_provenance_chain_identity(),
-        &compose_intent_execution_provenance_chain_identity(&left),
-        "runtime provenance chain identity must match independent typed composition"
-    );
-
-    let inspection = runtime
-        .inspect_intent_receipt(&left)
-        .expect("authoritative receipt inspection should inspect");
-    let right_inspection = runtime
-        .inspect_intent_receipt(&right)
-        .expect("right authoritative receipt inspection should inspect");
-    assert_eq!(
-        inspection.delivery_counters().counter_identity().scope(),
-        WorthQueryEvidenceScope::IntentInspectionDeliveryCounters
-    );
-    assert_eq!(
-        inspection.inspection_identity().scope(),
-        WorthQueryEvidenceScope::IntentReceiptInspection
-    );
-    assert_eq!(
-        inspection.inspection_identity(),
-        &compose_authoritative_intent_receipt_inspection_identity(&inspection),
-        "authoritative inspection identity must match typed composition"
-    );
-    assert_eq!(
-        inspection.receipt_identity(),
-        left.receipt_identity(),
-        "authoritative inspection should retain the typed receipt identity"
-    );
-    assert_ne!(
-        inspection.inspection_identity(),
-        right_inspection.inspection_identity(),
-        "authoritative inspection identity must not collapse delimiter-shaped receipt fields"
-    );
-}
+#[path = "intent_receipt_identity/authoritative_intent_receipt_identity_keeps_typed_scope_under_de.rs"]
+mod authoritative_intent_receipt_identity_keeps_typed_scope_under_de;
 
 #[test]
 fn effect_triggered_intent_receipt_identity_keeps_nested_receipts_typed() {
-    let mut runtime = bridge_backed_runtime_with_support(intent_support_profile());
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime =
+        bridge_backed_runtime_with_support(request_execution, intent_support_profile());
     let live = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "tasks.effect-identity",
             task_live_request(),
             task_schema(),
@@ -113,14 +32,22 @@ fn effect_triggered_intent_receipt_identity_keeps_nested_receipts_typed() {
         .expect("write-intent effect should declare");
 
     runtime
-        .write(test_update_string_aspect_command(
-            crate::memory_workspace::admit_authored_entity_label("task|identity"),
-            "title.value",
-            "title:identity",
-        ))
+        .write(
+            request_execution,
+            test_update_string_aspect_command(
+                crate::memory_workspace::admit_authored_entity_label("task|identity"),
+                "title.value",
+                "title:identity",
+            ),
+        )
         .expect("write should route pending effect intent");
     let receipt = runtime
-        .execute_next_effect_write_intent(&effect, "1.0", "effect.intent.input.v1")
+        .execute_next_effect_write_intent(
+            request_execution,
+            &effect,
+            "1.0",
+            "effect.intent.input.v1",
+        )
         .expect("pending effect intent should execute");
 
     assert_eq!(
@@ -143,7 +70,7 @@ fn effect_triggered_intent_receipt_identity_keeps_nested_receipts_typed() {
     );
 
     let inspection = runtime
-        .inspect_effect_intent_receipt(&receipt)
+        .inspect_effect_intent_receipt(request_execution, &receipt)
         .expect("effect receipt inspection should inspect");
     assert_eq!(
         inspection.phase_identity().scope(),
@@ -182,38 +109,61 @@ fn effect_triggered_intent_receipt_identity_keeps_nested_receipts_typed() {
 
 #[test]
 fn effect_triggered_intent_receipt_identity_changes_with_nested_authoritative_receipt() {
-    let mut left_runtime = bridge_backed_runtime_with_support(intent_support_profile());
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut left_runtime =
+        bridge_backed_runtime_with_support(request_execution, intent_support_profile());
     let left_effect = declare_identity_effect(
+        request_execution,
         &mut left_runtime,
         "tasks.effect-left|identity",
         "effects.identity|receipt",
     );
     left_runtime
-        .write(test_update_string_aspect_command(
-            crate::memory_workspace::admit_authored_entity_label("task|identity"),
-            "title.value",
-            "title:left",
-        ))
+        .write(
+            request_execution,
+            test_update_string_aspect_command(
+                crate::memory_workspace::admit_authored_entity_label("task|identity"),
+                "title.value",
+                "title:left",
+            ),
+        )
         .expect("left write should route pending effect intent");
     let left = left_runtime
-        .execute_next_effect_write_intent(&left_effect, "1.0", "effect.intent.input.v1")
+        .execute_next_effect_write_intent(
+            request_execution,
+            &left_effect,
+            "1.0",
+            "effect.intent.input.v1",
+        )
         .expect("left pending effect intent should execute");
 
-    let mut right_runtime = bridge_backed_runtime_with_support(intent_support_profile());
+    let mut right_runtime =
+        bridge_backed_runtime_with_support(request_execution, intent_support_profile());
     let right_effect = declare_identity_effect(
+        request_execution,
         &mut right_runtime,
         "tasks.effect-right|identity",
         "effects.identity",
     );
     right_runtime
-        .write(test_update_string_aspect_command(
-            crate::memory_workspace::admit_authored_entity_label("identity|task"),
-            "title.value",
-            "title:right",
-        ))
+        .write(
+            request_execution,
+            test_update_string_aspect_command(
+                crate::memory_workspace::admit_authored_entity_label("identity|task"),
+                "title.value",
+                "title:right",
+            ),
+        )
         .expect("right write should route pending effect intent");
     let right = right_runtime
-        .execute_next_effect_write_intent(&right_effect, "1.0", "effect.intent.input.v1")
+        .execute_next_effect_write_intent(
+            request_execution,
+            &right_effect,
+            "1.0",
+            "effect.intent.input.v1",
+        )
         .expect("right pending effect intent should execute");
 
     assert_eq!(
@@ -250,6 +200,9 @@ fn effect_triggered_intent_receipt_identity_changes_with_nested_authoritative_re
 
 #[test]
 fn preview_intent_receipt_inspection_identity_keeps_basis_and_receipt_typed() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
@@ -262,11 +215,12 @@ fn preview_intent_receipt_inspection_identity_keeps_basis_and_receipt_typed() {
         .intent_authority(TestIntentAuthority)
         .support_profile(intent_support_profile())
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("intent-capable runtime should build");
 
     let mut preview = runtime
         .preview_with_options(
+            request_execution,
             test_session_label("preview|identity:basis"),
             WorthQueryPreviewOptions::sandboxed_write_intent(),
         )
@@ -281,7 +235,7 @@ fn preview_intent_receipt_inspection_identity_keeps_basis_and_receipt_typed() {
         ))
         .expect("preview intent should be admitted");
     let inspection = runtime
-        .inspect_preview_intent_receipt(&receipt)
+        .inspect_preview_intent_receipt(request_execution, &receipt)
         .expect("preview receipt inspection should be available");
 
     assert_eq!(
@@ -317,12 +271,17 @@ fn preview_intent_receipt_inspection_identity_keeps_basis_and_receipt_typed() {
 
 #[test]
 fn preview_intent_receipt_inspection_basis_resists_delimiter_sequence_pressure() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let left = preview_receipt_with_basis(
+        request_execution,
         ["alpha", "beta|gamma"],
         "preview|intent",
         test_intent_input([("entity", "preview|task"), ("title", "left")]),
     );
     let right = preview_receipt_with_basis(
+        request_execution,
         ["intent|alpha", "beta|gamma"],
         "preview",
         test_intent_input([("entity", "preview|task"), ("title", "right")]),

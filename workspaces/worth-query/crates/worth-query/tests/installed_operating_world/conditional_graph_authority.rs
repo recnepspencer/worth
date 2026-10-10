@@ -14,8 +14,12 @@ fn geometry_node_location() -> domain::WorthQueryConditionalNodeLocation {
 
 #[test]
 fn installed_operation_and_exact_graph_participation_mint_the_candidate() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let declared = dependency(domain::WorthQuerySemanticLocality::SourceRecord);
     let workspace = conditional_workspace(
+        request_execution,
         "installed-correspondence-candidate",
         node(
             "geometry",
@@ -92,7 +96,11 @@ fn installed_operation_and_exact_graph_participation_mint_the_candidate() {
 
 #[test]
 fn bound_query_facade_installs_correspondence_with_operation_authority() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let workspace = conditional_workspace(
+        request_execution,
         "installed-correspondence-owner",
         node(
             "geometry",
@@ -177,7 +185,11 @@ fn bound_query_facade_installs_correspondence_with_operation_authority() {
 
 #[test]
 fn foreign_runtime_graph_participation_denies_before_bridge_admission() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let first = conditional_workspace(
+        request_execution,
         "candidate-runtime-first",
         node(
             "geometry",
@@ -187,6 +199,7 @@ fn foreign_runtime_graph_participation_denies_before_bridge_admission() {
     )
     .unwrap();
     let second = conditional_workspace(
+        request_execution,
         "candidate-runtime-second",
         node(
             "geometry",

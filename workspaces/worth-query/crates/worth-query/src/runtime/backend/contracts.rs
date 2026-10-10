@@ -39,6 +39,7 @@ pub trait WorthQueryRuntimeBackend:
     #[doc(hidden)]
     fn prepare_product_source(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
         worth_query_execution::facade::integration::WorthQueryProductRelationalInstallation,
         super::WorthQueryProductSourceDenial,
@@ -87,7 +88,10 @@ pub trait WorthQueryRuntimeBackend:
         ))
     }
 
-    fn current_snapshot_identity(&self) -> WorthQuerySnapshotIdentity {
+    fn current_snapshot_identity(
+        &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> WorthQuerySnapshotIdentity {
         super::unavailable_snapshot_identity()
     }
 
@@ -109,11 +113,13 @@ pub trait WorthQueryRuntimeBackend:
 
     fn write(
         &mut self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         mutation: WorthQueryBackendAdmissibleMutation,
     ) -> Result<WorthQueryMutationReceipt, WorthQueryWorkspaceError>;
 
     fn write_batch(
         &mut self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         mutations: Vec<WorthQueryBackendAdmissibleMutation>,
     ) -> Result<Vec<WorthQueryMutationReceipt>, WorthQueryWorkspaceError>;
 
@@ -126,6 +132,7 @@ pub trait WorthQueryRuntimeBackend:
 
     fn verify_existing_truth_assertion(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: &WorthQueryExistingTruthTargetBinding,
         _aspects: &[crate::runtime::WorthQueryAuthoredAspectMutation],
     ) -> Result<WorthQueryVerifiedExistingTruthAssertion, WorthQueryExistingTruthAssertionDenial>
@@ -154,6 +161,7 @@ pub trait WorthQueryRuntimeBackend:
 
     fn execute_intent(
         &mut self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         declaration: &WorthQueryIntentDeclaration,
     ) -> Result<WorthQueryIntentExecution, WorthQueryRuntimeError>;
 
@@ -178,6 +186,7 @@ pub trait WorthQueryRuntimeBackend:
 
     fn capture_query_merge_authority(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         _target_branch: &crate::runtime::WorthQueryAdmittedBranchName,
         _source_branch: &crate::runtime::WorthQueryAdmittedBranchName,
     ) -> Result<WorthQueryBackendMergeAuthority, WorthQueryWorkspaceError> {
@@ -188,6 +197,7 @@ pub trait WorthQueryRuntimeBackend:
 
     fn validate_query_merge_authority(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         _authority: &WorthQueryBackendMergeAuthority,
     ) -> Result<(), WorthQueryWorkspaceError> {
         Err(WorthQueryWorkspaceError::new(
@@ -197,6 +207,7 @@ pub trait WorthQueryRuntimeBackend:
 
     fn execute_query_merge(
         &mut self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         _authority: &WorthQueryBackendMergeAuthority,
         _declaration: &crate::workflow::LoweredMergeWorkflowDeclaration,
     ) -> Result<
@@ -222,6 +233,7 @@ pub trait WorthQueryRuntimeBackend:
 
     fn live_entities_for_target(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         target: &WorthQueryLiveArtifactTarget,
     ) -> Vec<WorthQueryEntity>;
 
@@ -238,6 +250,7 @@ pub trait WorthQueryRuntimeBackend:
 
     fn collection_entity(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         _collection: &str,
         _identity: &WorthQueryEntityIdentity,
     ) -> WorthQueryBackendEntityLookup {
@@ -329,12 +342,16 @@ pub trait WorthQueryRuntimeSchemaAdapter {
 }
 
 pub trait WorthQueryRuntimeSnapshotIdentityAdapter {
-    fn current_snapshot_identity(&self) -> WorthQuerySnapshotIdentity;
+    fn current_snapshot_identity(
+        &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> WorthQuerySnapshotIdentity;
 }
 
 pub trait WorthQueryRuntimeExistingTruthVerificationAdapter {
     fn verify_existing_truth_assertion(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: &WorthQueryExistingTruthTargetBinding,
         aspects: &[crate::runtime::WorthQueryAuthoredAspectMutation],
     ) -> Result<(), WorthQueryExistingTruthAssertionDenial>;
@@ -345,52 +362,6 @@ pub trait WorthQueryRuntimeExistingTruthVerificationAdapter {
     ) -> Result<Vec<WorthQueryExistingTruthProbeField>, WorthQueryExistingTruthProbeDenial>;
 }
 
-pub trait WorthQueryRuntimeWriteAuthorityAdapter {
-    fn build_bridge_mutation_authority_bundle(
-        &self,
-        bridge: &RuntimeBridge,
-        snapshot_identity: &WorthQuerySnapshotIdentity,
-        mutation: &WorthQueryBackendAdmissibleMutation,
-        collection: &str,
-        entity_identity: &WorthQueryEntityIdentity,
-        mutation_kind: WorthQueryMutationKind,
-    ) -> Result<BridgeMutationAuthorityBundle, WorthQueryWorkspaceError> {
-        super::build_bridge_authority_bundle(
-            bridge,
-            snapshot_identity,
-            mutation,
-            super::WorthQueryBridgeMutationTarget::new(collection, entity_identity, mutation_kind),
-        )
-    }
-
-    fn build_write_authority_execution_receipt(
-        &self,
-        mutation: &WorthQueryBackendAdmissibleMutation,
-        receipt: WorthQueryMutationReceipt,
-    ) -> WriteAuthorityExecutionReceipt {
-        WriteAuthorityExecutionReceipt::from_backend_admissible_mutation(
-            mutation,
-            receipt.admit_runtime_write_authority(),
-        )
-    }
-
-    fn write(
-        &mut self,
-        bridge: &RuntimeBridge,
-        relational_runtime: Option<&mut RelationalRuntime>,
-        mutation: WorthQueryBackendAdmissibleMutation,
-    ) -> Result<WriteAuthorityExecutionReceipt, WorthQueryWorkspaceError>;
-
-    fn write_batch(
-        &mut self,
-        bridge: &RuntimeBridge,
-        mut relational_runtime: Option<&mut RelationalRuntime>,
-        mutations: Vec<WorthQueryBackendAdmissibleMutation>,
-    ) -> Result<Vec<WriteAuthorityExecutionReceipt>, WorthQueryWorkspaceError> {
-        let mut receipts = Vec::with_capacity(mutations.len());
-        for mutation in mutations {
-            receipts.push(self.write(bridge, relational_runtime.as_deref_mut(), mutation)?);
-        }
-        Ok(receipts)
-    }
-}
+#[path = "write_authority_adapter.rs"]
+mod write_authority_adapter;
+pub use write_authority_adapter::WorthQueryRuntimeWriteAuthorityAdapter;

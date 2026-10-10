@@ -3,6 +3,9 @@ mod support;
 use worth_relational::facade::runtime::RelationalRuntimeApi;
 
 fn main() {
+    let host_request = support::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(support::demo_schema_registry())
         .build();
@@ -22,7 +25,7 @@ fn main() {
         .expect("snapshot read path");
     let snap_read = runtime
         .read_truth()
-        .read_snapshot(snapshot)
+        .read_snapshot(snapshot, request_execution)
         .expect("snapshot read");
 
     let authoritative_aspect_state = snap_read

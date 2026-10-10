@@ -53,10 +53,11 @@ impl WorthQueryPrincipalCurrentnessDependency {
 
     pub(in crate::domain_computation) fn remains_current_in(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     ) -> bool {
         self.freshness
-            .remains_current_in(runtime, snapshot, &self.layout, &self.binding)
+            .remains_current_in(execution, runtime, snapshot, &self.layout, &self.binding)
     }
 }

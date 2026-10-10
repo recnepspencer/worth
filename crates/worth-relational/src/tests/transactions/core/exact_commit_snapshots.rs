@@ -4,6 +4,9 @@ use crate::tests::support::*;
 
 #[test]
 fn exact_commit_snapshot_survives_later_update_and_delete_without_reconstruction() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let created = create_entity_outcome(&runtime, "before");
     let entity = changed_entities(&created)[0];
@@ -27,9 +30,9 @@ fn exact_commit_snapshot_survives_later_update_and_delete_without_reconstruction
     );
     let created_record = runtime
         .read_truth()
-        .project_snapshot(created_observation.snapshot_handle())
+        .project_snapshot(created_observation.snapshot_handle(), execution)
         .expect("retained handle resolves")
-        .all_authoritative_entity_records()
+        .all_authoritative_entity_records(execution)
         .into_iter()
         .find(|record| record.entity_id == entity)
         .expect("entity existed at creation commit");
@@ -42,17 +45,17 @@ fn exact_commit_snapshot_survives_later_update_and_delete_without_reconstruction
         .expect("updated commit publication remains retained after deletion");
     let updated_record = runtime
         .read_truth()
-        .project_snapshot(updated_observation.snapshot_handle())
+        .project_snapshot(updated_observation.snapshot_handle(), execution)
         .expect("retained update handle resolves")
-        .all_authoritative_entity_records()
+        .all_authoritative_entity_records(execution)
         .into_iter()
         .find(|record| record.entity_id == entity)
         .expect("entity existed at update commit");
     assert_eq!(read_entity_name(&updated_record), Some("after".to_owned()));
     assert!(runtime
         .read_truth()
-        .project_historical_version(runtime.current_version_id())
-        .all_authoritative_entity_records()
+        .project_historical_version(execution, runtime.current_version_id())
+        .all_authoritative_entity_records(execution,)
         .into_iter()
         .all(|record| record.entity_id != entity));
     release_test_commit_snapshot(&runtime, &created);
@@ -102,6 +105,9 @@ fn exact_commit_snapshot_rejects_foreign_runtime_branch_and_commit_identity() {
 
 #[test]
 fn exact_commit_snapshot_capacity_defers_movement_until_explicit_release() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(test_schema_registry())
         .publication(PublicationConfig {
@@ -142,7 +148,7 @@ fn exact_commit_snapshot_capacity_defers_movement_until_explicit_release() {
     assert_eq!(runtime.current_version_id(), version_before);
     runtime
         .read_truth()
-        .project_snapshot(&first.snapshot)
+        .project_snapshot(&first.snapshot, execution)
         .expect("capacity denial cannot invalidate the retained publication");
 
     runtime

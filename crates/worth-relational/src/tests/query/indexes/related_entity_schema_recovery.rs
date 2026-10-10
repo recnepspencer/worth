@@ -12,8 +12,11 @@ use crate::facade::schema::{
 
 #[test]
 fn recovered_related_ordering_uses_each_exact_roots_schema_contract() {
-    let (runtime, fixture) = v1_ordering_runtime();
-    let recovered = transition_checkpoint_and_recover(runtime, fixture.index_id);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, fixture) = v1_ordering_runtime(execution);
+    let recovered = transition_checkpoint_and_recover(execution, runtime, fixture.index_id);
     let RelatedOrderingFixture {
         parent,
         alpha,
@@ -44,6 +47,7 @@ fn recovered_related_ordering_uses_each_exact_roots_schema_contract() {
             .execute_bounded_related_entity_ordered_lookup(
                 related_request(legacy_snapshot.clone(), index_id, parent),
                 parity,
+                execution,
             )
             .unwrap();
         assert_eq!(old.child_entity_ids(), &[alpha, beta]);
@@ -61,6 +65,7 @@ fn recovered_related_ordering_uses_each_exact_roots_schema_contract() {
         .execute_bounded_related_entity_ordered_lookup(
             related_request(current_snapshot, index_id, parent),
             BoundedIndexParityMode::Certification,
+            execution,
         )
         .unwrap();
     assert!(current.child_entity_ids().is_empty());
@@ -73,7 +78,9 @@ struct RelatedOrderingFixture {
     index_id: DerivedIndexId,
 }
 
-fn v1_ordering_runtime() -> (RelationalRuntime, RelatedOrderingFixture) {
+fn v1_ordering_runtime(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> (RelationalRuntime, RelatedOrderingFixture) {
     let v1_registry = AspectSchemaFixture::with_default_declared_aspects(
         CascadeDeletePolicy::CascadeDeleteRelations,
     )
@@ -99,6 +106,7 @@ fn v1_ordering_runtime() -> (RelationalRuntime, RelatedOrderingFixture) {
         .unwrap();
     let (_, v1_basis) = runtime.observe_branch(&v1_branch).unwrap();
     let v1_build = runtime.index_authority().build_for_basis(
+        execution,
         DerivedIndexBuildRequest {
             source_commit_id: v1_commit.commit.commit_id,
             branch_id: BranchId("v1-ordering".to_owned()),
@@ -120,6 +128,7 @@ fn v1_ordering_runtime() -> (RelationalRuntime, RelatedOrderingFixture) {
 }
 
 fn transition_checkpoint_and_recover(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     mut runtime: RelationalRuntime,
     index_id: DerivedIndexId,
 ) -> RelationalRuntime {
@@ -160,13 +169,14 @@ fn transition_checkpoint_and_recover(
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("v2 schema transition commits");
-    let v2_build = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    let v2_build = runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id: v2_commit.commit.commit_id,
             branch_id: BranchId("main".to_owned()),
             index_ids: vec![index_id],
-        });
+        },
+    );
     assert!(v2_build.failed_indexes.is_empty());
 
     runtime
@@ -181,7 +191,7 @@ fn transition_checkpoint_and_recover(
         .build();
     recovered
         .durability_recovery()
-        .recover(plan)
+        .recover(execution, plan)
         .expect("both exact root schema carriers recover");
     recovered
 }

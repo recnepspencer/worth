@@ -34,6 +34,7 @@ impl WorthUiRuntimeQueryBinding {
 
     pub fn refresh_operation_live(
         &mut self,
+        execution: &worth_runtime_bridge::facade::ExecutionRequest<'_, '_>,
         request: crate::WorthUiOperationLiveRefreshRequest<'_>,
     ) -> Result<crate::WorthUiOperationLiveRefreshOutcome, crate::WorthUiOperationLiveRefreshError>
     {
@@ -42,7 +43,9 @@ impl WorthUiRuntimeQueryBinding {
             Self::QueryFree => Err(crate::WorthUiOperationLiveRefreshError::Ui(
                 crate::WorthUiOperationLiveRefreshDenial::ResourceNotRetained,
             )),
-            Self::Installed(binding) => binding.refresh_operation_live(&reference, workspace),
+            Self::Installed(binding) => {
+                binding.refresh_operation_live(execution, &reference, workspace)
+            }
         }
     }
 

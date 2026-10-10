@@ -21,6 +21,7 @@ pub struct FrontierFieldEqualityTruthReadLimitExceeded {
 impl<'runtime> VisibilityReadContext<'runtime> {
     pub fn bounded_entity_field_equals_for_frontier_at_version(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_ids: &BTreeSet<crate::identity::data::EntityId>,
         kind_id: crate::identity::data::KindId,
         field_locator: &AspectFieldLocator,

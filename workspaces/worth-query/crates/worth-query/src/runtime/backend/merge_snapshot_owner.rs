@@ -7,6 +7,7 @@
 pub trait WorthQueryMergeSnapshotOwner {
     fn release_query_merge_snapshot(
         &mut self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         _snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     ) {
         panic!("a backend that performs a relational merge must settle its published snapshot")

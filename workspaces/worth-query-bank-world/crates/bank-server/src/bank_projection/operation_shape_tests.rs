@@ -40,25 +40,28 @@ fn payment_projection_rejects_multiple_decision_entities() {
                 .unwrap();
         }
     });
-    let completed = harness
-        .projection
-        .project_operation::<ApprovePaymentOperation, _>(
-            |reader| {
-                let payment_entity = reader
-                    .resolve_entity(PaymentIdentityField::reference(), payment)
-                    .unwrap();
-                project_payment_approval(
-                    reader,
-                    &payment_entity,
-                    &ApprovePayment {
-                        payment,
-                        approver: id(BankPrincipalId::new, 3),
-                    },
-                )
-            },
-            ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let completed = crate::test_host_policy::with_phase(harness._runtime.runtime(), |phase| {
+        harness
+            .projection
+            .project_operation::<ApprovePaymentOperation, _>(
+                phase,
+                |reader| {
+                    let payment_entity = reader
+                        .resolve_entity(PaymentIdentityField::reference(), payment)
+                        .unwrap();
+                    project_payment_approval(
+                        reader,
+                        &payment_entity,
+                        &ApprovePayment {
+                            payment,
+                            approver: id(BankPrincipalId::new, 3),
+                        },
+                    )
+                },
+                ExecutionAllocationPolicy::SystemAllocation,
+            )
+    })
+    .unwrap();
     assert_eq!(
         completed.output().as_ref().err(),
         Some(&BankProjectionDenial::AmbiguousRelation("PaymentApproval"))
@@ -87,27 +90,30 @@ fn payment_projection_preserves_the_source_account_balance() {
     let harness = ProjectionHarness::install(&snapshot, |graph| {
         bind_bank_world_with_estate(graph, &snapshot, &[], &[], None).unwrap();
     });
-    let projected = harness
-        .projection
-        .project_operation::<ApprovePaymentOperation, _>(
-            |reader| {
-                let payment_entity = reader
-                    .resolve_entity(PaymentIdentityField::reference(), payment)
-                    .unwrap();
-                project_payment_approval(
-                    reader,
-                    &payment_entity,
-                    &ApprovePayment {
-                        payment,
-                        approver: id(BankPrincipalId::new, 3),
-                    },
-                )
-            },
-            ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
-        .into_output()
-        .unwrap();
+    let projected = crate::test_host_policy::with_phase(harness._runtime.runtime(), |phase| {
+        harness
+            .projection
+            .project_operation::<ApprovePaymentOperation, _>(
+                phase,
+                |reader| {
+                    let payment_entity = reader
+                        .resolve_entity(PaymentIdentityField::reference(), payment)
+                        .unwrap();
+                    project_payment_approval(
+                        reader,
+                        &payment_entity,
+                        &ApprovePayment {
+                            payment,
+                            approver: id(BankPrincipalId::new, 3),
+                        },
+                    )
+                },
+                ExecutionAllocationPolicy::SystemAllocation,
+            )
+    })
+    .unwrap()
+    .into_output()
+    .unwrap();
     assert_eq!(projected.starting_balance(source), Some(expected));
     assert!(projected.snapshot().journal().is_empty());
 }
@@ -129,26 +135,29 @@ fn payment_work(
     let harness = ProjectionHarness::install(snapshot, |graph| {
         bind_bank_world_with_estate(graph, snapshot, &[], &[], None).unwrap();
     });
-    harness
-        .projection
-        .project_operation::<ApprovePaymentOperation, _>(
-            |reader| {
-                let payment_entity = reader
-                    .resolve_entity(PaymentIdentityField::reference(), payment)
-                    .unwrap();
-                project_payment_approval(
-                    reader,
-                    &payment_entity,
-                    &ApprovePayment {
-                        payment,
-                        approver: id(BankPrincipalId::new, 3),
-                    },
-                )
-            },
-            ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
-        .work()
+    crate::test_host_policy::with_phase(harness._runtime.runtime(), |phase| {
+        harness
+            .projection
+            .project_operation::<ApprovePaymentOperation, _>(
+                phase,
+                |reader| {
+                    let payment_entity = reader
+                        .resolve_entity(PaymentIdentityField::reference(), payment)
+                        .unwrap();
+                    project_payment_approval(
+                        reader,
+                        &payment_entity,
+                        &ApprovePayment {
+                            payment,
+                            approver: id(BankPrincipalId::new, 3),
+                        },
+                    )
+                },
+                ExecutionAllocationPolicy::SystemAllocation,
+            )
+    })
+    .unwrap()
+    .work()
 }
 
 fn reversal_work(
@@ -158,29 +167,32 @@ fn reversal_work(
     let harness = ProjectionHarness::install(snapshot, |graph| {
         bind_bank_world_with_estate(graph, snapshot, &[], &[], None).unwrap();
     });
-    harness
-        .projection
-        .project_operation::<ReverseJournalOperation, _>(
-            |reader| {
-                let institution_id = id(InstitutionId::new, 1);
-                let institution = reader
-                    .resolve_entity(InstitutionIdentityField::reference(), institution_id)
-                    .unwrap();
-                project_journal_reversal(
-                    reader,
-                    &institution,
-                    institution_id,
-                    &ReverseJournal {
-                        institution: institution_id,
-                        journal,
-                        reason: ReversalReason::OperatorCorrection,
-                    },
-                )
-            },
-            ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
-        .work()
+    crate::test_host_policy::with_phase(harness._runtime.runtime(), |phase| {
+        harness
+            .projection
+            .project_operation::<ReverseJournalOperation, _>(
+                phase,
+                |reader| {
+                    let institution_id = id(InstitutionId::new, 1);
+                    let institution = reader
+                        .resolve_entity(InstitutionIdentityField::reference(), institution_id)
+                        .unwrap();
+                    project_journal_reversal(
+                        reader,
+                        &institution,
+                        institution_id,
+                        &ReverseJournal {
+                            institution: institution_id,
+                            journal,
+                            reason: ReversalReason::OperatorCorrection,
+                        },
+                    )
+                },
+                ExecutionAllocationPolicy::SystemAllocation,
+            )
+    })
+    .unwrap()
+    .work()
 }
 
 fn pending_payment_world(unrelated: usize) -> (BankSnapshot, bank_domain::model::PaymentId) {

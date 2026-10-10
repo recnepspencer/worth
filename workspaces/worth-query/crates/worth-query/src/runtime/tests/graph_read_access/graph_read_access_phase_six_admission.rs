@@ -11,7 +11,13 @@ use crate::runtime::tests::graph_read_access::support::graph_read_access_cost_mo
 
 #[test]
 fn broad_read_is_denied_by_access_admission_before_execution() {
-    let mut workspace = workspace("graph-read-access.phase-six.budget-denial");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = workspace(
+        request_execution,
+        "graph-read-access.phase-six.budget-denial",
+    );
     let family = dense_traversal_family(&mut workspace, "phase-six-budget-denial");
     let review = workspace
         .read_family_intent(&family)
@@ -53,7 +59,7 @@ fn broad_read_is_denied_by_access_admission_before_execution() {
     );
     assert_read_denial_carries_admission(
         review
-            .execute()
+            .execute(request_execution)
             .expect_err("denied graph read should not execute"),
         admission.digest(),
     );
@@ -61,7 +67,13 @@ fn broad_read_is_denied_by_access_admission_before_execution() {
 
 #[test]
 fn inline_read_review_plan_is_same_artifact_attached_to_execution_receipt() {
-    let mut workspace = workspace("graph-read-access.phase-six.inline-receipt");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = workspace(
+        request_execution,
+        "graph-read-access.phase-six.inline-receipt",
+    );
     let family = projection_only_family(&mut workspace, "phase-six-inline-receipt");
     let review = workspace
         .read_family_intent(&family)
@@ -77,7 +89,7 @@ fn inline_read_review_plan_is_same_artifact_attached_to_execution_receipt() {
         .expect("inline graph read should admit with access plan");
     let binding_digest = admitted.execution_binding().binding_digest().to_string();
     let result = admitted
-        .execute()
+        .execute(request_execution)
         .expect("admitted inline read should execute");
     let receipt_plan = result
         .receipt()
@@ -117,17 +129,26 @@ fn inline_read_review_plan_is_same_artifact_attached_to_execution_receipt() {
 
 #[test]
 fn equivalent_read_fronts_produce_same_access_admission_digest() {
-    let mut execute_workspace = workspace("graph-read-access.phase-six.execute-front");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut execute_workspace = workspace(
+        request_execution,
+        "graph-read-access.phase-six.execute-front",
+    );
     let execute_family = projection_only_family(&mut execute_workspace, "phase-six-execute-front");
     let execute_result = execute_workspace
-        .execute_read_family(&execute_family)
+        .execute_read_family(request_execution, &execute_family)
         .expect("execute helper should execute through admission");
 
-    let mut intent_workspace = workspace("graph-read-access.phase-six.intent-front");
+    let mut intent_workspace = workspace(
+        request_execution,
+        "graph-read-access.phase-six.intent-front",
+    );
     let intent_family = projection_only_family(&mut intent_workspace, "phase-six-intent-front");
     let intent_result = intent_workspace
         .read_family_intent(&intent_family)
-        .execute()
+        .execute(request_execution)
         .expect("intent helper should execute through admission");
 
     assert_eq!(
@@ -146,7 +167,13 @@ fn equivalent_read_fronts_produce_same_access_admission_digest() {
 
 #[test]
 fn access_case_registry_covers_each_requirement_row_before_execution() {
-    let mut workspace = workspace("graph-read-access.phase-six.case-registry");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = workspace(
+        request_execution,
+        "graph-read-access.phase-six.case-registry",
+    );
     let family = frontier_search_family(&mut workspace, "phase-six-case-registry");
     let admission = admit_graph_read_access_for_family(&family).expect("admission should derive");
     let requirement_kinds = admission
@@ -192,7 +219,10 @@ fn access_case_registry_covers_each_requirement_row_before_execution() {
 
 #[test]
 fn admission_explanation_exposes_requirements_cost_and_budget_without_executor_topology() {
-    let mut workspace = workspace("graph-read-access.phase-six.explanation");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = workspace(request_execution, "graph-read-access.phase-six.explanation");
     let family = projection_only_family(&mut workspace, "phase-six-explanation");
     let review = workspace
         .read_family_intent(&family)

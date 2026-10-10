@@ -19,10 +19,11 @@ impl WorthQueryRuntime {
 
     pub(crate) fn review_authoritative_runtime_write(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         command: WorthQueryWriteCommand,
     ) -> Result<WorthQueryRuntimeIntentAdmissionReviewData, WorthQueryRuntimeError> {
         self.admit_facade_family(WorthQueryRuntimeFacadeFamily::Write)?;
-        let seed = self.build_authoritative_mutation_intent_seed(command);
+        let seed = self.build_authoritative_mutation_intent_seed(request_execution, command);
         let request = crate::intent_admission::WorthQueryRawIntentAdmissionRequest::authoritative_write_entrypoint(seed)
             .map_err(|violation| {
                 WorthQueryRuntimeError::Workspace(WorthQueryWorkspaceError::new(violation.message()))
@@ -97,6 +98,7 @@ impl WorthQueryRuntime {
 
     pub(crate) fn execute_authoritative_mutation_execution_binding(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: WorthQueryAuthoritativeMutationExecutionBinding,
     ) -> Result<WorthQueryWriteReceipt, WorthQueryRuntimeError> {
         self.admit_facade_family(WorthQueryRuntimeFacadeFamily::Write)?;
@@ -113,6 +115,7 @@ impl WorthQueryRuntime {
             binding_digest: binding.binding_digest().to_string(),
         };
         self.execute_authoritative_write_command_direct(
+            execution,
             handoff.command().clone(),
             handoff.admitted_mutation().clone(),
             handoff.verified_existing_truth_assertion().cloned(),

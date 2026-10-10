@@ -1,6 +1,9 @@
 use super::*;
 
-pub(super) fn certify_checkpoint_window_recover_compile_round_trip(suite: &'static str) {
+pub(super) fn certify_checkpoint_window_recover_compile_round_trip(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    suite: &'static str,
+) {
     let checkpoint_recover_compile_samples = capture_perf_samples(
         suite,
         "checkpoint_window_recover_compile_round_trip",
@@ -49,7 +52,7 @@ pub(super) fn certify_checkpoint_window_recover_compile_round_trip(suite: &'stat
             let recover_started_at = Instant::now();
             recovered
                 .durability_recovery()
-                .recover(plan)
+                .recover(execution, plan)
                 .expect("chip checkpoint recovery");
             let recover_micros = recover_started_at.elapsed().as_micros();
 

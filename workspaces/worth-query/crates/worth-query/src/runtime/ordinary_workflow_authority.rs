@@ -30,6 +30,9 @@ pub(crate) enum WorthQueryOrdinaryAuthorityDrift {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum WorthQueryMergeAuthorityValidationError {
+    ForeignPhase(
+        worth_query_execution::facade::application_contribution::WorthQueryForeignAdvancementPhase,
+    ),
     ForeignOwner,
     StaleSnapshot,
     ExecutionDenied(
@@ -141,9 +144,11 @@ impl WorthQueryOrdinaryAuthorityAdmission {
 impl WorthQueryRuntime {
     pub(crate) fn capture_ordinary_mutation_authority(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<WorthQueryOrdinaryAuthorityAdmission, WorthQueryRuntimeError> {
         self.admit_facade_family(WorthQueryRuntimeFacadeFamily::Write)?;
         Ok(self.ordinary_authority_admission(
+            execution,
             WorthQueryOrdinaryAuthorityFamily::Mutation,
             None,
             None,
@@ -157,10 +162,12 @@ impl WorthQueryRuntime {
 
     pub(crate) fn capture_ordinary_writeback_authority(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<WorthQueryOrdinaryAuthorityAdmission, WorthQueryRuntimeError> {
         self.admit_facade_family(WorthQueryRuntimeFacadeFamily::Effect)?;
         self.backend.admit_query_writeback_authority()?;
         Ok(self.ordinary_authority_admission(
+            execution,
             WorthQueryOrdinaryAuthorityFamily::Writeback,
             None,
             None,
@@ -170,14 +177,16 @@ impl WorthQueryRuntime {
 
     pub(crate) fn capture_ordinary_merge_authority(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         target_branch: &super::WorthQueryAdmittedBranchName,
         source_branch: &super::WorthQueryAdmittedBranchName,
     ) -> Result<WorthQueryOrdinaryAuthorityAdmission, WorthQueryRuntimeError> {
         self.admit_facade_family(WorthQueryRuntimeFacadeFamily::Effect)?;
-        let merge_authority = self
-            .backend
-            .capture_query_merge_authority(target_branch, source_branch)?;
+        let merge_authority =
+            self.backend
+                .capture_query_merge_authority(execution, target_branch, source_branch)?;
         Ok(self.ordinary_authority_admission(
+            execution,
             WorthQueryOrdinaryAuthorityFamily::BranchMerge,
             None,
             None,
@@ -187,6 +196,7 @@ impl WorthQueryRuntime {
 
     pub(crate) fn capture_ordinary_preview_authority(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         label: WorthQuerySessionLabel,
         effect_policy: WorthQueryEffectPolicy,
     ) -> Result<WorthQueryOrdinaryAuthorityAdmission, WorthQueryRuntimeError> {
@@ -211,18 +221,25 @@ impl WorthQueryRuntime {
                 ));
             }
         };
-        Ok(self.ordinary_authority_admission(family, Some(label), Some(preview_basis), None))
+        Ok(self.ordinary_authority_admission(
+            execution,
+            family,
+            Some(label),
+            Some(preview_basis),
+            None,
+        ))
     }
 
     pub(crate) fn ordinary_authority_drift(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &WorthQueryOrdinaryAuthorityAdmission,
     ) -> WorthQueryOrdinaryAuthorityDrift {
         if admission.runtime_identity != self.authority_identity {
             WorthQueryOrdinaryAuthorityDrift::ForeignOwner
         } else if !admission
             .snapshot_identity
-            .is_same_current_identity_as(&self.current_snapshot_identity())
+            .is_same_current_identity_as(&self.current_snapshot_identity_with_request(execution))
         {
             WorthQueryOrdinaryAuthorityDrift::StaleSnapshot
         } else {
@@ -232,6 +249,7 @@ impl WorthQueryRuntime {
 
     pub(crate) fn validate_ordinary_merge_authority(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: WorthQueryOrdinaryAuthorityAdmission,
     ) -> Result<WorthQueryValidatedMergeAuthority, WorthQueryMergeAuthorityValidationError> {
         if admission.family != WorthQueryOrdinaryAuthorityFamily::BranchMerge
@@ -243,7 +261,7 @@ impl WorthQueryRuntime {
             .merge_authority
             .ok_or(WorthQueryMergeAuthorityValidationError::StaleSnapshot)?;
         self.backend
-            .validate_query_merge_authority(&backend_authority)
+            .validate_query_merge_authority(request_execution, &backend_authority)
             .map_err(|error| classify_merge_validation_kind(error.kind()))?;
         Ok(WorthQueryValidatedMergeAuthority {
             backend_authority,
@@ -253,18 +271,19 @@ impl WorthQueryRuntime {
 
     pub(crate) fn execute_ordinary_authoritative_mutation(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         command: WorthQueryWriteCommand,
         materialize_inspection: bool,
     ) -> Result<WorthQueryLowerRuntimeMutationExecution, WorthQueryRuntimeError> {
-        let admitted = self.write_intent(command).admit()?;
+        let admitted = self.write_intent(command).admit(execution)?;
         let request_identity =
             workflow_lower_identity("request", admitted.handoff().request_digest());
         let handoff_identity =
             workflow_lower_identity("handoff", admitted.handoff().handoff_digest());
-        let receipt = admitted.execute()?;
+        let receipt = admitted.execute(execution)?;
         let receipt_identity = receipt.commit_evidence_identity().clone();
         let inspection_identity = if materialize_inspection {
-            let inspection = match self.inspect(&receipt)? {
+            let inspection = match self.inspect(execution, &receipt)? {
                 WorthQueryInspection::WriteReceipt(inspection) => inspection,
                 other => panic!("expected write receipt inspection, got {other:?}"),
             };
@@ -283,6 +302,7 @@ impl WorthQueryRuntime {
 
     fn ordinary_authority_admission(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         family: WorthQueryOrdinaryAuthorityFamily,
         session_label: Option<WorthQuerySessionLabel>,
         preview_basis: Option<WorthQueryPreviewBasisAdmission>,
@@ -291,7 +311,7 @@ impl WorthQueryRuntime {
         let snapshot_identity = merge_authority
             .as_ref()
             .map(|authority| authority.target_snapshot_identity().clone())
-            .unwrap_or_else(|| self.current_snapshot_identity());
+            .unwrap_or_else(|| self.current_snapshot_identity_with_request(execution));
         let mut identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowContextBinding)
                 .field_shape(

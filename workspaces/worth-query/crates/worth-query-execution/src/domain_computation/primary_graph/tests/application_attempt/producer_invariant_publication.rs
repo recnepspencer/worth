@@ -20,10 +20,28 @@ const REQUIRED: &[WorthQueryProducerInvariantRequirement] =
 fn producer_requirement_denies_before_first_publication_and_leaves_retry_clean() {
     let world = installed_authorization_world(true);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
-    let candidate = admitted_program(&world, &principal, &account, &request, "published")
-        .with_producer_required_invariants(REQUIRED);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let candidate = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            admitted_program(&phase, &world, &principal, &account, &request, "published")
+                .with_producer_required_invariants(REQUIRED)
+        })
+        .expect("the fixture read owns its installed host call");
     let outcome = world.application.compare_and_commit_application(
         candidate,
         idempotency(231, 231),
@@ -36,9 +54,21 @@ fn producer_requirement_denies_before_first_publication_and_leaves_retry_clean()
         denial.stage(),
         WorthQueryApplicationCommitDenialStage::InvariantExecution
     );
-    let _predecessor = resolved_account(&world, "open", &live_scope());
+    let _predecessor = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            resolved_account(&(phase).test_host_request(), &world, "open", &live_scope())
+        })
+        .expect("the fixture read owns its installed host call");
 
-    let retry = admitted_program(&world, &principal, &account, &request, "published");
+    let retry = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            admitted_program(&phase, &world, &principal, &account, &request, "published")
+        })
+        .expect("the fixture read owns its installed host call");
     assert!(matches!(
         world.application.compare_and_commit_application(
             retry,

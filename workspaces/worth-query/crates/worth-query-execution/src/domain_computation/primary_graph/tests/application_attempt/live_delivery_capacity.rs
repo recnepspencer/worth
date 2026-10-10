@@ -11,18 +11,23 @@ use crate::domain_computation::primary_graph::{
 
 #[test]
 fn one_missing_batch_slot_denies_before_world_or_bridge_movement() {
-    assert_live_reservation_denial(0, u64::MAX, "slot-short", 211);
+    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+        assert_live_reservation_denial(&host_custody, 0, u64::MAX, "slot-short", 211);
+    })
 }
 
 #[test]
 fn one_missing_payload_byte_denies_before_world_or_bridge_movement() {
-    let payload = "byte-short".to_owned();
-    let required = AccountActivityBinding::retained_bytes(&payload);
-    assert!(required > 0);
-    assert_live_reservation_denial(1, required - 1, &payload, 212);
+    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+        let payload = "byte-short".to_owned();
+        let required = AccountActivityBinding::retained_bytes(&payload);
+        assert!(required > 0);
+        assert_live_reservation_denial(&host_custody, 1, required - 1, &payload, 212);
+    })
 }
 
 fn assert_live_reservation_denial(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     batch_capacity: usize,
     byte_capacity: u64,
     payload: &str,
@@ -30,10 +35,14 @@ fn assert_live_reservation_denial(
 ) {
     let world = installed_authorization_world(true);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
+    let principal = authenticated_principal(phase_custody, &world, &request);
+    let account = resolved_account(phase_custody, &world, "open", &request);
     let branch = world.application.current_world();
-    let selected = world.application.on_branch(branch).select().unwrap();
+    let selected = world
+        .application
+        .on_branch(branch)
+        .select(&phase_custody.phase_for_application(&world.application))
+        .unwrap();
     let product_before = selected.product().selected_commit().clone();
     let bridge_before = bridge_head_commit(&world);
     let _live = world
@@ -45,6 +54,7 @@ fn assert_live_reservation_denial(
         .primary_provider
         .set_application_commit_causality_limits(batch_capacity, byte_capacity);
     let program = admitted_program_with_emit(
+        &phase_custody.phase_for_application(&world.application),
         &world,
         &principal,
         &account,
@@ -70,7 +80,11 @@ fn assert_live_reservation_denial(
         outcome,
         WorthQueryApplicationCommitOutcome::Aborted
     ));
-    let product_after = world.application.on_branch(branch).select().unwrap();
+    let product_after = world
+        .application
+        .on_branch(branch)
+        .select(&phase_custody.phase_for_application(&world.application))
+        .unwrap();
     assert_eq!(product_after.product().selected_commit(), &product_before);
     assert_eq!(bridge_head_commit(&world), bridge_before);
     assert_eq!(
@@ -80,7 +94,7 @@ fn assert_live_reservation_denial(
             .published_application_commit_count(),
         0
     );
-    resolved_account(&world, "open", &request);
+    resolved_account(phase_custody, &world, "open", &request);
 }
 
 fn bridge_head_commit(

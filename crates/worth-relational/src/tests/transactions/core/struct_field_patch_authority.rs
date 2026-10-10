@@ -11,6 +11,9 @@ use worth_proof::TransitionOutcome;
 
 #[test]
 fn update_entity_fields_applies_struct_contract_field_patch() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = AspectSchemaFixture {
         entity_aspects: vec![
             entity_field_aspect(
@@ -54,7 +57,7 @@ fn update_entity_fields_applies_struct_contract_field_patch() {
     let patch_record = &outcome.patch()[0];
     let current_read = runtime
         .read_truth()
-        .read_snapshot(&outcome.snapshot)
+        .read_snapshot(&outcome.snapshot, execution)
         .unwrap();
     let record = current_read.get_entity(entity).unwrap();
 

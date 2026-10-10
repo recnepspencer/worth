@@ -8,8 +8,12 @@ use super::super::installed_operation_fixture::{
 
 #[test]
 fn workflow_run_ledger_denies_a_locally_valid_counter_regression_atomically() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let (mut workspace, probe) =
-        evidence_workflow_workspace("domain-evidence-ledger-regression").unwrap();
+        evidence_workflow_workspace(request_execution, "domain-evidence-ledger-regression")
+            .unwrap();
     probe.set(EvidenceWorkflowMode::LedgerRegression);
 
     let denial = match bind(&workspace)
@@ -43,8 +47,14 @@ fn workflow_run_ledger_denies_a_locally_valid_counter_regression_atomically() {
 
 #[test]
 fn claimed_output_mismatch_denies_before_a_stage_receipt_exists() {
-    let (mut workspace, probe) =
-        evidence_workflow_workspace("domain-evidence-workflow-output-mismatch").unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (mut workspace, probe) = evidence_workflow_workspace(
+        request_execution,
+        "domain-evidence-workflow-output-mismatch",
+    )
+    .unwrap();
     probe.set(EvidenceWorkflowMode::OutputOccurrenceMismatch);
 
     let denial = match bind(&workspace)
@@ -73,8 +83,11 @@ fn claimed_output_mismatch_denies_before_a_stage_receipt_exists() {
 
 #[test]
 fn replay_compares_mandatory_core_and_ignores_policy_omitted_sidecars() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let (mut workspace, probe) =
-        evidence_workflow_workspace("domain-evidence-replay-sidecars").unwrap();
+        evidence_workflow_workspace(request_execution, "domain-evidence-replay-sidecars").unwrap();
     let original = bind(&workspace)
         .admit_workflow_resources(
             crate::suite::installed_operation_fixture::execution_resource_request(),
@@ -148,8 +161,12 @@ fn replay_compares_mandatory_core_and_ignores_policy_omitted_sidecars() {
 
 #[test]
 fn certification_replay_cannot_waive_exact_mandatory_core_drift() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let (mut workspace, probe) =
-        evidence_workflow_workspace("domain-evidence-replay-core-drift").unwrap();
+        evidence_workflow_workspace(request_execution, "domain-evidence-replay-core-drift")
+            .unwrap();
     let original = bind(&workspace)
         .admit_workflow_resources(
             crate::suite::installed_operation_fixture::execution_resource_request(),

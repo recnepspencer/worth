@@ -23,6 +23,7 @@ where
         Scope,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         authority: &WorthQueryWorkflowApprovalAuthorityBasis,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
@@ -31,6 +32,7 @@ where
             .mutation_product()
             .ok_or_else(stale_authorization)?;
         self.readmit_workflow_approval_authority_on_product(
+            execution,
             authority,
             product,
             admission.graph_work_session_identity(),
@@ -39,6 +41,7 @@ where
 
     pub(in crate::domain_computation) fn readmit_workflow_approval_authority_on_product(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         authority: &WorthQueryWorkflowApprovalAuthorityBasis,
         product: &crate::basis::WorthQueryProductBranchLease,
         session: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
@@ -66,7 +69,7 @@ where
             ));
         }
         let security = self
-            .admit_product_security_basis(product)
+            .admit_product_security_basis(execution, product)
             .map_err(|denial| {
                 super::super::denial::product_security_basis_denial(
                     denial,
@@ -74,11 +77,11 @@ where
                 )
             })?;
         let graph = self.runtime.primary_graph().ok_or_else(foreign_runtime)?;
-        graph.integration_handle().with_runtime_mut(|runtime| {
+        graph.integration_handle().with_runtime_mut(execution, |runtime| {
             let snapshot = security.snapshot_handle();
             if !authority
                 .principal()
-                .remains_current_in(runtime, snapshot, graph.layout())
+                .remains_current_in(execution, runtime, snapshot, graph.layout())
             {
                 return Err(stale_principal());
             }
@@ -93,7 +96,7 @@ where
                     sample: &sample,
                 },
             )
-            .observe_active_capability(Some(authority.grant()), None)?;
+            .observe_active_capability(execution, Some(authority.grant()), None)?;
             (observed.decision().durable_lineage() == *authority.lineage())
                 .then_some(())
                 .ok_or_else(stale_authorization)?;
@@ -136,7 +139,7 @@ where
                         sample: &sample,
                     },
                 )
-                .observe_retained_capability(
+                .observe_retained_capability(execution,
                     support.posture(),
                     support.grant(),
                     None,
@@ -147,7 +150,7 @@ where
                 let dependencies_match = match support.role() {
                     crate::domain_computation::authorization::WorthQueryCapabilitySupportRole::DelegationTarget => authority
                         .dependencies()
-                        .delegation_target_support_matches(observed.decision(), runtime, snapshot),
+                        .delegation_target_support_matches(execution, observed.decision(), runtime, snapshot),
                     crate::domain_computation::authorization::WorthQueryCapabilitySupportRole::ElevationUpperBound => authority
                         .dependencies()
                         .support_matches(observed.decision()),

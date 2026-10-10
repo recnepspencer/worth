@@ -8,19 +8,25 @@ use worth_signal::facade::NodeId;
 
 #[test]
 fn bridge_denied_completion_classes_reach_query_without_synthetic_result_states() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     assert_denied_kind(
+        request_execution,
         "bridge-async-rejected",
         NodeId::new(404, 0),
         worth_runtime_bridge::certification::reject_async_request,
         WorthQueryRuntimeAsyncResultStateKind::Failed,
     );
     assert_denied_kind(
+        request_execution,
         "bridge-async-cancelled",
         NodeId::new(405, 0),
         worth_runtime_bridge::certification::cancel_async_request,
         WorthQueryRuntimeAsyncResultStateKind::Cancelled,
     );
     assert_denied_kind(
+        request_execution,
         "bridge-async-superseded",
         NodeId::new(406, 0),
         |bridge, request| {
@@ -29,6 +35,7 @@ fn bridge_denied_completion_classes_reach_query_without_synthetic_result_states(
         WorthQueryRuntimeAsyncResultStateKind::Superseded,
     );
     assert_denied_kind(
+        request_execution,
         "bridge-async-lifecycle-denied",
         NodeId::new(407, 0),
         worth_runtime_bridge::certification::deny_oversized_async_completion,
@@ -38,17 +45,23 @@ fn bridge_denied_completion_classes_reach_query_without_synthetic_result_states(
 
 #[test]
 fn bridge_cancellation_and_retry_lineage_reach_query_in_order() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let bridge = test_bridge();
     let request = worth_runtime_bridge::certification::retryable_async_request(
         &bridge,
         NodeId::new(408, 0),
         authoritative_async_basis("commit-a", "snapshot-a"),
     );
-    let mut workspace =
-        WorthQueryWorkspace::new("bridge-async-retry", stateful_bridge_task_runtime())
-            .expect("valid Query workspace");
+    let mut workspace = WorthQueryWorkspace::new(
+        "bridge-async-retry",
+        stateful_bridge_task_runtime(request_execution),
+    )
+    .expect("valid Query workspace");
     let view: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
         .declare_bridge_async_live_view(
+            request_execution,
             "tasks.retry-async",
             task_live_request(),
             task_schema(),
@@ -79,57 +92,14 @@ fn bridge_cancellation_and_retry_lineage_reach_query_in_order() {
     );
 }
 
-#[test]
-fn bridge_backed_async_source_reaches_current_stale_revalidating_current() {
-    let bridge = test_bridge();
-    let basis_a = authoritative_async_basis("commit-a", "snapshot-a");
-    let (request_a, completion_a) =
-        admitted_async_request_and_completion(&bridge, NodeId::new(401, 0), basis_a, 64);
-    let mut workspace =
-        WorthQueryWorkspace::new("bridge-async-progression", stateful_bridge_task_runtime())
-            .expect("valid Query workspace");
-    let view: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .declare_bridge_async_live_view(
-            "tasks.production-async",
-            task_live_request(),
-            task_schema(),
-            &request_a,
-        )
-        .expect("live view should declare");
-    let pending = workspace
-        .take_bridge_async_initial_result(&view)
-        .expect("initial Pending must be delivered once");
-    assert_eq!(
-        kinds(&pending),
-        vec![WorthQueryRuntimeAsyncResultStateKind::Pending]
-    );
-    assert_eq!(
-        pending.states()[0].basis_identity(),
-        pending.expected_basis_identity()
-    );
-    assert_eq!(
-        pending.states()[0].checkpoint_identity(),
-        pending.expected_checkpoint_identity()
-    );
-    let replay = workspace
-        .take_bridge_async_initial_result(&view)
-        .expect_err("initial Pending delivery must be affine");
-    assert_eq!(
-        replay.kind(),
-        WorthQueryAsyncSourceBindingErrorKind::InitialStateAlreadyDelivered
-    );
-    assert_eq!(
-        workspace_async_kind(&workspace, &view),
-        WorthQueryRuntimeAsyncResultStateKind::Pending
-    );
-
-    admit_initial_completion(&bridge, &mut workspace, &view, completion_a);
-    let request_b = admit_revalidation(&bridge, &mut workspace, &view, &request_a);
-    admit_refreshed_completion(&bridge, &mut workspace, &view, &request_b);
-}
+#[path = "async_source_binding/bridge_backed_async_source_reaches_current_stale_revalidating_cu.rs"]
+mod bridge_backed_async_source_reaches_current_stale_revalidating_cu;
 
 #[test]
 fn async_source_binding_rejects_foreign_runtime() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let bridge = test_bridge();
     let foreign_bridge = test_bridge();
     let request = admitted_async_request(
@@ -137,9 +107,10 @@ fn async_source_binding_rejects_foreign_runtime() {
         NodeId::new(402, 0),
         authoritative_async_basis("commit-a", "snapshot-a"),
     );
-    let mut runtime = stateful_bridge_task_runtime();
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let view: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = runtime
         .declare_bridge_async_live_view(
+            request_execution,
             "tasks.hostile-async",
             task_live_request(),
             task_schema(),
@@ -167,12 +138,13 @@ fn async_source_binding_rejects_foreign_runtime() {
         WorthQueryAsyncSourceBindingErrorKind::ForeignBridgeRuntime
     );
     assert_eq!(
-        runtime_async_kind(&runtime, &view),
+        runtime_async_kind(request_execution, &runtime, &view),
         WorthQueryRuntimeAsyncResultStateKind::Pending
     );
 }
 
 fn assert_denied_kind(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     label: &str,
     node: NodeId,
     deny: impl FnOnce(
@@ -187,10 +159,12 @@ fn assert_denied_kind(
         node,
         authoritative_async_basis("commit-a", "snapshot-a"),
     );
-    let mut workspace = WorthQueryWorkspace::new(label, stateful_bridge_task_runtime())
-        .expect("valid Query workspace");
+    let mut workspace =
+        WorthQueryWorkspace::new(label, stateful_bridge_task_runtime(request_execution))
+            .expect("valid Query workspace");
     let view: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
         .declare_bridge_async_live_view(
+            request_execution,
             format!("tasks.{label}"),
             task_live_request(),
             task_schema(),
@@ -205,11 +179,17 @@ fn assert_denied_kind(
         BridgeMixedCauseOrderingInput::AsyncDeniedCompletion(denied),
     );
     assert_eq!(kinds(&batch), vec![expected]);
-    assert_eq!(workspace_async_kind(&workspace, &view), expected);
+    assert_eq!(
+        workspace_async_kind(request_execution, &workspace, &view),
+        expected
+    );
 }
 
 #[test]
 fn duplicate_bridge_completion_is_suppressed_before_query_projection() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let bridge = test_bridge();
     let (request, completion) = admitted_async_request_and_completion(
         &bridge,
@@ -217,9 +197,10 @@ fn duplicate_bridge_completion_is_suppressed_before_query_projection() {
         authoritative_async_basis("commit-a", "snapshot-a"),
         64,
     );
-    let mut runtime = stateful_bridge_task_runtime();
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let view: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = runtime
         .declare_bridge_async_live_view(
+            request_execution,
             "tasks.duplicate-async",
             task_live_request(),
             task_schema(),
@@ -241,7 +222,7 @@ fn duplicate_bridge_completion_is_suppressed_before_query_projection() {
     assert_eq!(batch.states().len(), 1);
     assert_eq!(batch.suppressed_duplicate_count(), 1);
     assert_eq!(
-        runtime_async_kind(&runtime, &view),
+        runtime_async_kind(request_execution, &runtime, &view),
         WorthQueryRuntimeAsyncResultStateKind::Current
     );
 }
@@ -276,6 +257,7 @@ fn admit_authoritative_input(
 }
 
 fn admit_initial_completion(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     bridge: &RuntimeBridge,
     workspace: &mut WorthQueryWorkspace,
     view: &WorthQueryLiveView<WorthQueryUnrefinedLiveShape>,
@@ -292,12 +274,13 @@ fn admit_initial_completion(
         vec![WorthQueryRuntimeAsyncResultStateKind::Current]
     );
     assert_eq!(
-        workspace_async_kind(workspace, view),
+        workspace_async_kind(request_execution, workspace, view),
         WorthQueryRuntimeAsyncResultStateKind::Current
     );
 }
 
 fn admit_revalidation(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     bridge: &RuntimeBridge,
     workspace: &mut WorthQueryWorkspace,
     view: &WorthQueryLiveView<WorthQueryUnrefinedLiveShape>,
@@ -321,13 +304,14 @@ fn admit_revalidation(
         ]
     );
     assert_eq!(
-        workspace_async_kind(workspace, view),
+        workspace_async_kind(request_execution, workspace, view),
         WorthQueryRuntimeAsyncResultStateKind::Revalidating
     );
     next_request
 }
 
 fn admit_refreshed_completion(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     bridge: &RuntimeBridge,
     workspace: &mut WorthQueryWorkspace,
     view: &WorthQueryLiveView<WorthQueryUnrefinedLiveShape>,
@@ -345,17 +329,18 @@ fn admit_refreshed_completion(
         vec![WorthQueryRuntimeAsyncResultStateKind::Current]
     );
     assert_eq!(
-        workspace_async_kind(workspace, view),
+        workspace_async_kind(request_execution, workspace, view),
         WorthQueryRuntimeAsyncResultStateKind::Current
     );
 }
 
 fn workspace_async_kind(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace: &WorthQueryWorkspace,
     view: &WorthQueryLiveView<WorthQueryUnrefinedLiveShape>,
 ) -> WorthQueryRuntimeAsyncResultStateKind {
     workspace
-        .state(view)
+        .state(request_execution, view)
         .expect("async live state should remain independently inspectable")
         .async_result_state()
         .expect("async live state should retain a result posture")
@@ -363,12 +348,11 @@ fn workspace_async_kind(
 }
 
 fn runtime_async_kind(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryRuntime,
     view: &WorthQueryLiveView<WorthQueryUnrefinedLiveShape>,
 ) -> WorthQueryRuntimeAsyncResultStateKind {
-    <&WorthQueryLiveView<WorthQueryUnrefinedLiveShape> as WorthQueryRuntimeStateTarget>::into_state_snapshot(
-        view, runtime,
-    )
+    <&WorthQueryLiveView<WorthQueryUnrefinedLiveShape> as WorthQueryRuntimeStateTarget>::into_state_snapshot(view, request_execution, runtime)
     .expect("async live state should remain independently inspectable")
     .async_result_state()
     .expect("async live state should retain a result posture")

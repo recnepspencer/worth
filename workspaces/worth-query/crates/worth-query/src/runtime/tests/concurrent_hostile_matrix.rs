@@ -5,7 +5,10 @@ use crate::application::{
 
 #[test]
 fn phase_sixteen_concurrent_hostile_matrix_closes_with_replay_stable_artifact() {
-    let artifact = execute_phase_sixteen_concurrent_hostile_matrix();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let artifact = execute_phase_sixteen_concurrent_hostile_matrix(request_execution);
 
     assert_phase_sixteen_closed(&artifact);
     assert_eq!(
@@ -18,7 +21,10 @@ fn phase_sixteen_concurrent_hostile_matrix_closes_with_replay_stable_artifact() 
 
 #[test]
 fn phase_sixteen_concurrent_hostile_matrix_uses_real_topology_and_runtime_counters() {
-    let artifact = execute_phase_sixteen_concurrent_hostile_matrix();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let artifact = execute_phase_sixteen_concurrent_hostile_matrix(request_execution);
     let topology = artifact.topology();
     let counters = artifact.counters();
 
@@ -38,7 +44,10 @@ fn phase_sixteen_concurrent_hostile_matrix_uses_real_topology_and_runtime_counte
 
 #[test]
 fn phase_sixteen_counter_sabotage_opens_the_matrix_posture() {
-    let artifact = execute_phase_sixteen_concurrent_hostile_matrix();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let artifact = execute_phase_sixteen_concurrent_hostile_matrix(request_execution);
     let sabotage = phase_sixteen_sabotage_proofs(&artifact);
 
     assert_eq!(sabotage.len(), 8);

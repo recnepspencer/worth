@@ -53,13 +53,19 @@ fn replace_entity_on_branch(
 
 #[test]
 fn retained_fork_lineage_ancestry_is_flat_across_owner_created_history() {
-    assert_owner_history_scale(64);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    assert_owner_history_scale(execution, 64);
 }
 
 #[test]
 #[ignore = "scheduled 4,096-branch owner-history scale profile"]
 fn retained_fork_lineage_ancestry_is_flat_at_scale_profile() {
-    assert_owner_history_scale(4_096);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    assert_owner_history_scale(execution, 4_096);
 }
 
 #[test]
@@ -80,7 +86,10 @@ impl RetainedScaleFixture {
     }
 }
 
-fn retained_scale_fixture(replacement_count: usize) -> RetainedScaleFixture {
+fn retained_scale_fixture(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    replacement_count: usize,
+) -> RetainedScaleFixture {
     let runtime = runtime_with_test_schema();
     let created = create_entity_outcome(&runtime, "flat-lineage-source");
     let original = changed_entities(&created)[0];
@@ -100,8 +109,8 @@ fn retained_scale_fixture(replacement_count: usize) -> RetainedScaleFixture {
             .version_id;
         current = runtime
             .read_truth()
-            .project_historical_version(version)
-            .all_authoritative_entity_records()
+            .project_historical_version(execution, version)
+            .all_authoritative_entity_records(execution)
             .into_iter()
             .find(|record| record.lineage_id.is_some())
             .expect("visible replacement successor")
@@ -136,8 +145,11 @@ fn retained_resolution(
         .expect("retained fork history")
 }
 
-fn assert_owner_history_scale(unrelated_commit_count: usize) {
-    let fixture = retained_scale_fixture(1);
+fn assert_owner_history_scale(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    unrelated_commit_count: usize,
+) {
+    let fixture = retained_scale_fixture(execution, 1);
     let baseline = fixture.resolution();
     let baseline_commit_count = fixture.runtime.history().immutable_commit_count();
     let baseline_branch_count = fixture.runtime.history.branch_count();

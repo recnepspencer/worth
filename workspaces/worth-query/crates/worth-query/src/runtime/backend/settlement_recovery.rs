@@ -1,6 +1,7 @@
 pub trait WorthQuerySettlementRecoveryBackend {
     fn repair_deferred_branch_merge_settlement(
         &mut self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         _deferred: &crate::ordinary::workflow::WorthQueryBranchMergeSettlementDeferred,
     ) -> Result<
         worth_relational::facade::history::RelationalCommitReceipt,
@@ -11,6 +12,7 @@ pub trait WorthQuerySettlementRecoveryBackend {
 
     fn repair_pending_branch_merge_settlement(
         &mut self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         _commit_id: worth_relational::facade::history::CommitId,
     ) -> Result<
         worth_relational::facade::history::RelationalCommitReceipt,

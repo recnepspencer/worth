@@ -12,22 +12,9 @@ use crate::domain_computation::primary_graph::tests::fixture::{
 use std::num::NonZeroUsize;
 use worth_execution::{ExecutionRequest, ExecutionWorkCeiling, LeaseRequest};
 
-pub(super) fn observe(
-    workers: Option<usize>,
-    count: usize,
-    duplicate: bool,
-    owner_failure: bool,
-    failures: &[usize],
-) -> Observation {
-    observe_case(
-        workers,
-        count,
-        duplicate,
-        owner_failure,
-        failures,
-        Case::default(),
-    )
-}
+#[path = "observation/default_case.rs"]
+mod default_case;
+pub(super) use default_case::observe;
 pub(super) fn observe_case(
     workers: Option<usize>,
     count: usize,
@@ -38,11 +25,22 @@ pub(super) fn observe_case(
 ) -> Observation {
     let _run = crate::domain_computation::primary_graph::tests::fixture::isolated_request_owner();
     let world = installed_authorization_world(true);
+    world.application.with_host_advancement(|phase| {
+    let host_request = phase.test_host_request();
+    let phase_custody = &host_request;
+    let request_execution = phase.execution_request_for(world.application.product_runtime()).expect("the pair fixture lends its installed phase");
+    let execution = &request_execution;
+
     if count == 3 {
-        super::reconstruction_population::add_third_root(&world);
+        super::reconstruction_population::add_third_root(execution, &world);
     }
     if count >= 2 {
-        super::reconstruction_population::add_primary_reads(&world, count == 3);
+        super::reconstruction_population::add_primary_reads(
+            &phase_custody.phase_for_application(&world.application),
+            execution,
+            &world,
+            count == 3,
+        );
     }
     let query_cancel =
         worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource::new();
@@ -58,10 +56,11 @@ pub(super) fn observe_case(
         query_cancel.token(),
     );
     let caller_cancel = worth_execution::CancellationSource::new();
-    let selected = world.selected_product();
+    let selected = world.selected_product(phase_custody);
     let external = world.authenticate("alice", Duration::from_secs(60), &scope);
     let principal = selected
         .resolve_authenticated_principal(
+            &phase_custody.phase_for_application(&world.application),
             &world.binding,
             &external,
             &scope,
@@ -74,6 +73,7 @@ pub(super) fn observe_case(
         .map(|status| {
             selected
                 .resolve_entity(
+                    &phase_custody.phase_for_application(&world.application),
                     AccountStatus::reference(),
                     status.to_owned(),
                     &scope,
@@ -118,10 +118,12 @@ pub(super) fn observe_case(
     let membership = world
         .application
         .execute_application_query_one_shot(
+            &phase_custody.phase_for_application(&world.application),
             selected
-                .retain_selection()
+                .retain_selection(execution)
                 .unwrap()
                 .admit_application_query(
+                    &phase_custody.phase_for_application(&world.application),
                     &membership_query,
                     &access[0],
                     ApplicationQueryParameterSet::new(),
@@ -244,9 +246,10 @@ pub(super) fn observe_case(
                             .position(|status| *status == member)
                             .unwrap();
                         let first = selected
-                            .retain_selection()
+                            .retain_selection(execution)
                             .unwrap()
                             .admit_application_query(
+                                &phase_custody.phase_for_application(&world.application),
                                 &query,
                                 &access[index],
                                 ApplicationQueryParameterSet::new(),
@@ -259,9 +262,10 @@ pub(super) fn observe_case(
                             member.clone()
                         };
                         let second = selected
-                            .retain_selection()
+                            .retain_selection(execution)
                             .unwrap()
                             .admit_application_query(
+                                &phase_custody.phase_for_application(&world.application),
                                 &second_query,
                                 &access[index],
                                 ApplicationQueryParameterSet::new()
@@ -380,4 +384,5 @@ pub(super) fn observe_case(
         duplicate,
         failures,
     )
+    }).expect("the pair fixture owns its installed preparation call")
 }

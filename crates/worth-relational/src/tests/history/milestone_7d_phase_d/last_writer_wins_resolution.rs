@@ -2,6 +2,9 @@ use super::*;
 
 #[test]
 fn built_in_last_writer_wins_reject_retained_envelope_is_stable_across_recovery() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = runtime_with_aspect_field_merge_policy(
         AspectKey::new("value").unwrap(),
         field_key("value"),
@@ -18,6 +21,7 @@ fn built_in_last_writer_wins_reject_retained_envelope_is_stable_across_recovery(
     );
     create_branch_from_main(&runtime, "feature");
     update_entity_aspect_fields_on_branch(
+        execution,
         &mut runtime,
         entity,
         crate::tests::support::single_string_aspect_field_patch(
@@ -28,6 +32,7 @@ fn built_in_last_writer_wins_reject_retained_envelope_is_stable_across_recovery(
         BranchId("main".to_string()),
     );
     update_entity_aspect_fields_on_branch(
+        execution,
         &mut runtime,
         entity,
         crate::tests::support::single_string_aspect_field_patch(
@@ -42,6 +47,7 @@ fn built_in_last_writer_wins_reject_retained_envelope_is_stable_across_recovery(
     let live_artifact = runtime
         .merge()
         .inspect_planning_scope(
+            execution,
             MergeExecutionRequest {
                 target_branch: BranchId("main".to_string()),
                 source_branch: BranchId("feature".to_string()),
@@ -79,7 +85,7 @@ fn built_in_last_writer_wins_reject_retained_envelope_is_stable_across_recovery(
         crate::facade::merge::LoweredRecordDecision::Reject(_)
     ));
 
-    let (_recovery, recovered) = checkpoint_and_recover_with(&runtime, || {
+    let (_recovery, recovered) = checkpoint_and_recover_with(execution, &runtime, || {
         runtime_with_aspect_field_merge_policy(
             AspectKey::new("value").unwrap(),
             field_key("value"),
@@ -89,6 +95,7 @@ fn built_in_last_writer_wins_reject_retained_envelope_is_stable_across_recovery(
     let recovered_artifact = recovered
         .merge()
         .inspect_planning_scope(
+            execution,
             MergeExecutionRequest {
                 target_branch: BranchId("main".to_string()),
                 source_branch: BranchId("feature".to_string()),
@@ -110,6 +117,9 @@ fn built_in_last_writer_wins_reject_retained_envelope_is_stable_across_recovery(
 
 #[test]
 fn built_in_last_writer_wins_auto_resolution_is_stable_across_recovery() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = runtime_with_aspect_field_merge_policy(
         AspectKey::new("value").unwrap(),
         field_key("value"),
@@ -125,6 +135,7 @@ fn built_in_last_writer_wins_auto_resolution_is_stable_across_recovery() {
         ),
     );
     update_entity_aspect_fields_on_branch(
+        execution,
         &mut runtime,
         entity,
         crate::tests::support::single_string_aspect_field_patch(
@@ -136,6 +147,7 @@ fn built_in_last_writer_wins_auto_resolution_is_stable_across_recovery() {
     );
     create_branch_from_main(&runtime, "feature");
     update_entity_aspect_fields_on_branch(
+        execution,
         &mut runtime,
         entity,
         crate::tests::support::single_string_aspect_field_patch(
@@ -149,6 +161,7 @@ fn built_in_last_writer_wins_auto_resolution_is_stable_across_recovery() {
     let live_artifact = runtime
         .merge()
         .inspect_planning_scope(
+            execution,
             MergeExecutionRequest {
                 target_branch: BranchId("main".to_string()),
                 source_branch: BranchId("feature".to_string()),
@@ -183,18 +196,22 @@ fn built_in_last_writer_wins_auto_resolution_is_stable_across_recovery() {
     ));
 
     let prepared = runtime
-        .prepare_merge_execution(MergeExecutionRequest {
-            target_branch: BranchId("main".to_string()),
-            source_branch: BranchId("feature".to_string()),
-            merge_intent: MergeIntent::ReconcileIntoTarget,
-        })
+        .prepare_merge_execution(
+            execution,
+            MergeExecutionRequest {
+                target_branch: BranchId("main".to_string()),
+                source_branch: BranchId("feature".to_string()),
+                merge_intent: MergeIntent::ReconcileIntoTarget,
+            },
+        )
         .expect("prepared last-writer-wins merge");
     let merge = runtime
-        .execute_prepared_merge(prepared)
+        .execute_prepared_merge(execution, prepared)
         .expect("executed last-writer-wins merge");
     let live_commit_id = merge.commit.commit.commit_id;
     assert_eq!(
         read_entity_aspect_field_display(
+            execution,
             &runtime,
             &BranchId("main".to_string()),
             entity,
@@ -208,7 +225,7 @@ fn built_in_last_writer_wins_auto_resolution_is_stable_across_recovery() {
         .replay()
         .canonical_commit_envelope(merge.commit.commit.commit_id)
         .expect("live merge envelope");
-    let (_recovery, recovered) = checkpoint_and_recover_with(&runtime, || {
+    let (_recovery, recovered) = checkpoint_and_recover_with(execution, &runtime, || {
         runtime_with_aspect_field_merge_policy(
             AspectKey::new("value").unwrap(),
             field_key("value"),
@@ -226,6 +243,7 @@ fn built_in_last_writer_wins_auto_resolution_is_stable_across_recovery() {
     );
     assert_eq!(
         read_entity_aspect_field_display(
+            execution,
             &recovered,
             &BranchId("main".to_string()),
             entity,
@@ -238,6 +256,9 @@ fn built_in_last_writer_wins_auto_resolution_is_stable_across_recovery() {
 
 #[test]
 fn auto_resolved_merge_reads_pinned_visible_value_through_declared_aspect_binding() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = runtime_with_aspect_field_merge_policy(
         AspectKey::new("display_name").unwrap(),
         field_key("display"),
@@ -254,6 +275,7 @@ fn auto_resolved_merge_reads_pinned_visible_value_through_declared_aspect_bindin
     );
     create_branch_from_main(&runtime, "feature");
     update_entity_aspect_fields_on_branch(
+        execution,
         &mut runtime,
         entity,
         string_aspect_field_patch_for_target(
@@ -264,6 +286,7 @@ fn auto_resolved_merge_reads_pinned_visible_value_through_declared_aspect_bindin
         BranchId("main".to_string()),
     );
     update_entity_aspect_fields_on_branch(
+        execution,
         &mut runtime,
         entity,
         string_aspect_field_patch_for_target(
@@ -275,18 +298,22 @@ fn auto_resolved_merge_reads_pinned_visible_value_through_declared_aspect_bindin
     );
 
     let prepared = runtime
-        .prepare_merge_execution(MergeExecutionRequest {
-            target_branch: BranchId("main".to_string()),
-            source_branch: BranchId("feature".to_string()),
-            merge_intent: MergeIntent::ReconcileIntoTarget,
-        })
+        .prepare_merge_execution(
+            execution,
+            MergeExecutionRequest {
+                target_branch: BranchId("main".to_string()),
+                source_branch: BranchId("feature".to_string()),
+                merge_intent: MergeIntent::ReconcileIntoTarget,
+            },
+        )
         .expect("prepared binding-native merge");
     runtime
-        .execute_prepared_merge(prepared)
+        .execute_prepared_merge(execution, prepared)
         .expect("executed binding-native merge");
 
     assert_eq!(
         read_entity_aspect_field_display(
+            execution,
             &runtime,
             &BranchId("main".to_string()),
             entity,

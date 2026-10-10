@@ -20,8 +20,16 @@ impl ChargedBytes for QueryPacketMapInput {
     }
 }
 
+/// The existing read strategy chosen by the caller. Custody is required for both.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum RelationalQueryReadStrategy {
+    CallingThread,
+    RequestPatterns,
+}
+
 #[derive(Debug)]
 pub enum QueryReadExecutionStop {
+    Request(worth_execution::WorkCeilingDenial),
     PreparationAdmission(ScanDenial),
     PreparationStopped {
         reason: MapStop<()>,
@@ -55,7 +63,7 @@ impl ChargedBytes for QueryReadPacketDenial {
 #[derive(Debug)]
 pub struct QueryLeasedReadOutcome {
     pub outcome: QueryExecutionOutcome,
-    pub report: ExecutionReport,
+    pub report: Option<ExecutionReport>,
 }
 
 /// Charges packet-owned buffers before growing them. The map also checks the

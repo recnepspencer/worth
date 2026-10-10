@@ -159,6 +159,7 @@ impl CargoRecords {
     }
     pub fn read(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         basis: &AdmittedRelationalBranchBasis,
     ) -> super::observation::SupplyChainObservation {
         let pinned = self
@@ -170,7 +171,7 @@ impl CargoRecords {
             let read = self
                 .runtime
                 .read_truth()
-                .read_snapshot(&pinned)
+                .read_snapshot(&pinned, execution)
                 .expect("observation: relational read");
             let names: BTreeMap<_, _> = self
                 .ids

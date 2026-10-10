@@ -20,6 +20,17 @@ impl WorthQueryWorkflowAdvanceAdapter {
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
+        let phase_request = match phase.execution_request_for(&runtime.product_runtime) {
+            Ok(request) => request,
+            Err(_) => return Ok(WorkflowProgressOutcome::Application(
+                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase
+                    .into_commit_outcome()
+                    .landed()
+                    .expect_err("a foreign phase cannot commit"),
+            )),
+        };
+        let execution = &phase_request;
+
         if let Err(cause) = phase.execution_request_for(&runtime.product_runtime) {
             let uncommitted =
                 crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(cause)
@@ -28,8 +39,8 @@ impl WorthQueryWorkflowAdvanceAdapter {
                     .expect_err("a foreign phase cannot commit");
             return Ok(WorkflowProgressOutcome::Application(uncommitted));
         }
-        let prepared = prepared.settle(runtime, settlement, source, posture)?;
-        Ok(runtime.compare_and_commit_workflow_advance(phase, prepared, idempotency))
+        let prepared = prepared.settle(execution, runtime, settlement, source, posture)?;
+        Ok(runtime.compare_and_commit_workflow_advance(execution, phase, prepared, idempotency))
     }
 
     pub fn compare_and_commit_condition<Schema, Operation, Input, Scope>(
@@ -50,6 +61,17 @@ impl WorthQueryWorkflowAdvanceAdapter {
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
+        let phase_request = match phase.execution_request_for(&runtime.product_runtime) {
+            Ok(request) => request,
+            Err(_) => return Ok(WorkflowProgressOutcome::Application(
+                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase
+                    .into_commit_outcome()
+                    .landed()
+                    .expect_err("a foreign phase cannot commit"),
+            )),
+        };
+        let execution = &phase_request;
+
         if let Err(cause) = phase.execution_request_for(&runtime.product_runtime) {
             let uncommitted =
                 crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(cause)
@@ -58,8 +80,8 @@ impl WorthQueryWorkflowAdvanceAdapter {
                     .expect_err("a foreign phase cannot commit");
             return Ok(WorkflowProgressOutcome::Application(uncommitted));
         }
-        let prepared = prepared.settle(runtime, sources)?;
-        Ok(runtime.compare_and_commit_workflow_advance(phase, prepared, idempotency))
+        let prepared = prepared.settle(execution, runtime, sources)?;
+        Ok(runtime.compare_and_commit_workflow_advance(execution, phase, prepared, idempotency))
     }
 
     pub fn compare_and_commit_operation<
@@ -96,6 +118,17 @@ impl WorthQueryWorkflowAdvanceAdapter {
         >,
         EffectInput: Clone + Send + Sync + 'static,
     {
+        let phase_request = match phase.execution_request_for(&runtime.product_runtime) {
+            Ok(request) => request,
+            Err(_) => return Ok(WorkflowProgressOutcome::Application(
+                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase
+                    .into_commit_outcome()
+                    .landed()
+                    .expect_err("a foreign phase cannot commit"),
+            )),
+        };
+        let execution = &phase_request;
+
         if let Err(cause) = phase.execution_request_for(&runtime.product_runtime) {
             let uncommitted =
                 crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(cause)
@@ -106,6 +139,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
         }
         let custody = runtime
             .resolve_admitted_guarded_workflow_operation_custody(
+                execution,
                 effect_admission,
                 effect_idempotency,
                 required.transition_identity_bytes(),
@@ -125,7 +159,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
             }
             _ => return Err(owner_custody_denial(required)),
         };
-        Ok(runtime.compare_and_commit_workflow_advance(phase, prepared, idempotency))
+        Ok(runtime.compare_and_commit_workflow_advance(execution, phase, prepared, idempotency))
     }
 
     pub fn compare_and_commit<Schema, Operation, Input, Scope>(
@@ -140,7 +174,18 @@ impl WorthQueryWorkflowAdvanceAdapter {
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        runtime.compare_and_commit_workflow_advance(phase, prepared, idempotency)
+        let phase_request = match phase.execution_request_for(&runtime.product_runtime) {
+            Ok(request) => request,
+            Err(_) => return WorkflowProgressOutcome::Application(
+                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase
+                    .into_commit_outcome()
+                    .landed()
+                    .expect_err("a foreign phase cannot commit"),
+            ),
+        };
+        let execution = &phase_request;
+
+        runtime.compare_and_commit_workflow_advance(execution, phase, prepared, idempotency)
     }
 }
 

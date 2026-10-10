@@ -14,6 +14,9 @@ use crate::transactions::data::MergeExecutionSummary;
 
 #[test]
 fn merge_branch_basis_matches_planning_artifact_and_history_scope_authority() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
     create_entity(&runtime, "root");
     create_branch_from_main(&runtime, "feature");
@@ -34,7 +37,7 @@ fn merge_branch_basis_matches_planning_artifact_and_history_scope_authority() {
         .expect("history-scoped merge plan");
     let artifact = runtime
         .merge()
-        .inspect_planning_scope(request)
+        .inspect_planning_scope(execution, request)
         .expect("planning artifact");
 
     assert_exact_branch_basis(&history_plan.basis, &direct_basis);
@@ -51,6 +54,9 @@ fn merge_branch_basis_matches_planning_artifact_and_history_scope_authority() {
 
 #[test]
 fn merge_branch_basis_denial_happens_before_planning_for_missing_or_disconnected_branches() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
     create_entity(&runtime, "root");
     let main_branch = BranchId("main".to_string());
@@ -68,7 +74,7 @@ fn merge_branch_basis_denial_happens_before_planning_for_missing_or_disconnected
     assert!(matches!(
         runtime
             .merge()
-            .inspect_planning_scope(MergePlanningRequest::new(
+            .inspect_planning_scope(execution, MergePlanningRequest::new(
                 main_branch.clone(),
                 missing_branch.clone(),
                 MergeIntent::ReconcileIntoTarget,
@@ -91,13 +97,14 @@ fn merge_branch_basis_denial_happens_before_planning_for_missing_or_disconnected
         } if source_branch == orphan_branch && target_branch == main_branch
     ));
     assert_eq!(
-        runtime
-            .merge()
-            .inspect_planning_scope(MergePlanningRequest::new(
+        runtime.merge().inspect_planning_scope(
+            execution,
+            MergePlanningRequest::new(
                 main_branch.clone(),
                 orphan_branch,
                 MergeIntent::ReconcileIntoTarget,
-            )),
+            )
+        ),
         Err(
             crate::merge::data::MergePlanningError::RequestNormalization(
                 crate::merge::data::RelationalMergeRequestNormalizationDenial::OwnerBinding(
@@ -111,19 +118,25 @@ fn merge_branch_basis_denial_happens_before_planning_for_missing_or_disconnected
 
 #[test]
 fn merge_branch_basis_survives_published_merge_outcome_and_durability_recovery() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
     create_entity(&runtime, "root");
     create_branch_from_main(&runtime, "feature");
     create_entity_outcome_on_branch(&runtime, "feature-only", BranchId("feature".to_string()));
     let prepared = runtime
-        .prepare_merge_execution(crate::facade::merge::MergeExecutionRequest {
-            target_branch: BranchId("main".to_string()),
-            source_branch: BranchId("feature".to_string()),
-            merge_intent: MergeIntent::ReconcileIntoTarget,
-        })
+        .prepare_merge_execution(
+            execution,
+            crate::facade::merge::MergeExecutionRequest {
+                target_branch: BranchId("main".to_string()),
+                source_branch: BranchId("feature".to_string()),
+                merge_intent: MergeIntent::ReconcileIntoTarget,
+            },
+        )
         .expect("prepared merge");
     let merge = runtime
-        .execute_prepared_merge(prepared)
+        .execute_prepared_merge(execution, prepared)
         .expect("executed merge");
     let live_envelope = runtime
         .replay()
@@ -135,7 +148,7 @@ fn merge_branch_basis_survives_published_merge_outcome_and_durability_recovery()
         .expect("live merge authority");
 
     let (_recovery, recovered) =
-        checkpoint_and_recover_with(&runtime, persisted_runtime_with_test_schema);
+        checkpoint_and_recover_with(execution, &runtime, persisted_runtime_with_test_schema);
     let recovered_envelope = recovered
         .replay()
         .canonical_commit_envelope(merge.commit.commit.commit_id)

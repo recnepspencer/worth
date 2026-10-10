@@ -97,7 +97,8 @@ fn scope_posture(kind: ScopeKind) -> WorthQueryRequiredOutputRecoveryPosture {
         | ScopeKind::EqualityIndexUnavailable
         | ScopeKind::ActiveSnapshotCapacityExhausted { .. }
         | ScopeKind::RetentionCapacityExhausted => Retryable,
-        ScopeKind::PrimaryGraphNotInstalled
+        ScopeKind::ForeignPhase
+        | ScopeKind::PrimaryGraphNotInstalled
         | ScopeKind::FieldNotInstalled
         | ScopeKind::ValueEncodingRejected
         | ScopeKind::UnknownEntity
@@ -169,6 +170,7 @@ fn execution_posture(kind: ExecutionKind) -> WorthQueryRequiredOutputRecoveryPos
         | ExecutionKind::RetentionCapacityExhausted
         | ExecutionKind::PredicateIndexUnavailable
         | ExecutionKind::TraversalUnavailable => Retryable,
+        ExecutionKind::ExecutionRequest(_) => Retryable,
         ExecutionKind::Authorization(kind) => authorization_posture(kind),
         ExecutionKind::ForeignPlan
         | ExecutionKind::StaleInstalledQuery

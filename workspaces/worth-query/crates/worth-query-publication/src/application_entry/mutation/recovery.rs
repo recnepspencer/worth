@@ -79,6 +79,9 @@ where
     /// and use [`Self::resolve_idempotency_in_program`] for a fresh read.
     pub fn recover_unpublished_in_program<Program>(
         mut self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
         recovery: &WorthQueryProductUnpublishedRecovery,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
     ) -> Result<
@@ -88,7 +91,7 @@ where
     where
         Program: ApplicationProgramDefinition<Schema>,
     {
-        let prepared = self.authorize_recovery(application)?;
+        let prepared = self.authorize_recovery(phase, application)?;
         self.check_recovery_liveness()?;
         self.request
             .application
@@ -104,21 +107,31 @@ where
     /// request authorization, without preparing or executing a mutation.
     pub fn resolve_idempotency_in_program<Program>(
         mut self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
     ) -> Result<WorthQueryAdmittedIdempotencyRead, WorthQueryApplicationRecoveryRequestDenial>
     where
         Program: ApplicationProgramDefinition<Schema>,
     {
-        let prepared = self.authorize_recovery(application)?;
+        let prepared = self.authorize_recovery(phase, application)?;
         self.check_recovery_liveness()?;
         self.request
             .application
-            .resolve_admitted_application_idempotency(&prepared.admission, prepared.idempotency)
+            .resolve_admitted_application_idempotency(
+                phase,
+                &prepared.admission,
+                prepared.idempotency,
+            )
             .map_err(WorthQueryApplicationRecoveryRequestDenial::Idempotency)
     }
 
     fn authorize_recovery<Program>(
         &mut self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
     ) -> Result<PreparedMutation<Schema, Intent::Binding>, WorthQueryApplicationRecoveryRequestDenial>
     where
@@ -142,7 +155,7 @@ where
             .request
             .application
             .on_branch(self.request.branch)
-            .select()
+            .select(phase)
             .map_err(WorthQueryApplicationRequestMutationDenial::ProductSelection)?;
         let owner = application
             .selected_program_owner(&selected)
@@ -159,7 +172,7 @@ where
         // Bind the original source identity and partition for recovery matching.
         // The retained attempt already owns its source facts: do not consume the
         // pending expectation into a fresh candidate or invoke the handler.
-        super::authorization::prepare_selected(self, &identities, staged, &selected)
+        super::authorization::prepare_selected(phase, self, &identities, staged, &selected)
             .map_err(WorthQueryApplicationRecoveryRequestDenial::Request)
     }
 

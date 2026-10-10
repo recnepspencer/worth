@@ -12,7 +12,13 @@ use crate::domain_computation::primary_graph::application_attempt::{
 fn an_unobservable_key_gathers_its_partition_again_and_denies_nothing() {
     let world = installed_authorization_world(true);
     let installed = installed(StatusRead::Gather(1), sum);
-    let first = first_run(&world, &installed);
+    let first = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            first_run(&(phase).test_host_request(), &world, &installed)
+        })
+        .expect("the fixture read owns its installed host call");
     let outcome = *first.outcome.as_ref().unwrap();
     let mut state = first.sealed.unwrap().unwrap().state;
     let key = state
@@ -36,7 +42,18 @@ fn an_unobservable_key_gathers_its_partition_again_and_denies_nothing() {
     state.facts.rename_key(&key, undeclared);
     let prior = ComputationPrior::new(edition(), Ok(custodied_state_for_test(state)), None);
 
-    let next = attempt(&world, &installed, Some(prior));
+    let next = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            attempt(
+                &(phase).test_host_request(),
+                &world,
+                &installed,
+                Some(prior),
+            )
+        })
+        .expect("the fixture read owns its installed host call");
     assert!(matches!(next.runs.as_slice(), [(Run::Incremental, None)]));
     assert_eq!(next.gathered, [1], "only the partition that read it");
     assert_eq!(next.outcome.unwrap(), outcome);
@@ -50,7 +67,13 @@ fn an_unobservable_key_gathers_its_partition_again_and_denies_nothing() {
 fn more_retained_keys_than_the_declared_work_runs_in_full_uncompared() {
     let world = installed_authorization_world(true);
     let installed = installed(StatusRead::Gather(1), sum);
-    let first = first_run(&world, &installed);
+    let first = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            first_run(&(phase).test_host_request(), &world, &installed)
+        })
+        .expect("the fixture read owns its installed host call");
     let outcome = *first.outcome.as_ref().unwrap();
     let mut state = first.sealed.unwrap().unwrap().state;
     let key = state
@@ -78,7 +101,18 @@ fn more_retained_keys_than_the_declared_work_runs_in_full_uncompared() {
     }
     let prior = ComputationPrior::new(edition(), Ok(custodied_state_for_test(state)), None);
 
-    let next = attempt(&world, &installed, Some(prior));
+    let next = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            attempt(
+                &(phase).test_host_request(),
+                &world,
+                &installed,
+                Some(prior),
+            )
+        })
+        .expect("the fixture read owns its installed host call");
     assert!(matches!(
         next.runs.as_slice(),
         [(Run::Full(Cause::ObservationOverBudget), Some(_))]
@@ -95,7 +129,13 @@ fn more_retained_keys_than_the_declared_work_runs_in_full_uncompared() {
 fn a_few_adjacency_keys_whose_worst_case_passes_the_declared_work_run_in_full() {
     let world = installed_authorization_world(true);
     let installed = installed(StatusRead::Gather(1), sum);
-    let first = first_run(&world, &installed);
+    let first = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            first_run(&(phase).test_host_request(), &world, &installed)
+        })
+        .expect("the fixture read owns its installed host call");
     let outcome = *first.outcome.as_ref().unwrap();
     let mut state = first.sealed.unwrap().unwrap().state;
     let key = state
@@ -122,7 +162,18 @@ fn a_few_adjacency_keys_whose_worst_case_passes_the_declared_work_run_in_full() 
     }
     let prior = ComputationPrior::new(edition(), Ok(custodied_state_for_test(state)), None);
 
-    let next = attempt(&world, &installed, Some(prior));
+    let next = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            attempt(
+                &(phase).test_host_request(),
+                &world,
+                &installed,
+                Some(prior),
+            )
+        })
+        .expect("the fixture read owns its installed host call");
     assert!(matches!(
         next.runs.as_slice(),
         [(Run::Full(Cause::ObservationOverBudget), Some(_))]

@@ -25,6 +25,7 @@ use worth_relational::facade::transactions::{
 };
 
 fn prepare_transition<Schema: ApplicationSchema>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     _phase: &WorthQueryBootstrapAdvancementPhase<'_>,
     graph: &mut WorthQueryPrimaryGraphBootstrap<Schema>,
     installed: &WorthQueryInstalledApplicationSchema<Schema>,
@@ -40,19 +41,20 @@ fn prepare_transition<Schema: ApplicationSchema>(
     let (basis, identity, entities) = graph
         .graph
         .integration_handle()
-        .with_runtime(|runtime| {
+        .with_runtime(execution, |runtime| {
             let basis = runtime
                 .admit_branch_basis(&runtime.main_branch_identity())
                 .map_err(map_bootstrap_basis_denial)?;
             let branch = runtime
                 .read_truth()
-                .project_observation(&basis.observation())
+                .project_observation(execution, &basis.observation())
                 .map_err(|error| {
                     denial(format!(
                         "checkpoint transition source unreadable: {error:?}"
                     ))
                 })?;
             let (identity, work) = read_activation(
+                execution,
                 &branch,
                 layout.program_activation(),
                 transition.resources.maximum_selection_work,
@@ -60,6 +62,7 @@ fn prepare_transition<Schema: ApplicationSchema>(
                 |rendering| *rendering == expected,
             )?;
             let entities = selection::select(
+                execution,
                 &branch,
                 &layout,
                 installed,
@@ -112,7 +115,7 @@ fn prepare_transition<Schema: ApplicationSchema>(
     let successor = graph
         .graph
         .integration_handle()
-        .with_runtime_mut(|runtime| {
+        .with_runtime_mut(execution, |runtime| {
             let mut transaction = runtime
                 .begin_branch_transaction(
                     &basis,
@@ -154,16 +157,20 @@ fn prepare_transition<Schema: ApplicationSchema>(
 pub(in crate::domain_computation::primary_graph) fn transition_checkpoint<
     Schema: ApplicationSchema,
 >(
-    _phase: &WorthQueryBootstrapAdvancementPhase<'_>,
+    phase: &WorthQueryBootstrapAdvancementPhase<'_>,
     graph: &mut WorthQueryPrimaryGraphBootstrap<Schema>,
     installed: &WorthQueryInstalledApplicationSchema<Schema>,
     support: &WorthQueryAdmittedProgramSupport<Schema>,
     cell: &WorthQueryProgramActivationCell,
     transition: CheckpointTransition<'_, '_, Schema>,
 ) -> Result<(), WorthQueryInMemoryApplicationDenial> {
+    let phase_request = phase.execution_request();
+    let execution = &phase_request;
     let recovery = std::rc::Rc::clone(&transition.recovery);
     let capture_policy = transition.capture_policy;
-    let successor = prepare_transition(_phase, graph, installed, support, cell, transition)?;
+    let successor = prepare_transition(
+        execution, phase, graph, installed, support, cell, transition,
+    )?;
     let publication = graph
         .recovered_publication
         .clone()
@@ -175,7 +182,7 @@ pub(in crate::domain_computation::primary_graph) fn transition_checkpoint<
             graph
                 .graph
                 .integration_handle()
-                .with_runtime(|runtime| runtime.durability_authority().native_checkpoint(capture_policy))
+                .with_runtime(execution, |runtime| runtime.durability_authority().native_checkpoint(capture_policy))
                 .map_err(crate::domain_computation::primary_graph::WorthQueryCheckpointCaptureDenial::from)
         })
         .and_then(|native| {

@@ -18,6 +18,7 @@ where
     /// undo causality.
     pub fn compare_and_commit_undo_application<Operation, Input, Scope>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
         handoff: &WorthQueryUndoProgressionHandoff,
@@ -39,6 +40,7 @@ where
                 );
             }
             self.compare_and_commit_application_with_causality(
+                execution,
                 &phase,
                 program,
                 idempotency,
@@ -54,6 +56,7 @@ where
     /// Relational transaction. Relational also rechecks the bound branch head.
     pub fn compare_and_commit_redo_application<Operation, Input, Scope>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
         handoff: &WorthQueryRedoProgressionHandoff,
@@ -75,6 +78,7 @@ where
                 );
             }
             self.compare_and_commit_application_with_causality(
+                execution,
                 &phase,
                 program,
                 idempotency,

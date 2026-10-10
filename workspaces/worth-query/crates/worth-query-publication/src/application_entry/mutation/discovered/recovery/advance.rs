@@ -44,6 +44,9 @@ where
     /// result retains every read/publication/cleanup result for promotion.
     pub fn recover_unpublished_discovered_in_program<Program, Root>(
         mut self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
         recovery: &mut WorthQueryUnpublishedDiscoveredApplicationMutation<
             Schema,
             Intent,
@@ -59,8 +62,11 @@ where
         RootConnection<Schema, Root>:
             WorthQueryApplicationDiscoveredOutputConnection<Schema, Source = Intent::Binding>,
     {
-        let prepared =
-            self.authorize_discovered_source::<Program, Root>(application, &recovery.source)?;
+        let prepared = self.authorize_discovered_source::<Program, Root>(
+            phase,
+            application,
+            &recovery.source,
+        )?;
         recovery
             .phase
             .advance(

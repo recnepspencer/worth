@@ -3,6 +3,9 @@ use crate::tests::support::*;
 
 #[test]
 fn nested_savepoint_abandoned_aspect_work_leaves_zero_patch_cdc_history_and_lineage_residue() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     let created = create_entity_outcome(&runtime, "anchor");
     let anchor = changed_entities(&created)[0];
@@ -186,7 +189,7 @@ fn nested_savepoint_abandoned_aspect_work_leaves_zero_patch_cdc_history_and_line
 
     let read = runtime
         .read_truth()
-        .read_snapshot(&outcome.snapshot)
+        .read_snapshot(&outcome.snapshot, execution)
         .unwrap();
     let entity_names = read
         .entities()

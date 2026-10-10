@@ -3,6 +3,9 @@ use crate::tests::support::*;
 
 #[test]
 fn retained_root_preserves_relation_aspect_history_without_record_pins() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(test_schema_registry())
         .mvcc(MvccConfig {
@@ -47,7 +50,7 @@ fn retained_root_preserves_relation_aspect_history_without_record_pins() {
     assert_eq!(runtime.relation_history_len_for_test(relation), 1);
     let historical = runtime
         .read_truth()
-        .read_observation(&retained_basis.observation())
+        .read_observation(execution, &retained_basis.observation())
         .unwrap();
     let relation_record = historical
         .relations

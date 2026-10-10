@@ -11,6 +11,9 @@ use super::{forward_traversal, ENTITY_KIND};
 
 #[test]
 fn exact_next_hop_anchor_ignores_same_source_population() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let principal = create_entity(&runtime, "anchored-principal");
     let anchor = create_entity(&runtime, "anchored-role");
@@ -18,7 +21,7 @@ fn exact_next_hop_anchor_ignores_same_source_population() {
     create_relation(&runtime, principal, anchor, "anchored-principal-role");
     create_relation(&runtime, anchor, scope, "anchored-role-scope");
 
-    let baseline = observe_anchored_path(&runtime, principal, anchor, scope);
+    let baseline = observe_anchored_path(execution, &runtime, principal, anchor, scope);
     for ordinal in 0..64 {
         let unrelated = create_entity(&runtime, &format!("same-source-grant-{ordinal}"));
         create_relation(
@@ -28,7 +31,7 @@ fn exact_next_hop_anchor_ignores_same_source_population() {
             &format!("same-source-edge-{ordinal}"),
         );
     }
-    let populated = observe_anchored_path(&runtime, principal, anchor, scope);
+    let populated = observe_anchored_path(execution, &runtime, principal, anchor, scope);
 
     assert_eq!(populated.counters(), baseline.counters());
     assert_eq!(
@@ -40,23 +43,27 @@ fn exact_next_hop_anchor_ignores_same_source_population() {
 
 #[test]
 fn exact_next_hop_anchor_retains_revocation_currentness() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let principal = create_entity(&runtime, "revoked-anchor-principal");
     let anchor = create_entity(&runtime, "revoked-anchor-role");
     let scope = create_entity(&runtime, "revoked-anchor-scope");
     let exact = create_relation(&runtime, principal, anchor, "revoked-principal-role");
     create_relation(&runtime, anchor, scope, "revoked-role-scope");
-    let admitted = observe_anchored_path(&runtime, principal, anchor, scope);
+    let admitted = observe_anchored_path(execution, &runtime, principal, anchor, scope);
 
     let revoked = delete_relation_on_branch(&runtime, exact, BranchId("main".to_owned()));
 
     assert_eq!(
-        runtime.compare_authorization_observation(&admitted, revoked.snapshot.clone()),
+        runtime.compare_authorization_observation(&admitted, revoked.snapshot.clone(), execution),
         RelationalAuthorizationObservationFreshness::Stale,
     );
 }
 
 fn observe_anchored_path(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalRuntime,
     principal: crate::identity::data::EntityId,
     anchor: crate::identity::data::EntityId,
@@ -78,5 +85,5 @@ fn observe_anchored_path(
         [],
     )
     .unwrap();
-    runtime.observe_authorization(plan).unwrap()
+    runtime.observe_authorization(plan, execution).unwrap()
 }

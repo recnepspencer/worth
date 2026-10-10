@@ -12,7 +12,6 @@ impl WorthQueryExecutionInstallationAuthority {
         Schema: ApplicationSchema,
     {
         // Installation has no World identity yet; this borrows its admitted root.
-        let _execution = phase.execution_request();
         let factories =
             WorthQueryApplicationInvariantFactories::for_installed_schema(installed_schema);
         self.prepare_primary_graph_with_relational_runtime_and_invariants(
@@ -74,7 +73,7 @@ impl WorthQueryExecutionInstallationAuthority {
     /// The phase witnesses admission before inline Relational schema and recovery reads.
     pub(super) fn prepare_primary_graph_with_optional_checkpoint<Schema>(
         &self,
-        _phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
+        phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
         runtime: &WorthQueryExecutionRuntime,
         installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
         mut relational_runtime: RelationalRuntime,
@@ -85,6 +84,8 @@ impl WorthQueryExecutionInstallationAuthority {
     where
         Schema: ApplicationSchema,
     {
+        let execution = phase.execution_request();
+
         if !self.belongs_to(runtime) {
             return Err(primary_graph_denial(
                 WorthQueryPrimaryGraphInstallationDenialKind::ForeignRuntime,
@@ -143,7 +144,7 @@ impl WorthQueryExecutionInstallationAuthority {
             if let Some(checkpoint) = checkpoint {
                 let (outcome, authority) = relational_runtime
                     .durability_recovery()
-                    .restore_native_checkpoint_with_authority(&checkpoint.native)
+                    .restore_native_checkpoint_with_authority(&execution, &checkpoint.native)
                     .map_err(|error| {
                         primary_graph_denial(
                         WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
@@ -171,7 +172,7 @@ impl WorthQueryExecutionInstallationAuthority {
             checkpoint.is_some(),
         )?;
         let recovered_publication = checkpoint
-            .map(|checkpoint| checkpoint.recover_publication(&graph))
+            .map(|checkpoint| checkpoint.recover_publication(&execution, &graph))
             .transpose()?;
         Ok(WorthQueryPrimaryGraphBootstrap {
             runtime_authority: runtime.authority_identity(),

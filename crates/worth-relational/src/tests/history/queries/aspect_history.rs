@@ -173,6 +173,9 @@ fn aspect_history_projection_filter_matches_field_level_patch_locus() {
 
 #[test]
 fn bulk_like_aspect_history_filters_and_query_packets_stay_stable_after_recovery() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime =
         persisted_runtime_with_declared_aspect_schema(CascadeDeletePolicy::RetainDanglingForAudit);
     let hub = create_entity(&runtime, "hub");
@@ -219,6 +222,7 @@ fn bulk_like_aspect_history_filters_and_query_packets_stay_stable_after_recovery
         )
         .unwrap();
     let before_recovery_reads = execute_explicit_query(
+        execution,
         &runtime,
         &snapshot,
         "fanout-entities",
@@ -258,10 +262,11 @@ fn bulk_like_aspect_history_filters_and_query_packets_stay_stable_after_recovery
         persisted_runtime_with_declared_aspect_schema(CascadeDeletePolicy::RetainDanglingForAudit);
     let recovery = recovered
         .durability_recovery()
-        .recover(recovery_plan)
+        .recover(execution, recovery_plan)
         .unwrap();
     let recovered_snapshot = recovered.visibility_authority().snapshot();
     let recovered_reads = execute_explicit_query(
+        execution,
         &recovered,
         &recovered_snapshot,
         "fanout-entities",

@@ -72,14 +72,17 @@ pub(super) fn runtime_with_schema_declared_entity_policy(persisted: bool) -> Rel
     builder.build()
 }
 
-pub(super) fn prepared_merge(runtime: &RelationalRuntime) -> PreparedMergeExecution {
+pub(super) fn prepared_merge(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+) -> PreparedMergeExecution {
     let shared = create_entity(runtime, "shared");
     create_branch_from_main(runtime, "feature");
     update_entity_status_on_branch(runtime, shared, "inactive", "main");
     update_entity_status_on_branch(runtime, shared, "active", "feature");
     runtime
         .merge()
-        .prepare_merge_execution(merge_request())
+        .prepare_merge_execution(execution, merge_request())
         .expect("prepared merge")
 }
 

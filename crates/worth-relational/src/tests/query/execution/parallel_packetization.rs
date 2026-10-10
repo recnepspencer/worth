@@ -2,6 +2,9 @@ use super::*;
 
 #[test]
 fn unleased_query_execution_preserves_multi_seed_traversal_packets() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::CertificationCore)
         .schema_registry(declared_aspect_schema_registry(
@@ -64,7 +67,13 @@ fn unleased_query_execution_preserves_multi_seed_traversal_packets() {
         .expect("planned query packet");
     let outcome = runtime
         .read_truth()
-        .execute_query_plan(plan)
+        .execute_query_plan(
+            plan,
+            execution,
+            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
+        )
+        .expect("request remains live")
+        .map(|read| read.outcome)
         .expect("query execution outcome");
     let counters = runtime.performance_access().counters();
     let expected_packet_count = 2;

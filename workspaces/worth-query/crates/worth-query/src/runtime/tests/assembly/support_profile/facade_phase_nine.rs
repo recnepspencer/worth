@@ -34,7 +34,10 @@ impl WorthQueryDerivedViewMaintainer for PhaseNineMaintainer {
 
 #[test]
 fn phase_nine_facade_families_are_supported_and_admitted() {
-    let workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("task.phase-nine-support")
         .expect("workspace should build");
 
@@ -82,6 +85,9 @@ fn phase_nine_facade_families_are_supported_and_admitted() {
 
 #[test]
 fn workspace_submission_lane_matches_existing_workspace_convenience_receipts() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let command = WorthQueryAspectMutationBuilder::new()
         .set_aspect(
             test_aspect_touch("identity.id"),
@@ -94,19 +100,19 @@ fn workspace_submission_lane_matches_existing_workspace_convenience_receipts() {
         .build_insert("Task")
         .expect("insert command should build");
 
-    let convenience_receipt = stateful_bridge_task_runtime()
+    let convenience_receipt = stateful_bridge_task_runtime(request_execution)
         .workspace("task.phase-nine-convenience")
         .expect("workspace should build")
-        .write(command.clone())
+        .write(request_execution, command.clone())
         .expect("workspace convenience write should succeed");
     let submission_receipt = {
-        let mut workspace = stateful_bridge_task_runtime()
+        let mut workspace = stateful_bridge_task_runtime(request_execution)
             .workspace("task.phase-nine-submission")
             .expect("workspace should build");
         workspace
             .submissions()
             .expect("submission lane should mint")
-            .submit(command)
+            .submit(request_execution, command)
             .expect("submission lane write should succeed")
     };
 
@@ -122,15 +128,24 @@ fn workspace_submission_lane_matches_existing_workspace_convenience_receipts() {
 
 #[test]
 fn workspace_shared_read_lane_matches_runtime_owned_context_without_recomputation() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("task.phase-nine-shared-read")
         .expect("workspace should build");
     let live: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view_request("tasks.phase-nine", task_live_request(), task_schema())
+        .live_view_request(
+            request_execution,
+            "tasks.phase-nine",
+            task_live_request(),
+            task_schema(),
+        )
         .expect("live view should declare");
     let invocations = Arc::new(AtomicUsize::new(0));
     let derived: WorthQueryDerivedViewHandle<WorthQueryUnrefinedLiveShape> = workspace
         .computed_view(
+            request_execution,
             crate::program::WorthQueryDerivedView::new(
                 "derived.phase-nine",
                 [test_aspect_touch("title.value")],
@@ -143,7 +158,7 @@ fn workspace_shared_read_lane_matches_runtime_owned_context_without_recomputatio
         .expect("derived view should declare");
 
     workspace
-        .insert("Task", |builder| {
+        .insert(request_execution, "Task", |builder| {
             builder
                 .set_aspect(
                     test_aspect_touch("identity.id"),
@@ -157,13 +172,14 @@ fn workspace_shared_read_lane_matches_runtime_owned_context_without_recomputatio
         .expect("insert should publish derived artifact");
 
     let facade_artifact = workspace
-        .shared_read_context()
+        .shared_read_context(request_execution)
         .expect("workspace shared read context should mint")
         .published_derived_artifact(&derived)
         .expect("workspace shared read artifact should mint");
-    let decomposed_artifact = WorthQuerySharedReadContext::from_runtime(&workspace.runtime)
-        .published_derived_artifact(&derived)
-        .expect("runtime shared read artifact should mint");
+    let decomposed_artifact =
+        WorthQuerySharedReadContext::from_runtime(request_execution, &workspace.runtime)
+            .published_derived_artifact(&derived)
+            .expect("runtime shared read artifact should mint");
 
     assert_eq!(facade_artifact, decomposed_artifact);
     assert_eq!(

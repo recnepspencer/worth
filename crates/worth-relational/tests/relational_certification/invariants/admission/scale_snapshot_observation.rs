@@ -6,14 +6,18 @@ use super::super::world::supply_chain::{
     entity_kind_id, snapshot_for_supply_chain_identity, EntityKind,
 };
 
-pub(super) fn vessel_call_signs(runtime: &RelationalRuntime, branch: &BranchId) -> Vec<String> {
+pub(super) fn vessel_call_signs(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    branch: &BranchId,
+) -> Vec<String> {
     let identity = runtime
         .branch_identity(branch)
         .expect("branch identity is owner-issued");
     let snapshot = snapshot_for_supply_chain_identity(runtime, &identity);
     let view = runtime
         .read_truth()
-        .read_snapshot(&snapshot)
+        .read_snapshot(&snapshot, execution)
         .expect("branch snapshot is readable");
     let aspect = AspectKey::new("call_sign").expect("call-sign aspect");
     view.entities()
@@ -33,14 +37,18 @@ pub(super) fn vessel_call_signs(runtime: &RelationalRuntime, branch: &BranchId) 
         .collect()
 }
 
-pub(super) fn live_record_count(runtime: &RelationalRuntime, branch: &BranchId) -> usize {
+pub(super) fn live_record_count(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    branch: &BranchId,
+) -> usize {
     let identity = runtime
         .branch_identity(branch)
         .expect("branch identity is owner-issued");
     let snapshot = snapshot_for_supply_chain_identity(runtime, &identity);
     let view = runtime
         .read_truth()
-        .read_snapshot(&snapshot)
+        .read_snapshot(&snapshot, execution)
         .expect("branch snapshot is readable");
     view.entities().len() + view.relations().len()
 }

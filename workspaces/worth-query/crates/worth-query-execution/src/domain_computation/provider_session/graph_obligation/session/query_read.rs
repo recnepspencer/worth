@@ -22,6 +22,7 @@ impl WorthQueryManagedGraphWorkSession {
 
     pub(in crate::domain_computation) fn execute_query_read<T>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         basis: &WorthQueryApplicationBasisIdentity,
         read: impl FnOnce(
             &mut worth_relational::facade::runtime::RelationalRuntime,
@@ -35,7 +36,7 @@ impl WorthQueryManagedGraphWorkSession {
             return Err(WorthQueryManagedGraphReadDenial::ForeignBasis);
         }
         let output = port
-            .execute(&self.binding, read)
+            .execute(execution, &self.binding, read)
             .map_err(|_| WorthQueryManagedGraphReadDenial::ForeignGraph)?;
         Ok((
             output,

@@ -2,6 +2,8 @@
 mod compat_http_admission_failure_cases;
 #[path = "support/compat_http/admission_runtime.rs"]
 mod compat_http_admission_runtime;
+#[path = "support/test_execution_policy.rs"]
+mod test_execution_policy;
 
 use worth_server::{
     request_context::DiagnosticRichnessProfile, WorthServerCompatHttpRouteFamily,

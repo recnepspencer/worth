@@ -23,6 +23,9 @@ use provider_fixtures::{CountedCompute, DeferredWake, DetachedCompute, Unrequest
 
 #[test]
 fn unchanged_correspondence_versions_stop_before_condition_and_compute() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let node = node(
         "dependency-versioned",
         domain::WorthQueryComparatorRequirement::ExactCanonicalValue,
@@ -31,6 +34,7 @@ fn unchanged_correspondence_versions_stop_before_condition_and_compute() {
     let installation = conditional_installation(&node);
     let contacts = Arc::new(AtomicUsize::new(0));
     let mut workspace = conditional_workspace_with(
+        request_execution,
         "dependency-versioned",
         node,
         installation,
@@ -106,6 +110,9 @@ fn unchanged_correspondence_versions_stop_before_condition_and_compute() {
 
 #[test]
 fn unchanged_dependency_opens_live_continuity_without_new_semantic_output() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let node = node(
         "promotion-dependency-unchanged",
         domain::WorthQueryComparatorRequirement::ExactCanonicalValue,
@@ -114,6 +121,7 @@ fn unchanged_dependency_opens_live_continuity_without_new_semantic_output() {
     let installation = conditional_installation(&node);
     let contacts = Arc::new(AtomicUsize::new(0));
     let mut workspace = conditional_workspace_with(
+        request_execution,
         "promotion-dependency-unchanged",
         node,
         installation,
@@ -144,7 +152,10 @@ fn unchanged_dependency_opens_live_continuity_without_new_semantic_output() {
         .settle()
         .unwrap();
 
-    let live = match settled.into_lifecycle().promote(&mut workspace) {
+    let live = match settled
+        .into_lifecycle()
+        .promote(request_execution, &mut workspace)
+    {
         domain::WorthQueryProjectionPromotionOutcome::Promoted(live) => live,
         _ => panic!("fresh unchanged evidence did not admit live continuity"),
     };
@@ -157,13 +168,16 @@ fn unchanged_dependency_opens_live_continuity_without_new_semantic_output() {
         live.conditional_provenance()[0].class(),
         domain::WorthQueryConditionalOutcomeClass::DependencyUnchanged
     );
-    let refresh = live.refresh(&mut workspace).unwrap();
+    let refresh = live.refresh(request_execution, &mut workspace).unwrap();
     assert!(refresh.delivery().is_empty());
     assert_eq!(refresh.work().delivery_batches(), 0);
 }
 
 #[test]
 fn unrequested_on_demand_node_defers_without_compute_or_query_work() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let dependency = dependency(domain::WorthQuerySemanticLocality::SourceRecord);
     let node = conditional_node_result(
         "on-demand-deferred",
@@ -178,6 +192,7 @@ fn unrequested_on_demand_node_defers_without_compute_or_query_work() {
         .trigger(UnrequestedTrigger);
     let contacts = Arc::new(AtomicUsize::new(0));
     let mut workspace = conditional_workspace_with(
+        request_execution,
         "on-demand-deferred",
         node,
         installation,
@@ -224,6 +239,9 @@ fn unrequested_on_demand_node_defers_without_compute_or_query_work() {
 
 #[test]
 fn temporal_wake_defers_without_compute_or_query_work() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let dependency = dependency(domain::WorthQuerySemanticLocality::SourceRecord);
     let node = conditional_node_result(
         "temporal-deferred",
@@ -242,6 +260,7 @@ fn temporal_wake_defers_without_compute_or_query_work() {
         worth_runtime_bridge::facade::BridgeConditionalProviderSet::new().wake(DeferredWake);
     let contacts = Arc::new(AtomicUsize::new(0));
     let mut workspace = conditional_workspace_with(
+        request_execution,
         "temporal-deferred",
         node,
         installation,

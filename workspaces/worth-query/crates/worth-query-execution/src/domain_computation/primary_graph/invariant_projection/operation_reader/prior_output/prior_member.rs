@@ -14,6 +14,7 @@ where
     /// time. The suffix selects a member, never a contract or entity kind.
     pub fn prior_output_member<PriorBinding, Family, Action>(
         &mut self,
+
         suffix: &str,
     ) -> Result<
         WorthQueryInvariantEntityIdentity<Schema, Family::Entity>,
@@ -26,6 +27,7 @@ where
         Family::Entity: OperationReads<Operation>,
         Action: WorthQueryApplicationOutputAction,
     {
+        let _execution = self.reader.execution;
         self.prior_output_member_if_present::<PriorBinding, Family, Action>(suffix)?
             .ok_or_else(|| {
                 WorthQueryPriorOutputDenial::new(
@@ -41,6 +43,7 @@ where
     /// and charge one role lookup without enumerating the family's inventory.
     pub fn prior_output_member_if_present<PriorBinding, Family, Action>(
         &mut self,
+
         suffix: &str,
     ) -> Result<
         Option<WorthQueryInvariantEntityIdentity<Schema, Family::Entity>>,
@@ -53,6 +56,7 @@ where
         Family::Entity: OperationReads<Operation>,
         Action: WorthQueryApplicationOutputAction,
     {
+        let execution = self.reader.execution;
         let role = OutputRoleUse::member::<Family, Action>(suffix).map_err(|denial| {
             WorthQueryPriorOutputDenial::projection(
                 Family::PREFIX,
@@ -74,7 +78,7 @@ where
                     &role.name,
                 )
             })?;
-        self.live_prior_identity::<Family::Entity>(&role.name, entity)
+        self.live_prior_identity::<Family::Entity>(execution, &role.name, entity)
             .map(Some)
     }
 }

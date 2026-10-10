@@ -21,7 +21,10 @@ fn workflow_checkpoint_failure_and_generation_disruption_become_cleanup_only_aut
             .expect("workflow rollback fixture registry slot must remain available") =
             Some(registry);
 
-        let recovery = match yielded.readmit_same_runtime(active_request, &runtime, &bridge) {
+        let recovery = match {
+            let installed_fixture_phase = yielded.fixture_phase(active_request);
+            yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+        } {
             crate::domain_computation::WorthQueryWorkflowReadmissionOutcome::RecoveryRequired(
                 recovery,
             ) => recovery,
@@ -99,7 +102,10 @@ fn workflow_generation_mismatch_denies_before_fresh_authority_and_rolls_back_cle
             .registry()
             .prepare_next_generation()
             .expect("test delta should place the registry in a pending generation");
-        let denied = match yielded.readmit_same_runtime(active_request, &runtime, &bridge) {
+        let denied = match {
+            let installed_fixture_phase = yielded.fixture_phase(active_request);
+            yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+        } {
             crate::domain_computation::WorthQueryWorkflowReadmissionOutcome::Denied(denied) => {
                 denied
             }
@@ -124,13 +130,19 @@ fn workflow_generation_mismatch_denies_before_fresh_authority_and_rolls_back_cle
                 .production_generation(),
             generation
         );
-        let active = match yielded.readmit_same_runtime(active_request, &runtime, &bridge) {
+        let active = match {
+            let installed_fixture_phase = yielded.fixture_phase(active_request);
+            yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+        } {
             crate::domain_computation::WorthQueryWorkflowReadmissionOutcome::Readmitted(
                 readmitted,
             ) => readmitted.into_active(),
             _ => panic!("generation rollback should restore exact retry authority"),
         };
-        let completion = match active.advance(execution) {
+        let completion = match {
+            let installed_fixture_phase = active.fixture_phase(execution);
+            active.advance(&installed_fixture_phase)
+        } {
             WorthQueryWorkflowGraphStepOutcome::Completed(completion) => completion,
             _ => panic!("restored workflow provider should complete"),
         };

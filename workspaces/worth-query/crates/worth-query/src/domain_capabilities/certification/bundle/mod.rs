@@ -99,8 +99,10 @@ impl WorthQueryDomainCapabilityCertificationBundle {
     }
 }
 
-pub fn certify_domain_capabilities() -> WorthQueryDomainCapabilityCertificationBundle {
-    let installation = super::install_domain_capability_certification();
+pub fn certify_domain_capabilities(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryDomainCapabilityCertificationBundle {
+    let installation = super::install_domain_capability_certification(execution);
     certify_domain_capabilities_in(installation.contributions())
 }
 
@@ -143,7 +145,10 @@ mod tests {
 
     #[test]
     fn certification_bundle_matches_required_manifest() {
-        let bundle = certify_domain_capabilities();
+        let host_request = crate::test_execution_policy::serial_request();
+        let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+        let bundle = certify_domain_capabilities(request_execution);
 
         assert_eq!(
             bundle.output_manifest(),

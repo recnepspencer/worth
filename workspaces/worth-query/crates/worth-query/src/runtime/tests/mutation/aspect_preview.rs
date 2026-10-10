@@ -2,18 +2,22 @@ use super::super::support::*;
 
 #[test]
 fn preview_insert_uses_aspect_native_authoring_and_stays_preview_local() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("tasks.preview-aspect-insert")
         .expect("task runtime should open a named workspace");
     let mut preview = workspace
         .preview_with_options(
+            request_execution,
             test_session_label("task-preview"),
             WorthQueryPreviewOptions::sandboxed_write_intent(),
         )
         .expect("preview should open");
 
     let receipt = preview
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(
                 test_aspect_touch("identity.id"),
                 test_authored_string_aspect_value("preview-task-1"),

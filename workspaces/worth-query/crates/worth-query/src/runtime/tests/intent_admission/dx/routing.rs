@@ -2,10 +2,13 @@ use super::*;
 
 #[test]
 fn existing_truth_probe_intent_common_path_executes_through_canonical_handoff() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("intent-admission-probe-dx")
         .expect("workspace should open");
-    let binding = seeded_probe_binding(&mut workspace);
+    let binding = seeded_probe_binding(request_execution, &mut workspace);
     let request = WorthQueryExistingTruthProbeRequest::new(
         binding,
         test_aspect_touches(["identity.id", "title.value"]),
@@ -15,7 +18,7 @@ fn existing_truth_probe_intent_common_path_executes_through_canonical_handoff() 
 
     let result = runtime
         .probe_existing_intent(request)
-        .execute()
+        .execute(request_execution)
         .expect("probe common-path helper should execute");
 
     assert_eq!(
@@ -39,10 +42,13 @@ fn existing_truth_probe_intent_common_path_executes_through_canonical_handoff() 
 
 #[test]
 fn existing_truth_probe_intent_advanced_path_exposes_request_eligibility_decision_and_handoff() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("intent-admission-probe-advanced")
         .expect("workspace should open");
-    let binding = seeded_probe_binding(&mut workspace);
+    let binding = seeded_probe_binding(request_execution, &mut workspace);
     let request = WorthQueryExistingTruthProbeRequest::new(
         binding,
         test_aspect_touches(["identity.id", "title.value"]),
@@ -82,10 +88,13 @@ fn existing_truth_probe_intent_advanced_path_exposes_request_eligibility_decisio
 
 #[test]
 fn workspace_existing_truth_probe_intent_common_path_executes_through_canonical_handoff() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("intent-admission-workspace-probe-dx")
         .expect("workspace should open");
-    let binding = seeded_probe_binding(&mut workspace);
+    let binding = seeded_probe_binding(request_execution, &mut workspace);
     let request = WorthQueryExistingTruthProbeRequest::new(
         binding,
         test_aspect_touches(["identity.id", "title.value"]),
@@ -94,7 +103,7 @@ fn workspace_existing_truth_probe_intent_common_path_executes_through_canonical_
 
     let result = workspace
         .probe_existing_intent(request)
-        .execute()
+        .execute(request_execution)
         .expect("workspace probe common-path helper should execute");
 
     assert_eq!(
@@ -117,10 +126,11 @@ fn workspace_existing_truth_probe_intent_common_path_executes_through_canonical_
 }
 
 fn seeded_probe_binding(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace: &mut WorthQueryWorkspace,
 ) -> WorthQueryExistingTruthTargetBinding {
     let seed = workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(
                 test_aspect_touch("identity.id"),
                 test_authored_string_aspect_value("task-1"),

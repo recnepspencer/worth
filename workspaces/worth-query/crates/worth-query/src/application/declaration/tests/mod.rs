@@ -23,54 +23,15 @@ use support::{
     TopologySplitEdgeDeclaration,
 };
 
-#[test]
-fn equivalent_declaration_authoring_paths_share_the_same_digest() {
-    let handle = admitted_handle(GeometryOperatingContext::collaborative());
-    let left = handle
-        .declare(SplitEdgeDeclaration::midpoint("edge:42"))
-        .expect("midpoint declaration should canonicalize");
-    let right = handle
-        .declare(SplitEdgeDeclaration::midpoint_builder("edge:42"))
-        .expect("equivalent midpoint declaration should canonicalize");
-
-    assert_eq!(left.declaration_family_key(), "split-edge");
-    assert_eq!(
-        left.declaration_taxonomy(),
-        WorthQueryDeclarationFamilyTaxonomy::new(
-            WorthQueryDeclarationPrimaryAuthorityFamily::RelationalTruth,
-            WorthQuerySignalCompatibilityPosture::Compatible,
-            WorthQueryGroupedDeclarationPosture::NeighborhoodCapable,
-        )
-    );
-    assert_eq!(
-        left.declaration_primary_authority_family(),
-        WorthQueryDeclarationPrimaryAuthorityFamily::RelationalTruth
-    );
-    assert_eq!(
-        left.declaration_signal_compatibility(),
-        WorthQuerySignalCompatibilityPosture::Compatible
-    );
-    assert_eq!(
-        left.declaration_grouped_posture(),
-        WorthQueryGroupedDeclarationPosture::NeighborhoodCapable
-    );
-    assert_eq!(
-        handle.family_support::<SplitEdgeFamily>().declare_status(),
-        WorthQueryDeclarationCapabilityStatus::Admitted
-    );
-    let _truth = left.relational_truth();
-    let _signal = left.signal_compatible();
-    let _grouped = left.neighborhood_capable();
-    assert_eq!(left.declaration_digest(), right.declaration_digest());
-    assert_eq!(
-        left.declaration_meaning_digest(),
-        right.declaration_meaning_digest()
-    );
-}
+#[path = "mod/equivalent_declaration_authoring_paths_share_the_same_digest.rs"]
+mod equivalent_declaration_authoring_paths_share_the_same_digest;
 
 #[test]
 fn distinct_declaration_meaning_yields_distinct_digests() {
-    let handle = admitted_handle(GeometryOperatingContext::collaborative());
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, GeometryOperatingContext::collaborative());
     let midpoint = handle
         .declare(SplitEdgeDeclaration::midpoint("edge:42"))
         .expect("midpoint declaration should canonicalize");
@@ -87,8 +48,12 @@ fn distinct_declaration_meaning_yields_distinct_digests() {
 
 #[test]
 fn admitted_operating_world_changes_authority_identity_not_portable_meaning() {
-    let collaborative = admitted_handle(GeometryOperatingContext::collaborative());
-    let restricted = admitted_handle(GeometryOperatingContext::restricted());
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let collaborative =
+        admitted_handle(request_execution, GeometryOperatingContext::collaborative());
+    let restricted = admitted_handle(request_execution, GeometryOperatingContext::restricted());
 
     let left = collaborative
         .declare(SplitEdgeDeclaration::midpoint("edge:42"))
@@ -110,7 +75,10 @@ fn admitted_operating_world_changes_authority_identity_not_portable_meaning() {
 
 #[test]
 fn taxonomy_posture_changes_declaration_identity() {
-    let handle = admitted_handle(GeometryOperatingContext::collaborative());
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, GeometryOperatingContext::collaborative());
     let neighborhood = handle
         .declare(SplitEdgeDeclaration::midpoint("edge:42"))
         .expect("neighborhood declaration should canonicalize");
@@ -134,8 +102,11 @@ fn taxonomy_posture_changes_declaration_identity() {
 
 #[test]
 fn identical_family_keys_in_different_domains_do_not_collapse() {
-    let geometry = admitted_handle(GeometryOperatingContext::collaborative());
-    let topology = admitted_topology_handle();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let geometry = admitted_handle(request_execution, GeometryOperatingContext::collaborative());
+    let topology = admitted_topology_handle(request_execution);
 
     let left = geometry
         .declare(SplitEdgeDeclaration::midpoint("edge:42"))
@@ -159,7 +130,10 @@ fn identical_family_keys_in_different_domains_do_not_collapse() {
 
 #[test]
 fn ordinary_pinned_and_explicit_version_paths_agree_when_version_matches() {
-    let handle = admitted_handle(GeometryOperatingContext::collaborative());
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, GeometryOperatingContext::collaborative());
     let ordinary = handle
         .declare(SplitEdgeDeclaration::midpoint("edge:42"))
         .expect("ordinary declaration should canonicalize");
@@ -178,7 +152,10 @@ fn ordinary_pinned_and_explicit_version_paths_agree_when_version_matches() {
 
 #[test]
 fn canonical_comparison_preserves_equivalent_mismatched_and_unsupported_posture() {
-    let handle = admitted_handle(GeometryOperatingContext::collaborative());
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, GeometryOperatingContext::collaborative());
     let left = handle
         .declare(SplitEdgeDeclaration::midpoint("edge:42"))
         .expect("left declaration should canonicalize");
@@ -216,7 +193,10 @@ fn canonical_comparison_preserves_equivalent_mismatched_and_unsupported_posture(
 
 #[test]
 fn equivalent_temporal_authoring_forms_share_canonical_identity() {
-    let handle = admitted_handle(GeometryOperatingContext::collaborative());
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, GeometryOperatingContext::collaborative());
     let left = handle
         .declare(TemporalReadDeclaration::new(
             "edge:42",
@@ -243,7 +223,10 @@ fn equivalent_temporal_authoring_forms_share_canonical_identity() {
 
 #[test]
 fn temporal_posture_changes_mutate_declaration_identity_explicitly() {
-    let handle = admitted_handle(GeometryOperatingContext::collaborative());
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, GeometryOperatingContext::collaborative());
     let stale = handle
         .declare(TemporalReadDeclaration::new(
             "edge:42",
@@ -278,7 +261,10 @@ fn temporal_posture_changes_mutate_declaration_identity_explicitly() {
 
 #[test]
 fn rolling_and_sliding_windows_remain_distinct_temporal_meaning() {
-    let handle = admitted_handle(GeometryOperatingContext::collaborative());
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, GeometryOperatingContext::collaborative());
     let rolling = handle
         .declare(TemporalReadDeclaration::new(
             "edge:42",
@@ -302,7 +288,10 @@ fn rolling_and_sliding_windows_remain_distinct_temporal_meaning() {
 
 #[test]
 fn declaration_digest_changes_when_temporal_posture_is_added() {
-    let handle = admitted_handle(GeometryOperatingContext::collaborative());
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, GeometryOperatingContext::collaborative());
     let plain = handle
         .declare(TemporalReadDeclaration::new("edge:42", Vec::new()))
         .expect("plain declaration should canonicalize");
@@ -320,7 +309,10 @@ fn declaration_digest_changes_when_temporal_posture_is_added() {
 
 #[test]
 fn temporal_clauses_fail_closed_without_family_opt_in() {
-    let handle = admitted_handle(GeometryOperatingContext::collaborative());
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, GeometryOperatingContext::collaborative());
 
     match handle.declare_checked(
         SplitEdgeDeclaration::midpoint("edge:42").with_temporal(vec![
@@ -348,7 +340,10 @@ fn temporal_clauses_fail_closed_without_family_opt_in() {
 
 #[test]
 fn temporal_declaration_families_can_fail_closed_as_deferred_debt() {
-    let handle = admitted_handle(GeometryOperatingContext::collaborative());
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, GeometryOperatingContext::collaborative());
 
     match handle.declare_checked(DeferredTemporalReadDeclaration::new(
         "edge:42",

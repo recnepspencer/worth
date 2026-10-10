@@ -39,28 +39,33 @@ pub(super) fn commit_owner_validated(
         WorthQueryCommitProgressionMint::witness(),
         allocation_policy,
     )?;
-    let evidence = evidence_seal::seal(provider, &mut committed);
-    provider.graph.with_runtime_mut_unwind_isolated(|runtime| {
-        committed
-            .publish_and_encode(provider, runtime, evidence)
-            .map_err(crate::domain_computation::WorthQueryProviderSessionCommitStop::Denied)
-    })
+    let evidence = evidence_seal::seal(&execution, provider, &mut committed);
+    provider
+        .graph
+        .with_runtime_mut_unwind_isolated(&execution, |runtime| {
+            committed
+                .publish_and_encode(&execution, provider, runtime, evidence)
+                .map_err(crate::domain_computation::WorthQueryProviderSessionCommitStop::Denied)
+        })
 }
 
 /// The recovered World movement rejoins the same evidence and pending
 /// publication owner as a live application commit. The recovered session
 /// carries the original Relational result and all pre-effect Query claims.
 pub(in crate::domain_computation::primary_graph::provider) fn publish_recovered(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,
     mut committed: commit_execution::WorthQueryCommittedApplicationSession,
 ) -> Result<
     crate::domain_computation::WorthQueryProviderTerminalDescription,
     crate::domain_computation::WorthQueryProviderSessionFailure,
 > {
-    let evidence = evidence_seal::seal(provider, &mut committed);
-    provider.graph.with_runtime_mut_unwind_isolated(|runtime| {
-        committed.publish_and_encode(provider, runtime, evidence)
-    })
+    let evidence = evidence_seal::seal(execution, provider, &mut committed);
+    provider
+        .graph
+        .with_runtime_mut_unwind_isolated(&execution, |runtime| {
+            committed.publish_and_encode(execution, provider, runtime, evidence)
+        })
 }
 
 pub(in crate::domain_computation::primary_graph) use evidence_seal::{

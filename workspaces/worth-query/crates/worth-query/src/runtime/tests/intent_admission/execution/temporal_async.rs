@@ -2,13 +2,17 @@ use super::*;
 
 #[test]
 fn effect_triggered_async_completion_receipt_preserves_write_adjacent_trigger_class() {
-    let mut runtime = intent_runtime_with_authority(TestIntentAuthority);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = intent_runtime_with_authority(request_execution, TestIntentAuthority);
     let origin_identity = test_write_adjacent_origin_identity(
         WorthQueryEffectWriteAdjacentTriggerClass::AsyncCompletion,
         "async-completion:cause:task-title",
     );
     let live = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "tasks.async-follow-on",
             task_live_request(),
             task_schema(),
@@ -29,19 +33,22 @@ fn effect_triggered_async_completion_receipt_preserves_write_adjacent_trigger_cl
         .expect("async completion write-intent effect should declare");
 
     runtime
-        .write(test_update_string_aspect_command(
-            crate::memory_workspace::admit_authored_entity_label("task-1"),
-            "title.value",
-            "title from async completion",
-        ))
+        .write(
+            request_execution,
+            test_update_string_aspect_command(
+                crate::memory_workspace::admit_authored_entity_label("task-1"),
+                "title.value",
+                "title from async completion",
+            ),
+        )
         .expect("write should queue pending intent");
 
     let receipt = runtime
         .next_effect_write_intent(&effect, "1.0", "effect.intent.input.v1")
-        .execute()
+        .execute(request_execution)
         .expect("effect-triggered intent should execute");
     let inspection = runtime
-        .inspect_effect_intent_receipt(&receipt)
+        .inspect_effect_intent_receipt(request_execution, &receipt)
         .expect("effect-intent receipt should inspect");
 
     assert_eq!(
@@ -70,13 +77,17 @@ fn effect_triggered_async_completion_receipt_preserves_write_adjacent_trigger_cl
 
 #[test]
 fn consumed_pending_write_intent_cannot_admit_a_second_authority_path() {
-    let mut runtime = intent_runtime_with_authority(TestIntentAuthority);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = intent_runtime_with_authority(request_execution, TestIntentAuthority);
     let origin_identity = test_write_adjacent_origin_identity(
         WorthQueryEffectWriteAdjacentTriggerClass::ReplayDrift,
         "replay-drift:cause:task-title",
     );
     let live = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "tasks.duplicate-follow-on",
             task_live_request(),
             task_schema(),
@@ -97,11 +108,14 @@ fn consumed_pending_write_intent_cannot_admit_a_second_authority_path() {
         .expect("replay drift write-intent effect should declare");
 
     runtime
-        .write(test_update_string_aspect_command(
-            crate::memory_workspace::admit_authored_entity_label("task-1"),
-            "title.value",
-            "title from replay drift",
-        ))
+        .write(
+            request_execution,
+            test_update_string_aspect_command(
+                crate::memory_workspace::admit_authored_entity_label("task-1"),
+                "title.value",
+                "title from replay drift",
+            ),
+        )
         .expect("write should queue pending intent");
 
     let (pending_delivery, handoff) = runtime
@@ -115,11 +129,11 @@ fn consumed_pending_write_intent_cannot_admit_a_second_authority_path() {
     let duplicate_binding = binding.clone();
 
     runtime
-        .execute_effect_intent_execution_binding(binding)
+        .execute_effect_intent_execution_binding(request_execution, binding)
         .expect("first effect-triggered execution should succeed");
 
     let error = runtime
-        .execute_effect_intent_execution_binding(duplicate_binding)
+        .execute_effect_intent_execution_binding(request_execution, duplicate_binding)
         .expect_err("the same pending delivery must not execute twice");
 
     match error {

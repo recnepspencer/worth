@@ -5,6 +5,7 @@ use crate::domain_computation::primary_graph::request_allocation_control::Reques
 impl WorthQueryPrimaryGraphProvider {
     pub(super) fn validate_relational_candidate(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         batch: worth_relational::facade::transactions::WorkerIntentBatch,
         branch: &worth_relational::facade::history::BranchId,
         product: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
@@ -40,7 +41,7 @@ impl WorthQueryPrimaryGraphProvider {
         }
         let control = super::validation_control::ValidationRequestControl::new(request);
         let allocation_control = RequestAllocationControl::new(request, allocation_policy);
-        let candidate = self.graph.with_runtime_mut(|runtime| {
+        let candidate = self.graph.with_runtime_mut(execution, |runtime| {
             if let Some(pending) = aftermath_causality {
                 let observed_parent = basis
                     .observation()

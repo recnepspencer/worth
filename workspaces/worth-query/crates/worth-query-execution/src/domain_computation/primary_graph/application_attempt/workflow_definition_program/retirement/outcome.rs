@@ -86,6 +86,7 @@ where
         Scope,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
 
         prepared: PreparedWorkflowDefinitionRetirement<Schema, Operation, Input, Scope>,
@@ -121,6 +122,7 @@ where
             }
         };
         let outcome = self.compare_and_commit_application_for_program_action(
+            execution,
             phase,
             &presented,
             program,

@@ -128,7 +128,13 @@ where
             ));
         }
         let resource_evidence = admitted.resource_attempt.evidence().clone();
-        let execution_snapshot = workspace.snapshot_identity();
+        let execution_snapshot = workspace.snapshot_identity(execution).map_err(|cause| {
+            TransitionOutcome::Denied(WorthQueryBoundExecutionDenial::new(
+                WorthQueryBoundExecutionDenialKind::ExecutionRequest(cause.into()),
+                "snapshot phase custody",
+                counters,
+            ))
+        })?;
         let conditional = match admitted.evaluate_conditionals(
             execution,
             workspace,

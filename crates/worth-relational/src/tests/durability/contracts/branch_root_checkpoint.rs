@@ -2,6 +2,9 @@ use super::*;
 
 #[test]
 fn checkpoint_recovery_rejects_missing_exact_branch_root_artifact() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
     create_entity_outcome(&runtime, "root-artifact-required");
     runtime
@@ -20,7 +23,7 @@ fn checkpoint_recovery_rejects_missing_exact_branch_root_artifact() {
     let mut recovered = persisted_runtime_with_test_schema();
     let error = recovered
         .durability_recovery()
-        .recover(plan)
+        .recover(execution, plan)
         .expect_err("global partition images cannot substitute for a branch root");
 
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
@@ -30,6 +33,9 @@ fn checkpoint_recovery_rejects_missing_exact_branch_root_artifact() {
 
 #[test]
 fn checkpoint_recovery_rejects_root_artifact_without_commit_envelope() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
     create_entity_outcome(&runtime, "root-envelope-binding");
     runtime
@@ -45,7 +51,7 @@ fn checkpoint_recovery_rejects_root_artifact_without_commit_envelope() {
     let mut recovered = persisted_runtime_with_test_schema();
     let error = recovered
         .durability_recovery()
-        .recover(plan)
+        .recover(execution, plan)
         .expect_err("a root image cannot select an unrelated or missing envelope");
 
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
@@ -55,6 +61,9 @@ fn checkpoint_recovery_rejects_root_artifact_without_commit_envelope() {
 
 #[test]
 fn checkpoint_recovery_rejects_duplicate_commit_envelopes_before_root_readmission() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
     create_entity_outcome(&runtime, "duplicate-envelope-root");
     runtime.durability_authority().checkpoint().unwrap();
@@ -65,7 +74,10 @@ fn checkpoint_recovery_rejects_duplicate_commit_envelopes_before_root_readmissio
     checkpoint.envelopes.push(checkpoint.envelopes[0].clone());
 
     let mut recovered = persisted_runtime_with_test_schema();
-    let error = recovered.durability_recovery().recover(plan).unwrap_err();
+    let error = recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap_err();
 
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
     assert!(
@@ -82,6 +94,9 @@ fn checkpoint_recovery_rejects_duplicate_commit_envelopes_before_root_readmissio
 
 #[test]
 fn checkpoint_recovery_readmits_shared_root_once_for_sibling_heads() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
     create_entity_outcome(&runtime, "shared-root-seed");
     let sibling = create_branch_from_main(&runtime, "sibling");
@@ -92,13 +107,19 @@ fn checkpoint_recovery_readmits_shared_root_once_for_sibling_heads() {
     assert_eq!(plan.checkpoint.as_ref().unwrap().branch_roots.len(), 1);
 
     let mut recovered = persisted_runtime_with_test_schema();
-    recovered.durability_recovery().recover(plan).unwrap();
+    recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
 
     assert_eq!(
-        current_branch_entity_count(&recovered, &BranchId("main".to_owned())),
+        current_branch_entity_count(execution, &recovered, &BranchId("main".to_owned())),
         1
     );
-    assert_eq!(current_branch_entity_count(&recovered, &sibling), 1);
+    assert_eq!(
+        current_branch_entity_count(execution, &recovered, &sibling),
+        1
+    );
     let main = recovered
         .branch_reference_state(&BranchId("main".to_owned()))
         .unwrap();
@@ -121,6 +142,9 @@ fn checkpoint_recovery_readmits_shared_root_once_for_sibling_heads() {
 
 #[test]
 fn tail_recovery_resolves_the_checkpoint_target_root_not_the_fork_source_head() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
     create_entity_outcome(&runtime, "shared-seed");
     let storm = create_branch_from_main(&runtime, "storm");
@@ -138,11 +162,12 @@ fn tail_recovery_resolves_the_checkpoint_target_root_not_the_fork_source_head() 
     let mut recovered = persisted_runtime_with_test_schema();
     recovered
         .durability_recovery()
-        .recover(plan)
+        .recover(execution, plan)
         .expect("divergent tail commits recover from their exact pre-commit roots");
 
-    let main_count = current_branch_entity_count(&recovered, &BranchId("main".to_owned()));
-    let storm_count = current_branch_entity_count(&recovered, &storm);
+    let main_count =
+        current_branch_entity_count(execution, &recovered, &BranchId("main".to_owned()));
+    let storm_count = current_branch_entity_count(execution, &recovered, &storm);
     assert_eq!(main_count, 2, "main contains seed plus its own tail write");
     assert_eq!(
         storm_count, 2,
@@ -152,6 +177,9 @@ fn tail_recovery_resolves_the_checkpoint_target_root_not_the_fork_source_head() 
 
 #[test]
 fn checkpoint_recovery_rejects_duplicate_global_partition_images() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
     create_entity_outcome(&runtime, "duplicate-global-partition");
     runtime.durability_authority().checkpoint().unwrap();
@@ -164,7 +192,10 @@ fn checkpoint_recovery_rejects_duplicate_global_partition_images() {
         .push(checkpoint.partition_images[0].clone());
 
     let mut recovered = persisted_runtime_with_test_schema();
-    let error = recovered.durability_recovery().recover(plan).unwrap_err();
+    let error = recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap_err();
 
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
     assert!(error.detail.contains("duplicate partition image"));
@@ -173,6 +204,9 @@ fn checkpoint_recovery_rejects_duplicate_global_partition_images() {
 
 #[test]
 fn checkpoint_recovery_rejects_duplicate_branch_root_partition_images() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
     create_entity_outcome(&runtime, "duplicate-root-partition");
     runtime.durability_authority().checkpoint().unwrap();
@@ -183,7 +217,10 @@ fn checkpoint_recovery_rejects_duplicate_branch_root_partition_images() {
     root.partition_images.push(root.partition_images[0].clone());
 
     let mut recovered = persisted_runtime_with_test_schema();
-    let error = recovered.durability_recovery().recover(plan).unwrap_err();
+    let error = recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap_err();
 
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
     assert!(error.detail.contains("duplicate partition image"));
@@ -192,6 +229,9 @@ fn checkpoint_recovery_rejects_duplicate_branch_root_partition_images() {
 
 #[test]
 fn checkpoint_recovery_rejects_foreign_branch_target_substitution() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
     create_entity_outcome(&runtime, "lineage-seed");
     let feature = create_branch_from_main(&runtime, "feature");
@@ -218,7 +258,10 @@ fn checkpoint_recovery_rejects_foreign_branch_target_substitution() {
     replace_checkpoint_target(main, foreign_target);
 
     let mut recovered = persisted_runtime_with_test_schema();
-    let error = recovered.durability_recovery().recover(plan).unwrap_err();
+    let error = recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap_err();
 
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
     assert!(error.detail.contains("foreign branch stream"));
@@ -227,6 +270,9 @@ fn checkpoint_recovery_rejects_foreign_branch_target_substitution() {
 
 #[test]
 fn tail_recovery_rejects_foreign_branch_target_substitution() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
     create_entity_outcome(&runtime, "tail-lineage-seed");
     let feature = create_branch_from_main(&runtime, "feature");
@@ -259,7 +305,10 @@ fn tail_recovery_rejects_foreign_branch_target_substitution() {
     replace_checkpoint_target(tail_cell, foreign_target);
 
     let mut recovered = persisted_runtime_with_test_schema();
-    let error = recovered.durability_recovery().recover(plan).unwrap_err();
+    let error = recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap_err();
 
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
     assert!(error.detail.contains("foreign branch stream"));
@@ -279,14 +328,18 @@ fn replace_checkpoint_target(
     .unwrap();
 }
 
-fn current_branch_entity_count(runtime: &RelationalRuntime, branch_id: &BranchId) -> usize {
+fn current_branch_entity_count(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    branch_id: &BranchId,
+) -> usize {
     let identity = runtime
         .branch_identity(branch_id)
         .expect("recovered branch identity exists");
     let snapshot = crate::tests::support::snapshot_for_owner_identity(runtime, &identity);
     runtime
         .read_truth()
-        .read_snapshot(&snapshot)
+        .read_snapshot(&snapshot, execution)
         .expect("recovered branch snapshot is readable")
         .entities()
         .len()

@@ -39,12 +39,17 @@ pub(super) fn require_stale_source_denial(
     source: WorthQueryObservedSource<PlanarQuery>,
 ) {
     match application
-        .on_branch(branch)
-        .select()
-        .expect("the Query-issued output occurrence remains selectable")
-        .suspend_current_generated_output::<PlanarFinalOutputProducer<ConsumerSchema>>(
-            scope, source,
-        ) {
+        .with_host_advancement(|host_phase| {
+            application
+                .on_branch(branch)
+                .select(&host_phase)
+                .expect("the Query-issued output occurrence remains selectable")
+                .suspend_current_generated_output::<PlanarFinalOutputProducer<ConsumerSchema>>(
+                    scope, source,
+                )
+        })
+        .expect("installed host call opens")
+    {
         Err(WorthQueryGeneratedOutputSuspensionFailure::Qualification(
             WorthQueryGeneratedOutputSuspensionDenial::SourceMismatch,
         )) => {}

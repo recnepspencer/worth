@@ -21,7 +21,7 @@ impl WorthQueryArtifactProviderResource for ReadmissionArtifact {
 }
 
 pub(in crate::domain_computation::managed_run) fn yielded_workflow(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     provider: YieldProvider,
 ) -> (
@@ -34,7 +34,7 @@ pub(in crate::domain_computation::managed_run) fn yielded_workflow(
 }
 
 pub(super) fn yielded_workflow_with_retained_artifact(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     provider: YieldProvider,
 ) -> (
@@ -56,7 +56,7 @@ pub(super) fn yielded_workflow_with_retained_artifact(
 }
 
 pub(super) fn yielded_workflow_for_stage(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     provider: YieldProvider,
     stage_identity: &str,
@@ -73,7 +73,7 @@ pub(super) fn yielded_workflow_for_stage(
 }
 
 fn yielded_workflow_fixture(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     provider: YieldProvider,
     stage_identity: &str,
@@ -149,9 +149,10 @@ fn yielded_workflow_fixture(
         )
         .expect("retained workflow artifact must register before production freezes")
     });
-    let active = running
-        .begin_stage_graph_execution(
-            execution,
+    let active = {
+        let installed_fixture_phase = running.fixture_phase(execution);
+        running.begin_stage_graph_execution(
+            &installed_fixture_phase,
             stage_identity,
             &graph,
             WorthQueryManagedGraphCallRequest::new(
@@ -159,8 +160,12 @@ fn yielded_workflow_fixture(
                 "workflow-readmission",
             ),
         )
-        .expect("workflow provider should begin");
-    let paused = match active.advance(execution) {
+    }
+    .expect("workflow provider should begin");
+    let paused = match {
+        let installed_fixture_phase = active.fixture_phase(execution);
+        active.advance(&installed_fixture_phase)
+    } {
         WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused,
         _ => panic!("workflow provider did not pause"),
     };
@@ -193,7 +198,10 @@ fn workflow_readmission_rolls_generation_and_preserves_occurrence_state() {
         let old_artifacts = yielded.inspection().artifact_evidence();
         let old_provider_work = yielded.inspection().provider_work().clone();
         let reservations = yielded.inspection().retained_capacity_reservation_count();
-        let readmitted = match yielded.readmit_same_runtime(active_request, &runtime, &bridge) {
+        let readmitted = match {
+            let installed_fixture_phase = yielded.fixture_phase(active_request);
+            yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+        } {
             crate::domain_computation::WorthQueryWorkflowReadmissionOutcome::Readmitted(
                 readmitted,
             ) => readmitted,
@@ -260,7 +268,10 @@ fn workflow_readmission_rolls_generation_and_preserves_occurrence_state() {
             .expect("fresh producer should register");
         drop(fresh_handle);
 
-        let completion = match active.advance(execution) {
+        let completion = match {
+            let installed_fixture_phase = active.fixture_phase(execution);
+            active.advance(&installed_fixture_phase)
+        } {
             WorthQueryWorkflowGraphStepOutcome::Completed(completion) => completion,
             _ => panic!("restored workflow provider did not complete"),
         };
@@ -292,7 +303,10 @@ fn workflow_provider_restore_denial_keeps_frozen_generation_retryable() {
             .inspection()
             .artifact_evidence()
             .production_generation();
-        let denied = match yielded.readmit_same_runtime(active_request, &runtime, &bridge) {
+        let denied = match {
+            let installed_fixture_phase = yielded.fixture_phase(active_request);
+            yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+        } {
             crate::domain_computation::WorthQueryWorkflowReadmissionOutcome::Denied(denied) => {
                 denied
             }
@@ -334,7 +348,10 @@ fn workflow_restore_panic_can_recover_only_through_terminal_cleanup() {
             .inspection()
             .artifact_evidence()
             .production_generation();
-        let recovery = match yielded.readmit_same_runtime(active_request, &runtime, &bridge) {
+        let recovery = match {
+            let installed_fixture_phase = yielded.fixture_phase(active_request);
+            yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+        } {
             crate::domain_computation::WorthQueryWorkflowReadmissionOutcome::RecoveryRequired(
                 recovery,
             ) => recovery,

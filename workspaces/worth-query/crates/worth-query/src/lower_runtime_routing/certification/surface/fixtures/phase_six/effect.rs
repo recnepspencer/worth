@@ -31,7 +31,9 @@ use super::effect_support::{
     test_bridge_with_writeback_authority,
 };
 
-pub(crate) fn representative_effect_relational_mutation_row() -> RepresentativeArtifacts {
+pub(crate) fn representative_effect_relational_mutation_row(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> RepresentativeArtifacts {
     let mut runtime = relational_runtime_with_intent_strategy();
     let entity_id = create_entity(&mut runtime, "before", BranchId("main".to_string()));
     let raw = RawEffectIntent::Mutation {
@@ -59,7 +61,10 @@ pub(crate) fn representative_effect_relational_mutation_row() -> RepresentativeA
     ))
     .lower()
     .expect("relational mutation should lower")
-    .execute_with(EffectExecutionAuthority::relational(&mut runtime))
+    .execute_with(
+        execution,
+        EffectExecutionAuthority::relational(&mut runtime),
+    )
     .expect("relational mutation should execute");
     route_planned_row(
         WorthQueryLowerRuntimeSeamKey::EffectBackedRelationalMutation,
@@ -75,7 +80,9 @@ pub(crate) fn representative_effect_relational_mutation_row() -> RepresentativeA
     )
 }
 
-pub(crate) fn representative_effect_relational_merge_row() -> RepresentativeArtifacts {
+pub(crate) fn representative_effect_relational_merge_row(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> RepresentativeArtifacts {
     let mut runtime = relational_runtime_with_intent_strategy();
     create_entity(&mut runtime, "main", BranchId("main".to_string()));
     crate::runtime::fork_branch_from_exact_source(
@@ -107,6 +114,7 @@ pub(crate) fn representative_effect_relational_merge_row() -> RepresentativeArti
     .lower()
     .expect("relational merge should lower")
     .execute_with(
+        execution,
         EffectExecutionAuthority::crate_relational_without_application_schema(&mut runtime),
     )
     .expect("relational merge should execute");
@@ -124,7 +132,9 @@ pub(crate) fn representative_effect_relational_merge_row() -> RepresentativeArti
     )
 }
 
-pub(crate) fn representative_effect_bridge_writeback_row() -> RepresentativeArtifacts {
+pub(crate) fn representative_effect_bridge_writeback_row(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> RepresentativeArtifacts {
     let bridge = test_bridge_with_writeback_authority();
     let raw = RawEffectIntent::Writeback {
         binding: runtime_workflow_binding(),
@@ -140,7 +150,7 @@ pub(crate) fn representative_effect_bridge_writeback_row() -> RepresentativeArti
     ))
     .lower()
     .expect("bridge writeback should lower")
-    .execute_with(EffectExecutionAuthority::bridge(&bridge))
+    .execute_with(execution, EffectExecutionAuthority::bridge(&bridge))
     .expect("bridge writeback should execute");
     route_planned_row(
         WorthQueryLowerRuntimeSeamKey::EffectBackedBridgeWriteback,

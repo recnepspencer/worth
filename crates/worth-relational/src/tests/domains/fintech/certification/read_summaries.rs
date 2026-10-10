@@ -111,6 +111,7 @@ pub(super) fn read_summary_artifacts(
 }
 
 pub(super) fn read_summary(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     session: &CertifiedRelationalFintechSession,
     snapshot: SnapshotHandle,
 ) -> Result<CertifiedFintechReadSummary, String> {
@@ -118,7 +119,7 @@ pub(super) fn read_summary(
         .world
         .runtime
         .read_truth()
-        .read_snapshot(&snapshot)
+        .read_snapshot(&snapshot, execution)
         .ok_or_else(|| format!("snapshot `{}` is unavailable", snapshot.snapshot_id.0))?;
     let corrected_trades = read
         .entities()
@@ -152,9 +153,15 @@ pub(super) fn read_summary(
 }
 
 pub(super) fn case_read_summary(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     session: &CertifiedRelationalFintechSession,
     case_role: FintechCaseRole,
 ) -> CertifiedFintechReadSummary {
-    let probe = capture_case_truth_probe(&session.world, case_role, ProbeStage::PostMutation);
+    let probe = capture_case_truth_probe(
+        execution,
+        &session.world,
+        case_role,
+        ProbeStage::PostMutation,
+    );
     CertifiedFintechReadSummary::case_probe(&probe)
 }

@@ -106,51 +106,74 @@ impl WorthQueryPartitionedComputationOwner<Schema, Feature, Digests> for DigestO
 #[test]
 fn unretained_runs_serialize_neither_input_nor_items_for_digests() {
     let world = installed_authorization_world(true);
-    for retention in [
-        ComputationRetention::ProducerOperation,
-        ComputationRetention::Unretained,
-    ] {
-        let installed = WorthQueryInstalledPartitionedComputation::<_, _, Digests, _>::new(
-            DigestOwner,
-            retention,
-        );
-        let request = live_scope();
-        let principal = authenticated_principal(&world, &request);
-        let root = resolved_account(&world, "open", &request);
-        let operation = world
-            .application
-            .installed_schema()
-            .installed_operation(TouchAccountOperation::reference())
-            .unwrap();
-        let admitted = world
-            .selected_product()
-            .authorize_operation(&principal, &root, &operation, Default::default(), &request)
-            .unwrap();
-        INPUTS.store(0, Ordering::Relaxed);
-        ITEMS.store(0, Ordering::Relaxed);
-        ComputationPrior::hand_in_test(Some(ComputationPrior::new(
-            edition(),
-            Err(Cause::FirstRun),
-            None,
-        )));
-        let result = world.invariant.project_admitted_operation(&admitted, |reader, root| {
+    world.application.with_host_advancement(|phase| {
+let host_custody = phase.test_host_request();
+
+for retention in [
+            ComputationRetention::ProducerOperation,
+            ComputationRetention::Unretained,
+        ] {
+            let installed = WorthQueryInstalledPartitionedComputation::<_, _, Digests, _>::new(
+                DigestOwner,
+                retention,
+            );
+            let request = live_scope();
+            let principal = authenticated_principal(
+                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &world,
+                &request,
+            );
+            let root = resolved_account(
+                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &world,
+                "open",
+                &request,
+            );
+            let operation = world
+                .application
+                .installed_schema()
+                .installed_operation(TouchAccountOperation::reference())
+                .unwrap();
+            let admitted = world
+                .selected_product(
+                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                )
+                .authorize_operation(
+                    &host_custody.phase_for_application(&world.application),
+                    &principal,
+                    &root,
+                    &operation,
+                    Default::default(),
+                    &request,
+                )
+                .unwrap();
+            INPUTS.store(0, Ordering::Relaxed);
+            ITEMS.store(0, Ordering::Relaxed);
+            ComputationPrior::hand_in_test(Some(ComputationPrior::new(
+                edition(),
+                Err(Cause::FirstRun),
+                None,
+            )));
+            let result = world.invariant.project_admitted_operation(&host_custody.phase_for_application(&world.application), &admitted, |reader, root| {
             let execution = QueryRequestExecution::open(RuntimeWorldExecutionPlacement::Serial(crate::domain_computation::primary_graph::application_contribution::request_execution::test_policy(std::num::NonZeroUsize::MIN, 1 << 30)), &request);
             installed.prepare_through(reader, &execution, &Value(root.clone()))?.compute(WorthQueryManagedComputationExecution::new(&execution))?.complete()
         }, worth_execution::ExecutionAllocationPolicy::SystemAllocation).unwrap().into_parts().0;
-        ComputationPrior::hand_in_test(None);
-        assert_eq!(result.unwrap(), (0..4).sum::<u64>());
-        let counts = [
-            INPUTS.load(Ordering::Relaxed),
-            ITEMS.load(Ordering::Relaxed),
-        ];
-        match retention {
-            ComputationRetention::Unretained => {
-                assert_eq!(counts, [0, 0], "unretained omits both digest encodings")
+            ComputationPrior::hand_in_test(None);
+            assert_eq!(result.unwrap(), (0..4).sum::<u64>());
+            let counts = [
+                INPUTS.load(Ordering::Relaxed),
+                ITEMS.load(Ordering::Relaxed),
+            ];
+            match retention {
+                ComputationRetention::Unretained => {
+                    assert_eq!(counts, [0, 0], "unretained omits both digest encodings")
+                }
+                ComputationRetention::ProducerOperation => assert!(
+                    counts.into_iter().all(|count| count > 0),
+                    "the same encoders are live in the retained control"
+                ),
             }
-            ComputationRetention::ProducerOperation => assert!(
-                counts.into_iter().all(|count| count > 0),
-                "the same encoders are live in the retained control"
-            ),
         }
-    }
+
+}).expect("the fixture block owns its installed host call")
 }

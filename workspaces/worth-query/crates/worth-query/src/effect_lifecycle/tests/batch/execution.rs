@@ -17,6 +17,9 @@ use super::super::support::{
 
 #[test]
 fn mutation_batch_executes_through_one_batch_native_lowered_plan() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = relational_runtime_with_intent_strategy();
     let left = create_entity(&mut runtime, "left", BranchId("main".to_string()));
     let right = create_entity(&mut runtime, "right", BranchId("main".to_string()));
@@ -44,7 +47,10 @@ fn mutation_batch_executes_through_one_batch_native_lowered_plan() {
         .expect("batch should admit")
         .lower()
         .expect("batch should lower")
-        .execute_with(EffectExecutionAuthority::relational(&mut runtime))
+        .execute_with(
+            request_execution,
+            EffectExecutionAuthority::relational(&mut runtime),
+        )
         .expect("batch should execute");
 
     assert_eq!(executed.components().len(), 2);
@@ -74,7 +80,7 @@ fn mutation_batch_executes_through_one_batch_native_lowered_plan() {
     let snapshot = exact_branch_snapshot(&mut runtime, "main");
     let read_view = runtime
         .read_truth()
-        .read_snapshot(&snapshot)
+        .read_snapshot(&snapshot, request_execution)
         .expect("snapshot should read");
     let names = read_view
         .entities()
@@ -88,6 +94,9 @@ fn mutation_batch_executes_through_one_batch_native_lowered_plan() {
 
 #[test]
 fn mutation_batch_preserves_branch_scoped_authority_target() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = relational_runtime_with_intent_strategy();
     let entity_id = create_entity(&mut runtime, "before", BranchId("main".to_string()));
     crate::runtime::fork_branch_from_exact_source(
@@ -118,7 +127,10 @@ fn mutation_batch_preserves_branch_scoped_authority_target() {
         .expect("batch should admit")
         .lower()
         .expect("batch should lower")
-        .execute_with(EffectExecutionAuthority::relational(&mut runtime))
+        .execute_with(
+            request_execution,
+            EffectExecutionAuthority::relational(&mut runtime),
+        )
         .expect("batch should execute");
 
     let aggregate = executed
@@ -130,6 +142,9 @@ fn mutation_batch_preserves_branch_scoped_authority_target() {
 
 #[test]
 fn retained_lowered_batch_denies_after_intervening_truth_change() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = relational_runtime_with_intent_strategy();
     let entity_id = create_entity(&mut runtime, "before", BranchId("main".to_string()));
     crate::runtime::fork_branch_from_exact_source(
@@ -161,7 +176,10 @@ fn retained_lowered_batch_denies_after_intervening_truth_change() {
     );
 
     let denial = lowered
-        .execute_with(EffectExecutionAuthority::relational(&mut runtime))
+        .execute_with(
+            request_execution,
+            EffectExecutionAuthority::relational(&mut runtime),
+        )
         .expect_err("retained lowered batch should deny stale exact-basis replay");
     let denial = denial.denial().expect("stale batch replay is a denial");
 
@@ -179,6 +197,9 @@ fn retained_lowered_batch_denies_after_intervening_truth_change() {
 
 #[test]
 fn lowered_branch_batch_does_not_deny_when_only_another_branch_moves() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = relational_runtime_with_intent_strategy();
     let entity_id = create_entity(&mut runtime, "before", BranchId("main".to_string()));
     crate::runtime::fork_branch_from_exact_source(
@@ -210,7 +231,10 @@ fn lowered_branch_batch_does_not_deny_when_only_another_branch_moves() {
     );
 
     let executed = lowered
-        .execute_with(EffectExecutionAuthority::relational(&mut runtime))
+        .execute_with(
+            request_execution,
+            EffectExecutionAuthority::relational(&mut runtime),
+        )
         .expect("unrelated main-branch movement should not stale-deny branch-a batch");
 
     let aggregate = executed
@@ -222,6 +246,9 @@ fn lowered_branch_batch_does_not_deny_when_only_another_branch_moves() {
 
 #[test]
 fn mutation_batch_rejects_mixed_target_branches_before_publication() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = relational_runtime_with_intent_strategy();
     let entity_id = create_entity(&mut runtime, "before", BranchId("main".to_string()));
     crate::runtime::fork_branch_from_exact_source(
@@ -252,7 +279,10 @@ fn mutation_batch_rejects_mixed_target_branches_before_publication() {
         .expect("legacy batch identity does not encode the target branch")
         .lower()
         .expect("mixed targets remain visible at execution admission")
-        .execute_with(EffectExecutionAuthority::relational(&mut runtime))
+        .execute_with(
+            request_execution,
+            EffectExecutionAuthority::relational(&mut runtime),
+        )
         .expect_err("mixed-target batch must deny before either branch moves");
     let denial = denial.denial().expect("mixed-target batch is a denial");
 

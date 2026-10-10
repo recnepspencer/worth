@@ -19,59 +19,96 @@ fn active_program_names_an_operation_missing_from_its_declared_routes() {
     world.application.program_support = Some(installed_program_support(
         &world.application.installed_schema,
     ));
-    seed_program_activation(&world, &rostered_program_revision());
+
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
-    let predecessor = world.selected_product().product().selected_commit().clone();
-    let admission = admitted_operation(&world, &principal, &account, &request);
-    let (_, projection, _) = world
-        .invariant
-        .project_admitted_operation(
-            &admission,
-            |reader, projected| {
-                reader
-                    .require_decision_field(projected, AccountStatus::reference())
-                    .unwrap();
-            },
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
-        .into_parts();
-    let program = world
-        .application
-        .begin_projected_application_read_attempt(
-            admission,
-            projection,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
-        .complete_projected_dependencies(
-            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
-        .begin_effect_program()
-        .finish()
-        .unwrap();
-    let support = world.application.program_support.as_ref().unwrap();
-    let occurrence = resolve_occurrence_program(support, &program).unwrap();
-    let denial = require_occurrence_acts_through::<TouchAccountOperation>(&occurrence).unwrap_err();
-    assert_eq!(
-        denial.kind(),
-        WorthQueryApplicationCommitDenialKind::ApplicationProgramRequired
-    );
-    assert_eq!(
-        denial.stage(),
-        WorthQueryApplicationCommitDenialStage::ProposalBinding
-    );
-    let expected = format!(
+    world.application.with_host_advancement(|phase| {
+let host_custody = phase.test_host_request();
+let borrowed_execution = host_custody.borrowed_request_for_test();
+let execution = &borrowed_execution;
+seed_program_activation(execution, &world, &rostered_program_revision());
+let principal = authenticated_principal(
+            &(host_custody.phase_for_application(&world.application)).test_host_request(),
+            &world,
+            &request,
+        );
+        let account = resolved_account(
+            &(host_custody.phase_for_application(&world.application)).test_host_request(),
+            &world,
+            "open",
+            &request,
+        );
+        let predecessor = world
+            .selected_product(
+                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+            )
+            .product()
+            .selected_commit()
+            .clone();
+        let admission = admitted_operation(
+            &host_custody.phase_for_application(&world.application),
+            &world,
+            &principal,
+            &account,
+            &request,
+        );
+        let (_, projection, _) = world
+            .invariant
+            .project_admitted_operation(
+                &host_custody.phase_for_application(&world.application),
+                &admission,
+                |reader, projected| {
+                    reader
+                        .require_decision_field(projected, AccountStatus::reference())
+                        .unwrap();
+                },
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .unwrap()
+            .into_parts();
+        let program = world
+            .application
+            .begin_projected_application_read_attempt(
+                &host_custody.phase_for_application(&world.application),
+                admission,
+                projection,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .unwrap()
+            .complete_projected_dependencies(
+                &host_custody.phase_for_application(&world.application),
+                crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .unwrap()
+            .begin_effect_program()
+            .finish()
+            .unwrap();
+        let support = world.application.program_support.as_ref().unwrap();
+        let occurrence = resolve_occurrence_program(execution, support, &program).unwrap();
+        let denial =
+            require_occurrence_acts_through::<TouchAccountOperation>(&occurrence).unwrap_err();
+        assert_eq!(
+            denial.kind(),
+            WorthQueryApplicationCommitDenialKind::ApplicationProgramRequired
+        );
+        assert_eq!(
+            denial.stage(),
+            WorthQueryApplicationCommitDenialStage::ProposalBinding
+        );
+        let expected = format!(
         "operation {} is not declared by active program worth.query.test.program-required-program.v1 revision {}",
         std::any::type_name::<TouchAccountOperation>(),
         rostered_program_revision(),
     );
-    assert_eq!(denial.detail(), Some(expected.as_str()));
-    assert_eq!(
-        world.selected_product().product().selected_commit(),
-        &predecessor
-    );
+        assert_eq!(denial.detail(), Some(expected.as_str()));
+        assert_eq!(
+            world
+                .selected_product(
+                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                )
+                .product()
+                .selected_commit(),
+            &predecessor
+        );
+
+}).expect("the fixture block owns its installed host call")
 }

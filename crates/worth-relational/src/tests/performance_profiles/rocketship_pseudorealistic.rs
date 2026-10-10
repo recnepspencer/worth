@@ -1,6 +1,7 @@
 use super::*;
 
 pub(super) fn seed_pseudorealistic_rocketship_world(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     node_count: usize,
     query_target_count: usize,
@@ -94,7 +95,8 @@ pub(super) fn seed_pseudorealistic_rocketship_world(
         node_count,
         "pseudorealistic rocketship should seed all entities"
     );
-    let entities = rebuild_pseudorealistic_entity_order(runtime, &subsystem_ranges, node_count);
+    let entities =
+        rebuild_pseudorealistic_entity_order(execution, runtime, &subsystem_ranges, node_count);
 
     let mut relation_specs = Vec::new();
     let mut mixed_query_targets = Vec::new();
@@ -305,6 +307,7 @@ pub(super) fn seed_pseudorealistic_rocketship_world(
 }
 
 pub(super) fn rebuild_pseudorealistic_entity_order(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     subsystem_ranges: &[(usize, usize, RocketshipSubsystemLayout)],
     node_count: usize,
@@ -316,7 +319,7 @@ pub(super) fn rebuild_pseudorealistic_entity_order(
     let snapshot = runtime.visibility_authority().snapshot();
     let read = runtime
         .read_truth()
-        .read_snapshot(&snapshot)
+        .read_snapshot(&snapshot, execution)
         .expect("pseudorealistic entity snapshot");
     let mut ordered = vec![None; node_count];
 

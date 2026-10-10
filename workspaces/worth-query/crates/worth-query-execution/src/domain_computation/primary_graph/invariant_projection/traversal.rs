@@ -17,20 +17,23 @@ where
 {
     pub fn relations_from<Relation, From, To>(
         &mut self,
+
         relation: ApplicationRelationRef<Schema, Relation, From, To>,
         from: &WorthQueryInvariantEntityIdentity<Schema, From>,
     ) -> Result<
         Vec<WorthQueryInvariantRelation<Schema, Relation, From, To>>,
         WorthQueryInvariantProjectionTraversalDenial,
     > {
+        let execution = self.execution;
         let layout = self.relation_layout(&relation)?;
         if !self.identity_is_local(from, relation.from()) || from.kind != layout.from {
             return Err(foreign(relation.name()));
         }
         self.admit_adjacency_list(relation.name())?;
         let read = self
-            .branch_view(relation.name())?
+            .branch_view(execution, relation.name())?
             .bounded_outgoing_relations_of_kind(
+                execution,
                 from.entity_id,
                 layout.kind,
                 self.work_budget.remaining(),
@@ -46,7 +49,7 @@ where
             .map(|record| {
                 self.realized_scope
                     .record_relation(record.source, record.target);
-                let to = self.endpoint::<To>(record.target, layout.to, relation.to())?;
+                let to = self.endpoint::<To>(execution, record.target, layout.to, relation.to())?;
                 Ok(WorthQueryInvariantRelation {
                     relation_id: record.relation_id,
                     from: self.retain_identity(from),
@@ -59,20 +62,23 @@ where
 
     pub fn relations_to<Relation, From, To>(
         &mut self,
+
         relation: ApplicationRelationRef<Schema, Relation, From, To>,
         to: &WorthQueryInvariantEntityIdentity<Schema, To>,
     ) -> Result<
         Vec<WorthQueryInvariantRelation<Schema, Relation, From, To>>,
         WorthQueryInvariantProjectionTraversalDenial,
     > {
+        let execution = self.execution;
         let layout = self.relation_layout(&relation)?;
         if !self.identity_is_local(to, relation.to()) || to.kind != layout.to {
             return Err(foreign(relation.name()));
         }
         self.admit_adjacency_list(relation.name())?;
         let read = self
-            .branch_view(relation.name())?
+            .branch_view(execution, relation.name())?
             .bounded_incoming_relations_of_kind(
+                execution,
                 to.entity_id,
                 layout.kind,
                 self.work_budget.remaining(),
@@ -88,7 +94,8 @@ where
             .map(|record| {
                 self.realized_scope
                     .record_relation(record.source, record.target);
-                let from = self.endpoint::<From>(record.source, layout.from, relation.from())?;
+                let from =
+                    self.endpoint::<From>(execution, record.source, layout.from, relation.from())?;
                 Ok(WorthQueryInvariantRelation {
                     relation_id: record.relation_id,
                     from,
@@ -144,6 +151,7 @@ where
 
     fn endpoint<Entity>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: worth_relational::facade::identity::EntityId,
         expected_kind: worth_relational::facade::identity::KindId,
         entity: &str,
@@ -152,8 +160,9 @@ where
         WorthQueryInvariantProjectionTraversalDenial,
     > {
         let available = self
-            .branch_view(entity)?
+            .branch_view(execution, entity)?
             .entity_record_with_projection_scope(
+                execution,
                 entity_id,
                 ProjectionAspectScope::empty(),
                 |record| {
@@ -179,11 +188,12 @@ where
     /// a sibling branch's commits made at older versions.
     fn branch_view(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         subject: &str,
     ) -> Result<VisibilityProjectionView<'_>, WorthQueryInvariantProjectionTraversalDenial> {
         self.runtime
             .read_truth()
-            .project_snapshot(self.snapshot)
+            .project_snapshot(self.snapshot, execution)
             .ok_or_else(|| endpoint_unavailable(subject))
     }
 

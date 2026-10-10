@@ -23,21 +23,35 @@ use worth_runtime_world::facade::RuntimeWorldPublicationOutcome;
 
 #[test]
 fn republication_cannot_certify_output_computed_before_its_own_write() {
-    suspend_restore_and_read(false);
+    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+        let borrowed_execution = host_custody.borrowed_request_for_test();
+        let execution = &borrowed_execution;
+
+        suspend_restore_and_read(&host_custody, execution, false);
+    })
 }
 
 #[test]
 fn restoration_fallback_cannot_certify_output_computed_before_its_own_write() {
-    suspend_restore_and_read(true);
+    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+        let borrowed_execution = host_custody.borrowed_request_for_test();
+        let execution = &borrowed_execution;
+
+        suspend_restore_and_read(&host_custody, execution, true);
+    })
 }
 
-fn suspend_restore_and_read(exhaust_registration: bool) {
+fn suspend_restore_and_read(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    exhaust_registration: bool,
+) {
     with_generated_own_write(|world, receipt, _, resources| {
         let application = &world.application;
         let request = live_scope();
         let graph = application.runtime.primary_graph().unwrap();
         let handle = graph.integration_handle();
-        let selected = world.selected_product();
+        let selected = world.selected_product(phase_custody);
         let (_, product, basis) = selected.into_parts();
         let observation = product.observation();
         let exact = handle.output_lineage.lock().unwrap().qualified_output::<OwnWriteOutputs>(
@@ -71,7 +85,7 @@ fn suspend_restore_and_read(exhaust_registration: bool) {
             .collect::<Vec<_>>();
         assert_eq!(generated.len(), 1);
         let generated = generated[0];
-        let kind = handle.with_runtime(|runtime| {
+        let kind = handle.with_runtime(execution, |runtime| {
             runtime
                 .read_truth()
                 .exact_snapshot_live_entity_kind(basis.snapshot_handle(), generated)
@@ -120,7 +134,7 @@ fn suspend_restore_and_read(exhaust_registration: bool) {
             )
         })
         .collect::<BTreeMap<_, _>>();
-        let prepared = handle.with_runtime(|runtime| {
+        let prepared = handle.with_runtime(execution, |runtime| {
             runtime
                 .owner_component_services()
                 .materialization_port()
@@ -158,8 +172,8 @@ fn suspend_restore_and_read(exhaust_registration: bool) {
         let suspended = completion.complete(commit).unwrap();
         drop(basis);
         drop(product);
-        let (_, product, basis) = world.selected_product().into_parts();
-        let prepared = handle.with_runtime(|runtime| {
+        let (_, product, basis) = world.selected_product(phase_custody).into_parts();
+        let prepared = handle.with_runtime(execution, |runtime| {
             runtime
                 .owner_component_services()
                 .materialization_port()
@@ -212,7 +226,12 @@ fn suspend_restore_and_read(exhaust_registration: bool) {
                 )
                 .unwrap()
         });
-        application.record_restored_generated_output(&observation, exact.correspondence, producer);
+        application.record_restored_generated_output(
+            execution,
+            &observation,
+            exact.correspondence,
+            producer,
+        );
         drop(held);
         drop(basis);
         drop(product);
@@ -227,7 +246,7 @@ fn suspend_restore_and_read(exhaust_registration: bool) {
                     "computed-account".to_owned(),
                 )],
             )]));
-        let (_, restored_product, _) = world.selected_product().into_parts();
+        let (_, restored_product, _) = world.selected_product(phase_custody).into_parts();
         let observation = restored_product.observation();
         let family = handle
             .output_lineage
@@ -248,15 +267,17 @@ fn suspend_restore_and_read(exhaust_registration: bool) {
         assert_eq!(candidate.verification_requirement, exhaust_registration.then_some(FullVerificationReason::CheckpointRestore),
             "the tests must reach the performed republication and its capacity fallback respectively");
         drop(restored_product);
-        let principal = authenticated_principal(world, &request);
-        let account = resolved_account(world, "2", &request);
+        let principal =
+            authenticated_principal(&(phase_custody).test_host_request(), world, &request);
+        let account = resolved_account(&(phase_custody).test_host_request(), world, "2", &request);
         let operation = application
             .installed_schema()
             .installed_operation(ReadRetainedAccount::reference())
             .unwrap();
         let admitted = world
-            .selected_product()
+            .selected_product(phase_custody)
             .authorize_operation(
+                &phase_custody.phase_for_application(&world.application),
                 &principal,
                 &account,
                 &operation,
@@ -264,10 +285,11 @@ fn suspend_restore_and_read(exhaust_registration: bool) {
                 &request,
             )
             .unwrap();
-        crate::domain_computation::primary_graph::output_lineage::own_write_fixture::evict_index_with_unrelated_write(world, &resources);
+        crate::domain_computation::primary_graph::output_lineage::own_write_fixture::evict_index_with_unrelated_write(&phase_custody.phase_for_application(&world.application), world, &resources);
         let answer = world
             .invariant
             .project_admitted_operation(
+                &phase_custody.phase_for_application(&world.application),
                 &admitted,
                 |reader, root| {
                     reader

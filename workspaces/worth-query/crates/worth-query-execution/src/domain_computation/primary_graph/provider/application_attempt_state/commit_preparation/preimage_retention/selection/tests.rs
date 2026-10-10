@@ -91,22 +91,28 @@ fn retain_from_exact_mutations(
 
 #[test]
 fn real_decision_fact_and_owner_footprint_reach_selection() {
-    let (demand, fact, footprint, entity) = owner_path_fixture();
-    let retained = retain_from_attempt(&demand, std::iter::once(&fact), &footprint)
-        .expect("real owner inputs retain exact prior truth")
-        .into_parts()
-        .0;
-    assert_eq!(
-        retained
-            .field(demand.loci().first().unwrap())
-            .unwrap()
-            .value(),
-        &AspectValue::String(InternedString::from("open"))
-    );
-    assert_eq!(retained.target_record(), Some(&RecordRef::Entity(entity)));
+    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+        let (demand, fact, footprint, entity) =
+            owner_path_fixture(&host_custody, &host_custody.borrowed_request_for_test());
+        let retained = retain_from_attempt(&demand, std::iter::once(&fact), &footprint)
+            .expect("real owner inputs retain exact prior truth")
+            .into_parts()
+            .0;
+        assert_eq!(
+            retained
+                .field(demand.loci().first().unwrap())
+                .unwrap()
+                .value(),
+            &AspectValue::String(InternedString::from("open"))
+        );
+        assert_eq!(retained.target_record(), Some(&RecordRef::Entity(entity)));
+    })
 }
 
-fn owner_path_fixture() -> (
+fn owner_path_fixture(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> (
     InstalledPreImageDemand,
     WorthQueryPrimaryGraphApplicationDecisionFact,
     ValidatedMutationFootprint,
@@ -115,9 +121,13 @@ fn owner_path_fixture() -> (
     let world = installed_authorization_world(true);
     let account = world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
+        .select_product_branch(
+            execution,
+            world.application.product_runtime().default_branch(),
+        )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
+            &phase_custody.phase_for_application(&world.application),
             AccountStatus::reference(),
             "open".to_owned(),
             &live_scope(),
@@ -165,7 +175,7 @@ fn owner_path_fixture() -> (
             value: AspectValue::String(InternedString::from("open")),
         },
     );
-    let footprint = validated_status_footprint(&world, account.entity_id(), locator);
+    let footprint = validated_status_footprint(execution, &world, account.entity_id(), locator);
     let Some(InstalledCorrectionMechanism::RecordedInverse(inverse)) =
         operation.contracts().aftermath().unwrap().mechanism()
     else {
@@ -180,12 +190,13 @@ fn owner_path_fixture() -> (
 }
 
 fn validated_status_footprint(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &AuthorizationWorld,
     entity: EntityId,
     locator: AspectFieldLocator,
 ) -> ValidatedMutationFootprint {
     let graph = world.application.primary_provider.graph.clone();
-    let validated = graph.with_runtime_mut(|runtime| {
+    let validated = graph.with_runtime_mut(request_execution, |runtime| {
         let fields = AspectFieldPatch::from(BTreeMap::from([(
             locator,
             AspectValue::String(InternedString::from("frozen")),

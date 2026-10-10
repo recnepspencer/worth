@@ -239,7 +239,10 @@ fn publication_terminal(budget: usize) -> Attempt {
     let settled_custody = application.required_custody_bytes_for_test();
 
     change_root_input!(request, application, 2, 0x9176_4080_u64);
-    let source_commit = request.retain_read().unwrap().selected_commit().clone();
+    let source_commit = crate::checkpoint_recovery::support::retain_read(&application, &request)
+        .unwrap()
+        .selected_commit()
+        .clone();
     drop((a, b));
     take_decisions("anchor-b");
 
@@ -250,7 +253,11 @@ fn publication_terminal(budget: usize) -> Attempt {
     if stopped.is_ok() {
         return Attempt::Above("last consumer refresh admitted");
     }
-    if request.retain_read().unwrap().selected_commit() == &source_commit {
+    if crate::checkpoint_recovery::support::retain_read(&application, &request)
+        .unwrap()
+        .selected_commit()
+        == &source_commit
+    {
         return Attempt::Below("refused before first upstream publication");
     }
     assert!(
@@ -265,7 +272,10 @@ fn publication_terminal(budget: usize) -> Attempt {
         stopped.as_ref().err()
     );
     assert_ne!(
-        request.retain_read().unwrap().selected_commit().clone(),
+        crate::checkpoint_recovery::support::retain_read(&application, &request)
+            .unwrap()
+            .selected_commit()
+            .clone(),
         source_commit,
         "the stopped advance actually published an upstream output"
     );
@@ -286,7 +296,10 @@ fn publication_terminal(budget: usize) -> Attempt {
         "partial publication retains {stopped_custody} bytes within its declared {}-byte allowance; the earlier settled baseline was {settled_custody}",
         budget
     );
-    let published_commit = request.retain_read().unwrap().selected_commit().clone();
+    let published_commit = crate::checkpoint_recovery::support::retain_read(&application, &request)
+        .unwrap()
+        .selected_commit()
+        .clone();
     let mut held_custody = stopped_custody;
     for attempt in 0..2 {
         let entries = query_entries();
@@ -307,7 +320,9 @@ fn publication_terminal(budget: usize) -> Attempt {
             "the terminal attempt re-enters the real source query"
         );
         assert_eq!(
-            request.retain_read().unwrap().selected_commit(),
+            crate::checkpoint_recovery::support::retain_read(&application, &request)
+                .unwrap()
+                .selected_commit(),
             &published_commit,
             "a terminal attempt publishes no further output"
         );

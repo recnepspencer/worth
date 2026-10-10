@@ -5,15 +5,26 @@ use super::*;
 
 #[test]
 fn full_verification_uses_native_facts_and_retains_the_exact_captured_image() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = installed_authorization_world(true);
-    let selected = world.selected_product();
-    let entity = selected
-        .resolve_entity(
-            AccountStatus::reference(),
-            "open".to_owned(),
-            &live_scope(),
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
+    let selected = world
+        .application
+        .with_host_advancement(|phase| world.selected_product(&phase.test_host_request()))
+        .expect("installed host call opens");
+    let entity = world
+        .application
+        .with_host_advancement(|phase| {
+            selected.resolve_entity(
+                &phase,
+                AccountStatus::reference(),
+                "open".to_owned(),
+                &live_scope(),
+                WorthQueryPrincipalResolutionMode::Ordinary,
+            )
+        })
+        .expect("installed host call opens")
         .unwrap()
         .entity_id();
     let (_, product, _) = selected.into_parts();
@@ -37,7 +48,7 @@ fn full_verification_uses_native_facts_and_retains_the_exact_captured_image() {
         .field_locator(label_ref.entity(), label_ref.aspect(), label_ref.field())
         .unwrap()
         .clone();
-    handle.with_runtime_mut(|runtime| {
+    handle.with_runtime_mut(request_execution, |runtime| {
         let (old_handle, old_basis) = snapshot(runtime);
         use crate::domain_computation::primary_graph::invariant_projection::{
             ConsumedOutputEvidence, ConsumedOutputVerification,
@@ -48,6 +59,7 @@ fn full_verification_uses_native_facts_and_retains_the_exact_captured_image() {
             .unwrap();
         assert_eq!(
             ConsumedOutputEvidence::verify_many_with_admission(
+                request_execution,
                 &[],
                 owner,
                 runtime,
@@ -61,7 +73,13 @@ fn full_verification_uses_native_facts_and_retains_the_exact_captured_image() {
         register(
             owner,
             identity.clone(),
-            Arc::from([field_fact(runtime, &old_handle, entity, label.clone())]),
+            Arc::from([field_fact(
+                request_execution,
+                runtime,
+                &old_handle,
+                entity,
+                label.clone(),
+            )]),
             &old_basis,
             OrdSet::new(),
         );
@@ -74,7 +92,12 @@ fn full_verification_uses_native_facts_and_retains_the_exact_captured_image() {
             )
             .unwrap();
         assert_eq!(
-            old.verify_root(&identity, None, &mut owner.edit_admission()),
+            old.verify_root(
+                request_execution,
+                &identity,
+                None,
+                &mut owner.edit_admission()
+            ),
             Err(FullVerificationStop::OutputEvidenceUnavailable),
             "source-only test registration cannot manufacture full output evidence"
         );
@@ -90,7 +113,12 @@ fn full_verification_uses_native_facts_and_retains_the_exact_captured_image() {
             )
             .unwrap();
         assert_eq!(
-            captured.verify_root(&identity, None, &mut owner.edit_admission()),
+            captured.verify_root(
+                request_execution,
+                &identity,
+                None,
+                &mut owner.edit_admission()
+            ),
             Ok(FullVerificationDecision::Changed)
         );
         // A later same-position registration replaces the actor's row. The
@@ -98,7 +126,13 @@ fn full_verification_uses_native_facts_and_retains_the_exact_captured_image() {
         register(
             owner,
             identity.clone(),
-            Arc::from([field_fact(runtime, &changed_handle, entity, label)]),
+            Arc::from([field_fact(
+                request_execution,
+                runtime,
+                &changed_handle,
+                entity,
+                label,
+            )]),
             &changed_basis,
             OrdSet::new(),
         );
@@ -107,7 +141,12 @@ fn full_verification_uses_native_facts_and_retains_the_exact_captured_image() {
             SourceSettlementCurrentness::Clean
         ));
         assert_eq!(
-            captured.verify_root(&identity, None, &mut owner.edit_admission()),
+            captured.verify_root(
+                request_execution,
+                &identity,
+                None,
+                &mut owner.edit_admission()
+            ),
             Err(FullVerificationStop::ActorImageChanged),
             "an intervening actor edit cannot manufacture an equivalence mismatch"
         );
@@ -120,7 +159,12 @@ fn full_verification_uses_native_facts_and_retains_the_exact_captured_image() {
             )
             .unwrap();
         assert_eq!(
-            fresh.verify_root(&identity, None, &mut owner.edit_admission()),
+            fresh.verify_root(
+                request_execution,
+                &identity,
+                None,
+                &mut owner.edit_admission()
+            ),
             Err(FullVerificationStop::OutputEvidenceUnavailable)
         );
         assert!(

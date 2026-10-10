@@ -21,24 +21,26 @@ use crate::transactions::data::RecordRef;
 impl<'runtime> MergeAccess<'runtime> {
     pub(crate) fn plan_identity_scope(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: NormalizedRelationalMergeRequest,
     ) -> Result<IdentityScopedMergePlan, MergePlanningError> {
         let history_plan = self.plan_history_scope(request)?;
-        Ok(self.discover_identity_scope(history_plan))
+        Ok(self.discover_identity_scope(execution, history_plan))
     }
 
     fn discover_identity_scope(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         history_plan: HistoryScopedMergePlan,
     ) -> IdentityScopedMergePlan {
         let target_view = self
             .runtime
             .read_truth()
-            .read_version(history_plan.basis.target_head.version_id);
+            .read_version(execution, history_plan.basis.target_head.version_id);
         let source_view = self
             .runtime
             .read_truth()
-            .read_version(history_plan.basis.source_head.version_id);
+            .read_version(execution, history_plan.basis.source_head.version_id);
 
         let ancestry = MergeAncestrySummary {
             merge_base_rule: history_plan.basis.merge_base.rule,

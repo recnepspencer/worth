@@ -29,10 +29,16 @@ fn retirement_barrier_refuses_a_new_fork_of_that_program() {
         .runtime()
         .with_program_retirement_barrier_for_test(&source, || {
             host.runtime()
-                .branches()
-                .fork(branch)
-                .components(|components| components.fork_relational().reuse_exact_signal_basis())
-                .create()
+                .with_host_advancement(|host_phase| {
+                    host.runtime()
+                        .branches()
+                        .fork(branch)
+                        .components(|components| {
+                            components.fork_relational().reuse_exact_signal_basis()
+                        })
+                        .create(&host_phase)
+                })
+                .expect("installed host call opens")
         });
     assert!(matches!(
         result,
@@ -44,6 +50,9 @@ fn retirement_barrier_refuses_a_new_fork_of_that_program() {
 
 #[test]
 fn in_flight_fork_reservation_blocks_retirement_until_its_terminal() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let host = publish_on_first_program();
     let branch = host.current_world();
     let source = *host.owned_revision();
@@ -51,19 +60,23 @@ fn in_flight_fork_reservation_blocks_retirement_until_its_terminal() {
     host.runtime()
         .with_program_fork_reservation_for_test(&source, || {
             assert!(matches!(
-                host.retire_program_support(&source),
+                host.retire_program_support(request_execution, &source),
                 Err(WorthQueryProgramSupportRetirementDenial::InventoryUnavailable(_))
             ));
         });
     host.runtime()
-        .branches()
-        .fork(branch)
-        .components(|components| components.fork_relational().reuse_exact_signal_basis())
-        .create()
-        .expect("the admitted fork publishes after the in-flight reservation clears");
+        .with_host_advancement(|host_phase| {
+            host.runtime()
+                .branches()
+                .fork(branch)
+                .components(|components| components.fork_relational().reuse_exact_signal_basis())
+                .create(&host_phase)
+                .expect("the admitted fork publishes after the in-flight reservation clears")
+        })
+        .expect("installed host call opens");
 
     let denial = host
-        .retire_program_support(&source)
+        .retire_program_support(request_execution, &source)
         .expect_err("both live P0 branches remain truthful retirement users");
     let WorthQueryProgramSupportRetirementDenial::CurrentBranches(inventory) = denial else {
         panic!("the completed fork must become ordinary branch inventory")
@@ -73,6 +86,9 @@ fn in_flight_fork_reservation_blocks_retirement_until_its_terminal() {
 
 #[test]
 fn adopted_source_forks_with_world_carried_program_after_old_support_retires() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let host = publish_on_first_program();
     let source_branch = host.current_world();
     let source_program = *host.owned_revision();
@@ -82,20 +98,27 @@ fn adopted_source_forks_with_world_carried_program_after_old_support_retires() {
         .owned_revision();
     adopt(&host, source_branch, &target);
     let child = host
-        .runtime()
-        .branches()
-        .fork(source_branch)
-        .components(|components| components.fork_relational().reuse_exact_signal_basis())
-        .create()
-        .expect("the adopted source forks under P1");
+        .with_host_advancement(|host_phase| {
+            host.runtime()
+                .branches()
+                .fork(source_branch)
+                .components(|components| components.fork_relational().reuse_exact_signal_basis())
+                .create(&host_phase)
+                .expect("the adopted source forks under P1")
+        })
+        .expect("installed host call opens");
 
-    host.retire_program_support(&source_program)
+    host.retire_program_support(request_execution, &source_program)
         .expect("no branch or retained interpretation still uses P0");
     let selected = host
         .runtime()
-        .on_branch(child)
-        .select()
-        .expect("the child remains selectable after P0 retirement");
+        .with_host_advancement(|host_phase| {
+            host.runtime()
+                .on_branch(child)
+                .select(&host_phase)
+                .expect("the child remains selectable after P0 retirement")
+        })
+        .expect("installed host call opens");
     assert_eq!(
         selected.inspect_selected_program().unwrap().revision(),
         &target
@@ -103,16 +126,24 @@ fn adopted_source_forks_with_world_carried_program_after_old_support_retires() {
     drop(selected);
     let grandchild = host
         .runtime()
-        .branches()
-        .fork(child)
-        .components(|components| components.fork_relational().reuse_exact_signal_basis())
-        .create()
-        .expect("the P1 child still forks after P0 retirement");
+        .with_host_advancement(|host_phase| {
+            host.runtime()
+                .branches()
+                .fork(child)
+                .components(|components| components.fork_relational().reuse_exact_signal_basis())
+                .create(&host_phase)
+                .expect("the P1 child still forks after P0 retirement")
+        })
+        .expect("installed host call opens");
     let grandchild = host
         .runtime()
-        .on_branch(grandchild)
-        .select()
-        .expect("the grandchild carries a selectable P1 occurrence");
+        .with_host_advancement(|host_phase| {
+            host.runtime()
+                .on_branch(grandchild)
+                .select(&host_phase)
+                .expect("the grandchild carries a selectable P1 occurrence")
+        })
+        .expect("installed host call opens");
     assert_eq!(
         grandchild.inspect_selected_program().unwrap().revision(),
         &target
@@ -124,6 +155,9 @@ fn adopted_source_forks_with_world_carried_program_after_old_support_retires() {
 /// gate refuses it as retired before any effect, and the refusal claims no key.
 #[test]
 fn a_retired_program_action_is_refused_at_the_commit_gate_without_effect() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let host = publish_on_first_program();
     let branch = host.current_world();
     let source = *host.owned_revision();
@@ -132,7 +166,7 @@ fn a_retired_program_action_is_refused_at_the_commit_gate_without_effect() {
         .expect("the removal target is rostered")
         .owned_revision();
     adopt(&host, branch, &removal);
-    host.retire_program_support(&source)
+    host.retire_program_support(request_execution, &source)
         .expect("no branch or retained interpretation still uses P0");
 
     let branch = host.current_world();

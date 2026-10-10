@@ -11,6 +11,9 @@ use crate::suite::installed_operation_fixture::{
 
 #[test]
 fn over_budget_direct_request_denies_before_session_or_executor_contact() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let contract_envelope = envelope(
         100,
         100,
@@ -19,6 +22,7 @@ fn over_budget_direct_request_denies_before_session_or_executor_contact() {
         safe_point("direct-chunk"),
     );
     let (workspace, contacts) = resource_admission_workspace(
+        request_execution,
         "resource-direct-rejection-order",
         contract([strategy("bounded", contract_envelope.clone())]),
         support(contract_envelope),
@@ -58,7 +62,11 @@ fn over_budget_direct_request_denies_before_session_or_executor_contact() {
 
 #[test]
 fn over_budget_artifact_workflow_denies_before_artifact_allocation() {
-    let (workspace, probe) = artifact_move_workspace("resource-artifact-rejection-order").unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (workspace, probe) =
+        artifact_move_workspace(request_execution, "resource-artifact-rejection-order").unwrap();
     let bound = bind_artifact_workflow(&workspace);
     let request = installed::operation::WorthQueryExecutionResourceRequest::bounded(
         1_000_001,
@@ -81,6 +89,9 @@ fn over_budget_artifact_workflow_denies_before_artifact_allocation() {
 
 #[test]
 fn named_semantic_axes_are_admitted_and_rejected_independently() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     use installed::operation::WorthQuerySemanticScaleAxis as Axis;
 
     for (ordinal, axis) in [
@@ -102,6 +113,7 @@ fn named_semantic_axes_are_admitted_and_rejected_independently() {
             safe_point("axis-chunk"),
         );
         let (workspace, contacts) = resource_admission_workspace(
+            request_execution,
             &format!("resource-axis-denial-{ordinal}"),
             contract([strategy("axis-bounded", contract_envelope.clone())]),
             support(contract_envelope),
@@ -140,6 +152,7 @@ fn named_semantic_axes_are_admitted_and_rejected_independently() {
             safe_point("axis-chunk"),
         );
         let (workspace, _) = resource_admission_workspace(
+            request_execution,
             &format!("resource-axis-admit-{ordinal}"),
             contract([strategy("axis-bounded", contract_envelope.clone())]),
             support(contract_envelope),

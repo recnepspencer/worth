@@ -13,7 +13,10 @@ use support::aspect_touch as touch;
 
 #[test]
 fn live_plan_preserves_one_shot_access_shape_and_required_index_digests() {
-    let mut workspace = workspace("phase-thirteen-live-plan-parity");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = workspace(request_execution, "phase-thirteen-live-plan-parity");
     let family = simple_traversal_family(&mut workspace, "phase-thirteen-simple");
     let one_shot = match plan_admitted_graph_read_access_for_family(&family) {
         Ok(Some(plan)) => plan,
@@ -58,7 +61,10 @@ fn live_plan_preserves_one_shot_access_shape_and_required_index_digests() {
 
 #[test]
 fn live_planning_denies_one_shot_plan_that_requires_stronger_maintenance_support() {
-    let mut workspace = workspace("phase-thirteen-live-plan-budget-denial");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = workspace(request_execution, "phase-thirteen-live-plan-budget-denial");
     let family = simple_traversal_family(&mut workspace, "phase-thirteen-budget-denied");
 
     let denial = workspace
@@ -77,7 +83,10 @@ fn live_planning_denies_one_shot_plan_that_requires_stronger_maintenance_support
 
 #[test]
 fn dense_live_planning_denial_still_returns_live_specific_support_posture() {
-    let mut workspace = workspace("phase-thirteen-live-plan-denial");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = workspace(request_execution, "phase-thirteen-live-plan-denial");
     let family = dense_traversal_family(&mut workspace, "phase-thirteen-dense");
 
     let denial = workspace
@@ -98,9 +107,12 @@ fn dense_live_planning_denial_still_returns_live_specific_support_posture() {
 
 #[test]
 fn live_read_receipt_exposes_live_graph_access_counters() {
-    let mut workspace = workspace("phase-thirteen-live-receipt");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = workspace(request_execution, "phase-thirteen-live-receipt");
     let live_view = workspace
-        .live_view::<WorthQueryUnrefinedLiveShape>("tasks.table", |query| {
+        .live_view::<WorthQueryUnrefinedLiveShape>(request_execution, "tasks.table", |query| {
             query
                 .from("Task")
                 .select([
@@ -124,7 +136,7 @@ fn live_read_receipt_exposes_live_graph_access_counters() {
         .expect("live view should declare");
 
     let result = workspace
-        .read_live_result(&live_view)
+        .read_live_result(request_execution, &live_view)
         .expect("live read should execute");
     let receipt = result
         .receipt()
@@ -147,9 +159,15 @@ fn live_read_receipt_exposes_live_graph_access_counters() {
 
 #[test]
 fn live_mutation_delivery_carries_graph_read_maintenance_receipt() {
-    let mut workspace = workspace("phase-thirteen-live-mutation-maintenance");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = workspace(
+        request_execution,
+        "phase-thirteen-live-mutation-maintenance",
+    );
     let live_view = workspace
-        .live_view::<WorthQueryUnrefinedLiveShape>("tasks.table", |query| {
+        .live_view::<WorthQueryUnrefinedLiveShape>(request_execution, "tasks.table", |query| {
             query
                 .from("Task")
                 .select([
@@ -173,7 +191,7 @@ fn live_mutation_delivery_carries_graph_read_maintenance_receipt() {
         .expect("live view should declare");
 
     workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(touch("identity.id"), authored_text("task-maintained"))
                 .set_aspect(touch("title.value"), authored_text("Maintained task"))
         })
@@ -213,32 +231,39 @@ fn live_mutation_delivery_carries_graph_read_maintenance_receipt() {
 
 #[test]
 fn live_maintenance_receipt_tracks_projected_updates_without_hidden_overdelivery() {
-    let mut workspace = workspace("phase-thirteen-live-update-maintenance");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = workspace(request_execution, "phase-thirteen-live-update-maintenance");
     let live_view = workspace
-        .live_view::<WorthQueryUnrefinedLiveShape>("tasks.update.table", |query| {
-            query
-                .from("Task")
-                .select([
-                    crate::facade::foundation::AspectFieldKey::from_authoring_parts(
-                        "identity", "id",
+        .live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
+            "tasks.update.table",
+            |query| {
+                query
+                    .from("Task")
+                    .select([
+                        crate::facade::foundation::AspectFieldKey::from_authoring_parts(
+                            "identity", "id",
+                        )
+                        .unwrap(),
+                        crate::facade::foundation::AspectFieldKey::from_authoring_parts(
+                            "title", "value",
+                        )
+                        .unwrap(),
+                    ])
+                    .order_by(
+                        crate::facade::foundation::AspectFieldKey::from_authoring_parts(
+                            "title", "value",
+                        )
+                        .unwrap(),
                     )
-                    .unwrap(),
-                    crate::facade::foundation::AspectFieldKey::from_authoring_parts(
-                        "title", "value",
-                    )
-                    .unwrap(),
-                ])
-                .order_by(
-                    crate::facade::foundation::AspectFieldKey::from_authoring_parts(
-                        "title", "value",
-                    )
-                    .unwrap(),
-                )
-                .schema_basis("phase-thirteen-live-update-maintenance")
-        })
+                    .schema_basis("phase-thirteen-live-update-maintenance")
+            },
+        )
         .expect("live view should declare");
     let seed = workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(touch("identity.id"), authored_text("task-updated"))
                 .set_aspect(touch("title.value"), authored_text("Original title"))
                 .set_aspect(touch("description.value"), authored_text("hidden"))
@@ -248,7 +273,7 @@ fn live_maintenance_receipt_tracks_projected_updates_without_hidden_overdelivery
     let _ = workspace.observe(&live_view);
 
     workspace
-        .update(entity_identity.clone(), |task| {
+        .update(request_execution, entity_identity.clone(), |task| {
             task.set_aspect(touch("title.value"), authored_text("Updated title"))
         })
         .expect("projected update should execute");
@@ -259,7 +284,7 @@ fn live_maintenance_receipt_tracks_projected_updates_without_hidden_overdelivery
     let projected_counters = projected_maintenance.maintenance_counters();
 
     workspace
-        .update(entity_identity, |task| {
+        .update(request_execution, entity_identity, |task| {
             task.set_aspect(touch("description.value"), authored_text("hidden again"))
         })
         .expect("hidden update should execute");

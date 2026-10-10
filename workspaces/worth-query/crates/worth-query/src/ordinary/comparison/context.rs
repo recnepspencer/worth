@@ -31,12 +31,13 @@ pub(crate) struct WorthQueryCapturedBranchComparisonBasis {
 
 impl WorthQueryCapturedBranchComparisonBasis {
     fn capture(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         workspace: &WorthQueryWorkspace,
         label: WorthQuerySessionLabel,
     ) -> Result<Self, crate::runtime::WorthQueryRuntimeError> {
         Ok(Self {
             workspace_name: workspace.name().to_string(),
-            runtime_basis: workspace.capture_branch_comparison_basis(label)?,
+            runtime_basis: workspace.capture_branch_comparison_basis(execution, label)?,
         })
     }
 
@@ -52,20 +53,27 @@ impl WorthQueryCapturedBranchComparisonBasis {
         self.runtime_basis.admission()
     }
 
-    pub(crate) fn matches(&self, workspace: &WorthQueryWorkspace) -> bool {
+    pub(crate) fn matches(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        workspace: &WorthQueryWorkspace,
+    ) -> bool {
         self.workspace_name == workspace.name()
             && self
                 .runtime_basis
                 .snapshot()
-                .is_same_current_identity_as(&workspace.snapshot_identity())
+                .is_same_current_identity_as(&workspace.snapshot_identity_with_request(execution))
     }
 }
 
 impl WorthQueryCapturedComparisonBasis {
-    fn capture(workspace: &WorthQueryWorkspace) -> Self {
+    fn capture(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        workspace: &WorthQueryWorkspace,
+    ) -> Self {
         Self {
             workspace_name: workspace.name().to_string(),
-            snapshot: workspace.snapshot_identity(),
+            snapshot: workspace.snapshot_identity_with_request(execution),
         }
     }
 
@@ -77,11 +85,15 @@ impl WorthQueryCapturedComparisonBasis {
         &self.snapshot
     }
 
-    pub(crate) fn matches(&self, workspace: &WorthQueryWorkspace) -> bool {
+    pub(crate) fn matches(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        workspace: &WorthQueryWorkspace,
+    ) -> bool {
         self.workspace_name == workspace.name()
             && self
                 .snapshot
-                .is_same_current_identity_as(&workspace.snapshot_identity())
+                .is_same_current_identity_as(&workspace.snapshot_identity_with_request(execution))
     }
 }
 
@@ -118,11 +130,14 @@ impl WorthQueryComparisonContext {
 }
 
 /// Pair the runtime's current truth with its exact retained historical view.
-pub fn current_and_retained(workspace: &WorthQueryWorkspace) -> WorthQueryComparisonContext {
+pub fn current_and_retained(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    workspace: &WorthQueryWorkspace,
+) -> WorthQueryComparisonContext {
     WorthQueryComparisonContext {
         authority: WorthQueryComparisonPairAuthority::CurrentAndRetained {
-            current: WorthQueryCapturedComparisonBasis::capture(workspace),
-            retained: at(workspace),
+            current: WorthQueryCapturedComparisonBasis::capture(execution, workspace),
+            retained: at(execution, workspace),
         },
     }
 }
@@ -132,6 +147,7 @@ pub fn current_and_retained(workspace: &WorthQueryWorkspace) -> WorthQueryCompar
 /// The returned context is not sufficient by itself: execution rechecks both
 /// typed snapshots against the exact workspace names before either query runs.
 pub fn between(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     left: &WorthQueryWorkspace,
     left_label: WorthQuerySessionLabel,
     right: &WorthQueryWorkspace,
@@ -146,8 +162,8 @@ pub fn between(
             counters,
         ));
     }
-    let left =
-        WorthQueryCapturedBranchComparisonBasis::capture(left, left_label).map_err(|error| {
+    let left = WorthQueryCapturedBranchComparisonBasis::capture(execution, left, left_label)
+        .map_err(|error| {
             WorthQueryComparisonStop::new(
                 WorthQueryComparisonStopSource::LeftBasisAdmission,
                 WorthQueryComparisonNextAction::ResolveAuthority,
@@ -155,8 +171,8 @@ pub fn between(
                 counters.clone(),
             )
         })?;
-    let right =
-        WorthQueryCapturedBranchComparisonBasis::capture(right, right_label).map_err(|error| {
+    let right = WorthQueryCapturedBranchComparisonBasis::capture(execution, right, right_label)
+        .map_err(|error| {
             WorthQueryComparisonStop::new(
                 WorthQueryComparisonStopSource::RightBasisAdmission,
                 WorthQueryComparisonNextAction::ResolveAuthority,

@@ -129,6 +129,9 @@ fn preparation_order_does_not_reserve_a_subscriber_stream_gap() {
 
 #[test]
 fn checkpoint_tail_recovery_follows_publication_order_with_exact_reserved_identities() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = persisted_runtime_with_test_schema();
     create_entity(&runtime, "recovery-order-anchor");
     fork_publication_branch(&mut runtime, "prepared-first");
@@ -184,7 +187,7 @@ fn checkpoint_tail_recovery_follows_publication_order_with_exact_reserved_identi
     let mut recovered = persisted_runtime_with_test_schema();
     recovered
         .durability_recovery()
-        .recover(plan)
+        .recover(execution, plan)
         .expect("fresh recovery replays A after checkpointed B");
     assert_eq!(
         recovered

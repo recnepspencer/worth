@@ -6,6 +6,7 @@ use super::{
 use worth_relational::facade::runtime::{RelationalRuntime, RelationalRuntimeApi};
 
 pub(crate) fn certified_supply_chain_world(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     scale: SupplyChainScale,
 ) -> (
     ProductionSeededSupplyChainWorld,
@@ -16,6 +17,7 @@ pub(crate) fn certified_supply_chain_world(
     let program =
         CompiledSupplyChainProgram::compile(definition).expect("Supply Chain program compiles");
     let certified = audit_supply_chain_baseline(
+        execution,
         compile_supply_chain_baseline(program).expect("baseline installs"),
     )
     .expect("baseline matches the independent Supply Chain oracle");
@@ -36,10 +38,11 @@ pub(crate) fn canonical_empty_supply_chain_runtime(scale: SupplyChainScale) -> R
 }
 
 pub(crate) fn assert_oracle_matches(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &ProductionSeededSupplyChainWorld,
     expected: &ExpectedSupplyChainObservation,
 ) {
-    let observed = super::observe_supply_chain(world)
+    let observed = super::observe_supply_chain(execution, world)
         .expect("production Supply Chain observation remains available");
     compare(expected, &observed).expect("production observation matches the independent oracle");
 }

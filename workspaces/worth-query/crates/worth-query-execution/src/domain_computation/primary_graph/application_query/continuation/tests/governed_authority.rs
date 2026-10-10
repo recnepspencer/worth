@@ -29,25 +29,40 @@ fn governed_cursor_alone_cannot_resume_disclosure() {
     world
         .authorization_time
         .script(vec![UNIX_EPOCH + Duration::from_secs(100); 32]);
-    let continuation = issue(&world, &principal, &account, &query, &request);
-    let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
-
-    let denial = world
+    world
         .application
-        .readmit_application_query_continuation(
-            &query,
-            &access,
-            governed_live_account_parameters("account-1"),
-            continuation,
-            resume_controls(&request),
-        )
-        .err()
-        .expect("a cursor carries no governed disclosure authority");
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
 
-    assert_eq!(
-        denial.kind(),
-        WorthQueryApplicationQueryAdmissionDenialKind::DisclosureGovernanceRequired
-    );
+            let continuation = issue(
+                &host_custody,
+                &world,
+                &principal,
+                &account,
+                &query,
+                &request,
+            );
+            let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
+
+            let denial = world
+                .application
+                .readmit_application_query_continuation(
+                    &host_custody.phase_for_application(&world.application),
+                    &query,
+                    &access,
+                    governed_live_account_parameters("account-1"),
+                    continuation,
+                    resume_controls(&request),
+                )
+                .err()
+                .expect("a cursor carries no governed disclosure authority");
+
+            assert_eq!(
+                denial.kind(),
+                WorthQueryApplicationQueryAdmissionDenialKind::DisclosureGovernanceRequired
+            );
+        })
+        .expect("the fixture block owns its installed host call")
 }
 
 #[test]
@@ -56,27 +71,46 @@ fn governed_continuation_consumes_fresh_capability_evidence() {
     world
         .authorization_time
         .script(vec![UNIX_EPOCH + Duration::from_secs(100); 32]);
-    let continuation = issue(&world, &principal, &account, &query, &request);
-    let fresh = admit_touch_account_capability(&world, &principal, &request).unwrap();
-    let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
-    let plan = world
+    world
         .application
-        .readmit_governed_application_query_continuation(
-            &query,
-            &access,
-            fresh,
-            governed_live_account_parameters("account-1"),
-            continuation,
-            resume_controls(&request),
-        )
-        .unwrap();
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
 
-    let page = world
-        .application
-        .execute_application_query_continuation_page(plan)
-        .unwrap();
-    assert_eq!(page.rows().len(), 1);
-    assert!(page.receipt().basis_released());
+            let continuation = issue(
+                &host_custody,
+                &world,
+                &principal,
+                &account,
+                &query,
+                &request,
+            );
+            let fresh = admit_touch_account_capability(&host_custody, &world, &principal, &request)
+                .unwrap();
+            let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
+            let plan = world
+                .application
+                .readmit_governed_application_query_continuation(
+                    &host_custody.phase_for_application(&world.application),
+                    &query,
+                    &access,
+                    fresh,
+                    governed_live_account_parameters("account-1"),
+                    continuation,
+                    resume_controls(&request),
+                )
+                .unwrap();
+
+            let page = world
+                .application
+                .execute_application_query_continuation_page(
+                    &host_custody.phase_for_application(&world.application),
+                    plan,
+                )
+                .unwrap();
+            assert_eq!(page.rows().len(), 1);
+            assert!(page.receipt().basis_released());
+        })
+        .expect("the fixture block owns its installed host call")
 }
 
 fn context() -> (
@@ -95,37 +129,57 @@ fn context() -> (
     let world = installed_capability_authorization_world();
     let request = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
-    let principal = world
+    let (principal, account, query) = world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
-        .expect("the selected product branch remains admitted")
-        .resolve_authenticated_principal(
-            &world.binding,
-            &external,
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
-    let account = world
-        .application
-        .select_product_branch(world.application.product_runtime().default_branch())
-        .expect("the selected product branch remains admitted")
-        .resolve_entity(
-            AccountIdentity::reference(),
-            "account-1".to_owned(),
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
-    let query = world
-        .application
-        .installed_schema()
-        .certification_query(GovernedLiveAccountActivityQuery::reference())
-        .unwrap();
+        .with_host_advancement(|phase| {
+            let phase_custody = phase.test_host_request();
+            let borrowed_execution = phase
+                .execution_request_for(world.application.product_runtime())
+                .expect("the context lends its installed phase");
+            let execution = &borrowed_execution;
+            let principal = world
+                .application
+                .select_product_branch(
+                    execution,
+                    world.application.product_runtime().default_branch(),
+                )
+                .expect("the selected product branch remains admitted")
+                .resolve_authenticated_principal(
+                    &phase_custody.phase_for_application(&world.application),
+                    &world.binding,
+                    &external,
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap();
+            let account = world
+                .application
+                .select_product_branch(
+                    execution,
+                    world.application.product_runtime().default_branch(),
+                )
+                .expect("the selected product branch remains admitted")
+                .resolve_entity(
+                    &phase_custody.phase_for_application(&world.application),
+                    AccountIdentity::reference(),
+                    "account-1".to_owned(),
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap();
+            let query = world
+                .application
+                .installed_schema()
+                .certification_query(GovernedLiveAccountActivityQuery::reference())
+                .unwrap();
+            (principal, account, query)
+        })
+        .expect("the governed context owns its identity read");
     (world, principal, account, query, request)
 }
 
 fn issue(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     world: &AuthorizationWorld,
     principal: &WorthQueryAuthenticatedPrincipal<IdentityExecutionSchema, Principal, u64>,
     account: &WorthQueryApplicationEntityIdentity<IdentityExecutionSchema, Account>,
@@ -138,11 +192,13 @@ fn issue(
     >,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
 ) -> GovernedContinuation {
-    let capability = admit_touch_account_capability(world, principal, request).unwrap();
+    let capability =
+        admit_touch_account_capability(phase_custody, world, principal, request).unwrap();
     let access = WorthQueryApplicationQueryAccessContext::new(principal, account);
     let plan = world
-        .selected_product()
+        .selected_product(phase_custody)
         .admit_governed_application_query_continuation(
+            &phase_custody.phase_for_application(&world.application),
             query,
             &access,
             capability,
@@ -156,7 +212,10 @@ fn issue(
         .unwrap();
     let page = world
         .application
-        .execute_application_query_continuation_page(plan)
+        .execute_application_query_continuation_page(
+            &phase_custody.phase_for_application(&world.application),
+            plan,
+        )
         .unwrap();
     page.into_parts()
         .1

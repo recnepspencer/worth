@@ -3,6 +3,9 @@ use super::*;
 #[test]
 #[ignore = "performance baseline capture; run with -- --ignored --nocapture --test-threads=1"]
 fn perf_geometry_artifact_decomposition_matrix() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let suite = "geometry_artifact_decomposition_matrix";
     let node_count = rocketship_node_count();
     let query_target_count = rocketship_query_target_count(node_count);
@@ -20,8 +23,12 @@ fn perf_geometry_artifact_decomposition_matrix() {
                 config.publication.policy.max_patch_records_per_commit = node_count * 4
             });
             let diagnostics_start = runtime.publication().diagnostic_artifacts().len();
-            let seeded =
-                seed_pseudorealistic_rocketship_world(&runtime, node_count, query_target_count);
+            let seeded = seed_pseudorealistic_rocketship_world(
+                execution,
+                &runtime,
+                node_count,
+                query_target_count,
+            );
 
             let hot_update_started_at = Instant::now();
             let update = update_entity(
@@ -54,7 +61,11 @@ fn perf_geometry_artifact_decomposition_matrix() {
                             ),
                         )
                         .expect("planned artifact decomposition explicit query"),
+                    execution,
+                    crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                 )
+                .expect("request remains live")
+                .map(|read| read.outcome)
                 .expect("artifact decomposition explicit query");
             let explicit_query_micros = explicit_started_at.elapsed().as_micros();
 

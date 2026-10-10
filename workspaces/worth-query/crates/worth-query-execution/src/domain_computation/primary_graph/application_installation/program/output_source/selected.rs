@@ -48,6 +48,7 @@ where
     /// Commits a required-output source under the branch-selected program.
     pub fn compare_and_commit_selected_required_output_source<Root, Source>(
         &self,
+
         phase: &WorthQueryAdvancementPhase<'_>,
 
         access: &WorthQueryProgramPublicationAccess,
@@ -63,6 +64,17 @@ where
         Source: WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
         Source::Input: Clone + Send + Sync + 'static,
     {
+        let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
+            Ok(request) => request,
+            Err(_) => return Ok((
+                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase
+                    .into_commit_outcome(),
+                None,
+                None,
+            )),
+        };
+        let execution = &phase_request;
+
         let root = TypeId::of::<Root>();
         let presented = match self.selected_source_owner::<Source>(owner, root) {
             Ok(presented) => presented,
@@ -75,6 +87,7 @@ where
             }
         };
         self.compare_and_commit_output_source::<Source>(
+            execution,
             phase,
             access,
             Some(presented),
@@ -89,6 +102,7 @@ where
     /// Commits a discovered-output source under the branch-selected program.
     pub fn compare_and_commit_selected_discovered_output_source<Root, Source>(
         &self,
+
         phase: &WorthQueryAdvancementPhase<'_>,
 
         access: &WorthQueryProgramPublicationAccess,
@@ -105,6 +119,17 @@ where
             WorthQueryApplicationDiscoveredOutputConnection<Schema, Source = Source>,
         Source::Input: Clone + Send + Sync + 'static,
     {
+        let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
+            Ok(request) => request,
+            Err(_) => return Ok((
+                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase
+                    .into_commit_outcome(),
+                None,
+                None,
+            )),
+        };
+        let execution = &phase_request;
+
         let root = TypeId::of::<Root>();
         let presented = match self.selected_source_owner::<Source>(owner, root) {
             Ok(presented) => presented,
@@ -117,6 +142,7 @@ where
             }
         };
         self.compare_and_commit_output_source::<Source>(
+            execution,
             phase,
             access,
             Some(presented),

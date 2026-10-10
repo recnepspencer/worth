@@ -3,6 +3,9 @@ use super::*;
 #[test]
 fn derived_index_contract_entity_field_equals_executes_through_real_index_path_with_storage_parity()
 {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_index_field_aspects();
     let alpha = create_entity_outcome(&runtime, "alpha");
     let beta = create_entity_outcome(&runtime, "beta");
@@ -14,13 +17,14 @@ fn derived_index_contract_entity_field_equals_executes_through_real_index_path_w
         },
         branch_scoped: false,
     });
-    let build = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    let build = runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id: beta.commit.commit_id,
             branch_id: BranchId("main".to_string()),
             index_ids: vec![index.index_id],
-        });
+        },
+    );
     assert!(build.failed_indexes.is_empty());
 
     let snapshot = runtime.visibility_authority().snapshot();
@@ -50,11 +54,18 @@ fn derived_index_contract_entity_field_equals_executes_through_real_index_path_w
         .expect("query plan");
     let storage = runtime
         .read_truth()
-        .execute_query_plan(plan.clone())
+        .execute_query_plan(
+            plan.clone(),
+            execution,
+            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
+        )
+        .expect("request remains live")
+        .map(|read| read.outcome)
         .expect("storage outcome");
     let indexed = runtime
         .index_access()
-        .execute_query_plan_with_index_parity(plan, IndexParityMode::CertificationParity)
+        .execute_query_plan_with_index_parity(plan, IndexParityMode::CertificationParity, execution)
+        .expect("request remains live")
         .expect("indexed outcome");
 
     assert_eq!(
@@ -74,6 +85,9 @@ fn derived_index_contract_entity_field_equals_executes_through_real_index_path_w
 #[test]
 fn derived_index_contract_entity_field_any_of_executes_through_real_index_path_with_storage_parity()
 {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_index_field_aspects();
     let alpha = create_entity_outcome(&runtime, "alpha");
     let beta = create_entity_outcome(&runtime, "beta");
@@ -91,13 +105,14 @@ fn derived_index_contract_entity_field_any_of_executes_through_real_index_path_w
         .latest_commit()
         .expect("latest commit")
         .commit_id;
-    let build = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    let build = runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id: latest_commit_id,
             branch_id: BranchId("main".to_string()),
             index_ids: vec![index.index_id],
-        });
+        },
+    );
     assert!(build.failed_indexes.is_empty());
 
     let snapshot = runtime.visibility_authority().snapshot();
@@ -127,11 +142,18 @@ fn derived_index_contract_entity_field_any_of_executes_through_real_index_path_w
         .expect("query plan");
     let storage = runtime
         .read_truth()
-        .execute_query_plan(plan.clone())
+        .execute_query_plan(
+            plan.clone(),
+            execution,
+            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
+        )
+        .expect("request remains live")
+        .map(|read| read.outcome)
         .expect("storage outcome");
     let indexed = runtime
         .index_access()
-        .execute_query_plan_with_index_parity(plan, IndexParityMode::CertificationParity)
+        .execute_query_plan_with_index_parity(plan, IndexParityMode::CertificationParity, execution)
+        .expect("request remains live")
         .expect("indexed outcome");
 
     assert_eq!(
@@ -155,6 +177,9 @@ fn derived_index_contract_entity_field_any_of_executes_through_real_index_path_w
 
 #[test]
 fn derived_index_contract_matching_definition_without_generation_reports_missing_generation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_index_field_aspects();
     let outcome = create_entity_outcome(&runtime, "alpha");
     let _index = runtime.index_authority().register(DerivedIndexDefinition {
@@ -192,7 +217,12 @@ fn derived_index_contract_matching_definition_without_generation_reports_missing
         .expect("query plan");
     let result = runtime
         .index_access()
-        .execute_query_plan_with_index_parity(plan, IndexParityMode::ProductionAdmissibility)
+        .execute_query_plan_with_index_parity(
+            plan,
+            IndexParityMode::ProductionAdmissibility,
+            execution,
+        )
+        .expect("request remains live")
         .expect("query result");
 
     assert_eq!(
@@ -205,6 +235,9 @@ fn derived_index_contract_matching_definition_without_generation_reports_missing
 
 #[test]
 fn derived_index_contract_explicit_corrupt_generation_reports_corrupt_entries() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_index_field_aspects();
     let alpha = create_entity_outcome(&runtime, "alpha");
     let index = runtime.index_authority().register(DerivedIndexDefinition {
@@ -215,13 +248,14 @@ fn derived_index_contract_explicit_corrupt_generation_reports_corrupt_entries() 
         },
         branch_scoped: false,
     });
-    let build = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    let build = runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id: alpha.commit.commit_id,
             branch_id: BranchId("main".to_string()),
             index_ids: vec![index.index_id],
-        });
+        },
+    );
     assert!(build.failed_indexes.is_empty());
     runtime
         .indexes
@@ -257,7 +291,9 @@ fn derived_index_contract_explicit_corrupt_generation_reports_corrupt_entries() 
                 .plan_query_packet(&alpha.snapshot, packet)
                 .expect("query plan"),
             IndexParityMode::ProductionAdmissibility,
+            execution,
         )
+        .expect("request remains live")
         .expect("query outcome");
 
     assert_eq!(

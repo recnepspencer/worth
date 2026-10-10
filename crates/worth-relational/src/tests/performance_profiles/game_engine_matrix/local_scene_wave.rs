@@ -1,6 +1,9 @@
 use super::*;
 
-pub(super) fn certify_local_scene_graph_propagation_wave(suite: &'static str) {
+pub(super) fn certify_local_scene_graph_propagation_wave(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    suite: &'static str,
+) {
     let local_scene_wave_samples =
         capture_perf_samples(suite, "local_scene_graph_propagation_wave", || {
             let mut runtime =
@@ -58,7 +61,11 @@ pub(super) fn certify_local_scene_graph_propagation_wave(suite: &'static str) {
                         .read_truth()
                         .plan_query_packet(&snapshot, propagation_packet)
                         .expect("scene local propagation plan"),
+                    execution,
+                    crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                 )
+                .expect("request remains live")
+                .map(|read| read.outcome)
                 .expect("scene local propagation outcome");
             let propagation_micros = propagation_started_at.elapsed().as_micros();
 
@@ -76,7 +83,11 @@ pub(super) fn certify_local_scene_graph_propagation_wave(suite: &'static str) {
                         .read_truth()
                         .plan_query_packet(&snapshot, explicit_packet)
                         .expect("scene local explicit plan"),
+                    execution,
+                    crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                 )
+                .expect("request remains live")
+                .map(|read| read.outcome)
                 .expect("scene local explicit outcome");
             let explicit_micros = explicit_started_at.elapsed().as_micros();
             assert!(runtime

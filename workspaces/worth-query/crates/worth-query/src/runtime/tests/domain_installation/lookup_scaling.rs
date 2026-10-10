@@ -60,11 +60,14 @@ fn unrelated_package<const INDEX: usize>() -> WorthQueryDomainPackage<UnrelatedD
 
 #[test]
 fn installed_operation_lookup_width_is_independent_of_unrelated_packages_and_operations() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let baseline = complete_backend_from_parts_builder()
         .domain_package(package(InstalledDomain))
         .unwrap()
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .unwrap();
     assert_lookup_width(&baseline, 1);
 
@@ -87,7 +90,10 @@ fn installed_operation_lookup_width_is_independent_of_unrelated_packages_and_ope
         .unwrap()
         .domain_package(unrelated_package::<7>())
         .unwrap();
-    let runtime = builder.build_backend_from_parts().build().unwrap();
+    let runtime = builder
+        .build_backend_from_parts()
+        .build(request_execution)
+        .unwrap();
     assert_lookup_width(&runtime, 65);
 }
 

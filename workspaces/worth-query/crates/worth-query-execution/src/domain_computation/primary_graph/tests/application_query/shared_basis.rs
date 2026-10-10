@@ -15,11 +15,20 @@ fn admission(work: u64, bytes: u64) -> InvalidationEditAdmission {
 
 #[test]
 fn shared_basis_keeps_one_exact_native_owner_until_last_explicit_release() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = installed_authorization_world(true);
     let observer = world.application.application_query_basis_observer();
     let before = observer.observe();
     let mut meter = admission(100_000, 100_000);
-    let selected = world.selected_product();
+    let selected = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world.selected_product(&(phase).test_host_request())
+        })
+        .expect("the fixture read owns its installed host call");
     let snapshot = selected.application_basis().snapshot_handle().clone();
     let identity = selected.application_basis().identity().clone();
     let shared = match selected.prepare_shared_query_basis(&mut meter) {
@@ -48,27 +57,49 @@ fn shared_basis_keeps_one_exact_native_owner_until_last_explicit_release() {
         WorthQueryApplicationBasisReleaseOutcome::SharedCustodyRetained
     );
     assert_eq!(first.outcome().relational_retention(), None);
-    assert!(world
+    world
         .application
-        .primary_provider
-        .graph
-        .with_runtime(|runtime| runtime.read_truth().project_snapshot(&snapshot).is_some()));
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            assert!(world.application.primary_provider.graph.with_runtime(
+                request_execution,
+                |runtime| runtime
+                    .read_truth()
+                    .project_snapshot(&snapshot, &host_custody.borrowed_request_for_test())
+                    .is_some()
+            ))
+        })
+        .expect("the fixture read owns its installed host call");
     drop(product_b);
     let last = basis_b.release();
     assert!(last.released());
     assert_eq!(last.identity(), &identity);
     assert_eq!(observer.observe().active(), before.active());
-    assert!(world
+    world
         .application
-        .primary_provider
-        .graph
-        .with_runtime(|runtime| runtime.read_truth().project_snapshot(&snapshot).is_none()));
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            assert!(world.application.primary_provider.graph.with_runtime(
+                request_execution,
+                |runtime| runtime
+                    .read_truth()
+                    .project_snapshot(&snapshot, &host_custody.borrowed_request_for_test())
+                    .is_none()
+            ))
+        })
+        .expect("the fixture read owns its installed host call");
 }
 
 #[test]
 fn shared_basis_promotion_refuses_before_allocation_and_returns_exclusive_custody() {
     let world = installed_authorization_world(true);
-    let selected = world.selected_product();
+    let selected = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world.selected_product(&(phase).test_host_request())
+        })
+        .expect("the fixture read owns its installed host call");
     let identity = selected.application_basis().identity().clone();
     let mut denied = admission(100, 0);
     let (selected, stop) = match selected.prepare_shared_query_basis(&mut denied) {
@@ -97,13 +128,19 @@ fn denied_identity_copy_and_foreign_owner_leave_no_hidden_shared_custody() {
     let observer = world.application.application_query_basis_observer();
     let before = observer.observe();
     let mut funded = admission(100_000, 100_000);
-    let shared = match world
-        .selected_product()
-        .prepare_shared_query_basis(&mut funded)
-    {
-        Ok(shared) => shared,
-        Err((_, stop)) => panic!("funded sharing must prepare: {stop:?}"),
-    };
+    let shared = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            match world
+                .selected_product(&(phase).test_host_request())
+                .prepare_shared_query_basis(&mut funded)
+            {
+                Ok(shared) => shared,
+                Err((_, stop)) => panic!("funded sharing must prepare: {stop:?}"),
+            }
+        })
+        .expect("the fixture read owns its installed host call");
     let mut measured = admission(100_000, 100_000);
     let (product, basis) = world
         .application
@@ -158,11 +195,20 @@ fn denied_identity_copy_and_foreign_owner_leave_no_hidden_shared_custody() {
 
 #[test]
 fn shared_basis_drop_releases_the_final_native_owner() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = installed_authorization_world(true);
     let observer = world.application.application_query_basis_observer();
     let before = observer.observe();
     let mut meter = admission(100_000, 100_000);
-    let selected = world.selected_product();
+    let selected = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world.selected_product(&(phase).test_host_request())
+        })
+        .expect("the fixture read owns its installed host call");
     let snapshot = selected.application_basis().snapshot_handle().clone();
     let shared = match selected.prepare_shared_query_basis(&mut meter) {
         Ok(shared) => shared,
@@ -176,11 +222,19 @@ fn shared_basis_drop_releases_the_final_native_owner() {
     drop(product);
     drop(basis);
     assert_eq!(observer.observe().active(), before.active());
-    assert!(world
+    world
         .application
-        .primary_provider
-        .graph
-        .with_runtime(|runtime| runtime.read_truth().project_snapshot(&snapshot).is_none()));
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            assert!(world.application.primary_provider.graph.with_runtime(
+                request_execution,
+                |runtime| runtime
+                    .read_truth()
+                    .project_snapshot(&snapshot, &host_custody.borrowed_request_for_test())
+                    .is_none()
+            ))
+        })
+        .expect("the fixture read owns its installed host call");
 }
 
 #[test]
@@ -196,33 +250,53 @@ fn shared_basis_real_query_completes_without_claiming_physical_release() {
     let request = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
-        .selected_product()
-        .resolve_authenticated_principal(
-            &world.binding,
-            &external,
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .selected_product(&(phase).test_host_request())
+                .resolve_authenticated_principal(
+                    &phase,
+                    &world.binding,
+                    &external,
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let account = world
-        .selected_product()
-        .resolve_entity(
-            AccountStatus::reference(),
-            "open".to_string(),
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .selected_product(&(phase).test_host_request())
+                .resolve_entity(
+                    &phase,
+                    AccountStatus::reference(),
+                    "open".to_string(),
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let query = super::installed_query(&world);
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
     let mut meter = admission(100_000, 100_000);
-    let shared = match world
-        .selected_product()
-        .prepare_shared_query_basis(&mut meter)
-    {
-        Ok(shared) => shared,
-        Err((_, stop)) => panic!("funded sharing must prepare: {stop:?}"),
-    };
+    let shared = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            match world
+                .selected_product(&(phase).test_host_request())
+                .prepare_shared_query_basis(&mut meter)
+            {
+                Ok(shared) => shared,
+                Err((_, stop)) => panic!("funded sharing must prepare: {stop:?}"),
+            }
+        })
+        .expect("the fixture read owns its installed host call");
     let (product, basis) = world
         .application
         .retain_selected_query_basis_admitted(&shared, &mut meter)
@@ -230,27 +304,40 @@ fn shared_basis_real_query_completes_without_claiming_physical_release() {
     let identity = basis.identity().clone();
     let plan = world
         .application
-        .admit_application_query(
-            &query,
-            &access,
-            ApplicationQueryParameterSet::new()
-                .bind(status_parameter(), "open".to_string())
-                .unwrap(),
-            WorthQueryApplicationQueryControls::selected_read_one_shot(
-                product,
-                basis,
-                NonZeroUsize::new(32).unwrap(),
-                NonZeroUsize::new(4096).unwrap(),
-                &request,
-                &mut meter,
-            )
-            .unwrap(),
-        )
-        .unwrap();
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .admit_application_query(
+                    &host_custody.borrowed_request_for_test(),
+                    &query,
+                    &access,
+                    ApplicationQueryParameterSet::new()
+                        .bind(status_parameter(), "open".to_string())
+                        .unwrap(),
+                    WorthQueryApplicationQueryControls::selected_read_one_shot(
+                        product,
+                        basis,
+                        NonZeroUsize::new(32).unwrap(),
+                        NonZeroUsize::new(4096).unwrap(),
+                        &request,
+                        &mut meter,
+                    )
+                    .unwrap(),
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let result = world
         .application
-        .execute_application_query_one_shot(plan)
-        .unwrap();
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .execute_application_query_one_shot(&phase, plan)
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let release = result.receipt().read_completion().basis_release();
     assert_eq!(release.identity(), &identity);
     assert_eq!(
@@ -259,5 +346,14 @@ fn shared_basis_real_query_completes_without_claiming_physical_release() {
     );
     assert!(release.custody_released());
     assert!(!release.released());
-    assert!(shared.selected().application_basis().is_live());
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            assert!(shared
+                .selected()
+                .application_basis()
+                .is_live(&host_custody.borrowed_request_for_test(),))
+        })
+        .expect("the fixture read owns its installed host call");
 }

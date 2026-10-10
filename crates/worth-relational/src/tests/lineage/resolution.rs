@@ -16,6 +16,9 @@ use crate::tests::support::*;
 
 #[test]
 fn historical_lineage_resolution_follows_replace_events() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let created = create_entity_outcome(&runtime, "source");
     let entity = changed_entities(&created)[0];
@@ -84,10 +87,13 @@ fn historical_lineage_resolution_follows_replace_events() {
     assert_eq!(
         runtime
             .lineage_access()
-            .graph(LineageGraphRequest {
-                branch_id: BranchId("main".to_string()),
-                traversal_basis: LineageGraphTraversalBasis::FullBranchGraphMaterialization,
-            })
+            .graph(
+                execution,
+                LineageGraphRequest {
+                    branch_id: BranchId("main".to_string()),
+                    traversal_basis: LineageGraphTraversalBasis::FullBranchGraphMaterialization,
+                }
+            )
             .events
             .iter()
             .filter(|event| event.commit.commit_id == outcome.commit.commit_id)
@@ -98,6 +104,9 @@ fn historical_lineage_resolution_follows_replace_events() {
 
 #[test]
 fn failed_durable_append_cannot_misreport_a_performed_owner_commit() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let created = create_entity_outcome(&runtime, "failed-lineage-source");
     let entity = changed_entities(&created)[0];
@@ -107,10 +116,13 @@ fn failed_durable_append_cannot_misreport_a_performed_owner_commit() {
         .expect("source lineage")
         .lineage_id();
     let failed_commit_id = runtime.history.preview_next_commit_id();
-    let before = runtime.lineage_access().graph(LineageGraphRequest {
-        branch_id: BranchId("main".to_owned()),
-        traversal_basis: LineageGraphTraversalBasis::FullBranchGraphMaterialization,
-    });
+    let before = runtime.lineage_access().graph(
+        execution,
+        LineageGraphRequest {
+            branch_id: BranchId("main".to_owned()),
+            traversal_basis: LineageGraphTraversalBasis::FullBranchGraphMaterialization,
+        },
+    );
 
     runtime.durability.arm_append_failure();
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
@@ -152,10 +164,13 @@ fn failed_durable_append_cannot_misreport_a_performed_owner_commit() {
         failed_commit_id
     );
 
-    let after_failure = runtime.lineage_access().graph(LineageGraphRequest {
-        branch_id: BranchId("main".to_owned()),
-        traversal_basis: LineageGraphTraversalBasis::FullBranchGraphMaterialization,
-    });
+    let after_failure = runtime.lineage_access().graph(
+        execution,
+        LineageGraphRequest {
+            branch_id: BranchId("main".to_owned()),
+            traversal_basis: LineageGraphTraversalBasis::FullBranchGraphMaterialization,
+        },
+    );
     assert_eq!(after_failure.nodes.len(), before.nodes.len());
     assert_eq!(after_failure.events.len(), before.events.len() + 2);
     assert_eq!(
@@ -181,6 +196,9 @@ fn failed_durable_append_cannot_misreport_a_performed_owner_commit() {
 
 #[test]
 fn historical_lineage_resolution_does_not_scan_unrelated_branch_events() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let created = create_entity_outcome(&runtime, "source");
     let entity = changed_entities(&created)[0];
@@ -224,10 +242,13 @@ fn historical_lineage_resolution_does_not_scan_unrelated_branch_events() {
 
     let total_branch_events = runtime
         .lineage_access()
-        .graph(LineageGraphRequest {
-            branch_id: BranchId("main".to_string()),
-            traversal_basis: LineageGraphTraversalBasis::FullBranchGraphMaterialization,
-        })
+        .graph(
+            execution,
+            LineageGraphRequest {
+                branch_id: BranchId("main".to_string()),
+                traversal_basis: LineageGraphTraversalBasis::FullBranchGraphMaterialization,
+            },
+        )
         .metrics
         .event_count;
 

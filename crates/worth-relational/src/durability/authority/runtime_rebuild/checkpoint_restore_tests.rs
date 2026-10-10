@@ -29,6 +29,9 @@ fn equal_exact_root_reuses_the_readmitted_partition_substrate() {
 
 #[test]
 fn native_restore_work_counts_revised_history_sibling_roots_and_partition_images() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let source = persisted_runtime_with_test_schema();
     let entity = create_entity(&source, "work-seed");
     let small = source
@@ -64,7 +67,7 @@ fn native_restore_work_counts_revised_history_sibling_roots_and_partition_images
     let mut recovered = persisted_runtime_with_test_schema();
     let outcome = recovered
         .durability_recovery()
-        .restore_native_checkpoint(&native)
+        .restore_native_checkpoint(execution, &native)
         .unwrap();
     let work = outcome.checkpoint_restore_work.unwrap();
     assert_eq!(work.native_bytes_read, Some(native.bytes().len()));
@@ -99,7 +102,7 @@ fn native_restore_work_counts_revised_history_sibling_roots_and_partition_images
     assert_eq!(
         source
             .read_truth()
-            .read_snapshot(&pinned)
+            .read_snapshot(&pinned, execution)
             .unwrap()
             .entities()
             .len(),
@@ -109,6 +112,9 @@ fn native_restore_work_counts_revised_history_sibling_roots_and_partition_images
 
 #[test]
 fn shared_restored_substrate_keeps_a_pinned_reader_exact_after_next_write() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let source = persisted_runtime_with_test_schema();
     create_entity(&source, "reuse-reader-seed");
     source.durability_authority().checkpoint().unwrap();
@@ -116,7 +122,10 @@ fn shared_restored_substrate_keeps_a_pinned_reader_exact_after_next_write() {
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
     );
     let mut recovered = persisted_runtime_with_test_schema();
-    recovered.durability_recovery().recover(plan).unwrap();
+    recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
 
     let main = BranchId("main".into());
     let pinned = snapshot_for_owner_branch(&recovered, &main);
@@ -124,7 +133,7 @@ fn shared_restored_substrate_keeps_a_pinned_reader_exact_after_next_write() {
     assert_eq!(
         recovered
             .read_truth()
-            .read_snapshot(&pinned)
+            .read_snapshot(&pinned, execution)
             .unwrap()
             .entities()
             .len(),
@@ -134,7 +143,7 @@ fn shared_restored_substrate_keeps_a_pinned_reader_exact_after_next_write() {
     assert_eq!(
         recovered
             .read_truth()
-            .read_snapshot(&latest)
+            .read_snapshot(&latest, execution)
             .unwrap()
             .entities()
             .len(),
@@ -144,6 +153,9 @@ fn shared_restored_substrate_keeps_a_pinned_reader_exact_after_next_write() {
 
 #[test]
 fn divergent_sibling_is_not_reused_as_the_storage_mirror() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let source = persisted_runtime_with_test_schema();
     create_entity(&source, "reuse-sibling-seed");
     let sibling = create_branch_from_main(&source, "reuse-sibling");
@@ -172,13 +184,16 @@ fn divergent_sibling_is_not_reused_as_the_storage_mirror() {
     );
     plan.checkpoint = Some(checkpoint);
     let mut recovered = persisted_runtime_with_test_schema();
-    recovered.durability_recovery().recover(plan).unwrap();
+    recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
     for (branch, expected) in [(BranchId("main".into()), 2), (sibling, 2)] {
         let snapshot = snapshot_for_owner_branch(&recovered, &branch);
         assert_eq!(
             recovered
                 .read_truth()
-                .read_snapshot(&snapshot)
+                .read_snapshot(&snapshot, execution)
                 .unwrap()
                 .entities()
                 .len(),
@@ -254,6 +269,9 @@ fn divergent_mirror_partition_rebuilds_cross_partition_adjacency_after_reuse() {
 
 #[test]
 fn recovered_main_and_sibling_catalogs_reuse_exact_canonical_payloads() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let source = persisted_runtime_with_test_schema();
     let seed = create_entity_outcome(&source, "catalog-relink-seed");
     release_test_commit_snapshot(&source, &seed);
@@ -269,7 +287,10 @@ fn recovered_main_and_sibling_catalogs_reuse_exact_canonical_payloads() {
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
     );
     let mut recovered = persisted_runtime_with_test_schema();
-    recovered.durability_recovery().recover(plan).unwrap();
+    recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
     for commit_id in [
         seed.commit.commit_id,
         sibling_commit.commit.commit_id,

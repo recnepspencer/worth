@@ -6,8 +6,11 @@ use crate::runtime::tests::graph_read_access::support::public_bridge_runtime::Pu
 
 #[test]
 fn closeout_access_plan_receipts_replay_to_stable_digests() {
-    let first = execute_replayed_read("first");
-    let second = execute_replayed_read("second");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let first = execute_replayed_read(request_execution, "first");
+    let second = execute_replayed_read(request_execution, "second");
 
     assert_eq!(first.plan_digest, second.plan_digest);
     assert_eq!(first.admission_digest, second.admission_digest);
@@ -26,7 +29,13 @@ fn closeout_access_plan_receipts_replay_to_stable_digests() {
 
 #[test]
 fn closeout_replay_denies_wrong_family_plan_with_typed_digest_context() {
-    let mut source = workspace("graph-read-access.closeout.replay.source");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut source = workspace(
+        request_execution,
+        "graph-read-access.closeout.replay.source",
+    );
     let source_family = graph_access_family(&mut source, "closeout-replay-source");
     let plan = source
         .read_family_intent(&source_family)
@@ -36,11 +45,14 @@ fn closeout_replay_denies_wrong_family_plan_with_typed_digest_context() {
         .expect("source read should produce plan");
     let plan_digest = plan.digest().to_string();
 
-    let mut target = workspace("graph-read-access.closeout.replay.target");
+    let mut target = workspace(
+        request_execution,
+        "graph-read-access.closeout.replay.target",
+    );
     let target_family = unregistered_domain_operation_family(&mut target, "closeout-replay-target");
     let denial = read_composition_denial(
         target
-            .execute_read_family_with_access_plan(&target_family, plan)
+            .execute_read_family_with_access_plan(request_execution, &target_family, plan)
             .expect_err("wrong family plan should deny before execution"),
     );
     let mismatch = denial
@@ -64,11 +76,17 @@ struct ReplayReceiptDigestSet {
     execution_counter_envelope: ReplayExecutionCounterEnvelope,
 }
 
-fn execute_replayed_read(label: &str) -> ReplayReceiptDigestSet {
-    let mut workspace = workspace(&format!("graph-read-access.closeout.replay.{label}"));
+fn execute_replayed_read(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    label: &str,
+) -> ReplayReceiptDigestSet {
+    let mut workspace = workspace(
+        request_execution,
+        &format!("graph-read-access.closeout.replay.{label}"),
+    );
     let family = graph_access_family(&mut workspace, "closeout-replay-family");
     let result = workspace
-        .execute_read_family(&family)
+        .execute_read_family(request_execution, &family)
         .expect("replayed read should execute");
     let summary = result
         .receipt()
@@ -120,9 +138,12 @@ impl ReplayExecutionCounterEnvelope {
     }
 }
 
-fn workspace(name: &str) -> crate::runtime::WorthQueryWorkspace {
+fn workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    name: &str,
+) -> crate::runtime::WorthQueryWorkspace {
     PublicBridgeRuntimeHarness::new()
-        .bridge_backed_runtime()
+        .bridge_backed_runtime(request_execution)
         .workspace(name)
         .expect("closeout replay workspace should open")
 }

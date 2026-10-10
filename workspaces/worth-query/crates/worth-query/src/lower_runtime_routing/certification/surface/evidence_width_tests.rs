@@ -2,7 +2,10 @@ use super::evidence::worth_query_lower_runtime_representative_surface;
 
 #[test]
 fn representative_surface_reports_concrete_and_synthetic_coverage_widths() {
-    let surface = worth_query_lower_runtime_representative_surface();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let surface = worth_query_lower_runtime_representative_surface(request_execution);
 
     assert_eq!(
         surface.concrete_surface_width() + surface.synthetic_surface_width(),

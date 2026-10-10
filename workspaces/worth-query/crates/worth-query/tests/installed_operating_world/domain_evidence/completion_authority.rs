@@ -13,7 +13,11 @@ use super::super::installed_operation_fixture::{
 
 #[test]
 fn exact_direct_completions_bind_zero_graph_output_snapshot_and_resource_attempt() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = evidence_workspace(
+        request_execution,
         "domain-evidence-completion-twins",
         EvidenceScenario::Honest,
         domain::WorthQueryArtifactRedactionPosture::NotRequired,
@@ -39,8 +43,14 @@ fn exact_direct_completions_bind_zero_graph_output_snapshot_and_resource_attempt
 
 #[test]
 fn exact_workflow_completions_bind_stage_run_snapshot_and_resource_attempt() {
-    let (mut workspace, _) =
-        evidence_workflow_workspace("domain-evidence-workflow-completion-twins").unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (mut workspace, _) = evidence_workflow_workspace(
+        request_execution,
+        "domain-evidence-workflow-completion-twins",
+    )
+    .unwrap();
     let first = execute_workflow_completion(&mut workspace, 0);
     let second = execute_workflow_completion(&mut workspace, 0);
 
@@ -61,7 +71,12 @@ fn exact_workflow_completions_bind_stage_run_snapshot_and_resource_attempt() {
 
 #[test]
 fn exact_direct_completions_bind_ordered_nonempty_graph_receipts() {
-    let mut workspace = evidence_graph_workspace("domain-evidence-completion-graph-twins").unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace =
+        evidence_graph_workspace(request_execution, "domain-evidence-completion-graph-twins")
+            .unwrap();
     let first_admitted = admit_exact_completion(&workspace);
     let second_admitted = admit_exact_completion(&workspace);
     let first = execute_exact_completion(first_admitted, &mut workspace, 1);
@@ -76,8 +91,14 @@ fn exact_direct_completions_bind_ordered_nonempty_graph_receipts() {
 
 #[test]
 fn exact_workflow_completions_bind_ordered_nonempty_graph_receipts() {
-    let (mut workspace, _) =
-        evidence_graph_workflow_workspace("domain-evidence-workflow-graph-twins").unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (mut workspace, _) = evidence_graph_workflow_workspace(
+        request_execution,
+        "domain-evidence-workflow-graph-twins",
+    )
+    .unwrap();
     let first = execute_workflow_completion(&mut workspace, 1);
     let second = execute_workflow_completion(&mut workspace, 1);
 
@@ -208,7 +229,9 @@ fn execute_exact_completion(
     let expected_session = admitted.provider_session_identity().to_owned();
     let expected_attempt = admitted.provider_session_attempt_identity().to_owned();
     let expected_snapshot = workspace
-        .snapshot_identity()
+        .with_advancement(|phase| workspace.snapshot_identity(&phase))
+        .expect("installed host call opens")
+        .expect("phase belongs to workspace")
         .evidence_identity()
         .terminal_projection_for_reporting()
         .to_owned();

@@ -25,6 +25,7 @@ where
 
     pub(super) fn correlate_authenticated_inbound<'a>(
         &'a self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         authenticated: WorthQueryAuthenticatedInboundOccurrence<'a, Schema>,
     ) -> Result<WorthQueryCorrelatedInboundOccurrence<'a, Schema>, WorthQueryInboundAdmissionDenial>
     {
@@ -97,7 +98,7 @@ where
             .outbox_key_probes
             .fetch_add(1, Ordering::Relaxed);
         let owner = self
-            .observe_committed_dispatch_outbox_for_correlation(&correlation)
+            .observe_committed_dispatch_outbox_for_correlation(execution, &correlation)
             .map_err(map_owner_read)?;
         installed
             .cost
@@ -237,6 +238,7 @@ fn map_owner_read(
     use WorthQueryCommittedDispatchOutboxReadDenial as Read;
     use WorthQueryInboundAdmissionDenial as Denial;
     match denial {
+        Read::ForeignPhase => Denial::OwnerReadDenied(denial),
         Read::Missing => Denial::UnknownCorrelation,
         // Publication settles, the index is repaired and snapshots in use
         // are released, so the same callback later succeeds.

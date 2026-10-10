@@ -155,15 +155,17 @@ fn run_reclamation_budget(
     let rows = budget / row;
     let (application, invalidation) = limited_application(budget, 128 * 1_024 * 1_024, 8);
     application.consumed_output_custody_for_test();
-    let branch_bytes = application
-        .on_branch(application.current_world())
-        .select()
-        .unwrap()
-        .product()
-        .relational_basis_descriptor()
-        .branch_id()
-        .0
-        .len();
+    let branch_bytes = crate::checkpoint_recovery::support::host_call(&application, |phase| {
+        application
+            .on_branch(application.current_world())
+            .select(phase)
+    })
+    .unwrap()
+    .product()
+    .relational_basis_descriptor()
+    .branch_id()
+    .0
+    .len();
     let native_layout = primary_graph::WorthQueryPrimaryGraphApplicationRuntime::<CheckpointSchema>::native_required_hint_layout_for_test(branch_bytes);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);

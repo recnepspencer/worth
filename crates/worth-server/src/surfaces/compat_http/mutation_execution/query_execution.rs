@@ -148,7 +148,9 @@ pub(crate) fn execute_compatibility_mutation_request(
         }
     };
     let observed_basis_digest = bound_workspace
-        .snapshot_identity()
+        .with_advancement(|phase| bound_workspace.snapshot_identity(&phase))
+        .expect("installed snapshot host call opens")
+        .expect("snapshot phase belongs to workspace")
         .terminal_projection_for_reporting();
     let readiness = WorthServerOperationReadinessFacade::with_operation_registry(
         facade.operation_registry.clone(),

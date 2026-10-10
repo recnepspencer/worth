@@ -12,7 +12,10 @@ fn foreign_bridge_denies_before_fresh_query_or_provider_work_and_preserves_retry
         let checkpoint = yielded.inspection().checkpoint().identity().to_owned();
         let resource_attempt = yielded.inspection().yielded_attempt_identity().to_owned();
         let foreign_bridge = super::causal_fixture::managed_admission_context().bridge;
-        let denied = match yielded.readmit_same_runtime(active_request, &runtime, &foreign_bridge) {
+        let denied = match {
+            let installed_fixture_phase = yielded.fixture_phase(active_request);
+            yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &foreign_bridge)
+        } {
             crate::domain_computation::WorthQueryDirectReadmissionOutcome::Denied(denied) => denied,
             _ => panic!("foreign Bridge runtime should deny during Bridge preflight"),
         };
@@ -40,13 +43,19 @@ fn foreign_bridge_denies_before_fresh_query_or_provider_work_and_preserves_retry
             resource_attempt
         );
 
-        let active = match yielded.readmit_same_runtime(active_request, &runtime, &bridge) {
+        let active = match {
+            let installed_fixture_phase = yielded.fixture_phase(active_request);
+            yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+        } {
             crate::domain_computation::WorthQueryDirectReadmissionOutcome::Readmitted(
                 readmitted,
             ) => readmitted.into_active(),
             _ => panic!("foreign-Bridge denial must preserve exact retry authority"),
         };
-        let completion = match active.advance(execution) {
+        let completion = match {
+            let installed_fixture_phase = active.fixture_phase(execution);
+            active.advance(&installed_fixture_phase)
+        } {
             WorthQueryDirectGraphStepOutcome::Completed(completion) => completion,
             _ => panic!("restored provider should complete"),
         };
@@ -69,8 +78,10 @@ fn crossed_bridge_denial_preserves_both_interleaved_direct_peers() {
         let (first, first_bridge, first_runtime) = yielded_direct(execution);
         let (second, second_bridge, second_runtime) = yielded_direct(execution);
 
-        let first = match first.readmit_same_runtime(active_request, &first_runtime, &second_bridge)
-        {
+        let first = match {
+            let installed_fixture_phase = first.fixture_phase(active_request);
+            first.readmit_same_runtime(&installed_fixture_phase, &first_runtime, &second_bridge)
+        } {
             crate::domain_computation::WorthQueryDirectReadmissionOutcome::Denied(denied) => {
                 assert_eq!(
                 denied.kind(),
@@ -89,23 +100,30 @@ fn crossed_bridge_denial_preserves_both_interleaved_direct_peers() {
             _ => panic!("a peer Bridge runtime must not readmit the first direct run"),
         };
 
-        let first = match first.readmit_same_runtime(active_request, &first_runtime, &first_bridge)
-        {
+        let first = match {
+            let installed_fixture_phase = first.fixture_phase(active_request);
+            first.readmit_same_runtime(&installed_fixture_phase, &first_runtime, &first_bridge)
+        } {
             crate::domain_computation::WorthQueryDirectReadmissionOutcome::Readmitted(
                 readmitted,
             ) => readmitted.into_active(),
             _ => panic!("the first owner must retain its rightful readmission"),
         };
-        let second =
-            match second.readmit_same_runtime(active_request, &second_runtime, &second_bridge) {
-                crate::domain_computation::WorthQueryDirectReadmissionOutcome::Readmitted(
-                    readmitted,
-                ) => readmitted.into_active(),
-                _ => panic!("the untouched peer must retain its rightful readmission"),
-            };
+        let second = match {
+            let installed_fixture_phase = second.fixture_phase(active_request);
+            second.readmit_same_runtime(&installed_fixture_phase, &second_runtime, &second_bridge)
+        } {
+            crate::domain_computation::WorthQueryDirectReadmissionOutcome::Readmitted(
+                readmitted,
+            ) => readmitted.into_active(),
+            _ => panic!("the untouched peer must retain its rightful readmission"),
+        };
 
         for active in [first, second] {
-            let completion = match active.advance(execution) {
+            let completion = match {
+                let installed_fixture_phase = active.fixture_phase(execution);
+                active.advance(&installed_fixture_phase)
+            } {
                 WorthQueryDirectGraphStepOutcome::Completed(completion) => completion,
                 _ => panic!("each rightful peer must complete independently"),
             };
@@ -134,7 +152,10 @@ fn successor_installation_denies_stale_yield_before_any_fresh_authority() {
             ))
             .expect("successor installation should commit");
         let bridge = super::causal_fixture::managed_admission_context().bridge;
-        let denied = match yielded.readmit_same_runtime(active_request, &runtime, &bridge) {
+        let denied = match {
+            let installed_fixture_phase = yielded.fixture_phase(active_request);
+            yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+        } {
             crate::domain_computation::WorthQueryDirectReadmissionOutcome::Denied(denied) => denied,
             _ => panic!("stale yielded installation should deny"),
         };

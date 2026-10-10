@@ -3,30 +3,62 @@ use super::*;
 #[test]
 fn unwind_after_performed_publication_preserves_one_exact_retriable_record() {
     let world = installed_authorization_world(true);
-    let selected = world.selected_product();
+    let selected = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world.selected_product(&(phase).test_host_request())
+        })
+        .expect("the fixture read owns its installed host call");
     let _live = world
         .application
         .primary_provider
         .observe_application_commit_causality(selected.product());
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+        })
+        .expect("the fixture read owns its installed host call");
     let before = selected.product().selected_commit().clone();
-    let first = admitted_program_with_emit(
-        &world,
-        &principal,
-        &account,
-        &request,
-        "post-performed-unwind",
-        Some("post-performed-effect"),
-    );
-    let retry = admitted_program(
-        &world,
-        &principal,
-        &account,
-        &request,
-        "post-performed-unwind",
-    );
+    let first = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            admitted_program_with_emit(
+                &phase,
+                &world,
+                &principal,
+                &account,
+                &request,
+                "post-performed-unwind",
+                Some("post-performed-effect"),
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    let retry = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            admitted_program(
+                &phase,
+                &world,
+                &principal,
+                &account,
+                &request,
+                "post-performed-unwind",
+            )
+        })
+        .expect("the fixture read owns its installed host call");
 
     world.faults.panic_next_pending_application_publication();
     let WorthQueryApplicationCommitOutcome::Committed(first_receipt) =
@@ -53,11 +85,20 @@ fn unwind_after_performed_publication_preserves_one_exact_retriable_record() {
         0,
         "the internal exact retry must retire the recovered slot"
     );
-    assert_ne!(
-        world.selected_product().product().selected_commit(),
-        &before,
-        "World must already expose the performed successor"
-    );
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            assert_ne!(
+                world
+                    .selected_product(&(phase).test_host_request(),)
+                    .product()
+                    .selected_commit(),
+                &before,
+                "World must already expose the performed successor"
+            )
+        })
+        .expect("the fixture read owns its installed host call");
 
     let WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered) =
         world.application.compare_and_commit_application(

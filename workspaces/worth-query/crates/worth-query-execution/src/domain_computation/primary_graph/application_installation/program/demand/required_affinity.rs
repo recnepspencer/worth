@@ -18,6 +18,7 @@ where
     /// it neither duplicates the prepared token nor recovers roots from a receipt.
     pub fn validate_required_program_source<Root>(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         prepared: &WorthQueryPreparedRequiredOutputSource,
         receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
@@ -31,6 +32,12 @@ where
             + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
         RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
     {
+        let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
+            Ok(request) => request,
+            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase), "program-source-phase")),
+        };
+        let execution = &phase_request;
+
         if !self.contains_output_root::<Root>() {
             return Err(WorthQueryOutputDemandDenial::new(
                 WorthQueryOutputDemandDenialKind::ForeignDemand,
@@ -50,11 +57,17 @@ where
         }
         // Retained observations remain readable after retirement; progression
         // also requires the original branch to remain open now.
-        self.runtime.on_branch(branch).select().map_err(|denial| {
-            WorthQueryOutputDemandDenial::product_selection(denial, "required continuation branch")
-        })?;
         self.runtime
-            .select_application_read_observation(observation)
+            .on_branch(branch)
+            .select_with_request(execution)
+            .map_err(|denial| {
+                WorthQueryOutputDemandDenial::product_selection(
+                    denial,
+                    "required continuation branch",
+                )
+            })?;
+        self.runtime
+            .select_application_read_observation_with_request(execution, observation)
             .map_err(|denial| {
                 WorthQueryOutputDemandDenial::product_selection(
                     denial,
@@ -86,6 +99,7 @@ where
     /// Validates an initial read-origin continuation without inventing a source receipt.
     pub fn validate_initial_program_source<Root>(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         observation: &crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
         branch: crate::basis::WorthQueryProductBranch,
@@ -93,6 +107,12 @@ where
     where
         Root: ApplicationOutputGraphShape<Schema>,
     {
+        let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
+            Ok(request) => request,
+            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase), "program-source-phase")),
+        };
+        let execution = &phase_request;
+
         if !self.contains_output_root::<Root>()
             || branch.occurrence() != observation.branch_incarnation()
         {
@@ -103,11 +123,17 @@ where
         }
         // Retained observations remain readable after retirement; progression
         // also requires the original branch to remain open now.
-        self.runtime.on_branch(branch).select().map_err(|denial| {
-            WorthQueryOutputDemandDenial::product_selection(denial, "required continuation branch")
-        })?;
         self.runtime
-            .select_application_read_observation(observation)
+            .on_branch(branch)
+            .select_with_request(execution)
+            .map_err(|denial| {
+                WorthQueryOutputDemandDenial::product_selection(
+                    denial,
+                    "required continuation branch",
+                )
+            })?;
+        self.runtime
+            .select_application_read_observation_with_request(execution, observation)
             .map(|_| ())
             .map_err(|denial| {
                 WorthQueryOutputDemandDenial::product_selection(

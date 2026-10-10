@@ -2,6 +2,9 @@ use super::*;
 
 #[test]
 fn derived_index_contract_relation_field_equals_persisted_recovery_preserves_parity() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_index_field_aspects();
     let source = create_entity_outcome(&runtime, "source");
     let target = create_entity_outcome(&runtime, "target");
@@ -19,13 +22,14 @@ fn derived_index_contract_relation_field_equals_persisted_recovery_preserves_par
         },
         branch_scoped: false,
     });
-    let build = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    let build = runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id: relation.commit.commit_id,
             branch_id: BranchId("main".to_string()),
             index_ids: vec![index.index_id],
-        });
+        },
+    );
     assert!(build.failed_indexes.is_empty());
 
     let snapshot = runtime.visibility_authority().snapshot();
@@ -57,11 +61,16 @@ fn derived_index_contract_relation_field_equals_persisted_recovery_preserves_par
                 .plan_query_packet(&snapshot, packet.clone())
                 .expect("original plan"),
             IndexParityMode::CertificationParity,
+            execution,
         )
+        .expect("request remains live")
         .expect("original outcome");
 
-    let (_recovery, recovered) =
-        checkpoint_and_recover_with(&runtime, persisted_runtime_with_index_field_aspects);
+    let (_recovery, recovered) = checkpoint_and_recover_with(
+        execution,
+        &runtime,
+        persisted_runtime_with_index_field_aspects,
+    );
     let recovered_snapshot = recovered.visibility_authority().snapshot();
     let recovered_context = recovered
         .read_truth()
@@ -77,7 +86,9 @@ fn derived_index_contract_relation_field_equals_persisted_recovery_preserves_par
                 .plan_query_packet(&recovered_snapshot, recovered_packet)
                 .expect("recovered plan"),
             IndexParityMode::CertificationParity,
+            execution,
         )
+        .expect("request remains live")
         .expect("recovered outcome");
 
     assert_eq!(original.access_path, recovered_outcome.access_path);
@@ -93,6 +104,9 @@ fn derived_index_contract_relation_field_equals_persisted_recovery_preserves_par
 
 #[test]
 fn derived_index_contract_persisted_recovery_preserves_entity_field_equals_parity() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_index_field_aspects();
     let alpha = create_entity_outcome(&runtime, "alpha");
     let index = runtime.index_authority().register(DerivedIndexDefinition {
@@ -103,13 +117,14 @@ fn derived_index_contract_persisted_recovery_preserves_entity_field_equals_parit
         },
         branch_scoped: false,
     });
-    let build = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    let build = runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id: alpha.commit.commit_id,
             branch_id: BranchId("main".to_string()),
             index_ids: vec![index.index_id],
-        });
+        },
+    );
     assert!(build.failed_indexes.is_empty());
 
     let snapshot = alpha.snapshot.clone();
@@ -141,11 +156,16 @@ fn derived_index_contract_persisted_recovery_preserves_entity_field_equals_parit
                 .plan_query_packet(&snapshot, packet.clone())
                 .expect("original plan"),
             IndexParityMode::CertificationParity,
+            execution,
         )
+        .expect("request remains live")
         .expect("original outcome");
 
-    let (_recovery, recovered) =
-        checkpoint_and_recover_with(&runtime, persisted_runtime_with_index_field_aspects);
+    let (_recovery, recovered) = checkpoint_and_recover_with(
+        execution,
+        &runtime,
+        persisted_runtime_with_index_field_aspects,
+    );
     let recovered_snapshot = recovered.visibility_authority().snapshot();
     let recovered_context = recovered
         .read_truth()
@@ -161,7 +181,9 @@ fn derived_index_contract_persisted_recovery_preserves_entity_field_equals_parit
                 .plan_query_packet(&recovered_snapshot, recovered_packet)
                 .expect("recovered plan"),
             IndexParityMode::CertificationParity,
+            execution,
         )
+        .expect("request remains live")
         .expect("recovered outcome");
 
     assert_eq!(original.access_path, recovered_outcome.access_path);
@@ -177,7 +199,11 @@ fn derived_index_contract_persisted_recovery_preserves_entity_field_equals_parit
 
 #[test]
 fn derived_index_contract_entity_field_equals_is_stable_with_leased_index_build() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     fn build_runtime(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         leased: bool,
     ) -> (
         crate::facade::runtime::RelationalRuntime,
@@ -199,18 +225,22 @@ fn derived_index_contract_entity_field_equals_is_stable_with_leased_index_build(
             index_ids: vec![index.index_id],
         };
         let build = if leased {
+            runtime.index_authority().build_for_commit_with_lease(
+                &worth_execution::ExecutionRequest::leased(&test_execution_lease()),
+                request,
+                &test_execution_lease(),
+            )
+        } else {
             runtime
                 .index_authority()
-                .build_for_commit_with_lease(request, &test_execution_lease())
-        } else {
-            runtime.index_authority().build_for_commit(request)
+                .build_for_commit(execution, request)
         };
         assert!(build.failed_indexes.is_empty());
         (runtime, alpha.snapshot.clone())
     }
 
-    let (serial_runtime, serial_snapshot) = build_runtime(false);
-    let (staged_runtime, staged_snapshot) = build_runtime(true);
+    let (serial_runtime, serial_snapshot) = build_runtime(execution, false);
+    let (staged_runtime, staged_snapshot) = build_runtime(execution, true);
 
     let serial_context = serial_runtime
         .read_truth()
@@ -251,7 +281,9 @@ fn derived_index_contract_entity_field_equals_is_stable_with_leased_index_build(
                 )
                 .expect("serial plan"),
             IndexParityMode::CertificationParity,
+            execution,
         )
+        .expect("request remains live")
         .expect("serial outcome");
 
     let staged_outcome = staged_runtime
@@ -284,7 +316,9 @@ fn derived_index_contract_entity_field_equals_is_stable_with_leased_index_build(
                 )
                 .expect("staged plan"),
             IndexParityMode::CertificationParity,
+            execution,
         )
+        .expect("request remains live")
         .expect("staged outcome");
 
     assert_eq!(serial_outcome.access_path, staged_outcome.access_path);
@@ -298,72 +332,5 @@ fn derived_index_contract_entity_field_equals_is_stable_with_leased_index_build(
     );
 }
 
-#[test]
-fn derived_index_contract_staged_parallel_generation_matches_serial_reference() {
-    fn build_runtime() -> (
-        crate::facade::runtime::RelationalRuntime,
-        crate::facade::history::CommitId,
-        Vec<crate::facade::indexes::DerivedIndexId>,
-    ) {
-        let runtime = runtime_with_test_schema();
-        let commit = create_entity_outcome(&runtime, "main-a");
-        let name_index = runtime.index_authority().register(DerivedIndexDefinition {
-            index_id: DerivedIndexId(0),
-            name: "entity.name".to_string(),
-            kind: DerivedIndexKind::EntityField {
-                field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
-            },
-            branch_scoped: false,
-        });
-        let missing_index = runtime.index_authority().register(DerivedIndexDefinition {
-            index_id: DerivedIndexId(0),
-            name: "entity.missing".to_string(),
-            kind: DerivedIndexKind::EntityField {
-                field_locator: aspect_field_locator(aspect_key("missing"), field_key("missing")),
-            },
-            branch_scoped: false,
-        });
-
-        (
-            runtime,
-            commit.commit.commit_id,
-            vec![name_index.index_id, missing_index.index_id],
-        )
-    }
-
-    let (serial_runtime, serial_commit_id, index_ids) = build_runtime();
-    let (staged_runtime, staged_commit_id, staged_index_ids) = build_runtime();
-
-    serial_runtime.performance_access().reset_counters();
-    staged_runtime.performance_access().reset_counters();
-
-    let serial = serial_runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
-            source_commit_id: serial_commit_id,
-            branch_id: BranchId("main".to_string()),
-            index_ids,
-        });
-    let staged = staged_runtime
-        .index_authority()
-        .build_for_commit_with_lease(
-            DerivedIndexBuildRequest {
-                source_commit_id: staged_commit_id,
-                branch_id: BranchId("main".to_string()),
-                index_ids: staged_index_ids,
-            },
-            &test_execution_lease(),
-        );
-
-    let staged_counters = staged_runtime.performance_access().counters();
-
-    assert_eq!(staged, serial);
-    assert_eq!(staged_counters.preparation_packet_count, 2);
-    assert_eq!(staged_counters.preparation_parallel_legal_count, 1);
-    assert_eq!(staged_counters.preparation_parallel_profitable_count, 1);
-    assert_eq!(
-        staged_counters.preparation_staged_parallel_strategy_count,
-        1
-    );
-    assert_eq!(staged_counters.preparation_serial_strategy_count, 0);
-}
+#[path = "recovery_and_execution_models/staged_generation.rs"]
+mod staged_generation;

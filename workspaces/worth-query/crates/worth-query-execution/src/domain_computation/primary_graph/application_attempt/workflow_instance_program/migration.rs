@@ -66,6 +66,7 @@ where
         Spec,
     >(
         mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         succession: WorkflowSuccession,
         source: PublishedWorkflowInstanceRef,
@@ -116,6 +117,7 @@ where
         let layout = self.lease.layout.workflow().clone();
         let compile = |published: &PublishedWorkflowDefinitionRef, posture| {
             reconstruct_compiled_definition(
+                execution,
                 self.lease.handle(),
                 self.lease.snapshot(),
                 &layout,
@@ -165,9 +167,9 @@ where
         .unwrap_or(usize::MAX);
         let handle = self.lease.handle();
         let snapshot = self.lease.snapshot();
-        let observed = handle.with_runtime(|runtime| {
+        let observed = handle.with_runtime(execution, |runtime| {
             let mut observed =
-                super::super::workflow_instance_observation::observe_workflow_instance(
+                super::super::workflow_instance_observation::observe_workflow_instance(execution,
                     handle,
                     runtime,
                     snapshot,
@@ -181,7 +183,7 @@ where
                     super::super::workflow_instance_observation::WorkflowInstanceObservationPurpose::Advance,
                 )?;
             let allowance = observed.ensure_step_left()?;
-            observed.ensure_history(
+            observed.ensure_history(execution,
                 handle,
                 runtime,
                 snapshot,
@@ -192,7 +194,7 @@ where
             )?;
             // An external operation its owner still holds would settle into an
             // ended source. Migration waits for it, as cancellation does.
-            facts.push(fence_owner_custody(
+            facts.push(fence_owner_custody(execution,
                 runtime,
                 snapshot,
                 &layout,
@@ -200,7 +202,7 @@ where
                 &observed.transitions,
                 "an external operation must settle under the source before migration",
             )?);
-            let inherited = performed::inherited_effects(
+            let inherited = performed::inherited_effects(execution,
                 runtime,
                 snapshot,
                 &layout,
@@ -210,8 +212,8 @@ where
                 WorthQueryApplicationAttemptDenialKind::WorkflowInstanceMigrationUnmapped,
             )?;
             let deadlines = (
-                instance_deadline(runtime, snapshot, &layout, source.entity_id(), &mut facts)?,
-                definition_deadline(runtime, snapshot, &layout, resumed.definition(), &mut facts)?,
+                instance_deadline(execution, runtime, snapshot, &layout, source.entity_id(), &mut facts)?,
+                definition_deadline(execution, runtime, snapshot, &layout, resumed.definition(), &mut facts)?,
             );
             Ok::<_, WorthQueryApplicationAttemptDenial>((observed, inherited, deadlines, allowance))
         });
@@ -225,8 +227,8 @@ where
                 if ended.kind()
                     == WorthQueryApplicationAttemptDenialKind::WorkflowInstanceMigrated =>
             {
-                let successor = handle.with_runtime(|runtime| {
-                    successor_identity(runtime, snapshot, &layout, source.entity_id())
+                let successor = handle.with_runtime(execution, |runtime| {
+                    successor_identity(execution, runtime, snapshot, &layout, source.entity_id())
                 });
                 if successor.as_deref() != Some(instance_identity.as_str()) {
                     return Err(ended);

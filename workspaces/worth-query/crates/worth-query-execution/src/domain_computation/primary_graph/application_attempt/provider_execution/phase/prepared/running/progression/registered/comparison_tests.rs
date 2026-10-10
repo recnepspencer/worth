@@ -7,6 +7,7 @@ use worth_query_admission::facade::authenticated_principal::{
 impl WorthQueryRegisteredProviderAttempt<'_> {
     pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression) fn assert_scoped_comparison(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         world: &AuthorizationWorld,
         foreign: &AuthorizationWorld,
         request: &WorthQueryRequestScope,
@@ -16,6 +17,7 @@ impl WorthQueryRegisteredProviderAttempt<'_> {
             .application
             .primary_provider
             .assert_comparison_scope_lifecycle(
+                execution,
                 &self.staged.read_authority(),
                 self.requests,
                 request,

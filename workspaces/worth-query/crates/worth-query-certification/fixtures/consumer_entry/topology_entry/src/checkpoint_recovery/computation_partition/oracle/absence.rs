@@ -51,7 +51,7 @@ fn absence_steps_run_every_owner_call_and_equal_fresh_outcome_and_work() {
         let application = match step {
             Step::Evict => application,
             Step::Restore => {
-                let checkpoint = application.capture_application_checkpoint(worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy::SystemAllocation).unwrap();
+                let checkpoint = application.with_host_advancement(|host_phase| application.capture_application_checkpoint(&host_phase, worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy::SystemAllocation).unwrap()).expect("installed host call opens");
                 drop(application);
                 installation::install_configured::<false, TOTALS_WORK, 1>(
                     Some(checkpoint),

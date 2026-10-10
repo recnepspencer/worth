@@ -1,6 +1,9 @@
 use super::*;
 
-pub(super) fn certify_merge_execution_vs_persisted_commit_floor(suite: &'static str) {
+pub(super) fn certify_merge_execution_vs_persisted_commit_floor(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    suite: &'static str,
+) {
     let merge_vs_commit_floor_samples = capture_perf_samples(
         suite,
         "merge_execution_vs_persisted_commit_floor",
@@ -37,17 +40,20 @@ pub(super) fn certify_merge_execution_vs_persisted_commit_floor(suite: &'static 
             )[0];
 
             let prepared = merge_runtime
-                .prepare_merge_execution(MergeExecutionRequest {
-                    target_branch: BranchId("main".to_string()),
-                    source_branch: BranchId("feature".to_string()),
-                    merge_intent: MergeIntent::ReconcileIntoTarget,
-                })
+                .prepare_merge_execution(
+                    execution,
+                    MergeExecutionRequest {
+                        target_branch: BranchId("main".to_string()),
+                        source_branch: BranchId("feature".to_string()),
+                        merge_intent: MergeIntent::ReconcileIntoTarget,
+                    },
+                )
                 .expect("prepared merge");
 
             merge_runtime.performance_access().reset_counters();
             let merge_started_at = Instant::now();
             let merge_outcome = merge_runtime
-                .execute_prepared_merge(prepared)
+                .execute_prepared_merge(execution, prepared)
                 .expect("execute merge");
             let merge_elapsed_micros = merge_started_at.elapsed().as_micros();
             let merge_counters = merge_runtime.performance_access().counters();

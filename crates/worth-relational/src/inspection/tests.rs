@@ -8,6 +8,9 @@ use crate::tests::support::*;
 
 #[test]
 fn structural_identity_origin_tracks_non_current_scope() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let entity = create_entity(&runtime, "scoped-identity");
     let version_id = runtime.current_version_id();
@@ -15,11 +18,16 @@ fn structural_identity_origin_tracks_non_current_scope() {
 
     let current = runtime
         .inspect_what_happened()
-        .structural_identity(InspectionScope::Current, RecordRef::Entity(entity))
+        .structural_identity(
+            execution,
+            InspectionScope::Current,
+            RecordRef::Entity(entity),
+        )
         .expect("current structural identity");
     let version = runtime
         .inspect_what_happened()
         .structural_identity(
+            execution,
             InspectionScope::Version(version_id),
             RecordRef::Entity(entity),
         )
@@ -27,6 +35,7 @@ fn structural_identity_origin_tracks_non_current_scope() {
     let snapshot = runtime
         .inspect_what_happened()
         .structural_identity(
+            execution,
             InspectionScope::Snapshot(snapshot),
             RecordRef::Entity(entity),
         )
@@ -39,6 +48,9 @@ fn structural_identity_origin_tracks_non_current_scope() {
 
 #[test]
 fn historical_neighbors_follow_scoped_relation_endpoints_after_rewire() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let original_source = create_entity(&runtime, "original-source");
     let shared_target = create_entity(&runtime, "shared-target");
@@ -66,14 +78,18 @@ fn historical_neighbors_follow_scoped_relation_endpoints_after_rewire() {
     )
     .expect("relation rewire should commit");
 
-    let current_neighbors = runtime
-        .inspect_what_happened()
-        .neighbors(InspectionScope::Current, original_source);
+    let current_neighbors = runtime.inspect_what_happened().neighbors(
+        execution,
+        InspectionScope::Current,
+        original_source,
+    );
     let historical_neighbors = runtime.inspect_what_happened().neighbors(
+        execution,
         InspectionScope::Version(historical_version),
         original_source,
     );
     let snapshot_neighbors = runtime.inspect_what_happened().neighbors(
+        execution,
         InspectionScope::Snapshot(historical_snapshot),
         original_source,
     );

@@ -22,13 +22,41 @@ fn final_commit_rejects_a_replacement_policy_path_for_the_same_grant() {
         .authorization_time
         .script([time(100), time(100), time(100)]);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let mut admission = admitted_capability_operation(&world, &principal, &request);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let mut admission = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            admitted_capability_operation(
+                &(phase).test_host_request(),
+                &world,
+                &principal,
+                &request,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
     let commit_authorization = admission
         .take_authorization_dependencies(world.application.authorization.bridge())
         .unwrap();
 
-    replace_grantor_with_custodian(&world, principal.principal_entity_id());
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            replace_grantor_with_custodian(
+                &phase,
+                &host_custody.borrowed_request_for_test(),
+                &world,
+                principal.principal_entity_id(),
+            )
+        })
+        .expect("the fixture read owns its installed host call");
 
     let commit_lane = world
         .application
@@ -42,11 +70,19 @@ fn final_commit_rejects_a_replacement_policy_path_for_the_same_grant() {
         )
         .unwrap();
     let coordination = commit_lane.enter();
-    let Err(denial) = commit_authorization.authorize_application_commit(
-        &world.application,
-        &admission,
-        &coordination,
-    ) else {
+    let Err(denial) = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            commit_authorization.authorize_application_commit(
+                &host_custody.borrowed_request_for_test(),
+                &world.application,
+                &admission,
+                &coordination,
+            )
+        })
+        .expect("the fixture read owns its installed host call")
+    else {
         panic!("a replacement policy path must not inherit retained commit authority");
     };
     assert_eq!(
@@ -56,15 +92,21 @@ fn final_commit_rejects_a_replacement_policy_path_for_the_same_grant() {
 }
 
 fn replace_grantor_with_custodian(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &super::super::fixture::AuthorizationWorld,
     principal: EntityId,
 ) {
     let request = live_scope();
     let grant = world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
+        .select_product_branch(
+            execution,
+            world.application.product_runtime().default_branch(),
+        )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
+            phase_custody,
             CapabilityIdentity::reference(),
             "capability-1".to_owned(),
             &request,
@@ -83,12 +125,12 @@ fn replace_grantor_with_custodian(
         .unwrap()
         .kind;
     let handle = graph.integration_handle();
-    let selected = world.selected_product();
-    let grantor = handle.with_runtime_mut(|runtime| {
+    let selected = world.selected_product(&(phase_custody).test_host_request());
+    let grantor = handle.with_runtime_mut(execution, |runtime| {
         let snapshot = selected.application_basis().snapshot_handle();
         runtime
             .read_truth()
-            .visible_relations_of_kind(grantor_kind, snapshot.version_id())
+            .visible_relations_of_kind(execution, grantor_kind, snapshot.version_id())
             .into_iter()
             .find(|record| record.source == principal && record.target == grant.entity_id())
             .expect("the admitted capability has one current grantor path")
@@ -96,6 +138,7 @@ fn replace_grantor_with_custodian(
     });
     drop(selected);
     super::super::fixture::publish_relational_mutation(
+        execution,
         world,
         WorkerIntentBatch::new("replace-capability-policy-path")
             .push(MutationIntent::Relation(RelationMutationIntent::Delete(

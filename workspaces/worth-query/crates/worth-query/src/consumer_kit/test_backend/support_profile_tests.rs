@@ -8,7 +8,10 @@ use super::{in_memory_test_runtime, WorthQueryTestBackendSchema};
 
 #[test]
 fn in_memory_test_runtime_support_profile_is_honest_about_debt_rows() {
-    let workspace = task_workspace();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let workspace = task_workspace(request_execution);
     let matrix = workspace.public_support_matrix();
 
     assert_eq!(
@@ -53,7 +56,10 @@ fn in_memory_test_runtime_support_profile_is_honest_about_debt_rows() {
 
 #[test]
 fn in_memory_test_runtime_support_matrix_denies_unsupported_public_families() {
-    let workspace = task_workspace();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let workspace = task_workspace(request_execution);
     for family in unsupported_public_families() {
         let error = workspace
             .admit_public_api_family(family)
@@ -67,10 +73,15 @@ fn in_memory_test_runtime_support_matrix_denies_unsupported_public_families() {
     }
 }
 
-fn task_workspace() -> crate::runtime::WorthQueryWorkspace {
+fn task_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> crate::runtime::WorthQueryWorkspace {
     in_memory_test_runtime()
         .with_schema(task_schema())
-        .workspace("consumer-kit.test-backend.support-profile")
+        .workspace(
+            request_execution,
+            "consumer-kit.test-backend.support-profile",
+        )
         .expect("in-memory test runtime should build")
 }
 

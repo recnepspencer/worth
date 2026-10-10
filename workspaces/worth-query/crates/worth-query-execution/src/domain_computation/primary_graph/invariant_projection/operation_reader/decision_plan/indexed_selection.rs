@@ -24,6 +24,7 @@ impl<Schema: ApplicationSchema, Operation>
     /// commit comparison. Overflow denies rather than returning a truncated set.
     pub fn decision_select_entities<Entity, Aspect, Field, Value, Write, Unit>(
         &mut self,
+
         field: ApplicationFieldRef<
             Schema,
             Entity,
@@ -42,6 +43,7 @@ impl<Schema: ApplicationSchema, Operation>
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
+        let execution = self.reader.execution;
         self.admit_decision_target(&ApplicationOperationDecisionReadTarget::Field {
             entity: field.entity().to_owned(),
             aspect: field.aspect().to_owned(),
@@ -89,7 +91,11 @@ impl<Schema: ApplicationSchema, Operation>
             .reader
             .runtime
             .index_access()
-            .execute_bounded_entity_field_lookup(request, BoundedIndexParityMode::Production)
+            .execute_bounded_entity_field_lookup(
+                request,
+                BoundedIndexParityMode::Production,
+                execution,
+            )
             .map_err(|denial| {
                 let examined = denial.examined_entry_count();
                 self.reader.work_budget.consume(1 + examined);

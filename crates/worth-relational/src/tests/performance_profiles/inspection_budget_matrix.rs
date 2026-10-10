@@ -3,6 +3,8 @@ use super::*;
 #[test]
 #[ignore = "performance baseline capture; run with -- --ignored --nocapture --test-threads=1"]
 fn perf_inspection_budget_matrix() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let suite = "inspection_budget_matrix";
 
     let graph_kind_connectivity_samples =
@@ -20,30 +22,26 @@ fn perf_inspection_budget_matrix() {
             let graph_started_at = Instant::now();
             let graph = runtime
                 .inspect_what_happened()
-                .graph_summary(&current_graph_request(None, None, true));
+                .graph_summary(execution, &current_graph_request(None, None, true));
             let graph_micros = graph_started_at.elapsed().as_micros();
 
             let kind_started_at = Instant::now();
-            let kind = runtime
-                .inspect_what_happened()
-                .kind_summary(&KindInspectionRequest {
+            let kind = runtime.inspect_what_happened().kind_summary(
+                execution,
+                &KindInspectionRequest {
                     scope: InspectionScope::Current,
                     partition_scope: Some(vec![PartitionId(7)]),
                     kind_id: KindId(1),
                     record_class: InspectionRecordClass::Entity,
-                });
+                },
+            );
             let kind_micros = kind_started_at.elapsed().as_micros();
 
             let connectivity_started_at = Instant::now();
-            let connectivity =
-                runtime
-                    .inspect_what_happened()
-                    .connectivity_summary(&connectivity_request(
-                        InspectionScope::Current,
-                        None,
-                        None,
-                        false,
-                    ));
+            let connectivity = runtime.inspect_what_happened().connectivity_summary(
+                execution,
+                &connectivity_request(InspectionScope::Current, None, None, false),
+            );
             let connectivity_micros = connectivity_started_at.elapsed().as_micros();
 
             PerfMeasurement {
@@ -128,12 +126,17 @@ fn perf_inspection_budget_matrix() {
             let direct_started_at = Instant::now();
             let direct = runtime
                 .inspect_what_happened()
-                .structural_identity(InspectionScope::Current, RecordRef::Entity(entity))
+                .structural_identity(
+                    execution,
+                    InspectionScope::Current,
+                    RecordRef::Entity(entity),
+                )
                 .expect("structural identity evidence");
             let direct_micros = direct_started_at.elapsed().as_micros();
 
             let query_started_at = Instant::now();
             let query = runtime.inspect_what_happened().query_structural_identity(
+                execution,
                 &StructuralIdentityQueryRequest {
                     scope: InspectionScope::Current,
                     partition_scope: None,
@@ -144,6 +147,7 @@ fn perf_inspection_budget_matrix() {
 
             let historical_started_at = Instant::now();
             let historical = reconstructed_record_inspection(
+                execution,
                 &runtime,
                 &BranchId("main".to_string()),
                 created.version_id,

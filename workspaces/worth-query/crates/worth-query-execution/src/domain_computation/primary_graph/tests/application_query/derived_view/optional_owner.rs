@@ -27,186 +27,7 @@ impl WorthQueryManagedDerivedValue for Owner {
     }
 }
 
-#[test]
-fn optional_owner_removal_and_insertion_refresh_at_the_real_current_product() {
-    let world = installed_authorization_world(true);
-    let request = live_scope();
-    let execution = serial_request(&request);
-    let external = world.authenticate("alice", Duration::from_secs(60), &request);
-    let selected = world.selected_product();
-    let principal = selected
-        .resolve_authenticated_principal(
-            &world.binding,
-            &external,
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
-    let scope = selected
-        .resolve_entity(
-            AccountStatus::reference(),
-            "open".to_owned(),
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
-    let access = WorthQueryApplicationQueryAccessContext::new(&principal, &scope);
-    let query = world
-        .application
-        .installed_schema()
-        .certification_query(OptionalAccountOwnerQuery::reference())
-        .unwrap();
-    let census = world
-        .application
-        .installed_schema()
-        .certification_query(PublicAccountMembershipQuery::reference())
-        .unwrap();
-    let view = world
-        .application
-        .open_managed_derived_collection_pair(
-            &ApplicationDerivedViewDefinition::new(
-                "optional-owner",
-                PublicAccountMembershipQuery::reference(),
-                ApplicationDerivedViewLimits::bounded(8, 65_536),
-            ),
-            &census,
-            &query,
-            &query,
-            selected.product(),
-        )
-        .unwrap();
-    let membership = membership::read(&world);
-    let account = membership.rows()[0].members[0];
-    let owner = read(&world, None).ordinary().rows()[0]
-        .owner
-        .expect("fixture has one native ownership edge");
-    let keys = world
-        .application
-        .reconstruct_managed_derived_collection_pair(
-            worth_execution::ExecutionRequest::serial(&execution),
-            &view,
-            selected.product(),
-            &membership,
-            |row| {
-                row.members
-                    .iter()
-                    .map(|root| (*root, row.tag.clone()))
-                    .collect()
-            },
-            |_| {
-                let first = selected
-                    .retain_selection()
-                    .unwrap()
-                    .admit_application_query(
-                        &query,
-                        &access,
-                        ApplicationQueryParameterSet::new(),
-                        current_controls(&request),
-                    )
-                    .map_err(|_| WorthQueryManagedDerivedViewDenial::QueryExecutionDenied)?;
-                let second = selected
-                    .retain_selection()
-                    .unwrap()
-                    .admit_application_query(
-                        &query,
-                        &access,
-                        ApplicationQueryParameterSet::new(),
-                        current_controls(&request),
-                    )
-                    .map_err(|_| WorthQueryManagedDerivedViewDenial::QueryExecutionDenied)?;
-                Ok(WorthQueryDerivedPairReadPlans::new(first, second))
-            },
-            |row| row.account,
-            |row| row.account,
-            |_, row| Owner(row.owner),
-        )
-        .unwrap();
-    let key = &keys[0];
-    assert_eq!(
-        world
-            .application
-            .observe_managed_derived_view(&view)
-            .unwrap()
-            .get(key)
-            .unwrap()
-            .unwrap()
-            .0,
-        Some(owner)
-    );
-    let graph = world.application.runtime.primary_graph().unwrap();
-    let kind = graph
-        .layout
-        .relation(AccountOwner::reference().name())
-        .unwrap()
-        .kind;
-    let edge = graph.integration_handle().with_runtime_mut(|runtime| {
-        runtime
-            .read_truth()
-            .visible_relations_of_kind(
-                kind,
-                selected.application_basis().snapshot_handle().version_id(),
-            )
-            .into_iter()
-            .find(|edge| edge.target == account)
-            .unwrap()
-            .relation_id
-    });
-    let removed = graph.managed_derived_views().prepare_publication(
-        publication_basis(selected.product()),
-        &[ViewChange::Adjacency(account, kind, 1)],
-        100_000,
-    );
-    drop(selected);
-    super::super::super::fixture::publish_relational_mutation(
-        &world,
-        WorkerIntentBatch::new("remove-optional-owner").push(MutationIntent::Relation(
-            RelationMutationIntent::Delete(DeleteRelationIntent { relation_id: edge }),
-        )),
-    );
-    let absent = world.selected_product();
-    removed.apply(absent.product().selected_commit());
-    assert_eq!(
-        world
-            .application
-            .observe_managed_derived_view(&view)
-            .unwrap()
-            .get(key)
-            .err(),
-        Some(WorthQueryManagedDerivedViewDenial::EntryRefreshRequired)
-    );
-    assert_eq!(refresh(&world, &view, key).0, None);
-    let inserted = graph.managed_derived_views().prepare_publication(
-        publication_basis(absent.product()),
-        &[ViewChange::Adjacency(account, kind, 1)],
-        100_000,
-    );
-    drop(absent);
-    super::super::super::fixture::publish_relational_mutation(
-        &world,
-        WorkerIntentBatch::new("insert-optional-owner").push(MutationIntent::Create(
-            CreateIntent::Relation(RelationSpec {
-                partition_id: PartitionId::main(),
-                kind_id: kind,
-                client_key: ClientKey::raw("restored-owner"),
-                source: EntityReference::Existing(owner),
-                target: EntityReference::Existing(account),
-                fields: AspectFieldPatch::default(),
-            }),
-        )),
-    );
-    let present = world.selected_product();
-    inserted.apply(present.product().selected_commit());
-    assert_eq!(
-        world
-            .application
-            .observe_managed_derived_view(&view)
-            .unwrap()
-            .get(key)
-            .err(),
-        Some(WorthQueryManagedDerivedViewDenial::EntryRefreshRequired)
-    );
-    assert_eq!(refresh(&world, &view, key).0, Some(owner));
-}
+mod optional_owner_removal_and_insertion_refresh_at_the_real_current;
 
 fn batch() -> Batch {
     let nz = |value| NonZeroUsize::new(value).unwrap();
@@ -248,12 +69,18 @@ impl Read {
     }
 }
 
-fn read(world: &AuthorizationWorld, batch: Option<&Batch>) -> Read {
+fn read(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    world: &AuthorizationWorld,
+    batch: Option<&Batch>,
+) -> Read {
     let request = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
-    let selected = world.selected_product();
+    let selected = world.selected_product(&(phase_custody).test_host_request());
     let principal = selected
         .resolve_authenticated_principal(
+            phase_custody,
             &world.binding,
             &external,
             &request,
@@ -262,6 +89,7 @@ fn read(world: &AuthorizationWorld, batch: Option<&Batch>) -> Read {
         .unwrap();
     let scope = selected
         .resolve_entity(
+            phase_custody,
             AccountStatus::reference(),
             "open".to_owned(),
             &request,
@@ -276,7 +104,7 @@ fn read(world: &AuthorizationWorld, batch: Option<&Batch>) -> Read {
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &scope);
     let (application, product, basis) = selected.into_parts();
     let plan = application
-        .admit_application_query(
+        .admit_application_query(execution,
             &query,
             &access,
             ApplicationQueryParameterSet::new(),
@@ -290,28 +118,31 @@ fn read(world: &AuthorizationWorld, batch: Option<&Batch>) -> Read {
         Some(batch) => Read::Batched(
             world
                 .application
-                .execute_application_query_one_shot_in_batch(plan, batch)
+                .execute_application_query_one_shot_in_batch(phase_custody, plan, batch)
                 .unwrap(),
         ),
         None => Read::Ordinary(
             world
                 .application
-                .execute_application_query_one_shot(plan)
+                .execute_application_query_one_shot(phase_custody, plan)
                 .unwrap(),
         ),
     }
 }
 
 fn refresh(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &AuthorizationWorld,
     view: &WorthQueryManagedDerivedView<PublicAccountMembershipQuery, Owner>,
     key: &WorthQueryManagedDerivedViewKey,
 ) -> std::sync::Arc<Owner> {
     let request = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
-    let selected = world.selected_product();
+    let selected = world.selected_product(&(phase_custody).test_host_request());
     let principal = selected
         .resolve_authenticated_principal(
+            phase_custody,
             &world.binding,
             &external,
             &request,
@@ -320,6 +151,7 @@ fn refresh(
         .unwrap();
     let scope = selected
         .resolve_entity(
+            phase_custody,
             AccountStatus::reference(),
             "open".to_owned(),
             &request,
@@ -334,7 +166,7 @@ fn refresh(
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &scope);
     let (application, product, basis) = selected.into_parts();
     let plan = application
-        .admit_application_query(
+        .admit_application_query(execution,
             &query,
             &access,
             ApplicationQueryParameterSet::new(),
@@ -347,12 +179,15 @@ fn refresh(
     world
         .application
         .refresh_managed_derived_collection_pair_entry_in_batch(
+            execution,
             view,
             &product,
             key,
             plan,
             &batch(),
-            |_, batch| Ok::<_, BatchDenial>(read(world, Some(batch)).batched()),
+            |_, batch| {
+                Ok::<_, BatchDenial>(read(phase_custody, execution, world, Some(batch)).batched())
+            },
             |row| row.account,
             |row| row.account,
             |_, row| Owner(row.owner),

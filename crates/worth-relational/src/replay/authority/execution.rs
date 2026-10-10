@@ -52,16 +52,20 @@ impl<'runtime> ReplayAuthority<'runtime> {
         outcome
     }
 
-    pub fn replay_commit(&self, request: RelationalReplayRequest) -> RelationalReplayOutcome {
+    pub fn replay_commit(
+        &self,
+        request: RelationalReplayRequest,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> RelationalReplayOutcome {
         let admission = match self.admit_replay_target(&request) {
             Ok(admission) => admission,
             Err(outcome) => return outcome,
         };
-        let reconstruction = match self.reconstruct_replay_target(&request, &admission) {
+        let reconstruction = match self.reconstruct_replay_target(execution, &request, &admission) {
             Ok(reconstruction) => reconstruction,
             Err(outcome) => return outcome,
         };
-        self.compare_replay_reconstruction(request, admission, reconstruction)
+        self.compare_replay_reconstruction(request, admission, reconstruction, execution)
     }
 
     fn admit_replay_target(
@@ -140,6 +144,7 @@ impl<'runtime> ReplayAuthority<'runtime> {
 
     fn reconstruct_replay_target(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: &RelationalReplayRequest,
         admission: &ReplayAdmission,
     ) -> Result<ReplayReconstruction, RelationalReplayOutcome> {
@@ -148,7 +153,10 @@ impl<'runtime> ReplayAuthority<'runtime> {
             &admission.commit_closure,
             request.verification_mode,
         );
-        let runtime = match self.runtime.rebuild_runtime_from_plan(replay_plan) {
+        let runtime = match self
+            .runtime
+            .rebuild_runtime_from_plan(execution, replay_plan)
+        {
             Ok(runtime) => runtime,
             Err(error) => {
                 return Err(self.fail_and_record(
@@ -208,6 +216,7 @@ impl<'runtime> ReplayAuthority<'runtime> {
         request: RelationalReplayRequest,
         admission: ReplayAdmission,
         reconstruction: ReplayReconstruction,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> RelationalReplayOutcome {
         let compared_surfaces = promised_replay_surfaces(
             self.runtime,
@@ -223,6 +232,7 @@ impl<'runtime> ReplayAuthority<'runtime> {
                 &admission.envelope,
                 &admission.commit_closure,
                 request.verification_mode,
+                execution,
             );
         }
         let selected_lineage_authority =
@@ -265,6 +275,7 @@ impl<'runtime> ReplayAuthority<'runtime> {
         )
         .expect("reconstructed replay envelope continuity must remain valid");
         compare_replay_surfaces(
+            execution,
             self.runtime,
             &admission.verification_plan,
             &mut mismatches,
@@ -293,17 +304,21 @@ impl<'runtime> ReplayAuthority<'runtime> {
         branch_id: BranchId,
         commits: &[CommitId],
         verification_mode: ReplayVerificationMode,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Vec<RelationalReplayOutcome> {
         commits
             .iter()
             .copied()
             .map(|commit_id| {
-                self.replay_commit(RelationalReplayRequest {
-                    commit_id,
-                    branch_id: branch_id.clone(),
-                    execution_mode: ReplayExecutionMode::SerialDeterministic,
-                    verification_mode,
-                })
+                self.replay_commit(
+                    RelationalReplayRequest {
+                        commit_id,
+                        branch_id: branch_id.clone(),
+                        execution_mode: ReplayExecutionMode::SerialDeterministic,
+                        verification_mode,
+                    },
+                    execution,
+                )
             })
             .collect()
     }

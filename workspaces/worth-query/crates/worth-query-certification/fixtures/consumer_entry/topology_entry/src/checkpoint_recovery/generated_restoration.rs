@@ -55,8 +55,12 @@ fn an_output_restored_after_a_checkpoint_is_never_created_a_second_time() {
     drop(principal);
     drop(scope);
     let checkpoint = application
-        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
-        .expect("the ready outputs are checkpointable");
+        .with_host_advancement(|host_phase| {
+            application
+                .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
+                .expect("the ready outputs are checkpointable")
+        })
+        .expect("installed host call opens");
     drop(application);
 
     let restored = install(Some(checkpoint));
@@ -81,8 +85,12 @@ fn an_output_readmitted_after_a_checkpoint_then_restored_is_never_created_a_seco
     drop(principal);
     drop(scope);
     let checkpoint = application
-        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
-        .expect("the ready outputs are checkpointable");
+        .with_host_advancement(|host_phase| {
+            application
+                .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
+                .expect("the ready outputs are checkpointable")
+        })
+        .expect("installed host call opens");
     drop(application);
 
     let restored = install(Some(checkpoint));
@@ -195,12 +203,14 @@ fn suspend_and_restore(
         .expect("the producer source is readable")
         .observed_sources()[0]
         .clone();
-    let suspended = application
-        .on_branch(application.current_world())
-        .select()
-        .expect("the current branch is selectable")
-        .suspend_current_generated_output::<Final>(scope, source)
-        .unwrap_or_else(|_| panic!("the generated final output suspends"));
+    let suspended = crate::checkpoint_recovery::support::host_call(&application, |phase| {
+        application
+            .on_branch(application.current_world())
+            .select(phase)
+    })
+    .expect("the current branch is selectable")
+    .suspend_current_generated_output::<Final>(scope, source)
+    .unwrap_or_else(|_| panic!("the generated final output suspends"));
     let completed = reconstruct_ring(application, suspended, ring);
     application
         .restore_generated_output(completed, scope)
@@ -227,8 +237,12 @@ fn reconstruct_ring(
     Final,
 > {
     let mut reconstruction = application
-        .reconstruct_generated_output::<Final>(suspended)
-        .unwrap_or_else(|_| panic!("the creating producer reconstructs its output"));
+        .with_host_advancement(|host_phase| {
+            application
+                .reconstruct_generated_output::<Final>(&host_phase, suspended)
+                .unwrap_or_else(|_| panic!("the creating producer reconstructs its output"))
+        })
+        .expect("installed host call opens");
     let mut entities = Vec::with_capacity(ring.len());
     for (index, (key, x, y, length)) in ring.iter().enumerate() {
         let entity = generated(match index {

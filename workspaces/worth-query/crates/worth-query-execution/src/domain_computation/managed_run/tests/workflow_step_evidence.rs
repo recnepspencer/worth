@@ -188,6 +188,8 @@ fn provider_step_evidence_ignores_preexisting_artifacts_and_keeps_checkpoint_con
         );
         let running =
             super::workflow_provider_steps::admitted_workflow(&runtime, &operation, resources);
+        let installed_running_phase = execution.phase_for_workflow(&running);
+
         let production = running
             .artifacts()
             .production_authority("producer")
@@ -208,7 +210,7 @@ fn provider_step_evidence_ignores_preexisting_artifacts_and_keeps_checkpoint_con
 
         let active = running
             .begin_stage_graph_execution(
-                execution,
+                &installed_running_phase,
                 "producer",
                 &graph,
                 WorthQueryManagedGraphCallRequest::new(
@@ -217,11 +219,11 @@ fn provider_step_evidence_ignores_preexisting_artifacts_and_keeps_checkpoint_con
                 ),
             )
             .expect("checkpoint provider should start");
-        let active = match active.advance(execution) {
+        let active = match active.advance(&installed_running_phase) {
             WorthQueryWorkflowGraphStepOutcome::Continue(active) => active,
             _ => panic!("checkpoint-producing first step did not continue"),
         };
-        let completion = match active.advance(execution) {
+        let completion = match active.advance(&installed_running_phase) {
             WorthQueryWorkflowGraphStepOutcome::Completed(completion) => completion,
             _ => panic!("checkpoint continuity provider did not complete"),
         };
@@ -339,21 +341,26 @@ fn governed_artifact_retention_survives_a_later_provider_call() {
 }
 
 fn complete_observe_call(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     running: crate::domain_computation::WorthQueryRunningWorkflowRun,
     graph: &WorthQueryInstalledGraphParticipationAuthority,
     scope: &str,
 ) -> crate::domain_computation::WorthQueryCompletedWorkflowGraphExecution {
-    let active = running
-        .begin_stage_graph_execution(
-            execution,
+    let active = {
+        let installed_fixture_phase = running.fixture_phase(execution);
+        running.begin_stage_graph_execution(
+            &installed_fixture_phase,
             "producer",
             graph,
             WorthQueryManagedGraphCallRequest::new(WorthQueryGraphProviderCallKind::Observe, scope),
         )
-        .expect("multi-call provider should start");
-    match active.advance(execution) {
+    }
+    .expect("multi-call provider should start");
+    match {
+        let installed_fixture_phase = active.fixture_phase(execution);
+        active.advance(&installed_fixture_phase)
+    } {
         WorthQueryWorkflowGraphStepOutcome::Completed(completion) => completion,
         _ => panic!("multi-call provider did not complete"),
     }

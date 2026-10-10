@@ -98,6 +98,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
             <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
         >,
         prepare: impl FnOnce(
+            &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
             WorthQueryAdmittedApplicationOperation<
                 Schema,
                 Operation,
@@ -155,10 +156,11 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
                 let selected = self
                     .application
                     .on_branch(self.branch)
-                    .select()
+                    .select(&phase)
                     .map_err(Denial::ProductSelection)?;
                 let principal = selected
                     .resolve_authenticated_principal(
+                        &phase,
                         &principal_binding,
                         self.principal,
                         self.scope,
@@ -179,6 +181,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
                 let publication = program_publication_access();
                 let mut access = selected
                     .admit_encoded_capability_access(
+                        &phase,
                         &publication,
                         &principal,
                         &capability,
@@ -195,11 +198,17 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
                     .map_err(Denial::OperationInstallation)?;
                 let admission = self
                     .application
-                    .authorize_capability_revocation(access, &capability, &operation, preconditions)
+                    .authorize_capability_revocation(
+                        &phase,
+                        access,
+                        &capability,
+                        &operation,
+                        preconditions,
+                    )
                     .map_err(Denial::Authorization)?;
                 match self
                     .application
-                    .resolve_admitted_application_idempotency(&admission, idempotency)
+                    .resolve_admitted_application_idempotency(&phase, &admission, idempotency)
                     .map_err(Denial::Idempotency)?
                     .into_resolution()
                 {
@@ -213,7 +222,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
                     }
                     WorthQueryApplicationIdempotencyResolution::Unseen => {}
                 }
-                let prepared = prepare(admission).map_err(Denial::Preparation)?;
+                let prepared = prepare(&phase, admission).map_err(Denial::Preparation)?;
                 Ok(
                     program_action.compare_and_commit_capability_revocation_in_advancement(
                         &phase,

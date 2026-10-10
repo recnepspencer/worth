@@ -179,40 +179,40 @@ fn execute_group(group: DependencyGroupExecution) -> GroupExecution {
 
 fn execute_slot_operation(slot: &mut WorthServerOperationExecutionSlot) -> Result<String, String> {
     let handoff = slot.handoff_mut();
-    match handoff.operation().clone() {
-        WorthServerQueryHandoffOperation::QueryRead { operation_name }
-        | WorthServerQueryHandoffOperation::DirectRead { operation_name } => handoff
-            .workspace_mut()
-            .resolve_live_artifact_target(&operation_name)
-            .and_then(|target| handoff.workspace_mut().read_live_target(&target))
-            .map(|result| result.receipt().result_digest().to_string())
-            .map_err(|error| error.to_string()),
-        WorthServerQueryHandoffOperation::DirectState { target_label } => handoff
-            .workspace_mut()
-            .resolve_live_artifact_target(&target_label)
-            .and_then(|target| handoff.workspace_mut().state_live_target(&target))
-            .map(|state| {
-                state
-                    .state_digest()
-                    .terminal_projection_for_reporting()
-                    .to_string()
-            })
-            .map_err(|error| error.to_string()),
-        WorthServerQueryHandoffOperation::DirectInspection { target_label } => handoff
-            .workspace_mut()
-            .resolve_live_artifact_target(&target_label)
-            .and_then(|target| {
-                handoff
-                    .workspace_mut()
-                    .inspections()?
-                    .inspect_live_target(&target)
-            })
-            .map(|inspection| inspection.receipt().result_digest().to_string())
-            .map_err(|error| error.to_string()),
-        unsupported => Err(format!(
-            "shared-read scheduler cannot execute unsupported operation `{unsupported:?}`"
-        )),
-    }
+    let operation = handoff.operation().clone();
+    handoff
+        .workspace_mut()
+        .with_execution_request_mut(|execution, workspace| match operation {
+            WorthServerQueryHandoffOperation::QueryRead { operation_name }
+            | WorthServerQueryHandoffOperation::DirectRead { operation_name } => workspace
+                .resolve_live_artifact_target(&operation_name)
+                .and_then(|target| workspace.read_live_target(execution, &target))
+                .map(|result| result.receipt().result_digest().to_string())
+                .map_err(|error| error.to_string()),
+            WorthServerQueryHandoffOperation::DirectState { target_label } => workspace
+                .resolve_live_artifact_target(&target_label)
+                .and_then(|target| workspace.state_live_target(&target))
+                .map(|state| {
+                    state
+                        .state_digest()
+                        .terminal_projection_for_reporting()
+                        .to_string()
+                })
+                .map_err(|error| error.to_string()),
+            WorthServerQueryHandoffOperation::DirectInspection { target_label } => workspace
+                .resolve_live_artifact_target(&target_label)
+                .and_then(|target| {
+                    workspace
+                        .inspections()?
+                        .inspect_live_target(execution, &target)
+                })
+                .map(|inspection| inspection.receipt().result_digest().to_string())
+                .map_err(|error| error.to_string()),
+            unsupported => Err(format!(
+                "shared-read scheduler cannot execute unsupported operation `{unsupported:?}`"
+            )),
+        })
+        .map_err(|error| error.to_string())?
 }
 
 struct PreparedGroups {

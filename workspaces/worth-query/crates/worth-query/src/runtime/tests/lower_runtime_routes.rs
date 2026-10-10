@@ -2,6 +2,9 @@ use super::support::*;
 
 #[test]
 fn runtime_live_view_denies_when_schema_boundary_receipt_drifts_from_request() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = test_product_runtime_builder()
         .schema_adapter(DriftingSchemaReceiptAdapter)
         .source_adapter(TestSourceAdapter::default())
@@ -14,11 +17,12 @@ fn runtime_live_view_denies_when_schema_boundary_receipt_drifts_from_request() {
         .aspect_contracts(stateful_bridge_aspect_contracts())
         .expect("native lower-runtime route contracts should admit")
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("backend should build with drifting schema boundary receipt");
 
     let error = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "external.tasks",
             task_live_request(),
             task_schema(),
@@ -30,6 +34,9 @@ fn runtime_live_view_denies_when_schema_boundary_receipt_drifts_from_request() {
 
 #[test]
 fn runtime_write_denies_when_write_authority_route_receipt_drifts_from_command() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     struct DriftingWriteAuthority;
 
     impl WorthQueryRuntimeWriteAuthorityAdapter for DriftingWriteAuthority {
@@ -64,17 +71,20 @@ fn runtime_write_denies_when_write_authority_route_receipt_drifts_from_command()
         .aspect_contracts(stateful_bridge_aspect_contracts())
         .expect("native lower-runtime route contracts should admit")
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("backend should build with drifting write route receipt");
 
     let error = runtime
-        .write(insert_command(
-            "Task",
-            [
-                ("identity.id", test_string_aspect_value("")),
-                ("title.value", test_string_aspect_value("x")),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [
+                    ("identity.id", test_string_aspect_value("")),
+                    ("title.value", test_string_aspect_value("x")),
+                ],
+            ),
+        )
         .expect_err("drifted write route receipt must deny the write");
 
     assert_workspace_write_error(

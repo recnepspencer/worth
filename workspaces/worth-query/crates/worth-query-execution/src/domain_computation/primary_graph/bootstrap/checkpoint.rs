@@ -46,13 +46,16 @@ pub(super) fn primary_graph_for_installation(
 impl DecodedApplicationCheckpoint {
     pub(super) fn recover_publication(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         graph: &WorthQueryPrimaryGraph,
     ) -> Result<WorthQueryPrimaryGraphPublication, WorthQueryPrimaryGraphInstallationDenial> {
-        let envelope = graph.integration_handle().with_runtime(|runtime| {
-            runtime
-                .replay()
-                .canonical_commit_envelope(self.bootstrap_commit_id)
-        });
+        let envelope = graph
+            .integration_handle()
+            .with_runtime(execution, |runtime| {
+                runtime
+                    .replay()
+                    .canonical_commit_envelope(self.bootstrap_commit_id)
+            });
         let envelope = envelope
             .ok_or_else(|| checkpoint_denial("checkpoint omitted its claimed bootstrap commit"))?;
         if envelope.branch_context != super::super::primary_relational_branch_id()
@@ -74,6 +77,7 @@ impl DecodedApplicationCheckpoint {
             .equality_index_ids()
             .collect::<std::collections::BTreeSet<_>>();
         verify_bootstrap_indexes(
+            execution,
             graph,
             principal_index_ids
                 .iter()
@@ -174,22 +178,25 @@ fn created_reference_matches(
 }
 
 fn verify_bootstrap_indexes(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     graph: &WorthQueryPrimaryGraph,
     index_ids: impl Iterator<Item = worth_relational::facade::indexes::DerivedIndexId>,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-    graph.integration_handle().with_runtime(|runtime| {
-        let indexes = runtime.index_access();
-        for index_id in index_ids {
-            let generation =
-                indexes.latest_generation(index_id, &super::super::primary_relational_branch_id());
-            if generation.is_none() {
-                return Err(checkpoint_denial(
-                    "checkpoint omitted a bootstrap identity-index generation",
-                ));
+    graph
+        .integration_handle()
+        .with_runtime(execution, |runtime| {
+            let indexes = runtime.index_access();
+            for index_id in index_ids {
+                let generation = indexes
+                    .latest_generation(index_id, &super::super::primary_relational_branch_id());
+                if generation.is_none() {
+                    return Err(checkpoint_denial(
+                        "checkpoint omitted a bootstrap identity-index generation",
+                    ));
+                }
             }
-        }
-        Ok(())
-    })
+            Ok(())
+        })
 }
 
 fn checkpoint_denial(subject: impl Into<String>) -> WorthQueryPrimaryGraphInstallationDenial {

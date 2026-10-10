@@ -34,12 +34,24 @@ impl WorthQueryExternalEffectTransport for CompletingTransport {
 #[test]
 fn transport_winner_retains_compact_signed_meaning_until_cutoff() {
     let world = installed_world();
-    let receipt = world.commit_dispatch(121, "compact-message-meaning");
+    let receipt = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world.commit_dispatch(&phase, 121, "compact-message-meaning")
+        })
+        .expect("the fixture read owns its installed host call");
     let owner = world
         .application
-        .observe_committed_dispatch_outbox(&receipt)
-        .unwrap()
-        .unwrap();
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .observe_committed_dispatch_outbox(&phase, &receipt)
+                .unwrap()
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let correlation = *owner.record().correlation();
     let admitted = world
         .application
@@ -87,6 +99,7 @@ fn transport_winner_retains_compact_signed_meaning_until_cutoff() {
             let phase = &active_phase;
             assert_eq!(
                 world.application.resume_installed_transport_completion(
+                    &phase.borrowed_request_for_test(),
                     phase,
                     &correlation,
                     &request

@@ -1,19 +1,22 @@
 use super::*;
 
 pub(super) fn staged<'run>(
-    execution: &'run crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &'run crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     running: &'run mut WorthQueryRunningDirectRun,
     graph: &WorthQueryInstalledGraphParticipationAuthority,
 ) -> crate::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run> {
-    running
-        .admit_provider_execution_plan(graph)
-        .unwrap()
-        .readmit(execution)
-        .unwrap()
-        .prepare()
-        .unwrap()
-        .bind_reads_and_effects()
+    {
+        let installed_fixture_phase = running.fixture_phase(execution);
+        running
+            .admit_provider_execution_plan(graph)
+            .unwrap()
+            .readmit(&installed_fixture_phase)
+    }
+    .unwrap()
+    .prepare()
+    .unwrap()
+    .bind_reads_and_effects()
 }
 
 pub(super) fn cleanup(running: WorthQueryRunningDirectRun) {

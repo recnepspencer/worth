@@ -130,6 +130,7 @@ impl WorthUiOperationLiveResource {
 
     pub(crate) fn refresh(
         &mut self,
+        execution: &worth_runtime_bridge::facade::ExecutionRequest<'_, '_>,
         workspace: &mut runtime::WorthQueryWorkspace,
     ) -> Result<WorthUiOperationLiveRefreshOutcome, WorthUiOperationLiveRefreshError> {
         if self.staged_change.is_some() {
@@ -167,7 +168,7 @@ impl WorthUiOperationLiveResource {
         self.consumer
             .bind_shared_target(&admitted, workspace)
             .map_err(|stop| WorthUiOperationLiveRefreshError::Delivery(Box::new(stop)))?;
-        let patch = match self.consumer.plan_patch(&admitted, workspace) {
+        let patch = match self.consumer.plan_patch(execution, &admitted, workspace) {
             collection::WorthQueryCollectionDeliveryOutcome::Patch(patch) => patch,
             collection::WorthQueryCollectionDeliveryOutcome::NoDelivery(stop) => {
                 return Err(WorthUiOperationLiveRefreshError::Delivery(Box::new(stop)));

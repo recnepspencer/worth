@@ -78,10 +78,12 @@ fn suspension_and_restoration_refuse_before_their_real_reader_at_both_placements
                 .unwrap()
                 .observed_sources()[0]
                 .clone();
-            let selected = application
-                .on_branch(application.current_world())
-                .select()
-                .unwrap();
+            let selected = crate::checkpoint_recovery::support::host_call(&application, |phase| {
+                application
+                    .on_branch(application.current_world())
+                    .select(phase)
+            })
+            .unwrap();
             limit(memory);
             let before = reads();
             let Err(SuspensionFailure::ExecutionDenied(cause)) =
@@ -92,10 +94,12 @@ fn suspension_and_restoration_refuse_before_their_real_reader_at_both_placements
             assert_cause(cause, memory, placement);
             assert_eq!(reads(), before);
             bound(None);
-            let selected = application
-                .on_branch(application.current_world())
-                .select()
-                .unwrap();
+            let selected = crate::checkpoint_recovery::support::host_call(&application, |phase| {
+                application
+                    .on_branch(application.current_world())
+                    .select(phase)
+            })
+            .unwrap();
             let before = reads();
             let suspended = selected
                 .suspend_current_generated_output::<Final>(&scope, source)

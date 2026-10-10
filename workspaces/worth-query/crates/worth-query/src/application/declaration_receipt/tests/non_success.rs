@@ -12,7 +12,10 @@ use super::support::{
 
 #[test]
 fn denied_route_receipts_preserve_typed_phase_nine_cause() {
-    let handle = admitted_handle("primary");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "primary");
 
     match handle.receipt_routes_checked(WorthQueryDeclarationReceiptInput::route_checked(
         route_checked_from_input(
@@ -36,7 +39,10 @@ fn denied_route_receipts_preserve_typed_phase_nine_cause() {
 
 #[test]
 fn deferred_route_receipts_do_not_disappear() {
-    let handle = admitted_handle("primary");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "primary");
 
     match handle.receipt_routes_checked(WorthQueryDeclarationReceiptInput::route_checked(
         route_checked_from_input(
@@ -56,7 +62,10 @@ fn deferred_route_receipts_do_not_disappear() {
 
 #[test]
 fn failed_route_receipts_remain_distinct_from_denied_receipts() {
-    let handle = admitted_handle("primary");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "primary");
 
     match handle.receipt_routes_checked(WorthQueryDeclarationReceiptInput::route_checked(
         route_checked_from_input(&handle, ReceiptInput::<FailedReceiptFamily>::new("edge:42")),
@@ -73,7 +82,10 @@ fn failed_route_receipts_remain_distinct_from_denied_receipts() {
 
 #[test]
 fn unsupported_signal_receipts_become_typed_denials() {
-    let handle = admitted_handle("primary");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "primary");
 
     match handle.receipt_routes_checked(WorthQueryDeclarationReceiptInput::route_checked(
         route_checked_from_input(&handle, ReceiptInput::<SignalReceiptFamily>::new("edge:42")),
@@ -96,7 +108,10 @@ fn unsupported_signal_receipts_become_typed_denials() {
 
 #[test]
 fn public_denial_lanes_diverge_for_distinct_denial_topology() {
-    let handle = admitted_handle("primary");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "primary");
 
     let required_intent = match handle.receipt_routes_checked(
         WorthQueryDeclarationReceiptInput::route_checked(route_checked_from_input(
@@ -135,7 +150,10 @@ fn public_denial_lanes_diverge_for_distinct_denial_topology() {
 
 #[test]
 fn deferred_receipts_explain_route_contract_context() {
-    let handle = admitted_handle("primary");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "primary");
 
     match handle.receipt_routes_checked(WorthQueryDeclarationReceiptInput::route_checked(
         route_checked_from_input(

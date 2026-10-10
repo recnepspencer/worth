@@ -59,11 +59,14 @@ fn fork_tail_plan(mutate: fn(&mut crate::branch::RelationalBranchCellCheckpoint)
     plan
 }
 
-fn assert_recovery_rejects_fork_checkpoint(plan: RecoveryPlan) {
+fn assert_recovery_rejects_fork_checkpoint(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    plan: RecoveryPlan,
+) {
     let mut recovered = persisted_runtime_with_test_schema();
     let error = recovered
         .durability_recovery()
-        .recover(plan)
+        .recover(execution, plan)
         .expect_err("malformed fork provenance must fail closed");
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
     assert_eq!(recovered.history().immutable_commit_count(), 0);
@@ -104,17 +107,29 @@ fn wrong_provenance_branch(cell: &mut crate::branch::RelationalBranchCellCheckpo
 
 #[test]
 fn recovery_rejects_one_sided_fork_provenance_in_checkpoint() {
-    assert_recovery_rejects_fork_checkpoint(fork_checkpoint_plan(provenance_only));
-    assert_recovery_rejects_fork_checkpoint(fork_checkpoint_plan(source_only));
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    assert_recovery_rejects_fork_checkpoint(execution, fork_checkpoint_plan(provenance_only));
+    assert_recovery_rejects_fork_checkpoint(execution, fork_checkpoint_plan(source_only));
 }
 
 #[test]
 fn recovery_rejects_mismatched_fork_provenance_identity_in_checkpoint() {
-    assert_recovery_rejects_fork_checkpoint(fork_checkpoint_plan(wrong_provenance_branch));
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    assert_recovery_rejects_fork_checkpoint(
+        execution,
+        fork_checkpoint_plan(wrong_provenance_branch),
+    );
 }
 
 #[test]
 fn recovery_rejects_one_sided_fork_provenance_in_tail() {
-    assert_recovery_rejects_fork_checkpoint(fork_tail_plan(provenance_only));
-    assert_recovery_rejects_fork_checkpoint(fork_tail_plan(source_only));
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    assert_recovery_rejects_fork_checkpoint(execution, fork_tail_plan(provenance_only));
+    assert_recovery_rejects_fork_checkpoint(execution, fork_tail_plan(source_only));
 }

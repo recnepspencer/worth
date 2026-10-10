@@ -13,7 +13,10 @@ use super::support::{
 
 #[test]
 fn planned_receipts_preserve_route_scoped_aspect_contract() {
-    let receipt = admitted_handle("primary")
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let receipt = admitted_handle(request_execution, "primary")
         .declare_review_progress_describe_plan_and_receipt(
             ReceiptInput::<AspectRichReceiptFamily>::new("edge:42"),
         )
@@ -40,7 +43,10 @@ fn planned_receipts_preserve_route_scoped_aspect_contract() {
 
 #[test]
 fn receipt_binding_target_retains_crossing_aspect_state() {
-    let receipt = admitted_handle("primary")
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let receipt = admitted_handle(request_execution, "primary")
         .declare_review_progress_describe_plan_and_receipt(
             ReceiptInput::<AspectRichReceiptFamily>::new("edge:42"),
         )
@@ -59,7 +65,10 @@ fn receipt_binding_target_retains_crossing_aspect_state() {
 
 #[test]
 fn denied_receipts_keep_scoped_aspect_publication_without_widening() {
-    let handle = admitted_handle("primary");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "primary");
 
     match handle.receipt_routes_checked(WorthQueryDeclarationReceiptInput::route_checked(
         route_checked_with_intent(
@@ -85,7 +94,10 @@ fn denied_receipts_keep_scoped_aspect_publication_without_widening() {
 
 #[test]
 fn deferred_and_failed_receipts_keep_honest_scoped_publication() {
-    let handle = admitted_handle("primary");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "primary");
 
     match handle.receipt_routes_checked(WorthQueryDeclarationReceiptInput::route_checked(
         route_checked_from_input(

@@ -1,3 +1,4 @@
+mod merge_snapshot_owner;
 use super::super::*;
 use super::merge::{capture_merge_authority, execute_merge, validate_merge_authority};
 use super::projection_paths::{
@@ -34,19 +35,6 @@ impl StatefulBridgeRuntimeBackend {
     }
 }
 
-impl WorthQueryMergeSnapshotOwner for StatefulBridgeRuntimeBackend {
-    fn release_query_merge_snapshot(
-        &mut self,
-        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    ) {
-        self.state
-            .borrow()
-            .relational_source
-            .with_runtime_mut(|runtime| runtime.snapshots().release_snapshot(snapshot))
-            .expect("merge fixture closes its exact published snapshot once");
-    }
-}
-
 impl WorthQueryRuntimeBackend for StatefulBridgeRuntimeBackend {
     fn support_profile(&self) -> WorthQueryRuntimeSupportProfile {
         self.support_profile.clone()
@@ -54,18 +42,23 @@ impl WorthQueryRuntimeBackend for StatefulBridgeRuntimeBackend {
 
     fn prepare_product_source(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
         worth_query_execution::facade::integration::WorthQueryProductRelationalInstallation,
         crate::runtime::WorthQueryProductSourceDenial,
     > {
         let source = self.state.borrow().relational_source.clone();
-        let branch = source.with_runtime(|runtime| runtime.main_branch_identity());
+        let branch =
+            source.with_runtime(request_execution, |runtime| runtime.main_branch_identity());
         source
-            .prepare_product_source(&branch)
+            .prepare_product_source(request_execution, &branch)
             .map_err(crate::runtime::WorthQueryProductSourceDenial::Basis)
     }
 
-    fn current_snapshot_identity(&self) -> WorthQuerySnapshotIdentity {
+    fn current_snapshot_identity(
+        &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> WorthQuerySnapshotIdentity {
         let state = self.state.borrow();
         WorthQuerySnapshotIdentity::preview(
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::RuntimeStateSnapshot)
@@ -110,6 +103,7 @@ impl WorthQueryRuntimeBackend for StatefulBridgeRuntimeBackend {
 
     fn write(
         &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         mutation: WorthQueryBackendAdmissibleMutation,
     ) -> Result<WorthQueryMutationReceipt, WorthQueryWorkspaceError> {
         execute_write(&self.state, mutation)
@@ -117,11 +111,12 @@ impl WorthQueryRuntimeBackend for StatefulBridgeRuntimeBackend {
 
     fn write_batch(
         &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         mutations: Vec<WorthQueryBackendAdmissibleMutation>,
     ) -> Result<Vec<WorthQueryMutationReceipt>, WorthQueryWorkspaceError> {
         let mut receipts = Vec::with_capacity(mutations.len());
         for mutation in mutations {
-            receipts.push(self.write(mutation)?);
+            receipts.push(self.write(request_execution, mutation)?);
         }
         Ok(receipts)
     }
@@ -171,12 +166,13 @@ impl WorthQueryRuntimeBackend for StatefulBridgeRuntimeBackend {
 
     fn verify_existing_truth_assertion(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: &WorthQueryExistingTruthTargetBinding,
         aspects: &[WorthQueryAuthoredAspectMutation],
     ) -> Result<WorthQueryVerifiedExistingTruthAssertion, WorthQueryExistingTruthAssertionDenial>
     {
         let state = self.state.borrow();
-        let snapshot_identity = self.current_snapshot_identity();
+        let snapshot_identity = self.current_snapshot_identity(request_execution);
         verify_existing_truth_assertion(&state, binding, aspects, snapshot_identity)
     }
 
@@ -189,6 +185,7 @@ impl WorthQueryRuntimeBackend for StatefulBridgeRuntimeBackend {
 
     fn execute_intent(
         &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         _declaration: &WorthQueryIntentDeclaration,
     ) -> Result<WorthQueryIntentExecution, WorthQueryRuntimeError> {
         Err(WorthQueryRuntimeError::MissingIntentAuthority)
@@ -216,28 +213,31 @@ impl WorthQueryRuntimeBackend for StatefulBridgeRuntimeBackend {
 
     fn capture_query_merge_authority(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         target_branch: &crate::runtime::WorthQueryAdmittedBranchName,
         source_branch: &crate::runtime::WorthQueryAdmittedBranchName,
     ) -> Result<WorthQueryBackendMergeAuthority, WorthQueryWorkspaceError> {
-        capture_merge_authority(&self.state, target_branch, source_branch)
+        capture_merge_authority(request_execution, &self.state, target_branch, source_branch)
     }
 
     fn validate_query_merge_authority(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         authority: &WorthQueryBackendMergeAuthority,
     ) -> Result<(), WorthQueryWorkspaceError> {
-        validate_merge_authority(&self.state, authority)
+        validate_merge_authority(request_execution, &self.state, authority)
     }
 
     fn execute_query_merge(
         &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         authority: &WorthQueryBackendMergeAuthority,
         declaration: &crate::workflow::LoweredMergeWorkflowDeclaration,
     ) -> Result<
         worth_relational::facade::transactions::MergeExecutionOutcome,
         crate::effect_lifecycle::RelationalEffectExecutionFailure,
     > {
-        execute_merge(&self.state, authority, declaration)
+        execute_merge(request_execution, &self.state, authority, declaration)
     }
 
     fn execute_query_causal_inspection(
@@ -253,6 +253,7 @@ impl WorthQueryRuntimeBackend for StatefulBridgeRuntimeBackend {
 
     fn live_entities_for_target(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         target: &WorthQueryLiveArtifactTarget,
     ) -> Vec<WorthQueryEntity> {
         let state = self.state.borrow();

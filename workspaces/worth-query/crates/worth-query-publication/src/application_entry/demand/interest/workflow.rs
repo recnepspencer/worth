@@ -43,6 +43,7 @@ where
                 let controls = WorthQueryOutputDemandControls::from_limits(limits);
                 let admitted = workflow
                     .admit_workflow_assessment_output(
+                        &phase,
                         &worth_query_execution::publication_boundary::program_publication_access(),
                         source,
                         limits,

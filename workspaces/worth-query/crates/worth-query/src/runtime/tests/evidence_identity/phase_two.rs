@@ -6,7 +6,10 @@ use crate::runtime::evidence_identities::{
 
 #[test]
 fn support_matrix_and_state_snapshot_remain_in_phase_two_canonical_migration_coverage() {
-    let runtime = bridge_backed_runtime_with_support(intent_support_profile());
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = bridge_backed_runtime_with_support(request_execution, intent_support_profile());
     let workspace =
         WorthQueryWorkspace::new("phase-two-evidence-identity", runtime).expect("workspace builds");
     let matrix = workspace.public_support_matrix();
@@ -116,7 +119,10 @@ fn state_snapshot_with_optional_postures_remains_in_phase_two_canonical_migratio
 
 #[test]
 fn public_api_contract_transcript_and_support_report_emit_canonical_evidence_tokens() {
-    let runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = stateful_bridge_task_runtime(request_execution);
     let contract = runtime.public_api_contract();
     assert_canonical_evidence_identity_token(contract.contract_digest());
     assert_eq!(
@@ -140,7 +146,7 @@ fn public_api_contract_transcript_and_support_report_emit_canonical_evidence_tok
     }
 
     let transcript =
-        crate::harness::RuntimeApiStabilizationAdapter::composed_runtime_hostile_transcript_evidence();
+        crate::harness::RuntimeApiStabilizationAdapter::composed_runtime_hostile_transcript_evidence(request_execution);
     assert_canonical_evidence_identity_token(transcript.transcript_digest());
     assert_eq!(
         transcript.transcript_identity().as_str(),

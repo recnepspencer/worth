@@ -6,6 +6,7 @@ struct DeterministicFailureExecutor;
 impl CommitStrategyExecutor for DeterministicFailureExecutor {
     fn execute(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         _request: &crate::commit_strategies::data::CanonicalStrategyCommitRequest,
         _observation: &StrategyObservationContext<'_>,
     ) -> Result<StrategyExecutionResult, StrategyExecutorFailure> {
@@ -221,6 +222,7 @@ fn strategy_schema_registry() -> crate::schema::data::RelationalSchemaRegistry {
 }
 
 pub(super) fn execute_strategy_commit(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     request: NativeStrategyCommitRequest,
     target_branch: Option<BranchId>,
@@ -235,7 +237,7 @@ pub(super) fn execute_strategy_commit(
         .unwrap_or_else(|| runtime.visibility_authority().snapshot());
     let execution = runtime
         .commit_strategies()
-        .execute(&request, &snapshot)
+        .execute(&request, &snapshot, request_execution)
         .expect("strategy execution");
     let transaction_validation_input = target_branch
         .as_ref()

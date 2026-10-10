@@ -28,35 +28,46 @@ struct PrimaryDecisionReadSetComparison<'provider> {
 impl WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph) fn compare_application_read_set(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         authority: &WorthQuerySessionReadAuthority<'_>,
         receipt: WorthQueryCompleteDecisionReadSetReceipt,
         control: StorageControl<'_, '_>,
     ) -> Result<WorthQueryDecisionReadSetFreshnessOutcome, WorthQueryDecisionReadSetFailure> {
         authority.validate_decision_read_set_receipt(&receipt)?;
-        let mut comparison =
-            PrimaryDecisionReadSetComparison::acquire(self, authority.session(), control)?;
+        let mut comparison = PrimaryDecisionReadSetComparison::acquire(
+            execution,
+            self,
+            authority.session(),
+            control,
+        )?;
         authority.compare_decision_read_set_with(receipt, |evidence, admission| {
-            comparison.compare(authority.session(), evidence, admission, control)
+            comparison.compare(execution, authority.session(), evidence, admission, control)
         })
     }
 
     pub(in crate::domain_computation::primary_graph) fn recompare_application_read_set(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         authority: &WorthQuerySessionReadAuthority<'_>,
         fresh: WorthQueryFreshDecisionReadSet,
         control: StorageControl<'_, '_>,
     ) -> Result<WorthQueryDecisionReadSetFreshnessOutcome, WorthQueryDecisionReadSetFailure> {
         authority.validate_fresh_decision_read_set(&fresh)?;
-        let mut comparison =
-            PrimaryDecisionReadSetComparison::acquire(self, authority.session(), control)?;
+        let mut comparison = PrimaryDecisionReadSetComparison::acquire(
+            execution,
+            self,
+            authority.session(),
+            control,
+        )?;
         authority.recompare_fresh_decision_read_set_with(fresh, |evidence, admission| {
-            comparison.compare(authority.session(), evidence, admission, control)
+            comparison.compare(execution, authority.session(), evidence, admission, control)
         })
     }
 }
 
 impl<'provider> PrimaryDecisionReadSetComparison<'provider> {
     fn acquire(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         provider: &'provider WorthQueryPrimaryGraphProvider,
         session: WorthQueryProviderSessionView<'_>,
         control: StorageControl<'_, '_>,
@@ -68,7 +79,7 @@ impl<'provider> PrimaryDecisionReadSetComparison<'provider> {
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .shared_observed_facts(session)
             .ok_or_else(provider_rejected)?;
-        let snapshot = provider.graph.with_runtime_mut(|runtime| {
+        let snapshot = provider.graph.with_runtime_mut(execution, |runtime| {
             crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(
                 runtime, product.observation().basis().relational_basis(),
             )
@@ -85,6 +96,7 @@ impl<'provider> PrimaryDecisionReadSetComparison<'provider> {
 
     fn compare(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         session: WorthQueryProviderSessionView<'_>,
         evidence: WorthQueryDecisionFactEvidenceView<'_>,
         admission: WorthQueryDecisionFactComparisonAdmission,
@@ -110,17 +122,20 @@ impl<'provider> PrimaryDecisionReadSetComparison<'provider> {
             .snapshot
             .as_ref()
             .expect("comparison owns its exact observer");
-        let fresh = self.provider.graph.with_runtime(|runtime| match fact {
-            WorthQueryPrimaryGraphApplicationDecisionFact::Application { fact, .. }
-            | WorthQueryPrimaryGraphApplicationDecisionFact::ObservedSource { fact }
-            | WorthQueryPrimaryGraphApplicationDecisionFact::ApplicationObservedSource {
-                fact,
-                ..
-            } => self
-                .selections
-                .remains_equal(fact, runtime, snapshot, control),
-            _ => Ok(fact.remains_equal_in(runtime, snapshot)),
-        })?;
+        let fresh = self
+            .provider
+            .graph
+            .with_runtime(execution, |runtime| match fact {
+                WorthQueryPrimaryGraphApplicationDecisionFact::Application { fact, .. }
+                | WorthQueryPrimaryGraphApplicationDecisionFact::ObservedSource { fact }
+                | WorthQueryPrimaryGraphApplicationDecisionFact::ApplicationObservedSource {
+                    fact,
+                    ..
+                } => self
+                    .selections
+                    .remains_equal(execution, fact, runtime, snapshot, control),
+                _ => Ok(fact.remains_equal_in(execution, runtime, snapshot)),
+            })?;
         check_control(control)?;
         admission.observe_current_version(if fresh {
             evidence.physical_version_evidence().to_owned()
@@ -132,12 +147,9 @@ impl<'provider> PrimaryDecisionReadSetComparison<'provider> {
 
 impl Drop for PrimaryDecisionReadSetComparison<'_> {
     fn drop(&mut self) {
-        // Prepared tokens retain the root; release them before the active observer.
         self.selections.clear();
         if let Some(snapshot) = self.snapshot.take() {
-            self.provider.graph.with_runtime_mut(|runtime| {
-                crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
-            });
+            self.provider.graph.release_query_snapshot(&snapshot);
         }
     }
 }

@@ -11,13 +11,18 @@ use support::graph_read_access::persistent_requirements::{
 
 #[test]
 fn identical_persistent_requirements_derive_identical_digests() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let first_digest = persistent_requirement_digest_for_named_family(
-        "graph-read-access.phase-ten.equivalence.first",
+        request_execution,
         "phase-ten-equivalence",
+        "graph-read-access.phase-ten.equivalence.first",
     );
     let second_digest = persistent_requirement_digest_for_reordered_family(
-        "graph-read-access.phase-ten.equivalence.second",
+        request_execution,
         "phase-ten-equivalence",
+        "graph-read-access.phase-ten.equivalence.second",
     );
 
     assert_eq!(first_digest, second_digest);
@@ -25,13 +30,18 @@ fn identical_persistent_requirements_derive_identical_digests() {
 
 #[test]
 fn persistent_requirement_identity_ignores_family_display_label() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let first_digest = persistent_requirement_digest_for_named_family(
-        "graph-read-access.phase-ten.label.first",
+        request_execution,
         "phase-ten-label-a",
+        "graph-read-access.phase-ten.label.first",
     );
     let second_digest = persistent_requirement_digest_for_named_family(
-        "graph-read-access.phase-ten.label.second",
+        request_execution,
         "phase-ten-label-b",
+        "graph-read-access.phase-ten.label.second",
     );
 
     assert_eq!(first_digest, second_digest);
@@ -39,13 +49,18 @@ fn persistent_requirement_identity_ignores_family_display_label() {
 
 #[test]
 fn different_typed_requirement_identity_changes_persistent_requirement_digest() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let presence_digest = persistent_requirement_digest_for_named_family(
-        "graph-read-access.phase-ten.near-miss-digest.presence",
+        request_execution,
         "phase-ten-near-miss-digest",
+        "graph-read-access.phase-ten.near-miss-digest.presence",
     );
     let equality_digest = persistent_requirement_digest_for_equality_family(
-        "graph-read-access.phase-ten.near-miss-digest.equality",
+        request_execution,
         "phase-ten-near-miss-digest",
+        "graph-read-access.phase-ten.near-miss-digest.equality",
     );
 
     assert_ne!(presence_digest, equality_digest);
@@ -53,7 +68,11 @@ fn different_typed_requirement_identity_changes_persistent_requirement_digest() 
 
 #[test]
 fn family_index_contract_carries_requirement_identity_without_index_names() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = persistent_requirement_workspace(
+        request_execution,
         "graph-read-access.phase-ten.family-contract",
         profile_requiring_store_backed_graph_index(
             WorthQueryGraphReadAccessRequirementKind::PredicateSupport,

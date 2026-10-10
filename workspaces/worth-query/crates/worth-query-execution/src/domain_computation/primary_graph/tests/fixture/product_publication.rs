@@ -5,25 +5,25 @@ use super::{live_scope, AuthorizationWorld};
 
 /// Publishes one fixture mutation through the real World owner boundary.
 pub(in crate::domain_computation::primary_graph) fn publish_relational_mutation(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &AuthorizationWorld,
     batch: WorkerIntentBatch,
 ) {
-    publish_relational_mutation_on_application(&world.application, batch)
+    publish_relational_mutation_on_application(execution, &world.application, batch)
 }
 
 pub(in crate::domain_computation::primary_graph) fn publish_relational_mutation_on_application<
     Schema: worth_query_installation::facade::ApplicationSchema,
 >(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     application: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     batch: WorkerIntentBatch,
 ) {
     let request = live_scope();
-    application.with_application_advancement(&request, |phase| {
-        let execution = phase.execution_request_for(application.product_runtime()).expect("fixture publication uses its installed runtime phase");
 
     let (prepared, before_lease) =
-        prepare_relational_mutation_with_before(application, batch, &request);
-    let outcome = prepared.execute(execution);
+        prepare_relational_mutation_with_before(request_execution, application, batch, &request);
+    let outcome = prepared.execute(*request_execution);
     let RuntimeWorldPublicationOutcome::Performed(performed) = outcome else {
         panic!("fixture World publication must perform: {outcome:?}");
     };
@@ -31,12 +31,12 @@ pub(in crate::domain_computation::primary_graph) fn publish_relational_mutation_
     drop(performed.consume());
     let graph = application.runtime.primary_graph().unwrap();
     let handle = graph.integration_handle();
-    handle.with_runtime_mut(|runtime| {
+    handle.with_runtime_mut(request_execution, |runtime| {
         let observation = published_basis.observation();
         let head = observation
             .commit_receipt()
             .expect("the fixture publication has a canonical commit");
-        let refreshed = crate::domain_computation::primary_graph::index_maintenance_budget::refresh_with_cold_fallback(
+        let refreshed = crate::domain_computation::primary_graph::index_maintenance_budget::refresh_with_cold_fallback(request_execution,
             runtime,
             worth_relational::facade::indexes::DerivedIndexBuildRequest {
                 source_commit_id: head.commit_id,
@@ -50,24 +50,24 @@ pub(in crate::domain_computation::primary_graph) fn publish_relational_mutation_
         assert_eq!(refreshed.generations.len(), handle.primary_index_ids.len());
         assert_eq!(refreshed.work.cold_record_slots, 0);
     });
-
-    }).expect("the fixture World policy admits its publication");
 }
 
 pub(in crate::domain_computation::primary_graph) fn prepare_relational_mutation_on_application<
     Schema: worth_query_installation::facade::ApplicationSchema,
 >(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     application: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     batch: WorkerIntentBatch,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
 ) -> crate::domain_computation::execution_runtime::product_world::WorthQueryPreparedProductPublication
 {
-    prepare_relational_mutation_with_before(application, batch, request).0
+    prepare_relational_mutation_with_before(execution, application, batch, request).0
 }
 
 fn prepare_relational_mutation_with_before<
     Schema: worth_query_installation::facade::ApplicationSchema,
 >(
+execution: &worth_execution::ExecutionRequest<'_, '_>,
     application: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     batch: WorkerIntentBatch,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
@@ -76,12 +76,12 @@ fn prepare_relational_mutation_with_before<
     crate::domain_computation::primary_graph::application_query::resource_lifecycle::WorthQueryApplicationBasisLease,
 ){
     let selected = application
-        .select_product_branch(application.product_runtime().default_branch())
+        .select_product_branch(execution, application.product_runtime().default_branch())
         .expect("the fixture product branch remains admitted");
     let (_, product, application_basis) = selected.into_parts();
     let graph = application.runtime.primary_graph().unwrap();
     let handle = graph.integration_handle();
-    let candidate = handle.with_runtime_mut(|runtime| {
+    let candidate = handle.with_runtime_mut(execution, |runtime| {
         let mut transaction = runtime
             .begin_branch_transaction(
                 product.relational_basis(),

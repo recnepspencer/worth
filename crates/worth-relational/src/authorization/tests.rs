@@ -31,6 +31,9 @@ const RELATION_KIND: KindId = KindId(2);
 
 #[test]
 fn actual_snapshot_observation_mints_exact_neutral_evidence() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let fixture = authorization_fixture();
     let snapshot = fixture.runtime.visibility_authority().snapshot();
     let plan = allow_plan(
@@ -43,7 +46,7 @@ fn actual_snapshot_observation_mints_exact_neutral_evidence() {
     );
     let evidence = fixture
         .runtime
-        .observe_authorization(plan)
+        .observe_authorization(plan, execution)
         .expect("installed path should be observable");
 
     assert_ne!(evidence.observation_identity().bytes(), &[0; 32]);
@@ -75,6 +78,9 @@ fn actual_snapshot_observation_mints_exact_neutral_evidence() {
 
 #[test]
 fn parallel_matching_paths_remain_neutral_graph_observations() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let fixture = authorization_fixture();
     create_relation(
         &fixture.runtime,
@@ -87,7 +93,7 @@ fn parallel_matching_paths_remain_neutral_graph_observations() {
 
     let evidence = fixture
         .runtime
-        .observe_authorization(plan)
+        .observe_authorization(plan, execution)
         .expect("the snapshot can be observed");
 
     assert!(evidence.paths()[0].matched());
@@ -97,16 +103,17 @@ fn parallel_matching_paths_remain_neutral_graph_observations() {
 
 #[test]
 fn revocation_changes_only_new_snapshot_authority() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let fixture = authorization_fixture();
     let before = fixture.runtime.visibility_authority().snapshot();
     let before_evidence = fixture
         .runtime
-        .observe_authorization(allow_plan(
-            before.clone(),
-            fixture.principal,
-            fixture.scope,
-            [],
-        ))
+        .observe_authorization(
+            allow_plan(before.clone(), fixture.principal, fixture.scope, []),
+            execution,
+        )
         .expect("pre-revocation observation");
     let revocation = delete_relation_on_branch(
         &fixture.runtime,
@@ -116,16 +123,22 @@ fn revocation_changes_only_new_snapshot_authority() {
 
     let after_evidence = fixture
         .runtime
-        .observe_authorization(allow_plan(
-            revocation.snapshot.clone(),
-            fixture.principal,
-            fixture.scope,
-            [],
-        ))
+        .observe_authorization(
+            allow_plan(
+                revocation.snapshot.clone(),
+                fixture.principal,
+                fixture.scope,
+                [],
+            ),
+            execution,
+        )
         .expect("post-revocation observation");
     let historical_evidence = fixture
         .runtime
-        .observe_authorization(allow_plan(before, fixture.principal, fixture.scope, []))
+        .observe_authorization(
+            allow_plan(before, fixture.principal, fixture.scope, []),
+            execution,
+        )
         .expect("pinned historical observation");
 
     assert!(before_evidence.paths()[0].matched());
@@ -140,16 +153,17 @@ fn revocation_changes_only_new_snapshot_authority() {
 
 #[test]
 fn foreign_runtime_is_a_typed_denial_before_graph_reads() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let source = authorization_fixture();
     let foreign_snapshot = source.runtime.visibility_authority().snapshot();
     let destination = runtime_with_test_schema();
     let denial = destination
-        .observe_authorization(allow_plan(
-            foreign_snapshot,
-            source.principal,
-            source.scope,
-            [],
-        ))
+        .observe_authorization(
+            allow_plan(foreign_snapshot, source.principal, source.scope, []),
+            execution,
+        )
         .expect_err("foreign snapshot must not open destination runtime");
 
     assert!(matches!(
@@ -206,16 +220,17 @@ fn reverse_path_validation_uses_declared_relation_orientation() {
 
 #[test]
 fn unrelated_graph_scale_does_not_change_observation_work() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let fixture = authorization_fixture();
     let baseline_snapshot = fixture.runtime.visibility_authority().snapshot();
     let baseline = fixture
         .runtime
-        .observe_authorization(allow_plan(
-            baseline_snapshot,
-            fixture.principal,
-            fixture.scope,
-            [],
-        ))
+        .observe_authorization(
+            allow_plan(baseline_snapshot, fixture.principal, fixture.scope, []),
+            execution,
+        )
         .expect("baseline observation");
     for index in 0..64 {
         let left = create_entity(&fixture.runtime, &format!("unrelated-left-{index}"));
@@ -230,12 +245,10 @@ fn unrelated_graph_scale_does_not_change_observation_work() {
     let scaled_snapshot = fixture.runtime.visibility_authority().snapshot();
     let scaled = fixture
         .runtime
-        .observe_authorization(allow_plan(
-            scaled_snapshot,
-            fixture.principal,
-            fixture.scope,
-            [],
-        ))
+        .observe_authorization(
+            allow_plan(scaled_snapshot, fixture.principal, fixture.scope, []),
+            execution,
+        )
         .expect("scaled observation");
 
     assert_eq!(scaled.counters(), baseline.counters());

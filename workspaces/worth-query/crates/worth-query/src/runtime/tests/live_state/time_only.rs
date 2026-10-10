@@ -18,9 +18,17 @@ fn drain_only_program(view_name: &str) -> WorthQueryProgram {
 
 #[test]
 fn runtime_time_only_delivery_is_canonical_without_relational_patch() {
-    let mut runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let view: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = runtime
-        .declare_live_view("tasks.time-only", task_live_request(), task_schema())
+        .declare_live_view(
+            request_execution,
+            "tasks.time-only",
+            task_live_request(),
+            task_schema(),
+        )
         .expect("live view should declare");
 
     let emitted = runtime
@@ -53,9 +61,13 @@ fn runtime_time_only_delivery_is_canonical_without_relational_patch() {
 
 #[test]
 fn runtime_state_and_inspection_retain_last_time_only_delivery_after_drain() {
-    let mut runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let view: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = runtime
         .declare_live_view(
+            request_execution,
             "tasks.inspect-time-only",
             task_live_request(),
             task_schema(),
@@ -73,9 +85,7 @@ fn runtime_state_and_inspection_retain_last_time_only_delivery_after_drain() {
         .expect("time-only delivery should emit");
     let _ = runtime.drain_patches(&view);
 
-    let state = <&WorthQueryLiveView<WorthQueryUnrefinedLiveShape> as WorthQueryRuntimeStateTarget>::into_state_snapshot(
-        &view, &runtime,
-    )
+    let state = <&WorthQueryLiveView<WorthQueryUnrefinedLiveShape> as WorthQueryRuntimeStateTarget>::into_state_snapshot(&view, request_execution, &runtime)
     .expect("state should snapshot");
     let inspection = runtime
         .inspect_live_view_explanation(&view)
@@ -105,9 +115,13 @@ fn runtime_state_and_inspection_retain_last_time_only_delivery_after_drain() {
 
 #[test]
 fn runtime_time_only_delivery_matches_program_drain_lane_and_denies_missing_evidence() {
-    let mut runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let view: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = runtime
         .declare_live_view(
+            request_execution,
             "tasks.program-time-only",
             task_live_request(),
             task_schema(),
@@ -142,7 +156,7 @@ fn runtime_time_only_delivery_matches_program_drain_lane_and_denies_missing_evid
         .operation("drain_time_only")
         .expect("operation should resolve");
     let receipt = runtime
-        .run_operation(operation, Vec::new())
+        .run_operation_with_request(request_execution, operation, Vec::new())
         .expect("program should drain patches");
     let program_batches = &receipt.patch_batches[0].query_delivery_batches;
 

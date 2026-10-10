@@ -2,6 +2,9 @@ use super::*;
 
 #[test]
 fn relation_field_index_executes_retained_history_after_relation_deletion() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_index_field_aspects();
     let source = changed_entities(&create_entity_outcome(&runtime, "source"))[0];
     let target = changed_entities(&create_entity_outcome(&runtime, "target"))[0];
@@ -17,13 +20,14 @@ fn relation_field_index_executes_retained_history_after_relation_deletion() {
     });
 
     delete_relation_on_branch(&runtime, relation_id, BranchId("main".to_string()));
-    let build = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    let build = runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id: historical.commit.commit_id,
             branch_id: BranchId("main".to_string()),
             index_ids: vec![index.index_id],
-        });
+        },
+    );
     assert!(build.failed_indexes.is_empty());
 
     let context = runtime
@@ -52,11 +56,18 @@ fn relation_field_index_executes_retained_history_after_relation_deletion() {
         .unwrap();
     let storage = runtime
         .read_truth()
-        .execute_query_plan(plan.clone())
+        .execute_query_plan(
+            plan.clone(),
+            execution,
+            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
+        )
+        .expect("request remains live")
+        .map(|read| read.outcome)
         .unwrap();
     let indexed = runtime
         .index_access()
-        .execute_query_plan_with_index_parity(plan, IndexParityMode::CertificationParity)
+        .execute_query_plan_with_index_parity(plan, IndexParityMode::CertificationParity, execution)
+        .expect("request remains live")
         .unwrap();
 
     assert_eq!(indexed.execution.result, storage.result);

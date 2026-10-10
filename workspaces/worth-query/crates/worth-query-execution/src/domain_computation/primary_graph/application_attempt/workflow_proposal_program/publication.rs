@@ -130,6 +130,7 @@ where
         Scope,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
         instance: PublishedWorkflowInstanceRef,
@@ -143,7 +144,8 @@ where
     {
         let context_identity = derive_workflow_proposal_context_identity(instance.entity_id());
         let resolution = self
-            .resolve_admitted_application_idempotency(
+            .resolve_admitted_application_idempotency_with_request(
+                execution,
                 admission,
                 idempotency.bind_workflow_proposal_context(&context_identity),
             )?
@@ -187,6 +189,7 @@ where
         Scope,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
 
         prepared: PreparedWorkflowProposal<Schema, Operation, Input, Scope>,
@@ -232,6 +235,7 @@ where
             }
         };
         let outcome = self.compare_and_commit_application_for_program_action(
+            execution,
             phase,
             &presented,
             program,

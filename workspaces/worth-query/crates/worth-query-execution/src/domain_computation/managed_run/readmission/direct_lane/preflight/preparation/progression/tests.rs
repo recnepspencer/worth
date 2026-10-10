@@ -25,9 +25,7 @@ fn bridge_cleanup_failure_returns_exact_owner_retry_authority() {
         let recovery = std::thread::spawn(move || {
             crate::domain_computation::primary_graph::with_test_advancement(|phase| {
                 match restore_direct(
-                    phase
-                        .request_for_source(0)
-                        .expect("standalone restore fixture"),
+                    phase.borrowed_request_for_test(),
                     pending,
                     &bridge,
                     progress,

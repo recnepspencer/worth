@@ -11,6 +11,9 @@ use worth_foundational::facade::ContractValidatedAspectValueView;
 
 #[test]
 fn scoped_field_projection_borrows_selected_root_without_copying_unrelated_payload() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = AspectSchemaFixture {
         entity_aspects: vec![
             entity_field_aspect(aspect_key("name"), field_key("name")),
@@ -50,9 +53,13 @@ fn scoped_field_projection_borrows_selected_root_without_copying_unrelated_paylo
     let entity = changed_entities(&created)[0];
     let updated = update_entity(&runtime, entity, "after");
     for (snapshot, expected_name) in [(&created.snapshot, "before"), (&updated.snapshot, "after")] {
-        let view = runtime.read_truth().project_snapshot(snapshot).unwrap();
-        assert_borrowed_title(&view, entity);
+        let view = runtime
+            .read_truth()
+            .project_snapshot(snapshot, execution)
+            .unwrap();
+        assert_borrowed_title(execution, &view, entity);
         let name = view.entity_record_with_projection_scope(
+            execution,
             entity,
             ProjectionAspectScope::whole_aspects([aspect_key("name")]),
             |record| {
@@ -67,7 +74,11 @@ fn scoped_field_projection_borrows_selected_root_without_copying_unrelated_paylo
     }
 }
 
-fn assert_borrowed_title(view: &VisibilityProjectionView<'_>, entity: EntityId) {
+fn assert_borrowed_title(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    view: &VisibilityProjectionView<'_>,
+    entity: EntityId,
+) {
     let root = view.basis.root().unwrap();
     let partition = root.get_partition(entity.partition_id).unwrap();
     let slot = partition
@@ -82,6 +93,7 @@ fn assert_borrowed_title(view: &VisibilityProjectionView<'_>, entity: EntityId) 
     };
     let title = summary.get(&field_key("title")).unwrap();
     let seen = view.entity_record_with_projection_scope(
+        execution,
         entity,
         ProjectionAspectScope::fields(aspect_key("summary"), [field_key("title")]),
         |record| {
@@ -101,30 +113,34 @@ fn assert_borrowed_title(view: &VisibilityProjectionView<'_>, entity: EntityId) 
 
 #[test]
 fn projection_preserves_identity_kind_and_lifecycle_across_exact_and_historical_bases() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     let created = create_entity_outcome(&runtime, "live");
     let entity = changed_entities(&created)[0];
     let deleted = delete_entity(&runtime, entity);
     let before = runtime
         .read_truth()
-        .project_snapshot(&created.snapshot)
+        .project_snapshot(&created.snapshot, execution)
         .unwrap();
     let after = runtime
         .read_truth()
-        .project_snapshot(&deleted.snapshot)
+        .project_snapshot(&deleted.snapshot, execution)
         .unwrap();
     let historical_before = runtime
         .read_truth()
-        .project_historical_version(created.version_id);
+        .project_historical_version(execution, created.version_id);
     let historical_after = runtime
         .read_truth()
-        .project_historical_version(deleted.version_id);
+        .project_historical_version(execution, deleted.version_id);
     for (before, after) in [(before, after), (historical_before, historical_after)] {
-        assert_projection_lifecycle(&before, &after, entity);
+        assert_projection_lifecycle(execution, &before, &after, entity);
     }
 }
 
 fn assert_projection_lifecycle(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     before: &VisibilityProjectionView<'_>,
     after: &VisibilityProjectionView<'_>,
     entity: EntityId,
@@ -133,11 +149,11 @@ fn assert_projection_lifecycle(
     let value =
         |record: EntityProjectionRecord<'_>| record.aspect_value(&aspect_key("name")).cloned();
     assert_eq!(
-        before.entity_record_with_projection_scope(entity, scope.clone(), value),
+        before.entity_record_with_projection_scope(execution, entity, scope.clone(), value),
         Some(string_aspect_value("live"))
     );
     assert!(after
-        .entity_record_with_projection_scope(entity, scope.clone(), value)
+        .entity_record_with_projection_scope(execution, entity, scope.clone(), value)
         .is_none());
     let stale = EntityId::new(
         entity.partition_id,
@@ -145,10 +161,11 @@ fn assert_projection_lifecycle(
         entity.generation_value() + 1,
     );
     assert!(before
-        .entity_record_with_projection_scope(stale, scope.clone(), value)
+        .entity_record_with_projection_scope(execution, stale, scope.clone(), value)
         .is_none());
     assert_eq!(
         before.entity_record_of_expected_kind_with_projection_scope(
+            execution,
             entity,
             KindId(2),
             scope.clone(),
@@ -158,7 +175,7 @@ fn assert_projection_lifecycle(
     );
     let wildcard = EntityId::new(entity.partition_id, entity.local_slot_value(), 0);
     assert_eq!(
-        before.entity_record_with_projection_scope(wildcard, scope, |record| Some(
+        before.entity_record_with_projection_scope(execution, wildcard, scope, |record| Some(
             record.entity_id()
         )),
         Some(entity)
@@ -168,13 +185,17 @@ fn assert_projection_lifecycle(
 #[test]
 #[should_panic(expected = "projection mask rejected by aspect contract")]
 fn borrowed_projection_cannot_bypass_installed_mask_contract() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     let created = create_entity_outcome(&runtime, "masked");
     runtime
         .read_truth()
-        .project_snapshot(&created.snapshot)
+        .project_snapshot(&created.snapshot, execution)
         .unwrap()
         .entity_record_with_projection_scope(
+            execution,
             changed_entities(&created)[0],
             ProjectionAspectScope::fields(aspect_key("name"), [field_key("name")]),
             |_| Some(()),

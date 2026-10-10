@@ -18,6 +18,7 @@ use super::super::surface_comparison::{
 use super::super::{SelectedPublishedLineageAuthority, ValidatedReplayContinuityEnvelope};
 
 pub(super) fn compare_replay_surfaces(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     verification_plan: &ReplayVerificationPlan,
     mismatches: &mut Vec<ReplayMismatch>,
@@ -212,9 +213,9 @@ pub(super) fn compare_replay_surfaces(
     );
     if compared_surfaces.contains(&ReplayObservableSurface::Snapshot) {
         let original_surface =
-            runtime.replay_snapshot_surface_at_version(envelope.commit.version_id);
-        let replayed_surface =
-            replay_runtime.replay_snapshot_surface_at_version(replayed_envelope.commit.version_id);
+            runtime.replay_snapshot_surface_at_version(execution, envelope.commit.version_id);
+        let replayed_surface = replay_runtime
+            .replay_snapshot_surface_at_version(execution, replayed_envelope.commit.version_id);
         compare_replay_surface(
             runtime,
             verification_plan,

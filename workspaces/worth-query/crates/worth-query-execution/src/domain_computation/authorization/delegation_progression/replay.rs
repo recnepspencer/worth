@@ -33,6 +33,63 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Input,
     >(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        access: WorthQueryAdmittedApplicationCapabilityAccess<
+            Schema,
+            CommandCapability,
+            Operation,
+            Input,
+        >,
+        target: &WorthQueryInstalledApplicationCapability<
+            Schema,
+            TargetCapability,
+            TargetOperation,
+            TargetInput,
+        >,
+        operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
+        preconditions: TypedMutationPreconditions<
+            Schema,
+            Operation,
+            <Input as ApplicationCapabilityRequest<Schema, CommandCapability>>::Scope,
+        >,
+        idempotency: WorthQueryApplicationIdempotencyBinding,
+    ) -> Result<
+        Option<WorthQueryApplicationCommitOutcome>,
+        WorthQueryApplicationIdempotencyResolutionDenial,
+    >
+    where
+        Operation: ApplicationOperationMarkerIdentity<Schema>,
+        Input: ApplicationCapabilityRequest<Schema, CommandCapability>
+            + ApplicationCapabilityDelegationRequest<Schema, TargetCapability>
+            + Clone
+            + Send
+            + Sync
+            + 'static,
+    {
+        let execution = match phase.execution_request_for(&self.product_runtime) {
+            Ok(execution) => execution,
+            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::ForeignPhase, "phase-custody"))),
+        };
+        self.replay_capability_delegation_after_fresh_denial_with_request(
+            &execution,
+            access,
+            target,
+            operation,
+            preconditions,
+            idempotency,
+        )
+    }
+
+    pub(in crate::domain_computation) fn replay_capability_delegation_after_fresh_denial_with_request<
+        CommandCapability,
+        TargetCapability,
+        TargetOperation,
+        TargetInput,
+        Operation,
+        Input,
+    >(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         access: WorthQueryAdmittedApplicationCapabilityAccess<
             Schema,
             CommandCapability,
@@ -74,8 +131,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let Ok(proposed) = access.capability_input().delegation_request() else {
             return Ok(None);
         };
-        let Some(Ok(resolved)) = access.with_exact_observation(self, |observation| {
-            observation.resolve_delegation_replay_target(target, &proposed)
+        let Some(Ok(resolved)) = access.with_exact_observation(execution, self, |observation| {
+            observation.resolve_delegation_replay_target(execution, target, &proposed)
         }) else {
             return Ok(None);
         };
@@ -85,6 +142,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             return Ok(None);
         };
         let Ok(admission) = progress_capability_operation(
+            execution,
             self,
             access,
             operation,
@@ -97,7 +155,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             return Ok(None);
         };
         let resolution = self
-            .resolve_admitted_application_idempotency(&admission, idempotency)?
+            .resolve_admitted_application_idempotency_with_request(
+                execution,
+                &admission,
+                idempotency,
+            )?
             .into_resolution();
         Ok(match resolution {
             WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => Some(

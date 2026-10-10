@@ -2,27 +2,35 @@ use super::support::*;
 
 #[test]
 fn grouped_live_view_inspection_preserves_grouped_family_and_baseline_support() {
-    let mut runtime = stateful_bridge_grouped_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_grouped_task_runtime(request_execution);
     let table: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = runtime
         .declare_live_view(
+            request_execution,
             "tasks.seed-table",
             grouped_task_table_live_request(),
             grouped_task_schema(),
         )
         .expect("table live view should declare before grouped view");
     let _ = runtime
-        .write(insert_command(
-            "Task",
-            [
-                ("identity.id", test_string_aspect_value("")),
-                ("title.value", test_string_aspect_value("Seed task")),
-                ("status.value", test_string_aspect_value("todo")),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [
+                    ("identity.id", test_string_aspect_value("")),
+                    ("title.value", test_string_aspect_value("Seed task")),
+                    ("status.value", test_string_aspect_value("todo")),
+                ],
+            ),
+        )
         .expect("seed insert should write through table declaration");
     let _ = runtime.drain_patches(&table);
     let grouped: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = runtime
         .declare_live_view(
+            request_execution,
             "tasks.grouped",
             grouped_task_live_request(),
             grouped_task_schema(),

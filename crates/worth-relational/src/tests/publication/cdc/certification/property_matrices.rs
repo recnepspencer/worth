@@ -87,11 +87,14 @@ proptest! {
         windows in arb_windows(),
         checkpoint_seed in any::<u64>(),
     ) {
-        let world = run_property_scenario(
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+        let world = run_property_scenario(execution,
             operations.clone(),
             RuntimeHarnessMode::InMemory(RelationalRuntimeProfile::GeometryKernel),
         );
-        let replay_world = run_property_scenario(
+        let replay_world = run_property_scenario(execution,
             operations,
             RuntimeHarnessMode::InMemory(RelationalRuntimeProfile::GeometryKernel),
         );
@@ -109,8 +112,8 @@ proptest! {
         );
 
         let world_for_truth = world;
-        let truth = VisibleTruthSummary::capture(&world_for_truth.runtime);
-        let replay_truth = VisibleTruthSummary::capture(&replay_world.runtime);
+        let truth = VisibleTruthSummary::capture(execution, &world_for_truth.runtime);
+        let replay_truth = VisibleTruthSummary::capture(execution, &replay_world.runtime);
         assert_visible_truth_matches(
             "property random operation matrix replay truth",
             &truth,
@@ -123,7 +126,10 @@ proptest! {
         operations in vec(arb_scenario_operation(), 16..64),
         checkpoint_seed in any::<u64>(),
     ) {
-        let world = run_property_scenario(
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+        let world = run_property_scenario(execution,
             operations,
             RuntimeHarnessMode::Persisted,
         );
@@ -139,11 +145,11 @@ proptest! {
         world.runtime.durability_authority().checkpoint().unwrap();
         let recovery_plan = world.runtime.durability().recovery_plan(crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification);
         let mut recovered = build_property_runtime(RuntimeHarnessMode::Persisted);
-        recovered.durability_recovery().recover(recovery_plan).unwrap();
+        recovered.durability_recovery().recover(execution, recovery_plan).unwrap();
         let recovered_patch_stream = collect_patch_stream_from_head(&recovered, 4096);
         prop_assert_eq!(recovered_patch_stream, head);
-        let truth = VisibleTruthSummary::capture(&world.runtime);
-        let recovered_truth = VisibleTruthSummary::capture(&recovered);
+        let truth = VisibleTruthSummary::capture(execution, &world.runtime);
+        let recovered_truth = VisibleTruthSummary::capture(execution, &recovered);
         assert_visible_truth_matches(
             "property persisted random operation matrix recovered truth",
             &truth,
@@ -156,7 +162,10 @@ proptest! {
         operations in vec(arb_branch_operation(), 16..72),
         checkpoint_seed in any::<u64>(),
     ) {
-        let world = run_property_scenario(
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+        let world = run_property_scenario(execution,
             operations,
             RuntimeHarnessMode::InMemory(RelationalRuntimeProfile::GeometryKernel),
         );

@@ -3,6 +3,7 @@ use super::*;
 
 /// [`attempt_in`] with the request's execution opened under `placement`.
 pub(super) fn attempt_placed<Tested, Owned>(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     world: &AuthorizationWorld,
     installed: &WorthQueryInstalledPartitionedComputation<Schema, Feature, Tested, Owned>,
     prior: Option<ComputationPrior>,
@@ -13,16 +14,17 @@ where
     Tested: ApplicationManagedComputation<Schema, Feature, Input = Input>,
     Owned: TestOwner<Tested>,
 {
-    let principal = authenticated_principal(world, request);
-    let account = resolved_account(world, "open", request);
+    let principal = authenticated_principal(&(phase_custody).test_host_request(), world, request);
+    let account = resolved_account(&(phase_custody).test_host_request(), world, "open", request);
     let operation = world
         .application
         .installed_schema()
         .installed_operation(TouchAccountOperation::reference())
         .unwrap();
     let admission = world
-        .selected_product()
+        .selected_product(&(phase_custody).test_host_request())
         .authorize_operation(
+            &phase_custody.phase_for_application(&world.application),
             &principal,
             &account,
             &operation,
@@ -37,6 +39,7 @@ where
     SealedComputationRun::keep_in_test(None);
     let mut outcome = None;
     let completed = world.invariant.project_admitted_operation(
+        &phase_custody.phase_for_application(&world.application),
         &admission,
         |reader, root| {
             outcome = Some((|| -> Outcome {
@@ -80,12 +83,14 @@ where
         world
             .application
             .begin_projected_application_read_attempt(
+                &phase_custody.phase_for_application(&world.application),
                 admission,
                 projection.expect("an uninterrupted projection sealed"),
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )
             .unwrap()
             .complete_projected_dependencies(
+                &phase_custody.phase_for_application(&world.application),
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )
             .map(|_| SealedComputationRun::kept_in_test())

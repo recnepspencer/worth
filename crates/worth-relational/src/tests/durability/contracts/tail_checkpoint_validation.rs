@@ -3,6 +3,9 @@ use worth_foundational::{FoundationalBranchReferenceObservation, FoundationalBra
 
 #[test]
 fn durability_contract_recovery_rejects_tail_target_without_immutable_artifact() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
     create_entity_outcome(&runtime, "checkpoint-basis");
     runtime.durability_authority().checkpoint().unwrap();
@@ -36,7 +39,7 @@ fn durability_contract_recovery_rejects_tail_target_without_immutable_artifact()
     let mut recovered = persisted_runtime_with_test_schema();
     let error = recovered
         .durability_recovery()
-        .recover(plan)
+        .recover(execution, plan)
         .expect_err("tail admission must validate its target artifact");
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
     assert!(error.detail.contains("recovery root"));

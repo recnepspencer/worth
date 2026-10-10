@@ -2,8 +2,11 @@ use super::super::MilestoneFivePointFiveWorkflowCertificationAdapter;
 
 #[test]
 fn workflow_certification_hostile_rows_are_distinct_when_spec_says_they_must_be() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let matrix = MilestoneFivePointFiveWorkflowCertificationAdapter::
-        workflow_declaration_taxonomy_and_context_binding_test();
+        workflow_declaration_taxonomy_and_context_binding_test(request_execution);
 
     for row in &matrix.rows {
         match row.row_name {

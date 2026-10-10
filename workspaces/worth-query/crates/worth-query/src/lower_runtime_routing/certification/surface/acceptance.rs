@@ -91,8 +91,10 @@ impl WorthQueryLowerRuntimeAcceptanceSuite {
     }
 }
 
-pub fn worth_query_lower_runtime_acceptance_suite() -> WorthQueryLowerRuntimeAcceptanceSuite {
-    let surface = worth_query_lower_runtime_representative_surface();
+pub fn worth_query_lower_runtime_acceptance_suite(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryLowerRuntimeAcceptanceSuite {
+    let surface = worth_query_lower_runtime_representative_surface(execution);
     WorthQueryLowerRuntimeAcceptanceSuite::new(vec![
         WorthQueryLowerRuntimeAcceptanceRow::new(
             WorthQueryLowerRuntimeAcceptanceLane::Control,
@@ -134,7 +136,10 @@ mod tests {
 
     #[test]
     fn acceptance_suite_exposes_control_hostile_and_parity_lanes() {
-        let suite = worth_query_lower_runtime_acceptance_suite();
+        let host_request = crate::test_execution_policy::serial_request();
+        let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+        let suite = worth_query_lower_runtime_acceptance_suite(request_execution);
 
         assert_eq!(suite.rows().len(), 3);
         assert!(!suite.suite_digest().is_empty());
@@ -154,7 +159,10 @@ mod tests {
 
     #[test]
     fn acceptance_suite_control_lane_proves_exact_cardinality() {
-        let suite = worth_query_lower_runtime_acceptance_suite();
+        let host_request = crate::test_execution_policy::serial_request();
+        let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+        let suite = worth_query_lower_runtime_acceptance_suite(request_execution);
         let control = suite.lane(WorthQueryLowerRuntimeAcceptanceLane::Control);
 
         assert!(control.detail().contains("crossings="));
@@ -168,7 +176,10 @@ mod tests {
 
     #[test]
     fn acceptance_suite_hostile_digest_stays_distinct_from_control() {
-        let suite = worth_query_lower_runtime_acceptance_suite();
+        let host_request = crate::test_execution_policy::serial_request();
+        let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+        let suite = worth_query_lower_runtime_acceptance_suite(request_execution);
 
         assert_ne!(
             suite

@@ -2,6 +2,9 @@ use super::*;
 
 #[test]
 fn idempotent_intent_noop_emits_receipt_without_mutation_or_signal_routing() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let routed = std::rc::Rc::new(std::cell::Cell::new(0));
     let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
@@ -19,10 +22,11 @@ fn idempotent_intent_noop_emits_receipt_without_mutation_or_signal_routing() {
         .aspect_contracts(stateful_bridge_aspect_contracts())
         .expect("native intent test contracts should admit")
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("intent-capable runtime should build");
     let live = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "tasks.noop-intent",
             task_live_request(),
             task_schema(),
@@ -30,6 +34,7 @@ fn idempotent_intent_noop_emits_receipt_without_mutation_or_signal_routing() {
         .expect("live should declare");
     let computed = runtime
         .declare_maintained_derived_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             WorthQueryDerivedView::new("computed.noop-intent", test_aspect_touches(["title"]))
                 .depends_on_live(&live)
                 .produces(test_aspect_touches(["title.summary"])),
@@ -48,13 +53,16 @@ fn idempotent_intent_noop_emits_receipt_without_mutation_or_signal_routing() {
         .expect("effect should declare");
 
     let receipt = runtime
-        .execute_intent(WorthQueryIntentDeclaration::strategy_commit(
-            "idempotent-title-reconcile",
-            "strategy.intent.reconcile",
-            "1.0",
-            "intent.reconcile.input.v1",
-            test_intent_input([("entity", "task-1"), ("title", "already committed")]),
-        ))
+        .execute_intent(
+            request_execution,
+            WorthQueryIntentDeclaration::strategy_commit(
+                "idempotent-title-reconcile",
+                "strategy.intent.reconcile",
+                "1.0",
+                "intent.reconcile.input.v1",
+                test_intent_input([("entity", "task-1"), ("title", "already committed")]),
+            ),
+        )
         .expect("idempotent intent should still mint a receipt");
 
     assert_eq!(
@@ -89,7 +97,7 @@ fn idempotent_intent_noop_emits_receipt_without_mutation_or_signal_routing() {
     assert_eq!(runtime.drain_patches(&live).query_delivery_batches.len(), 0);
     assert_eq!(
         runtime
-            .read_derived_result(&computed)
+            .read_derived_result(request_execution, &computed)
             .expect("computed materialization should execute")
             .row_count(),
         0
@@ -105,6 +113,9 @@ fn idempotent_intent_noop_emits_receipt_without_mutation_or_signal_routing() {
 
 #[test]
 fn idempotent_intent_inspection_preserves_outcome_without_mutation_claim() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
@@ -117,20 +128,23 @@ fn idempotent_intent_inspection_preserves_outcome_without_mutation_claim() {
         .intent_authority(NoopIntentAuthority)
         .support_profile(intent_support_profile())
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("intent-capable runtime should build");
 
     let receipt = runtime
-        .execute_intent(WorthQueryIntentDeclaration::strategy_commit(
-            "inspectable-noop-intent",
-            "strategy.intent.reconcile",
-            "1.0",
-            "intent.reconcile.input.v1",
-            test_intent_input([("entity", "task-1"), ("title", "already committed")]),
-        ))
+        .execute_intent(
+            request_execution,
+            WorthQueryIntentDeclaration::strategy_commit(
+                "inspectable-noop-intent",
+                "strategy.intent.reconcile",
+                "1.0",
+                "intent.reconcile.input.v1",
+                test_intent_input([("entity", "task-1"), ("title", "already committed")]),
+            ),
+        )
         .expect("idempotent intent should execute");
     let inspection = runtime
-        .inspect_intent_receipt(&receipt)
+        .inspect_intent_receipt(request_execution, &receipt)
         .expect("no-op intent receipt should inspect");
 
     assert_eq!(
@@ -146,6 +160,9 @@ fn idempotent_intent_inspection_preserves_outcome_without_mutation_claim() {
 
 #[test]
 fn mutating_intent_with_empty_delta_denies_before_signal_routing() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let routed = std::rc::Rc::new(std::cell::Cell::new(0));
     let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
@@ -161,17 +178,20 @@ fn mutating_intent_with_empty_delta_denies_before_signal_routing() {
         .intent_authority(EmptyMutatingIntentAuthority)
         .support_profile(intent_support_profile())
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("intent-capable runtime should build");
 
     let error = runtime
-        .execute_intent(WorthQueryIntentDeclaration::strategy_commit(
-            "empty-mutating-intent",
-            "strategy.intent.reconcile",
-            "1.0",
-            "intent.reconcile.input.v1",
-            test_intent_input([("entity", "task-1")]),
-        ))
+        .execute_intent(
+            request_execution,
+            WorthQueryIntentDeclaration::strategy_commit(
+                "empty-mutating-intent",
+                "strategy.intent.reconcile",
+                "1.0",
+                "intent.reconcile.input.v1",
+                test_intent_input([("entity", "task-1")]),
+            ),
+        )
         .expect_err("empty mutating execution must use the no-op constructor");
 
     match error {

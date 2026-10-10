@@ -153,7 +153,10 @@ impl HarnessAdapter for RelationalHarnessAdapter {
         request: &ExecutionRequest<Self::TargetId>,
         profile: &ExecutionProfile,
     ) -> Result<RunRecord<Self::TargetId>, Self::Error> {
-        execution::execute_request(self, runtime, fixture, request, profile)
+        let host_request = crate::test_execution_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+        execution::execute_request(execution, self, runtime, fixture, request, profile)
     }
 
     fn capture_snapshot(
@@ -163,7 +166,10 @@ impl HarnessAdapter for RelationalHarnessAdapter {
         request: &ExecutionRequest<Self::TargetId>,
         profile: &ExecutionProfile,
     ) -> Result<SnapshotRecord<Self::TargetId>, Self::Error> {
-        snapshot_capture::capture_snapshot(self, runtime, fixture, request, profile)
+        let host_request = crate::test_execution_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+        snapshot_capture::capture_snapshot(execution, self, runtime, fixture, request, profile)
     }
 }
 

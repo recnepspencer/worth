@@ -19,153 +19,97 @@ use worth_relational::facade::transactions::{
     WorkerIntentBatch,
 };
 
-#[test]
-fn selection_denies_invalid_work_and_overflow_budgets_without_retaining_partial_results() {
-    let world = installed_authorization_world(true);
-    let request = live_scope();
-    let label = AccountLabel::reference();
-    set_unrelated_value(
-        &world,
-        "primary",
-        (label.entity(), label.aspect(), label.field()),
-    );
-    let account = resolved_account(&world, "open", &request);
-    let actor = authenticated_principal(&world, &request);
-    let operation = world
-        .application
-        .installed_schema()
-        .installed_operation(TouchAccountOperation::reference())
-        .unwrap();
-    let admission = world
-        .selected_product()
-        .authorize_operation(&actor, &account, &operation, Default::default(), &request)
-        .unwrap();
-    let over_budget = world.invariant.project_admitted_operation(
-        &admission,
-        |reader, _| {
-            let denial = reader
-                .decision_select_entities(AccountLabel::reference(), "primary".to_owned(), 32)
-                .unwrap_err()
-                .downcast::<WorthQueryEntityResolutionDenial>()
-                .unwrap();
-            assert_eq!(
-                denial.kind(),
-                WorthQueryEntityResolutionDenialKind::ProjectionWorkBudgetExceeded
-            );
-        },
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    );
-    assert!(
-        over_budget.is_err(),
-        "an exhausted projection cannot be sealed after a handler ignores its denial"
-    );
-    let (_, projection, work) = world
-        .invariant
-        .project_admitted_operation(
-            &admission,
-            |reader, _| {
-                for (limit, expected) in [
-                    (
-                        0,
-                        WorthQueryEntityResolutionDenialKind::InvalidCandidateLimit,
-                    ),
-                    (
-                        usize::MAX,
-                        WorthQueryEntityResolutionDenialKind::InvalidCandidateLimit,
-                    ),
-                    (
-                        1,
-                        WorthQueryEntityResolutionDenialKind::CandidateLimitExceeded { maximum: 1 },
-                    ),
-                ] {
-                    let denial = reader
-                        .decision_select_entities(
-                            AccountLabel::reference(),
-                            "primary".to_owned(),
-                            limit,
-                        )
-                        .unwrap_err()
-                        .downcast::<WorthQueryEntityResolutionDenial>()
-                        .unwrap();
-                    assert_eq!(denial.kind(), expected);
-                }
-            },
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
-        .into_parts();
-    assert_eq!(
-        work.equality_lookups(),
-        1,
-        "invalid budgets deny before index work"
-    );
-    assert_eq!(work.index_candidates_examined(), 1);
-    let reads = world
-        .application
-        .begin_projected_application_read_attempt(
-            admission,
-            projection,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
-        .complete_projected_dependencies(
-            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    assert!(
-        !reads
-            .facts
-            .iter()
-            .any(|fact| matches!(fact, Fact::IndexedEntitySelection { .. })),
-        "an overflowing prefix cannot become a complete source fact"
-    );
-}
+mod selection_denies_invalid_work_and_overflow_budgets_without_retai;
 
 #[test]
 fn distinct_absent_predicates_survive_sealing_and_compare_only_their_own_matches() {
     let world = installed_authorization_world(true);
     let request = live_scope();
-    let actor = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
+    let actor = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+        })
+        .expect("the fixture read owns its installed host call");
     let operation = world
         .application
         .installed_schema()
         .installed_operation(TouchAccountOperation::reference())
         .unwrap();
     let admission = world
-        .selected_product()
-        .authorize_operation(&actor, &account, &operation, Default::default(), &request)
-        .unwrap();
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .selected_product(&(phase).test_host_request())
+                .authorize_operation(
+                    &phase,
+                    &actor,
+                    &account,
+                    &operation,
+                    Default::default(),
+                    &request,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let (_, projection, work) = world
-        .invariant
-        .project_admitted_operation(
-            &admission,
-            |reader, _| {
-                for value in ["missing-a", "missing-b"] {
-                    assert!(reader
-                        .decision_select_entities(AccountStatus::reference(), value.to_owned(), 2,)
-                        .unwrap()
-                        .is_empty());
-                }
-            },
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
-        .into_parts();
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .invariant
+                .project_admitted_operation(
+                    &phase,
+                    &admission,
+                    |reader, _| {
+                        for value in ["missing-a", "missing-b"] {
+                            assert!(reader
+                                .decision_select_entities(
+                                    AccountStatus::reference(),
+                                    value.to_owned(),
+                                    2,
+                                )
+                                .unwrap()
+                                .is_empty());
+                        }
+                    },
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap()
+                .into_parts()
+        })
+        .expect("the fixture read owns its installed host call");
     assert_eq!(work.equality_lookups(), 2);
     assert_eq!(work.index_candidates_examined(), 0);
     let reads = world
         .application
-        .begin_projected_application_read_attempt(
-            admission,
-            projection,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
-        .complete_projected_dependencies(
-            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .begin_projected_application_read_attempt(
+                    &phase,
+                    admission,
+                    projection,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap()
+                .complete_projected_dependencies(
+                    &phase,
+                    crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let predicates = reads
         .facts
         .iter()
@@ -177,14 +121,61 @@ fn distinct_absent_predicates_survive_sealing_and_compare_only_their_own_matches
         2,
         "the same index must retain both predicates"
     );
-    assert_eq!(currentness(&world, &predicates[0]), (true, 1));
-    assert_eq!(currentness(&world, &predicates[1]), (true, 1));
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            assert_eq!(
+                currentness(
+                    &phase,
+                    &host_custody.borrowed_request_for_test(),
+                    &world,
+                    &predicates[0]
+                ),
+                (true, 1)
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            assert_eq!(
+                currentness(
+                    &phase,
+                    &host_custody.borrowed_request_for_test(),
+                    &world,
+                    &predicates[1]
+                ),
+                (true, 1)
+            )
+        })
+        .expect("the fixture read owns its installed host call");
 
-    set_unrelated_status(&world, "missing-a");
-    let results = predicates
-        .iter()
-        .map(|fact| currentness(&world, fact))
-        .collect::<Vec<_>>();
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            set_unrelated_status(&phase, &world, "missing-a")
+        })
+        .expect("the fixture read owns its installed host call");
+    let results = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            predicates
+                .iter()
+                .map(|fact| {
+                    currentness(
+                        &phase,
+                        &host_custody.borrowed_request_for_test(),
+                        &world,
+                        fact,
+                    )
+                })
+                .collect::<Vec<_>>()
+        })
+        .expect("the fixture read owns its installed host call");
     assert_eq!(
         results,
         vec![(false, 2), (true, 1)],
@@ -192,16 +183,22 @@ fn distinct_absent_predicates_survive_sealing_and_compare_only_their_own_matches
     );
 }
 
-fn currentness(world: &AuthorizationWorld, fact: &Fact) -> (bool, usize) {
-    let selected = world.selected_product();
+fn currentness(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    world: &AuthorizationWorld,
+    fact: &Fact,
+) -> (bool, usize) {
+    let selected = world.selected_product(&(phase_custody).test_host_request());
     world
         .application
         .primary_provider
         .graph
-        .with_runtime(|runtime| {
+        .with_runtime(execution, |runtime| {
             let (movement, work) = fact
                 .source_currentness_within(
                     runtime,
+                    execution,
                     selected.application_basis().snapshot_handle(),
                     3,
                 )
@@ -210,17 +207,32 @@ fn currentness(world: &AuthorizationWorld, fact: &Fact) -> (bool, usize) {
         })
 }
 
-fn set_unrelated_status(world: &AuthorizationWorld, status: &str) {
+fn set_unrelated_status(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    world: &AuthorizationWorld,
+    status: &str,
+) {
     let field = AccountStatus::reference();
     set_unrelated_value(
+        phase_custody,
         world,
         status,
         (field.entity(), field.aspect(), field.field()),
     );
 }
 
-fn set_unrelated_value(world: &AuthorizationWorld, status: &str, field: (&str, &str, &str)) {
-    let account = resolved_account(world, "unrelated", &live_scope());
+fn set_unrelated_value(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    world: &AuthorizationWorld,
+    status: &str,
+    field: (&str, &str, &str),
+) {
+    let account = resolved_account(
+        &(phase_custody).test_host_request(),
+        world,
+        "unrelated",
+        &live_scope(),
+    );
     let installed = world
         .application
         .runtime
@@ -239,6 +251,7 @@ fn set_unrelated_value(world: &AuthorizationWorld, status: &str, field: (&str, &
         StringApplicationValueBinding::encode(&status.to_owned()).unwrap(),
     )]));
     publish_relational_mutation(
+        &phase_custody.borrowed_request_for_test(),
         world,
         WorkerIntentBatch::new("indexed-selection-currentness").push(MutationIntent::Entity(
             EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {

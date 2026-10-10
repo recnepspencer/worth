@@ -64,6 +64,7 @@ impl WorthQueryDurableAuthorizationDependencies {
 
     pub(in crate::domain_computation) fn matches_with_retained_activation(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         observed: &Self,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
@@ -75,7 +76,7 @@ impl WorthQueryDurableAuthorizationDependencies {
                 RelationalAuthorizationDurableDependencies::from_wire_string(activation).is_ok_and(
                     |stamp| {
                         stamp
-                            .source_revisions_match(runtime, snapshot)
+                            .source_revisions_match(runtime, execution, snapshot)
                             .is_ok_and(|matches| matches)
                     },
                 )
@@ -101,11 +102,12 @@ impl WorthQueryDurableDelegationDependencies {
 }
 
 pub(super) fn capture(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     evidence: &RelationalAuthorizationObservationEvidence,
 ) -> Result<String, ()> {
     runtime
-        .capture_authorization_durable_dependencies(evidence)
+        .capture_authorization_durable_dependencies(evidence, execution)
         .map_err(|_| ())?
         .to_wire_string()
         .map_err(|_| ())

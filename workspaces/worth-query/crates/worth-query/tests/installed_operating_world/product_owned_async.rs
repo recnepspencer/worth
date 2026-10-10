@@ -20,7 +20,9 @@ fn async_identity() -> WorthQueryAsyncResourceRequestIdentity {
     .unwrap()
 }
 
-fn workspace() -> runtime::WorthQueryWorkspace {
+fn workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> runtime::WorthQueryWorkspace {
     let node = conditional_node_contract::node(
         "geometry",
         domain::WorthQueryComparatorRequirement::ExactCanonicalValue,
@@ -41,7 +43,7 @@ fn workspace() -> runtime::WorthQueryWorkspace {
         installed_operation_fixture::DirectConditionalCompute,
     )
     .owned_bridge_async_declaration(declaration)
-    .workspace("selected-product-owned-async")
+    .workspace(request_execution, "selected-product-owned-async")
     .unwrap()
 }
 
@@ -65,7 +67,10 @@ fn completion_envelope(
 
 #[test]
 fn selected_product_drives_owned_async_completion_and_definition_reuse() {
-    let workspace = workspace();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let workspace = workspace(request_execution);
     let world = workspace
         .observe_operating_world(workspace.current_world())
         .unwrap();
@@ -111,7 +116,10 @@ fn selected_product_drives_owned_async_completion_and_definition_reuse() {
 
 #[test]
 fn configured_timeout_retry_completes_and_releases_the_exact_request() {
-    let workspace = workspace();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let workspace = workspace(request_execution);
     let world = workspace
         .observe_operating_world(workspace.current_world())
         .unwrap();
@@ -161,16 +169,23 @@ fn configured_timeout_retry_completes_and_releases_the_exact_request() {
 
 #[test]
 fn sibling_product_revalidation_carries_truth_drift_and_releases_the_replacement() {
-    let workspace = workspace();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let workspace = workspace(request_execution);
     let source_world = workspace
         .observe_operating_world(workspace.current_world())
         .unwrap();
     let source = source_world.product_branch();
     let sibling_branch = workspace
-        .branches()
-        .fork(source.product_branch())
-        .components(|components| components.fork_relational().reuse_exact_signal_basis())
-        .create()
+        .with_advancement(|phase| {
+            workspace
+                .branches()
+                .fork(source.product_branch())
+                .components(|components| components.fork_relational().reuse_exact_signal_basis())
+                .create(&phase)
+        })
+        .expect("installed host call opens")
         .expect("World must publish the sibling product occurrence");
     let sibling_world = workspace.observe_operating_world(sibling_branch).unwrap();
     let sibling = sibling_world.product_branch();
@@ -213,8 +228,11 @@ fn sibling_product_revalidation_carries_truth_drift_and_releases_the_replacement
 
 #[test]
 fn foreign_world_product_cannot_enter_the_owned_async_owner() {
-    let origin = workspace();
-    let foreign = workspace();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let origin = workspace(request_execution);
+    let foreign = workspace(request_execution);
     let foreign_world = foreign
         .observe_operating_world(foreign.current_world())
         .unwrap();
@@ -233,76 +251,23 @@ fn foreign_world_product_cannot_enter_the_owned_async_owner() {
     ));
 }
 
-#[test]
-fn stale_prior_occurrence_cannot_supersede_a_view_bound_to_its_same_source_successor() {
-    let mut workspace = workspace();
-    let world = workspace
-        .observe_operating_world(workspace.current_world())
-        .unwrap();
-    let selected = world.retain_product_branch();
-    drop(world);
-    let declaration = workspace
-        .installed_owned_bridge_async_declaration(&async_identity())
-        .unwrap();
-    let stale = workspace
-        .admit_owned_bridge_async_request(&declaration, &selected)
-        .unwrap();
-    let bound = workspace
-        .admit_owned_bridge_async_request(&declaration, &selected)
-        .unwrap();
-    let displacing = workspace
-        .admit_owned_bridge_async_request(&declaration, &selected)
-        .unwrap();
-    let (request, schema) = owned_async_live_request_and_schema();
-    let view: runtime::WorthQueryLiveView<runtime::WorthQueryUnrefinedLiveShape> = workspace
-        .declare_bridge_async_live_view(
-            "selected-product-owned-async-view",
-            request,
-            schema,
-            bound.request(),
-        )
-        .unwrap();
-
-    let denial = workspace
-        .supersede_owned_bridge_async_live_view(&view, &stale, &displacing)
-        .expect_err("the stale prior occurrence must not mutate the bound view");
-    assert_eq!(
-        denial.kind(),
-        runtime::WorthQueryAsyncSourceBindingErrorKind::ForeignRequest
-    );
-    assert_eq!(
-        workspace
-            .state_live(&view)
-            .unwrap()
-            .async_result_state()
-            .unwrap()
-            .kind(),
-        runtime::WorthQueryRuntimeAsyncResultStateKind::Pending
-    );
-
-    let admitted = workspace
-        .supersede_owned_bridge_async_live_view(&view, &bound, &displacing)
-        .expect("the exact bound occurrence admits supersession");
-    assert_eq!(
-        admitted.states()[0].kind(),
-        runtime::WorthQueryRuntimeAsyncResultStateKind::Superseded
-    );
-    for request in [&stale, &bound, &displacing] {
-        workspace
-            .retire_owned_bridge_async_request(request)
-            .unwrap();
-    }
-    workspace.close_owned_bridge_async_live_view(&view).unwrap();
-}
+#[path = "product_owned_async/stale_prior_occurrence_cannot_supersede_a_view_bound_to_its_same.rs"]
+mod stale_prior_occurrence_cannot_supersede_a_view_bound_to_its_same;
 
 #[test]
 fn terminal_retries_require_the_exact_bound_occurrence() {
-    assert_terminal_retry_is_occurrence_bound(false);
-    assert_terminal_retry_is_occurrence_bound(true);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    assert_terminal_retry_is_occurrence_bound(request_execution, false);
+    assert_terminal_retry_is_occurrence_bound(request_execution, true);
 }
 
-fn assert_terminal_retry_is_occurrence_bound(cancel: bool) {
-    let mut workspace = workspace();
+fn assert_terminal_retry_is_occurrence_bound(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    cancel: bool,
+) {
+    let mut workspace = workspace(request_execution);
     let world = workspace
         .observe_operating_world(workspace.current_world())
         .unwrap();
@@ -320,6 +285,7 @@ fn assert_terminal_retry_is_occurrence_bound(cancel: bool) {
     let (request, schema) = owned_async_live_request_and_schema();
     let view: runtime::WorthQueryLiveView<runtime::WorthQueryUnrefinedLiveShape> = workspace
         .declare_bridge_async_live_view(
+            request_execution,
             "terminal-occurrence-bound-view",
             request,
             schema,

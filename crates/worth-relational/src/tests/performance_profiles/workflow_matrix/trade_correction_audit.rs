@@ -1,6 +1,9 @@
 use super::*;
 
-pub(super) fn certify_fintech_trade_correction_audit_round_trip(suite: &'static str) {
+pub(super) fn certify_fintech_trade_correction_audit_round_trip(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    suite: &'static str,
+) {
     let fintech_trade_correction_samples =
         capture_perf_samples(suite, "fintech_trade_correction_audit_round_trip", || {
             let mut world = setup_trade_correction_perf_world();
@@ -17,7 +20,7 @@ pub(super) fn certify_fintech_trade_correction_audit_round_trip(suite: &'static 
             let audit_commit_micros = audit_started_at.elapsed().as_micros();
 
             let query_started_at = Instant::now();
-            let probe = perf_capture_trade_correction_probe(&world);
+            let probe = perf_capture_trade_correction_probe(execution, &world);
             let query_probe_micros = query_started_at.elapsed().as_micros();
             let elapsed_micros =
                 correction_commit_micros + audit_commit_micros + query_probe_micros;

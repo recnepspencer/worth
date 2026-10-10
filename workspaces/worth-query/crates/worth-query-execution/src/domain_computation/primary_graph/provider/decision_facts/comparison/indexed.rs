@@ -35,6 +35,7 @@ impl PreparedSelections {
 
     pub(super) fn remains_equal(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         fact: &WorthQueryApplicationObservedFact,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
@@ -51,7 +52,7 @@ impl PreparedSelections {
             candidates,
         } = fact
         else {
-            return Ok(fact.remains_equal_in(runtime, snapshot));
+            return Ok(fact.remains_equal_in(runtime, execution, snapshot));
         };
         // Preserve scalar malformed-limit refusal before index admission.
         if *candidate_limit == 0 || *candidate_limit == usize::MAX {
@@ -59,7 +60,7 @@ impl PreparedSelections {
         }
         let key = (*index_id, *entity_kind, locator.clone());
         if !self.selectors.contains_key(&key) {
-            let Some(view) = runtime.read_truth().project_snapshot(snapshot) else {
+            let Some(view) = runtime.read_truth().project_snapshot(snapshot, execution) else {
                 return Ok(false);
             };
             let Ok(prepared) = runtime.index_access().prepare_entity_field_lookup(
@@ -67,6 +68,7 @@ impl PreparedSelections {
                 *index_id,
                 *entity_kind,
                 locator,
+                execution,
             ) else {
                 return Ok(false);
             };
@@ -78,6 +80,7 @@ impl PreparedSelections {
             value,
             *candidate_limit,
             BoundedIndexParityMode::Production,
+            execution,
             || super::check_control(control),
         );
         match current {

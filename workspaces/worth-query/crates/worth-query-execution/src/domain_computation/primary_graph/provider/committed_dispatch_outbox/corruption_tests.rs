@@ -30,10 +30,14 @@ use crate::domain_computation::primary_graph::{
 
 #[test]
 fn every_valid_persisted_field_substitution_breaks_whole_record_affinity() {
+    let host_request = crate::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for (field, replacement) in valid_field_substitutions() {
-        let (provider, binding, commit, runtime_id) = committed_substituted_row(field, replacement);
+        let (provider, binding, commit, runtime_id) =
+            committed_substituted_row(execution, field, replacement);
         assert_eq!(
-            provider.observe_expected(&binding, &commit, runtime_id),
+            provider.observe_expected(execution, &binding, &commit, runtime_id),
             Err(Denial::RecordMismatch),
             "field {field} must participate in whole-record affinity"
         );
@@ -42,15 +46,19 @@ fn every_valid_persisted_field_substitution_breaks_whole_record_affinity() {
 
 #[test]
 fn malformed_values_in_an_actual_committed_row_deny_before_record_copy_fallback() {
+    let host_request = crate::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for (field, replacement) in [
         (0, text("abc")),
         (3, text("UPPERCASE.IS.NOT.CANONICAL")),
         (4, AspectValue::UInt64(0)),
         (6, text("abc")),
     ] {
-        let (provider, binding, commit, runtime_id) = committed_substituted_row(field, replacement);
+        let (provider, binding, commit, runtime_id) =
+            committed_substituted_row(execution, field, replacement);
         assert_eq!(
-            provider.observe_expected(&binding, &commit, runtime_id),
+            provider.observe_expected(execution, &binding, &commit, runtime_id),
             Err(Denial::Malformed),
             "malformed persisted field {field} must be decoded, not replaced from the binding"
         );
@@ -59,10 +67,13 @@ fn malformed_values_in_an_actual_committed_row_deny_before_record_copy_fallback(
 
 #[test]
 fn a_committed_record_of_another_kind_denies_before_projection() {
+    let host_request = crate::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = installed_authorization_world(true);
     let provider = &world.application.primary_provider;
     let record = record();
-    let (binding, commit, runtime_id) = provider.graph.with_runtime_mut(|runtime| {
+    let (binding, commit, runtime_id) = provider.graph.with_runtime_mut(execution, |runtime| {
         let (outbox_intent, pending) = bind_dispatch_outbox_create_intent(
             Some(provider.graph.layout.provider_dispatch_outbox()),
             Some(&record),
@@ -119,17 +130,20 @@ fn a_committed_record_of_another_kind_denies_before_projection() {
     });
 
     assert_eq!(
-        provider.observe_expected(&binding, &commit, runtime_id),
+        provider.observe_expected(execution, &binding, &commit, runtime_id),
         Err(Denial::WrongRecordKind)
     );
 }
 
 #[test]
 fn a_deleted_record_is_non_visible_at_the_requested_commit_without_binding_fallback() {
+    let host_request = crate::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = installed_authorization_world(true);
     let provider = &world.application.primary_provider;
     let record = record();
-    let (binding, deletion_commit, runtime_id) = provider.graph.with_runtime_mut(|runtime| {
+    let (binding, deletion_commit, runtime_id) = provider.graph.with_runtime_mut(execution, |runtime| {
         let (intent, pending) = bind_dispatch_outbox_create_intent(
             Some(provider.graph.layout.provider_dispatch_outbox()),
             Some(&record),
@@ -189,12 +203,13 @@ fn a_deleted_record_is_non_visible_at_the_requested_commit_without_binding_fallb
     });
 
     assert_eq!(
-        provider.observe_expected(&binding, &deletion_commit, runtime_id),
+        provider.observe_expected(execution, &binding, &deletion_commit, runtime_id),
         Err(Denial::Missing)
     );
 }
 
 fn committed_substituted_row(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     field: usize,
     replacement: AspectValue,
 ) -> (
@@ -208,7 +223,7 @@ fn committed_substituted_row(
     let record = record();
     let layout = provider.graph.layout.provider_dispatch_outbox().clone();
     let branch = primary_relational_branch_id();
-    let (binding, commit, runtime_id) = provider.graph.with_runtime_mut(|runtime| {
+    let (binding, commit, runtime_id) = provider.graph.with_runtime_mut(request_execution, |runtime| {
         let (intent, pending) =
             bind_dispatch_outbox_create_intent(
                 Some(&layout),

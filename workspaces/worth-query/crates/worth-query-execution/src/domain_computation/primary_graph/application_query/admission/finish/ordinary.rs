@@ -22,6 +22,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Scope,
     >(
         &'a self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         query: &'a WorthQueryInstalledApplicationQuery<
             Schema,
             Query,
@@ -53,13 +54,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         WorthQueryApplicationQueryAdmissionDenial,
     > {
         self.finish_application_query_admission_with_basis(
+            execution,
             query,
             access,
             parameters,
             controls,
             pending_governance,
             |basis| {
-                admit_application_query_basis(self, basis)
+                admit_application_query_basis(execution, self, basis)
                     .map(|basis| (basis, WorthQueryQueryIndexPosture::HistoricalAllPrimary))
             },
         )

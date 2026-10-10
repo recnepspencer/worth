@@ -46,7 +46,9 @@ fn approved_emergency_historical_and_preview_preserve_one_shot_meaning() {
         .query(request)
         .as_principal(&requester)
         .controls(controls())
-        .admit_historical_with_approved_elevation(&approved, |admitted| admitted.execute())
+        .admit_historical_with_approved_elevation(&approved, |phase, admitted| {
+            admitted.execute(phase)
+        })
         .expect("historical execution should preserve approved one-shot meaning");
     let session = fixture.runtime.open_preview(&request_scope()).unwrap();
     let preview = fixture
@@ -54,7 +56,9 @@ fn approved_emergency_historical_and_preview_preserve_one_shot_meaning() {
         .query(request)
         .as_principal(&requester)
         .controls(controls())
-        .admit_preview_with_approved_elevation(&approved, &session, |admitted| admitted.execute())
+        .admit_preview_with_approved_elevation(&approved, &session, |phase, admitted| {
+            admitted.execute(phase)
+        })
         .expect("preview execution should preserve approved one-shot meaning");
 
     assert_eq!(historical.rows(), one_shot.rows());
@@ -79,7 +83,7 @@ fn abandoning_an_admitted_lane_releases_its_scoped_authority() {
         .query(request)
         .as_principal(&requester)
         .controls(controls())
-        .admit_historical_with_approved_elevation(&approved, |_admitted| Ok(()))
+        .admit_historical_with_approved_elevation(&approved, |_phase, _admitted| Ok(()))
         .expect("dropping historical authority without execution is lawful");
     assert_resources_released(&fixture);
 
@@ -89,7 +93,7 @@ fn abandoning_an_admitted_lane_releases_its_scoped_authority() {
         .query(request)
         .as_principal(&requester)
         .controls(controls())
-        .admit_preview_with_approved_elevation(&approved, &session, |_admitted| Ok(()))
+        .admit_preview_with_approved_elevation(&approved, &session, |_phase, _admitted| Ok(()))
         .expect("dropping preview authority without execution is lawful");
     assert!(session.discard().unwrap().discarded());
     assert_resources_released(&fixture);
@@ -107,9 +111,9 @@ fn historical_denies_if_exact_support_is_revoked_after_admission() {
         ))
         .as_principal(&requester)
         .controls(controls())
-        .admit_historical_with_approved_elevation(&approved, |admitted| {
+        .admit_historical_with_approved_elevation(&approved, |phase, admitted| {
             revoke_exact_support(&fixture, &requester, 145);
-            admitted.execute()
+            admitted.execute(phase)
         }) {
         Ok(_) => panic!("historical delivery must refresh exact support after admission"),
         Err(denial) => denial,
@@ -136,9 +140,9 @@ fn preview_denies_if_exact_support_is_revoked_after_admission() {
         ))
         .as_principal(&requester)
         .controls(controls())
-        .admit_preview_with_approved_elevation(&approved, &session, |admitted| {
+        .admit_preview_with_approved_elevation(&approved, &session, |phase, admitted| {
             revoke_exact_support(&fixture, &requester, 155);
-            admitted.execute()
+            admitted.execute(phase)
         }) {
         Ok(_) => panic!("preview delivery must refresh exact support after admission"),
         Err(denial) => denial,
@@ -169,7 +173,7 @@ fn preview_admission_uses_current_support_after_session_open() {
         ))
         .as_principal(&requester)
         .controls(controls())
-        .admit_preview_with_approved_elevation(&approved, &session, |_admitted| {
+        .admit_preview_with_approved_elevation(&approved, &session, |_phase, _admitted| {
             reached_delivery.set(true);
             Ok(())
         })
@@ -199,7 +203,7 @@ fn historical_admission_uses_current_support_after_approval() {
         ))
         .as_principal(&requester)
         .controls(controls())
-        .admit_historical_with_approved_elevation(&approved, |_admitted| {
+        .admit_historical_with_approved_elevation(&approved, |_phase, _admitted| {
             reached_delivery.set(true);
             Ok(())
         })
@@ -228,7 +232,7 @@ fn elevated_preview_rejects_a_foreign_session() {
         ))
         .as_principal(&requester)
         .controls(controls())
-        .admit_preview_with_approved_elevation(&approved, &session, |_admitted| Ok(()))
+        .admit_preview_with_approved_elevation(&approved, &session, |_phase, _admitted| Ok(()))
         .expect_err("another runtime's retained product must be refused");
     assert!(matches!(
         denial,

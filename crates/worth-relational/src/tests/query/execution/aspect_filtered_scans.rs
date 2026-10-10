@@ -2,6 +2,9 @@ use super::*;
 
 #[test]
 fn planned_query_execution_supports_aspect_filtered_entity_scans_through_reducer_path() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     let left = create_entity_in_partition(&runtime, "left-a", PartitionId(7));
     let right = create_entity_in_partition(&runtime, "right-a", PartitionId(11));
@@ -38,7 +41,13 @@ fn planned_query_execution_supports_aspect_filtered_entity_scans_through_reducer
         .expect("planned query packet");
     let outcome = runtime
         .read_truth()
-        .execute_query_plan(plan)
+        .execute_query_plan(
+            plan,
+            execution,
+            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
+        )
+        .expect("request remains live")
+        .map(|read| read.outcome)
         .expect("query execution outcome");
 
     assert_eq!(outcome.complexity.packet_count, 2);
@@ -55,6 +64,9 @@ fn planned_query_execution_supports_aspect_filtered_entity_scans_through_reducer
 
 #[test]
 fn planned_query_execution_aspect_filter_requires_projected_authoritative_presence() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut fixture = AspectSchemaFixture::with_default_declared_aspects(
         CascadeDeletePolicy::CascadeDeleteRelations,
     );
@@ -97,7 +109,13 @@ fn planned_query_execution_aspect_filter_requires_projected_authoritative_presen
         .expect("planned query packet");
     let outcome = runtime
         .read_truth()
-        .execute_query_plan(plan)
+        .execute_query_plan(
+            plan,
+            execution,
+            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
+        )
+        .expect("request remains live")
+        .map(|read| read.outcome)
         .expect("query execution outcome");
 
     assert_eq!(outcome.result.entities.len(), 0);
@@ -106,6 +124,9 @@ fn planned_query_execution_aspect_filter_requires_projected_authoritative_presen
 
 #[test]
 fn planned_query_execution_aspect_filter_supports_field_mask_presence() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = AspectSchemaFixture {
         entity_aspects: vec![
             entity_field_aspect(aspect_key("name"), field_key("name")),
@@ -149,7 +170,13 @@ fn planned_query_execution_aspect_filter_supports_field_mask_presence() {
         .expect("planned query packet");
     let outcome = runtime
         .read_truth()
-        .execute_query_plan(plan)
+        .execute_query_plan(
+            plan,
+            execution,
+            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
+        )
+        .expect("request remains live")
+        .map(|read| read.outcome)
         .expect("query execution outcome");
 
     assert_eq!(
@@ -165,6 +192,9 @@ fn planned_query_execution_aspect_filter_supports_field_mask_presence() {
 
 #[test]
 fn planned_query_execution_supports_aspect_filtered_relation_scans_through_reducer_path() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     let left = create_entity_in_partition(&runtime, "left", PartitionId(7));
     let right = create_entity_in_partition(&runtime, "right", PartitionId(11));
@@ -205,7 +235,13 @@ fn planned_query_execution_supports_aspect_filtered_relation_scans_through_reduc
         .expect("planned query packet");
     let outcome = runtime
         .read_truth()
-        .execute_query_plan(plan)
+        .execute_query_plan(
+            plan,
+            execution,
+            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
+        )
+        .expect("request remains live")
+        .map(|read| read.outcome)
         .expect("query execution outcome");
 
     assert_eq!(outcome.complexity.packet_count, 2);

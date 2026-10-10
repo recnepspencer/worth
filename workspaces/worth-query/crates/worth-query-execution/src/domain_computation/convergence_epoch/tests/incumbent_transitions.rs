@@ -102,11 +102,14 @@ fn repeated_semantic_candidate_key_mints_a_distinct_pareto_occurrence() {
 }
 
 fn advance(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     epoch: WorthQueryIteratingDirectConvergenceEpoch,
     call_identity: &str,
 ) -> WorthQueryDirectConvergenceIterationOutcome {
+    let installed_fixture_phase = epoch.fixture_phase(execution);
+    let execution = &installed_fixture_phase;
+
     let started = match epoch.begin_iteration(
         execution,
         WorthQueryManagedGraphCallRequest::new(

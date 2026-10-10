@@ -3,6 +3,8 @@ use super::*;
 #[test]
 #[ignore = "performance baseline capture; run with -- --ignored --nocapture --test-threads=1"]
 fn perf_mixed_load_matrix() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let suite = "mixed_load_matrix";
 
     let snapshot_version_pressure_samples =
@@ -18,14 +20,16 @@ fn perf_mixed_load_matrix() {
             let serial_snapshot_name = {
                 let read = runtime
                     .read_truth()
-                    .read_snapshot(&explicit_snapshot)
+                    .read_snapshot(&explicit_snapshot, execution)
                     .expect("snapshot read");
                 read_entity_name(read.get_entity(entity).expect("snapshot entity"))
                     .expect("snapshot name")
                     .to_string()
             };
             let serial_version_name = {
-                let read = runtime.read_truth().read_version(created_version_id);
+                let read = runtime
+                    .read_truth()
+                    .read_version(execution, created_version_id);
                 read_entity_name(read.get_entity(entity).expect("version entity"))
                     .expect("version name")
                     .to_string()
@@ -33,7 +37,7 @@ fn perf_mixed_load_matrix() {
             let serial_latest_name = {
                 let read = runtime
                     .read_truth()
-                    .read_snapshot(&updated.snapshot)
+                    .read_snapshot(&updated.snapshot, execution)
                     .expect("latest read");
                 read_entity_name(read.get_entity(entity).expect("latest entity"))
                     .expect("latest name")
@@ -52,12 +56,14 @@ fn perf_mixed_load_matrix() {
                     readers.push(scope.spawn(move || {
                         let snapshot_read = runtime
                             .read_truth()
-                            .read_snapshot(&explicit_snapshot)
+                            .read_snapshot(&explicit_snapshot, execution)
                             .expect("thread snapshot read");
-                        let version_read = runtime.read_truth().read_version(created_version_id);
+                        let version_read = runtime
+                            .read_truth()
+                            .read_version(execution, created_version_id);
                         let latest_read = runtime
                             .read_truth()
-                            .read_snapshot(&published_snapshot)
+                            .read_snapshot(&published_snapshot, execution)
                             .expect("thread latest read");
                         (
                             read_entity_name(
@@ -154,13 +160,14 @@ fn perf_mixed_load_matrix() {
                 },
                 branch_scoped: false,
             });
-            runtime
-                .index_authority()
-                .build_for_commit(DerivedIndexBuildRequest {
+            runtime.index_authority().build_for_commit(
+                execution,
+                DerivedIndexBuildRequest {
                     source_commit_id: commit.commit.commit_id,
                     branch_id: BranchId("main".to_string()),
                     index_ids: vec![relation_index.index_id],
-                });
+                },
+            );
 
             let snapshot = commit.snapshot.clone();
             let context = runtime
@@ -191,7 +198,9 @@ fn perf_mixed_load_matrix() {
                         .plan_query_packet(&snapshot, packet.clone())
                         .expect("baseline relation plan"),
                     IndexParityMode::CertificationParity,
+                    execution,
                 )
+                .expect("request remains live")
                 .expect("baseline relation outcome");
 
             runtime.performance_access().reset_counters();
@@ -213,7 +222,9 @@ fn perf_mixed_load_matrix() {
                                     .plan_query_packet(&snapshot, packet)
                                     .expect("thread relation plan"),
                                 IndexParityMode::CertificationParity,
+                                execution,
                             )
+                            .expect("request remains live")
                             .expect("thread relation outcome");
                         assert_eq!(outcome.access_path, expected.access_path);
                         assert_eq!(outcome.execution.result, expected.execution.result);

@@ -10,25 +10,28 @@ use crate::runtime::tests::support::{
 
 #[test]
 fn retained_history_preserves_current_result_meaning_on_the_same_truth_basis() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let current_declaration =
         declare_read(local_identity_read).expect("current declaration should build");
     let historical_declaration = declare_history(local_identity_read)
         .expect("historical declaration should build")
         .retained_snapshot();
-    let mut workspace = read_runtime()
+    let mut workspace = read_runtime(request_execution)
         .workspace("ordinary-retained-history-parity")
         .expect("workspace should open");
-    let historical_context = at(&workspace);
+    let historical_context = at(request_execution, &workspace);
 
     let current = current_declaration
         .using(current())
-        .run(&mut workspace)
+        .run(request_execution, &mut workspace)
         .into_result()
         .expect("current read should execute")
         .into_result();
     let historical = historical_declaration
         .using(historical_context)
-        .run(&mut workspace)
+        .run(request_execution, &mut workspace)
         .into_result()
         .expect("retained history should execute");
 
@@ -51,16 +54,19 @@ fn retained_history_preserves_current_result_meaning_on_the_same_truth_basis() {
 
 #[test]
 fn unavailable_replay_stops_before_context_planning_or_runtime_contact() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let declaration = declare_history(local_identity_read)
         .expect("historical declaration should build")
         .delta_replay(8);
-    let mut workspace = read_runtime()
+    let mut workspace = read_runtime(request_execution)
         .workspace("ordinary-history-replay-unavailable")
         .expect("workspace should open");
-    let context = at(&workspace);
+    let context = at(request_execution, &workspace);
     let stop = declaration
         .using(context)
-        .run(&mut workspace)
+        .run(request_execution, &mut workspace)
         .into_result()
         .expect_err("runtime replay should be explicitly unavailable");
 
@@ -83,26 +89,32 @@ fn unavailable_replay_stops_before_context_planning_or_runtime_contact() {
 
 #[test]
 fn stale_retained_context_stops_before_planning_or_runtime_contact() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let declaration = declare_history(local_identity_read)
         .expect("historical declaration should build")
         .retained_snapshot();
-    let mut workspace = stateful_bridge_task_runtime()
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("ordinary-history-stale")
         .expect("workspace should open");
-    let context = at(&workspace);
+    let context = at(request_execution, &workspace);
     workspace
-        .write(insert_command(
-            "Task",
-            [
-                ("identity.id", test_string_aspect_value("changed")),
-                ("title.value", test_string_aspect_value("Changed")),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [
+                    ("identity.id", test_string_aspect_value("changed")),
+                    ("title.value", test_string_aspect_value("Changed")),
+                ],
+            ),
+        )
         .expect("write should advance the truth snapshot");
 
     let stop = declaration
         .using(context)
-        .run(&mut workspace)
+        .run(request_execution, &mut workspace)
         .into_result()
         .expect_err("stale history context must stop");
     assert_eq!(stop.source(), WorthQueryHistoricalStopSource::StaleContext);

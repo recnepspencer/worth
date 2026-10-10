@@ -100,8 +100,10 @@ fn touch_effect_cannot_cross_an_effect_free_step_contract() {
             reject_effect: false,
             panic_after_effect: false,
         });
+        let installed_running_phase = execution.phase_for_direct(&running);
+
         let active = start_effect(execution, running, &graph, "effect-free");
-        let terminal = match active.advance(execution) {
+        let terminal = match active.advance(&installed_running_phase) {
             WorthQueryDirectGraphStepOutcome::Failed(terminal) => terminal,
             _ => panic!("effect-free bounded step admitted an applied effect"),
         };
@@ -128,11 +130,14 @@ fn declared_partial_effect_posture_carries_exact_applied_effect_evidence() {
             reject_effect: false,
             panic_after_effect: false,
         });
-        let completion =
-            match start_effect(execution, running, &graph, "partial-effect").advance(execution) {
-                WorthQueryDirectGraphStepOutcome::Completed(completion) => completion,
-                _ => panic!("declared partial-effect posture did not admit the governed effect"),
-            };
+        let installed_running_phase = execution.phase_for_direct(&running);
+
+        let completion = match start_effect(execution, running, &graph, "partial-effect")
+            .advance(&installed_running_phase)
+        {
+            WorthQueryDirectGraphStepOutcome::Completed(completion) => completion,
+            _ => panic!("declared partial-effect posture did not admit the governed effect"),
+        };
         assert_eq!(applied_effects.load(Ordering::Relaxed), 1);
         assert_eq!(completion.receipt().work_report().applied_effect_count(), 1);
         let terminal = completion.into_running().completed().unwrap();
@@ -157,11 +162,14 @@ fn rejected_effect_closure_cannot_claim_an_applied_effect() {
             reject_effect: true,
             panic_after_effect: false,
         });
-        let terminal =
-            match start_effect(execution, running, &graph, "rejected-effect").advance(execution) {
-                WorthQueryDirectGraphStepOutcome::Failed(terminal) => terminal,
-                _ => panic!("rejected provider effect advanced the managed run"),
-            };
+        let installed_running_phase = execution.phase_for_direct(&running);
+
+        let terminal = match start_effect(execution, running, &graph, "rejected-effect")
+            .advance(&installed_running_phase)
+        {
+            WorthQueryDirectGraphStepOutcome::Failed(terminal) => terminal,
+            _ => panic!("rejected provider effect advanced the managed run"),
+        };
         assert_eq!(applied_effects.load(Ordering::Relaxed), 1);
         assert_eq!(terminal.provider_work().attempted_effect_count(), 1);
         assert_eq!(terminal.provider_work().applied_effect_count(), 0);
@@ -196,11 +204,14 @@ fn panic_after_effect_attempt_preserves_effect_uncertainty() {
             reject_effect: false,
             panic_after_effect: true,
         });
-        let terminal =
-            match start_effect(execution, running, &graph, "panicked-effect").advance(execution) {
-                WorthQueryDirectGraphStepOutcome::Failed(terminal) => terminal,
-                _ => panic!("panicked provider effect advanced the managed run"),
-            };
+        let installed_running_phase = execution.phase_for_direct(&running);
+
+        let terminal = match start_effect(execution, running, &graph, "panicked-effect")
+            .advance(&installed_running_phase)
+        {
+            WorthQueryDirectGraphStepOutcome::Failed(terminal) => terminal,
+            _ => panic!("panicked provider effect advanced the managed run"),
+        };
         assert_eq!(applied_effects.load(Ordering::Relaxed), 1);
         assert_eq!(terminal.provider_work().attempted_effect_count(), 1);
         assert_eq!(terminal.provider_work().applied_effect_count(), 0);
@@ -220,20 +231,22 @@ fn panic_after_effect_attempt_preserves_effect_uncertainty() {
 }
 
 fn start_effect(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     running: WorthQueryRunningDirectRun,
     graph: &WorthQueryInstalledGraphParticipationAuthority,
     scope: &str,
 ) -> crate::domain_computation::WorthQueryActiveDirectGraphExecution {
-    running
-        .begin_graph_execution(
-            execution,
+    {
+        let installed_fixture_phase = running.fixture_phase(execution);
+        running.begin_graph_execution(
+            &installed_fixture_phase,
             graph,
             WorthQueryManagedGraphCallRequest::new(
                 WorthQueryGraphProviderCallKind::TouchEffect,
                 scope,
             ),
         )
-        .expect("installed touch authority should start")
+    }
+    .expect("installed touch authority should start")
 }

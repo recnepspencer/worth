@@ -14,6 +14,7 @@ use worth_relational::facade::{
 };
 
 pub(in crate::domain_computation::primary_graph) fn seed_program_activation(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &AuthorizationWorld,
     revision: &ApplicationProgramRevision,
 ) {
@@ -41,7 +42,8 @@ pub(in crate::domain_computation::primary_graph) fn seed_program_activation(
         }),
     ));
     let request = super::live_scope();
-    let prepared = prepare_relational_mutation_on_application(&world.application, batch, &request);
+    let prepared =
+        prepare_relational_mutation_on_application(execution, &world.application, batch, &request);
     let worth_runtime_world::facade::RuntimeWorldPublicationOutcome::Performed(performed) = world
         .application
         .with_application_advancement(&request, |phase| {
@@ -67,12 +69,12 @@ pub(in crate::domain_computation::primary_graph) fn seed_program_activation(
         .application
         .primary_provider
         .graph
-        .with_runtime_mut(|runtime| {
+        .with_runtime_mut(execution, |runtime| {
             world
                 .application
                 .primary_provider
                 .graph
-                .ensure_primary_indexes_for_basis(runtime, &basis)
+                .ensure_primary_indexes_for_basis(execution, runtime, &basis)
                 .unwrap();
         });
     world

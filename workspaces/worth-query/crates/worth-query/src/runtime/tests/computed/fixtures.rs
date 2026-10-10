@@ -28,18 +28,20 @@ pub(super) fn update_string_aspect(
 }
 
 pub(super) fn read_derived_value_aspects<T>(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryRuntime,
     view: &WorthQueryDerivedViewHandle<T>,
 ) -> Vec<AspectValue> {
-    retained_value_aspects(read_derived(runtime, view).retained_rows())
+    retained_value_aspects(read_derived(request_execution, runtime, view).retained_rows())
 }
 
 pub(super) fn read_derived<T>(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryRuntime,
     view: &WorthQueryDerivedViewHandle<T>,
 ) -> WorthQueryDerivedMaterializationResult {
     runtime
-        .read_derived_result(view)
+        .read_derived_result(request_execution, view)
         .expect("test derived materialization should execute")
 }
 

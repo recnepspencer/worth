@@ -2,6 +2,9 @@ use crate::tests::support::*;
 
 #[test]
 fn savepoint_abandoned_work_never_appears_in_subscriber_cdc() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let anchor = create_entity_outcome(&runtime, "anchor");
     let anchor_entity = changed_entities(&anchor)[0];
@@ -61,7 +64,7 @@ fn savepoint_abandoned_work_never_appears_in_subscriber_cdc() {
 
     let read = runtime
         .read_truth()
-        .read_snapshot(&outcome.snapshot)
+        .read_snapshot(&outcome.snapshot, execution)
         .unwrap();
     let names = read
         .entities()

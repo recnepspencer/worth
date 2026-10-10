@@ -65,6 +65,9 @@ pub struct WorthQueryOrdinaryWorkflowRunWithKeys<
 #[derive(Debug)]
 pub enum WorthQueryOrdinaryWorkflowRunStop {
     Terminal,
+    ProductSelection(
+        worth_query_execution::facade::product::WorthQueryProductBranchAdmissionDenial,
+    ),
     /// The supplied key sequence ended; the instance may still be live.
     CallerKeysExhausted,
     /// This invocation reached the installed step ceiling, not a terminal proof.
@@ -179,8 +182,11 @@ where
             workflow,
             instance,
         } = run;
-        let maximum = workflow
-            .workflow_spec_on(instance.branch())
+        let installed = match workflow.workflow_spec_on(&phase, instance.branch()) {
+            Ok(installed) => installed,
+            Err(denial) => return WorthQueryOrdinaryWorkflowRunProgress { transitions: Vec::new(), attempted_steps: 0, stop: WorthQueryOrdinaryWorkflowRunStop::ProductSelection(denial) },
+        };
+        let maximum = installed
             .resources()
             .maximum_retained_transitions_per_instance() as usize;
         let mut transitions = Vec::new();

@@ -41,8 +41,20 @@ fn current_capability_progresses_through_the_real_application_commit() {
     let world = installed_capability_authorization_world();
     world.authorization_time.hold(time(100));
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let (program, evidence) = admitted_capability_program(&world, &principal, &request, "updated");
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let (program, evidence) = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            admitted_capability_program(&phase, &world, &principal, &request, "updated")
+        })
+        .expect("the fixture read owns its installed host call");
 
     assert_eq!(evidence.time_sample, AspectValue::UInt64(100));
     assert_eq!(evidence.authorization_fact_count, 2);
@@ -64,91 +76,14 @@ fn current_capability_progresses_through_the_real_application_commit() {
     );
 }
 
-#[test]
-fn caller_time_cannot_substitute_for_the_query_owned_sample() {
-    let world = installed_capability_authorization_world();
-    world.authorization_time.script([time(300)]);
-    let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
+#[path = "capability_progression/caller_time_cannot_substitute_for_the_query_owned_sample.rs"]
+mod caller_time_cannot_substitute_for_the_query_owned_sample;
 
-    let Err(denial) = admitted_capability_access(&world, &principal, &request, 100) else {
-        panic!("a descriptive in-range caller time cannot revive an expired grant");
-    };
+#[path = "capability_progression/explicit_purpose_mismatch_preserves_its_exact_explanation_cause.rs"]
+mod explicit_purpose_mismatch_preserves_its_exact_explanation_cause;
 
-    assert_eq!(
-        denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::CapabilityAuthorizationMissing
-    );
-    assert!(denial.identity().is_some());
-    assert_eq!(
-        denial.causes(),
-        [WorthQueryOperationAuthorizationDenialKind::CapabilityAuthorizationMissing]
-    );
-}
-
-#[test]
-fn explicit_purpose_mismatch_preserves_its_exact_explanation_cause() {
-    let world = installed_capability_authorization_world();
-    world.authorization_time.script([time(100)]);
-    let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let capability = world
-        .application
-        .installed_schema()
-        .capability(
-            TouchAccountCapability::reference(),
-            CapabilityTouchOperation::reference(),
-        )
-        .unwrap();
-    let mut input = capability_input(100);
-    input.purpose = CapabilityPurpose::Audit;
-
-    let Err(denial) =
-        world
-            .selected_product()
-            .admit_capability_access(&principal, &capability, input, &request)
-    else {
-        panic!("an explicit purpose mismatch must not mint capability authority")
-    };
-
-    assert_eq!(
-        denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::PurposeMismatch
-    );
-    assert_eq!(
-        denial.explanation_cause(),
-        Some(WorthQueryApplicationAuthorizationExplanationCause::PurposeMismatch)
-    );
-}
-
-#[test]
-fn capability_governed_operation_rejects_conventional_authorization() {
-    let world = installed_capability_authorization_world();
-    let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
-    let operation = world
-        .application
-        .installed_schema()
-        .installed_operation(CapabilityTouchOperation::reference())
-        .unwrap();
-
-    assert!(operation.contracts().authorization().requires_capability());
-    assert!(operation.contracts().ability_requirements().is_empty());
-    let Err(denial) = world.selected_product().authorize_operation(
-        &principal,
-        &account,
-        &operation,
-        Default::default(),
-        &request,
-    ) else {
-        panic!("principal authority cannot substitute for capability access");
-    };
-    assert_eq!(
-        denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::CapabilityRequired
-    );
-}
+#[path = "capability_progression/capability_governed_operation_rejects_conventional_authorization.rs"]
+mod capability_governed_operation_rejects_conventional_authorization;
 
 #[test]
 fn admitted_access_is_runtime_affine_at_operation_progression() {
@@ -156,25 +91,35 @@ fn admitted_access_is_runtime_affine_at_operation_progression() {
     source.authorization_time.script([time(100)]);
     let target = installed_capability_authorization_world();
     let request = live_scope();
-    let principal = authenticated_principal(&source, &request);
-    let access = admitted_capability_access(&source, &principal, &request, 100).unwrap();
-    let target_operation = target
+    target
         .application
-        .installed_schema()
-        .installed_operation(CapabilityTouchOperation::reference())
-        .unwrap();
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
 
-    let Err(denial) = target.application.authorize_capability_operation(
-        access,
-        &target_operation,
-        Default::default(),
-    ) else {
-        panic!("an access proof copied across runtimes cannot authorize an operation");
-    };
-    assert_eq!(
-        denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::ForeignRuntime
-    );
+            let principal = authenticated_principal(&host_custody, &source, &request);
+            let access =
+                admitted_capability_access(&host_custody, &source, &principal, &request, 100)
+                    .unwrap();
+            let target_operation = target
+                .application
+                .installed_schema()
+                .installed_operation(CapabilityTouchOperation::reference())
+                .unwrap();
+
+            let Err(denial) = target.application.authorize_capability_operation(
+                &host_custody.phase_for_application(&target.application),
+                access,
+                &target_operation,
+                Default::default(),
+            ) else {
+                panic!("an access proof copied across runtimes cannot authorize an operation");
+            };
+            assert_eq!(
+                denial.kind(),
+                WorthQueryOperationAuthorizationDenialKind::ForeignRuntime
+            );
+        })
+        .expect("the fixture block owns its installed host call")
 }
 
 #[test]
@@ -182,9 +127,28 @@ fn missing_grant_membership_mints_no_access_authority() {
     let world = installed_authorization_world(false);
     world.authorization_time.script([time(100)]);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
 
-    let Err(denial) = admitted_capability_access(&world, &principal, &request, 100) else {
+    let Err(denial) = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            admitted_capability_access(
+                &(phase).test_host_request(),
+                &world,
+                &principal,
+                &request,
+                100,
+            )
+        })
+        .expect("the fixture read owns its installed host call")
+    else {
         panic!("a principal without grant membership cannot receive capability access");
     };
     assert_eq!(
@@ -210,12 +174,14 @@ pub(super) struct AdmissionEvidence {
 }
 
 pub(super) fn admitted_capability_program(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     world: &World,
     principal: &WorthQueryAuthenticatedPrincipal<IdentityExecutionSchema, Principal, u64>,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     replacement: &str,
 ) -> (Program, AdmissionEvidence) {
     admitted_capability_program_for_input(
+        phase_custody,
         world,
         principal,
         request,
@@ -225,6 +191,7 @@ pub(super) fn admitted_capability_program(
 }
 
 pub(super) fn admitted_capability_program_for_input(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     world: &World,
     principal: &WorthQueryAuthenticatedPrincipal<IdentityExecutionSchema, Principal, u64>,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
@@ -236,7 +203,14 @@ pub(super) fn admitted_capability_program_for_input(
         .installed_schema()
         .installed_operation(CapabilityTouchOperation::reference())
         .unwrap();
-    let access = admitted_capability_access_for_input(world, principal, request, input).unwrap();
+    let access = admitted_capability_access_for_input(
+        &(phase_custody).test_host_request(),
+        world,
+        principal,
+        request,
+        input,
+    )
+    .unwrap();
     let evidence = capture_admission_evidence(
         &access,
         operation.contracts().authorization().requires_capability(),
@@ -244,10 +218,10 @@ pub(super) fn admitted_capability_program_for_input(
     );
     let admission = world
         .application
-        .authorize_capability_operation(access, &operation, Default::default())
+        .authorize_capability_operation(phase_custody, access, &operation, Default::default())
         .unwrap();
     (
-        build_touch_program(world, request, admission, replacement),
+        build_touch_program(phase_custody, world, request, admission, replacement),
         evidence,
     )
 }
@@ -271,15 +245,17 @@ fn capture_admission_evidence(
 }
 
 pub(super) fn build_touch_program(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     world: &World,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     admission: Admission,
     replacement: &str,
 ) -> Program {
-    let account = resolved_account(world, "open", request);
+    let account = resolved_account(&(phase_custody).test_host_request(), world, "open", request);
     let (_, projection, _) = world
         .invariant
         .project_admitted_operation(
+            phase_custody,
             &admission,
             |reader, projected| {
                 reader
@@ -293,6 +269,7 @@ pub(super) fn build_touch_program(
     let reads = world
         .application
         .begin_projected_application_read_attempt(
+            phase_custody,
             admission,
             projection,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -300,6 +277,7 @@ pub(super) fn build_touch_program(
         .unwrap();
     let mut effects = reads
         .complete_projected_dependencies(
+            phase_custody,
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap()
@@ -312,15 +290,23 @@ pub(super) fn build_touch_program(
 }
 
 pub(super) fn admitted_capability_access(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     world: &World,
     principal: &WorthQueryAuthenticatedPrincipal<IdentityExecutionSchema, Principal, u64>,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     caller_time: u64,
 ) -> Result<CapabilityAccess, WorthQueryOperationAuthorizationDenial> {
-    admitted_capability_access_for_input(world, principal, request, capability_input(caller_time))
+    admitted_capability_access_for_input(
+        phase_custody,
+        world,
+        principal,
+        request,
+        capability_input(caller_time),
+    )
 }
 
 pub(super) fn admitted_capability_access_for_input(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     world: &World,
     principal: &WorthQueryAuthenticatedPrincipal<IdentityExecutionSchema, Principal, u64>,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
@@ -335,8 +321,14 @@ pub(super) fn admitted_capability_access_for_input(
         )
         .unwrap();
     world
-        .selected_product()
-        .admit_capability_access(principal, &capability, input, request)
+        .selected_product(&(phase_custody).test_host_request())
+        .admit_capability_access(
+            &phase_custody.phase_for_application(&world.application),
+            principal,
+            &capability,
+            input,
+            request,
+        )
 }
 
 pub(super) fn capability_input(caller_time: u64) -> CapabilityTouchInput {
@@ -354,11 +346,13 @@ pub(super) fn capability_input(caller_time: u64) -> CapabilityTouchInput {
 }
 
 pub(super) fn admitted_capability_operation(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     world: &World,
     principal: &WorthQueryAuthenticatedPrincipal<IdentityExecutionSchema, Principal, u64>,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
 ) -> Admission {
-    let access = admitted_capability_access(world, principal, request, 100).unwrap();
+    let access =
+        admitted_capability_access(&phase_custody, world, principal, request, 100).unwrap();
     let operation = world
         .application
         .installed_schema()
@@ -366,7 +360,12 @@ pub(super) fn admitted_capability_operation(
         .unwrap();
     world
         .application
-        .authorize_capability_operation(access, &operation, Default::default())
+        .authorize_capability_operation(
+            &phase_custody.phase_for_application(&world.application),
+            access,
+            &operation,
+            Default::default(),
+        )
         .unwrap()
 }
 

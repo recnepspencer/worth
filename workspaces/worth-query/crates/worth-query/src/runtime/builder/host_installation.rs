@@ -32,13 +32,14 @@ pub struct WorthQueryHostRuntimeInstallationCompletion {
 impl WorthQueryHostRuntimeInstallationCompletion {
     pub fn complete(
         mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         installation: WorthQueryExecutionRuntimeInstallation,
     ) -> Result<WorthQueryRuntime, WorthQueryHostRuntimeCompletionError> {
         validate_installation(&installation, self.generation, &self.expected_packages)
             .map_err(WorthQueryHostRuntimeCompletionError::Installation)?;
         self.builder.host_execution_installation = Some(installation);
         self.builder
-            .build()
+            .build(request_execution)
             .map_err(WorthQueryHostRuntimeCompletionError::Runtime)
     }
 }

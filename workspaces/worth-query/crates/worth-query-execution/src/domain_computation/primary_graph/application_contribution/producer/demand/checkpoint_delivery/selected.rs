@@ -20,6 +20,7 @@ where
     /// stage, while Query preparation and finish stay on the carried meter.
     pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) fn advance_selected_output_checkpoint(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
 
         producer_identity: &str,
@@ -143,6 +144,7 @@ where
                 ready_backing,
             } => {
                 let readiness = self.evaluate_current_output_readiness_admitted(
+                    execution,
                     phase,
                     producer_identity,
                     &receipt,

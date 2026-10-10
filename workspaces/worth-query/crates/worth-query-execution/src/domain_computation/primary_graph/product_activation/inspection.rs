@@ -43,6 +43,7 @@ pub enum WorthQuerySelectedProgramInspectionDenial {
 pub(in crate::domain_computation::primary_graph) fn inspect_selected_program<
     Schema: ApplicationSchema,
 >(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     basis: &AdmittedRelationalBranchBasis,
 ) -> Result<WorthQuerySelectedProgramInspection, WorthQuerySelectedProgramInspectionDenial> {
@@ -60,7 +61,7 @@ pub(in crate::domain_computation::primary_graph) fn inspect_selected_program<
     // version alone would also see a sibling's later adoption.
     let rendering =
         graph
-            .with_runtime(|runtime| {
+            .with_runtime(execution, |runtime| {
                 let field = locator.field_path().fields().first()?.clone();
                 let aspect = locator.aspect().aspect_key();
                 let scope = ProjectionAspectScope::from_requirements([
@@ -68,9 +69,9 @@ pub(in crate::domain_computation::primary_graph) fn inspect_selected_program<
                 ]);
                 runtime
                     .read_truth()
-                    .project_observation(&basis.observation())
+                    .project_observation(execution, &basis.observation())
                     .ok()?
-                    .entity_record_with_projection_scope(activation, scope, |record| {
+                    .entity_record_with_projection_scope(execution, activation, scope, |record| {
                         if record.kind_id() != layout.entity_kind
                             || record.lifecycle() != RecordLifecycleState::Live
                         {
@@ -92,12 +93,13 @@ pub(in crate::domain_computation::primary_graph) fn inspect_selected_program<
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(in crate::domain_computation::primary_graph) fn retain_selected_program_interpretation(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         basis: &AdmittedRelationalBranchBasis,
     ) -> Result<
         WorthQueryRetainedSelectedProgramInspection,
         crate::basis::WorthQueryProductBranchAdmissionDenial,
     > {
-        let inspection = inspect_selected_program(self, basis);
+        let inspection = inspect_selected_program(execution, self, basis);
         let interpretation = if let (Some(support), Ok(selected)) =
             (self.installed_program_support(), &inspection)
         {
@@ -117,6 +119,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 
     pub(in crate::domain_computation::primary_graph) fn bind_selected_program_interpretation(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         relational: &AdmittedRelationalBranchBasis,
         basis: &mut crate::domain_computation::primary_graph::application_query::resource_lifecycle::WorthQueryApplicationBasisLease,
     ) -> Result<
@@ -131,7 +134,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             return Err(crate::basis::WorthQueryProductBranchAdmissionDenial::ObservationRejected);
         }
         let (selected, interpretation) = self
-            .retain_selected_program_interpretation(relational)?
+            .retain_selected_program_interpretation(execution, relational)?
             .into_parts();
         if let Some(interpretation) = interpretation {
             basis.bind_program_interpretation(interpretation);

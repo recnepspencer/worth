@@ -25,7 +25,10 @@ use crate::lower_runtime_routing::{
 
 #[test]
 fn certification_bundle_contains_phase_seven_lanes() {
-    let bundle = certify_lower_runtime_routing();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let bundle = certify_lower_runtime_routing(request_execution);
 
     for lane in [
         WorthQueryLowerRuntimeCertificationLane::CrossingsSurface,
@@ -44,143 +47,8 @@ fn certification_bundle_contains_phase_seven_lanes() {
     assert!(!bundle.certification_bundle_digest().is_empty());
 }
 
-#[test]
-fn certification_bundle_emits_required_outputs() {
-    let bundle = certify_lower_runtime_routing();
-    let crossings = worth_query_lower_runtime_crossing_inventory();
-    let support = worth_query_lower_runtime_support_matrix();
-    let non_bypass = certify_lower_runtime_non_bypass().expect("non-bypass should pass");
-    let reconciliation = worth_query_lower_runtime_boundary_reconciliation_report();
-    let synthetic_tail = worth_query_lower_runtime_synthetic_tail_report();
-    let surface = worth_query_lower_runtime_representative_surface();
-    let slopes = certify_lower_runtime_performance_slopes(&surface);
-    let reconciliation_width = reconciliation.rows().len().to_string();
-    let synthetic_tail_width = synthetic_tail.rows().len().to_string();
-    let full_crossing_width = slopes
-        .full_profile()
-        .counters()
-        .crossing_inventory_width()
-        .to_string();
-    let full_route_width = slopes
-        .full_profile()
-        .counters()
-        .route_plan_width()
-        .to_string();
-    let full_evidence_width = slopes
-        .full_profile()
-        .counters()
-        .boundary_evidence_width()
-        .to_string();
-
-    for output in worth_query_lower_runtime_certification_output_manifest() {
-        assert!(
-            bundle.output_digest(output).is_some(),
-            "missing required output {output}"
-        );
-    }
-    assert_eq!(
-        bundle.output_digests().len(),
-        worth_query_lower_runtime_certification_output_manifest().len()
-    );
-    assert_eq!(
-        bundle.output_digest("crossing_inventory_digest"),
-        Some(crossings.inventory_digest().as_str())
-    );
-    assert_eq!(
-        bundle.output_digest("route_support_matrix_digest"),
-        Some(support.matrix_digest().as_str())
-    );
-    assert_eq!(
-        bundle.output_digest("route_non_bypass_digest"),
-        Some(non_bypass.route_non_bypass_digest())
-    );
-    assert_eq!(
-        bundle.output_digest("route_boundary_reconciliation_digest"),
-        Some(reconciliation.report_digest())
-    );
-    assert_eq!(
-        bundle.output_digest("route_phase_artifact_manifest_digest"),
-        Some(worth_query_lower_runtime_phase_artifact_manifest_digest().as_str())
-    );
-    assert_eq!(
-        bundle.output_digest("route_proof_shape_digest"),
-        Some(worth_query_lower_runtime_proof_shape_digest().as_str())
-    );
-    assert_eq!(
-        bundle.output_digest("route_phase_progression_digest"),
-        Some(worth_query_lower_runtime_phase_progression_digest().as_str())
-    );
-    assert_eq!(
-        bundle.output_digest("route_typestate_transition_digest"),
-        Some(worth_query_lower_runtime_typestate_transition_digest().as_str())
-    );
-    assert_ne!(
-        bundle.output_digest("query_digest"),
-        bundle.output_digest("capability_request_digest"),
-        "query identity must not collapse into request identity"
-    );
-    let concrete_width = bundle
-        .output_digest("route_concrete_surface_width")
-        .expect("concrete width output should exist")
-        .parse::<usize>()
-        .expect("concrete width should parse as usize");
-    let synthetic_width = bundle
-        .output_digest("route_synthetic_surface_width")
-        .expect("synthetic width output should exist")
-        .parse::<usize>()
-        .expect("synthetic width should parse as usize");
-    assert_eq!(
-        concrete_width + synthetic_width,
-        crossings.rows().len(),
-        "concrete and synthetic surface widths should partition crossing inventory"
-    );
-    assert!(
-        concrete_width >= required_phase_six_concrete_seams().len(),
-        "phase six certification should expose every required concrete seam"
-    );
-    assert_ne!(
-        bundle.output_digest("route_concrete_surface_digest"),
-        bundle.output_digest("route_synthetic_surface_digest"),
-        "concrete and synthetic surfaces must remain distinguishable in the bundle"
-    );
-    assert_eq!(
-        synthetic_width,
-        allowed_phase_six_synthetic_seams().len(),
-        "synthetic width must match the explicit phase six allowlist"
-    );
-    assert_eq!(
-        bundle.output_digest("route_synthetic_tail_report_digest"),
-        Some(synthetic_tail.report_digest())
-    );
-    assert_eq!(
-        bundle.output_digest("route_synthetic_tail_justification_digest"),
-        Some(synthetic_tail.justification_digest())
-    );
-    assert_eq!(
-        bundle.output_digest("route_boundary_reconciliation_width"),
-        Some(reconciliation_width.as_str())
-    );
-    assert_eq!(
-        bundle.output_digest("route_synthetic_tail_width"),
-        Some(synthetic_tail_width.as_str())
-    );
-    assert_eq!(
-        bundle.output_digest("counter_snapshot"),
-        Some(slopes.full_profile().counters().counter_snapshot_digest())
-    );
-    assert_eq!(
-        bundle.output_digest("crossing_inventory_width"),
-        Some(full_crossing_width.as_str())
-    );
-    assert_eq!(
-        bundle.output_digest("route_plan_width"),
-        Some(full_route_width.as_str())
-    );
-    assert_eq!(
-        bundle.output_digest("boundary_evidence_width"),
-        Some(full_evidence_width.as_str())
-    );
-}
+#[path = "tests/certification_bundle_emits_required_outputs.rs"]
+mod certification_bundle_emits_required_outputs;
 
 #[test]
 fn certification_output_manifest_extends_required_outputs_exactly() {
@@ -215,7 +83,10 @@ fn phase_manifest_is_public_and_consumable_by_closeout_bundle() {
 
 #[test]
 fn stabilization_closeout_report_is_public_and_consumes_final_phase_artifacts() {
-    let report = worth_query_lower_runtime_closeout_report();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let report = worth_query_lower_runtime_closeout_report(request_execution);
 
     assert_eq!(
         report
@@ -246,7 +117,7 @@ fn stabilization_closeout_report_is_public_and_consumes_final_phase_artifacts() 
     );
     assert_eq!(
         report.closure_test().suite_digest(),
-        worth_query_lower_runtime_closure_test().suite_digest()
+        worth_query_lower_runtime_closure_test(request_execution).suite_digest()
     );
     assert_eq!(
         report
@@ -281,8 +152,11 @@ fn stabilization_closeout_report_is_public_and_consumes_final_phase_artifacts() 
 
 #[test]
 fn certification_bundle_acceptance_lane_matches_named_suite() {
-    let bundle = certify_lower_runtime_routing();
-    let suite = worth_query_lower_runtime_acceptance_suite();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let bundle = certify_lower_runtime_routing(request_execution);
+    let suite = worth_query_lower_runtime_acceptance_suite(request_execution);
     let row = bundle
         .rows()
         .iter()
@@ -302,7 +176,10 @@ fn certification_bundle_acceptance_lane_matches_named_suite() {
 
 #[test]
 fn certification_bundle_failure_digest_is_hostile_row_aggregate() {
-    let bundle = certify_lower_runtime_routing();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let bundle = certify_lower_runtime_routing(request_execution);
     let expected = hash_parts(
         &bundle
             .rows()
@@ -319,7 +196,10 @@ fn certification_bundle_failure_digest_is_hostile_row_aggregate() {
 
 #[test]
 fn parity_digest_changes_when_intentionally_different_route_families_are_compared() {
-    let bundle = certify_lower_runtime_routing();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let bundle = certify_lower_runtime_routing(request_execution);
     let route_parity = bundle
         .output_digest("route_parity_digest")
         .expect("route parity output should exist");
@@ -338,8 +218,11 @@ fn parity_digest_changes_when_intentionally_different_route_families_are_compare
 
 #[test]
 fn proof_shape_and_slope_surfaces_stay_exported() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let proof = worth_query_lower_runtime_proof_shape_audit();
-    let surface = worth_query_lower_runtime_representative_surface();
+    let surface = worth_query_lower_runtime_representative_surface(request_execution);
     let slopes = certify_lower_runtime_performance_slopes(&surface);
 
     assert_eq!(proof.rows().len(), 5);
@@ -352,7 +235,10 @@ fn proof_shape_and_slope_surfaces_stay_exported() {
 
 #[test]
 fn compatibility_debt_registry_digest_tracks_closed_gap_registry() {
-    let bundle = certify_lower_runtime_routing();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let bundle = certify_lower_runtime_routing(request_execution);
     let gaps = worth_query_lower_runtime_gap_registry();
 
     assert_eq!(gaps.rows().len(), 0);
@@ -364,7 +250,11 @@ fn compatibility_debt_registry_digest_tracks_closed_gap_registry() {
 
 #[test]
 fn certification_bundle_phase_six_required_seams_are_concrete() {
-    let surface = super::surface::worth_query_lower_runtime_representative_surface();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let surface =
+        super::surface::worth_query_lower_runtime_representative_surface(request_execution);
 
     for seam_key in required_phase_six_concrete_seams() {
         assert_eq!(

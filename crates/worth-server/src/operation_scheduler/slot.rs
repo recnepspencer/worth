@@ -93,7 +93,11 @@ impl WorthServerOperationExecutionSlot {
     pub(crate) fn mint_shared_read_context(
         &self,
     ) -> Result<WorthQuerySharedReadContext, WorthQueryRuntimeError> {
-        self.handoff().workspace().shared_read_context()
+        self.handoff()
+            .workspace()
+            .with_execution_request(|execution| {
+                self.handoff().workspace().shared_read_context(execution)
+            })?
     }
 
     pub(crate) fn shared_read_hot_path_lock_count(&self) -> usize {

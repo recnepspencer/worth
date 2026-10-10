@@ -126,16 +126,23 @@ fn approved_business_payment_runs_through_query_and_commits_the_real_payment_ope
     drop(performed);
     // Acceptance and recovery reconstruct custody from the owner after the
     // original effect response and its retry receipt have both been lost.
-    let unresolved = workflow
-        .accept_applied(
-            instance.clone(),
-            &operation,
-            authority.clone(),
-            authority.clone(),
-            &key("approved-payment:operation:perform"),
-            &key("approved-payment:operation:accept:unresolved"),
-        )
-        .expect_err("unresolved external custody cannot settle the workflow operation");
+    let unresolved = fixture
+        .world
+        .runtime
+        .with_application_advancement(&scope, |phase| {
+            workflow
+                .accept_applied(
+                    &phase,
+                    instance.clone(),
+                    &operation,
+                    authority.clone(),
+                    authority.clone(),
+                    &key("approved-payment:operation:perform"),
+                    &key("approved-payment:operation:accept:unresolved"),
+                )
+                .expect_err("unresolved external custody cannot settle the workflow operation")
+        })
+        .expect("installed host call opens");
     assert!(matches!(
         unresolved,
         bank_server::BankApprovedPaymentWorkflowError::OperationOwnerAcceptance(
@@ -159,14 +166,21 @@ fn approved_business_payment_runs_through_query_and_commits_the_real_payment_ope
         still_required.transition_identity(),
         operation.transition_identity()
     );
-    let mismatched_recovery = workflow
-        .prepare_apply_recovery(
-            &still_required,
-            authority.clone(),
-            &key("approved-payment:operation:foreign-recovery"),
-        )
-        .err()
-        .expect("a different workflow operation command cannot claim recovery custody");
+    let mismatched_recovery = fixture
+        .world
+        .runtime
+        .with_application_advancement(&scope, |phase| {
+            workflow
+                .prepare_apply_recovery(
+                    &phase,
+                    &still_required,
+                    authority.clone(),
+                    &key("approved-payment:operation:foreign-recovery"),
+                )
+                .err()
+                .expect("a different workflow operation command cannot claim recovery custody")
+        })
+        .expect("installed host call opens");
     assert!(matches!(
         mismatched_recovery,
         bank_server::BankApprovedPaymentWorkflowError::OperationRecoveryPreparation(
@@ -175,26 +189,42 @@ fn approved_business_payment_runs_through_query_and_commits_the_real_payment_ope
             )
         )
     ));
-    let recovery = workflow
-        .prepare_apply_recovery(
-            &still_required,
-            authority.clone(),
-            &key("approved-payment:operation:perform"),
-        )
-        .expect("the exact workflow-bound operation prepares recovery")
-        .safe_retry()
-        .expect("fresh recovery authority re-dispatches the committed outbox");
-    let denied = workflow
-        .accept_recovered_applied(
-            instance.clone(),
-            &still_required,
-            authority.clone(),
-            authority.clone(),
-            &key("approved-payment:operation:perform"),
-            &recovery,
-            &key("approved-payment:operation:accept:recovered"),
-        )
-        .expect_err("rail-local completion does not publish an authenticated inbound terminal");
+    let recovery = fixture
+        .world
+        .runtime
+        .with_application_advancement(&scope, |phase| {
+            workflow
+                .prepare_apply_recovery(
+                    &phase,
+                    &still_required,
+                    authority.clone(),
+                    &key("approved-payment:operation:perform"),
+                )
+                .expect("the exact workflow-bound operation prepares recovery")
+                .safe_retry(&phase)
+                .expect("fresh recovery authority re-dispatches the committed outbox")
+        })
+        .expect("installed host call opens");
+    let denied = fixture
+        .world
+        .runtime
+        .with_application_advancement(&scope, |phase| {
+            workflow
+                .accept_recovered_applied(
+                    &phase,
+                    instance.clone(),
+                    &still_required,
+                    authority.clone(),
+                    authority.clone(),
+                    &key("approved-payment:operation:perform"),
+                    &recovery,
+                    &key("approved-payment:operation:accept:recovered"),
+                )
+                .expect_err(
+                    "rail-local completion does not publish an authenticated inbound terminal",
+                )
+        })
+        .expect("installed host call opens");
     assert!(matches!(
         denied,
         bank_server::BankApprovedPaymentWorkflowError::OperationOwnerAcceptance(_)

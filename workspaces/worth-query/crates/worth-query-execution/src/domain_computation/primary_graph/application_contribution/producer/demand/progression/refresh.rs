@@ -13,6 +13,7 @@ where
     /// admission supersedes the older rows of the occurrence.
     pub(super) fn refresh_output_demand<Family>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
         source: &FamilySourceValue<Schema, Family>,
         observed_source: crate::domain_computation::primary_graph::WorthQueryObservedSource<
@@ -36,6 +37,7 @@ where
         });
         let profile_kind = Family::profile_kind(source);
         let mut refreshed = self.admit_output_demand_with_source_admitted::<Family>(
+            execution,
             source,
             observed_source,
             None,

@@ -7,7 +7,10 @@ use super::support::{
 
 #[test]
 fn receipt_common_lane_reads_like_crossing_intent() {
-    let receipt = admitted_handle("primary")
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let receipt = admitted_handle(request_execution, "primary")
         .declare_review_progress_describe_plan_and_receipt(
             ReceiptInput::<RelationalReceiptFamily>::new("edge:42"),
         )
@@ -20,7 +23,10 @@ fn receipt_common_lane_reads_like_crossing_intent() {
 
 #[test]
 fn explicit_and_common_receipt_paths_converge_on_one_digest() {
-    let handle = admitted_handle("primary");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "primary");
     let explicit = handle
         .receipt_routes_from_progressed(progressed(
             &handle,
@@ -38,7 +44,10 @@ fn explicit_and_common_receipt_paths_converge_on_one_digest() {
 
 #[test]
 fn mixed_route_receipts_remain_mixed() {
-    let receipt = admitted_handle("primary")
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let receipt = admitted_handle(request_execution, "primary")
         .declare_review_progress_describe_plan_and_receipt(ReceiptInput::<MixedReceiptFamily>::new(
             "edge:42",
         ))
@@ -56,7 +65,10 @@ fn mixed_route_receipts_remain_mixed() {
 
 #[test]
 fn advanced_lane_planned_receipt_issues_without_checked_wrapper_loss() {
-    let handle = admitted_handle("primary");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "primary");
 
     match route_checked_with_intent(
         &handle,
@@ -75,12 +87,15 @@ fn advanced_lane_planned_receipt_issues_without_checked_wrapper_loss() {
 
 #[test]
 fn receipt_digest_changes_when_admitted_world_changes() {
-    let primary = admitted_handle("primary")
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let primary = admitted_handle(request_execution, "primary")
         .declare_review_progress_describe_plan_and_receipt(
             ReceiptInput::<RelationalReceiptFamily>::new("edge:42"),
         )
         .unwrap_or_else(|_| panic!("primary world should issue receipt"));
-    let alternate = admitted_handle("alternate")
+    let alternate = admitted_handle(request_execution, "alternate")
         .declare_review_progress_describe_plan_and_receipt(
             ReceiptInput::<RelationalReceiptFamily>::new("edge:42"),
         )

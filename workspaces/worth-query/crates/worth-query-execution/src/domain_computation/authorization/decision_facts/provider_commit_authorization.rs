@@ -37,6 +37,7 @@ impl WorthQueryProviderCommitAuthorization {
         Scope,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         application: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         admission: &'admission crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         serialization: &'serialization crate::domain_computation::primary_graph::WorthQueryApplicationBranchCommitCoordination<'_>,
@@ -55,9 +56,9 @@ impl WorthQueryProviderCommitAuthorization {
         Schema: worth_query_installation::facade::ApplicationSchema,
     {
         if let Some(authority) = &self.workflow_approval_authority {
-            application.readmit_workflow_approval_authority(authority, admission)?;
+            application.readmit_workflow_approval_authority(execution, authority, admission)?;
         }
-        application.authorize_application_commit(admission, &self.commit, serialization)
+        application.authorize_application_commit(execution, admission, &self.commit, serialization)
     }
 
     pub(in crate::domain_computation) fn register_provider_attempt<
@@ -111,6 +112,7 @@ impl WorthQueryRegisteredCommitAuthorization {
         Scope,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         application: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         admission: &'admission crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         serialization: &'serialization crate::domain_computation::primary_graph::WorthQueryApplicationBranchCommitCoordination<'_>,
@@ -128,7 +130,11 @@ impl WorthQueryRegisteredCommitAuthorization {
     where
         Schema: worth_query_installation::facade::ApplicationSchema,
     {
-        self.authorization
-            .authorize_application_commit(application, admission, serialization)
+        self.authorization.authorize_application_commit(
+            execution,
+            application,
+            admission,
+            serialization,
+        )
     }
 }

@@ -13,6 +13,7 @@ use crate::domain_computation::primary_graph::invariant_projection::WorthQueryAp
 use worth_query_installation::facade::{ApplicationSchema, ApplicationSignedAggregateValueBinding};
 
 pub(super) fn execute<Schema, Binding>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     reader: &mut WorthQueryApplicationInvariantProjectionReader<'_, Schema>,
     plan: ValidatedAggregatePlan,
 ) -> Result<WorthQueryInvariantAggregate<Binding::Value>, WorthQueryInvariantAggregateDenial>
@@ -24,9 +25,13 @@ where
     let mut accounting = AggregateWorkAccounting::new(&mut reader.work, &mut reader.work_budget);
     match cache_resolution::probe(&cache, plan, &mut accounting)?.resolve() {
         Ok(hit) => hit.complete::<Binding>(&mut reader.realized_scope),
-        Err(miss) => {
-            completed_scan::complete(reader.runtime, reader.snapshot, miss, &mut accounting)
-                .and_then(|scan| scan.publish::<Binding>(&cache, &mut reader.realized_scope))
-        }
+        Err(miss) => completed_scan::complete(
+            execution,
+            reader.runtime,
+            reader.snapshot,
+            miss,
+            &mut accounting,
+        )
+        .and_then(|scan| scan.publish::<Binding>(&cache, &mut reader.realized_scope)),
     }
 }

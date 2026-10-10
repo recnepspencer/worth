@@ -116,15 +116,19 @@ impl FintechWorld {
             .clone()
     }
 
-    pub(super) fn read_latest(&self) -> RelationalReadView {
+    pub(super) fn read_latest(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> RelationalReadView {
         self.runtime
             .read_truth()
-            .read_snapshot(&self.latest_snapshot())
+            .read_snapshot(&self.latest_snapshot(), execution)
             .unwrap()
     }
 
     pub(super) fn read_query(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         snapshot: &SnapshotHandle,
         packet: PlannedQueryPacket,
     ) -> crate::query::data::CanonicalQueryResult {
@@ -135,7 +139,11 @@ impl FintechWorld {
                     .read_truth()
                     .plan_query_packet(snapshot, packet)
                     .expect("planned fintech query"),
+                execution,
+                crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
             )
+            .expect("request remains live")
+            .map(|read| read.outcome)
             .expect("executed fintech query")
             .result
     }

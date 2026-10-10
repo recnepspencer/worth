@@ -33,6 +33,7 @@ pub(super) fn observation_work_bound(key: &WorthQueryApplicationFactKey) -> Opti
 /// The fact `key` names as `snapshot` holds it, or the denial seal gives when
 /// it cannot be observed there.
 pub(in crate::domain_computation::primary_graph) fn observe_fact(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,
     layout: &WorthQueryPrimaryGraphLayout,
@@ -48,9 +49,10 @@ pub(in crate::domain_computation::primary_graph) fn observe_fact(
             })?;
             let exists = runtime
                 .read_truth()
-                .project_snapshot(snapshot)
+                .project_snapshot(snapshot, execution)
                 .and_then(|view| {
                     view.entity_record_with_projection_scope(
+                        execution,
                         *entity_id,
                         ProjectionAspectScope::empty(),
                         |record| {
@@ -85,7 +87,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_fact(
                 )
             })?;
             let observation = super::super::observation::observe_field(
-                runtime, snapshot, *entity_id, kind, locator,
+                runtime, execution, snapshot, *entity_id, kind, locator,
             )
             .ok_or_else(|| {
                 denial(
@@ -129,6 +131,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_fact(
             })?;
             let matching_relations = super::super::observation::exact_relations(
                 runtime,
+                execution,
                 snapshot,
                 layout.kind,
                 *from,
@@ -155,6 +158,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_fact(
             })?;
             let relations = observe_adjacency(
                 runtime,
+                execution,
                 snapshot,
                 layout.kind,
                 *anchor,

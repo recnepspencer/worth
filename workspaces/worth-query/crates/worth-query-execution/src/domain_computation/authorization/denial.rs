@@ -12,6 +12,8 @@ mod capacity;
 /// any effect.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryOperationAuthorizationDenialKind {
+    /// The supplied phase belongs to another installed runtime.
+    ForeignPhase,
     /// The authorization check was cancelled.
     Cancelled,
     /// The authorization check reached its deadline.

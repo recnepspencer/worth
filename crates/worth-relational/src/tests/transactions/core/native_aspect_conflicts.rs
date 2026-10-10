@@ -10,6 +10,9 @@ use worth_foundational::facade::{
 
 #[test]
 fn native_same_record_updates_conflict_before_truth_or_publication_changes() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for (clear_second, reverse_order) in
         [(false, false), (false, true), (true, false), (true, true)]
     {
@@ -66,7 +69,7 @@ fn native_same_record_updates_conflict_before_truth_or_publication_changes() {
 
         let read = runtime
             .read_truth()
-            .read_snapshot(&after_snapshot)
+            .read_snapshot(&after_snapshot, execution)
             .expect("unchanged snapshot");
         let value = read
             .get_entity(entity)

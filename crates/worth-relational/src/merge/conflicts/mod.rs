@@ -24,20 +24,22 @@ use crate::merge::MergeAccess;
 impl<'runtime> MergeAccess<'runtime> {
     pub(crate) fn plan_conflict_scope(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: NormalizedRelationalMergeRequest,
     ) -> Result<ConflictClassifiedMergePlan, MergePlanningError> {
-        let identity_plan = self.plan_identity_scope(request)?;
-        self.classify_conflict_scope(identity_plan)
+        let identity_plan = self.plan_identity_scope(execution, request)?;
+        self.classify_conflict_scope(execution, identity_plan)
     }
 
     fn classify_conflict_scope(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         identity_plan: IdentityScopedMergePlan,
     ) -> Result<ConflictClassifiedMergePlan, MergePlanningError> {
         let target_view = self
             .runtime
             .read_truth()
-            .read_version(identity_plan.basis.target_head.version_id);
+            .read_version(execution, identity_plan.basis.target_head.version_id);
         let history = self.runtime.history();
         let base_envelope = history
             .commit_envelope(identity_plan.basis.merge_base.commit.commit_id)
@@ -45,7 +47,10 @@ impl<'runtime> MergeAccess<'runtime> {
                 commit_id: identity_plan.basis.merge_base.commit.commit_id,
             })?;
         let base_version_id = base_envelope.commit.version_id;
-        let base_view = self.runtime.read_truth().read_version(base_version_id);
+        let base_view = self
+            .runtime
+            .read_truth()
+            .read_version(execution, base_version_id);
         let ancestor_basis = AncestorRecordBasisContext::new(&base_view);
         let source_records_by_ref = identity_plan
             .source_records

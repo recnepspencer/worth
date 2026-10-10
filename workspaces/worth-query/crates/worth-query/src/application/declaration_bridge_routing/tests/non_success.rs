@@ -10,8 +10,11 @@ use super::support::{
 
 #[test]
 fn explicit_routing_rejects_envelopes_from_the_wrong_handle() {
-    let first = admitted_handle("alpha");
-    let second = admitted_handle("beta");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let first = admitted_handle(request_execution, "alpha");
+    let second = admitted_handle(request_execution, "beta");
 
     let progressed = first
         .declare_review_and_progress(RoutingInput::<RuntimeRouteFamily>::new("edge:42"))
@@ -35,7 +38,10 @@ fn explicit_routing_rejects_envelopes_from_the_wrong_handle() {
 
 #[test]
 fn signal_only_declarations_do_not_reach_bridge_continuation() {
-    let handle = admitted_handle("signal-only");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "signal-only");
 
     match checked_from_progressed(&handle, RoutingInput::<SignalOnlyFamily>::new("edge:42")) {
         WorthQueryDeclarationBridgeRoutingChecked::Denied(routing) => {
@@ -50,7 +56,10 @@ fn signal_only_declarations_do_not_reach_bridge_continuation() {
 
 #[test]
 fn denied_receipt_envelopes_stay_denied_for_bridge_routing() {
-    let handle = admitted_handle("denied");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "denied");
 
     let route_checked = handle.plan_routes_checked(
         crate::application::WorthQueryDeclarationRoutePlanInput::with_intent(

@@ -1,6 +1,7 @@
 use super::{replay_trace, ProductionModelTrace, ScenarioLifecycle, TraceFailure};
 
 pub(super) fn shrink_failing_trace(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     mut trace: ProductionModelTrace,
     mut failure: TraceFailure,
 ) -> (ProductionModelTrace, TraceFailure) {
@@ -13,7 +14,7 @@ pub(super) fn shrink_failing_trace(
             continue;
         }
         normalize_lifecycles(&mut candidate);
-        match replay_trace(&candidate) {
+        match replay_trace(execution, &candidate) {
             Err(candidate_failure) if candidate_failure.identity == failure.identity => {
                 trace = candidate;
                 failure = candidate_failure;

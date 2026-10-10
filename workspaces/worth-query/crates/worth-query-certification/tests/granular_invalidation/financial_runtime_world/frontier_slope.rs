@@ -7,9 +7,11 @@ use worth_query_host::facade::primary_graph::WorthQueryConditionalClockObservati
 
 use super::{host::FinancialCourtroomWorld, query};
 
-pub fn assert_frontier_expansion_slope() {
-    let projected_value = observe(false);
-    let ordered_window = observe(true);
+pub fn assert_frontier_expansion_slope(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) {
+    let projected_value = observe(request_execution, false);
+    let ordered_window = observe(request_execution, true);
     assert_eq!(
         ordered_window.direct_truth_deliveries,
         projected_value.direct_truth_deliveries
@@ -42,13 +44,16 @@ struct ObservedFrontier {
     maintenance: WorthQueryGranularMaintenanceCounters,
 }
 
-fn observe(expand: bool) -> ObservedFrontier {
+fn observe(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    expand: bool,
+) -> ObservedFrontier {
     let mut host = FinancialCourtroomWorld::publish_portfolio();
-    let mut query = query::build_portfolio_with_unrelated_rows(&host, 64);
+    let mut query = query::build_portfolio_with_unrelated_rows(request_execution, &host, 64);
     assert!(matches!(
-        host.conditional_clock(&host.portfolio_clock)
+        host.conditional_clock(request_execution, &host.portfolio_clock)
             .unwrap()
-            .observe(),
+            .observe(request_execution),
         WorthQueryConditionalClockObservationOutcome::Accepted(_)
     ));
     host.portfolio_gate.release();
@@ -59,9 +64,9 @@ fn observe(expand: bool) -> ObservedFrontier {
     }
     host.portfolio_clock_control.push(2, 11);
     let WorthQueryConditionalClockObservationOutcome::Accepted(mut receipt) = host
-        .conditional_clock(&host.portfolio_clock)
+        .conditional_clock(request_execution, &host.portfolio_clock)
         .unwrap()
-        .observe()
+        .observe(request_execution)
     else {
         panic!("the frontier slope mutation must be observed")
     };
@@ -72,6 +77,7 @@ fn observe(expand: bool) -> ObservedFrontier {
         host.application.granular_invalidation_installation(),
     );
     let outcome = maintain_primary_runtime_granular_collection_batch(
+        request_execution,
         &query.live,
         query
             .collection

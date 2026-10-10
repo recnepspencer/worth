@@ -56,6 +56,7 @@ impl<'view, 'basis, 'resolution, 'identity>
 /// rebuilding a second principal/index authority.
 pub(super) fn resolve_unique_mapping_candidate<'view, 'basis, 'resolution, 'identity>(
     runtime: &RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     view: &'view VisibilityProjectionView<'basis>,
     resolution: &'resolution WorthQueryPrincipalSnapshotResolution<'identity>,
     admission: &mut InvalidationEditAdmission,
@@ -70,15 +71,18 @@ pub(super) fn resolve_unique_mapping_candidate<'view, 'basis, 'resolution, 'iden
     };
     let lookup = runtime
         .index_access()
-        .execute_bounded_entity_field_lookup_admitted(
-            view,
-            resolution.layout.index_id,
-            resolution.layout.mapping_kind,
-            &resolution.layout.identity_locator,
-            resolution.expected_identity,
-            2,
+        .execute_bounded_entity_field_lookup(
+            worth_relational::facade::indexes::BoundedEntityFieldSelectedLookup::new(
+                view,
+                resolution.layout.index_id,
+                resolution.layout.mapping_kind,
+                &resolution.layout.identity_locator,
+                resolution.expected_identity,
+                2,
+                |work, bytes| admission.charge_selected_index_read(work, bytes),
+            ),
             parity,
-            |work, bytes| admission.charge_selected_index_read(work, bytes),
+            execution,
         )
         .map_err(|denial| match denial {
             BoundedEntityFieldLookupAdmissionStop::Lookup(denial) => Stop::Index(denial.kind()),

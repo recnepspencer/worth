@@ -57,6 +57,7 @@ impl TestExistingTruthVerificationAdapter {
 impl WorthQueryRuntimeExistingTruthVerificationAdapter for TestExistingTruthVerificationAdapter {
     fn verify_existing_truth_assertion(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: &WorthQueryExistingTruthTargetBinding,
         aspects: &[WorthQueryAuthoredAspectMutation],
     ) -> Result<(), WorthQueryExistingTruthAssertionDenial> {
@@ -144,6 +145,7 @@ impl WorthQueryRuntimeExistingTruthVerificationAdapter
 {
     fn verify_existing_truth_assertion(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         _binding: &WorthQueryExistingTruthTargetBinding,
         _aspects: &[WorthQueryAuthoredAspectMutation],
     ) -> Result<(), WorthQueryExistingTruthAssertionDenial> {

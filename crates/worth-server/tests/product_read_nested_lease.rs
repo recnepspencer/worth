@@ -2,6 +2,8 @@
 mod fixture;
 #[path = "../../worth-relational/examples/support.rs"]
 mod relational_support;
+#[path = "support/test_execution_policy.rs"]
+mod test_execution_policy;
 
 use std::{
     num::NonZeroUsize,
@@ -75,11 +77,11 @@ impl WorthServerProductApplicationAdapter for NestedRelationalReadAdapter {
         if self.cancel_inside_adapter.load(Ordering::SeqCst) != 0 {
             self.cancellation.cancel();
         }
-        match self
-            .runtime
-            .read_truth()
-            .execute_query_plan_with_lease(self.plan.clone(), lease)
-        {
+        match self.runtime.read_truth().execute_query_plan(
+            self.plan.clone(),
+            &worth_execution::ExecutionRequest::leased(lease),
+            worth_relational::facade::runtime::RelationalQueryReadStrategy::RequestPatterns,
+        ) {
             Ok(Some(_)) => Ok(self.execute(operation)),
             Ok(None) => Err(MapKernelStop::NestedStopped),
             Err(worth_relational::facade::runtime::QueryReadExecutionStop::PacketStopped {

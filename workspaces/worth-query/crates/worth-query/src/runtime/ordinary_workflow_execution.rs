@@ -130,6 +130,7 @@ impl WorthQueryLowerRuntimePreviewExecution {
 impl WorthQueryRuntime {
     pub(crate) fn execute_ordinary_writeback(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         authority: WorthQueryOrdinaryAuthorityAdmission,
         declaration_identity: &WorthQueryEvidenceIdentity,
         materialize_inspection: bool,
@@ -141,7 +142,9 @@ impl WorthQueryRuntime {
                 "ordinary writeback requires a writeback authority context",
             ));
         }
-        if self.ordinary_authority_drift(&authority) != WorthQueryOrdinaryAuthorityDrift::Current {
+        if self.ordinary_authority_drift(execution, &authority)
+            != WorthQueryOrdinaryAuthorityDrift::Current
+        {
             return Err(WorthQueryOrdinaryWritebackExecutionError::new(
                 WorthQueryOrdinaryWritebackFailureStage::Authority,
                 "ordinary writeback authority is no longer current",
@@ -255,6 +258,7 @@ impl WorthQueryRuntime {
 
     pub(crate) fn execute_ordinary_read_only_preview(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         basis_admission: WorthQueryPreviewBasisAdmission,
         declaration_identity: &WorthQueryEvidenceIdentity,
         materialize_inspection: bool,
@@ -262,13 +266,14 @@ impl WorthQueryRuntime {
         let label = basis_admission.session_label().clone();
         let request_identity = preview_request_identity("read-only", &label, declaration_identity);
         let outcome = {
-            let session = self.open_preview_with_admitted_basis(basis_admission)?;
+            let session = self.open_preview_with_admitted_basis(execution, basis_admission)?;
             session.discard()
         };
         let receipt_identity = outcome.closeout_evidence().closeout_identity().clone();
         self.finish_ordinary_preview_execution(
-            request_identity,
+            execution,
             receipt_identity,
+            request_identity,
             outcome,
             materialize_inspection,
         )
@@ -276,6 +281,7 @@ impl WorthQueryRuntime {
 
     pub(crate) fn execute_ordinary_preview_promotion(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         basis_admission: WorthQueryPreviewBasisAdmission,
         declaration_identity: &WorthQueryEvidenceIdentity,
         command: WorthQueryWriteCommand,
@@ -284,14 +290,15 @@ impl WorthQueryRuntime {
         let label = basis_admission.session_label().clone();
         let request_identity = preview_request_identity("promotion", &label, declaration_identity);
         let (receipt_identity, outcome) = {
-            let mut session = self.open_preview_with_admitted_basis(basis_admission)?;
-            let preview_receipt = session.write(command)?;
+            let mut session = self.open_preview_with_admitted_basis(execution, basis_admission)?;
+            let preview_receipt = session.write(execution, command)?;
             let receipt_identity = preview_receipt.commit_evidence_identity().clone();
-            (receipt_identity, session.promote()?)
+            (receipt_identity, session.promote(execution)?)
         };
         self.finish_ordinary_preview_execution(
-            request_identity,
+            execution,
             receipt_identity,
+            request_identity,
             outcome,
             materialize_inspection,
         )
@@ -299,13 +306,14 @@ impl WorthQueryRuntime {
 
     fn finish_ordinary_preview_execution(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         request_identity: WorthQueryEvidenceIdentity,
         receipt_identity: WorthQueryEvidenceIdentity,
         outcome: WorthQueryPreviewOutcome,
         materialize_inspection: bool,
     ) -> Result<WorthQueryLowerRuntimePreviewExecution, WorthQueryRuntimeError> {
         let inspection_identity = if materialize_inspection {
-            let inspection = match self.inspect(&outcome)? {
+            let inspection = match self.inspect(execution, &outcome)? {
                 WorthQueryInspection::PreviewOutcome(inspection) => inspection,
                 other => panic!("expected preview outcome inspection, got {other:?}"),
             };

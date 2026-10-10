@@ -2,14 +2,34 @@
 use super::*;
 #[test]
 fn managed_recovery_refuses_before_revalidation_at_both_placements() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
         let _restore = Restore(place(placement), bound(None));
         let world = installed_authorization_world(true);
         let request = live_scope();
-        let principal = authenticated_principal(&world, &request);
-        let account = resolved_account(&world, "open", &request);
-        let program = admitted_program(&world, &principal, &account, &request, "recovered");
-        world.application.fail_next_durable_append_for_test();
+        let principal = world
+            .application
+            .with_host_advancement(|phase| {
+                authenticated_principal(&phase.test_host_request(), &world, &request)
+            })
+            .expect("installed host call opens");
+        let account = world
+            .application
+            .with_host_advancement(|phase| {
+                resolved_account(&phase.test_host_request(), &world, "open", &request)
+            })
+            .expect("installed host call opens");
+        let program = world
+            .application
+            .with_host_advancement(|phase| {
+                admitted_program(&phase, &world, &principal, &account, &request, "recovered")
+            })
+            .expect("installed host call opens");
+        world
+            .application
+            .fail_next_durable_append_for_test(request_execution);
         let WorthQueryApplicationCommitOutcome::ProductUnpublished(partial) =
             world.application.compare_and_commit_application(
                 program,
@@ -21,7 +41,12 @@ fn managed_recovery_refuses_before_revalidation_at_both_placements() {
         };
         let recovery = partial.into_recovery();
         recovery.continue_owner_settlement().unwrap();
-        let fresh = admitted_operation(&world, &principal, &account, &request);
+        let fresh = world
+            .application
+            .with_host_advancement(|phase| {
+                admitted_operation(&phase, &world, &principal, &account, &request)
+            })
+            .expect("installed host call opens");
         for memory in [false, true] {
             bound(Some(worth_foundational::ExecutionBudget::new(
                 NonZeroUsize::MIN,

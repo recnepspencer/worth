@@ -2,6 +2,7 @@ use super::*;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 
 pub(super) fn execute_fresh<Schema, Binding>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     phase: &WorthQueryAdvancementPhase<'_>,
 
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -29,7 +30,7 @@ where
 {
     let selected = runtime
         .on_branch(branch)
-        .select()
+        .select_with_request(execution)
         .map_err(|error| failed(Binding::IDENTITY, error))?;
     if !disclosure.admits(
         external_principal,
@@ -51,7 +52,8 @@ where
         .installed_mutation_binding::<Operation<Schema, Binding>>()
         .map_err(|error| failed(Binding::IDENTITY, error))?;
     let principal = selected
-        .resolve_authenticated_principal(
+        .resolve_authenticated_principal_with_request(
+            execution,
             binding.principal_binding(),
             external_principal,
             request_scope,
@@ -62,7 +64,8 @@ where
         .scope_binding()
         .into_field_parts(principal.principal_identity());
     let scope = selected
-        .resolve_entity(
+        .resolve_entity_with_request(
+            execution,
             scope_field,
             scope_value,
             request_scope,
@@ -70,7 +73,8 @@ where
         )
         .map_err(|error| scope_rejected(Binding::IDENTITY, error))?;
     let admission = selected
-        .authorize_operation(
+        .authorize_operation_with_request(
+            execution,
             &principal,
             &scope,
             binding.operation(),
@@ -79,6 +83,7 @@ where
         )
         .map_err(|error| request_authority_denied(Binding::IDENTITY, error))?;
     post_authorization::execute_authorized::<Schema, Binding>(
+        execution,
         phase,
         runtime,
         &selected,

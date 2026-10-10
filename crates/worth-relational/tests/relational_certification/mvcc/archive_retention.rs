@@ -12,7 +12,10 @@ use worth_relational::facade::runtime::ProjectionAspectScope;
 
 #[test]
 fn archive_preserves_existing_reads_and_closes_every_new_mutation_door() {
-    let (mut world, _) = certified_supply_chain_world(SupplyChainScale::court());
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (mut world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
     let identity = fork_branch(&world.runtime, "storm");
     let (_, basis) = world.runtime.observe_branch(&identity).unwrap();
     let immutable_observation = basis.observation();
@@ -26,6 +29,7 @@ fn archive_preserves_existing_reads_and_closes_every_new_mutation_door() {
         .unwrap();
     let voyage_id = world.handles.aurora_voyage().id;
     assert!(snapshot_contains_entity(
+        execution,
         &world.runtime,
         &snapshot,
         voyage_id
@@ -56,6 +60,7 @@ fn archive_preserves_existing_reads_and_closes_every_new_mutation_door() {
     );
     assert_eq!(immutable_observation.correctness_index(), retained_index);
     assert!(snapshot_contains_entity(
+        execution,
         &world.runtime,
         &snapshot,
         voyage_id
@@ -104,14 +109,20 @@ fn archive_preserves_existing_reads_and_closes_every_new_mutation_door() {
 }
 
 fn snapshot_contains_entity(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     entity: worth_relational::facade::identity::EntityId,
 ) -> bool {
     runtime
         .read_truth()
-        .project_snapshot(snapshot)
+        .project_snapshot(snapshot, execution)
         .unwrap()
-        .entity_record_with_projection_scope(entity, ProjectionAspectScope::empty(), |_| Some(()))
+        .entity_record_with_projection_scope(
+            execution,
+            entity,
+            ProjectionAspectScope::empty(),
+            |_| Some(()),
+        )
         .is_some()
 }

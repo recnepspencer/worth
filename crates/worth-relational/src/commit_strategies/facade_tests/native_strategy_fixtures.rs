@@ -136,6 +136,7 @@ pub(super) struct PlanningExecutor;
 impl CommitStrategyExecutor for PlanningExecutor {
     fn execute(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: &CanonicalStrategyCommitRequest,
         _observation: &crate::commit_strategies::data::StrategyObservationContext<'_>,
     ) -> Result<StrategyExecutionResult, StrategyExecutorFailure> {
@@ -149,6 +150,7 @@ pub(super) struct DeterministicFailureExecutor;
 impl CommitStrategyExecutor for DeterministicFailureExecutor {
     fn execute(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         _request: &CanonicalStrategyCommitRequest,
         _observation: &crate::commit_strategies::data::StrategyObservationContext<'_>,
     ) -> Result<StrategyExecutionResult, StrategyExecutorFailure> {
@@ -206,6 +208,7 @@ pub(super) fn persisted_intent_runtime_with_failing_executor(
 }
 
 pub(crate) fn execute_persisted_intent_strategy_commit(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut crate::facade::runtime::RelationalRuntime,
     entity: EntityId,
 ) -> crate::facade::transactions::CommitResult {
@@ -236,7 +239,7 @@ pub(crate) fn execute_persisted_intent_strategy_commit(
     let snapshot = runtime.visibility_authority().snapshot();
     let execution = runtime
         .commit_strategies()
-        .execute(&request, &snapshot)
+        .execute(&request, &snapshot, request_execution)
         .expect("strategy execution");
     let (transaction_validation_input, mut authority) =
         crate::tests::support::test_owner_strategy_authority(runtime, None);

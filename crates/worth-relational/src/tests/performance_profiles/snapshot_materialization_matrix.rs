@@ -3,6 +3,8 @@ use super::*;
 #[test]
 #[ignore = "performance baseline capture; run with -- --ignored --nocapture --test-threads=1"]
 fn perf_snapshot_materialization_matrix() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let suite = "snapshot_materialization_matrix";
 
     let snapshot_read_samples = capture_perf_samples(suite, "snapshot_read_view_current", || {
@@ -20,7 +22,7 @@ fn perf_snapshot_materialization_matrix() {
         let started_at = Instant::now();
         let read = runtime
             .read_truth()
-            .read_snapshot(&snapshot)
+            .read_snapshot(&snapshot, execution)
             .expect("snapshot read");
         let elapsed_micros = started_at.elapsed().as_micros();
         let counters = runtime.performance_access().counters();
@@ -72,7 +74,7 @@ fn perf_snapshot_materialization_matrix() {
             let started_at = Instant::now();
             let read = runtime
                 .read_truth()
-                .read_version(pinned_snapshot.version_id);
+                .read_version(execution, pinned_snapshot.version_id);
             let elapsed_micros = started_at.elapsed().as_micros();
             let counters = runtime.performance_access().counters();
 
@@ -115,9 +117,9 @@ fn perf_snapshot_materialization_matrix() {
             let started_at = Instant::now();
             let projected = runtime
                 .read_truth()
-                .project_snapshot(&snapshot)
+                .project_snapshot(&snapshot, execution)
                 .expect("projection snapshot")
-                .entities::<EntityIdentityProjection>();
+                .entities::<EntityIdentityProjection>(execution);
             let elapsed_micros = started_at.elapsed().as_micros();
             let counters = runtime.performance_access().counters();
 

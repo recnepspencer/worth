@@ -4,6 +4,9 @@ use crate::tests::support::*;
 
 #[test]
 fn cdc_certification_snapshot_pinning_is_neutral_under_rewrite_churn() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let pinned_runtime = runtime_with_test_schema_profile(RelationalRuntimeProfile::GeometryKernel);
     let unpinned_runtime =
         runtime_with_test_schema_profile(RelationalRuntimeProfile::GeometryKernel);
@@ -84,11 +87,11 @@ fn cdc_certification_snapshot_pinning_is_neutral_under_rewrite_churn() {
     let latest_snapshot = pinned_runtime.visibility_authority().snapshot();
     let pinned_snapshot_read = pinned_runtime
         .read_truth()
-        .read_snapshot(&pinned_snapshot)
+        .read_snapshot(&pinned_snapshot, execution)
         .unwrap();
     let pinned_latest_read = pinned_runtime
         .read_truth()
-        .read_snapshot(&latest_snapshot)
+        .read_snapshot(&latest_snapshot, execution)
         .unwrap();
 
     assert_eq!(

@@ -11,6 +11,7 @@ where
 
     pub fn resolve_entity<Aspect, Entity, Field, Value, Write, Unit>(
         &mut self,
+
         field: ApplicationFieldRef<
             Schema,
             Entity,
@@ -28,6 +29,7 @@ where
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
+        let execution = self.execution;
         if !self.work_budget.can_afford(3) {
             return Err(WorthQueryEntityResolutionDenial::new(
                 WorthQueryEntityResolutionDenialKind::ProjectionWorkBudgetExceeded,
@@ -41,12 +43,18 @@ where
             )
         })?;
         let truth = self.entity_resolution.at_snapshot(
+            execution,
             self.runtime,
             self.snapshot,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )?;
-        let (resolved, examined) =
-            truth.resolve_with_work(field.entity(), field.aspect(), field.field(), value);
+        let (resolved, examined) = truth.resolve_with_work(
+            execution,
+            field.entity(),
+            field.aspect(),
+            field.field(),
+            value,
+        );
         self.work_budget.consume(1 + examined);
         self.work.record_lookup(examined);
         let resolved = resolved?;
@@ -62,6 +70,7 @@ where
 
     pub fn resolve_optional_entity<Aspect, Entity, Field, Value, Write, Unit>(
         &mut self,
+
         field: ApplicationFieldRef<
             Schema,
             Entity,
@@ -82,6 +91,7 @@ where
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
+        let _execution = self.execution;
         match self.resolve_entity(field, value) {
             Ok(identity) => Ok(Some(identity)),
             Err(denial) if denial.kind() == WorthQueryEntityResolutionDenialKind::UnknownEntity => {
@@ -93,6 +103,7 @@ where
 
     pub fn field<Entity, Aspect, Field, Value, Write, Equality, Unit>(
         &mut self,
+
         identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
         field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
     ) -> Option<Value>
@@ -102,6 +113,7 @@ where
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
+        let execution = self.execution;
         if !self.identity_is_local(identity, field.entity()) {
             return None;
         }
@@ -117,6 +129,7 @@ where
         self.work.record_field();
         crate::domain_computation::primary_graph::application_attempt::observe_field_value_borrowed(
             self.runtime,
+            execution,
             self.snapshot,
             identity.entity_id,
             identity.kind,

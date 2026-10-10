@@ -53,6 +53,7 @@ impl WorthQueryDurablePrincipalCurrentness {
 
     pub(in crate::domain_computation) fn remains_current_in(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         layout: &super::schema_layout::WorthQueryPrimaryGraphLayout,
@@ -60,11 +61,18 @@ impl WorthQueryDurablePrincipalCurrentness {
         let Some(binding) = layout.principal_binding(&self.binding) else {
             return false;
         };
-        let Ok(mapping) = observe_mapping(runtime, snapshot, self.mapping, binding, &self.binding)
-        else {
+        let Ok(mapping) = observe_mapping(
+            execution,
+            runtime,
+            snapshot,
+            self.mapping,
+            binding,
+            &self.binding,
+        ) else {
             return false;
         };
         let Ok(target) = observe_exact_principal_target(
+            execution,
             runtime,
             snapshot,
             self.target_relation,
@@ -191,17 +199,24 @@ impl WorthQueryPrincipalFreshnessEvidence {
 
     pub(in crate::domain_computation) fn remains_current_in(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         layout: &WorthQueryPrimaryPrincipalBindingLayout,
         binding: &str,
     ) -> bool {
-        let Ok(mapping) =
-            observe_mapping(runtime, snapshot, self.mapping.entity_id, layout, binding)
-        else {
+        let Ok(mapping) = observe_mapping(
+            execution,
+            runtime,
+            snapshot,
+            self.mapping.entity_id,
+            layout,
+            binding,
+        ) else {
             return false;
         };
         let Ok(target) = observe_exact_principal_target(
+            execution,
             runtime,
             snapshot,
             self.target.relation_id,
@@ -220,6 +235,7 @@ pub(in crate::domain_computation) fn validate_freshness_at_snapshot<
     Principal,
     PrincipalIdentity,
 >(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
@@ -227,6 +243,7 @@ pub(in crate::domain_computation) fn validate_freshness_at_snapshot<
     expected_identity: &worth_foundational::facade::AspectValue,
 ) -> Result<(), WorthQueryPrincipalResolutionDenial> {
     let mapping = observe_mapping(
+        execution,
         runtime,
         snapshot,
         principal.mapping_entity_id(),
@@ -234,6 +251,7 @@ pub(in crate::domain_computation) fn validate_freshness_at_snapshot<
         principal.binding(),
     )?;
     let target = observe_exact_principal_target(
+        execution,
         runtime,
         snapshot,
         principal.target_relation_id(),

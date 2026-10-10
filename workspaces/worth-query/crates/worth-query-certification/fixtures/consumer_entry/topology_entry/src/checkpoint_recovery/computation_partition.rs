@@ -294,10 +294,11 @@ fn program_with_one_partitioned_computation_installs_with_its_owner() {
         Default::default(),
     );
     let (scope, principal) = authenticate(&application);
-    application
-        .request(&principal, &scope)
-        .retain_read()
-        .expect("the installed program serves a read");
+    crate::checkpoint_recovery::support::retain_read(
+        &application,
+        &application.request(&principal, &scope),
+    )
+    .expect("the installed program serves a read");
 }
 
 #[test]

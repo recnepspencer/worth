@@ -48,6 +48,9 @@ fn facade_namespaces_expose_domain_groupings() {
 
 #[test]
 fn admitted_observation_opens_its_selected_root_after_branch_movement() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = public_api_runtime();
     let first = crate::tests::support::create_entity_outcome(&runtime, "observed");
     let first_version = first.version_id;
@@ -67,7 +70,10 @@ fn admitted_observation_opens_its_selected_root_after_branch_movement() {
 
     assert_eq!(observed.version_id, first_version);
     assert_eq!(observed.branch_id, *identity.branch_id());
-    assert!(runtime.read_truth().read_snapshot(&observed).is_some());
+    assert!(runtime
+        .read_truth()
+        .read_snapshot(&observed, execution)
+        .is_some());
     assert!(runtime.snapshots().release_snapshot(&observed).is_ok());
     assert!(runtime
         .snapshots()

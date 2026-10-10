@@ -11,6 +11,9 @@ use crate::facade::{identity::PartitionId, symbols::ClientKey};
 
 #[test]
 fn initial_schema_installation_moves_empty_exact_basis_without_revoking_retained_reads() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = RelationalRuntimeApi::builder().build();
     let identity = runtime.main_branch_identity();
     let (old_descriptor, old_basis) = runtime.observe_branch(&identity).unwrap();
@@ -61,7 +64,7 @@ fn initial_schema_installation_moves_empty_exact_basis_without_revoking_retained
     );
     assert!(runtime
         .read_truth()
-        .read_version(crate::identity::data::VersionId(0))
+        .read_version(execution, crate::identity::data::VersionId(0))
         .entities()
         .is_empty());
 

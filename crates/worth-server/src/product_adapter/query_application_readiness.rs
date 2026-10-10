@@ -17,6 +17,7 @@ pub(crate) trait WorthServerQueryApplicationReadinessProvider:
 }
 
 pub(crate) enum WorthServerQueryApplicationReadinessDenial {
+    Advancement(worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial),
     ProductSelection(primary_graph::WorthQueryProductBranchAdmissionDenial),
     Application(primary_graph::WorthQueryApplicationQueryAdmissionDenial),
 }
@@ -24,6 +25,7 @@ pub(crate) enum WorthServerQueryApplicationReadinessDenial {
 impl WorthServerQueryApplicationReadinessDenial {
     pub(crate) fn subject(&self) -> String {
         match self {
+            Self::Advancement(cause) => cause.to_string(),
             Self::ProductSelection(denial) => {
                 format!("current product branch selection: {denial:?}")
             }
@@ -79,11 +81,15 @@ where
         WorthServerQueryApplicationReadinessDenial,
     > {
         self.application
-            .on_branch(self.application.current_world())
-            .select()
-            .map_err(WorthServerQueryApplicationReadinessDenial::ProductSelection)?
-            .inspect_application_readiness()
-            .map_err(WorthServerQueryApplicationReadinessDenial::Application)
+            .with_host_advancement(|phase| {
+                self.application
+                    .on_branch(self.application.current_world())
+                    .select(&phase)
+                    .map_err(WorthServerQueryApplicationReadinessDenial::ProductSelection)?
+                    .inspect_application_readiness()
+                    .map_err(WorthServerQueryApplicationReadinessDenial::Application)
+            })
+            .map_err(WorthServerQueryApplicationReadinessDenial::Advancement)?
     }
 }
 

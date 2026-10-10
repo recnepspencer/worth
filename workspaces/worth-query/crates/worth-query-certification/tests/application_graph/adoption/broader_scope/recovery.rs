@@ -21,6 +21,9 @@ use crate::document_retention_model::settled_verdict::{settle, RetentionVerdict}
 
 #[test]
 fn unpublished_middle_branch_recovers_without_stranding_prefix_or_suffix() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let host = publish_on_first_program();
     let a = host.current_world();
     let b = fork(&host, a);
@@ -47,7 +50,8 @@ fn unpublished_middle_branch_recovers_without_stranding_prefix_or_suffix() {
         adoption.advance().unwrap().unwrap(),
         WorthQueryBranchSetAdoptionProgress::Performed { branch, .. } if *branch == a
     ));
-    host.runtime().fail_next_durable_append_for_test();
+    host.runtime()
+        .fail_next_durable_append_for_test(request_execution);
     assert!(matches!(
         adoption.advance().unwrap().unwrap(),
         WorthQueryBranchSetAdoptionProgress::ProductUnpublished { branch, .. } if *branch == b
@@ -63,13 +67,18 @@ fn unpublished_middle_branch_recovers_without_stranding_prefix_or_suffix() {
         .unpublished_custody()
         .is_some_and(|unpublished| unpublished.relational_requires_settlement()));
 
-    host.runtime().fail_next_durable_append_for_test();
+    host.runtime()
+        .fail_next_durable_append_for_test(request_execution);
     let failure = host
         .runtime()
-        .request(&principal, &scope)
-        .recover_branch_set_adoption(recovery)
-        .err()
-        .expect("a second durability loss must retain the whole branch-set recovery");
+        .with_host_advancement(|host_phase| {
+            host.runtime()
+                .request(&principal, &scope)
+                .recover_branch_set_adoption(&host_phase, recovery)
+                .err()
+                .expect("a second durability loss must retain the whole branch-set recovery")
+        })
+        .expect("installed host call opens");
     assert!(matches!(
         &failure,
         worth_query_host::facade::application_entry::WorthQueryBranchSetAdoptionRecoveryFailure::Recovery {
@@ -91,8 +100,12 @@ fn unpublished_middle_branch_recovers_without_stranding_prefix_or_suffix() {
 
     let outcome = host
         .runtime()
-        .request(&principal, &scope)
-        .recover_branch_set_adoption(recovery);
+        .with_host_advancement(|host_phase| {
+            host.runtime()
+                .request(&principal, &scope)
+                .recover_branch_set_adoption(&host_phase, recovery)
+        })
+        .expect("installed host call opens");
     let mut adoption = match outcome {
         Ok(WorthQueryBranchSetAdoptionRecoveryOutcome::Performed { adoption, cleanup }) => {
             cleanup.expect("the superseded recovery record must drain");
@@ -132,6 +145,9 @@ fn unpublished_middle_branch_recovers_without_stranding_prefix_or_suffix() {
 
 #[test]
 fn unpublished_middle_branch_can_release_custody_without_relabeling_untouched_suffix() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let host = publish_on_first_program();
     let a = host.current_world();
     let b = fork(&host, a);
@@ -158,7 +174,8 @@ fn unpublished_middle_branch_can_release_custody_without_relabeling_untouched_su
         adoption.advance().unwrap().unwrap(),
         WorthQueryBranchSetAdoptionProgress::Performed { branch, .. } if *branch == a
     ));
-    host.runtime().fail_next_durable_append_for_test();
+    host.runtime()
+        .fail_next_durable_append_for_test(request_execution);
     assert!(matches!(
         adoption.advance().unwrap().unwrap(),
         WorthQueryBranchSetAdoptionProgress::ProductUnpublished { branch, .. } if *branch == b
@@ -181,8 +198,12 @@ fn unpublished_middle_branch_can_release_custody_without_relabeling_untouched_su
     let outcome = std::thread::scope(|threads| {
         let recovering = threads.spawn(|| {
             host.runtime()
-                .request(&recovery_principal, &recovery_scope)
-                .recover_branch_set_adoption(recovery)
+                .with_host_advancement(|host_phase| {
+                    host.runtime()
+                        .request(&recovery_principal, &recovery_scope)
+                        .recover_branch_set_adoption(&host_phase, recovery)
+                })
+                .expect("installed host call opens")
         });
         assert!(
             pause.wait_until_reached(Duration::from_secs(10)),

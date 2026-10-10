@@ -9,7 +9,10 @@ use super::domain::{
 
 #[test]
 fn equivalent_admitted_progression_paths_share_foundational_bundle_digest() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
     let explicit = handle
         .describe_foundational(
             WorthQueryDeclarationFoundationalEvidenceInput::admitted_progression(
@@ -41,8 +44,11 @@ fn equivalent_admitted_progression_paths_share_foundational_bundle_digest() {
 
 #[test]
 fn evidence_digest_changes_with_world_and_progression_outcome() {
-    let collaborative = admitted_handle("collaborative");
-    let mirror = admitted_handle("mirror");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let collaborative = admitted_handle(request_execution, "collaborative");
+    let mirror = admitted_handle(request_execution, "mirror");
     let admitted_left = collaborative
         .describe_foundational(
             WorthQueryDeclarationFoundationalEvidenceInput::admitted_progression(
@@ -85,8 +91,11 @@ fn evidence_digest_changes_with_world_and_progression_outcome() {
 
 #[test]
 fn legality_only_evidence_preserves_world_identity_and_world_sensitive_digest() {
-    let collaborative = admitted_handle("collaborative");
-    let mirror = admitted_handle("mirror");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let collaborative = admitted_handle(request_execution, "collaborative");
+    let mirror = admitted_handle(request_execution, "mirror");
     let collaborative_world_basis = collaborative.retained_world_basis();
     let mirror_world_basis = mirror.retained_world_basis();
     let collaborative_evidence = collaborative
@@ -132,7 +141,10 @@ fn legality_only_evidence_preserves_world_identity_and_world_sensitive_digest() 
 
 #[test]
 fn descriptive_only_families_still_describe_honestly() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
     let evidence = handle
         .describe_foundational(
             WorthQueryDeclarationFoundationalEvidenceInput::admitted_progression(
@@ -153,7 +165,10 @@ fn descriptive_only_families_still_describe_honestly() {
 
 #[test]
 fn profile_elision_is_preserved_on_wrapped_evidence() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
     let evidence = handle
         .describe_foundational_with_profile(
             WorthQueryDeclarationFoundationalEvidenceInput::admitted_progression(

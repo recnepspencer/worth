@@ -26,7 +26,9 @@ use super::{
     EffectLifecyclePhase4LaneOutcome,
 };
 
-pub(super) fn branch_mutation_execution_row() -> EffectLifecyclePhase4CertificationRow {
+pub(super) fn branch_mutation_execution_row(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> EffectLifecyclePhase4CertificationRow {
     let mut runtime = relational_runtime_with_intent_strategy();
     let entity_id = create_entity(&mut runtime, "before", BranchId("main".to_string()));
     crate::runtime::fork_branch_from_exact_source(
@@ -53,7 +55,10 @@ pub(super) fn branch_mutation_execution_row() -> EffectLifecyclePhase4Certificat
     let executed = scope_admitted_effect_plan(admitted)
         .lower()
         .expect("mutation should lower")
-        .execute_with(EffectExecutionAuthority::relational(&mut runtime))
+        .execute_with(
+            execution,
+            EffectExecutionAuthority::relational(&mut runtime),
+        )
         .expect("mutation should execute");
     EffectLifecyclePhase4CertificationRow::new(
         EffectLifecyclePhase4LaneKind::BranchMutationExecution,
@@ -72,7 +77,9 @@ pub(super) fn branch_mutation_execution_row() -> EffectLifecyclePhase4Certificat
     )
 }
 
-pub(super) fn relational_merge_execution_row() -> EffectLifecyclePhase4CertificationRow {
+pub(super) fn relational_merge_execution_row(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> EffectLifecyclePhase4CertificationRow {
     let mut runtime = relational_runtime_with_intent_strategy();
     create_entity(&mut runtime, "main", BranchId("main".to_string()));
     crate::runtime::fork_branch_from_exact_source(
@@ -108,6 +115,7 @@ pub(super) fn relational_merge_execution_row() -> EffectLifecyclePhase4Certifica
         .lower()
         .expect("merge should lower")
         .execute_with(
+            execution,
             EffectExecutionAuthority::crate_relational_without_application_schema(&mut runtime),
         )
         .expect("merge should execute");
@@ -128,7 +136,9 @@ pub(super) fn relational_merge_execution_row() -> EffectLifecyclePhase4Certifica
     )
 }
 
-pub(super) fn bridge_writeback_execution_row() -> EffectLifecyclePhase4CertificationRow {
+pub(super) fn bridge_writeback_execution_row(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> EffectLifecyclePhase4CertificationRow {
     let bridge = test_bridge_with_writeback_authority();
     let basis = EffectAuthoringBasis::from(branch_mutation_basis("branch-a"));
     let raw = RawEffectIntent::Writeback {
@@ -148,7 +158,7 @@ pub(super) fn bridge_writeback_execution_row() -> EffectLifecyclePhase4Certifica
     let executed = scope_admitted_effect_plan(admitted)
         .lower()
         .expect("writeback should lower")
-        .execute_with(EffectExecutionAuthority::bridge(&bridge))
+        .execute_with(execution, EffectExecutionAuthority::bridge(&bridge))
         .expect("writeback should execute");
     EffectLifecyclePhase4CertificationRow::new(
         EffectLifecyclePhase4LaneKind::BridgeWritebackExecution,
@@ -167,7 +177,9 @@ pub(super) fn bridge_writeback_execution_row() -> EffectLifecyclePhase4Certifica
     )
 }
 
-pub(super) fn batch_execution_row() -> EffectLifecyclePhase4CertificationRow {
+pub(super) fn batch_execution_row(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> EffectLifecyclePhase4CertificationRow {
     let mut runtime = relational_runtime_with_intent_strategy();
     let left = create_entity(&mut runtime, "left", BranchId("main".to_string()));
     let right = create_entity(&mut runtime, "right", BranchId("main".to_string()));
@@ -199,7 +211,10 @@ pub(super) fn batch_execution_row() -> EffectLifecyclePhase4CertificationRow {
         .expect("batch should admit")
         .lower()
         .expect("batch should lower")
-        .execute_with(EffectExecutionAuthority::relational(&mut runtime))
+        .execute_with(
+            execution,
+            EffectExecutionAuthority::relational(&mut runtime),
+        )
         .expect("batch should execute");
     EffectLifecyclePhase4CertificationRow::new(
         EffectLifecyclePhase4LaneKind::BatchExecution,
@@ -216,7 +231,9 @@ pub(super) fn batch_execution_row() -> EffectLifecyclePhase4CertificationRow {
     )
 }
 
-pub(super) fn relational_oracle_row() -> EffectLifecyclePhase4CertificationRow {
+pub(super) fn relational_oracle_row(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> EffectLifecyclePhase4CertificationRow {
     let mut runtime = relational_runtime_with_intent_strategy();
     let entity_id = create_entity(&mut runtime, "before", BranchId("main".to_string()));
     crate::runtime::fork_branch_from_exact_source(
@@ -247,7 +264,10 @@ pub(super) fn relational_oracle_row() -> EffectLifecyclePhase4CertificationRow {
     )
     .lower()
     .expect("mutation should lower")
-    .execute_with(EffectExecutionAuthority::relational(&mut runtime))
+    .execute_with(
+        execution,
+        EffectExecutionAuthority::relational(&mut runtime),
+    )
     .expect("mutation should execute");
     let commit = executed
         .as_mutation()
@@ -278,7 +298,9 @@ pub(super) fn relational_oracle_row() -> EffectLifecyclePhase4CertificationRow {
     )
 }
 
-pub(super) fn bridge_oracle_row() -> EffectLifecyclePhase4CertificationRow {
+pub(super) fn bridge_oracle_row(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> EffectLifecyclePhase4CertificationRow {
     let bridge = test_bridge_with_writeback_authority();
     let basis = EffectAuthoringBasis::from(branch_mutation_basis("branch-a"));
     let executed = scope_admitted_effect_plan(
@@ -302,7 +324,7 @@ pub(super) fn bridge_oracle_row() -> EffectLifecyclePhase4CertificationRow {
     )
     .lower()
     .expect("writeback should lower")
-    .execute_with(EffectExecutionAuthority::bridge(&bridge))
+    .execute_with(execution, EffectExecutionAuthority::bridge(&bridge))
     .expect("writeback should execute");
     let (outcome, receipt) = executed
         .as_writeback()

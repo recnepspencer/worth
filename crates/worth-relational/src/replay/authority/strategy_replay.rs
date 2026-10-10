@@ -21,6 +21,7 @@ pub(super) fn verify_strategy_reexecution_surface(
     envelope: &CanonicalCommitEnvelope,
     commit_closure: &[CommitId],
     verification_mode: ReplayVerificationMode,
+    request: &worth_execution::ExecutionRequest<'_, '_>,
 ) {
     let Some(expected_artifacts) = envelope.strategy_artifacts.as_ref() else {
         return;
@@ -35,6 +36,7 @@ pub(super) fn verify_strategy_reexecution_surface(
         return;
     };
     let Some(basis_runtime) = rebuild_strategy_basis_runtime(
+        request,
         runtime,
         envelope,
         expected_artifacts,
@@ -44,7 +46,8 @@ pub(super) fn verify_strategy_reexecution_surface(
     ) else {
         return;
     };
-    let Some(execution) = execute_strategy_replay(&basis_runtime, expected_artifacts, mismatches)
+    let Some(execution) =
+        execute_strategy_replay(&basis_runtime, expected_artifacts, mismatches, request)
     else {
         return;
     };
@@ -152,6 +155,7 @@ fn select_strategy_basis_commits(
 }
 
 fn rebuild_strategy_basis_runtime(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     envelope: &CanonicalCommitEnvelope,
     expected_artifacts: &StrategyCommitArtifactBundle,
@@ -164,7 +168,7 @@ fn rebuild_strategy_basis_runtime(
         basis_commits,
         verification_mode,
     );
-    let basis_runtime = match runtime.rebuild_runtime_from_plan(basis_plan) {
+    let basis_runtime = match runtime.rebuild_runtime_from_plan(execution, basis_plan) {
         Ok(runtime) => runtime,
         Err(error) => {
             mismatches.push(strategy_mismatch(
@@ -197,12 +201,13 @@ fn execute_strategy_replay(
     basis_runtime: &RelationalRuntime,
     expected_artifacts: &StrategyCommitArtifactBundle,
     mismatches: &mut Vec<ReplayMismatch>,
+    request: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Option<StrategyExecutionDraft> {
     let replay_request = expected_artifacts.replay_request();
     let snapshot = basis_runtime.visibility_authority().snapshot();
     match basis_runtime
         .commit_strategies()
-        .execute(&replay_request, &snapshot)
+        .execute(&replay_request, &snapshot, request)
     {
         Ok(execution) => Some(execution),
         Err(error) => {

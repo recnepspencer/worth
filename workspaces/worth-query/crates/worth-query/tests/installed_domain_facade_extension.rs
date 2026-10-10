@@ -53,7 +53,10 @@ impl ConsumerDomainQueryExt for domain::WorthQueryInstalledDomainHandle<PublicIn
 
 #[test]
 fn downstream_extension_preserves_the_generic_installed_capability_artifact() {
-    let workspace = workspace("installed-domain-facade-extension");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let workspace = workspace(request_execution, "installed-domain-facade-extension");
     let handle = workspace
         .domain(PublicInstalledDomain)
         .expect("one installed handle lookup should admit");

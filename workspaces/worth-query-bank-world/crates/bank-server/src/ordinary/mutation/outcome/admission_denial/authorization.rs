@@ -6,6 +6,7 @@ use worth_query_host::facade::primary_graph::{
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankAuthorizationDenialKind {
+    ForeignPhase,
     Cancelled,
     DeadlineExceeded,
     ExpiredAuthentication,
@@ -114,6 +115,7 @@ impl From<QueryKind> for BankAuthorizationDenialKind {
 const fn map_kind(kind: QueryKind) -> BankAuthorizationDenialKind {
     use BankAuthorizationDenialKind as Bank;
     match kind {
+        QueryKind::ForeignPhase => Bank::ForeignPhase,
         QueryKind::Cancelled => Bank::Cancelled,
         QueryKind::DeadlineExceeded => Bank::DeadlineExceeded,
         QueryKind::ExpiredAuthentication => Bank::ExpiredAuthentication,
@@ -182,6 +184,7 @@ const fn map_kind(kind: QueryKind) -> BankAuthorizationDenialKind {
 const fn authorization_code(kind: BankAuthorizationDenialKind) -> &'static str {
     use BankAuthorizationDenialKind as Bank;
     match kind {
+        Bank::ForeignPhase => "foreign-phase",
         Bank::Cancelled => "cancelled",
         Bank::DeadlineExceeded => "deadline-exceeded",
         Bank::ExpiredAuthentication => "expired-authentication",

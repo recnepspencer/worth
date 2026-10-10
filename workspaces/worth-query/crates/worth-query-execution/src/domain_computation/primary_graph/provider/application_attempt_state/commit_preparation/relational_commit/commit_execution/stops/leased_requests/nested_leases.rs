@@ -2,6 +2,9 @@ use super::*;
 
 #[test]
 fn refusing_ancestor_through_both_public_doors() {
+    let host_request = crate::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     in_isolated_process(
         concat!(
             module_path!(),
@@ -12,7 +15,7 @@ fn refusing_ancestor_through_both_public_doors() {
                 .request_lease(request(32 * 1024 * 1024, 1_000_000))
                 .unwrap();
             let _held = lease.reserve_memory(32 * 1024 * 1024).unwrap();
-            check_lease(&lease, |stop, ancestor| {
+            check_lease(execution, &lease, |stop, ancestor| {
                 let Outcome::Denied(failure) = stop else {
                     panic!("wrong ancestor stop")
                 };

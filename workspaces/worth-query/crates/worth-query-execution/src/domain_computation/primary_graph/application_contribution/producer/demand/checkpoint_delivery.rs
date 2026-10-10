@@ -26,6 +26,7 @@ where
 {
     pub(super) fn advance_output_checkpoint(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
 
         interest: &WorthQueryOutputDemandInterest,
@@ -63,6 +64,7 @@ where
                 ready_backing,
             } => {
                 let readiness = match self.evaluate_current_output_readiness(
+                    execution,
                     phase,
                     producer_identity,
                     &receipt,

@@ -2,12 +2,15 @@ use super::*;
 
 #[test]
 fn continuity_update_denies_missing_binding_typed_and_early() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("tasks.continuity-denial")
         .expect("task runtime should open a named workspace");
 
     let error = workspace
-        .update(test_entity_identity("entity:0:1:0"), |task| {
+        .update(request_execution, test_entity_identity("entity:0:1:0"), |task| {
             task.continuity_rebind_existing_target(crate::runtime::WorthQueryMutationAuthorityIdentity::continuity_prior_authority(crate::runtime::WorthQueryContinuityPriorAuthorityLabel::new("authority:task-1").expect("continuity prior authority label")).expect("continuity prior authority identity"), crate::runtime::WorthQueryMutationAuthorityIdentity::continuity_successor_authority(crate::runtime::WorthQueryContinuitySuccessorAuthorityLabel::new("authority:task-1-successor").expect("continuity successor authority label")).expect("continuity successor authority identity"))
                 .set_aspect(test_aspect_touch("title.value"), test_authored_string_aspect_value("No binding"))
         })
@@ -27,12 +30,15 @@ fn continuity_update_denies_missing_binding_typed_and_early() {
 
 #[test]
 fn continuity_insert_denies_non_update_family_typed_and_early() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("tasks.continuity-insert-denial")
         .expect("task runtime should open a named workspace");
 
     let error = workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.continuity_rebind_existing_target(crate::runtime::WorthQueryMutationAuthorityIdentity::continuity_prior_authority(crate::runtime::WorthQueryContinuityPriorAuthorityLabel::new("authority:task-1").expect("continuity prior authority label")).expect("continuity prior authority identity"), crate::runtime::WorthQueryMutationAuthorityIdentity::continuity_successor_authority(crate::runtime::WorthQueryContinuitySuccessorAuthorityLabel::new("authority:task-1-successor").expect("continuity successor authority label")).expect("continuity successor authority identity"))
                 .set_aspect(test_aspect_touch("identity.id"), test_authored_string_aspect_value("task-2"))
         })
@@ -52,27 +58,34 @@ fn continuity_insert_denies_non_update_family_typed_and_early() {
 
 #[test]
 fn preview_update_existing_denies_continuity_without_authoritative_lane() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("tasks.preview-continuity-denial")
         .expect("task runtime should open a named workspace");
     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.preview-continuity-denial-table", |q| {
-            q.from("Task")
-                .select([
-                    crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
-                        .unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
-                        .unwrap(),
-                ])
-                .order_by(
-                    crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
-                        .unwrap(),
-                )
-                .schema_basis("tasks-preview-continuity-denial-table")
-        })
+        .live_view(
+            request_execution,
+            "tasks.preview-continuity-denial-table",
+            |q| {
+                q.from("Task")
+                    .select([
+                        crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
+                            .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
+                            .unwrap(),
+                    ])
+                    .order_by(
+                        crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
+                            .unwrap(),
+                    )
+                    .schema_basis("tasks-preview-continuity-denial-table")
+            },
+        )
         .expect("live view should declare");
     let seed = workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(
                 test_aspect_touch("identity.id"),
                 test_authored_string_aspect_value("task-preview"),
@@ -96,11 +109,11 @@ fn preview_update_existing_denies_continuity_without_authoritative_lane() {
     .expect("binding collection should build");
     let binding_digest = binding.binding_digest();
     let mut preview = workspace
-        .preview(test_session_label("continuity denial"))
+        .preview(request_execution, test_session_label("continuity denial"))
         .expect("preview should open");
 
     let error = preview
-        .update_existing(binding, |task| {
+        .update_existing(request_execution, binding, |task| {
             task.continuity_rebind_existing_target(crate::runtime::WorthQueryMutationAuthorityIdentity::continuity_prior_authority(crate::runtime::WorthQueryContinuityPriorAuthorityLabel::new("authority:task-preview").expect("continuity prior authority label")).expect("continuity prior authority identity"), crate::runtime::WorthQueryMutationAuthorityIdentity::continuity_successor_authority(crate::runtime::WorthQueryContinuitySuccessorAuthorityLabel::new("authority:task-preview-successor").expect("continuity successor authority label")).expect("continuity successor authority identity"),
             )
             .set_aspect(test_aspect_touch("title.value"), test_authored_string_aspect_value("Preview continuity denied"))
@@ -122,27 +135,34 @@ fn preview_update_existing_denies_continuity_without_authoritative_lane() {
 
 #[test]
 fn preview_batch_denies_continuity_without_authoritative_lane() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("tasks.preview-batch-continuity-denial")
         .expect("task runtime should open a named workspace");
     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.preview-batch-continuity-denial-table", |q| {
-            q.from("Task")
-                .select([
-                    crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
-                        .unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
-                        .unwrap(),
-                ])
-                .order_by(
-                    crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
-                        .unwrap(),
-                )
-                .schema_basis("tasks-preview-batch-continuity-denial-table")
-        })
+        .live_view(
+            request_execution,
+            "tasks.preview-batch-continuity-denial-table",
+            |q| {
+                q.from("Task")
+                    .select([
+                        crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
+                            .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
+                            .unwrap(),
+                    ])
+                    .order_by(
+                        crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
+                            .unwrap(),
+                    )
+                    .schema_basis("tasks-preview-batch-continuity-denial-table")
+            },
+        )
         .expect("live view should declare");
     let seed = workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(
                 test_aspect_touch("identity.id"),
                 test_authored_string_aspect_value("task-preview-batch"),
@@ -166,11 +186,14 @@ fn preview_batch_denies_continuity_without_authoritative_lane() {
     .expect("binding collection should build");
     let binding_digest = binding.binding_digest();
     let mut preview = workspace
-        .preview(test_session_label("continuity batch denial"))
+        .preview(
+            request_execution,
+            test_session_label("continuity batch denial"),
+        )
         .expect("preview should open");
 
     let error = preview
-        .batch(|batch| {
+        .batch(request_execution, |batch| {
             batch.update_existing(binding, |task| {
                 task.continuity_rebind_existing_target(crate::runtime::WorthQueryMutationAuthorityIdentity::continuity_prior_authority(crate::runtime::WorthQueryContinuityPriorAuthorityLabel::new("authority:task-preview-batch").expect("continuity prior authority label")).expect("continuity prior authority identity"), crate::runtime::WorthQueryMutationAuthorityIdentity::continuity_successor_authority(crate::runtime::WorthQueryContinuitySuccessorAuthorityLabel::new("authority:task-preview-batch-successor").expect("continuity successor authority label")).expect("continuity successor authority identity"),
                 )

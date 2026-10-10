@@ -68,6 +68,9 @@ fn replicas_patch_target() -> AspectFieldLocator {
 
 #[test]
 fn aspect_field_reconciliation_strategy_updates_only_declared_field_aspect() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let descriptor = AspectFieldReconciliationStrategy::descriptor(
         crate::commit_strategies::data::CommitStrategyId(701),
     );
@@ -96,7 +99,7 @@ fn aspect_field_reconciliation_strategy_updates_only_declared_field_aspect() {
     let snapshot = runtime.visibility_authority().snapshot();
     let execution = runtime
         .commit_strategies()
-        .execute(&request, &snapshot)
+        .execute(&request, &snapshot, request_execution)
         .expect("strategy execution");
     let output = AspectFieldReconciliationOutput::decode(execution.output().canonical_bytes())
         .expect("output decode");
@@ -123,6 +126,9 @@ fn aspect_field_reconciliation_strategy_updates_only_declared_field_aspect() {
 
 #[test]
 fn aspect_field_reconciliation_strategy_noops_when_authoritative_field_matches() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let descriptor = AspectFieldReconciliationStrategy::descriptor(
         crate::commit_strategies::data::CommitStrategyId(703),
     );
@@ -152,7 +158,7 @@ fn aspect_field_reconciliation_strategy_noops_when_authoritative_field_matches()
     let snapshot = runtime.visibility_authority().snapshot();
     let execution = runtime
         .commit_strategies()
-        .execute(&request, &snapshot)
+        .execute(&request, &snapshot, request_execution)
         .expect("strategy execution");
     let output = AspectFieldReconciliationOutput::decode(execution.output().canonical_bytes())
         .expect("output decode");
@@ -163,6 +169,9 @@ fn aspect_field_reconciliation_strategy_noops_when_authoritative_field_matches()
 
 #[test]
 fn aspect_field_reconciliation_strategy_rejects_undeclared_field() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let descriptor = AspectFieldReconciliationStrategy::descriptor(
         crate::commit_strategies::data::CommitStrategyId(702),
     );
@@ -202,7 +211,7 @@ fn aspect_field_reconciliation_strategy_rejects_undeclared_field() {
     let snapshot = runtime.visibility_authority().snapshot();
     let error = runtime
         .commit_strategies()
-        .execute(&request, &snapshot)
+        .execute(&request, &snapshot, execution)
         .expect_err("undeclared aspect field should be rejected");
 
     match error {

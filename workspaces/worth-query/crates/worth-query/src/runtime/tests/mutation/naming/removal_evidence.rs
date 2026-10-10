@@ -2,11 +2,14 @@ use super::*;
 
 #[test]
 fn delete_existing_preserves_naming_removal_evidence_on_receipt_and_inspection() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("tasks.naming-remove")
         .expect("task runtime should open a named workspace");
     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.naming-remove-table", |q| {
+        .live_view(request_execution, "tasks.naming-remove-table", |q| {
             q.from("Task")
                 .select([
                     crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
@@ -23,7 +26,7 @@ fn delete_existing_preserves_naming_removal_evidence_on_receipt_and_inspection()
         .expect("live view should declare");
 
     let seed = workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(
                 test_aspect_touch("identity.id"),
                 test_authored_string_aspect_value("task-1"),
@@ -61,14 +64,14 @@ fn delete_existing_preserves_naming_removal_evidence_on_receipt_and_inspection()
     .expect("binding collection should build");
 
     let receipt = workspace
-        .delete_existing_with(binding, |delete| {
+        .delete_existing_with(request_execution, binding, |delete| {
             delete
                 .touch(test_aspect_touch("title.value"))
                 .naming_remove(attachment_authority.clone(), prior_authority.clone())
         })
         .expect("existing-target naming delete should execute");
     let inspection = workspace
-        .inspect(&receipt)
+        .inspect(request_execution, &receipt)
         .expect("naming delete receipt should inspect");
 
     let naming = receipt
@@ -116,11 +119,14 @@ fn delete_existing_preserves_naming_removal_evidence_on_receipt_and_inspection()
 
 #[test]
 fn preview_batch_symbolic_naming_preserves_typed_evidence() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("tasks.preview-naming")
         .expect("task runtime should open a named workspace");
     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.preview-naming-table", |q| {
+        .live_view(request_execution, "tasks.preview-naming-table", |q| {
             q.from("Task")
                 .select([
                     crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
@@ -137,10 +143,10 @@ fn preview_batch_symbolic_naming_preserves_typed_evidence() {
         .expect("live view should declare");
 
     let mut preview = workspace
-        .preview(test_session_label("naming-preview"))
+        .preview(request_execution, test_session_label("naming-preview"))
         .expect("preview should open");
     let receipt = preview
-        .batch(|batch| {
+        .batch(request_execution, |batch| {
             batch
                 .insert_symbolic("draft-task", "Task", |task| {
                     task.set_aspect(

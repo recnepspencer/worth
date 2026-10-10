@@ -7,6 +7,9 @@ use crate::tests::support::*;
 
 #[test]
 fn topology_identity_survival_preserves_reidentification_truth_across_recovery() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
     let created = create_entity_outcome(&runtime, "topology-source");
     let entity = changed_entities(&created)[0];
@@ -56,7 +59,10 @@ fn topology_identity_survival_preserves_reidentification_truth_across_recovery()
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
     );
     let mut recovered = persisted_runtime_with_test_schema();
-    recovered.durability_recovery().recover(plan).unwrap();
+    recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
 
     let recovered_resolution =
         recovered
@@ -77,6 +83,7 @@ fn topology_identity_survival_preserves_reidentification_truth_across_recovery()
     );
 
     assert_recovered_commit_truth_matches(
+        execution,
         &runtime,
         &recovered,
         replacement.commit.commit_id,

@@ -1,6 +1,9 @@
 use super::*;
 
-pub(super) fn certify_geometry_commit_downstream_wave(suite: &'static str) {
+pub(super) fn certify_geometry_commit_downstream_wave(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    suite: &'static str,
+) {
     for (case, development_profile) in [
         ("geometry_commit_downstream_wave_operational", false),
         ("geometry_commit_downstream_wave_development", true),
@@ -70,7 +73,11 @@ pub(super) fn certify_geometry_commit_downstream_wave(suite: &'static str) {
                         .read_truth()
                         .plan_query_packet(&snapshot, traversal_packet)
                         .expect("merged traversal plan"),
+                    execution,
+                    crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                 )
+                .expect("request remains live")
+                .map(|read| read.outcome)
                 .expect("merged traversal outcome");
             let relational_query_micros = relational_query_started_at.elapsed().as_micros();
 

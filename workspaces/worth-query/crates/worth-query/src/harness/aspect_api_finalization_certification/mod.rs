@@ -123,15 +123,19 @@ impl AspectApiFinalizationCertificationMatrix {
 pub struct AspectApiFinalizationCertificationAdapter;
 
 impl AspectApiFinalizationCertificationAdapter {
-    pub fn public_aspect_api_finalization_artifact() -> AspectApiFinalizationCertificationArtifact {
-        Self::public_aspect_api_finalization_test().into_artifact()
+    pub fn public_aspect_api_finalization_artifact(
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> AspectApiFinalizationCertificationArtifact {
+        Self::public_aspect_api_finalization_test(request_execution).into_artifact()
     }
 
-    pub fn public_aspect_api_finalization_test() -> AspectApiFinalizationCertificationMatrix {
+    pub fn public_aspect_api_finalization_test(
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> AspectApiFinalizationCertificationMatrix {
         AspectApiFinalizationCertificationMatrix {
             suite_name: "Public Aspect API Finalization Test",
-            rows: rows::canonical_rows(),
-            rejection_rows: rows::rejection_rows(),
+            rows: rows::canonical_rows(request_execution),
+            rejection_rows: rows::rejection_rows(request_execution),
         }
     }
 }

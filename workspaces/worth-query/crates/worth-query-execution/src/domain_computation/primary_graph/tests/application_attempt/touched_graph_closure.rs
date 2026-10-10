@@ -8,27 +8,55 @@ use super::super::fixture::{AccountStatus, MultiTouchOperation, TouchAccountOper
 fn incomplete_mandatory_decision_reads_cannot_form_an_effect_program() {
     let world = installed_authorization_world(true);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+        })
+        .expect("the fixture read owns its installed host call");
     let operation = world
         .application
         .installed_schema()
         .installed_operation(TouchAccountOperation::reference())
         .unwrap();
     let admission = world
-        .selected_product()
-        .authorize_operation(
-            &principal,
-            &account,
-            &operation,
-            Default::default(),
-            &request,
-        )
-        .unwrap();
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .selected_product(&(phase).test_host_request())
+                .authorize_operation(
+                    &phase,
+                    &principal,
+                    &account,
+                    &operation,
+                    Default::default(),
+                    &request,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let attempt = world
         .application
-        .begin_application_read_attempt(admission)
-        .unwrap();
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .begin_application_read_attempt(
+                    &host_custody.borrowed_request_for_test(),
+                    admission,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
 
     let Err(denial) =
         attempt.complete(crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
@@ -45,71 +73,149 @@ fn incomplete_mandatory_decision_reads_cannot_form_an_effect_program() {
 fn sealed_projection_completion_accepts_the_exact_empty_dependency_set() {
     let world = installed_authorization_world(true);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+        })
+        .expect("the fixture read owns its installed host call");
     let operation = world
         .application
         .installed_schema()
         .installed_operation(TouchAccountOperation::reference())
         .unwrap();
     let admission = world
-        .selected_product()
-        .authorize_operation(
-            &principal,
-            &account,
-            &operation,
-            Default::default(),
-            &request,
-        )
-        .unwrap();
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .selected_product(&(phase).test_host_request())
+                .authorize_operation(
+                    &phase,
+                    &principal,
+                    &account,
+                    &operation,
+                    Default::default(),
+                    &request,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let (_, projection, _) = world
-        .invariant
-        .project_admitted_operation(&admission, |_, _| (), AllocationPolicy::SystemAllocation)
-        .unwrap()
-        .into_parts();
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .invariant
+                .project_admitted_operation(
+                    &phase,
+                    &admission,
+                    |_, _| (),
+                    AllocationPolicy::SystemAllocation,
+                )
+                .unwrap()
+                .into_parts()
+        })
+        .expect("the fixture read owns its installed host call");
     let attempt = world
         .application
-        .begin_projected_application_read_attempt(
-            admission,
-            projection,
-            AllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .begin_projected_application_read_attempt(
+                    &phase,
+                    admission,
+                    projection,
+                    AllocationPolicy::SystemAllocation,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
 
-    attempt
-        .complete_projected_dependencies(
-            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("the projection sealed an exact empty dependency set");
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            attempt
+                .complete_projected_dependencies(
+                    &phase,
+                    crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .expect("the projection sealed an exact empty dependency set")
+        })
+        .expect("the fixture read owns its installed host call");
 }
 
 #[test]
 fn same_type_entity_outside_the_admitted_root_cannot_enter_an_unprojected_read_set() {
     let world = installed_authorization_world(true);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+        })
+        .expect("the fixture read owns its installed host call");
     let operation = world
         .application
         .installed_schema()
         .installed_operation(TouchAccountOperation::reference())
         .unwrap();
     let admission = world
-        .selected_product()
-        .authorize_operation(
-            &principal,
-            &account,
-            &operation,
-            Default::default(),
-            &request,
-        )
-        .unwrap();
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .selected_product(&(phase).test_host_request())
+                .authorize_operation(
+                    &phase,
+                    &principal,
+                    &account,
+                    &operation,
+                    Default::default(),
+                    &request,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let attempt = world
         .application
-        .begin_application_read_attempt(admission)
-        .unwrap();
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .begin_application_read_attempt(
+                    &host_custody.borrowed_request_for_test(),
+                    admission,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
 
-    let Err(denial) = attempt.resolve_entity(AccountStatus::reference(), "unrelated".to_string())
+    let Err(denial) = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            attempt.resolve_entity(&phase, AccountStatus::reference(), "unrelated".to_string())
+        })
+        .expect("the fixture read owns its installed host call")
     else {
         panic!("an unprojected read attempt must remain inside its admitted root");
     };
@@ -119,110 +225,8 @@ fn same_type_entity_outside_the_admitted_root_cannot_enter_an_unprojected_read_s
     );
 }
 
-#[test]
-fn only_the_exact_projection_occurrence_can_enter_its_read_set() {
-    let world = installed_authorization_world(true);
-    let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
-    let other_account = resolved_account(&world, "unrelated", &request);
-    let operation = world
-        .application
-        .installed_schema()
-        .installed_operation(TouchAccountOperation::reference())
-        .unwrap();
-
-    let admission = world
-        .selected_product()
-        .authorize_operation(
-            &principal,
-            &account,
-            &operation,
-            Default::default(),
-            &request,
-        )
-        .unwrap();
-    let other_admission = world
-        .selected_product()
-        .authorize_operation(
-            &principal,
-            &other_account,
-            &operation,
-            Default::default(),
-            &request,
-        )
-        .unwrap();
-    let (_, other_projection, _) = world
-        .invariant
-        .project_admitted_operation(
-            &other_admission,
-            |_, _| (),
-            AllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
-        .into_parts();
-    let mismatch = world
-        .application
-        .begin_projected_application_read_attempt(
-            admission,
-            other_projection,
-            AllocationPolicy::SystemAllocation,
-        )
-        .err()
-        .expect("another admitted scope's projection must not substitute");
-    assert_eq!(
-        mismatch.kind(),
-        WorthQueryApplicationAttemptDenialKind::ProjectionAdmissionMismatch
-    );
-
-    let first_equivalent = world
-        .selected_product()
-        .authorize_operation(
-            &principal,
-            &account,
-            &operation,
-            Default::default(),
-            &request,
-        )
-        .unwrap();
-    let second_equivalent = world
-        .selected_product()
-        .authorize_operation(
-            &principal,
-            &account,
-            &operation,
-            Default::default(),
-            &request,
-        )
-        .unwrap();
-    assert_eq!(
-        first_equivalent.operation_scope_binding(),
-        second_equivalent.operation_scope_binding(),
-        "equivalent retries intentionally retain one descriptive scope identity"
-    );
-    let (_, first_projection, _) = world
-        .invariant
-        .project_admitted_operation(
-            &first_equivalent,
-            |_, _| (),
-            AllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
-        .into_parts();
-    let equivalent_mismatch = world
-        .application
-        .begin_projected_application_read_attempt(
-            second_equivalent,
-            first_projection,
-            AllocationPolicy::SystemAllocation,
-        )
-        .err()
-        .expect("stable retry identity must not substitute occurrence authority");
-    assert_eq!(
-        equivalent_mismatch.kind(),
-        WorthQueryApplicationAttemptDenialKind::ProjectionAdmissionMismatch
-    );
-}
+#[path = "touched_graph_closure/only_the_exact_projection_occurrence_can_enter_its_read_set.rs"]
+mod only_the_exact_projection_occurrence_can_enter_its_read_set;
 
 #[path = "touched_graph_closure/field_family_occurrence.rs"]
 mod field_family_occurrence;

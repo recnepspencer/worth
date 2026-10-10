@@ -18,9 +18,10 @@ pub struct WorthQueryProductRelationalInstallation {
 impl WorthQueryRelationalSourceOwner {
     pub fn prepare_product_source(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         branch: &RelationalBranchIdentity,
     ) -> Result<WorthQueryProductRelationalInstallation, RelationalBranchBasisDenial> {
-        self.with_runtime(|runtime| {
+        self.with_runtime(execution, |runtime| {
             let (_, basis) = runtime.observe_branch(branch)?;
             Ok(WorthQueryProductRelationalInstallation {
                 services: runtime.owner_component_services(),

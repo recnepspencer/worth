@@ -8,7 +8,11 @@ use crate::runtime::WorthQueryWorkspace;
 impl WorthQueryReadRequest {
     /// Admit the declared authority context and execute the read through
     /// Query-owned planning, routing, and receipt assembly.
-    pub fn run(self, workspace: &mut WorthQueryWorkspace) -> WorthQueryReadOutcome {
+    pub fn run(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        workspace: &mut WorthQueryWorkspace,
+    ) -> WorthQueryReadOutcome {
         let (declaration, context) = self.into_parts();
         let intent = declaration.into_declared_intent();
         let journey_counters = WorthQueryReadJourneyCounters::begin_context_admission();
@@ -37,7 +41,7 @@ impl WorthQueryReadRequest {
         let projection_binding = WorthQueryReadProjectionBinding::from_graph(&read_graph);
         let journey_counters = journey_counters.record_lower_runtime_execution_attempt();
         let runtime_result =
-            workspace.execute_declared_read_graph_in_authority(read_graph, &authority);
+            workspace.execute_declared_read_graph_in_authority(execution, read_graph, &authority);
         match runtime_result {
             Ok(result) => WorthQueryReadOutcome::Completed(WorthQueryReadCompletion::new(
                 result,

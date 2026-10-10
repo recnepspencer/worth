@@ -54,13 +54,19 @@ type Retained = RetainedPartitions<
 >;
 type Tree = ReductionTree<u64, fn(&u64, &u64) -> u64>;
 
-fn template() -> SealedComputationRun {
+fn template(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
+) -> SealedComputationRun {
     let world = installed_authorization_world(true);
     // Keep the source run's memory reservation alive throughout each test.
-    first_run(&world, &installed(StatusRead::Gather(1), sum))
-        .sealed
-        .unwrap()
-        .unwrap()
+    first_run(
+        phase_custody,
+        &world,
+        &installed(StatusRead::Gather(1), sum),
+    )
+    .sealed
+    .unwrap()
+    .unwrap()
 }
 
 /// Only the tree-update boundary is under test here. Unused owner facts are
@@ -139,72 +145,91 @@ fn reconcile(report: TreeRun) {
 
 #[test]
 fn every_edit_obeys_its_pre_edit_shape_bound_and_reconciles() {
-    let template = template();
-    let keys: Vec<_> = (0..128).map(|n| Id::new(n * 17 + 3)).collect();
-    let retained = retained(&template, &keys);
-    let shape = shape::Shape::from_sorted(&keys);
-    for key in &keys {
-        reset_counts();
-        let next = run(&retained, &keys, BTreeMap::from([(*key, 2)]), u64::MAX);
-        reconcile(next.report);
-        let TreeRun::Edited(metrics) = next.report else {
-            panic!("an ordinary update edits")
-        };
-        let path = shape::Shape::update_path(&shape, *key);
-        assert!(metrics.recombined_nodes <= u128::try_from(path.len()).unwrap());
-        assert_eq!(metrics.combine_calls, 2 * metrics.recombined_nodes);
-        assert_eq!(*next.outcome.unwrap().result(), 129);
-        reset_counts();
-        let same = run(&retained, &keys, BTreeMap::from([(*key, 1)]), u64::MAX);
-        reconcile(same.report);
-        assert_eq!(
-            same.report.metrics().recombined_nodes,
-            0,
-            "identical bits cut off"
-        );
-        assert_eq!(same.report.metrics().combine_calls, 0);
-        let deleted: Vec<_> = keys.iter().copied().filter(|id| id != key).collect();
-        reset_counts();
-        let next = run(&retained, &deleted, BTreeMap::new(), u64::MAX);
-        reconcile(next.report);
-        assert!(matches!(next.report, TreeRun::Edited(_)));
-        assert_eq!(
-            next.report.metrics().combine_calls,
-            2 * next.report.metrics().recombined_nodes
-        );
-        assert!(
-            next.report.metrics().recombined_nodes
-                <= u128::from(shape::Shape::deletion_depth(&shape, *key))
-        );
-        assert_eq!(*next.outcome.unwrap().result(), 127);
-    }
-    for key in (0..128).map(|n| Id::new(n * 17 + 4)) {
-        let mut inserted = keys.clone();
-        inserted.push(key);
-        inserted.sort();
-        let bound = shape::Shape::depth(&shape, key) + shape::Shape::rotations(&shape, key) + 1;
-        reset_counts();
-        let next = run(&retained, &inserted, BTreeMap::from([(key, 2)]), u64::MAX);
-        reconcile(next.report);
-        assert!(matches!(next.report, TreeRun::Edited(_)));
-        assert_eq!(
-            next.report.metrics().combine_calls,
-            2 * next.report.metrics().recombined_nodes
-        );
-        assert_eq!(next.report.metrics().recombined_nodes, u128::from(bound));
-        assert_eq!(*next.outcome.unwrap().result(), 130);
-    }
+    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+        let template = template(&host_custody);
+        let keys: Vec<_> = (0..128).map(|n| Id::new(n * 17 + 3)).collect();
+        let retained = retained(&template, &keys);
+        let shape = shape::Shape::from_sorted(&keys);
+        for key in &keys {
+            reset_counts();
+            let next = run(&retained, &keys, BTreeMap::from([(*key, 2)]), u64::MAX);
+            reconcile(next.report);
+            let TreeRun::Edited(metrics) = next.report else {
+                panic!("an ordinary update edits")
+            };
+            let path = shape::Shape::update_path(&shape, *key);
+            assert!(metrics.recombined_nodes <= u128::try_from(path.len()).unwrap());
+            assert_eq!(metrics.combine_calls, 2 * metrics.recombined_nodes);
+            assert_eq!(*next.outcome.unwrap().result(), 129);
+            reset_counts();
+            let same = run(&retained, &keys, BTreeMap::from([(*key, 1)]), u64::MAX);
+            reconcile(same.report);
+            assert_eq!(
+                same.report.metrics().recombined_nodes,
+                0,
+                "identical bits cut off"
+            );
+            assert_eq!(same.report.metrics().combine_calls, 0);
+            let deleted: Vec<_> = keys.iter().copied().filter(|id| id != key).collect();
+            reset_counts();
+            let next = run(&retained, &deleted, BTreeMap::new(), u64::MAX);
+            reconcile(next.report);
+            assert!(matches!(next.report, TreeRun::Edited(_)));
+            assert_eq!(
+                next.report.metrics().combine_calls,
+                2 * next.report.metrics().recombined_nodes
+            );
+            assert!(
+                next.report.metrics().recombined_nodes
+                    <= u128::from(shape::Shape::deletion_depth(&shape, *key))
+            );
+            assert_eq!(*next.outcome.unwrap().result(), 127);
+        }
+        for key in (0..128).map(|n| Id::new(n * 17 + 4)) {
+            let mut inserted = keys.clone();
+            inserted.push(key);
+            inserted.sort();
+            let bound = shape::Shape::depth(&shape, key) + shape::Shape::rotations(&shape, key) + 1;
+            reset_counts();
+            let next = run(&retained, &inserted, BTreeMap::from([(key, 2)]), u64::MAX);
+            reconcile(next.report);
+            assert!(matches!(next.report, TreeRun::Edited(_)));
+            assert_eq!(
+                next.report.metrics().combine_calls,
+                2 * next.report.metrics().recombined_nodes
+            );
+            assert_eq!(next.report.metrics().recombined_nodes, u128::from(bound));
+            assert_eq!(*next.outcome.unwrap().result(), 130);
+        }
+    })
 }
 
 #[test]
 fn public_incremental_observation_reports_actual_work_apart_from_charge() {
     let world = installed_authorization_world(true);
     let installed = installed(StatusRead::Gather(1), counted);
-    let first = first_run(&world, &installed);
+    let first = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            first_run(&(phase).test_host_request(), &world, &installed)
+        })
+        .expect("the fixture read owns its installed host call");
     let charge = first.outcome.as_ref().unwrap().1;
     *installed.owner.bump.lock().unwrap() = 10;
     reset_counts();
-    let next = attempt(&world, &installed, Some(prior_of(first, true)));
+    let next = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            attempt(
+                &(phase).test_host_request(),
+                &world,
+                &installed,
+                Some(prior_of(first, true)),
+            )
+        })
+        .expect("the fixture read owns its installed host call");
     assert_eq!(next.runs, [(Run::Incremental, None)]);
     let [tree] = next.tree_runs.as_slice() else {
         panic!("one terminal report")

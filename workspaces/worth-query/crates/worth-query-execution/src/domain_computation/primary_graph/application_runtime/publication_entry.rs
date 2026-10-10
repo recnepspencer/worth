@@ -34,6 +34,7 @@ where
 {
     pub fn publish_application_runtime(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
         runtime: WorthQueryExecutionRuntime,
         authority: WorthQueryExecutionInstallationAuthority,
@@ -45,6 +46,7 @@ where
     > {
         installation::require_no_conditional_bindings(&runtime, &installed_schema)?;
         installation::publish_application_runtime_with_clock(
+            execution,
             phase,
             installation::ApplicationRuntimePublication {
                 bootstrap: self,
@@ -122,6 +124,7 @@ where
     /// no Query authority and is never exposed to operation callers.
     pub fn publish_application_runtime_with_authorization_time_source(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
         runtime: WorthQueryExecutionRuntime,
         authority: WorthQueryExecutionInstallationAuthority,
@@ -133,6 +136,7 @@ where
         WorthQueryPrimaryGraphInstallationDenial,
     > {
         self.publish_application_runtime_with_ports(
+            execution,
             phase,
             runtime,
             authority,
@@ -145,6 +149,7 @@ where
 
     pub(in crate::domain_computation::primary_graph) fn publish_application_runtime_with_ports(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
         runtime: WorthQueryExecutionRuntime,
         authority: WorthQueryExecutionInstallationAuthority,
@@ -157,6 +162,7 @@ where
         WorthQueryPrimaryGraphInstallationDenial,
     > {
         installation::publish_application_runtime_with_clock(
+            execution,
             phase,
             installation::ApplicationRuntimePublication {
                 bootstrap: self,

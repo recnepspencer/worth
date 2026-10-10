@@ -6,11 +6,13 @@ pub(super) struct PrimaryStrategyConflictProof {
 }
 
 pub(super) fn certify_primary_strategy_conflict(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     entity: crate::facade::identity::EntityId,
     feature_branch: &BranchId,
 ) -> PrimaryStrategyConflictProof {
     let main_commit = execute_strategy_commit(
+        execution,
         runtime,
         IntentReconciliationInput {
             entity_id: entity,
@@ -25,6 +27,7 @@ pub(super) fn certify_primary_strategy_conflict(
         None,
     );
     let feature_commit = execute_strategy_commit(
+        execution,
         runtime,
         ReplicaConvergenceInput {
             entity_id: entity,
@@ -40,11 +43,14 @@ pub(super) fn certify_primary_strategy_conflict(
     );
     let planning = runtime
         .merge()
-        .inspect_planning_scope(MergePlanningRequest::new(
-            BranchId("main".to_string()),
-            feature_branch.clone(),
-            MergeIntent::ReconcileIntoTarget,
-        ))
+        .inspect_planning_scope(
+            execution,
+            MergePlanningRequest::new(
+                BranchId("main".to_string()),
+                feature_branch.clone(),
+                MergeIntent::ReconcileIntoTarget,
+            ),
+        )
         .expect("merge planning");
     let classification = planning
         .conflict_classification

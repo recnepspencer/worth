@@ -6,6 +6,7 @@ use crate::domain_computation::primary_graph::application_output_demand::ReadyCo
 use worth_relational::facade::snapshots::SnapshotHandle;
 
 pub(super) fn retain<Schema: worth_query_installation::facade::ApplicationSchema>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     completion: &ReadyCompletion,
     pending: &crate::domain_computation::primary_graph::invariant_projection::SelectedPendingConsumedOutput<'_>,
@@ -35,8 +36,9 @@ pub(super) fn retain<Schema: worth_query_installation::facade::ApplicationSchema
         return Ok(ReboundConsumedOutput::Fresh);
     }
     handle
-        .with_runtime(|relational| {
+        .with_runtime(execution, |relational| {
             let current = candidate.certify_current(
+                execution,
                 &handle.source_owner.invalidation_owner,
                 relational,
                 product,

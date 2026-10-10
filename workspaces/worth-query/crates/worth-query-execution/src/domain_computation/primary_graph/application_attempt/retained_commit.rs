@@ -26,6 +26,7 @@ where
 {
     pub fn compare_and_commit_application_retained<Operation, Input, Scope>(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
@@ -52,6 +53,7 @@ where
     #[doc(hidden)]
     pub fn compare_and_commit_application_retained_in_advancement<Operation, Input, Scope>(
         &self,
+
         phase: &super::super::WorthQueryAdvancementPhase<'_>,
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,

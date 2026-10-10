@@ -6,7 +6,13 @@ use super::installed_operation_fixture::{
 
 #[test]
 fn workflow_executor_lowering_must_match_installed_operation_semantics() {
-    let denial = match mismatched_workflow_lowering_workspace("workflow-lowering-mismatch") {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let denial = match mismatched_workflow_lowering_workspace(
+        request_execution,
+        "workflow-lowering-mismatch",
+    ) {
         Ok(_) => panic!("foreign workflow lowering family must not install"),
         Err(denial) => denial,
     };
@@ -17,7 +23,13 @@ fn workflow_executor_lowering_must_match_installed_operation_semantics() {
 
 #[test]
 fn workflow_executor_determinism_must_match_installed_operation_semantics() {
-    let denial = match mismatched_workflow_determinism_workspace("workflow-determinism-mismatch") {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let denial = match mismatched_workflow_determinism_workspace(
+        request_execution,
+        "workflow-determinism-mismatch",
+    ) {
         Ok(_) => panic!("workflow executor determinism drift must not install"),
         Err(denial) => denial,
     };
@@ -28,6 +40,9 @@ fn workflow_executor_determinism_must_match_installed_operation_semantics() {
 
 #[test]
 fn malformed_workflow_graphs_fail_before_runtime_construction() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for (name, invalid, expected) in [
         (
             "cycle",
@@ -65,7 +80,7 @@ fn malformed_workflow_graphs_fail_before_runtime_construction() {
             "workflow-graph-read-closure-mismatch",
         ),
     ] {
-        let denial = match invalid_workflow_workspace(name, invalid) {
+        let denial = match invalid_workflow_workspace(request_execution, name, invalid) {
             Ok(_) => panic!("malformed workflow must deny before runtime construction"),
             Err(denial) => denial,
         };
@@ -79,17 +94,24 @@ fn malformed_workflow_graphs_fail_before_runtime_construction() {
 
 #[test]
 fn installed_workflow_graph_converges_across_stage_declaration_order() {
-    let direct = installed_graph("workflow-graph-direct", false);
-    let reversed = installed_graph("workflow-graph-reversed", true);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let direct = installed_graph(request_execution, "workflow-graph-direct", false);
+    let reversed = installed_graph(request_execution, "workflow-graph-reversed", true);
     assert_eq!(direct, reversed);
     assert_eq!(direct, ["left", "publish", "right", "start"]);
 }
 
-fn installed_graph(name: &str, reversed: bool) -> Vec<String> {
+fn installed_graph(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    name: &str,
+    reversed: bool,
+) -> Vec<String> {
     let mut workspace = if reversed {
-        reversed_workflow_workspace(name)
+        reversed_workflow_workspace(request_execution, name)
     } else {
-        workflow_workspace(name)
+        workflow_workspace(request_execution, name)
     }
     .unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();

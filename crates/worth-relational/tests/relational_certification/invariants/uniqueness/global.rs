@@ -25,6 +25,9 @@ const DIVERGENT_CALL_SIGN: &str = "BRANCH-DIVERGENCE";
 
 #[test]
 fn global_uniqueness_uses_selected_branch_proposal_after_sibling_diverges() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let program = CompiledSupplyChainProgram::compile(
         SupplyChainWorldDefinition::operating(SupplyChainScale::court())
             .expect("Court Supply Chain definition is valid"),
@@ -77,8 +80,8 @@ fn global_uniqueness_uses_selected_branch_proposal_after_sibling_diverges() {
     let main_commit = commit_vessel(&world.runtime, main.clone(), "main-only-vessel");
     assert!(main_commit.is_ok(), "main-only call sign is admissible");
     assert_unique_execution(main_commit.as_ref().expect("main commit"));
-    let main_values = vessel_call_signs(&world.runtime, &main);
-    let storm_before = vessel_call_signs(&world.runtime, &storm);
+    let main_values = vessel_call_signs(execution, &world.runtime, &main);
+    let storm_before = vessel_call_signs(execution, &world.runtime, &storm);
     assert_eq!(main_values, oracle_vessel_call_signs(&oracle_main));
     assert_eq!(storm_before, oracle_vessel_call_signs(&oracle_genesis));
 
@@ -91,13 +94,16 @@ fn global_uniqueness_uses_selected_branch_proposal_after_sibling_diverges() {
         "child uniqueness must use the child root plus its proposal: {storm_commit:?}"
     );
     assert_unique_execution(storm_commit.as_ref().expect("storm commit"));
-    let storm_values = vessel_call_signs(&world.runtime, &storm);
+    let storm_values = vessel_call_signs(execution, &world.runtime, &storm);
     assert_eq!(storm_values, oracle_vessel_call_signs(&oracle_storm));
     assert_eq!(main_values, oracle_vessel_call_signs(&oracle_main));
 }
 
 #[test]
 fn global_uniqueness_rejects_duplicate_on_one_branch_without_residue() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let program = CompiledSupplyChainProgram::compile(
         SupplyChainWorldDefinition::operating(SupplyChainScale::court())
             .expect("Court Supply Chain definition is valid"),
@@ -116,7 +122,7 @@ fn global_uniqueness_rejects_duplicate_on_one_branch_without_residue() {
     let main = BranchId("main".to_owned());
     commit_vessel(&world.runtime, main.clone(), "first-vessel")
         .expect("first branch vessel commits");
-    let before_values = vessel_call_signs(&world.runtime, &main);
+    let before_values = vessel_call_signs(execution, &world.runtime, &main);
     let before_branch = world
         .runtime
         .branch_reference_state(&main)
@@ -133,7 +139,10 @@ fn global_uniqueness_rejects_duplicate_on_one_branch_without_residue() {
     let duplicate = commit_vessel(&world.runtime, main.clone(), "duplicate-vessel");
     assert_unique_conflict(duplicate.unwrap_err(), DIVERGENT_CALL_SIGN);
 
-    assert_eq!(vessel_call_signs(&world.runtime, &main), before_values);
+    assert_eq!(
+        vessel_call_signs(execution, &world.runtime, &main),
+        before_values
+    );
     assert_eq!(
         world
             .runtime
@@ -163,6 +172,9 @@ fn global_uniqueness_rejects_duplicate_on_one_branch_without_residue() {
 
 #[test]
 fn global_uniqueness_rejects_two_colliding_creates_in_one_proposal_without_residue() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let program = CompiledSupplyChainProgram::compile(
         SupplyChainWorldDefinition::operating(SupplyChainScale::court())
             .expect("Court Supply Chain definition is valid"),
@@ -179,7 +191,7 @@ fn global_uniqueness_rejects_two_colliding_creates_in_one_proposal_without_resid
     let world = compile_supply_chain_baseline_with_invariant_catalog(program, catalog)
         .expect("Court world with native uniqueness compiles");
     let main = BranchId("main".to_owned());
-    let before_values = vessel_call_signs(&world.runtime, &main);
+    let before_values = vessel_call_signs(execution, &world.runtime, &main);
     let before_branch = world
         .runtime
         .branch_reference_state(&main)
@@ -190,7 +202,10 @@ fn global_uniqueness_rejects_two_colliding_creates_in_one_proposal_without_resid
     let duplicate = commit_two_vessels(&world.runtime, main.clone());
     assert_unique_conflict(duplicate.unwrap_err(), DIVERGENT_CALL_SIGN);
 
-    assert_eq!(vessel_call_signs(&world.runtime, &main), before_values);
+    assert_eq!(
+        vessel_call_signs(execution, &world.runtime, &main),
+        before_values
+    );
     assert_eq!(
         world
             .runtime
@@ -329,14 +344,18 @@ fn insert_string(
     );
 }
 
-fn vessel_call_signs(runtime: &RelationalRuntime, branch: &BranchId) -> Vec<String> {
+fn vessel_call_signs(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    branch: &BranchId,
+) -> Vec<String> {
     let identity = runtime
         .branch_identity(branch)
         .expect("branch identity is owner-issued");
     let snapshot = snapshot_for_supply_chain_identity(runtime, &identity);
     let view = runtime
         .read_truth()
-        .read_snapshot(&snapshot)
+        .read_snapshot(&snapshot, execution)
         .expect("branch snapshot is readable");
     let aspect = AspectKey::new("call_sign").expect("call-sign aspect");
     view.entities()
@@ -375,11 +394,6 @@ fn assert_unique_execution(commit: &worth_relational::facade::transactions::Comm
     assert!(observed, "commit must record native uniqueness execution");
 }
 
-fn current_snapshot_version(runtime: &RelationalRuntime, branch: &BranchId) -> u64 {
-    let identity = runtime
-        .branch_identity(branch)
-        .expect("branch identity is owner-issued");
-    snapshot_for_supply_chain_identity(runtime, &identity)
-        .version_id()
-        .0
-}
+#[path = "global/current_version.rs"]
+mod current_version;
+use current_version::current_snapshot_version;

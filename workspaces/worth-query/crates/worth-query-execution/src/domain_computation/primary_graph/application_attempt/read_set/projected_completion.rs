@@ -23,7 +23,30 @@ impl<Schema, Operation, Input, Scope>
     /// Re-observes exactly the decision dependencies carried by the sealed
     /// operation projection. No caller can add, remove, or replace a fact key.
     pub fn complete_projected_dependencies(
+        self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<
+        WorthQueryCompleteApplicationReadSet<
+            Schema,
+            Operation,
+            Input,
+            Scope,
+            WorthQueryProjectedApplicationMutation,
+        >,
+        WorthQueryApplicationAttemptDenial,
+    > {
+        let phase_request = match phase.request_for_source(self.lease.handle().relational_runtime_instance_id()) {
+            Ok(request) => request,
+            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::ForeignPhase, "application-read-phase")),
+        };
+        let execution = &phase_request;
+        self.complete_projected_dependencies_with_request(execution, allocation_policy)
+    }
+
+    pub(in crate::domain_computation) fn complete_projected_dependencies_with_request(
         mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         WorthQueryCompleteApplicationReadSet<
@@ -51,7 +74,7 @@ impl<Schema, Operation, Input, Scope>
                     denial,
                 )
             })?;
-            let (read_scope, fact) = self.observe_projected_fact(key)?;
+            let (read_scope, fact) = self.observe_projected_fact(execution, key)?;
             self.installed_read_scopes.insert(key.clone(), read_scope);
             self.facts.insert(key.clone(), fact);
         }
@@ -60,6 +83,7 @@ impl<Schema, Operation, Input, Scope>
 
     fn observe_projected_fact(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         key: &WorthQueryApplicationFactKey,
     ) -> Result<
         (
@@ -75,8 +99,14 @@ impl<Schema, Operation, Input, Scope>
             ));
         }
         let read_scope = self.projected_read_scope(key)?;
-        let fact = self.lease.handle().with_runtime(|runtime| {
-            super::fact_observation::observe_fact(runtime, self.lease.snapshot(), &self.layout, key)
+        let fact = self.lease.handle().with_runtime(execution, |runtime| {
+            super::fact_observation::observe_fact(
+                execution,
+                runtime,
+                self.lease.snapshot(),
+                &self.layout,
+                key,
+            )
         })?;
         Ok((read_scope, fact))
     }

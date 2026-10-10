@@ -15,6 +15,7 @@ use crate::domain_computation::primary_graph::application_query::{
 };
 
 pub(super) fn select_root_path_union(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
     plan: &ReadPlan<'_>,
@@ -27,7 +28,7 @@ pub(super) fn select_root_path_union(
 ) -> Result<BoundedRootSelection, WorthQueryApplicationReadExecutionDenial> {
     let projection = runtime
         .read_truth()
-        .project_snapshot(plan.snapshot)
+        .project_snapshot(plan.snapshot, execution)
         .ok_or_else(|| traversal_denial(plan.name))?;
     let mut roots = BTreeMap::new();
     let mut work = RootSelectionWork::new(maximum_work, interruption, spent);
@@ -37,6 +38,7 @@ pub(super) fn select_root_path_union(
     }
     for path in paths {
         let terminal = traverse_path(
+            execution,
             runtime,
             &projection,
             graph,
@@ -85,6 +87,7 @@ pub(super) fn select_root_path_union(
 }
 
 fn traverse_path(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     projection: &worth_relational::facade::runtime::VisibilityProjectionView<'_>,
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
@@ -97,6 +100,7 @@ fn traverse_path(
     seed.observe_entity(plan.root);
     let mut frontier = BTreeMap::from([(plan.root, seed)]);
     apply_guards(
+        execution,
         runtime,
         projection,
         graph,
@@ -129,6 +133,7 @@ fn traverse_path(
         };
         for (&anchor, source) in &mut frontier {
             let observed = source.observe_adjacencies(
+                execution,
                 projection,
                 anchor,
                 layout.kind,
@@ -147,6 +152,7 @@ fn traverse_path(
             ApplicationQueryRootPathDirection::Forward => runtime
                 .read_truth()
                 .bounded_outgoing_relations_for_frontier_at_version(
+                    execution,
                     &anchors,
                     layout.kind,
                     plan.snapshot.version_id(),
@@ -155,6 +161,7 @@ fn traverse_path(
             ApplicationQueryRootPathDirection::Reverse => runtime
                 .read_truth()
                 .bounded_incoming_relations_for_frontier_at_version(
+                    execution,
                     &anchors,
                     layout.kind,
                     plan.snapshot.version_id(),
@@ -188,6 +195,7 @@ fn traverse_path(
         }
         frontier = next;
         apply_guards(
+            execution,
             runtime,
             projection,
             graph,
@@ -203,6 +211,7 @@ fn traverse_path(
 }
 
 fn apply_guards(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     projection: &worth_relational::facade::runtime::VisibilityProjectionView<'_>,
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
@@ -245,6 +254,7 @@ fn apply_guards(
         }
         for (&entity, source) in &mut *frontier {
             let observed = source.observe_guard_field(
+                execution,
                 projection,
                 graph,
                 entity,
@@ -262,6 +272,7 @@ fn apply_guards(
         let candidates = frontier.keys().copied().collect::<BTreeSet<_>>();
         work.checkpoint(guard.field().as_str())?;
         let read = read_governed_root_guard(
+            execution,
             runtime,
             computation,
             &candidates,
@@ -285,6 +296,7 @@ fn apply_guards(
 
 #[allow(clippy::too_many_arguments)]
 fn read_governed_root_guard(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     _projection: crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationInternalProjectionAdmission<'_>,
     frontier: &BTreeSet<EntityId>,
@@ -300,6 +312,7 @@ fn read_governed_root_guard(
     runtime
         .read_truth()
         .bounded_entity_field_equals_for_frontier_at_version(
+            execution,
             frontier,
             entity_kind,
             locator,

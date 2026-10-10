@@ -1,6 +1,9 @@
 use super::*;
 
-pub(super) fn certify_persisted_recovery_replay_round_trip(suite: &'static str) {
+pub(super) fn certify_persisted_recovery_replay_round_trip(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    suite: &'static str,
+) {
     let replay_recovery_samples = capture_perf_samples(
         suite,
         "persisted_recovery_replay_round_trip",
@@ -31,20 +34,20 @@ pub(super) fn certify_persisted_recovery_replay_round_trip(suite: &'static str) 
             let recover_started_at = Instant::now();
             let recovery_outcome = recovered
                 .durability_recovery()
-                .recover(recovery_plan)
+                .recover(execution, recovery_plan)
                 .expect("workflow recovery");
             let recover_micros = recover_started_at.elapsed().as_micros();
 
             let replay_started_at = Instant::now();
-            let replay_outcome =
-                recovered
-                    .replay_authority()
-                    .replay_commit(RelationalReplayRequest {
-                        commit_id: tail_commit_id,
-                        branch_id: BranchId("main".to_string()),
-                        execution_mode: ReplayExecutionMode::SerialDeterministic,
-                        verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-                    });
+            let replay_outcome = recovered.replay_authority().replay_commit(
+                RelationalReplayRequest {
+                    commit_id: tail_commit_id,
+                    branch_id: BranchId("main".to_string()),
+                    execution_mode: ReplayExecutionMode::SerialDeterministic,
+                    verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
+                },
+                execution,
+            );
             let replay_commit_micros = replay_started_at.elapsed().as_micros();
 
             let recovered_snapshot = recovered.visibility_authority().snapshot();
@@ -62,7 +65,11 @@ pub(super) fn certify_persisted_recovery_replay_round_trip(suite: &'static str) 
                         .read_truth()
                         .plan_query_packet(&recovered_snapshot, recovered_packet)
                         .expect("planned recovered workflow query"),
+                    execution,
+                    crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                 )
+                .expect("request remains live")
+                .map(|read| read.outcome)
                 .expect("recovered workflow query");
             let post_recovery_query_micros = query_started_at.elapsed().as_micros();
 

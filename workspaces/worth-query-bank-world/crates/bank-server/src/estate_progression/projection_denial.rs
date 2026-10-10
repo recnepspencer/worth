@@ -14,6 +14,9 @@ pub enum BankInvariantDecisionPlanDenial {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankInvariantProjectionTraversalDenial {
+    ExecutionRequest(
+        worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial,
+    ),
     RelationNotInstalled,
     UndeclaredDecisionTarget,
     ForeignIdentity,
@@ -48,6 +51,7 @@ impl BankInvariantDecisionPlanDenial {
 impl BankInvariantProjectionTraversalDenial {
     pub const fn code(self) -> &'static str {
         match self {
+            Self::ExecutionRequest(_) => "execution-request",
             Self::RelationNotInstalled => "relation-not-installed",
             Self::UndeclaredDecisionTarget => "undeclared-decision-target",
             Self::ForeignIdentity => "foreign-identity",
@@ -64,6 +68,7 @@ impl BankInvariantProjectionTraversalDenial {
 
     pub(crate) const fn from_query(kind: QueryTraversal) -> Self {
         match kind {
+            QueryTraversal::ExecutionRequest(cause) => Self::ExecutionRequest(cause),
             QueryTraversal::RelationNotInstalled => Self::RelationNotInstalled,
             QueryTraversal::UndeclaredDecisionTarget => Self::UndeclaredDecisionTarget,
             QueryTraversal::ForeignIdentity => Self::ForeignIdentity,

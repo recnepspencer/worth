@@ -213,11 +213,13 @@ impl WorthQueryGraphProviderAnchor {
 
     pub(crate) fn compare_decision_fact(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         session: WorthQueryProviderSessionView<'_>,
         evidence: WorthQueryDecisionFactEvidenceView<'_>,
         admission: WorthQueryDecisionFactComparisonAdmission,
     ) -> Result<WorthQueryDecisionFactComparisonEvidence, WorthQueryDecisionReadSetFailure> {
         semantic_provider_ports::compare_decision_fact(
+            execution,
             &self.decision_fact_provider,
             session,
             evidence,

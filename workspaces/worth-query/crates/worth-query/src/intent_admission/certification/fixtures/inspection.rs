@@ -20,6 +20,7 @@ pub(in crate::intent_admission::certification) struct CertifiedInspectionAdvisor
 }
 
 pub(in crate::intent_admission::certification) fn certified_inspection_advisory_redaction_fixture(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> CertifiedInspectionAdvisoryRedactionFixture {
     let inspection_basis = crate::basis_lifecycle::basis_lifecycle()
         .current_head()
@@ -27,10 +28,10 @@ pub(in crate::intent_admission::certification) fn certified_inspection_advisory_
         .expect("inspection certification basis should admit");
     let bridge = certification_bridge();
     let declaration = authoritative_declaration("certification-inspection-advisory-redaction");
-    let mut runtime = certification_runtime();
+    let mut runtime = certification_runtime(execution);
     let receipt = runtime
         .intent(declaration)
-        .execute()
+        .execute(execution)
         .expect("inspection certification intent should execute through lattice");
     let review = runtime
         .inspect_intent(&receipt)
@@ -41,7 +42,7 @@ pub(in crate::intent_admission::certification) fn certified_inspection_advisory_
     let inspection_result = review
         .admit()
         .expect("inspection certification should admit through unified inspection intent")
-        .execute()
+        .execute(execution)
         .expect("inspection certification should execute through unified inspection intent");
     let observation = match inspection_result.inspection() {
         WorthQueryInspection::IntentReceipt(inspection) => {

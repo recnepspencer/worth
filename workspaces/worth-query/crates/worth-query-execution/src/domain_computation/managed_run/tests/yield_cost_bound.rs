@@ -187,7 +187,7 @@ fn workflow_yield_transition_allocation_is_unrelated_authority_invariant() {
 }
 
 fn execute_target(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     unrelated_width: usize,
 ) -> YieldCostEvidence {
     let (paused, unrelated, suspension_count, retained_probe_count) =
@@ -215,7 +215,7 @@ mod allocation_measurement;
 use allocation_measurement::{measured_target, measured_workflow_target};
 
 fn prepared_target(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     unrelated_width: usize,
 ) -> (
@@ -240,17 +240,22 @@ fn prepared_target(
             retained_probe_count: Arc::clone(&retained_probe_count),
         },
     );
-    let active = running
-        .begin_graph_execution(
-            execution,
+    let active = {
+        let installed_fixture_phase = running.fixture_phase(execution);
+        running.begin_graph_execution(
+            &installed_fixture_phase,
             &graph,
             WorthQueryManagedGraphCallRequest::new(
                 WorthQueryGraphProviderCallKind::Observe,
                 "yield-cost-slope",
             ),
         )
-        .expect("yield cost provider should begin");
-    let paused = match active.advance(execution) {
+    }
+    .expect("yield cost provider should begin");
+    let paused = match {
+        let installed_fixture_phase = active.fixture_phase(execution);
+        active.advance(&installed_fixture_phase)
+    } {
         WorthQueryDirectGraphStepOutcome::Continue(paused) => paused,
         _ => panic!("yield cost provider did not pause"),
     };
@@ -259,7 +264,7 @@ fn prepared_target(
 
 #[cfg(feature = "allocation-probes")]
 fn prepared_workflow_target(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     unrelated_width: usize,
 ) -> (
     crate::domain_computation::WorthQueryPausedWorkflowGraphExecution,
@@ -310,9 +315,10 @@ fn prepared_workflow_target(
     );
     let running =
         super::workflow_provider_steps::admitted_workflow(&runtime, &operation, resources);
+    let installed_fixture_phase = running.fixture_phase(execution);
     let active = running
         .begin_stage_graph_execution(
-            execution,
+            &installed_fixture_phase,
             "stage",
             &graph,
             WorthQueryManagedGraphCallRequest::new(
@@ -321,7 +327,7 @@ fn prepared_workflow_target(
             ),
         )
         .expect("workflow yield cost provider should begin");
-    let paused = match active.advance(execution) {
+    let paused = match active.advance(&installed_fixture_phase) {
         WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused,
         _ => panic!("workflow yield cost provider did not pause"),
     };

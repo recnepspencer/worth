@@ -37,6 +37,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         LinkKey,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         view: &WorthQueryManagedDerivedView<MembershipQuery, Value>,
         product: &WorthQueryProductBranchLease,
         key: &WorthQueryManagedDerivedViewKey,
@@ -85,7 +86,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             return Err(super::Denial::ForeignQuery.into());
         }
         let first_result = self
-            .execute_application_query_one_shot_in_batch(first, batch)
+            .execute_application_query_one_shot_in_batch_with_request(execution, first, batch)
             .map_err(Denial::Read)?;
         self.refresh_managed_derived_collection_pair_entry_from_batch_result(
             view,

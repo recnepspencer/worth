@@ -2,9 +2,13 @@ use super::*;
 
 #[test]
 fn invalidated_shared_read_context_fails_typed_without_rebinding() {
-    let (mut workspace, derived) = shared_read_pinning_workspace("shared-read.phase13.stale");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (mut workspace, derived) =
+        shared_read_pinning_workspace(request_execution, "shared-read.phase13.stale");
     let read = workspace
-        .shared_read_context()
+        .shared_read_context(request_execution)
         .expect("shared read context should mint");
     let stale_basis = read.inspect_basis();
     let old_binding = read
@@ -15,12 +19,12 @@ fn invalidated_shared_read_context_fails_typed_without_rebinding() {
         .binding_for_reporting()
         .to_string();
 
-    insert_task(&mut workspace, "task-2", "Task Two");
+    insert_task(request_execution, &mut workspace, "task-2", "Task Two");
     workspace
         .runtime
         .invalidate_shared_read_snapshot_for_certification(stale_basis.snapshot_identity());
     let newer = workspace
-        .shared_read_context()
+        .shared_read_context(request_execution)
         .expect("new context should remint explicitly");
     let newer_binding = newer
         .published_derived_artifact(&derived)

@@ -14,11 +14,13 @@ use crate::visibility::materialization::read_records::reader::{
 impl VisibilityProjectionView<'_> {
     pub fn bounded_outgoing_relations_for_frontier(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_ids: &BTreeSet<EntityId>,
         kind_id: KindId,
         maximum_work_units: usize,
     ) -> Result<BoundedFrontierAdjacencyTruthRead, FrontierAdjacencyTruthReadLimitExceeded> {
         self.bounded_relations_for_frontier(
+            execution,
             entity_ids,
             kind_id,
             AdjacencyDirection::Outgoing,
@@ -29,11 +31,13 @@ impl VisibilityProjectionView<'_> {
 
     pub fn bounded_incoming_relations_for_frontier(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_ids: &BTreeSet<EntityId>,
         kind_id: KindId,
         maximum_work_units: usize,
     ) -> Result<BoundedFrontierAdjacencyTruthRead, FrontierAdjacencyTruthReadLimitExceeded> {
         self.bounded_relations_for_frontier(
+            execution,
             entity_ids,
             kind_id,
             AdjacencyDirection::Incoming,
@@ -46,12 +50,14 @@ impl VisibilityProjectionView<'_> {
     /// audit-retained edges. Ordinary frontier queries remain Live-only.
     pub(crate) fn bounded_index_relations_for_frontier(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_ids: &BTreeSet<EntityId>,
         kind_id: KindId,
         outgoing: bool,
         maximum_work_units: usize,
     ) -> Result<BoundedFrontierAdjacencyTruthRead, FrontierAdjacencyTruthReadLimitExceeded> {
         self.bounded_relations_for_frontier(
+            execution,
             entity_ids,
             kind_id,
             if outgoing {
@@ -66,6 +72,7 @@ impl VisibilityProjectionView<'_> {
 
     fn bounded_relations_for_frontier(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_ids: &BTreeSet<EntityId>,
         kind_id: KindId,
         direction: AdjacencyDirection,
@@ -109,7 +116,8 @@ impl VisibilityProjectionView<'_> {
                     return Err(exceeded);
                 }
                 examined += 1;
-                let Some(record) = self.authoritative_relation_record(relation_id) else {
+                let Some(record) = self.authoritative_relation_record(execution, relation_id)
+                else {
                     continue;
                 };
                 if record.kind.kind_id != kind_id

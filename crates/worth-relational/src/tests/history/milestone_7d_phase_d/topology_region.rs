@@ -2,6 +2,9 @@ use super::*;
 
 #[test]
 fn topology_region_conflict_detection_reports_bounded_neighborhood_counters() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_topology_identity_registry(unique_test_store_path(
         "worth-relational-7d-topology-region",
     ));
@@ -38,6 +41,7 @@ fn topology_region_conflict_detection_reports_bounded_neighborhood_counters() {
     let artifact = runtime
         .merge()
         .inspect_planning_scope(
+            execution,
             MergeExecutionRequest {
                 target_branch: BranchId("main".to_string()),
                 source_branch: BranchId("feature".to_string()),
@@ -114,6 +118,9 @@ fn topology_region_conflict_detection_reports_bounded_neighborhood_counters() {
 
 #[test]
 fn topology_region_conflict_denial_is_stable_across_recovery() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let store_path = unique_test_store_path("worth-relational-7d-topology-region-recovery");
     let runtime = persisted_runtime_with_topology_identity_registry(store_path.clone());
     let source = create_entity(&runtime, "source");
@@ -148,6 +155,7 @@ fn topology_region_conflict_denial_is_stable_across_recovery() {
     let live_artifact = runtime
         .merge()
         .inspect_planning_scope(
+            execution,
             MergeExecutionRequest {
                 target_branch: BranchId("main".to_string()),
                 source_branch: BranchId("feature".to_string()),
@@ -196,12 +204,13 @@ fn topology_region_conflict_denial_is_stable_across_recovery() {
         assert_eq!(evidence.topology_neighborhood_rewired_records.len(), 2);
     }
 
-    let (_recovery, recovered) = checkpoint_and_recover_with(&runtime, move || {
+    let (_recovery, recovered) = checkpoint_and_recover_with(execution, &runtime, move || {
         persisted_runtime_with_topology_identity_registry(store_path.clone())
     });
     let recovered_artifact = recovered
         .merge()
         .inspect_planning_scope(
+            execution,
             MergeExecutionRequest {
                 target_branch: BranchId("main".to_string()),
                 source_branch: BranchId("feature".to_string()),

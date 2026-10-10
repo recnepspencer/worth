@@ -14,23 +14,26 @@ impl IndexAuthority<'_> {
     /// owner basis. This path performs no historical retention reacquisition.
     pub fn build_for_basis(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: DerivedIndexBuildRequest,
         basis: &AdmittedRelationalBranchBasis,
     ) -> DerivedIndexBuildOutcome {
-        self.build_for_basis_inner(request, basis, None)
+        self.build_for_basis_inner(execution, request, basis, None)
     }
 
     pub fn build_for_basis_with_lease(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: DerivedIndexBuildRequest,
         basis: &AdmittedRelationalBranchBasis,
         lease: &worth_execution::ExecutionResourceLease<'_>,
     ) -> DerivedIndexBuildOutcome {
-        self.build_for_basis_inner(request, basis, Some(lease))
+        self.build_for_basis_inner(execution, request, basis, Some(lease))
     }
 
     fn build_for_basis_inner(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: DerivedIndexBuildRequest,
         basis: &AdmittedRelationalBranchBasis,
         lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
@@ -68,7 +71,11 @@ impl IndexAuthority<'_> {
             );
         }
         let version_id = observation.version_id();
-        let projection = match self.runtime.read_truth().project_observation(&observation) {
+        let projection = match self
+            .runtime
+            .read_truth()
+            .project_observation(execution, &observation)
+        {
             Ok(projection) => projection,
             Err(denial) => {
                 return failed_build_outcome(
@@ -129,8 +136,16 @@ impl IndexAuthority<'_> {
             );
         };
         let results = match checked_inputs {
-            Some(inputs) => execute_index_inputs(&projection, inputs, lease, work_budget.as_ref()),
-            None => execute_index_packets(&projection, plan_index_packets(definitions), None, None),
+            Some(inputs) => {
+                execute_index_inputs(execution, &projection, inputs, lease, work_budget.as_ref())
+            }
+            None => execute_index_packets(
+                execution,
+                &projection,
+                plan_index_packets(definitions),
+                None,
+                None,
+            ),
         };
         let results = match results {
             Ok(results) => results,

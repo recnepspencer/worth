@@ -330,7 +330,7 @@ fn installed_budgets_never_degrade_into_success() {
 }
 
 pub(super) fn execute_invariant(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     state: Arc<Mutex<ProvisionalProviderState>>,
     requirements: Vec<WorthQueryInstalledInvariantExecutionRequirement>,
     slot: &str,

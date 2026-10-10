@@ -16,9 +16,12 @@ use worth_relational::facade::transactions::planned_single_field_locator;
 
 #[test]
 fn populated_derived_index_cache_stays_outside_owner_authority_accounting() {
-    let empty_cache_growth = empty_entity_field_cache_growth();
-    let (world, expected) = certified_supply_chain_world(SupplyChainScale::court());
-    assert_oracle_matches(&world, &expected);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let empty_cache_growth = empty_entity_field_cache_growth(execution);
+    let (world, expected) = certified_supply_chain_world(execution, SupplyChainScale::court());
+    assert_oracle_matches(execution, &world, &expected);
     let main_branch = BranchId("main".to_owned());
     let main_identity = world.runtime.main_branch_identity();
     let source_commit = head_for_supply_chain_branch(&world.runtime, &main_branch);
@@ -45,14 +48,14 @@ fn populated_derived_index_cache_stays_outside_owner_authority_accounting() {
             },
             branch_scoped: true,
         });
-    let build = world
-        .runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    let build = world.runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id: source_commit.commit_id,
             branch_id: main_branch,
             index_ids: vec![index.index_id],
-        });
+        },
+    );
     assert!(build.failed_indexes.is_empty());
     assert_eq!(build.generations.len(), 1);
     assert!(matches!(
@@ -119,9 +122,9 @@ fn populated_derived_index_cache_stays_outside_owner_authority_accounting() {
     );
 }
 
-fn empty_entity_field_cache_growth() -> u64 {
-    let (world, expected) = certified_supply_chain_world(SupplyChainScale::court());
-    assert_oracle_matches(&world, &expected);
+fn empty_entity_field_cache_growth(execution: &worth_execution::ExecutionRequest<'_, '_>) -> u64 {
+    let (world, expected) = certified_supply_chain_world(execution, SupplyChainScale::court());
+    assert_oracle_matches(execution, &world, &expected);
     let main_branch = BranchId("main".to_owned());
     let main_identity = world.runtime.main_branch_identity();
     let source_commit = head_for_supply_chain_branch(&world.runtime, &main_branch);
@@ -144,14 +147,14 @@ fn empty_entity_field_cache_growth() -> u64 {
             },
             branch_scoped: true,
         });
-    let build = world
-        .runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    let build = world.runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id: source_commit.commit_id,
             branch_id: main_branch,
             index_ids: vec![index.index_id],
-        });
+        },
+    );
     assert!(build.failed_indexes.is_empty());
     assert!(matches!(
         &build.generations[0].entries,

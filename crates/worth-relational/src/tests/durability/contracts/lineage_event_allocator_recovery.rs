@@ -2,6 +2,9 @@ use super::*;
 
 #[test]
 fn tail_lineage_event_allocator_exhaustion_denies_before_replay() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
     create_entity_outcome(&runtime, "checkpoint-before-tail-overflow");
     runtime
@@ -48,7 +51,7 @@ fn tail_lineage_event_allocator_exhaustion_denies_before_replay() {
     let mut recovered = persisted_runtime_with_test_schema();
     let error = recovered
         .durability_recovery()
-        .recover(plan)
+        .recover(execution, plan)
         .expect_err("tail allocator exhaustion must deny");
 
     assert_eq!(error.class, RecoveryFailureClass::CorruptSegment);
@@ -58,6 +61,9 @@ fn tail_lineage_event_allocator_exhaustion_denies_before_replay() {
 
 #[test]
 fn failed_durable_append_blocks_descendants_and_recovers_last_checkpoint() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
     create_entity_outcome(&runtime, "lineage-gap-checkpoint");
     runtime.durability_authority().checkpoint().unwrap();
@@ -132,7 +138,7 @@ fn failed_durable_append_blocks_descendants_and_recovers_last_checkpoint() {
     let mut recovered = persisted_runtime_with_test_schema();
     let recovery = recovered
         .durability_recovery()
-        .recover(plan)
+        .recover(execution, plan)
         .expect("recovery stops at the last acknowledged checkpoint");
     assert_eq!(recovery.recovered_commits, 1);
     assert_eq!(
@@ -196,6 +202,9 @@ fn multi_event_reservation_exhaustion_denies_before_public_effects() {
 
 #[test]
 fn branch_local_sparse_slot_create_publishes_and_recovers_exact_lineage() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
     create_entity_outcome(&runtime, "sparse-slot-shared-root");
     let feature = create_branch_from_main(&runtime, "sparse-slot-feature");
@@ -226,7 +235,7 @@ fn branch_local_sparse_slot_create_publishes_and_recovers_exact_lineage() {
     let mut recovered = persisted_runtime_with_test_schema();
     recovered
         .durability_recovery()
-        .recover(plan)
+        .recover(execution, plan)
         .expect("sparse branch-local lineage recovers");
     assert_eq!(
         recovered

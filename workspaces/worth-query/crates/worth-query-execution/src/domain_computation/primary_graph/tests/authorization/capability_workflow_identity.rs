@@ -74,7 +74,13 @@ fn a_capability_workflow_encodes_its_input_and_key_once_each_first_and_replayed(
     let world = installed_capability_authorization_world();
     world.authorization_time.script([time(100); 24]);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
     let schema = world.application.installed_schema();
     let capability = schema
         .capability(
@@ -86,30 +92,38 @@ fn a_capability_workflow_encodes_its_input_and_key_once_each_first_and_replayed(
         .installed_operation(CapabilityTouchOperation::reference())
         .unwrap();
     let prepare = || {
-        reset_encoding_counts();
-        let input = ApplicationEncodedInput::<CapabilityTouchOperationInputBinding>::encode(
-            capability_input(100),
-        )
-        .expect("the input encodes");
-        let workflow = bind_touch("workflow-key", &input, *principal.principal_identity());
-        let selected = world.selected_product();
-        let access = admit_encoded_capability_access(
-            &world.application,
-            selected.product(),
-            &principal,
-            &capability,
-            input,
-            &request,
-        )
-        .expect("the encoded input is admitted");
-        let admission_work = access.admission_canonical_work();
-        let admission = world
+        world
             .application
-            .authorize_capability_operation(access, &operation, Default::default())
-            .unwrap();
-        let program = build_touch_program(&world, &request, admission, "workflow");
-        assert_eq!(encoding_counts(), (1, 1), "one input and one key encoding");
-        (program, workflow, admission_work)
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+                reset_encoding_counts();
+                let input =
+                    ApplicationEncodedInput::<CapabilityTouchOperationInputBinding>::encode(
+                        capability_input(100),
+                    )
+                    .expect("the input encodes");
+                let workflow = bind_touch("workflow-key", &input, *principal.principal_identity());
+                let selected = world.selected_product(&(phase).test_host_request());
+                let access = admit_encoded_capability_access(
+                    &host_custody.borrowed_request_for_test(),
+                    &world.application,
+                    selected.product(),
+                    &principal,
+                    &capability,
+                    input,
+                    &request,
+                )
+                .expect("the encoded input is admitted");
+                let admission_work = access.admission_canonical_work();
+                let admission = world
+                    .application
+                    .authorize_capability_operation(&phase, access, &operation, Default::default())
+                    .unwrap();
+                let program = build_touch_program(&phase, &world, &request, admission, "workflow");
+                assert_eq!(encoding_counts(), (1, 1), "one input and one key encoding");
+                (program, workflow, admission_work)
+            })
+            .expect("the fixture invocation owns its installed host call")
     };
     let (first, first_workflow, first_work) = prepare();
     let (retry, retry_workflow, retry_work) = prepare();

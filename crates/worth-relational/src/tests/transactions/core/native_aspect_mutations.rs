@@ -15,6 +15,9 @@ use worth_foundational::facade::{
 
 #[test]
 fn native_entity_patch_supports_optional_whole_clear() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let note = optional_string_contract("note");
     let fixture = AspectSchemaFixture {
         entity_aspects: vec![DeclaredAspectContractBinding {
@@ -32,7 +35,7 @@ fn native_entity_patch_supports_optional_whole_clear() {
     let cleared = commit_entity_patch(&runtime, entity, whole_clear(&note));
     let read = runtime
         .read_truth()
-        .read_snapshot(&cleared.snapshot)
+        .read_snapshot(&cleared.snapshot, execution)
         .expect("cleared snapshot");
     let state = read
         .get_entity(entity)
@@ -48,6 +51,9 @@ fn native_entity_patch_supports_optional_whole_clear() {
 
 #[test]
 fn native_struct_field_clear_uses_exact_contract_basis() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let binding = entity_summary_struct_aspect(aspect_key("summary"), field_key("summary"));
     let contract = binding.contract.clone();
     let fixture = AspectSchemaFixture {
@@ -81,7 +87,7 @@ fn native_struct_field_clear_uses_exact_contract_basis() {
     );
     let read = runtime
         .read_truth()
-        .read_snapshot(&updated.snapshot)
+        .read_snapshot(&updated.snapshot, execution)
         .unwrap();
     let value = read
         .get_entity(entity)
@@ -99,6 +105,9 @@ fn native_struct_field_clear_uses_exact_contract_basis() {
 
 #[test]
 fn native_relation_creation_synthesizes_endpoint_aspects_and_publishes_updates() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let fixture = AspectSchemaFixture::with_default_declared_aspects(
         CascadeDeletePolicy::CascadeDeleteRelations,
     );
@@ -120,7 +129,7 @@ fn native_relation_creation_synthesizes_endpoint_aspects_and_publishes_updates()
     );
     let read = runtime
         .read_truth()
-        .read_snapshot(&created.snapshot)
+        .read_snapshot(&created.snapshot, execution)
         .unwrap();
     let state = read
         .get_relation(relation)
@@ -140,6 +149,9 @@ fn native_relation_creation_synthesizes_endpoint_aspects_and_publishes_updates()
 
 #[test]
 fn stale_native_contract_basis_denies_without_mutating_truth() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     let entity = create_entity(&runtime, "before");
     let name = contract_for_entity(&runtime, "name");
@@ -180,7 +192,10 @@ fn stale_native_contract_basis_denies_without_mutating_truth() {
         }
     ));
     let latest = runtime.visibility_authority().snapshot();
-    let read = runtime.read_truth().read_snapshot(&latest).unwrap();
+    let read = runtime
+        .read_truth()
+        .read_snapshot(&latest, execution)
+        .unwrap();
     let value = read
         .get_entity(entity)
         .unwrap()
@@ -196,35 +211,6 @@ fn stale_native_contract_basis_denies_without_mutating_truth() {
     ));
     drop(read);
     runtime.snapshots().release_snapshot(&latest).unwrap();
-}
-
-#[test]
-fn native_patch_state_survives_checkpoint_readmission() {
-    let note = optional_string_contract("note");
-    let fixture = AspectSchemaFixture {
-        entity_aspects: vec![DeclaredAspectContractBinding {
-            binding: AspectBinding::EntityField {
-                field: field_key("note"),
-            },
-            contract: note.clone(),
-        }],
-        ..AspectSchemaFixture::default()
-    };
-    let runtime = fixture.build_runtime();
-    let created = commit_entity_create(&runtime, whole_set(&note, text("durable")));
-    let entity = changed_entities(&created)[0];
-    let recovery_fixture = fixture.clone();
-    let (_, recovered) =
-        checkpoint_and_recover_with(&runtime, move || recovery_fixture.build_runtime());
-    let read = recovered.read_truth().read_version(created.version_id);
-    assert!(read
-        .get_entity(entity)
-        .unwrap()
-        .authoritative_aspect_state
-        .as_ref()
-        .unwrap()
-        .get(note.key())
-        .is_some());
 }
 
 fn commit_entity_create(
@@ -390,3 +376,6 @@ fn contract_for_relation(
 fn text(value: &str) -> AspectValue {
     AspectValue::String(value.into())
 }
+
+#[path = "native_aspect_mutations/checkpoint_readmission.rs"]
+mod checkpoint_readmission;

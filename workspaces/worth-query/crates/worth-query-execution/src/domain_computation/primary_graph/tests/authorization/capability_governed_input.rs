@@ -37,13 +37,29 @@ fn every_capability_admission_reports_its_one_governed_input_derivation() {
     let world = installed_capability_authorization_world();
     world.authorization_time.script([time(100); 24]);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
 
-    let (first, first_admission) =
-        admitted_capability_program(&world, &principal, &request, "canonical-work");
+    let (first, first_admission) = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            admitted_capability_program(&phase, &world, &principal, &request, "canonical-work")
+        })
+        .expect("the fixture read owns its installed host call");
     assert_one_canonical_derivation(first_admission.canonical_work);
-    let (retry, retry_admission) =
-        admitted_capability_program(&world, &principal, &request, "canonical-work");
+    let (retry, retry_admission) = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            admitted_capability_program(&phase, &world, &principal, &request, "canonical-work")
+        })
+        .expect("the fixture read owns its installed host call");
     assert_eq!(
         retry_admission.canonical_work, first_admission.canonical_work,
         "the same input always reports the same deterministic work",
@@ -76,18 +92,37 @@ fn governed_input_identity_drift_under_a_reused_key_is_denied() {
     let world = installed_capability_authorization_world();
     world.authorization_time.script([time(100); 24]);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
 
-    let (first, _) = admitted_capability_program(&world, &principal, &request, "governed-input");
+    let (first, _) = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            admitted_capability_program(&phase, &world, &principal, &request, "governed-input")
+        })
+        .expect("the fixture read owns its installed host call");
     let mut drifted_input = capability_input(100);
     drifted_input.amount -= 1;
-    let (drifted, _) = admitted_capability_program_for_input(
-        &world,
-        &principal,
-        &request,
-        "governed-input",
-        drifted_input,
-    );
+    let (drifted, _) = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            admitted_capability_program_for_input(
+                &phase,
+                &world,
+                &principal,
+                &request,
+                "governed-input",
+                drifted_input,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
 
     let first_outcome = world.application.compare_and_commit_application(
         first,
@@ -118,53 +153,64 @@ fn governed_input_identity_drift_under_a_reused_key_is_denied() {
 
 #[test]
 fn the_handler_runs_on_exactly_the_input_its_capability_admitted() {
-    let (world, principal) = capability_world();
-    let report = execute_touch_handler(&world, &principal, capability_input(100));
-    let WorthQueryMutationHandlerWork::Captured(work) = report.decision_work() else {
-        panic!("the installed zero-read handler executed");
-    };
-    assert!(work.handler_contacted());
-    assert_eq!(
-        work.projection_work(),
-        WorthQueryInvariantProjectionWork::default()
-    );
-    match report.into_outcome() {
-        Ok(HandlerResult::Completed(_)) => {}
-        Ok(_) => panic!("the handler accepts the input it is given"),
-        Err(denial) => panic!("the admitted input must reach its installed handler: {denial:?}"),
-    }
+    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+        let (world, principal) = capability_world(&host_custody);
+        let report =
+            execute_touch_handler(&host_custody, &world, &principal, capability_input(100));
+        let WorthQueryMutationHandlerWork::Captured(work) = report.decision_work() else {
+            panic!("the installed zero-read handler executed");
+        };
+        assert!(work.handler_contacted());
+        assert_eq!(
+            work.projection_work(),
+            WorthQueryInvariantProjectionWork::default()
+        );
+        match report.into_outcome() {
+            Ok(HandlerResult::Completed(_)) => {}
+            Ok(_) => panic!("the handler accepts the input it is given"),
+            Err(denial) => {
+                panic!("the admitted input must reach its installed handler: {denial:?}")
+            }
+        }
+    })
 }
 
 #[test]
 fn a_request_whose_input_differs_from_the_admitted_input_is_refused() {
-    let (world, principal) = capability_world();
-    let mut other = capability_input(100);
-    other.amount -= 1;
-    let report = execute_touch_handler(&world, &principal, other);
-    assert_eq!(
-        *report.decision_work(),
-        WorthQueryMutationHandlerWork::NotStarted
-    );
-    let outcome = report.into_outcome();
-    assert!(
-        matches!(
-            outcome,
-            Err(MutationHandlerExecutionDenial::InputNotAdmitted)
-        ),
-        "an input other than the admitted one must be refused before any handler runs"
-    );
+    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+        let (world, principal) = capability_world(&host_custody);
+        let mut other = capability_input(100);
+        other.amount -= 1;
+        let report = execute_touch_handler(&host_custody, &world, &principal, other);
+        assert_eq!(
+            *report.decision_work(),
+            WorthQueryMutationHandlerWork::NotStarted
+        );
+        let outcome = report.into_outcome();
+        assert!(
+            matches!(
+                outcome,
+                Err(MutationHandlerExecutionDenial::InputNotAdmitted)
+            ),
+            "an input other than the admitted one must be refused before any handler runs"
+        );
+    })
 }
 
-fn capability_world() -> (World, Principal) {
+fn capability_world(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
+) -> (World, Principal) {
     let world = installed_capability_authorization_world();
     world.authorization_time.script([time(100); 24]);
-    let principal = authenticated_principal(&world, &live_scope());
+    let principal =
+        authenticated_principal(&(phase_custody).test_host_request(), &world, &live_scope());
     (world, principal)
 }
 
 /// Admits `capability_input(100)` and runs the touch handler for a request
 /// carrying `requested`.
 fn execute_touch_handler(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     world: &World,
     principal: &Principal,
     requested: CapabilityTouchInput,
@@ -175,10 +221,22 @@ fn execute_touch_handler(
         .installed_schema()
         .installed_operation(CapabilityTouchOperation::reference())
         .unwrap();
-    let access = admitted_capability_access(world, principal, &request, 100).unwrap();
+    let access = admitted_capability_access(
+        &(phase_custody.phase_for_application(&world.application)).test_host_request(),
+        world,
+        principal,
+        &request,
+        100,
+    )
+    .unwrap();
     let admission = world
         .application
-        .authorize_capability_operation(access, &operation, Default::default())
+        .authorize_capability_operation(
+            &phase_custody.phase_for_application(&world.application),
+            access,
+            &operation,
+            Default::default(),
+        )
         .unwrap();
     assert!(admission.governed_input_identity().is_some());
 

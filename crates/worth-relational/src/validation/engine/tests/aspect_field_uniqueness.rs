@@ -86,6 +86,9 @@ fn unique_entity_aspect_field_rejects_entity_aspect_create() {
 
 #[test]
 fn unique_entity_aspect_field_rejects_entity_aspect_patch() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_summary_title_commit_boundary_uniqueness();
     commit_entity_with_summary(&runtime, "first", "shared-title", "open")
         .expect("first summary entity");
@@ -130,7 +133,7 @@ fn unique_entity_aspect_field_rejects_entity_aspect_patch() {
         .unwrap_err();
     assert_unique_entity_field_conflict(error, "shared-title");
     assert_runtime_marker_unchanged(&runtime, before);
-    assert_entity_summary(&runtime, second_id, "second-title", "open");
+    assert_entity_summary(execution, &runtime, second_id, "second-title", "open");
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -200,6 +203,7 @@ fn assert_unique_entity_field_conflict(error: TransactionCommitError, value: &st
 }
 
 pub(super) fn assert_entity_summary(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalRuntime,
     entity_id: crate::identity::data::EntityId,
     title: &str,
@@ -209,7 +213,7 @@ pub(super) fn assert_entity_summary(
     let snapshot = crate::tests::support::snapshot_for_owner_identity(runtime, &identity);
     let read = runtime
         .read_truth()
-        .read_snapshot(&snapshot)
+        .read_snapshot(&snapshot, execution)
         .expect("main snapshot remains readable");
     let record = read.get_entity(entity_id).expect("entity remains visible");
     let summary = record

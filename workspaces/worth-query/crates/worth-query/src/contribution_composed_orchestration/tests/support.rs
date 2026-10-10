@@ -185,12 +185,14 @@ impl WorthQueryDeclarationInput<ContributionDomain> for DeferredContributionInpu
     }
 }
 
-pub(super) fn admitted_handle() -> crate::application::WorthQueryInstalledDomainDeclarationContext<
+pub(super) fn admitted_handle(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> crate::application::WorthQueryInstalledDomainDeclarationContext<
     ContributionDomain,
     ContributionWorld,
 > {
     crate::application::domain_test_support::installed_declaration_context_with_contributions(
-        ContributionDomain,
+        request_execution, ContributionDomain,
         ContributionWorld("main"),
         [
             crate::application::domain_test_support::family::<ContributionDomain, ContributionFamily>(
@@ -211,11 +213,13 @@ pub(super) fn admitted_handle() -> crate::application::WorthQueryInstalledDomain
 }
 
 pub(super) fn admitted_handle_without_contributions(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> crate::application::WorthQueryInstalledDomainDeclarationContext<
     ContributionDomain,
     ContributionWorld,
 > {
     crate::application::domain_test_support::installed_declaration_context(
+        request_execution,
         ContributionDomain,
         ContributionWorld("main"),
         [

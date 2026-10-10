@@ -1,51 +1,64 @@
 use super::super::support::*;
 
-fn task_relation_runtime() -> WorthQueryRuntime {
-    stateful_bridge_task_relation_runtime()
+fn task_relation_runtime(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryRuntime {
+    stateful_bridge_task_relation_runtime(request_execution)
 }
 
 #[test]
 fn compose_graph_supports_mixed_symbolic_create_and_existing_target_lifecycle() {
-    let mut workspace = task_relation_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = task_relation_runtime(request_execution)
         .workspace("tasks.graph-composition-mixed-existing")
         .expect("runtime should open a named workspace");
     let tasks: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.graph-composition-mixed-existing-tasks", |q| {
-            q.from("Task")
-                .select([
-                    crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
-                        .unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
-                        .unwrap(),
-                ])
-                .order_by(
-                    crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
-                        .unwrap(),
-                )
-                .schema_basis("tasks-graph-composition-mixed-existing-tasks")
-        })
+        .live_view(
+            request_execution,
+            "tasks.graph-composition-mixed-existing-tasks",
+            |q| {
+                q.from("Task")
+                    .select([
+                        crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
+                            .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
+                            .unwrap(),
+                    ])
+                    .order_by(
+                        crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
+                            .unwrap(),
+                    )
+                    .schema_basis("tasks-graph-composition-mixed-existing-tasks")
+            },
+        )
         .expect("task live view should declare");
     let relations: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.graph-composition-mixed-existing-relations", |q| {
-            q.from("TaskRelation")
-                .select([
-                    crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
-                        .unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts("kind", "value")
-                        .unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts("status", "value")
-                        .unwrap(),
-                ])
-                .order_by(
-                    crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
-                        .unwrap(),
-                )
-                .schema_basis("tasks-graph-composition-mixed-existing-relations")
-        })
+        .live_view(
+            request_execution,
+            "tasks.graph-composition-mixed-existing-relations",
+            |q| {
+                q.from("TaskRelation")
+                    .select([
+                        crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
+                            .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts("kind", "value")
+                            .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts("status", "value")
+                            .unwrap(),
+                    ])
+                    .order_by(
+                        crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
+                            .unwrap(),
+                    )
+                    .schema_basis("tasks-graph-composition-mixed-existing-relations")
+            },
+        )
         .expect("relation live view should declare");
 
     let update_seed = workspace
-        .insert("TaskRelation", |relation| {
+        .insert(request_execution, "TaskRelation", |relation| {
             relation
                 .set_aspect(
                     test_aspect_touch("identity.id"),
@@ -62,7 +75,7 @@ fn compose_graph_supports_mixed_symbolic_create_and_existing_target_lifecycle() 
         })
         .expect("update seed should execute");
     let delete_seed = workspace
-        .insert("TaskRelation", |relation| {
+        .insert(request_execution, "TaskRelation", |relation| {
             relation
                 .set_aspect(
                     test_aspect_touch("identity.id"),
@@ -102,7 +115,7 @@ fn compose_graph_supports_mixed_symbolic_create_and_existing_target_lifecycle() 
         .expect("delete binding should build");
 
     let receipt = workspace
-        .compose_graph(|graph| {
+        .compose_graph(request_execution, |graph| {
             let _ = graph.insert_entity("draft-task", "Task", |task| {
                 task.set_aspect(
                     test_aspect_touch("identity.id"),
@@ -126,9 +139,11 @@ fn compose_graph_supports_mixed_symbolic_create_and_existing_target_lifecycle() 
         })
         .expect("mixed symbolic and existing lifecycle program should execute");
 
-    let task_rows = workspace.read(&tasks);
-    let relation_rows = workspace.read(&relations);
-    let inspection = workspace.inspect(&receipt).expect("receipt should inspect");
+    let task_rows = workspace.read(request_execution, &tasks);
+    let relation_rows = workspace.read(request_execution, &relations);
+    let inspection = workspace
+        .inspect(request_execution, &receipt)
+        .expect("receipt should inspect");
     let program = receipt
         .graph_composition_program()
         .expect("graph composition receipt should expose composition program");

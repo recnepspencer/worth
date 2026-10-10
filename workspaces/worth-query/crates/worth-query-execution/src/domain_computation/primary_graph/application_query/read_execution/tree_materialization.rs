@@ -53,6 +53,7 @@ pub(super) struct MaterializedApplicationResultTree {
 }
 
 pub(super) fn materialize_result_tree(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
@@ -70,12 +71,13 @@ pub(super) fn materialize_result_tree(
 ) -> Result<MaterializedApplicationResultTree, WorthQueryApplicationReadExecutionDenial> {
     let projection = runtime
         .read_truth()
-        .project_snapshot(snapshot)
+        .project_snapshot(snapshot, execution)
         .ok_or_else(|| projection_denial(contract.root_entity()))?;
     let mut work = ResultTreeWork::new(maximum_work, interruption, spent);
     work.checkpoint("root")?;
     let mut collection_selection = ActiveResultTreeCollectionSelection::new(collection_selection);
     let mut rows = project_nodes(
+        execution,
         runtime,
         &projection,
         graph,
@@ -95,6 +97,7 @@ pub(super) fn materialize_result_tree(
     }
     order_collection(contract, governance, "root", &mut rows, &mut work)?;
     let source_footprints = source_footprint::collect_source_footprints(
+        execution,
         &projection,
         graph,
         contract,
@@ -124,6 +127,7 @@ pub(super) fn materialize_result_tree(
 
 #[allow(clippy::too_many_arguments)]
 fn project_nodes(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     projection: &worth_relational::facade::runtime::VisibilityProjectionView<'_>,
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
@@ -161,7 +165,7 @@ fn project_nodes(
     for entity_id in entity_ids {
         work.checkpoint(result_path)?;
         let projected_fields = projection
-            .entity_record_with_projection_scope(*entity_id, scope.clone(), |record| {
+            .entity_record_with_projection_scope(execution, *entity_id, scope.clone(), |record| {
                 (record.kind_id() == kind && record.lifecycle() == RecordLifecycleState::Live).then(
                     || {
                         let projected = allocate_claimed_result_vector::<
@@ -188,10 +192,19 @@ fn project_nodes(
     for relation in relations {
         work.checkpoint(relation.result_path())?;
         if !governance.is_disclosed(relation.slot_key_identity().as_ref()) {
-            advance_omitted_relation(runtime, graph, relation, &nodes, work, collection_selection)?;
+            advance_omitted_relation(
+                execution,
+                runtime,
+                graph,
+                relation,
+                &nodes,
+                work,
+                collection_selection,
+            )?;
             continue;
         }
         attach_relation(
+            execution,
             runtime,
             projection,
             graph,

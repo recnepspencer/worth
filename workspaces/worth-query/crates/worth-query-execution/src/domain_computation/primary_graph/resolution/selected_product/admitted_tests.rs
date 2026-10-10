@@ -9,64 +9,77 @@ use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenia
 #[test]
 fn admitted_selected_principal_matches_ordinary_and_certification_and_stops_one_short() {
     let world = installed_authorization_world(true);
-    let selected = world.selected_product();
-    let request = live_scope();
-    let external = world.authenticate("alice", Duration::from_secs(60), &request);
-    let legacy = selected
-        .resolve_authenticated_principal(
-            &world.binding,
-            &external,
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .expect("legacy selected principal resolves");
-    let owner = &world
+    world
         .application
-        .primary_provider
-        .graph
-        .source_owner
-        .invalidation_owner;
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            let borrowed_execution = host_custody.borrowed_request_for_test();
+            let execution = &borrowed_execution;
+            let selected = world.selected_product(
+                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+            );
+            let request = live_scope();
+            let external = world.authenticate("alice", Duration::from_secs(60), &request);
+            let legacy = selected
+                .resolve_authenticated_principal(
+                    &host_custody.phase_for_application(&world.application),
+                    &world.binding,
+                    &external,
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .expect("legacy selected principal resolves");
+            let owner = &world
+                .application
+                .primary_provider
+                .graph
+                .source_owner
+                .invalidation_owner;
 
-    for mode in [
-        WorthQueryPrincipalResolutionMode::Ordinary,
-        WorthQueryPrincipalResolutionMode::Certification,
-    ] {
-        let mut admission = owner.edit_admission();
-        let fresh = selected
-            .resolve_authenticated_principal_admitted(
-                &world.binding,
-                &external,
-                &request,
-                mode,
-                &mut admission,
-            )
-            .expect("admitted principal uses the same selected truth");
-        assert_eq!(fresh.principal_entity_id(), legacy.principal_entity_id());
-        assert_eq!(fresh.mapping_entity_id(), legacy.mapping_entity_id());
-        assert_eq!(fresh.target_relation_id(), legacy.target_relation_id());
-        assert_eq!(fresh.principal_identity(), legacy.principal_identity());
-        assert_eq!(
-            fresh.examined_candidate_count(),
-            legacy.examined_candidate_count()
-        );
-        let charged = admission.charged_work();
-        assert!(charged > 1);
-        let mut short = owner.edit_admission_within(
-            std::num::NonZeroUsize::new(usize::try_from(charged - 1).unwrap()).unwrap(),
-        );
-        let denial = match selected.resolve_authenticated_principal_admitted(
-            &world.binding,
-            &external,
-            &request,
-            mode,
-            &mut short,
-        ) {
-            Ok(_) => panic!("one less than performed Work must refuse"),
-            Err(denial) => denial,
-        };
-        assert_eq!(
-            denial.kind(),
-            WorthQueryPrincipalResolutionDenialKind::ProjectionWorkBudgetExceeded,
-        );
-    }
+            for mode in [
+                WorthQueryPrincipalResolutionMode::Ordinary,
+                WorthQueryPrincipalResolutionMode::Certification,
+            ] {
+                let mut admission = owner.edit_admission();
+                let fresh = selected
+                    .resolve_authenticated_principal_admitted(
+                        execution,
+                        &world.binding,
+                        &external,
+                        &request,
+                        mode,
+                        &mut admission,
+                    )
+                    .expect("admitted principal uses the same selected truth");
+                assert_eq!(fresh.principal_entity_id(), legacy.principal_entity_id());
+                assert_eq!(fresh.mapping_entity_id(), legacy.mapping_entity_id());
+                assert_eq!(fresh.target_relation_id(), legacy.target_relation_id());
+                assert_eq!(fresh.principal_identity(), legacy.principal_identity());
+                assert_eq!(
+                    fresh.examined_candidate_count(),
+                    legacy.examined_candidate_count()
+                );
+                let charged = admission.charged_work();
+                assert!(charged > 1);
+                let mut short = owner.edit_admission_within(
+                    std::num::NonZeroUsize::new(usize::try_from(charged - 1).unwrap()).unwrap(),
+                );
+                let denial = match selected.resolve_authenticated_principal_admitted(
+                    execution,
+                    &world.binding,
+                    &external,
+                    &request,
+                    mode,
+                    &mut short,
+                ) {
+                    Ok(_) => panic!("one less than performed Work must refuse"),
+                    Err(denial) => denial,
+                };
+                assert_eq!(
+                    denial.kind(),
+                    WorthQueryPrincipalResolutionDenialKind::ProjectionWorkBudgetExceeded,
+                );
+            }
+        })
+        .expect("the fixture block owns its installed host call")
 }

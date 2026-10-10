@@ -40,14 +40,16 @@ fn undo_after_an_output_publication_refuses_without_losing_the_retained_prior() 
     let (contacts, runs) = demand(&request, &application);
     assert_eq!((contacts, runs.len()), (1, 1));
     assert_eq!(runs[0].calls, case.after.expected_calls(Some(&case.before)));
-    let selected_before = application
-        .runtime()
-        .on_branch(application.current_world())
-        .select()
-        .unwrap()
-        .product()
-        .selected_commit()
-        .clone();
+    let selected_before = crate::checkpoint_recovery::support::host_call(&application, |phase| {
+        application
+            .runtime()
+            .on_branch(application.current_world())
+            .select(phase)
+    })
+    .unwrap()
+    .product()
+    .selected_commit()
+    .clone();
     let inverse_key = key + 1;
     let inverse = preparation::Identities::<false>::encode(&inverse_key, &input).unwrap();
     let (program, authority) =
@@ -78,14 +80,16 @@ fn undo_after_an_output_publication_refuses_without_losing_the_retained_prior() 
         owner_before,
         "refused undo/redo made zero owner calls"
     );
-    let selected_after = application
-        .runtime()
-        .on_branch(application.current_world())
-        .select()
-        .unwrap()
-        .product()
-        .selected_commit()
-        .clone();
+    let selected_after = crate::checkpoint_recovery::support::host_call(&application, |phase| {
+        application
+            .runtime()
+            .on_branch(application.current_world())
+            .select(phase)
+    })
+    .unwrap()
+    .product()
+    .selected_commit()
+    .clone();
     assert_eq!(selected_before, selected_after, "refusal publishes nothing");
     assert_eq!(
         demand(&request, &application).0,

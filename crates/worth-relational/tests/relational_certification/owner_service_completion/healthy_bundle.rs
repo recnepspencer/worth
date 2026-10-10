@@ -92,13 +92,16 @@ fn healthy_bundle_executes_every_promised_method_family() {
 
 #[test]
 fn discarded_candidate_leaves_truth_unchanged_and_releases_its_obligation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     use super::super::invariant_oracle_expectations::expected_supply_chain_branch;
     use super::super::world::supply_chain::{
         certified_supply_chain_world, compare, lower_supply_chain_production_delta,
         observe_supply_chain_observation, BranchLabel, DeltaId, SupplyChainScale,
     };
 
-    let (world, _baseline) = certified_supply_chain_world(SupplyChainScale::court());
+    let (world, _baseline) = certified_supply_chain_world(execution, SupplyChainScale::court());
     let services = world.runtime.owner_component_services();
     let (_, source) = services
         .fork_port()
@@ -115,6 +118,7 @@ fn discarded_candidate_leaves_truth_unchanged_and_releases_its_obligation() {
         .observe_branch(&identity)
         .expect("the basis port observes the storm predecessor");
     let batch = lower_supply_chain_production_delta(
+        execution,
         &world.runtime,
         &world.program,
         &world.handles,
@@ -158,9 +162,14 @@ fn discarded_candidate_leaves_truth_unchanged_and_releases_its_obligation() {
     assert_eq!(after_descriptor, descriptor);
     let observation = after_basis.observation();
     let handles = world.handles.for_observation(&observation);
-    let observed =
-        observe_supply_chain_observation(&world.program, &handles, &world.runtime, &observation)
-            .expect("discarded work leaves neutral Supply Chain truth observable");
+    let observed = observe_supply_chain_observation(
+        execution,
+        &world.program,
+        &handles,
+        &world.runtime,
+        &observation,
+    )
+    .expect("discarded work leaves neutral Supply Chain truth observable");
     compare(
         &expected_supply_chain_branch(&world.program, BranchLabel::Storm, None),
         &observed,

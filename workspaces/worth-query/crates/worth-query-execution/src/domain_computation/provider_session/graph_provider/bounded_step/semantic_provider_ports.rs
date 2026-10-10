@@ -25,6 +25,7 @@ pub(super) trait WorthQueryErasedDecisionFactProvider: Send + Sync {
 
     fn compare(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         session: crate::domain_computation::WorthQueryProviderSessionView<'_>,
         evidence: WorthQueryDecisionFactEvidenceView<'_>,
         admission: WorthQueryDecisionFactComparisonAdmission,
@@ -74,11 +75,12 @@ impl<P: WorthQueryDecisionFactProvider> WorthQueryErasedDecisionFactProvider for
 
     fn compare(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         session: crate::domain_computation::WorthQueryProviderSessionView<'_>,
         evidence: WorthQueryDecisionFactEvidenceView<'_>,
         admission: WorthQueryDecisionFactComparisonAdmission,
     ) -> Result<WorthQueryDecisionFactComparisonEvidence, WorthQueryDecisionReadSetFailure> {
-        self.compare_decision_fact(session, evidence, admission)
+        self.compare_decision_fact(execution, session, evidence, admission)
     }
 }
 
@@ -139,6 +141,7 @@ pub(super) fn observe_decision_fact(
 }
 
 pub(super) fn compare_decision_fact(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     provider: &Option<Arc<dyn WorthQueryErasedDecisionFactProvider>>,
     session: crate::domain_computation::WorthQueryProviderSessionView<'_>,
     evidence: WorthQueryDecisionFactEvidenceView<'_>,
@@ -152,7 +155,7 @@ pub(super) fn compare_decision_fact(
                 "provider did not install decision-fact comparison authority",
             )
         })?
-        .compare(session, evidence, admission)
+        .compare(execution, session, evidence, admission)
 }
 
 pub(super) fn stage_provisional_overlay(

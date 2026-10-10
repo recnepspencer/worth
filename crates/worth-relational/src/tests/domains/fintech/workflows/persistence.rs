@@ -5,6 +5,9 @@ use crate::tests::support::{field_key, read_entity_field};
 
 #[test]
 fn fintech_persisted_workflow_recovers_checkpoint_tail_and_keeps_queryable_portfolio_state() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut world = setup_world_for(FintechScenario::PersistedSmokeBook);
     let analysis = open_analysis_branch(&mut world);
     let _shock = shock_market_on_branch(&mut world, analysis.clone());
@@ -15,11 +18,14 @@ fn fintech_persisted_workflow_recovers_checkpoint_tail_and_keeps_queryable_portf
             crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
         );
         let mut recovered = FintechWorld::setup_persisted_world().runtime;
-        let outcome = recovered.durability_recovery().recover(plan).unwrap();
+        let outcome = recovered
+            .durability_recovery()
+            .recover(execution, plan)
+            .unwrap();
         capture_recovery_probe(&recovered, &outcome)
     };
 
-    let (recovered, outcome) = recover_persisted_world(&world).unwrap();
+    let (recovered, outcome) = recover_persisted_world(execution, &world).unwrap();
     let recovered_snapshot = recovered.visibility_authority().snapshot();
     let packet = {
         let context = recovered
@@ -43,10 +49,15 @@ fn fintech_persisted_workflow_recovers_checkpoint_tail_and_keeps_queryable_portf
                 .read_truth()
                 .plan_query_packet(&recovered_snapshot, packet)
                 .expect("planned recovered query"),
+            execution,
+            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
         )
+        .expect("request remains live")
+        .map(|read| read.outcome)
         .expect("executed recovered query")
         .result;
     let before_probe = capture_case_truth_probe(
+        execution,
         &world,
         FintechCaseRole::BaselinePortfolio,
         ProbeStage::PostMutation,
@@ -65,6 +76,7 @@ fn fintech_persisted_workflow_recovers_checkpoint_tail_and_keeps_queryable_portf
         recovered.history().latest_commit()
     );
     let after_probe = read_snapshot_probe(
+        execution,
         &world,
         FintechCaseRole::BaselinePortfolio,
         &world.latest_snapshot(),
@@ -132,6 +144,9 @@ fn fintech_branch_divergence_merge_and_savepoint_verbs_stay_case_local() {
 
 #[test]
 fn fintech_failure_injection_helpers_cover_savepoints_replay_and_checkpoint_corruption() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut world = setup_smoke_world();
     let analysis = open_analysis_branch(&mut world);
     let rollback = rollback_seeded_trade_correction_after_savepoint(&mut world, analysis.clone());
@@ -144,7 +159,7 @@ fn fintech_failure_injection_helpers_cover_savepoints_replay_and_checkpoint_corr
     let _correction = correct_seeded_trade_candidate(&mut world, analysis);
     let removed = drop_latest_parent_envelope_for_replay(&world.runtime);
     assert!(removed.is_some());
-    let wrong_branch = replay_latest_commit_on_wrong_branch(&world.runtime).unwrap();
+    let wrong_branch = replay_latest_commit_on_wrong_branch(execution, &world.runtime).unwrap();
     assert_eq!(
         wrong_branch.failure,
         Some(ReplayFailureClass::BranchMismatch)
@@ -187,18 +202,22 @@ fn fintech_complexity_hooks_measure_seeded_workflows() {
 
 #[test]
 fn fintech_persisted_workflow_supports_compaction_after_checkpoint() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut world = setup_world_for(FintechScenario::PersistedSmokeBook);
     let analysis = open_analysis_branch(&mut world);
     let _shock = shock_market_on_branch(&mut world, analysis);
     checkpoint_world(&mut world).unwrap();
     let pre_compaction_probe = capture_case_truth_probe(
+        execution,
         &world,
         FintechCaseRole::BaselinePortfolio,
         ProbeStage::PostMutation,
     );
 
     let compaction = compact_world_store(&mut world).unwrap();
-    let (recovered, outcome) = recover_persisted_world(&world).unwrap();
+    let (recovered, outcome) = recover_persisted_world(execution, &world).unwrap();
     let recovered_probe = capture_recovery_probe(&recovered, &outcome);
 
     assert!(
@@ -234,7 +253,11 @@ fn fintech_persisted_workflow_supports_compaction_after_checkpoint() {
                 .read_truth()
                 .plan_query_packet(&recovered_snapshot, packet)
                 .expect("planned recovered portfolio query"),
+            execution,
+            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
         )
+        .expect("request remains live")
+        .map(|read| read.outcome)
         .expect("executed recovered portfolio query")
         .result;
     assert_eq!(result.entities.len(), pre_compaction_probe.entity_count);
@@ -243,6 +266,9 @@ fn fintech_persisted_workflow_supports_compaction_after_checkpoint() {
 
 #[test]
 fn fintech_index_and_lineage_authority_survive_hostile_workflow_recovery() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut world = setup_world_for(FintechScenario::PersistedSmokeBook);
     let analysis = open_analysis_branch(&mut world);
     let correction = correct_seeded_trade_candidate(&mut world, analysis.clone());
@@ -256,6 +282,7 @@ fn fintech_index_and_lineage_authority_survive_hostile_workflow_recovery() {
     let _audit = emit_trade_correction_audit_record(&mut world, analysis.clone());
     let index = register_case_book_index(&mut world);
     let build = build_branch_scoped_case_index(
+        execution,
         &mut world,
         index.index_id,
         analysis,
@@ -263,7 +290,7 @@ fn fintech_index_and_lineage_authority_survive_hostile_workflow_recovery() {
     );
     checkpoint_world(&mut world).unwrap();
 
-    let (recovered, _outcome) = recover_persisted_world(&world).unwrap();
+    let (recovered, _outcome) = recover_persisted_world(execution, &world).unwrap();
     let index_access = recovered.index_access();
     let generation = index_access
         .latest_generation(index.index_id, &BranchId("analysis".to_string()))
@@ -301,6 +328,9 @@ fn fintech_observability_surfaces_agree_for_hostile_correction_workflow() {
 
 #[test]
 fn fintech_recovery_falls_back_from_corrupt_latest_checkpoint_and_keeps_truth() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut world = setup_world_for(FintechScenario::PersistedSmokeBook);
     let analysis = open_analysis_branch(&mut world);
     let _shock = shock_market_on_branch(&mut world, analysis.clone());
@@ -313,9 +343,12 @@ fn fintech_recovery_falls_back_from_corrupt_latest_checkpoint_and_keeps_truth() 
     let corrupted = corrupt_latest_checkpoint_file(&plan);
     assert!(corrupted.is_some());
 
-    let (recovered, outcome) = recover_runtime_from_plan(world.runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    ))
+    let (recovered, outcome) = recover_runtime_from_plan(
+        execution,
+        world.runtime.durability().recovery_plan(
+            crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
+        ),
+    )
     .unwrap();
     let recovered_snapshot = recovered.visibility_authority().snapshot();
     let packet = {
@@ -340,7 +373,11 @@ fn fintech_recovery_falls_back_from_corrupt_latest_checkpoint_and_keeps_truth() 
                 .read_truth()
                 .plan_query_packet(&recovered_snapshot, packet)
                 .expect("planned recovered correction query"),
+            execution,
+            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
         )
+        .expect("request remains live")
+        .map(|read| read.outcome)
         .expect("executed recovered correction query")
         .result;
 

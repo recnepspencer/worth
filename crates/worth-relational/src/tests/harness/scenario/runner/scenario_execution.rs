@@ -14,7 +14,10 @@ use super::{
 };
 use crate::tests::harness::fixtures::runtime::RuntimeHarnessMode;
 
-pub(crate) fn run_seeded_scenario(config: SeededScenarioConfig) -> SeededScenarioWorld {
+pub(crate) fn run_seeded_scenario(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    config: SeededScenarioConfig,
+) -> SeededScenarioWorld {
     let mut runtime = build_runtime(config.runtime_mode);
     let mut entities = seed_initial_entities(&mut runtime, "seed");
     let baseline_checkpoint = checkpoint_for_schema_version(
@@ -44,6 +47,7 @@ pub(crate) fn run_seeded_scenario(config: SeededScenarioConfig) -> SeededScenari
             &config,
         );
         apply_operation(
+            execution,
             &runtime,
             &mut entities,
             &mut snapshots,
@@ -73,6 +77,7 @@ pub(crate) fn run_seeded_scenario(config: SeededScenarioConfig) -> SeededScenari
 }
 
 pub(crate) fn run_property_scenario(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     operations: Vec<ScenarioOperation>,
     runtime_mode: RuntimeHarnessMode,
 ) -> SeededScenarioWorld {
@@ -96,6 +101,7 @@ pub(crate) fn run_property_scenario(
 
     for (step, operation) in operations.iter().enumerate() {
         apply_operation(
+            execution,
             &runtime,
             &mut entities,
             &mut snapshots,

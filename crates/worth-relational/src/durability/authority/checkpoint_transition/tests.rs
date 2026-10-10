@@ -8,7 +8,9 @@ use crate::publication::data::DeferredPublicationSettlementError;
 use crate::runtime::RelationalRuntime;
 use crate::tests::support::*;
 
-fn recovered_world() -> (RelationalRuntime, RecoveredRelationalRuntimeAuthority) {
+fn recovered_world(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> (RelationalRuntime, RecoveredRelationalRuntimeAuthority) {
     let source = persisted_runtime_with_test_schema();
     create_entity(&source, "checkpoint-predecessor");
     let checkpoint = source
@@ -18,7 +20,7 @@ fn recovered_world() -> (RelationalRuntime, RecoveredRelationalRuntimeAuthority)
     let mut target = persisted_runtime_with_test_schema();
     let (_, authority) = target
         .durability_recovery()
-        .restore_native_checkpoint_with_authority(&checkpoint)
+        .restore_native_checkpoint_with_authority(execution, &checkpoint)
         .unwrap();
     (target, authority)
 }
@@ -48,8 +50,11 @@ fn main_basis(runtime: &RelationalRuntime) -> crate::branch::AdmittedRelationalB
 
 #[test]
 fn acknowledged_transition_admits_only_its_exact_successor_and_releases_snapshot() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for admit_successor in [true, false] {
-        let (mut runtime, authority) = recovered_world();
+        let (mut runtime, authority) = recovered_world(execution);
         let predecessor = main_basis(&runtime);
         let count = runtime.history().immutable_commit_count();
         let prepared = candidate(&runtime, "acknowledged-successor");
@@ -96,9 +101,12 @@ fn acknowledged_transition_admits_only_its_exact_successor_and_releases_snapshot
 
 #[test]
 fn foreign_recovery_and_foreign_candidate_are_refused_before_effects() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for foreign_recovery in [true, false] {
-        let (mut runtime, authority) = recovered_world();
-        let (foreign, foreign_authority) = recovered_world();
+        let (mut runtime, authority) = recovered_world(execution);
+        let (foreign, foreign_authority) = recovered_world(execution);
         let before = main_basis(&runtime).descriptor().clone();
         let before_foreign = main_basis(&foreign).descriptor().clone();
         let count = runtime.history().immutable_commit_count();
@@ -151,8 +159,11 @@ fn foreign_recovery_and_foreign_candidate_are_refused_before_effects() {
 
 #[test]
 fn moved_source_and_stale_candidate_cannot_extend_recovery_lineage() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for stale_candidate in [true, false] {
-        let (mut runtime, authority) = recovered_world();
+        let (mut runtime, authority) = recovered_world(execution);
         let predecessor = main_basis(&runtime);
         let early = stale_candidate.then(|| candidate(&runtime, "prepared-before-movement"));
         create_entity(&runtime, "ordinary-movement");
@@ -181,7 +192,10 @@ fn moved_source_and_stale_candidate_cannot_extend_recovery_lineage() {
 
 #[test]
 fn deferred_transition_retains_exact_repair_custody_across_foreign_refusal() {
-    let (mut runtime, authority) = recovered_world();
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (mut runtime, authority) = recovered_world(execution);
     let prepared = candidate(&runtime, "deferred-transition");
     runtime.durability.arm_append_failure();
     let TransitionError::DurabilityDeferred(pending) = runtime
@@ -253,7 +267,10 @@ fn deferred_transition_retains_exact_repair_custody_across_foreign_refusal() {
 
 #[test]
 fn repair_carries_performed_successor_even_after_owner_repair_and_later_movement() {
-    let (mut runtime, authority) = recovered_world();
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (mut runtime, authority) = recovered_world(execution);
     let prepared = candidate(&runtime, "captured-successor");
     runtime.durability.arm_append_failure();
     let TransitionError::DurabilityDeferred(pending) = runtime

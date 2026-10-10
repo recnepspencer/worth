@@ -28,12 +28,27 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     /// dispositions the adoption law leaves open for each.
     pub fn workflow_adoption_inventory(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         target: &ApplicationProgramRevision,
         expected_requirements: &WorthQueryProgramAdoptionRequirements,
         maximum_work_units: usize,
     ) -> Result<WorthQueryWorkflowAdoptionInventory, WorthQueryBranchAdoptionPreparationDenial>
     {
-        preparation::workflow_inventory(self, target, expected_requirements, maximum_work_units)
+        let phase_request = match phase.execution_request_for(&self.application().product_runtime) {
+            Ok(request) => request,
+            Err(_) => return Err(WorthQueryBranchAdoptionPreparationDenial::ExecutionDenied(
+                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase,
+            )),
+        };
+        let execution = &phase_request;
+
+        preparation::workflow_inventory(
+            execution,
+            self,
+            target,
+            expected_requirements,
+            maximum_work_units,
+        )
     }
 
     /// Prepares one branch-local move to `target` against the exact selected
@@ -113,6 +128,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     #[doc(hidden)]
     pub fn prepare_branch_adoption_in_advancement(
         &self,
+
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         target: &ApplicationProgramRevision,
         expected_requirements: &WorthQueryProgramAdoptionRequirements,
@@ -122,11 +138,12 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryPreparedBranchAdoption, WorthQueryBranchAdoptionPreparationDenial> {
         let application = self.application();
-        phase
+        let phase_request = phase
             .execution_request_for(&application.product_runtime)
             .map_err(|cause| {
                 WorthQueryBranchAdoptionPreparationDenial::ExecutionDenied(cause.into())
             })?;
+        let execution = &phase_request;
         let gate = application
             .product_runtime
             .activations
@@ -136,6 +153,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             })?;
         gate.publish(|| {
             preparation::prepare(
+                execution,
                 phase,
                 self,
                 target,

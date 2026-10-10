@@ -118,6 +118,7 @@ impl WorthQueryLowerRuntimeMergeExecution {
 impl WorthQueryRuntime {
     pub(crate) fn execute_ordinary_merge(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         authority: WorthQueryValidatedMergeAuthority,
         declaration_identity: &WorthQueryEvidenceIdentity,
         materialize_inspection: bool,
@@ -183,12 +184,13 @@ impl WorthQueryRuntime {
         })?;
         let outcome = self
             .backend
-            .execute_query_merge(merge_authority, &declaration)
+            .execute_query_merge(execution, merge_authority, &declaration)
             .map_err(WorthQueryOrdinaryMergeExecutionError::from_relational)?;
         let executed =
             ExecutedEffectPlan::new(lowered, ExecutedEffectAuthorityArtifact::Merge(outcome), 1);
         let receipt = executed.receipt();
         self.backend.release_query_merge_snapshot(
+            execution,
             executed
                 .published_snapshot()
                 .expect("ordinary relational merge publishes one exact snapshot"),

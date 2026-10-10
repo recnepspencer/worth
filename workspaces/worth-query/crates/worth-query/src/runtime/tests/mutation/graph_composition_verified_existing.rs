@@ -31,6 +31,9 @@ fn admitted_primary_profile(target_binding_family: &str) -> WorthQueryRuntimeSup
 
 #[test]
 fn compose_graph_supports_verified_existing_target_lifecycle() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let binding = WorthQueryExistingRelationTarget::new(
         crate::runtime::WorthQueryMutationAuthorityIdentity::existing_truth_binding_authority(
             crate::runtime::WorthQueryExistingTruthBindingAuthorityLabel::new("authority:rel-1")
@@ -45,6 +48,7 @@ fn compose_graph_supports_verified_existing_target_lifecycle() {
     let binding = WorthQueryExistingTruthTargetBinding::from_relation_target(binding)
         .expect("relation binding should build");
     let runtime = bridge_runtime_with_support_and_existing_truth_verification(
+        request_execution,
         admitted_primary_profile("direct_relation_identity"),
         TestExistingTruthVerificationAdapter::default()
             .with_value(&binding, "status.value", test_string_aspect_value("active"))
@@ -59,7 +63,7 @@ fn compose_graph_supports_verified_existing_target_lifecycle() {
         .expect("workspace should open");
 
     let receipt = workspace
-        .compose_graph(|graph| {
+        .compose_graph(request_execution, |graph| {
             let _ = graph.insert_entity("draft-task", "Task", |task| {
                 task.set_aspect(
                     test_aspect_touch("identity.id"),
@@ -153,7 +157,10 @@ fn compose_graph_supports_verified_existing_target_lifecycle() {
         .iter()
         .any(|family| family == "mixed_existing_target_verified_retirement"));
 
-    match workspace.inspect(&receipt).expect("receipt should inspect") {
+    match workspace
+        .inspect(request_execution, &receipt)
+        .expect("receipt should inspect")
+    {
         WorthQueryInspection::BatchWriteReceipt(inspection) => {
             let update = &inspection.component_operations()[1];
             let delete = &inspection.component_operations()[2];
@@ -215,14 +222,19 @@ fn compose_graph_supports_verified_existing_target_lifecycle() {
 
 #[test]
 fn compose_graph_denies_verified_existing_target_when_backend_verification_is_unsupported() {
-    let mut workspace =
-        bridge_runtime_with_support(WorthQueryRuntimeSupportProfile::bridge_backed(
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = bridge_runtime_with_support(
+        request_execution,
+        WorthQueryRuntimeSupportProfile::bridge_backed(
             "test-subscription-activation",
             "test-preview-basis",
             "test-inspector-evidence",
-        ))
-        .workspace("tasks.graph-composition-verified-existing-unsupported")
-        .expect("workspace should open");
+        ),
+    )
+    .workspace("tasks.graph-composition-verified-existing-unsupported")
+    .expect("workspace should open");
     let binding = workspace
         .bind_existing_relation(
             WorthQueryExistingRelationTarget::new(
@@ -239,7 +251,7 @@ fn compose_graph_denies_verified_existing_target_when_backend_verification_is_un
         .expect("relation binding should build");
 
     let error = workspace
-        .compose_graph(|graph| {
+        .compose_graph(request_execution, |graph| {
             graph.update_existing_verified(
                 binding,
                 |verify| {

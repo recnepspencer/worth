@@ -8,12 +8,16 @@ use crate::tests::support::*;
 
 #[test]
 fn strategy_artifacts_are_bound_into_the_committed_root() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = crate::commit_strategies::facade::persisted_intent_runtime(
         unique_test_store_path("root-strategy-artifact"),
         true,
     );
     let entity = create_entity(&runtime, "strategy-before");
     let outcome = crate::commit_strategies::facade::execute_persisted_intent_strategy_commit(
+        execution,
         &mut runtime,
         entity,
     );
@@ -25,6 +29,9 @@ fn strategy_artifacts_are_bound_into_the_committed_root() {
 
 #[test]
 fn merge_execution_authority_is_bound_into_the_committed_root() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     create_entity_outcome(&runtime, "merge-main");
     runtime
@@ -33,14 +40,17 @@ fn merge_execution_authority_is_bound_into_the_committed_root() {
         .expect("feature branch forks");
     create_entity_outcome_on_branch(&runtime, "merge-feature", BranchId("feature".to_owned()));
     let prepared = runtime
-        .prepare_merge_execution(crate::merge::data::MergeExecutionRequest::new(
-            BranchId("main".to_owned()),
-            BranchId("feature".to_owned()),
-            crate::merge::data::MergeIntent::ReconcileIntoTarget,
-        ))
+        .prepare_merge_execution(
+            execution,
+            crate::merge::data::MergeExecutionRequest::new(
+                BranchId("main".to_owned()),
+                BranchId("feature".to_owned()),
+                crate::merge::data::MergeIntent::ReconcileIntoTarget,
+            ),
+        )
         .expect("governed merge prepares");
     let outcome = runtime
-        .execute_prepared_merge(prepared)
+        .execute_prepared_merge(execution, prepared)
         .expect("governed merge executes");
     let (root, mut envelope) =
         committed_root_and_envelope(&runtime, outcome.commit.commit.commit_id);

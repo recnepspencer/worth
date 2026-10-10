@@ -2,9 +2,12 @@ use super::support::*;
 
 #[test]
 fn hostile_certification_artifact_matches_serialized_replay_and_repeated_runs() {
-    let first = execute_runtime_hostile_schedule();
-    let replay = replay_runtime_hostile_schedule();
-    let second = execute_runtime_hostile_schedule();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let first = execute_runtime_hostile_schedule(request_execution);
+    let replay = replay_runtime_hostile_schedule(request_execution);
+    let second = execute_runtime_hostile_schedule(request_execution);
 
     assert_eq!(first, replay);
     assert_eq!(first, second);
@@ -14,7 +17,10 @@ fn hostile_certification_artifact_matches_serialized_replay_and_repeated_runs() 
 
 #[test]
 fn hostile_certification_counters_prove_zero_shared_read_lock_and_phase_eleven_residue() {
-    let artifact = execute_runtime_hostile_schedule();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let artifact = execute_runtime_hostile_schedule(request_execution);
     let counters = artifact.counters();
 
     assert_eq!(counters.committed_read_hot_path_lock_count(), 0);

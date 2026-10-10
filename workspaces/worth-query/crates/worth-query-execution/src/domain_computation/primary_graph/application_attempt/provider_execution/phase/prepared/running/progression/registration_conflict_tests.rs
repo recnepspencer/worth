@@ -41,29 +41,35 @@ type RunningRetainedCommit = WorthQueryRunningApplicationCommit<
 
 #[test]
 fn occupied_real_registration_cleans_the_conflict_and_preserves_an_interleaved_peer() {
-    let world =
-        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
-            true,
-        );
-    world
-        .application
-        .with_host_advancement(|active_phase| {
-            let phase = &active_phase;
+    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+        let world =
+            crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
+                true,
+            );
+        world
+            .application
+            .with_host_advancement(|active_phase| {
+                let phase = &active_phase;
 
-            let (victim, peer) = equivalent_programs(&world, "occupied-registration");
-            let victim = start(phase, &world, victim, idempotency(181, 182));
-            let peer = start(phase, &world, peer, idempotency(183, 184));
-            let victim = while_peer_is_registered(phase, &world, peer, || {
-                reject_occupied_registration(phase, &world, victim)
-            });
-            assert!(matches!(
-                victim,
-                WorthQueryApplicationCommitOutcome::Denied(ref denial)
-                    if denial.stage() == WorthQueryApplicationCommitDenialStage::ProviderPlan
-            ));
-            assert_eq!(world.application.provider_session_resource_count(), 0);
-        })
-        .expect("fixture owner admits its advancement");
+                let (victim, peer) = equivalent_programs(
+                    &host_custody.phase_for_application(&world.application),
+                    &world,
+                    "occupied-registration",
+                );
+                let victim = start(phase, &world, victim, idempotency(181, 182));
+                let peer = start(phase, &world, peer, idempotency(183, 184));
+                let victim = while_peer_is_registered(phase, &world, peer, || {
+                    reject_occupied_registration(phase, &world, victim)
+                });
+                assert!(matches!(
+                    victim,
+                    WorthQueryApplicationCommitOutcome::Denied(ref denial)
+                        if denial.stage() == WorthQueryApplicationCommitDenialStage::ProviderPlan
+                ));
+                assert_eq!(world.application.provider_session_resource_count(), 0);
+            })
+            .expect("fixture owner admits its advancement");
+    })
 }
 
 fn reject_occupied_registration(
@@ -154,6 +160,7 @@ fn reject_occupied_registration(
     drop(reservation);
 
     finish_application_commit(
+        &phase.borrowed_request_for_test(),
         phase,
         &world.application,
         WorthQueryProgressedApplicationCommit {
@@ -252,10 +259,12 @@ fn while_peer_is_registered(
         aftermath_causality,
     };
     let peer = finish_application_commit(
+        &phase.borrowed_request_for_test(),
         phase,
         &world.application,
         registered
             .progress(
+                &phase.borrowed_request_for_test(),
                 &authority,
                 crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
@@ -286,6 +295,7 @@ fn start(
     Account,
 > {
     let prepared = prepare_application_commit(
+        &phase.borrowed_request_for_test(),
         phase,
         &world.application,
         WorthQueryApplicationCommitPreparationRequest::new(program, idempotency, None, None),
@@ -298,14 +308,21 @@ fn start(
 }
 
 fn equivalent_programs(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     world: &AuthorizationWorld,
     replacement: &str,
 ) -> (RetainedProgram, RetainedProgram) {
     let request = live_scope();
-    let principal = authenticated_principal(world, &request);
-    let account = resolved_account(world, "open", &request);
+    let principal = authenticated_principal(&(phase_custody).test_host_request(), world, &request);
+    let account = resolved_account(
+        &(phase_custody).test_host_request(),
+        world,
+        "open",
+        &request,
+    );
     (
         retained_status_program(
+            &(phase_custody).test_host_request(),
             world,
             &principal,
             &account,
@@ -314,6 +331,7 @@ fn equivalent_programs(
             RetentionMutationBreadth::Narrow,
         ),
         retained_status_program(
+            &(phase_custody).test_host_request(),
             world,
             &principal,
             &account,

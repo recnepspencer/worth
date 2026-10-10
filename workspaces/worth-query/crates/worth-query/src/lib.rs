@@ -106,3 +106,6 @@ mod relational_execution_refusal;
 
 #[cfg(test)]
 mod test_execution_authority;
+
+#[cfg(test)]
+mod test_execution_policy;

@@ -21,8 +21,25 @@ fn commit_authorization_rechecks_cancellation_when_governed() {
         Instant::now() + Duration::from_secs(60),
         cancellation.token(),
     );
-    let principal = authenticated_principal(&world, &request);
-    let mut admission = admitted_capability_operation(&world, &principal, &request);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let mut admission = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            admitted_capability_operation(
+                &(phase).test_host_request(),
+                &world,
+                &principal,
+                &request,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
     let commit_authorization = admission
         .take_authorization_dependencies(world.application.authorization.bridge())
         .unwrap();
@@ -38,9 +55,20 @@ fn commit_authorization_rechecks_cancellation_when_governed() {
         )
         .unwrap();
     let coordination = commit_lane.enter();
-    let proof = commit_authorization
-        .authorize_application_commit(&world.application, &admission, &coordination)
-        .unwrap();
+    let proof = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            commit_authorization
+                .authorize_application_commit(
+                    &host_custody.borrowed_request_for_test(),
+                    &world.application,
+                    &admission,
+                    &coordination,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
 
     cancellation.cancel();
 
@@ -58,9 +86,37 @@ fn commit_basis_cannot_be_paired_with_a_different_admitted_operation() {
         .authorization_time
         .script([time(100), time(100), time(100), time(100)]);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let mut source = admitted_capability_operation(&world, &principal, &request);
-    let target = admitted_capability_operation(&world, &principal, &request);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let mut source = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            admitted_capability_operation(
+                &(phase).test_host_request(),
+                &world,
+                &principal,
+                &request,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    let target = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            admitted_capability_operation(
+                &(phase).test_host_request(),
+                &world,
+                &principal,
+                &request,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
     let source_authorization = source
         .take_authorization_dependencies(world.application.authorization.bridge())
         .unwrap();
@@ -77,11 +133,19 @@ fn commit_basis_cannot_be_paired_with_a_different_admitted_operation() {
         .unwrap();
     let coordination = commit_lane.enter();
 
-    let Err(denial) = source_authorization.authorize_application_commit(
-        &world.application,
-        &target,
-        &coordination,
-    ) else {
+    let Err(denial) = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            source_authorization.authorize_application_commit(
+                &host_custody.borrowed_request_for_test(),
+                &world.application,
+                &target,
+                &coordination,
+            )
+        })
+        .expect("the fixture read owns its installed host call")
+    else {
         panic!("a commit basis must remain bound to its originating admission");
     };
     assert_eq!(
@@ -98,8 +162,20 @@ fn commit_basis_cannot_be_revalidated_by_a_foreign_runtime() {
         .authorization_time
         .script([time(100), time(100)]);
     let request = live_scope();
-    let principal = authenticated_principal(&source_world, &request);
-    let mut admission = admitted_capability_operation(&source_world, &principal, &request);
+    let principal = foreign_world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            authenticated_principal(&host_custody, &source_world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let mut admission = foreign_world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            admitted_capability_operation(&host_custody, &source_world, &principal, &request)
+        })
+        .expect("the fixture read owns its installed host call");
     let commit_authorization = admission
         .take_authorization_dependencies(source_world.application.authorization.bridge())
         .unwrap();
@@ -116,11 +192,19 @@ fn commit_basis_cannot_be_revalidated_by_a_foreign_runtime() {
         .unwrap();
     let coordination = commit_lane.enter();
 
-    let Err(denial) = commit_authorization.authorize_application_commit(
-        &foreign_world.application,
-        &admission,
-        &coordination,
-    ) else {
+    let Err(denial) = foreign_world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            commit_authorization.authorize_application_commit(
+                &host_custody.borrowed_request_for_test(),
+                &foreign_world.application,
+                &admission,
+                &coordination,
+            )
+        })
+        .expect("the fixture read owns its installed host call")
+    else {
         panic!("a foreign runtime must not revalidate an admitted operation");
     };
     assert_eq!(

@@ -1,6 +1,9 @@
 use super::*;
 
-pub(super) fn certify_merge_prepare_vs_execute_feature_adoption(suite: &'static str) {
+pub(super) fn certify_merge_prepare_vs_execute_feature_adoption(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    suite: &'static str,
+) {
     let merge_prepare_execute_split_samples = capture_perf_samples(
         suite,
         "merge_prepare_vs_execute_feature_adoption",
@@ -39,18 +42,21 @@ pub(super) fn certify_merge_prepare_vs_execute_feature_adoption(suite: &'static 
             runtime.performance_access().reset_counters();
             let prepare_started_at = Instant::now();
             let prepared = runtime
-                .prepare_merge_execution(MergeExecutionRequest {
-                    target_branch: BranchId("main".to_string()),
-                    source_branch: BranchId("feature".to_string()),
-                    merge_intent: MergeIntent::ReconcileIntoTarget,
-                })
+                .prepare_merge_execution(
+                    execution,
+                    MergeExecutionRequest {
+                        target_branch: BranchId("main".to_string()),
+                        source_branch: BranchId("feature".to_string()),
+                        merge_intent: MergeIntent::ReconcileIntoTarget,
+                    },
+                )
                 .expect("prepared merge");
             let prepare_elapsed_micros = prepare_started_at.elapsed().as_micros();
 
             runtime.performance_access().reset_counters();
             let execute_started_at = Instant::now();
             let outcome = runtime
-                .execute_prepared_merge(prepared)
+                .execute_prepared_merge(execution, prepared)
                 .expect("execute merge");
             let execute_elapsed_micros = execute_started_at.elapsed().as_micros();
             let counters = runtime.performance_access().counters();

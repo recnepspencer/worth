@@ -17,6 +17,7 @@ where
         Spec,
     >(
         mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         instance: super::super::PublishedWorkflowInstanceRef,
         request_kind: WorkflowTransitionRequestKind,
@@ -51,6 +52,7 @@ where
             instance.definition_content_identity().clone(),
         );
         let (mut compiled, mut facts) = reconstruct_compiled_definition(
+            execution,
             self.lease.handle(),
             self.lease.snapshot(),
             &layout,
@@ -69,8 +71,8 @@ where
                 .maximum_retained_transitions_per_instance(),
         )
         .unwrap_or(usize::MAX);
-        let mut observed = self.lease.handle().with_runtime(|runtime| {
-            super::super::workflow_instance_observation::observe_workflow_instance(
+        let mut observed = self.lease.handle().with_runtime(execution, |runtime| {
+            super::super::workflow_instance_observation::observe_workflow_instance(execution,
                 self.lease.handle(),
                 runtime,
                 self.lease.snapshot(),
@@ -98,8 +100,9 @@ where
                         ),
                     ));
                 }
-                self.lease.handle().with_runtime(|runtime| {
+                self.lease.handle().with_runtime(execution, |runtime| {
                     observed.ensure_history(
+                        execution,
                         self.lease.handle(),
                         runtime,
                         self.lease.snapshot(),
@@ -137,8 +140,8 @@ where
                 // A settled instance holds no live membership, so the check passes.
                 let allowance = observed.ensure_step_left()?;
                 let (membership, mut settlement_facts) =
-                    self.lease.handle().with_runtime(|runtime| {
-                        super::super::workflow_instance_observation::recover_settled_live_membership(
+                    self.lease.handle().with_runtime(execution, |runtime| {
+                        super::super::workflow_instance_observation::recover_settled_live_membership(execution,
                             runtime,
                             self.lease.snapshot(),
                             &layout,
@@ -164,7 +167,7 @@ where
         // A step recorded before the budget is spent or the deadline passes
         // still replays after it.
         let allowance = match observed.ensure_step_left().and_then(|allowance| {
-            self.bind_workflow_deadline(clock, &layout, instance.entity_id())
+            self.bind_workflow_deadline(execution, clock, &layout, instance.entity_id())
                 .map(|_| allowance)
         }) {
             Ok(allowance) => allowance,
@@ -271,6 +274,7 @@ where
                 ),
             SelectedWorkflowTransitionKind::Assessment(assessment) => self
                 .materialize_assessment_requirement(
+                    execution,
                     &layout,
                     &compiled,
                     instance,
@@ -299,6 +303,7 @@ where
                 self.materialize_approval_requirement(&layout, instance, selected, facts, approval)
             }
             SelectedWorkflowTransitionKind::EvidenceJoin(policy) => self.materialize_evidence_join(
+                execution,
                 &layout,
                 compiled,
                 instance,
@@ -321,6 +326,7 @@ where
             ),
             SelectedWorkflowTransitionKind::Operation(operation) => self
                 .materialize_operation_requirement(
+                    execution,
                     &layout,
                     &compiled,
                     instance,

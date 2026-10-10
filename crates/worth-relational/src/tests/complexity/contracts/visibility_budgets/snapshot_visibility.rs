@@ -246,6 +246,9 @@ fn complexity_budget_branch_creation_reuses_cached_visibility_state() {
 
 #[test]
 fn complexity_contract_visibility_scans_are_explicitly_measured() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let source = create_entity(&runtime, "source");
     let target = create_entity(&runtime, "target");
@@ -255,7 +258,10 @@ fn complexity_contract_visibility_scans_are_explicitly_measured() {
     let current_version = create_entity_outcome(&runtime, "later").version_id;
 
     runtime.performance_access().reset_counters();
-    let _ = runtime.read_truth().read_snapshot(&snapshot).unwrap();
+    let _ = runtime
+        .read_truth()
+        .read_snapshot(&snapshot, execution)
+        .unwrap();
     let snapshot_counters = runtime.performance_access().counters();
 
     assert_eq!(snapshot_counters.visibility_entity_slot_scans, 0);
@@ -264,7 +270,9 @@ fn complexity_contract_visibility_scans_are_explicitly_measured() {
     assert!(snapshot_counters.visible_authoritative_relation_records_materialized >= 1);
 
     runtime.performance_access().reset_counters();
-    let _ = runtime.read_truth().read_version(historical_version);
+    let _ = runtime
+        .read_truth()
+        .read_version(execution, historical_version);
     let historical_version_counters = runtime.performance_access().counters();
 
     assert_eq!(historical_version_counters.visibility_entity_slot_scans, 2);
@@ -284,7 +292,9 @@ fn complexity_contract_visibility_scans_are_explicitly_measured() {
     assert!(historical_version_counters.visible_authoritative_relation_records_materialized >= 1);
 
     runtime.performance_access().reset_counters();
-    let _ = runtime.read_truth().read_version(current_version);
+    let _ = runtime
+        .read_truth()
+        .read_version(execution, current_version);
     let current_version_counters = runtime.performance_access().counters();
 
     assert_eq!(current_version_counters.visibility_entity_slot_scans, 0);

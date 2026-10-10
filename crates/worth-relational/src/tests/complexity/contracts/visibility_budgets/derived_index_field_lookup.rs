@@ -11,6 +11,9 @@ use crate::tests::support::*;
 
 #[test]
 fn complexity_budget_index_entity_field_equals_avoids_snapshot_materialization() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let alpha = create_entity_outcome(&runtime, "alpha");
     let index = runtime.index_authority().register(DerivedIndexDefinition {
@@ -21,13 +24,14 @@ fn complexity_budget_index_entity_field_equals_avoids_snapshot_materialization()
         },
         branch_scoped: false,
     });
-    let build = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    let build = runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id: alpha.commit.commit_id,
             branch_id: BranchId("main".to_string()),
             index_ids: vec![index.index_id],
-        });
+        },
+    );
     assert!(build.failed_indexes.is_empty());
 
     let snapshot = runtime.visibility_authority().snapshot();
@@ -61,7 +65,9 @@ fn complexity_budget_index_entity_field_equals_avoids_snapshot_materialization()
                 .plan_query_packet(&snapshot, packet)
                 .expect("query plan"),
             IndexParityMode::ProductionAdmissibility,
+            execution,
         )
+        .expect("request remains live")
         .expect("query outcome");
     let counters = runtime.performance_access().counters();
 
@@ -77,6 +83,9 @@ fn complexity_budget_index_entity_field_equals_avoids_snapshot_materialization()
 
 #[test]
 fn complexity_budget_index_relation_field_equals_avoids_snapshot_materialization() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let source = create_entity_outcome(&runtime, "source");
     let source_id = changed_entities(&source)[0];
@@ -91,13 +100,14 @@ fn complexity_budget_index_relation_field_equals_avoids_snapshot_materialization
         },
         branch_scoped: false,
     });
-    let build = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    let build = runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id: relation.commit.commit_id,
             branch_id: BranchId("main".to_string()),
             index_ids: vec![index.index_id],
-        });
+        },
+    );
     assert!(build.failed_indexes.is_empty());
 
     let snapshot = runtime.visibility_authority().snapshot();
@@ -131,7 +141,9 @@ fn complexity_budget_index_relation_field_equals_avoids_snapshot_materialization
                 .plan_query_packet(&snapshot, packet)
                 .expect("query plan"),
             IndexParityMode::ProductionAdmissibility,
+            execution,
         )
+        .expect("request remains live")
         .expect("query outcome");
     let counters = runtime.performance_access().counters();
 
@@ -147,6 +159,9 @@ fn complexity_budget_index_relation_field_equals_avoids_snapshot_materialization
 
 #[test]
 fn complexity_budget_index_field_equals_reuses_warm_index_scratch_on_repeated_lookup() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let alpha = create_entity_outcome(&runtime, "alpha");
     let index = runtime.index_authority().register(DerivedIndexDefinition {
@@ -157,13 +172,14 @@ fn complexity_budget_index_field_equals_reuses_warm_index_scratch_on_repeated_lo
         },
         branch_scoped: false,
     });
-    let build = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    let build = runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id: alpha.commit.commit_id,
             branch_id: BranchId("main".to_string()),
             index_ids: vec![index.index_id],
-        });
+        },
+    );
     assert!(build.failed_indexes.is_empty());
 
     let snapshot = runtime.visibility_authority().snapshot();
@@ -198,7 +214,9 @@ fn complexity_budget_index_field_equals_reuses_warm_index_scratch_on_repeated_lo
                     .plan_query_packet(&snapshot, packet.clone())
                     .expect("query plan"),
                 IndexParityMode::ProductionAdmissibility,
+                execution,
             )
+            .expect("request remains live")
             .expect("query outcome");
     }
     let counters = runtime.performance_access().counters();
@@ -210,6 +228,9 @@ fn complexity_budget_index_field_equals_reuses_warm_index_scratch_on_repeated_lo
 
 #[test]
 fn complexity_budget_index_field_equals_reports_actual_result_width() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let _alpha_a = create_entity_outcome(&runtime, "alpha");
     let _alpha_b = create_entity_outcome(&runtime, "alpha");
@@ -226,13 +247,14 @@ fn complexity_budget_index_field_equals_reports_actual_result_width() {
         .latest_commit()
         .expect("latest commit")
         .commit_id;
-    let build = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    let build = runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id: latest_commit_id,
             branch_id: BranchId("main".to_string()),
             index_ids: vec![index.index_id],
-        });
+        },
+    );
     assert!(build.failed_indexes.is_empty());
 
     let snapshot = runtime.visibility_authority().snapshot();
@@ -266,7 +288,9 @@ fn complexity_budget_index_field_equals_reports_actual_result_width() {
                 .plan_query_packet(&snapshot, packet)
                 .expect("query plan"),
             IndexParityMode::ProductionAdmissibility,
+            execution,
         )
+        .expect("request remains live")
         .expect("query outcome");
     let counters = runtime.performance_access().counters();
 

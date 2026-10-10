@@ -73,6 +73,7 @@ where
         AdmitBasis,
     >(
         &'a self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         query: &'a WorthQueryInstalledApplicationQuery<
             Schema,
             Query,
@@ -138,6 +139,7 @@ where
             graph,
         )?;
         let authorities = self.admit_application_query_authorities(
+            execution,
             &mut graph_work,
             &basis,
             &security_product,

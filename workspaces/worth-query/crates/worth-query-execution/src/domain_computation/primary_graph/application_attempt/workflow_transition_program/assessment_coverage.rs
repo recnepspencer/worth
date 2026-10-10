@@ -51,6 +51,7 @@ struct ObservedProposalCoverage {
 /// the assessment subject. Resource coverage must agree with admitted scope.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn observe_subject(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     compiled: &CompiledWorkflowDefinition,
     layout: &WorthQueryWorkflowLayout,
     progress: &WorkflowInstanceProgress,
@@ -61,6 +62,7 @@ pub(super) fn observe_subject(
     observation_request: &WorthQueryRequestScope,
 ) -> Result<ObservedAssessmentSubject, WorthQueryApplicationAttemptDenial> {
     observe_subject_cached(
+        execution,
         compiled,
         layout,
         progress,
@@ -75,6 +77,7 @@ pub(super) fn observe_subject(
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn observe_subject_cached(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     compiled: &CompiledWorkflowDefinition,
     layout: &WorthQueryWorkflowLayout,
     progress: &WorkflowInstanceProgress,
@@ -107,17 +110,19 @@ pub(super) fn observe_subject_cached(
         let source_transition = progress
             .latest_transition(source.entity())
             .ok_or_else(|| mismatch("assessment proposal transition is absent"))?;
-        let (proposal, identity, mut proposal_facts) = handle.with_runtime(|runtime| {
-            observe_retained_workflow_proposal_identity(
-                runtime,
-                snapshot,
-                layout,
-                source_transition,
-                observation_request,
-            )
-        })?;
-        let (coverages, coverage_facts) = handle.with_runtime(|runtime| {
-            observe_workflow_proposal_coverages(runtime, snapshot, layout, proposal, {
+        let (proposal, identity, mut proposal_facts) =
+            handle.with_runtime(execution, |runtime| {
+                observe_retained_workflow_proposal_identity(
+                    execution,
+                    runtime,
+                    snapshot,
+                    layout,
+                    source_transition,
+                    observation_request,
+                )
+            })?;
+        let (coverages, coverage_facts) = handle.with_runtime(execution, |runtime| {
+            observe_workflow_proposal_coverages(execution, runtime, snapshot, layout, proposal, {
                 check_request_live(observation_request, "workflow retained evidence")?;
                 observation_request
             })
@@ -179,6 +184,7 @@ pub(super) fn observe_subject_cached(
 /// versions decide reuse.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn observe(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     node: &CompiledWorkflowNode,
     program_revision: &worth_query_declaration::facade::application_program::ApplicationProgramRevision,
     coverage: &WorkflowProposalCoverageMeaning,
@@ -220,8 +226,14 @@ pub(super) fn observe(
             dependencies: Vec::new(),
         });
     }
-    let (dependencies, facts, current) =
-        observe_native_dependencies(evidence, layout, handle, snapshot, observation_request)?;
+    let (dependencies, facts, current) = observe_native_dependencies(
+        execution,
+        evidence,
+        layout,
+        handle,
+        snapshot,
+        observation_request,
+    )?;
     check_request_live(observation_request, "workflow retained evidence")?;
     if !current {
         return Ok(ObservedAssessmentCoverage {
@@ -238,6 +250,7 @@ pub(super) fn observe(
 }
 
 pub(super) fn observe_native_dependencies(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     evidence: &ObservedWorkflowAssessmentEvidence,
     layout: &WorthQueryWorkflowLayout,
     handle: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle,
@@ -252,8 +265,9 @@ pub(super) fn observe_native_dependencies(
     WorthQueryApplicationAttemptDenial,
 > {
     let mut facts = Vec::new();
-    let dependencies = handle.with_runtime(|runtime| {
+    let dependencies = handle.with_runtime(execution, |runtime| {
         observe_evidence_dependencies(
+            execution,
             runtime,
             snapshot,
             layout,
@@ -262,10 +276,10 @@ pub(super) fn observe_native_dependencies(
             &mut facts,
         )
     })?;
-    let current = handle.with_runtime(|runtime| {
+    let current = handle.with_runtime(execution, |runtime| {
         dependencies
             .iter()
-            .all(|fact| fact.remains_equal_in(runtime, snapshot))
+            .all(|fact| fact.remains_equal_in(runtime, execution, snapshot))
     });
     Ok((dependencies, facts, current))
 }

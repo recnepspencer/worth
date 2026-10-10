@@ -33,6 +33,9 @@ const DUPLICATE_CALL_SIGN: &str = "AURORA";
 #[test]
 #[ignore = "mandatory scheduled Scale certification; too expensive for the ordinary lane"]
 fn large_runtime_keeps_global_enforcement_and_filters_graph_planning() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let definition = SupplyChainWorldDefinition::operating(SupplyChainScale::scale())
         .expect("Scale Supply Chain definition is valid");
     let causal_record_count = definition.entities.len() + definition.relations.len();
@@ -77,7 +80,7 @@ fn large_runtime_keeps_global_enforcement_and_filters_graph_planning() {
             program, 200_000, catalog, custom,
         )
         .expect("the real Large causal baseline commits");
-    let world = audit_supply_chain_baseline(world)
+    let world = audit_supply_chain_baseline(execution, world)
         .expect("every installed Scale field, relation, schema axis, and ancestry row matches the independent oracle")
         .world;
 
@@ -103,7 +106,7 @@ fn large_runtime_keeps_global_enforcement_and_filters_graph_planning() {
 
     let main = BranchId("main".to_owned());
     assert_eq!(
-        live_record_count(&world.runtime, &main),
+        live_record_count(execution, &world.runtime, &main),
         causal_record_count,
         "the real Large fixture must be installed in the selected production snapshot"
     );
@@ -148,7 +151,7 @@ fn large_runtime_keeps_global_enforcement_and_filters_graph_planning() {
         graph_calls_before_follow_up,
         "ordinary commit admission must not run GraphComposition probes"
     );
-    let before_values = vessel_call_signs(&world.runtime, &main);
+    let before_values = vessel_call_signs(execution, &world.runtime, &main);
     let before_branch = world
         .runtime
         .branch_reference_state(&main)
@@ -163,7 +166,10 @@ fn large_runtime_keeps_global_enforcement_and_filters_graph_planning() {
         DUPLICATE_CALL_SIGN,
     );
     assert_unique_conflict(duplicate.unwrap_err(), DUPLICATE_CALL_SIGN);
-    assert_eq!(vessel_call_signs(&world.runtime, &main), before_values);
+    assert_eq!(
+        vessel_call_signs(execution, &world.runtime, &main),
+        before_values
+    );
     assert_eq!(
         world
             .runtime

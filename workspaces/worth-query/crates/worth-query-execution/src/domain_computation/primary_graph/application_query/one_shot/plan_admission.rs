@@ -11,6 +11,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn validate_
     PrincipalIdentity,
     Scope,
 >(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     plan: &WorthQueryAdmittedApplicationQueryPlan<
         '_,
@@ -40,7 +41,7 @@ where
     admit_request(request, plan.query.name())?;
     validate_basis_lifetime(&plan.controls, plan.query.name())?;
     validate_authentication_lifetime(application, plan.principal, plan.query.name())?;
-    if !plan.basis.is_live() {
+    if !plan.basis.is_live(execution) {
         return Err(denial(
             WorthQueryApplicationOneShotDenialKind::BasisUnavailable,
             plan.query.name(),

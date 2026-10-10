@@ -77,15 +77,17 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
     pub fn admit_merge_unique_values(
         &self,
         runtime: &RelationalRuntime,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         prepared: &PreparedMergeExecution,
     ) -> Result<(), WorthQueryMergeUniqueValueDenial> {
-        admit_merge_unique_values(self.layout.unique_fields(), runtime, prepared)
+        admit_merge_unique_values(self.layout.unique_fields(), runtime, execution, prepared)
     }
 }
 
 pub(in crate::domain_computation::primary_graph) fn admit_merge_unique_values(
     unique: WorthQueryUniqueFields<'_>,
     runtime: &RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     prepared: &PreparedMergeExecution,
 ) -> Result<(), WorthQueryMergeUniqueValueDenial> {
     if unique.is_empty() {
@@ -107,7 +109,7 @@ pub(in crate::domain_computation::primary_graph) fn admit_merge_unique_values(
                 (None, spec.kind_id, &spec.fields)
             }
             MutationIntent::Entity(EntityMutationIntent::UpdateFields(update)) => {
-                let kind = head.entity_kind(update.entity_id)?;
+                let kind = head.entity_kind(execution, update.entity_id)?;
                 (Some(update.entity_id), kind, &update.fields)
             }
             // Relations carry no unique field; deletes and revalidations write
@@ -134,13 +136,22 @@ pub(in crate::domain_computation::primary_graph) fn admit_merge_unique_values(
                 ))
             }
         };
-        admit_fields(unique, &mut head, &mut written, writer, kind, fields)?;
+        admit_fields(
+            unique,
+            execution,
+            &mut head,
+            &mut written,
+            writer,
+            kind,
+            fields,
+        )?;
     }
     Ok(())
 }
 
 fn admit_fields(
     unique: WorthQueryUniqueFields<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     head: &mut TargetHead<'_>,
     written: &mut BTreeSet<(
         KindId,
@@ -178,6 +189,7 @@ fn admit_fields(
         LOOKUPS.with(|calls| calls.borrow_mut().push(MERGE_UNIQUE_CANDIDATE_LIMIT));
         let selection = observe_indexed_candidates(
             runtime,
+            execution,
             snapshot,
             index_id,
             kind,
@@ -246,15 +258,17 @@ impl TargetHead<'_> {
 
     fn entity_kind(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: EntityId,
     ) -> Result<KindId, WorthQueryMergeUniqueValueDenial> {
         let runtime = self.runtime;
         let snapshot = self.snapshot()?;
         let truth = runtime.read_truth();
         let view = truth
-            .project_snapshot(snapshot)
+            .project_snapshot(snapshot, execution)
             .ok_or_else(target_head_unavailable)?;
         view.entity_record_with_projection_scope(
+            execution,
             entity_id,
             ProjectionAspectScope::empty(),
             |record| (record.lifecycle() == RecordLifecycleState::Live).then(|| record.kind_id()),

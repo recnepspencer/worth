@@ -1,3 +1,4 @@
+mod advancement;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
@@ -90,6 +91,7 @@ where
 {
     pub fn admit_program_root_output<Root>(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         source: WorthQueryApplicationOutputDemandSource<
             SourceQuery<Schema, WorthQueryProgramRootDemand<Schema, Root>>,
@@ -105,6 +107,12 @@ where
             + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
         RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
     {
+        let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
+            Ok(request) => request,
+            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase), "output-demand-phase")),
+        };
+        let execution = &phase_request;
+
         if !self.contains_output_root::<Root>() {
             return Err(WorthQueryOutputDemandDenial::new(
                 crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignDemand,
@@ -116,7 +124,7 @@ where
         self.runtime
             .admit_required_output_demand::<
                 Family<Schema, WorthQueryProgramRootDemand<Schema, Root>>,
-            >(source, limits)
+            >(execution, source, limits)
             .map(|admitted| WorthQueryAdmittedProgramOutput {
                 admitted,
                 target_feature: std::any::TypeId::of::<
@@ -242,6 +250,7 @@ where
 
     pub fn recover_program_root_output<Root>(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         source: WorthQueryApplicationOutputDemandSource<
             SourceQuery<Schema, WorthQueryProgramRootDemand<Schema, Root>>,
@@ -262,6 +271,12 @@ where
             + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
         RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
     {
+        let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
+            Ok(request) => request,
+            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase), "output-demand-phase")),
+        };
+        let execution = &phase_request;
+
         if !self.contains_output_root::<Root>() {
             return Err(WorthQueryOutputDemandDenial::new(
                 crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignDemand,
@@ -277,7 +292,7 @@ where
         self.runtime
             .admit_recovered_output_demand::<
                 Family<Schema, WorthQueryProgramRootDemand<Schema, Root>>,
-            >(
+            >(execution,
                 source,
                 current,
                 limits,
@@ -293,6 +308,7 @@ where
 
     pub fn admit_performed_program_root_output<Root>(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         source: WorthQueryApplicationOutputDemandSource<
             SourceQuery<Schema, WorthQueryProgramRootDemand<Schema, Root>>,
@@ -309,6 +325,12 @@ where
             + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
         RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
     {
+        let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
+            Ok(request) => request,
+            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase), "output-demand-phase")),
+        };
+        let execution = &phase_request;
+
         if !self.contains_output_root::<Root>() {
             return Err(WorthQueryOutputDemandDenial::new(
                 crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignDemand,
@@ -320,7 +342,7 @@ where
         self.runtime
             .admit_performed_output_demand::<
                 Family<Schema, WorthQueryProgramRootDemand<Schema, Root>>,
-            >(source, limits, prepared)
+            >(execution, source, limits, prepared)
             .map(|admitted| WorthQueryAdmittedProgramOutput {
                 admitted,
                 target_feature: std::any::TypeId::of::<<RootConnectionRef<Schema, Root> as ApplicationConnectionShape<Schema>>::TargetFeature>(),
@@ -335,44 +357,4 @@ where
     Schema: ApplicationSchema + 'static,
     Program: ApplicationProgramDefinition<Schema>,
 {
-    pub fn advance_program_output<Demand>(
-        &self,
-        phase: &WorthQueryAdvancementPhase<'_>,
-
-        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
-        demand: &mut WorthQueryAdmittedProgramOutput<Schema, Program, Demand>,
-        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
-        request_scope: &WorthQueryRequestScope,
-        delivery_branch: crate::basis::WorthQueryProductBranch,
-        disclosure: WorthQueryApplicationOutputDemandSource<
-            SourceQuery<Schema, Demand>,
-            SourceValue<Schema, Demand>,
-        >,
-    ) -> Result<WorthQueryProgramOutputAdvance<Schema, Program, Demand>, WorthQueryOutputDemandDenial>
-    where
-        Demand: WorthQueryApplicationOutputDemand<Schema>,
-        SourceValue<Schema, Demand>: 'static,
-        SourceQuery<Schema, Demand>: 'static,
-    {
-        self.runtime
-            .advance_program_output_demand(
-                phase,
-                &mut demand.admitted,
-                principal,
-                request_scope,
-                delivery_branch,
-                disclosure,
-            )
-            .map(|progress| match progress {
-                WorthQueryOutputDemandAdvance::Pending => WorthQueryProgramOutputAdvance::Pending,
-                WorthQueryOutputDemandAdvance::Settled(retained) => {
-                    WorthQueryProgramOutputAdvance::Settled(WorthQuerySettledProgramOutput {
-                        retained,
-                        target_feature: demand.target_feature,
-                        artifact: demand.artifact,
-                        marker: std::marker::PhantomData,
-                    })
-                }
-            })
-    }
 }

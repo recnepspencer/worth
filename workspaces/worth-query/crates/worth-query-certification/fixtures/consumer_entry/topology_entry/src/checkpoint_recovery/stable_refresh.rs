@@ -33,9 +33,9 @@ fn open_stable_interest_refreshes_twice_without_new_producer_or_world_commit() {
     assert!(first.application_commit_receipt().is_none());
 
     edit_successor(&request, &application, "anchor-b", 3, 102);
-    let before = request.retain_read().unwrap();
+    let before = crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
     let second = settle_open(&mut interest, &request);
-    let after = request.retain_read().unwrap();
+    let after = crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
     assert_eq!(
         second.posture(),
         WorthQueryOutputSettlementPosture::StableReused
@@ -59,9 +59,9 @@ fn open_stable_interest_refreshes_twice_without_new_producer_or_world_commit() {
     );
 
     edit_successor(&request, &application, "anchor-b", 4, 103);
-    let before = request.retain_read().unwrap();
+    let before = crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
     let third = settle_open(&mut interest, &request);
-    let after = request.retain_read().unwrap();
+    let after = crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
     assert_eq!(
         third.posture(),
         WorthQueryOutputSettlementPosture::StableReused

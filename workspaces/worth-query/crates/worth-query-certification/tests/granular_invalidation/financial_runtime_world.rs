@@ -19,14 +19,16 @@ mod schema;
 #[path = "financial_runtime_world/shared.rs"]
 mod shared;
 
-pub fn assert_financial_host_curve_delivery() {
+pub fn assert_financial_host_curve_delivery(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) {
     use worth_query_host::facade::primary_graph::WorthQueryConditionalClockObservationOutcome;
 
     let mut world = host::FinancialCourtroomWorld::publish_curve();
     let baseline = world
-        .conditional_clock(&world.curve_clock)
+        .conditional_clock(request_execution, &world.curve_clock)
         .unwrap()
-        .observe();
+        .observe(request_execution);
     assert!(matches!(
         baseline,
         WorthQueryConditionalClockObservationOutcome::Accepted(_)
@@ -35,9 +37,9 @@ pub fn assert_financial_host_curve_delivery() {
     world.curve_gate.release();
     world.curve_clock_control.push(2, 11);
     let observed = world
-        .conditional_clock(&world.curve_clock)
+        .conditional_clock(request_execution, &world.curve_clock)
         .unwrap()
-        .observe();
+        .observe(request_execution);
     let mut receipt = match observed {
         WorthQueryConditionalClockObservationOutcome::Accepted(receipt) => receipt,
         WorthQueryConditionalClockObservationOutcome::Duplicate(_) => {
@@ -102,7 +104,9 @@ pub fn assert_financial_host_curve_delivery() {
     assert_eq!(localities, ["partition", "record", "unscoped"].into());
 }
 
-pub fn assert_sibling_curve_record_does_no_query_work() {
+pub fn assert_sibling_curve_record_does_no_query_work(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) {
     use worth_query::facade::domain::{
         bind_primary_runtime_granular_invalidations, maintain_primary_runtime_granular_batch,
         WorthQueryPrimaryGranularMaintenanceOutcome,
@@ -110,16 +114,20 @@ pub fn assert_sibling_curve_record_does_no_query_work() {
     use worth_query_host::facade::primary_graph::WorthQueryConditionalClockObservationOutcome;
 
     let mut host = host::FinancialCourtroomWorld::publish_curve();
-    let mut sibling = query::build_sibling_curve_record(&host);
+    let mut sibling = query::build_sibling_curve_record(request_execution, &host);
     assert!(matches!(
-        host.conditional_clock(&host.curve_clock).unwrap().observe(),
+        host.conditional_clock(request_execution, &host.curve_clock)
+            .unwrap()
+            .observe(request_execution),
         WorthQueryConditionalClockObservationOutcome::Accepted(_)
     ));
     host.amend_curve(2, 4_260, 5_100);
     host.curve_gate.release();
     host.curve_clock_control.push(2, 11);
-    let WorthQueryConditionalClockObservationOutcome::Accepted(mut receipt) =
-        host.conditional_clock(&host.curve_clock).unwrap().observe()
+    let WorthQueryConditionalClockObservationOutcome::Accepted(mut receipt) = host
+        .conditional_clock(request_execution, &host.curve_clock)
+        .unwrap()
+        .observe(request_execution)
     else {
         panic!("the 5y curve change must be observed")
     };
@@ -128,6 +136,7 @@ pub fn assert_sibling_curve_record_does_no_query_work() {
         host.application.granular_invalidation_installation(),
     );
     let outcome = maintain_primary_runtime_granular_batch(
+        request_execution,
         &sibling.live,
         &mut sibling.workspace,
         &binding,
@@ -142,7 +151,9 @@ pub fn assert_sibling_curve_record_does_no_query_work() {
     assert_eq!(no_change.irrelevant_delivery_count(), 3);
 }
 
-pub fn assert_financial_curve_query_patch() {
+pub fn assert_financial_curve_query_patch(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) {
     use worth_query::facade::domain::{
         bind_primary_runtime_granular_invalidations, maintain_primary_runtime_granular_batch,
         WorthQueryPrimaryGranularMaintenanceOutcome,
@@ -150,8 +161,11 @@ pub fn assert_financial_curve_query_patch() {
     use worth_query_host::facade::primary_graph::WorthQueryConditionalClockObservationOutcome;
 
     let mut host = host::FinancialCourtroomWorld::publish_curve();
-    let mut query = query::build_curve(&host);
-    let baseline = host.conditional_clock(&host.curve_clock).unwrap().observe();
+    let mut query = query::build_curve(request_execution, &host);
+    let baseline = host
+        .conditional_clock(request_execution, &host.curve_clock)
+        .unwrap()
+        .observe(request_execution);
     assert!(matches!(
         baseline,
         WorthQueryConditionalClockObservationOutcome::Accepted(_)
@@ -159,8 +173,10 @@ pub fn assert_financial_curve_query_patch() {
     host.amend_curve(2, 4_260, 5_100);
     host.curve_gate.release();
     host.curve_clock_control.push(2, 11);
-    let WorthQueryConditionalClockObservationOutcome::Accepted(mut receipt) =
-        host.conditional_clock(&host.curve_clock).unwrap().observe()
+    let WorthQueryConditionalClockObservationOutcome::Accepted(mut receipt) = host
+        .conditional_clock(request_execution, &host.curve_clock)
+        .unwrap()
+        .observe(request_execution)
     else {
         panic!("the financial curve release must be accepted")
     };
@@ -169,6 +185,7 @@ pub fn assert_financial_curve_query_patch() {
         host.application.granular_invalidation_installation(),
     );
     let outcome = maintain_primary_runtime_granular_batch(
+        request_execution,
         &query.live,
         &mut query.workspace,
         &binding,
@@ -192,7 +209,9 @@ pub fn assert_financial_curve_query_patch() {
     assert_eq!(fields[0].as_uint64(), Ok(&5_120));
 }
 
-pub fn assert_suppressed_quote_has_no_query_patch() {
+pub fn assert_suppressed_quote_has_no_query_patch(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) {
     use worth_query::facade::domain::{
         bind_primary_runtime_granular_invalidations, maintain_primary_runtime_granular_batch,
         WorthQueryPrimaryGranularMaintenanceOutcome,
@@ -200,10 +219,12 @@ pub fn assert_suppressed_quote_has_no_query_patch() {
     use worth_query_host::facade::primary_graph::WorthQueryConditionalClockObservationOutcome;
 
     let mut host = host::FinancialCourtroomWorld::publish_quote();
-    let mut query = query::build_quote(&host);
+    let mut query = query::build_quote(request_execution, &host);
     host.quote_gate.release();
-    let WorthQueryConditionalClockObservationOutcome::Accepted(_) =
-        host.conditional_clock(&host.quote_clock).unwrap().observe()
+    let WorthQueryConditionalClockObservationOutcome::Accepted(_) = host
+        .conditional_clock(request_execution, &host.quote_clock)
+        .unwrap()
+        .observe(request_execution)
     else {
         panic!("the quote baseline must commit its producer output")
     };
@@ -214,14 +235,17 @@ pub fn assert_suppressed_quote_has_no_query_patch() {
 
     host.amend_quote(2, 102, 5_120);
     host.quote_clock_control.push(2, 11);
-    let WorthQueryConditionalClockObservationOutcome::Accepted(mut small) =
-        host.conditional_clock(&host.quote_clock).unwrap().observe()
+    let WorthQueryConditionalClockObservationOutcome::Accepted(mut small) = host
+        .conditional_clock(request_execution, &host.quote_clock)
+        .unwrap()
+        .observe(request_execution)
     else {
         panic!("the small quote move must be observed")
     };
     let small_batch = small.take_granular_invalidation_batch();
     assert_eq!(small_batch.observation().direct_truth_delivery_count(), 1);
     let small = maintain_primary_runtime_granular_batch(
+        request_execution,
         &query.live,
         &mut query.workspace,
         &binding,
@@ -235,7 +259,10 @@ pub fn assert_suppressed_quote_has_no_query_patch() {
 
     host.amend_quote(3, 110, 5_120);
     host.quote_clock_control.push(3, 12);
-    let large_observation = host.conditional_clock(&host.quote_clock).unwrap().observe();
+    let large_observation = host
+        .conditional_clock(request_execution, &host.quote_clock)
+        .unwrap()
+        .observe(request_execution);
     let mut large = match large_observation {
         WorthQueryConditionalClockObservationOutcome::Accepted(receipt) => receipt,
         WorthQueryConditionalClockObservationOutcome::Duplicate(_) => {
@@ -255,6 +282,7 @@ pub fn assert_suppressed_quote_has_no_query_patch() {
         }
     };
     let large = maintain_primary_runtime_granular_batch(
+        request_execution,
         &query.live,
         &mut query.workspace,
         &binding,

@@ -19,6 +19,7 @@ impl WorthQueryObservedApplicationFactBasis {
 
     pub(in crate::domain_computation::primary_graph::provider) fn remains_equal_in(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
     ) -> Result<bool, crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial>
     {
@@ -27,7 +28,7 @@ impl WorthQueryObservedApplicationFactBasis {
             self.product.observation().basis().relational_basis(),
         )
         .map_err(crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::from)?;
-        let fresh = self.fact.remains_equal_in(runtime, &snapshot);
+        let fresh = self.fact.remains_equal_in(execution, runtime, &snapshot);
         crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
         Ok(fresh)
     }
@@ -48,12 +49,13 @@ impl WorthQueryApplicationIdempotencyBasis {
 
     pub(in crate::domain_computation::primary_graph::provider) fn resolve(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         provider: &super::super::WorthQueryPrimaryGraphProvider,
     ) -> Result<
         super::super::WorthQueryProviderIdempotencyResolution,
         super::super::WorthQueryProviderIdempotencyResolutionDenial,
     > {
-        provider.resolve_idempotency_binding_at_product(self.binding, &self.product)
+        provider.resolve_idempotency_binding_at_product(execution, self.binding, &self.product)
     }
 }
 

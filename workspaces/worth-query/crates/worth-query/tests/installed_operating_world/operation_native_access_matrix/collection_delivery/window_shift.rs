@@ -7,9 +7,17 @@ use super::{managed_collection_lease, required_patch};
 
 #[test]
 fn removing_a_tail_anchor_emits_an_explicit_window_shift() {
-    let mut workspace = matrix_workspace("collection-delivery-window-shift", 0, false);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+    let mut workspace = matrix_workspace(
+        request_execution,
+        "collection-delivery-window-shift",
+        0,
+        false,
+    );
     for (row, order) in ["10", "20", "30", "40"].into_iter().enumerate() {
         insert_matrix_value(
+            request_execution,
             &mut workspace,
             row,
             matrix_value_with_order(row as u64, order),
@@ -34,10 +42,12 @@ fn removing_a_tail_anchor_emits_an_explicit_window_shift() {
     let removed_anchor = tail.rows()[0].entity_identity().clone();
     let mut consumer =
         domain::WorthQueryCollectionConsumerWindow::from_bound(collection, tail).unwrap();
-    let lease = managed_collection_lease(&mut workspace);
+    let lease = managed_collection_lease(request_execution, &mut workspace);
     assert!(lease.drain(&mut workspace).unwrap().delivery().is_empty());
 
-    workspace.delete(removed_anchor.clone()).unwrap();
+    workspace
+        .delete(request_execution, removed_anchor.clone())
+        .unwrap();
     let delta = lease
         .consumer_invalidation_delta(lease.drain(&mut workspace).unwrap())
         .unwrap();
@@ -46,7 +56,7 @@ fn removing_a_tail_anchor_emits_an_explicit_window_shift() {
         Err(stop) => panic!("window-shift invalidation stopped: {:?}", stop.kind()),
     };
     consumer.bind_shared_target(&admitted, &workspace).unwrap();
-    let patch = required_patch(&mut consumer, &admitted, &workspace);
+    let patch = required_patch(request_execution, &mut consumer, &admitted, &workspace);
 
     assert!(patch.operations().iter().any(|operation| matches!(
         operation,

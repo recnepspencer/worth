@@ -47,9 +47,12 @@ fn capture_phase() {
         panic!("the first request commits");
     };
     let checkpoint = host
-        .runtime()
-        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
-        .expect("the host captures");
+        .with_host_advancement(|host_phase| {
+            host.runtime()
+                .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
+                .expect("the host captures")
+        })
+        .expect("installed host call opens");
     std::fs::write(directory.join("checkpoint"), checkpoint.bytes()).expect("capture is written");
     let commit = receipt.committed_changes().commit_reference().commit_id.0;
     let ordinal = binding_runtime_ordinal(&host);
@@ -59,6 +62,9 @@ fn capture_phase() {
 
 #[test]
 fn restore_phase() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let Some(directory) = phase_directory() else {
         return;
     };
@@ -81,7 +87,7 @@ fn restore_phase() {
         ordinal,
         "a fresh process mints the capturing process's runtime ordinal again"
     );
-    assert_the_key_resolves_by_its_durable_record(&restored, CommitId(commit));
+    assert_the_key_resolves_by_its_durable_record(request_execution, &restored, CommitId(commit));
 }
 
 fn run_phase(phase: &str, directory: &Path) {

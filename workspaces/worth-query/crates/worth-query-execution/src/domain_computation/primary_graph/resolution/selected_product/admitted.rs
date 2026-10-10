@@ -1,4 +1,7 @@
 //! Fresh principal resolution at the already selected Product/native basis.
+#[path = "admitted/principal_admission_denial.rs"]
+mod principal_admission_denial;
+use principal_admission_denial::unfunded_principal_admission_denial;
 
 use worth_query_installation::facade::WorthQueryPrincipalBindingValidationAdmissionStop;
 use worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind;
@@ -75,6 +78,7 @@ where
         PrincipalIdentityBinding,
     >(
         &'selected self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed_binding: &WorthQueryInstalledPrincipalBinding<
             Schema,
             Binding,
@@ -103,6 +107,7 @@ where
         PrincipalIdentity: 'static,
     {
         let principal = self.resolve_authenticated_principal_admitted_with_validation(
+            execution,
             installed_binding,
             external,
             request,
@@ -128,6 +133,7 @@ where
         PrincipalIdentityBinding,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed_binding: &WorthQueryInstalledPrincipalBinding<
             Schema,
             Binding,
@@ -149,6 +155,7 @@ where
         PrincipalIdentity: 'static,
     {
         self.resolve_authenticated_principal_admitted_with_validation(
+            execution,
             installed_binding,
             external,
             scope,
@@ -166,6 +173,7 @@ where
         PrincipalIdentityBinding,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed_binding: &WorthQueryInstalledPrincipalBinding<
             Schema,
             Binding,
@@ -282,11 +290,12 @@ where
                 binding,
             )
         })?;
-        let evidence = graph.with_runtime_mut(|relational| {
+        let evidence = graph.with_runtime_mut(execution, |relational| {
             let view = relational
                 .read_truth()
                 .project_snapshot_admitted(
                     self.application_basis().snapshot_handle(),
+                    execution,
                     |work, bytes| {
                         admission.admit_read_scratch(bytes)?;
                         admission.charge_external_work(work)
@@ -318,6 +327,7 @@ where
                 binding_identity: graph.binding_identity().clone(),
             };
             let first = super::super::admitted::resolve_at_snapshot(
+                execution,
                 relational,
                 &view,
                 &resolution,
@@ -329,6 +339,7 @@ where
                     BoundedEntityFieldLookupDenialKind::ExactGenerationUnavailable,
                 )) => {
                     ensure_selected_field_indexes_admitted(
+                        execution,
                         relational,
                         self.product().relational_basis(),
                         [Some(layout.index_id), None],
@@ -344,6 +355,7 @@ where
                         ),
                     })?;
                     super::super::admitted::resolve_at_snapshot(
+                        execution,
                         relational,
                         &view,
                         &resolution,
@@ -379,17 +391,4 @@ where
             }
         })
     }
-}
-
-fn unfunded_principal_admission_denial(
-    stop: CompanionPreflightStop,
-) -> WorthQueryPrincipalResolutionDenial {
-    let kind = match stop {
-        CompanionPreflightStop::PreparationMemoryExhausted { .. }
-        | CompanionPreflightStop::PreparationMemoryCounterOverflow => {
-            WorthQueryPrincipalResolutionDenialKind::ProjectionPreparationMemoryExhausted
-        }
-        _ => WorthQueryPrincipalResolutionDenialKind::ProjectionWorkBudgetExceeded,
-    };
-    WorthQueryPrincipalResolutionDenial::new(kind, String::new())
 }

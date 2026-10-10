@@ -15,7 +15,10 @@ mod live_journey {
 
     #[test]
     fn facade_live_completes_declare_context_open_observe_delivery_and_close() {
-        let mut workspace = super::live_workspace();
+        let host_request = crate::test_execution_policy::serial_request();
+        let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+        let mut workspace = super::live_workspace(request_execution);
         let opened = declare("tasks.public", |read| {
             read.local_collection(
                 "Task",
@@ -43,7 +46,7 @@ mod live_journey {
         })
         .expect("live declaration should author")
         .using(current())
-        .open(&mut workspace);
+        .open(request_execution, &mut workspace);
         let handle = match opened {
             worth_query::facade::live::WorthQueryLiveOpenOutcome::Opened(completion) => {
                 completion.into_handle()
@@ -82,7 +85,7 @@ mod live_journey {
         );
         assert_eq!(observation.activation_work().active_lane_join_count(), 0);
         assert_eq!(observation.activation_work().consumer_attachment_count(), 1);
-        super::insert_task(&mut workspace);
+        super::insert_task(request_execution, &mut workspace);
         let delivery = handle
             .drain(&mut workspace)
             .expect("public typed delivery should be observable");
@@ -120,9 +123,12 @@ mod live_journey {
     }
 }
 
-fn insert_task(workspace: &mut WorthQueryWorkspace) {
+fn insert_task(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    workspace: &mut WorthQueryWorkspace,
+) {
     workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(
                 worth_query::facade::runtime::WorthQueryAspectTouch::aspect_field_path(
                     AspectKey::new("identity").expect("identity aspect should build"),
@@ -137,9 +143,11 @@ fn insert_task(workspace: &mut WorthQueryWorkspace) {
         .expect("public live delivery fixture should write through the real runtime");
 }
 
-fn live_workspace() -> WorthQueryWorkspace {
+fn live_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryWorkspace {
     in_memory_test_runtime()
         .with_schema(support::task_backend_schema::task_backend_schema())
-        .workspace("declarative-live-public-dx")
+        .workspace(request_execution, "declarative-live-public-dx")
         .expect("public live test workspace should build")
 }

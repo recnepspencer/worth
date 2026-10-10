@@ -18,11 +18,16 @@ fn direct_report_origin_matches_the_installed_provider_observation() {
 
         let (fixture, probe) =
             direct_admission_fixture_with_report_history_probe(FixtureDisposition::Converged);
-        let started = fixture
-            .admit()
-            .begin_iteration(execution, request("direct-report-origin"))
-            .unwrap_or_else(|_| panic!("direct report origin iteration must start"));
-        let terminal = match started.advance(execution) {
+        let started = {
+            let fixture_state = fixture.admit();
+            let installed_fixture_phase = fixture_state.fixture_phase(&execution);
+            fixture_state.begin_iteration(&installed_fixture_phase, request("direct-report-origin"))
+        }
+        .unwrap_or_else(|_| panic!("direct report origin iteration must start"));
+        let terminal = match {
+            let installed_fixture_phase = started.fixture_phase(execution);
+            started.advance(&installed_fixture_phase)
+        } {
             WorthQueryDirectConvergenceStepOutcome::Completed(
                 WorthQueryDirectConvergenceIterationOutcome::Converged(terminal),
             ) => terminal,
@@ -46,11 +51,20 @@ fn workflow_report_origin_matches_the_installed_provider_observation() {
 
         let (fixture, probe) =
             workflow_admission_fixture_with_report_history_probe(FixtureDisposition::Converged);
-        let started = fixture
-            .admit()
-            .begin_stage_iteration(execution, WORKFLOW_STAGE, request("workflow-report-origin"))
-            .unwrap_or_else(|_| panic!("workflow report origin iteration must start"));
-        let terminal = match started.advance(execution) {
+        let started = {
+            let fixture_state = fixture.admit();
+            let installed_fixture_phase = fixture_state.fixture_phase(&execution);
+            fixture_state.begin_stage_iteration(
+                &installed_fixture_phase,
+                WORKFLOW_STAGE,
+                request("workflow-report-origin"),
+            )
+        }
+        .unwrap_or_else(|_| panic!("workflow report origin iteration must start"));
+        let terminal = match {
+            let installed_fixture_phase = started.fixture_phase(execution);
+            started.advance(&installed_fixture_phase)
+        } {
             WorthQueryWorkflowConvergenceStepOutcome::Completed(
                 WorthQueryWorkflowConvergenceIterationOutcome::Converged(terminal),
             ) => terminal,

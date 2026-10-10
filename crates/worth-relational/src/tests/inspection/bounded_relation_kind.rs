@@ -6,6 +6,9 @@ const RELATION_KIND: crate::facade::identity::KindId = crate::facade::identity::
 
 #[test]
 fn bounded_relation_kind_read_charges_live_slots_and_records() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let source = create_entity(&runtime, "source");
     let first_target = create_entity(&runtime, "first-target");
@@ -19,7 +22,7 @@ fn bounded_relation_kind_read_charges_live_slots_and_records() {
 
     let exact = runtime
         .read_truth()
-        .bounded_visible_relations_of_kind(RELATION_KIND, version, 4)
+        .bounded_visible_relations_of_kind(execution, RELATION_KIND, version, 4)
         .expect("two live relations cost two examined slots and two records");
     assert_eq!(exact.relation_slots_examined(), 2);
     assert_eq!(exact.relation_records_reserved(), 2);
@@ -35,7 +38,7 @@ fn bounded_relation_kind_read_charges_live_slots_and_records() {
 
     let refused = runtime
         .read_truth()
-        .bounded_visible_relations_of_kind(RELATION_KIND, version, 3)
+        .bounded_visible_relations_of_kind(execution, RELATION_KIND, version, 3)
         .expect_err("one unit short must refuse before completing the inventory");
     let crate::facade::runtime::RelationKindTruthReadDenial::WorkLimitExceeded(refused) = refused
     else {
@@ -48,6 +51,9 @@ fn bounded_relation_kind_read_charges_live_slots_and_records() {
 
 #[test]
 fn bounded_relation_kind_read_uses_the_requested_historical_version() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let source = create_entity(&runtime, "source");
     let early_target = create_entity(&runtime, "early-target");
@@ -58,7 +64,7 @@ fn bounded_relation_kind_read_uses_the_requested_historical_version() {
 
     let historical = runtime
         .read_truth()
-        .bounded_visible_relations_of_kind(RELATION_KIND, before, 3)
+        .bounded_visible_relations_of_kind(execution, RELATION_KIND, before, 3)
         .expect("two occupied slots and one historical record cost three units");
     assert_eq!(historical.relation_slots_examined(), 2);
     assert_eq!(historical.relation_records_reserved(), 1);
@@ -66,19 +72,29 @@ fn bounded_relation_kind_read_uses_the_requested_historical_version() {
     assert_ne!(historical.records()[0].relation_id, late);
     let current = runtime
         .read_truth()
-        .bounded_visible_relations_of_kind(RELATION_KIND, runtime.current_version_id(), 4)
+        .bounded_visible_relations_of_kind(
+            execution,
+            RELATION_KIND,
+            runtime.current_version_id(),
+            4,
+        )
         .expect("both live relations are visible now");
     assert_eq!(current.relation_records_reserved(), 2);
     assert_eq!(
         current.into_records(),
-        runtime
-            .read_truth()
-            .visible_relations_of_kind(RELATION_KIND, runtime.current_version_id())
+        runtime.read_truth().visible_relations_of_kind(
+            execution,
+            RELATION_KIND,
+            runtime.current_version_id()
+        )
     );
 }
 
 #[test]
 fn refused_historical_relation_scan_charges_only_examined_slots() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let source = create_entity(&runtime, "source");
     let early_target = create_entity(&runtime, "early-target");
@@ -90,7 +106,7 @@ fn refused_historical_relation_scan_charges_only_examined_slots() {
     runtime.performance_access().reset_counters();
     let refused = runtime
         .read_truth()
-        .bounded_visible_relations_of_kind(RELATION_KIND, before, 1)
+        .bounded_visible_relations_of_kind(execution, RELATION_KIND, before, 1)
         .expect_err("one unit cannot both examine and reserve the early relation");
     let crate::facade::runtime::RelationKindTruthReadDenial::WorkLimitExceeded(refused) = refused
     else {

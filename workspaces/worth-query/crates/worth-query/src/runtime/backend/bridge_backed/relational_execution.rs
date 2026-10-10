@@ -45,12 +45,13 @@ impl WorthQueryBridgeBackedRuntimeBackend {
 
     pub(super) fn execute_backend_write(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         mutation: WorthQueryBackendAdmissibleMutation,
     ) -> Result<WorthQueryMutationReceipt, WorthQueryWorkspaceError> {
         let expected_mutation = mutation.clone();
         let write_execution = match self.relational_runtime.as_mut() {
             Some(owner) => owner
-                .execute_mutation(|runtime| {
+                .execute_mutation(execution, |runtime| {
                     self.write_authority
                         .write(&self.runtime_bridge, Some(runtime), mutation)
                 })
@@ -74,12 +75,13 @@ impl WorthQueryBridgeBackedRuntimeBackend {
 
     pub(super) fn execute_backend_write_batch(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         mutations: Vec<WorthQueryBackendAdmissibleMutation>,
     ) -> Result<Vec<WorthQueryMutationReceipt>, WorthQueryWorkspaceError> {
         let expected_mutations = mutations.clone();
         let write_executions = match self.relational_runtime.as_mut() {
             Some(owner) => owner
-                .execute_mutation(|runtime| {
+                .execute_mutation(execution, |runtime| {
                     self.write_authority
                         .write_batch(&self.runtime_bridge, Some(runtime), mutations)
                 })
@@ -115,6 +117,7 @@ impl WorthQueryBridgeBackedRuntimeBackend {
 
     pub(super) fn execute_backend_intent(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         declaration: &WorthQueryIntentDeclaration,
     ) -> Result<WorthQueryIntentExecution, WorthQueryRuntimeError> {
         let Some(intent_authority) = self.intent_authority.as_mut() else {
@@ -122,7 +125,7 @@ impl WorthQueryBridgeBackedRuntimeBackend {
         };
         match self.relational_runtime.as_mut() {
             Some(owner) => owner
-                .execute_mutation(|runtime| {
+                .execute_mutation(execution, |runtime| {
                     intent_authority.execute_intent(
                         &self.runtime_bridge,
                         Some(runtime),
@@ -139,6 +142,7 @@ impl WorthQueryBridgeBackedRuntimeBackend {
 
     pub(super) fn capture_backend_merge_authority(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         target_branch: &crate::runtime::WorthQueryAdmittedBranchName,
         source_branch: &crate::runtime::WorthQueryAdmittedBranchName,
     ) -> Result<WorthQueryBackendMergeAuthority, WorthQueryWorkspaceError> {
@@ -147,13 +151,14 @@ impl WorthQueryBridgeBackedRuntimeBackend {
                 "bridge-backed runtime has no configured relational merge authority",
             )
         })?;
-        owner.with_runtime(|runtime| {
+        owner.with_runtime(request_execution, |runtime| {
             WorthQueryBackendMergeAuthority::capture(runtime, target_branch, source_branch)
         })
     }
 
     pub(super) fn validate_backend_merge_authority(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         authority: &WorthQueryBackendMergeAuthority,
     ) -> Result<(), WorthQueryWorkspaceError> {
         let owner = self.relational_runtime.as_ref().ok_or_else(|| {
@@ -161,11 +166,14 @@ impl WorthQueryBridgeBackedRuntimeBackend {
                 "bridge-backed runtime has no configured relational merge authority",
             )
         })?;
-        owner.with_runtime(|runtime| authority.validate_against(runtime))
+        owner.with_runtime(request_execution, |runtime| {
+            authority.validate_against(runtime)
+        })
     }
 
     pub(super) fn execute_backend_merge(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         authority: &WorthQueryBackendMergeAuthority,
         declaration: &crate::workflow::LoweredMergeWorkflowDeclaration,
     ) -> Result<
@@ -188,26 +196,19 @@ impl WorthQueryBridgeBackedRuntimeBackend {
             )
         })?;
         owner
-            .execute_merge(declaration)
+            .execute_merge(execution, declaration)
             .map_err(primary_graph_refresh_merge_error)?
     }
 
     pub(super) fn release_backend_merge_snapshot(
         &mut self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     ) {
         self.relational_runtime
             .as_mut()
             .expect("a backend that executed a merge retains its relational runtime")
-            .execute_mutation(|runtime| {
-                runtime
-                    .snapshots()
-                    .release_snapshot(snapshot)
-                    .expect("ordinary merge closes its exact relational snapshot once");
-                Ok::<_, std::convert::Infallible>(())
-            })
-            .expect("snapshot closeout does not invalidate primary-graph indexes")
-            .expect("snapshot closeout is infallible");
+            .release_query_snapshot(snapshot);
     }
 }
 
@@ -240,4 +241,13 @@ fn primary_graph_refresh_merge_error(
         ),
     )
         .into()
+}
+
+fn foreign_phase_workspace_error(
+    cause: worth_query_execution::facade::application_contribution::WorthQueryForeignAdvancementPhase,
+) -> WorthQueryWorkspaceError {
+    WorthQueryWorkspaceError::with_kind(
+        crate::memory_workspace::WorthQueryWorkspaceErrorKind::ForeignPhase(cause),
+        "foreign advancement phase",
+    )
 }

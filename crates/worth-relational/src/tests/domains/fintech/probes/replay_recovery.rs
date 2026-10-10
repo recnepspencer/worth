@@ -25,6 +25,7 @@ pub(crate) struct RecoveryProbe {
 }
 
 pub(crate) fn capture_replay_probe(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &mut super::super::fixture::FintechWorld,
     branch_id: BranchId,
 ) -> ReplayProbe {
@@ -34,15 +35,15 @@ pub(crate) fn capture_replay_probe(
         .latest_commit()
         .map(|commit| commit.commit_id);
     let replay = latest.map(|commit_id| {
-        world
-            .runtime
-            .replay_authority()
-            .replay_commit(RelationalReplayRequest {
+        world.runtime.replay_authority().replay_commit(
+            RelationalReplayRequest {
                 commit_id,
                 branch_id: branch_id.clone(),
                 execution_mode: ReplayExecutionMode::SerialDeterministic,
                 verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-            })
+            },
+            execution,
+        )
     });
     replay_probe_from_outcome(branch_id.0.clone(), replay.as_ref())
 }

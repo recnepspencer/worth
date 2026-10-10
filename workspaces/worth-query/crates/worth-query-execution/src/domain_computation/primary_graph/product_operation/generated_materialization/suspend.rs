@@ -84,6 +84,12 @@ where
         Producer: WorthQueryApplicationProducerBinding<Schema>,
     {
         let (application, product, application_basis) = self.into_parts();
+        let execution_request = phase
+            .execution_request_for(&application.product_runtime)
+            .map_err(|cause| {
+                WorthQueryGeneratedOutputSuspensionFailure::ExecutionDenied(cause.into())
+            })?;
+        let execution = &execution_request;
         drop(application_basis);
         if application
             .installed_producers
@@ -167,15 +173,18 @@ where
                 WorthQueryGeneratedOutputSuspensionDenial::NoGeneratedPayload,
             ));
         }
-        let prepared = application.primary_provider.graph.with_runtime(|runtime| {
-            runtime
-                .owner_component_services()
-                .materialization_port()
-                .prepare_generated_materialization_suspension(
-                    product.relational_basis(),
-                    &generated_entities,
-                )
-        });
+        let prepared = application
+            .primary_provider
+            .graph
+            .with_runtime(execution, |runtime| {
+                runtime
+                    .owner_component_services()
+                    .materialization_port()
+                    .prepare_generated_materialization_suspension(
+                        product.relational_basis(),
+                        &generated_entities,
+                    )
+            });
         let prepared = prepared.map_err(WorthQueryGeneratedOutputSuspensionFailure::Preparation)?;
         let (candidate, completion) = prepared.into_parts();
         let prepared = product
@@ -205,7 +214,9 @@ where
         match prepared.execute(
             phase
                 .execution_request_for(&application.product_runtime)
-                .expect("private progression uses its admitted runtime phase"),
+                .map_err(|cause| {
+                    WorthQueryGeneratedOutputSuspensionFailure::ExecutionDenied(cause.into())
+                })?,
         ) {
             RuntimeWorldPublicationOutcome::Performed(performed) => {
                 let commit = performed

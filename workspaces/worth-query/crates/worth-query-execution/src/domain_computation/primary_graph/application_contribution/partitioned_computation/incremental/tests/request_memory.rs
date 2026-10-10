@@ -30,7 +30,10 @@ fn declared_bytes() -> u64 {
 }
 
 /// A full run under `memory`, leased, then serial.
-fn under(memory: u64) -> [Attempt; 2] {
+fn under(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
+    memory: u64,
+) -> [Attempt; 2] {
     let world = installed_authorization_world(true);
     let installed = installed(StatusRead::Gather(1), sum);
     [
@@ -40,7 +43,16 @@ fn under(memory: u64) -> [Attempt; 2] {
         },
         RuntimeWorldExecutionPlacement::Serial(policy(memory)),
     ]
-    .map(|placement| attempt_placed(&world, &installed, None, &live_scope(), placement))
+    .map(|placement| {
+        attempt_placed(
+            phase_custody,
+            &world,
+            &installed,
+            None,
+            &live_scope(),
+            placement,
+        )
+    })
 }
 
 /// Every refusal here is the request's policy, leased or serial.
@@ -60,11 +72,13 @@ fn refused(requested: u64, admitted: u64) -> Outcome {
 /// routing is refused and nothing is gathered.
 #[test]
 fn one_byte_short_of_the_routing_refuses_before_any_gather() {
-    let routing = routing_bytes();
-    for run in under(routing - 1) {
-        assert_eq!(run.outcome, refused(routing, routing - 1));
-        assert!(run.gathered.is_empty());
-    }
+    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+        let routing = routing_bytes();
+        for run in under(&host_custody, routing - 1) {
+            assert_eq!(run.outcome, refused(routing, routing - 1));
+            assert!(run.gathered.is_empty());
+        }
+    })
 }
 
 /// With the routing held, one byte short of a gather's declared bytes is
@@ -73,21 +87,23 @@ fn one_byte_short_of_the_routing_refuses_before_any_gather() {
 /// before the second, the same way leased and serial.
 #[test]
 fn one_byte_short_of_a_gathers_declared_bytes_refuses_before_that_gather() {
-    let routing = routing_bytes();
-    let declared = declared_bytes();
-    for run in under(routing + declared - 1) {
-        assert_eq!(run.outcome, refused(declared, declared - 1));
-        assert!(run.gathered.is_empty());
-    }
+    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+        let routing = routing_bytes();
+        let declared = declared_bytes();
+        for run in under(&host_custody, routing + declared - 1) {
+            assert_eq!(run.outcome, refused(declared, declared - 1));
+            assert!(run.gathered.is_empty());
+        }
 
-    let [leased, serial] = under(routing + declared);
-    assert_eq!(leased.gathered, serial.gathered);
-    assert_eq!(leased.gathered.len(), 1, "only the first gather fits");
-    assert_eq!(leased.outcome, serial.outcome);
-    assert!(matches!(
-        leased.outcome,
-        Err(WorthQueryPartitionedComputationDenial::Resource(
-            Resource::MemoryLimit { requested, admitted, level: OWN_POLICY }
-        )) if admitted == declared && requested > declared
-    ));
+        let [leased, serial] = under(&host_custody, routing + declared);
+        assert_eq!(leased.gathered, serial.gathered);
+        assert_eq!(leased.gathered.len(), 1, "only the first gather fits");
+        assert_eq!(leased.outcome, serial.outcome);
+        assert!(matches!(
+            leased.outcome,
+            Err(WorthQueryPartitionedComputationDenial::Resource(
+                Resource::MemoryLimit { requested, admitted, level: OWN_POLICY }
+            )) if admitted == declared && requested > declared
+        ));
+    })
 }

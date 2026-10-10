@@ -4,6 +4,9 @@ use crate::tests::support::*;
 
 #[test]
 fn committed_create_references_resolve_their_own_distinct_persisted_meanings() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let partition_id = PartitionId::main();
     let kind_id = KindId(1);
@@ -52,8 +55,8 @@ fn committed_create_references_resolve_their_own_distinct_persisted_meanings() {
 
     let records = runtime
         .read_truth()
-        .project_historical_version(committed.version_id)
-        .all_authoritative_entity_records();
+        .project_historical_version(execution, committed.version_id)
+        .all_authoritative_entity_records(execution);
     let first_record = records
         .iter()
         .find(|record| record.entity_id == first_id)

@@ -22,6 +22,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     Schema,
     Binding,
 >(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &'prepared WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     permission: PreparedApplicationQueryPermission<
         'prepared,
@@ -54,10 +55,10 @@ where
         WorthQueryApplicationProjection<Schema, SourceQuery<Schema, Binding>>,
 {
     let plan = runtime
-        .finish_prepared_application_query_permission(permission, admission)
+        .finish_prepared_application_query_permission(execution, permission, admission)
         .map_err(|stop| query_admission_denied(Binding::IDENTITY, stop))?;
     let read = runtime
-        .execute_application_query_one_shot_admitted(plan, admission)
+        .execute_application_query_one_shot_admitted(execution, plan, admission)
         .map_err(|stop| match stop {
             WorthQueryAdmittedOneShotStop::Admission(stop) => {
                 ready::ready_resource_denial(Binding::IDENTITY, stop)
@@ -76,6 +77,7 @@ where
         retained.source_root(),retained.selected_product_commit().expect("retained Product source").clone(),
         shared.selected().product().observation().selected_commit().clone());
     super::super::super::demand::disclosure::validate_readmitted_on_selected(
+        execution,
         runtime,
         retained,
         principal,

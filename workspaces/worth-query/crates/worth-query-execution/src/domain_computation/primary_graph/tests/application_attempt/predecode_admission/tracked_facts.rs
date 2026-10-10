@@ -17,56 +17,102 @@ use std::cell::Cell;
 fn present_predecode_field_stales_after_a_competing_actual_change() {
     let world = installed_authorization_world(true);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
-    let admission = admitted_operation(&world, &principal, &account, &request);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let admission = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            admitted_operation(&phase, &world, &principal, &account, &request)
+        })
+        .expect("the fixture read owns its installed host call");
     let (_, snapshot, work) = world
-        .invariant
-        .project_admitted_operation(
-            &admission,
-            |reader, root| {
-                let value = reader
-                    .decision_field_with_predecode_admission(
-                        root,
-                        AccountStatus::reference(),
-                        |_, _| Ok::<_, ()>(()),
-                        &|| Ok(()),
-                    )
-                    .unwrap()
-                    .unwrap();
-                assert_eq!(value.as_deref(), Some("open"));
-            },
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
-        .into_parts();
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .invariant
+                .project_admitted_operation(
+                    &phase,
+                    &admission,
+                    |reader, root| {
+                        let value = reader
+                            .decision_field_with_predecode_admission(
+                                root,
+                                AccountStatus::reference(),
+                                |_, _| Ok::<_, ()>(()),
+                                &|| Ok(()),
+                            )
+                            .unwrap()
+                            .unwrap();
+                        assert_eq!(value.as_deref(), Some("open"));
+                    },
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap()
+                .into_parts()
+        })
+        .expect("the fixture read owns its installed host call");
     assert_eq!(work.field_reads(), 1);
     let reads = world
         .application
-        .begin_projected_application_read_attempt(
-            admission,
-            snapshot,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    let mut effects = reads
-        .complete_projected_dependencies(
-            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
-        .begin_effect_program();
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .begin_projected_application_read_attempt(
+                    &phase,
+                    admission,
+                    snapshot,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
+    let mut effects = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            reads
+                .complete_projected_dependencies(
+                    &phase,
+                    crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap()
+                .begin_effect_program()
+        })
+        .expect("the fixture read owns its installed host call");
     let target = effects.existing_entity(&account).unwrap();
     effects
         .write_field(&target, AccountStatus::reference(), "loser".to_owned())
         .unwrap();
     let loser = effects.finish().unwrap();
-    let winner = admitted_program_with_expected_status(
-        &world,
-        &principal,
-        &account,
-        &request,
-        ("open", "winner"),
-    );
+    let winner = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            admitted_program_with_expected_status(
+                &phase,
+                &world,
+                &principal,
+                &account,
+                &request,
+                ("open", "winner"),
+            )
+        })
+        .expect("the fixture read owns its installed host call");
     assert!(matches!(
         world.application.compare_and_commit_application(
             winner,
@@ -89,9 +135,21 @@ fn present_predecode_field_stales_after_a_competing_actual_change() {
 fn absence_skips_admission_and_stales_after_a_competing_presence_change() {
     let world = installed_authorization_world(true);
     let called = Cell::new(false);
-    let loser = optional_program(&world, "loser", &called);
+    let loser = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            optional_program(&phase, &world, "loser", &called)
+        })
+        .expect("the fixture read owns its installed host call");
     assert!(!called.get(), "absence never invokes scalar admission");
-    let winner = optional_program(&world, "winner", &called);
+    let winner = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            optional_program(&phase, &world, "winner", &called)
+        })
+        .expect("the fixture read owns its installed host call");
     assert!(matches!(
         world.application.compare_and_commit_application(
             winner,
@@ -111,6 +169,7 @@ fn absence_skips_admission_and_stales_after_a_competing_presence_change() {
 }
 
 fn optional_program(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     world: &AuthorizationWorld,
     note: &str,
     called: &Cell<bool>,
@@ -121,16 +180,22 @@ fn optional_program(
     Account,
 > {
     let request = live_scope();
-    let principal = authenticated_principal(world, &request);
-    let account = resolved_account(world, "unrelated", &request);
+    let principal = authenticated_principal(&(phase_custody).test_host_request(), world, &request);
+    let account = resolved_account(
+        &(phase_custody).test_host_request(),
+        world,
+        "unrelated",
+        &request,
+    );
     let operation = world
         .application
         .installed_schema()
         .installed_operation(PatchAccountDraftOperation::reference())
         .unwrap();
     let admission = world
-        .selected_product()
+        .selected_product(&(phase_custody).test_host_request())
         .authorize_operation(
+            phase_custody,
             &principal,
             &account,
             &operation,
@@ -141,6 +206,7 @@ fn optional_program(
     let (_, snapshot, _) = world
         .invariant
         .project_admitted_operation(
+            phase_custody,
             &admission,
             |reader, root| {
                 let value = reader
@@ -164,6 +230,7 @@ fn optional_program(
     let reads = world
         .application
         .begin_projected_application_read_attempt(
+            phase_custody,
             admission,
             snapshot,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -171,6 +238,7 @@ fn optional_program(
         .unwrap();
     let mut effects = reads
         .complete_projected_dependencies(
+            phase_custody,
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap()

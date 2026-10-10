@@ -50,6 +50,7 @@ impl WorthQueryProgramActivationSeed {
 }
 
 pub(super) fn commit_initial_program_activation(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     graph: &WorthQueryPrimaryGraph,
     seed: WorthQueryProgramActivationSeed,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
@@ -59,45 +60,50 @@ pub(super) fn commit_initial_program_activation(
         kind_id: layout.entity_kind,
         client_key: ClientKey::raw(ACTIVATION_CLIENT_KEY),
     };
-    let identity = graph.integration_handle().with_runtime_mut(|runtime| {
-        let main_identity = runtime.main_branch_identity();
-        let options = runtime
-            .admit_branch_basis(&main_identity)
-            .map_err(map_bootstrap_basis_denial)?;
-        let mut transaction = runtime
-            .begin_branch_transaction(
-                &options,
-                worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
-            )
-            .map_err(map_bootstrap_transaction_admission_denial)?;
-        transaction
-            .push_batch(
-                WorkerIntentBatch::new("application-program-activation").push(
-                    MutationIntent::Create(CreateIntent::Entity(EntitySpec {
-                        partition_id: created.partition_id,
-                        kind_id: created.kind_id,
-                        client_key: created.client_key.clone(),
-                        fields: AspectFieldPatch::from(BTreeMap::from([(
-                            layout.program_revision_locator.clone(),
-                            seed.rendering.clone(),
-                        )])),
-                    })),
-                ),
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .map_err(map_bootstrap_staging_denial)?;
-        let committed = transaction
-            .commit(
+    let identity = graph
+        .integration_handle()
+        .with_runtime_mut(execution, |runtime| {
+            let main_identity = runtime.main_branch_identity();
+            let options = runtime
+                .admit_branch_basis(&main_identity)
+                .map_err(map_bootstrap_basis_denial)?;
+            let mut transaction = runtime
+                .begin_branch_transaction(
+                    &options,
+                    worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+                )
+                .map_err(map_bootstrap_transaction_admission_denial)?;
+            transaction
+                .push_batch(
+                    WorkerIntentBatch::new("application-program-activation").push(
+                        MutationIntent::Create(CreateIntent::Entity(EntitySpec {
+                            partition_id: created.partition_id,
+                            kind_id: created.kind_id,
+                            client_key: created.client_key.clone(),
+                            fields: AspectFieldPatch::from(BTreeMap::from([(
+                                layout.program_revision_locator.clone(),
+                                seed.rendering.clone(),
+                            )])),
+                        })),
+                    ),
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .map_err(map_bootstrap_staging_denial)?;
+            let committed = transaction
+                .commit(
+                    runtime,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .map_err(map_bootstrap_commit_denial)?;
+            let identity = committed.created_entity(&created);
+            crate::relational_snapshot_release::release_query_snapshot(
                 runtime,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .map_err(map_bootstrap_commit_denial)?;
-        let identity = committed.created_entity(&created);
-        crate::relational_snapshot_release::release_query_snapshot(runtime, &committed.snapshot);
-        identity.ok_or_else(|| {
-            activation_denial("Relational bound no identity to the program activation record")
-        })
-    })?;
+                &committed.snapshot,
+            );
+            identity.ok_or_else(|| {
+                activation_denial("Relational bound no identity to the program activation record")
+            })
+        })?;
     seed.cell.publish(identity).map_err(|published| {
         activation_denial(format!(
             "program activation was already published as {}:{}:{}",

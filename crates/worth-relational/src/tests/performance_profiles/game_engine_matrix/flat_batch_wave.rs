@@ -1,6 +1,9 @@
 use super::*;
 
-pub(super) fn certify_flat_entity_batch_region_wave(suite: &'static str) {
+pub(super) fn certify_flat_entity_batch_region_wave(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    suite: &'static str,
+) {
     let flat_batch_wave_samples =
         capture_perf_samples(suite, "flat_entity_batch_region_wave", || {
             let mut runtime =
@@ -101,7 +104,11 @@ pub(super) fn certify_flat_entity_batch_region_wave(suite: &'static str) {
                         .read_truth()
                         .plan_query_packet(&snapshot, explicit_packet)
                         .expect("scene batch explicit plan"),
+                    execution,
+                    crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                 )
+                .expect("request remains live")
+                .map(|read| read.outcome)
                 .expect("scene batch explicit outcome");
             let explicit_micros = explicit_started_at.elapsed().as_micros();
             assert!(runtime

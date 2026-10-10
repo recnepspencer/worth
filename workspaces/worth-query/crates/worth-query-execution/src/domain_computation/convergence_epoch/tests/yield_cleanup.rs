@@ -221,7 +221,7 @@ fn same_stage_workflow_pending_and_complete_peers_do_not_cross_pair() {
 }
 
 fn workflow_yield_with_pending_artifact(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     call_identity: &str,
 ) -> (
@@ -243,10 +243,19 @@ fn workflow_yield_with_pending_artifact(
     let epoch = admitted
         .start()
         .unwrap_or_else(|_| panic!("artifact workflow convergence must start"));
-    let started = epoch
-        .begin_stage_iteration(execution, WORKFLOW_STAGE, call(call_identity))
-        .unwrap_or_else(|_| panic!("artifact workflow iteration must start"));
-    let paused = match started.advance(execution) {
+    let started = {
+        let installed_fixture_phase = epoch.fixture_phase(execution);
+        epoch.begin_stage_iteration(
+            &installed_fixture_phase,
+            WORKFLOW_STAGE,
+            call(call_identity),
+        )
+    }
+    .unwrap_or_else(|_| panic!("artifact workflow iteration must start"));
+    let paused = match {
+        let installed_fixture_phase = started.fixture_phase(execution);
+        started.advance(&installed_fixture_phase)
+    } {
         WorthQueryWorkflowConvergenceStepOutcome::Continue(paused) => paused,
         _ => panic!("artifact workflow must reach a yield safe point"),
     };
@@ -261,7 +270,7 @@ fn workflow_yield_with_pending_artifact(
 }
 
 fn direct_yield(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     call_identity: &str,
 ) -> WorthQueryYieldedDirectConvergenceIteration {
     direct_yield_with_disposition(
@@ -272,7 +281,7 @@ fn direct_yield(
 }
 
 fn direct_yield_with_disposition(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     disposition: FixtureDisposition,
     call_identity: &str,
@@ -290,10 +299,15 @@ fn direct_yield_with_disposition(
         .admit_direct_convergence_epoch(&operation, contract, managed, graph)
         .unwrap_or_else(|_| panic!("direct convergence authorities must admit"))
         .start();
-    let started = epoch
-        .begin_iteration(execution, call(call_identity))
-        .unwrap_or_else(|_| panic!("direct convergence iteration must start"));
-    let paused = match started.advance(execution) {
+    let started = {
+        let installed_fixture_phase = epoch.fixture_phase(execution);
+        epoch.begin_iteration(&installed_fixture_phase, call(call_identity))
+    }
+    .unwrap_or_else(|_| panic!("direct convergence iteration must start"));
+    let paused = match {
+        let installed_fixture_phase = started.fixture_phase(execution);
+        started.advance(&installed_fixture_phase)
+    } {
         WorthQueryDirectConvergenceStepOutcome::Continue(paused) => paused,
         _ => panic!("direct yield fixture must reach a safe point"),
     };
@@ -304,7 +318,7 @@ fn direct_yield_with_disposition(
 }
 
 fn workflow_yield(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     call_identity: &str,
 ) -> WorthQueryYieldedWorkflowConvergenceIteration {
     workflow_yield_with_disposition(
@@ -315,7 +329,7 @@ fn workflow_yield(
 }
 
 fn workflow_yield_with_disposition(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     disposition: FixtureDisposition,
     call_identity: &str,
@@ -334,10 +348,19 @@ fn workflow_yield_with_disposition(
     let epoch = admitted
         .start()
         .unwrap_or_else(|_| panic!("workflow convergence epoch must start"));
-    let started = epoch
-        .begin_stage_iteration(execution, WORKFLOW_STAGE, call(call_identity))
-        .unwrap_or_else(|_| panic!("workflow convergence iteration must start"));
-    let paused = match started.advance(execution) {
+    let started = {
+        let installed_fixture_phase = epoch.fixture_phase(execution);
+        epoch.begin_stage_iteration(
+            &installed_fixture_phase,
+            WORKFLOW_STAGE,
+            call(call_identity),
+        )
+    }
+    .unwrap_or_else(|_| panic!("workflow convergence iteration must start"));
+    let paused = match {
+        let installed_fixture_phase = started.fixture_phase(execution);
+        started.advance(&installed_fixture_phase)
+    } {
         WorthQueryWorkflowConvergenceStepOutcome::Continue(paused) => paused,
         _ => panic!("workflow yield fixture must reach a safe point"),
     };

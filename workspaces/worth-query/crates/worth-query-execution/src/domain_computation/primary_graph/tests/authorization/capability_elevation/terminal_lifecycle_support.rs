@@ -46,6 +46,7 @@ pub(super) type ReviewReads = WorthQueryCompleteApplicationReadSet<
 >;
 
 pub(super) fn close_access(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     world: &World,
     principal: &Authenticated,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
@@ -58,10 +59,17 @@ pub(super) fn close_access(
     >,
     WorthQueryOperationAuthorizationDenial,
 > {
-    close_access_with_input(world, principal, request, close_input())
+    close_access_with_input(
+        &(phase_custody).test_host_request(),
+        world,
+        principal,
+        request,
+        close_input(),
+    )
 }
 
 pub(super) fn close_access_with_input(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     world: &World,
     principal: &Authenticated,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
@@ -84,11 +92,18 @@ pub(super) fn close_access_with_input(
         )
         .unwrap();
     world
-        .selected_product()
-        .admit_capability_access(principal, &capability, input, request)
+        .selected_product(phase_custody)
+        .admit_capability_access(
+            &phase_custody.phase_for_application(&world.application),
+            principal,
+            &capability,
+            input,
+            request,
+        )
 }
 
 pub(super) fn review_access(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     world: &World,
     principal: &Authenticated,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
@@ -101,10 +116,17 @@ pub(super) fn review_access(
     >,
     WorthQueryOperationAuthorizationDenial,
 > {
-    review_access_with_input(world, principal, request, review_input())
+    review_access_with_input(
+        &(phase_custody).test_host_request(),
+        world,
+        principal,
+        request,
+        review_input(),
+    )
 }
 
 pub(super) fn review_access_with_input(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     world: &World,
     principal: &Authenticated,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
@@ -127,11 +149,18 @@ pub(super) fn review_access_with_input(
         )
         .unwrap();
     world
-        .selected_product()
-        .admit_capability_access(principal, &capability, input, request)
+        .selected_product(phase_custody)
+        .admit_capability_access(
+            &phase_custody.phase_for_application(&world.application),
+            principal,
+            &capability,
+            input,
+            request,
+        )
 }
 
 pub(super) fn materialize_close(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     world: &World,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     approved: WorthQueryApprovedElevation,
@@ -141,65 +170,32 @@ pub(super) fn materialize_close(
     CloseElevationInput,
     Account,
 > {
-    close_reads(world, request, approved)
-        .materialize_elevation_close_program()
-        .unwrap()
+    close_reads(
+        &(phase_custody).test_host_request(),
+        world,
+        request,
+        approved,
+    )
+    .materialize_elevation_close_program()
+    .unwrap()
 }
 
-pub(super) fn close_reads(
-    world: &World,
-    request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
-    approved: WorthQueryApprovedElevation,
-) -> CloseReads {
-    let closer = super::approval_transition::authenticated(world, "bob", request);
-    let access = close_access(world, &closer, request).unwrap();
-    let operation = world
-        .application
-        .installed_schema()
-        .installed_operation(RevokeCapabilityElevationOperation::reference())
-        .unwrap();
-    let admission = world
-        .application
-        .authorize_elevation_close(approved, access, &operation, Default::default())
-        .unwrap();
-    let (_, projection, _) = world
-        .invariant
-        .project_admitted_operation(
-            &admission,
-            |reader, _| {
-                seal_lifecycle_facts(reader);
-                let elevation = reader
-                    .resolve_entity(
-                        CapabilityElevationIdentity::reference(),
-                        "elevation-2".to_owned(),
-                    )
-                    .unwrap();
-                reader
-                    .require_decision_field(&elevation, CapabilityElevationClosedAt::reference())
-                    .unwrap();
-            },
-            AllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
-        .into_parts();
-    world
-        .application
-        .begin_projected_application_read_attempt(
-            admission,
-            projection,
-            AllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
-        .complete_projected_dependencies(ExecutionAllocationPolicy::SystemAllocation)
-        .unwrap()
-}
+#[path = "terminal_lifecycle_support/close_reads.rs"]
+mod close_reads;
+pub(super) use close_reads::close_reads;
 
 pub(super) fn close_exact(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     world: &World,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     approved: WorthQueryApprovedElevation,
 ) -> WorthQueryMandatoryReview {
-    let program = materialize_close(world, request, approved);
+    let program = materialize_close(
+        &(phase_custody).test_host_request(),
+        world,
+        request,
+        approved,
+    );
     match world
         .application
         .compare_and_commit_elevation_close(program, idempotency(173, 173))
@@ -210,6 +206,7 @@ pub(super) fn close_exact(
 }
 
 pub(super) fn materialize_review(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     world: &World,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     mandatory: WorthQueryMandatoryReview,
@@ -219,18 +216,25 @@ pub(super) fn materialize_review(
     CompleteElevationReviewInput,
     Account,
 > {
-    review_reads(world, request, mandatory)
-        .materialize_mandatory_review_program()
-        .unwrap()
+    review_reads(
+        &(phase_custody).test_host_request(),
+        world,
+        request,
+        mandatory,
+    )
+    .materialize_mandatory_review_program()
+    .unwrap()
 }
 
 pub(super) fn review_reads(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     world: &World,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     mandatory: WorthQueryMandatoryReview,
 ) -> ReviewReads {
-    let reviewer = super::approval_transition::authenticated(world, "carol", request);
-    let access = review_access(world, &reviewer, request).unwrap();
+    let reviewer =
+        super::approval_transition::authenticated(&phase_custody, world, "carol", request);
+    let access = review_access(&phase_custody, world, &reviewer, request).unwrap();
     let operation = world
         .application
         .installed_schema()
@@ -238,11 +242,18 @@ pub(super) fn review_reads(
         .unwrap();
     let admission = world
         .application
-        .authorize_mandatory_review(mandatory, access, &operation, Default::default())
+        .authorize_mandatory_review(
+            &phase_custody.phase_for_application(&world.application),
+            mandatory,
+            access,
+            &operation,
+            Default::default(),
+        )
         .unwrap();
     let (_, projection, _) = world
         .invariant
         .project_admitted_operation(
+            &phase_custody.phase_for_application(&world.application),
             &admission,
             |reader, _| {
                 seal_lifecycle_facts(reader);
@@ -260,21 +271,26 @@ pub(super) fn review_reads(
     world
         .application
         .begin_projected_application_read_attempt(
+            &phase_custody.phase_for_application(&world.application),
             admission,
             projection,
             AllocationPolicy::SystemAllocation,
         )
         .unwrap()
-        .complete_projected_dependencies(ExecutionAllocationPolicy::SystemAllocation)
+        .complete_projected_dependencies(
+            &phase_custody.phase_for_application(&world.application),
+            ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
 }
 
 pub(super) fn review_exact(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     world: &World,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     mandatory: WorthQueryMandatoryReview,
 ) -> WorthQueryReviewedElevation {
-    let program = materialize_review(world, request, mandatory);
+    let program = materialize_review(phase_custody, world, request, mandatory);
     match world
         .application
         .compare_and_commit_mandatory_review(program, idempotency(174, 174))

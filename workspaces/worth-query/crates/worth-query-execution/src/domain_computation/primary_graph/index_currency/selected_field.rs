@@ -20,6 +20,7 @@ pub(crate) enum SelectedFieldIndexAdmissionStop {
 /// principal/scope request. Every cold native action uses the caller's
 /// original cumulative admission and the native maintenance owner.
 pub(crate) fn ensure_selected_field_indexes_admitted(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     basis: &AdmittedRelationalBranchBasis,
     indexes: [Option<DerivedIndexId>; 2],
@@ -85,6 +86,7 @@ pub(crate) fn ensure_selected_field_indexes_admitted(
             },
             basis,
             super::super::index_maintenance_budget::cold_index_reconstruction_budget(),
+            execution,
             |work, bytes| {
                 admission.admit_read_scratch(bytes)?;
                 admission.charge_external_work(work)

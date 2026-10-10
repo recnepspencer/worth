@@ -16,6 +16,7 @@ impl IndexAuthority<'_> {
         request: DerivedIndexBuildRequest,
         basis: &AdmittedRelationalBranchBasis,
         budget: DerivedIndexMaintenanceBudget,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         mut prepare: impl FnMut(u64, u64) -> Result<(), Stop>,
     ) -> Result<DerivedIndexMaintenanceOutcome, DerivedIndexMaintenanceAdmissionStop<Stop>> {
         let mut refused = None;
@@ -31,7 +32,7 @@ impl IndexAuthority<'_> {
             };
             let mut work = MaintenanceWork::admitted(budget, &mut relay);
             let prepared = self
-                .prepare_basis_refresh(&request, basis, None, &mut work)
+                .prepare_basis_refresh(&request, basis, None, &mut work, execution)
                 .map_err(|kind| work.deny(kind))?;
             // A caught internal native error cannot bypass a caller refusal.
             work.prepare(0, 0).map_err(|kind| work.deny(kind))?;

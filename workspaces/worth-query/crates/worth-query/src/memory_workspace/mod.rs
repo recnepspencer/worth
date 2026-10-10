@@ -352,3 +352,17 @@ pub struct WorthQueryMemoryWorkspace {
         crate::runtime::native_aspect_contracts::WorthQueryNativeAspectContractRegistry,
     next_client_key: u64,
 }
+
+impl
+    From<worth_query_execution::facade::application_contribution::WorthQueryForeignAdvancementPhase>
+    for WorthQueryWorkspaceError
+{
+    fn from(
+        cause: worth_query_execution::facade::application_contribution::WorthQueryForeignAdvancementPhase,
+    ) -> Self {
+        Self::with_kind(
+            WorthQueryWorkspaceErrorKind::ForeignPhase(cause),
+            "foreign advancement phase",
+        )
+    }
+}

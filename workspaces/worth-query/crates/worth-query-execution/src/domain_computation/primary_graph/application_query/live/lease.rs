@@ -130,16 +130,31 @@ where
         self.queue.buffered_cause_count()
     }
 
+    #[cfg(test)]
+    pub(crate) fn fixture_phase<'scope>(
+        &self,
+        host: &crate::domain_computation::primary_graph::TestHostRequest<'scope>,
+    ) -> crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'scope> {
+        host.phase_for_application(self.runtime)
+    }
+
     pub fn next(
         &mut self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
         request: &WorthQueryRequestScope,
     ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
+        let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
+            Ok(request) => request,
+            Err(_) => return WorthQueryApplicationLiveOutcome::AuthorizationDenied(Box::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::ForeignPhase, "phase-custody"))),
+        };
+        let execution = &phase_request;
+
         if let Some(outcome) = self.observe_interruption(request) {
             return outcome;
         }
         self.controls.replace_request(request.clone());
-        if let Err(outcome) = self.admit_delivery_progress(principal) {
+        if let Err(outcome) = self.admit_delivery_progress(execution, principal) {
             return outcome;
         }
         let fill = {
@@ -195,6 +210,7 @@ where
                 Err(_) => return WorthQueryApplicationLiveOutcome::Unavailable,
             };
         self.project_front(
+            execution,
             principal,
             publication.clone(),
             product.retained_clone(),
@@ -224,6 +240,7 @@ where
 
     fn project_front(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
         publication: crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
         product: crate::basis::WorthQueryProductObservationLease,
@@ -232,7 +249,7 @@ where
         let access = WorthQueryApplicationQueryAccessContext::new(principal, &self.scope);
         let application_basis = match self
             .runtime
-            .retain_product_application_basis(product.observation())
+            .retain_product_application_basis(execution, product.observation())
         {
             Ok(basis) => basis,
             Err(_) => return WorthQueryApplicationLiveOutcome::Unavailable,
@@ -249,6 +266,7 @@ where
             super::super::disclosure::WorthQueryApplicationQueryGovernance::Public,
         );
         let mut plan = match self.runtime.readmit_application_query_live(
+            execution,
             &self.query,
             &access,
             governance,
@@ -258,7 +276,7 @@ where
             Ok(plan) => plan,
             Err(denial) => return self.handle_admission_denial(denial),
         };
-        if let Err(denial) = refresh_governed_authorization(self.runtime, &mut plan) {
+        if let Err(denial) = refresh_governed_authorization(execution, self.runtime, &mut plan) {
             let _ = plan.basis.release();
             return self.handle_read_denial(denial);
         }
@@ -272,8 +290,15 @@ where
                 .max_inline_result_bytes(),
         );
         let (raw, authorization_work, read_proof) =
-            match execute_authorized_read(self.runtime, &plan, |runtime, graph, plan| {
-                read_live_target(runtime, graph, plan, target_identity, result_buffer)
+            match execute_authorized_read(execution, self.runtime, &plan, |runtime, graph, plan| {
+                read_live_target(
+                    runtime,
+                    execution,
+                    graph,
+                    plan,
+                    target_identity,
+                    result_buffer,
+                )
             }) {
                 Ok(raw) => raw,
                 Err(denial) => {

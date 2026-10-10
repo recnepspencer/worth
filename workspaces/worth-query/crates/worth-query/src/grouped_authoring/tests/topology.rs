@@ -16,8 +16,11 @@ use super::support::{admitted_handle, GeometryInput, RequiredIntentGeometryInput
 
 #[test]
 fn grouped_wrong_world_projects_to_binding_topology() {
-    let left = admitted_handle("main");
-    let right = admitted_handle("other");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let left = admitted_handle(request_execution, "main");
+    let right = admitted_handle(request_execution, "other");
     let declaration = match worth_query_grouped_declaration_checked_on_handle(
         &left,
         left.geometry_helpers()
@@ -59,8 +62,11 @@ fn grouped_wrong_world_projects_to_binding_topology() {
 
 #[test]
 fn grouped_proof_into_checked_preserves_alignment_stop() {
-    let left = admitted_handle("main");
-    let right = admitted_handle("other");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let left = admitted_handle(request_execution, "main");
+    let right = admitted_handle(request_execution, "other");
     let declaration = match worth_query_grouped_declaration_checked_on_handle(
         &left,
         left.geometry_helpers()
@@ -93,7 +99,10 @@ fn grouped_proof_into_checked_preserves_alignment_stop() {
 
 #[test]
 fn grouped_proof_member_stop_short_circuits_after_first_failing_member() {
-    let handle = admitted_handle("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "main");
     let declaration = match worth_query_grouped_declaration_checked_on_handle(
         &handle,
         WorthQueryGroupedDeclarationInput::local_neighborhood(RequiredIntentGeometryInput::new(
@@ -125,7 +134,10 @@ fn grouped_proof_member_stop_short_circuits_after_first_failing_member() {
 
 #[test]
 fn grouped_support_report_marks_unsupported_shared_claims() {
-    let handle = admitted_handle("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "main");
     let declaration = match worth_query_grouped_declaration_checked_on_handle(
         &handle,
         WorthQueryGroupedDeclarationInput::local_neighborhood(RequiredIntentGeometryInput::new(

@@ -10,12 +10,15 @@ use crate::runtime::{
 
 #[test]
 fn compose_read_executes_local_traversal_detail_with_attached_receipt() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.traversal")
         .expect("read-backed runtime should open a workspace");
 
     let result = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.local_detail(
                 "user",
                 manager_schema(),
@@ -90,12 +93,15 @@ fn compose_read_executes_local_traversal_detail_with_attached_receipt() {
 
 #[test]
 fn compose_read_executes_operator_owned_direct_edge_detail() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.operator-direct-edge-detail")
         .expect("read-backed runtime should open a workspace");
 
     let result = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.local_direct_edge_detail(
                 "user",
                 manager_schema(),
@@ -148,12 +154,15 @@ fn compose_read_executes_operator_owned_direct_edge_detail() {
 
 #[test]
 fn compose_read_executes_operator_owned_bounded_ancestor_detail() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.operator-bounded-ancestor-detail")
         .expect("read-backed runtime should open a workspace");
 
     let result = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.anchored_bounded_ancestor_detail(
                 "user",
                 expanded_manager_schema(),
@@ -207,12 +216,15 @@ fn compose_read_executes_operator_owned_bounded_ancestor_detail() {
 
 #[test]
 fn compose_read_marks_non_traversal_detail_as_not_requiring_relationship_proof() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.no-traversal")
         .expect("read-backed runtime should open a workspace");
 
     let result = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.local_detail(
                 "user",
                 manager_schema(),
@@ -238,12 +250,15 @@ fn compose_read_marks_non_traversal_detail_as_not_requiring_relationship_proof()
 
 #[test]
 fn compose_read_reports_typed_invalid_root_denial() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.invalid-root")
         .expect("read-backed runtime should open a workspace");
 
     let error = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.local_collection(
                 "",
                 manager_schema(),
@@ -274,12 +289,15 @@ fn compose_read_reports_typed_invalid_root_denial() {
 
 #[test]
 fn compose_read_denies_local_detail_when_query_classifies_as_broad_search() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.local-broad-mismatch")
         .expect("read-backed runtime should open a workspace");
 
     let error = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.local_detail(
                 "user",
                 searchable_manager_schema(),

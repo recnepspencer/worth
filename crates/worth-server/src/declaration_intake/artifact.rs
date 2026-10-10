@@ -170,10 +170,12 @@ impl WorthServerAdmittedDirectDeclaration {
         &self,
     ) -> Result<WorthQueryLiveReadResult, WorthQueryRuntimeError> {
         self.with_workspace_mut(|workspace| {
-            let live_target =
-                workspace.resolve_live_artifact_target(self.declaration_binding_label())?;
-            workspace.read_live_target(&live_target)
-        })
+            workspace.with_execution_request_mut(|execution, workspace| {
+                let live_target =
+                    workspace.resolve_live_artifact_target(self.declaration_binding_label())?;
+                workspace.read_live_target(execution, &live_target)
+            })
+        })?
     }
 
     pub(crate) fn snapshot_named_live_state(
@@ -190,10 +192,14 @@ impl WorthServerAdmittedDirectDeclaration {
         &self,
     ) -> Result<WorthQueryUnifiedInspectionResult, WorthQueryRuntimeError> {
         self.with_workspace(|workspace| {
-            let live_target =
-                workspace.resolve_live_artifact_target(self.declaration_binding_label())?;
-            workspace.inspections()?.inspect_live_target(&live_target)
-        })
+            workspace.with_execution_request(|execution| {
+                let live_target =
+                    workspace.resolve_live_artifact_target(self.declaration_binding_label())?;
+                workspace
+                    .inspections()?
+                    .inspect_live_target(execution, &live_target)
+            })
+        })?
     }
 
     pub(crate) fn subscription_basis_digest(&self) -> Result<String, WorthQueryRuntimeError> {
@@ -209,14 +215,22 @@ impl WorthServerAdmittedDirectDeclaration {
         request: &WorthServerDirectProjectionRequest,
     ) -> Result<ProjectionAuthorityOutcome, WorthServerNamedLiveProjectionExecutionError> {
         let live_read = self.with_workspace_mut(|workspace| {
-            let live_target = workspace
-                .resolve_live_artifact_target(self.declaration_binding_label())
+            workspace
+                .with_execution_request_mut(|execution, workspace| {
+                    let live_target = workspace
+                        .resolve_live_artifact_target(self.declaration_binding_label())
+                        .map_err(|error| {
+                            WorthServerNamedLiveProjectionExecutionError::Runtime(Box::new(error))
+                        })?;
+                    workspace
+                        .read_live_target(execution, &live_target)
+                        .map_err(|error| {
+                            WorthServerNamedLiveProjectionExecutionError::Runtime(Box::new(error))
+                        })
+                })
                 .map_err(|error| {
                     WorthServerNamedLiveProjectionExecutionError::Runtime(Box::new(error))
-                })?;
-            workspace.read_live_target(&live_target).map_err(|error| {
-                WorthServerNamedLiveProjectionExecutionError::Runtime(Box::new(error))
-            })
+                })?
         })?;
         live_read
             .consume_projection_authority_with_binding(

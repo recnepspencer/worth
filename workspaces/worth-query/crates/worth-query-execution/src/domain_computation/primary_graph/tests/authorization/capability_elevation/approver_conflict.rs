@@ -17,57 +17,93 @@ use crate::domain_computation::primary_graph::{
 
 #[test]
 fn exact_conflicted_approver_cannot_open_elevation_authority() {
-    let (world, request, approved) = super::approval_transition::exact_approved_world();
-    world.authorization_time.script([time(100)]);
-    let principal = authenticated_principal(&world, &request);
-    add_approver_conflict(&world);
+    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+        let (world, request, approved) =
+            super::approval_transition::exact_approved_world(&host_custody);
+        world.authorization_time.script([time(100)]);
+        let principal = authenticated_principal(&host_custody, &world, &request);
+        add_approver_conflict(
+            &host_custody,
+            &host_custody.borrowed_request_for_test(),
+            &world,
+        );
 
-    let Err(denial) = super::admit(&world, &approved, &principal, &request, Some("elevation-2"))
-    else {
-        panic!("a conflict held by the exact approver must deny elevation admission");
-    };
+        let Err(denial) = super::admit(
+            &host_custody,
+            &world,
+            &approved,
+            &principal,
+            &request,
+            Some("elevation-2"),
+        ) else {
+            panic!("a conflict held by the exact approver must deny elevation admission");
+        };
 
-    assert_eq!(
-        denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::ElevationApproverConflict
-    );
+        assert_eq!(
+            denial.kind(),
+            WorthQueryOperationAuthorizationDenialKind::ElevationApproverConflict
+        );
+    })
 }
 
 #[test]
 fn approver_conflict_drift_stales_admitted_elevation_authority() {
-    let (world, request, approved) = super::approval_transition::exact_approved_world();
-    world.authorization_time.script([time(100), time(100)]);
-    let principal = authenticated_principal(&world, &request);
-    let access =
-        super::admit(&world, &approved, &principal, &request, Some("elevation-2")).unwrap();
-    add_approver_conflict(&world);
-    let operation = world
-        .application
-        .installed_schema()
-        .installed_operation(ElevatedCapabilityTouchOperation::reference())
+    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+        let (world, request, approved) =
+            super::approval_transition::exact_approved_world(&host_custody);
+        world.authorization_time.script([time(100), time(100)]);
+        let principal = authenticated_principal(&host_custody, &world, &request);
+        let access = super::admit(
+            &host_custody,
+            &world,
+            &approved,
+            &principal,
+            &request,
+            Some("elevation-2"),
+        )
         .unwrap();
-
-    let Err(denial) =
-        world
+        add_approver_conflict(
+            &host_custody,
+            &host_custody.borrowed_request_for_test(),
+            &world,
+        );
+        let operation = world
             .application
-            .authorize_capability_operation(access, &operation, Default::default())
-    else {
-        panic!("new conflict truth for the exact approver must stale retained authority");
-    };
+            .installed_schema()
+            .installed_operation(ElevatedCapabilityTouchOperation::reference())
+            .unwrap();
 
-    assert_eq!(
-        denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::StaleAuthorization
-    );
+        let Err(denial) = world.application.authorize_capability_operation(
+            &host_custody.phase_for_application(&world.application),
+            access,
+            &operation,
+            Default::default(),
+        ) else {
+            panic!("new conflict truth for the exact approver must stale retained authority");
+        };
+
+        assert_eq!(
+            denial.kind(),
+            WorthQueryOperationAuthorizationDenialKind::StaleAuthorization
+        );
+    })
 }
 
-fn add_approver_conflict(world: &super::super::super::fixture::AuthorizationWorld) {
+fn add_approver_conflict(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    world: &super::super::super::fixture::AuthorizationWorld,
+) {
     let scope = live_scope();
     let approver = world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
+        .select_product_branch(
+            execution,
+            world.application.product_runtime().default_branch(),
+        )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
+            &phase_custody.phase_for_application(&world.application),
             PrincipalIdentityField::reference(),
             2_u64,
             &scope,
@@ -76,9 +112,13 @@ fn add_approver_conflict(world: &super::super::super::fixture::AuthorizationWorl
         .unwrap();
     let account = world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
+        .select_product_branch(
+            execution,
+            world.application.product_runtime().default_branch(),
+        )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
+            &phase_custody.phase_for_application(&world.application),
             AccountIdentity::reference(),
             "account-1".to_owned(),
             &scope,
@@ -92,6 +132,7 @@ fn add_approver_conflict(world: &super::super::super::fixture::AuthorizationWorl
         .unwrap()
         .kind;
     super::super::super::fixture::publish_relational_mutation(
+        execution,
         world,
         WorkerIntentBatch::new("add-approver-conflict").push(MutationIntent::Create(
             CreateIntent::Relation(RelationSpec {

@@ -30,6 +30,7 @@ where
 {
     pub(super) fn settle<Query>(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         settlement: &WorthQueryOutputDemandSettlement,
         source: &WorthQueryObservedSource<Query>,
@@ -38,7 +39,7 @@ where
         PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
         WorthQueryApplicationAttemptDenial,
     > {
-        let currentness_facts = validate(runtime, &self, settlement, source)?;
+        let currentness_facts = validate(execution, runtime, &self, settlement, source)?;
         let mut durable_currentness_facts = currentness_facts
             .iter()
             .filter(|fact| {
@@ -113,7 +114,7 @@ where
         }
         .charging_evidence(retained_bytes);
         let mut read_set = self.admitted.into_read_set();
-        bind_currentness_facts(&mut read_set, &currentness_facts, &node_path)?;
+        bind_currentness_facts(execution, &mut read_set, &currentness_facts, &node_path)?;
         let program = WorthQueryApplicationEffectProgram {
             read_set,
             effects,
@@ -152,6 +153,7 @@ where
 }
 
 pub(super) fn bind_currentness_facts<Schema, Operation, Input, Scope>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     read_set: &mut super::super::WorthQueryCompleteApplicationReadSet<
         Schema,
         Operation,
@@ -163,7 +165,7 @@ pub(super) fn bind_currentness_facts<Schema, Operation, Input, Scope>(
     subject: &str,
 ) -> Result<(), WorthQueryApplicationAttemptDenial> {
     check_request_live(read_set.admission.publication_request(), subject)?;
-    ensure_current(read_set, currentness_facts, subject)?;
+    ensure_current(execution, read_set, currentness_facts, subject)?;
     let mut merged = std::collections::BTreeMap::new();
     // This unchanged workflow seam selects explicit system allocation. The
     // empty replacement is sealed custody, never a mutable/default extraction.
@@ -227,6 +229,7 @@ pub(super) fn bind_currentness_facts<Schema, Operation, Input, Scope>(
 /// Denies unless every currentness fact still holds in the read set's
 /// snapshot: evidence observed before a later write is stale.
 pub(super) fn ensure_current<Schema, Operation, Input, Scope>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     read_set: &super::super::WorthQueryCompleteApplicationReadSet<
         Schema,
         Operation,
@@ -237,10 +240,10 @@ pub(super) fn ensure_current<Schema, Operation, Input, Scope>(
     currentness_facts: &[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact],
     subject: &str,
 ) -> Result<(), WorthQueryApplicationAttemptDenial> {
-    let current = read_set.lease.handle().with_runtime(|runtime| {
+    let current = read_set.lease.handle().with_runtime(execution, |runtime| {
         for fact in currentness_facts {
             check_request_live(read_set.admission.publication_request(), subject)?;
-            if !fact.remains_equal_in(runtime, read_set.lease.snapshot()) {
+            if !fact.remains_equal_in(runtime, execution, read_set.lease.snapshot()) {
                 return Ok::<bool, WorthQueryApplicationAttemptDenial>(false);
             }
         }
@@ -257,6 +260,7 @@ pub(super) fn ensure_current<Schema, Operation, Input, Scope>(
 }
 
 fn validate<Schema, Operation, Input, Scope, Query>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     prepared: &PreparedWorkflowAssessment<Schema, Operation, Input, Scope>,
     settlement: &WorthQueryOutputDemandSettlement,
@@ -303,7 +307,7 @@ where
         ));
     }
     runtime
-        .current_output_source_facts(settlement)
+        .current_output_source_facts(execution, settlement)
         .map_err(|_| {
             WorthQueryApplicationAttemptDenial::new(
                 WorthQueryApplicationAttemptDenialKind::WorkflowAssessmentEvidenceMismatch,

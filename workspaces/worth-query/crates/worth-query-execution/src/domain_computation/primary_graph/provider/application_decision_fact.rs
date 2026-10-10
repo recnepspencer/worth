@@ -119,17 +119,22 @@ impl WorthQueryPrimaryGraphApplicationDecisionFact {
 
     pub(super) fn remains_equal_in(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     ) -> bool {
         match self {
-            Self::Application { fact, .. } => fact.remains_equal_in(runtime, snapshot),
-            Self::ObservedSource { fact } => fact.remains_equal_in(runtime, snapshot),
+            Self::Application { fact, .. } => fact.remains_equal_in(runtime, execution, snapshot),
+            Self::ObservedSource { fact } => fact.remains_equal_in(runtime, execution, snapshot),
             Self::ApplicationObservedSource { fact, .. } => {
-                fact.remains_equal_in(runtime, snapshot)
+                fact.remains_equal_in(runtime, execution, snapshot)
             }
-            Self::Principal(dependency) => dependency.remains_current_in(runtime, snapshot),
-            Self::Authorization { decision, .. } => decision.remains_equal_in(runtime, snapshot),
+            Self::Principal(dependency) => {
+                dependency.remains_current_in(execution, runtime, snapshot)
+            }
+            Self::Authorization { decision, .. } => {
+                decision.remains_equal_in(execution, runtime, snapshot)
+            }
         }
     }
 }

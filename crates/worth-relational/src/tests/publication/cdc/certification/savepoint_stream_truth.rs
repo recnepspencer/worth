@@ -4,6 +4,9 @@ use crate::tests::support::*;
 
 #[test]
 fn cdc_certification_savepoint_abandoned_work_never_leaks_into_stream_truth() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let left = create_entity_outcome(&runtime, "anchor-left");
     let right = create_entity_outcome(&runtime, "anchor-right");
@@ -106,7 +109,7 @@ fn cdc_certification_savepoint_abandoned_work_never_leaks_into_stream_truth() {
 
     let read = runtime
         .read_truth()
-        .read_snapshot(&outcome.snapshot)
+        .read_snapshot(&outcome.snapshot, execution)
         .unwrap();
     let names = read
         .entities()

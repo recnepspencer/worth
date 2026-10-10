@@ -51,6 +51,8 @@ fn over_ceiling_workflow_artifacts_deny_yield_without_consuming_the_run() {
         );
         let running =
             super::workflow_provider_steps::admitted_workflow(&runtime, &operation, resources);
+        let installed_running_phase = execution.phase_for_workflow(&running);
+
         let production = running
             .artifacts()
             .production_authority("producer")
@@ -73,7 +75,7 @@ fn over_ceiling_workflow_artifacts_deny_yield_without_consuming_the_run() {
         .expect("exact artifact owner should register");
         let active = running
             .begin_stage_graph_execution(
-                execution,
+                &installed_running_phase,
                 "producer",
                 &graph,
                 WorthQueryManagedGraphCallRequest::new(
@@ -82,7 +84,7 @@ fn over_ceiling_workflow_artifacts_deny_yield_without_consuming_the_run() {
                 ),
             )
             .unwrap();
-        let paused = match active.advance(execution) {
+        let paused = match active.advance(&installed_running_phase) {
             WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused,
             _ => panic!("workflow provider did not pause"),
         };
@@ -111,7 +113,7 @@ fn over_ceiling_workflow_artifacts_deny_yield_without_consuming_the_run() {
         .expect("denied yield must restore the active artifact production generation");
         drop(post_denial_handle);
         drop(handle);
-        let completion = match denied.into_paused().advance(execution) {
+        let completion = match denied.into_paused().advance(&installed_running_phase) {
             WorthQueryWorkflowGraphStepOutcome::Completed(completion) => completion,
             _ => panic!("retained-memory denial consumed the paused workflow"),
         };

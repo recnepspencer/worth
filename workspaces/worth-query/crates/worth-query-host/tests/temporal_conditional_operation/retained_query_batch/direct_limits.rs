@@ -37,32 +37,55 @@ fn execute(
         .unwrap();
     let selected = world
         .application
-        .on_branch(world.application.current_world())
-        .select()
-        .unwrap();
-    let scope = selected
-        .resolve_entity(
-            IntentIdentityField::reference(),
-            "intent-1".to_owned(),
-            &request,
-            primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .on_branch(world.application.current_world())
+                .select(&phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
+    let scope = world
+        .application
+        .with_host_advancement(|phase| {
+            selected
+                .resolve_entity(
+                    &phase,
+                    IntentIdentityField::reference(),
+                    "intent-1".to_owned(),
+                    &request,
+                    primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("installed host call opens");
     let access = primary_graph::WorthQueryApplicationQueryAccessContext::new(&principal, &scope);
     let mut basis = world
         .application
-        .on_branch(world.application.current_world())
-        .select()
-        .unwrap();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .on_branch(world.application.current_world())
+                .select(&phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     let plan = if retained {
-        match selected.admit_retained_application_query_from_selection(
-            &mut basis,
-            &query,
-            &access,
-            ApplicationQueryParameterSet::new(),
-            product_query_support::controls(&request),
-            batch,
-        ) {
+        match world
+            .application
+            .with_host_advancement(|phase| {
+                selected.admit_retained_application_query_from_selection(
+                    &phase,
+                    &mut basis,
+                    &query,
+                    &access,
+                    ApplicationQueryParameterSet::new(),
+                    product_query_support::controls(&request),
+                    batch,
+                )
+            })
+            .expect("installed host call opens")
+        {
             Ok(plan) => plan,
             Err(primary_graph::WorthQueryRetainedBatchQueryAdmissionDenial::Resource(cause)) => {
                 return Err(ReadDenial::Resource(cause))
@@ -70,18 +93,29 @@ fn execute(
             Err(other) => panic!("ordinary retained admission must remain valid: {other:?}"),
         }
     } else {
-        selected
-            .admit_application_query(
-                &query,
-                &access,
-                ApplicationQueryParameterSet::new(),
-                product_query_support::controls(&request),
-            )
-            .unwrap()
+        world
+            .application
+            .with_host_advancement(|phase| {
+                selected
+                    .admit_application_query(
+                        &phase,
+                        &query,
+                        &access,
+                        ApplicationQueryParameterSet::new(),
+                        product_query_support::controls(&request),
+                    )
+                    .unwrap()
+            })
+            .expect("installed host call opens")
     };
     world
         .application
-        .execute_application_query_one_shot_in_batch(plan, batch)
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .execute_application_query_one_shot_in_batch(&phase, plan, batch)
+        })
+        .expect("installed host call opens")
 }
 
 #[test]
@@ -89,14 +123,19 @@ fn direct_and_retained_batch_reads_share_one_finite_item_limit() {
     let world = CourtroomWorld::publish("ready");
     let observer = world.application.result_buffer_observer();
     let before = observer.observe();
-    let head = world
+    let head = &world
         .application
-        .on_branch(world.application.current_world())
-        .select()
-        .unwrap()
-        .product()
-        .selected_commit()
-        .clone();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .on_branch(world.application.current_world())
+                .select(&phase)
+                .unwrap()
+                .product()
+                .selected_commit()
+                .clone()
+        })
+        .expect("installed host call opens");
     for first_retained in [false, true] {
         let batch = batch(8 * 1024);
         let first = execute(&world, &batch, first_retained).unwrap();
@@ -118,13 +157,17 @@ fn direct_and_retained_batch_reads_share_one_finite_item_limit() {
         );
         assert_eq!(observer.observe(), custody);
         assert_eq!(
-            world
+            &&world
                 .application
-                .on_branch(world.application.current_world())
-                .select()
-                .unwrap()
-                .product()
-                .selected_commit(),
+                .with_host_advancement(|phase| world
+                    .application
+                    .on_branch(world.application.current_world())
+                    .select(&phase)
+                    .unwrap()
+                    .product()
+                    .selected_commit()
+                    .clone())
+                .expect("installed host call opens"),
             &head
         );
         drop(first);
@@ -158,14 +201,19 @@ fn direct_batch_execution_narrows_the_actual_inline_buffer() {
     assert_eq!(small_batch.observe().retained_bytes(), 0);
     assert_eq!(observer.observe().retained_bytes(), before.retained_bytes());
     world.supersede_intent(2, 5, "active", &"x".repeat(16 * 1024), "ready");
-    let head = world
+    let head = &world
         .application
-        .on_branch(world.application.current_world())
-        .select()
-        .unwrap()
-        .product()
-        .selected_commit()
-        .clone();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .on_branch(world.application.current_world())
+                .select(&phase)
+                .unwrap()
+                .product()
+                .selected_commit()
+                .clone()
+        })
+        .expect("installed host call opens");
     let ample_batch = batch(32 * 1024);
     let control = execute(&world, &ample_batch, false).unwrap();
     assert_eq!(control.result().rows()[0].input, "x".repeat(16 * 1024));
@@ -180,13 +228,17 @@ fn direct_batch_execution_narrows_the_actual_inline_buffer() {
     assert_eq!(observer.observe().retained_bytes(), before.retained_bytes());
     assert_eq!(observer.observe().active_buffers(), before.active_buffers());
     assert_eq!(
-        world
+        &&world
             .application
-            .on_branch(world.application.current_world())
-            .select()
-            .unwrap()
-            .product()
-            .selected_commit(),
+            .with_host_advancement(|phase| world
+                .application
+                .on_branch(world.application.current_world())
+                .select(&phase)
+                .unwrap()
+                .product()
+                .selected_commit()
+                .clone())
+            .expect("installed host call opens"),
         &head
     );
     let retry_batch = batch(32 * 1024);

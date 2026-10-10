@@ -50,6 +50,9 @@ fn raw_interned_string(value: &InternedString) -> Option<&str> {
 
 #[test]
 fn entity_kind_scans_can_be_partition_scoped_without_cross_partition_leakage() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     let left = create_entity_in_partition(&runtime, "left-a", PartitionId(7));
     let _right = create_entity_in_partition(&runtime, "right-a", PartitionId(11));
@@ -57,8 +60,8 @@ fn entity_kind_scans_can_be_partition_scoped_without_cross_partition_leakage() {
 
     let scoped = runtime
         .read_truth()
-        .project_historical_version(version_id)
-        .entities_in::<NamedEntityProjection>(PartitionId(7));
+        .project_historical_version(execution, version_id)
+        .entities_in::<NamedEntityProjection>(execution, PartitionId(7));
 
     assert_eq!(scoped.len(), 1);
     assert_eq!(scoped[0].entity_id, left);
@@ -69,6 +72,9 @@ fn entity_kind_scans_can_be_partition_scoped_without_cross_partition_leakage() {
 
 #[test]
 fn entity_kind_scans_are_deterministic_across_equivalent_insert_order() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let ordered = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     let ordered_a = create_entity_in_partition(&ordered, "a", PartitionId(3));
     let ordered_b = create_entity_in_partition(&ordered, "b", PartitionId(3));
@@ -79,12 +85,12 @@ fn entity_kind_scans_are_deterministic_across_equivalent_insert_order() {
 
     let ordered_records = ordered
         .read_truth()
-        .project_historical_version(ordered.current_version_id())
-        .entities_in::<NamedEntityProjection>(PartitionId(3));
+        .project_historical_version(execution, ordered.current_version_id())
+        .entities_in::<NamedEntityProjection>(execution, PartitionId(3));
     let reversed_records = reversed
         .read_truth()
-        .project_historical_version(reversed.current_version_id())
-        .entities_in::<NamedEntityProjection>(PartitionId(3));
+        .project_historical_version(execution, reversed.current_version_id())
+        .entities_in::<NamedEntityProjection>(execution, PartitionId(3));
 
     assert_eq!(
         ordered_records
@@ -103,8 +109,8 @@ fn entity_kind_scans_are_deterministic_across_equivalent_insert_order() {
     assert_eq!(
         ordered
             .read_truth()
-            .project_historical_version(ordered.current_version_id())
-            .entities_in::<NamedEntityProjection>(PartitionId(3))
+            .project_historical_version(execution, ordered.current_version_id())
+            .entities_in::<NamedEntityProjection>(execution, PartitionId(3))
             .iter()
             .map(|record| record.entity_id)
             .collect::<Vec<_>>(),
@@ -118,6 +124,9 @@ fn entity_kind_scans_are_deterministic_across_equivalent_insert_order() {
 
 #[test]
 fn entity_kind_scans_preserve_historical_partition_visibility() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     let baseline = create_entity_outcome_on_branch(&runtime, "base", BranchId("main".to_string()));
     let main_entity = changed_entities(&baseline)[0];
@@ -129,8 +138,8 @@ fn entity_kind_scans_preserve_historical_partition_visibility() {
 
     let historical = runtime
         .read_truth()
-        .project_historical_version(historical_version)
-        .entities_in::<NamedEntityProjection>(PartitionId(17));
+        .project_historical_version(execution, historical_version)
+        .entities_in::<NamedEntityProjection>(execution, PartitionId(17));
 
     assert_eq!(historical.len(), 1);
     assert_eq!(historical[0].entity_id, left);

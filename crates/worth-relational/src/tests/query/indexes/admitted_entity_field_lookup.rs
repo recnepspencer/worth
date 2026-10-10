@@ -6,6 +6,9 @@ use crate::facade::indexes::{
 
 #[test]
 fn exact_admitted_lookup_preserves_production_and_certification_results() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_index_field_aspects();
     let created = create_entity_outcome(&runtime, "admitted-lookup");
     let locator = aspect_field_locator(aspect_key("name"), field_key("name"));
@@ -18,17 +21,18 @@ fn exact_admitted_lookup_preserves_production_and_certification_results() {
         },
         branch_scoped: false,
     });
-    let build = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    let build = runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id: created.commit.commit_id,
             branch_id: BranchId("main".to_owned()),
             index_ids: vec![index.index_id],
-        });
+        },
+    );
     assert!(build.failed_indexes.is_empty());
     let view = runtime
         .read_truth()
-        .project_snapshot(&created.snapshot)
+        .project_snapshot(&created.snapshot, execution)
         .expect("issued exact snapshot");
     for mode in [
         BoundedIndexParityMode::Production,
@@ -47,23 +51,27 @@ fn exact_admitted_lookup_preserves_production_and_certification_results() {
                 )
                 .expect("bounded request"),
                 mode,
+                execution,
             )
             .expect("legacy exact lookup");
         let mut charges = Vec::new();
         let admitted = runtime
             .index_access()
-            .execute_bounded_entity_field_lookup_admitted(
-                &view,
-                index.index_id,
-                KindId(1),
-                &locator,
-                &value,
-                2,
+            .execute_bounded_entity_field_lookup(
+                crate::facade::indexes::BoundedEntityFieldSelectedLookup::new(
+                    &view,
+                    index.index_id,
+                    KindId(1),
+                    &locator,
+                    &value,
+                    2,
+                    |work, _| {
+                        charges.push(work);
+                        Ok::<_, ()>(())
+                    },
+                ),
                 mode,
-                |work, _| {
-                    charges.push(work);
-                    Ok::<_, ()>(())
-                },
+                execution,
             )
             .expect("admitted exact lookup");
         use crate::indexes::data::SelectedIndexReadWork::{Operation, OrderedNavigation};
@@ -124,6 +132,9 @@ fn exact_admitted_lookup_preserves_production_and_certification_results() {
 
 #[test]
 fn exact_admitted_lookup_keeps_a_one_short_stop_in_the_callers_lane() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_index_field_aspects();
     let created = create_entity_outcome(&runtime, "short-stop");
     let locator = aspect_field_locator(aspect_key("name"), field_key("name"));
@@ -136,62 +147,73 @@ fn exact_admitted_lookup_keeps_a_one_short_stop_in_the_callers_lane() {
         },
         branch_scoped: false,
     });
-    let build = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    let build = runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id: created.commit.commit_id,
             branch_id: BranchId("main".to_owned()),
             index_ids: vec![index.index_id],
-        });
+        },
+    );
     assert!(build.failed_indexes.is_empty());
     let view = runtime
         .read_truth()
-        .project_snapshot(&created.snapshot)
+        .project_snapshot(&created.snapshot, execution)
         .unwrap();
     let mut actual_work = 0_u64;
     runtime
         .index_access()
-        .execute_bounded_entity_field_lookup_admitted(
-            &view,
-            index.index_id,
-            KindId(1),
-            &locator,
-            &value,
-            2,
+        .execute_bounded_entity_field_lookup(
+            crate::facade::indexes::BoundedEntityFieldSelectedLookup::new(
+                &view,
+                index.index_id,
+                KindId(1),
+                &locator,
+                &value,
+                2,
+                |work, _| {
+                    let work = match work {
+                        crate::indexes::data::SelectedIndexReadWork::Operation(work)
+                        | crate::indexes::data::SelectedIndexReadWork::OrderedNavigation(work) => {
+                            work
+                        }
+                    };
+                    actual_work = actual_work.checked_add(work).unwrap();
+                    Ok::<_, ()>(())
+                },
+            ),
             BoundedIndexParityMode::Certification,
-            |work, _| {
-                let work = match work {
-                    crate::indexes::data::SelectedIndexReadWork::Operation(work)
-                    | crate::indexes::data::SelectedIndexReadWork::OrderedNavigation(work) => work,
-                };
-                actual_work = actual_work.checked_add(work).unwrap();
-                Ok::<_, ()>(())
-            },
+            execution,
         )
         .expect("measured admitted lookup");
     assert!(actual_work > 1);
     let mut remaining = actual_work - 1;
     let denial = runtime
         .index_access()
-        .execute_bounded_entity_field_lookup_admitted(
-            &view,
-            index.index_id,
-            KindId(1),
-            &locator,
-            &value,
-            2,
+        .execute_bounded_entity_field_lookup(
+            crate::facade::indexes::BoundedEntityFieldSelectedLookup::new(
+                &view,
+                index.index_id,
+                KindId(1),
+                &locator,
+                &value,
+                2,
+                |work, _| {
+                    let work = match work {
+                        crate::indexes::data::SelectedIndexReadWork::Operation(work)
+                        | crate::indexes::data::SelectedIndexReadWork::OrderedNavigation(work) => {
+                            work
+                        }
+                    };
+                    if work > remaining {
+                        return Err("work");
+                    }
+                    remaining -= work;
+                    Ok(())
+                },
+            ),
             BoundedIndexParityMode::Certification,
-            |work, _| {
-                let work = match work {
-                    crate::indexes::data::SelectedIndexReadWork::Operation(work)
-                    | crate::indexes::data::SelectedIndexReadWork::OrderedNavigation(work) => work,
-                };
-                if work > remaining {
-                    return Err("work");
-                }
-                remaining -= work;
-                Ok(())
-            },
+            execution,
         )
         .expect_err("one short must stop before the final admitted read");
     assert!(matches!(

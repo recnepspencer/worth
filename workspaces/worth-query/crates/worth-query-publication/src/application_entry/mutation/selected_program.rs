@@ -140,7 +140,7 @@ where
                     .request
                     .application
                     .on_branch(self.request.branch)
-                    .select()
+                    .select(phase)
                     .map_err(WorthQueryApplicationRequestMutationDenial::ProductSelection)?;
                 let owner = application
                     .selected_program_owner(&selected)
@@ -155,7 +155,7 @@ where
                     phase,
                     move |request, identities, staged| {
                         super::authorization::prepare_capability_selected(
-                            request, identities, staged, &selected,
+                            phase, request, identities, staged, &selected,
                         )
                     },
                     |_, program, binding| {

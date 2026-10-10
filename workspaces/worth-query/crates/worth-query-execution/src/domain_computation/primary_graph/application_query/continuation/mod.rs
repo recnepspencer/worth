@@ -65,6 +65,7 @@ where
         Scope,
     >(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         mut plan: WorthQueryAdmittedApplicationQueryPlan<
             '_,
             Schema,
@@ -82,6 +83,12 @@ where
     where
         QueryResult: WorthQueryApplicationProjection<Schema, Query>,
     {
+        let request = match phase.execution_request_for(&self.product_runtime) {
+            Ok(request) => request,
+            Err(_) => return Err(WorthQueryApplicationContinuationDenial::from_authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::ForeignPhase, "phase-custody"))),
+        };
+        let execution = &request;
+
         validate_execution_plan(self, &plan)
             .map_err(|denial| map_validation_denial(denial, plan.query.name()))?;
         if plan.controls.lane() != WorthQueryApplicationQueryLane::Continuation {
@@ -92,9 +99,9 @@ where
         }
         validate_execution_lifetimes(self, &plan.controls, plan.principal)
             .map_err(|denial| map_validation_denial(denial, plan.query.name()))?;
-        validate_live_basis(plan.basis.is_live())
+        validate_live_basis(plan.basis.is_live(execution))
             .map_err(|denial| map_validation_denial(denial, plan.query.name()))?;
-        refresh_governed_authorization(self, &mut plan)
+        refresh_governed_authorization(execution, self, &mut plan)
             .map_err(|read| map_authorized_read_denial(read, plan.query.name()))?;
         let expected_generation = plan
             .continuation_state
@@ -116,8 +123,8 @@ where
                 .max_inline_result_bytes(),
         );
         let (raw, authorization_work, read_proof) =
-            execute_authorized_read(self, &plan, |runtime, graph, plan| {
-                read_continuation_page(runtime, graph, plan, after, result_buffer)
+            execute_authorized_read(execution, self, &plan, |runtime, graph, plan| {
+                read_continuation_page(runtime, execution, graph, plan, after, result_buffer)
             })
             .map_err(|read| map_authorized_read_denial(read, plan.query.name()))?;
         if expected_generation.is_some() && raw.raw.ordered_index_generation != expected_generation
@@ -196,6 +203,9 @@ fn map_authorized_read_denial(
         }
         WorthQueryAuthorizedApplicationReadDenial::Read(read) => {
             let kind = match read.kind() {
+                WorthQueryApplicationReadExecutionDenialKind::ExecutionRequest(kind) => {
+                    WorthQueryApplicationContinuationDenialKind::ExecutionRequest(kind)
+                }
                 WorthQueryApplicationReadExecutionDenialKind::Cancelled => {
                     WorthQueryApplicationContinuationDenialKind::Cancelled
                 }

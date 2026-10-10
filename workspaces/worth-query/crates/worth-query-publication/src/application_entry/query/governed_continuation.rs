@@ -84,7 +84,7 @@ where
         let application = self.application;
         let request_scope = self.scope;
         application
-            .with_application_advancement(request_scope, |_phase| {
+            .with_application_advancement(request_scope, |phase| {
                 if self.retained.is_some() || self.limits.is_some() {
                     return Err(WorthQueryApplicationRequestQueryDenial::RequestMode);
                 }
@@ -102,7 +102,7 @@ where
                 let selected = self
                     .application
                     .on_branch(self.branch)
-                    .select()
+                    .select(&phase)
                     .map_err(WorthQueryApplicationRequestQueryDenial::ProductSelection)?;
                 let installed_capability = self
                     .application
@@ -111,6 +111,7 @@ where
                     .map_err(WorthQueryApplicationRequestQueryDenial::CapabilityInstallation)?;
                 let principal = selected
                     .resolve_authenticated_principal(
+                        &phase,
                         binding.principal_binding(),
                         self.principal,
                         self.scope,
@@ -119,6 +120,7 @@ where
                     .map_err(WorthQueryApplicationRequestQueryDenial::PrincipalResolution)?;
                 let capability_access = selected
                     .admit_approved_elevation_access(
+                        &phase,
                         approved,
                         &principal,
                         &installed_capability,
@@ -130,6 +132,7 @@ where
                     scope_binding.into_field_parts(principal.principal_identity());
                 let scope = selected
                     .resolve_entity(
+                        &phase,
                         scope_field,
                         scope_value,
                         self.scope,
@@ -142,6 +145,7 @@ where
                     WorthQueryProductQueryControls::new(page_width, maximum_work, self.scope);
                 let plan = selected
                     .admit_governed_application_query_continuation(
+                        &phase,
                         &query,
                         &access,
                         capability_access,
@@ -150,7 +154,7 @@ where
                     )
                     .map_err(WorthQueryApplicationRequestQueryDenial::Admission)?;
                 self.application
-                    .execute_application_query_continuation_page(plan)
+                    .execute_application_query_continuation_page(&phase, plan)
                     .map_err(WorthQueryApplicationRequestQueryDenial::ContinuationExecution)
             })
             .map_err(WorthQueryApplicationRequestQueryDenial::ExecutionRequest)?
@@ -167,6 +171,7 @@ where
         page_width: NonZeroUsize,
         maximum_work: NonZeroUsize,
         after_readmission: impl for<'admitted> FnOnce(
+            &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
             &'admitted WorthQueryPrimaryGraphApplicationRuntime<Schema>,
             Plan<'admitted, Schema, Intent>,
         ) -> Output,
@@ -180,7 +185,7 @@ where
         let application = self.application;
         let request_scope = self.scope;
         application
-            .with_application_advancement(request_scope, |_phase| {
+            .with_application_advancement(request_scope, |phase| {
                 if self.retained.is_some() || self.limits.is_some() {
                     return Err(WorthQueryApplicationRequestQueryDenial::RequestMode);
                 }
@@ -198,7 +203,7 @@ where
                 let selected = self
                     .application
                     .on_branch(self.branch)
-                    .select()
+                    .select(&phase)
                     .map_err(WorthQueryApplicationRequestQueryDenial::ProductSelection)?;
                 let installed_capability = self
                     .application
@@ -207,6 +212,7 @@ where
                     .map_err(WorthQueryApplicationRequestQueryDenial::CapabilityInstallation)?;
                 let principal = selected
                     .resolve_authenticated_principal(
+                        &phase,
                         binding.principal_binding(),
                         self.principal,
                         self.scope,
@@ -215,6 +221,7 @@ where
                     .map_err(WorthQueryApplicationRequestQueryDenial::PrincipalResolution)?;
                 let capability_access = selected
                     .admit_approved_elevation_access(
+                        &phase,
                         approved,
                         &principal,
                         &installed_capability,
@@ -226,6 +233,7 @@ where
                     scope_binding.into_field_parts(principal.principal_identity());
                 let scope = selected
                     .resolve_entity(
+                        &phase,
                         scope_field,
                         scope_value,
                         self.scope,
@@ -242,6 +250,7 @@ where
                 let plan = self
                     .application
                     .readmit_governed_application_query_continuation(
+                        &phase,
                         &query,
                         &access,
                         capability_access,
@@ -250,7 +259,7 @@ where
                         controls,
                     )
                     .map_err(WorthQueryApplicationRequestQueryDenial::Admission)?;
-                Ok(after_readmission(self.application, plan))
+                Ok(after_readmission(&phase, self.application, plan))
             })
             .map_err(WorthQueryApplicationRequestQueryDenial::ExecutionRequest)?
     }

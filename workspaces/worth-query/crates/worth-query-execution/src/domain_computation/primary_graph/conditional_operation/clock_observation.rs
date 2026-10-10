@@ -265,7 +265,10 @@ impl<'runtime, Schema, Node, Clock>
 where
     Schema: ApplicationSchema,
 {
-    pub fn observe(&mut self) -> WorthQueryConditionalClockObservationOutcome<Clock> {
+    pub fn observe(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> WorthQueryConditionalClockObservationOutcome<Clock> {
         self.runtime
             .with_host_advancement(|active_phase| {
                 let phase = &active_phase;
@@ -276,9 +279,13 @@ where
                 let bridge = bridge_root
                     .read()
                     .unwrap_or_else(std::sync::PoisonError::into_inner);
-                let outcome =
-                    self.operation
-                        .observe_clock(phase, &bridge, self.runtime, &self.truth);
+                let outcome = self.operation.observe_clock(
+                    execution,
+                    phase,
+                    &bridge,
+                    self.runtime,
+                    &self.truth,
+                );
                 outcome.typed(
                     granular_invalidation_installation,
                     Some(granular_source_read_basis),

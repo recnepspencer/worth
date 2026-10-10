@@ -13,7 +13,10 @@ use super::operation_native_access_matrix::{
 };
 #[test]
 fn ordinary_consumer_enters_through_the_curated_installed_facade() {
-    let mut workspace = workspace("installed-public-facade-dx", false).unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = workspace(request_execution, "installed-public-facade-dx", false).unwrap();
     let domain = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
         .observe_operating_world(workspace.current_world())
@@ -56,15 +59,19 @@ fn ordinary_consumer_enters_through_the_curated_installed_facade() {
 
 #[test]
 fn conditional_authoring_and_signal_execution_stay_inside_the_query_facade() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let declarations = super::conditional_node_contract::representative_nodes();
     assert_eq!(declarations.len(), 5);
     for declaration in declarations {
         let identity = declaration.identity().to_string();
         if identity == "threshold" {
-            assert_threshold_family_executes_through_facade(declaration);
+            assert_threshold_family_executes_through_facade(request_execution, declaration);
             continue;
         }
         let mut workspace = conditional_workspace(
+            request_execution,
             &format!("installed-public-facade-conditional-{identity}"),
             declaration,
         )
@@ -113,11 +120,15 @@ fn conditional_authoring_and_signal_execution_stay_inside_the_query_facade() {
 }
 
 fn assert_threshold_family_executes_through_facade(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     declaration: domain::WorthQueryPortableConditionalNodeDeclaration,
 ) {
-    let mut workspace =
-        conditional_workspace("installed-public-facade-conditional-threshold", declaration)
-            .unwrap();
+    let mut workspace = conditional_workspace(
+        request_execution,
+        "installed-public-facade-conditional-threshold",
+        declaration,
+    )
+    .unwrap();
     let domain = workspace.domain(GeometryDomain).unwrap();
     let baseline = workspace
         .observe_operating_world(workspace.current_world())
@@ -149,7 +160,11 @@ fn assert_threshold_family_executes_through_facade(
 
 #[test]
 fn workflow_lineage_aftermath_support_and_inspection_stay_inside_the_facade() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut lineage = lineage_workflow_workspace(
+        request_execution,
         "installed-public-facade-lineage",
         installed::operation::WorthQueryOperationLineageContract::Preserve,
         false,
@@ -193,7 +208,7 @@ fn workflow_lineage_aftermath_support_and_inspection_stay_inside_the_facade() {
         ["start", "right", "left", "publish"]
     );
 
-    let workspace = workspace("installed-public-facade-support", false).unwrap();
+    let workspace = workspace(request_execution, "installed-public-facade-support", false).unwrap();
     let domain = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
         .observe_operating_world(workspace.current_world())

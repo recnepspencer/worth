@@ -3,6 +3,9 @@ use super::*;
 #[test]
 fn historical_relation_inspection_keeps_direct_commit_history_when_retained_only_blocks_record_truth(
 ) {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let source = create_entity(&runtime, "source");
     let target = create_entity(&runtime, "target");
@@ -15,6 +18,7 @@ fn historical_relation_inspection_keeps_direct_commit_history_when_retained_only
         .is_ok());
 
     let inspection = runtime.inspect_what_happened().inspect_historical_record(
+        execution,
         &BranchId("main".to_string()),
         relation_outcome.version_id,
         crate::facade::transactions::RecordRef::Relation(relation),
@@ -46,6 +50,9 @@ fn historical_relation_inspection_keeps_direct_commit_history_when_retained_only
 
 #[test]
 fn historical_relation_inspection_reconstructs_record_truth_without_inventing_lineage() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(test_schema_registry())
         .visibility_cache_policy(VisibilityCachePolicy {
@@ -67,6 +74,7 @@ fn historical_relation_inspection_reconstructs_record_truth_without_inventing_li
         .is_ok());
 
     let inspection = runtime.inspect_what_happened().inspect_historical_record(
+        execution,
         &BranchId("main".to_string()),
         relation_outcome.version_id,
         crate::facade::transactions::RecordRef::Relation(relation),

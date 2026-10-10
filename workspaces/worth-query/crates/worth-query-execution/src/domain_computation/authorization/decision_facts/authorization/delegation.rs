@@ -89,11 +89,13 @@ impl WorthQueryDelegationDecisionFact {
         }
     }
     pub(in crate::domain_computation::authorization) fn root(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         discovery: RelationalAuthorizationObservationEvidence,
         status_revision: worth_relational::facade::runtime::RelationalFieldRevision,
     ) -> Result<Self, ()> {
-        let discovery_dependencies = super::durable_dependencies::capture(runtime, &discovery)?;
+        let discovery_dependencies =
+            super::durable_dependencies::capture(execution, runtime, &discovery)?;
         Ok(Self::Root {
             discovery: Arc::new(discovery),
             discovery_dependencies,
@@ -102,6 +104,7 @@ impl WorthQueryDelegationDecisionFact {
     }
 
     pub(in crate::domain_computation::authorization) fn delegated(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         grantor: worth_relational::facade::identity::EntityId,
         parent_grant: worth_relational::facade::identity::EntityId,
@@ -110,8 +113,10 @@ impl WorthQueryDelegationDecisionFact {
         parent: WorthQueryAuthorizationDecisionFact,
         status_revision: worth_relational::facade::runtime::RelationalFieldRevision,
     ) -> Result<Self, ()> {
-        let discovery_dependencies = super::durable_dependencies::capture(runtime, &discovery)?;
-        let transition_dependencies = super::durable_dependencies::capture(runtime, &transition)?;
+        let discovery_dependencies =
+            super::durable_dependencies::capture(execution, runtime, &discovery)?;
+        let transition_dependencies =
+            super::durable_dependencies::capture(execution, runtime, &transition)?;
         Ok(Self::Delegated {
             grantor,
             parent_grant,
@@ -169,35 +174,39 @@ impl WorthQueryDelegationDecisionFact {
 
     pub(super) fn remains_current_in(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         bridge: &BridgeAuthorizationRuntime,
     ) -> bool {
-        self.remains_equal_in(runtime, snapshot)
+        self.remains_equal_in(execution, runtime, snapshot)
             && match self {
                 Self::Root { .. } => true,
                 Self::Delegated { parent, .. } => {
-                    parent.remains_current_in(runtime, snapshot, bridge)
+                    parent.remains_current_in(execution, runtime, snapshot, bridge)
                 }
             }
     }
 
     pub(super) fn remains_equal_in(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     ) -> bool {
         match self {
-            Self::Root { discovery, .. } => observation_is_current(runtime, snapshot, discovery),
+            Self::Root { discovery, .. } => {
+                observation_is_current(execution, runtime, snapshot, discovery)
+            }
             Self::Delegated {
                 discovery,
                 transition,
                 parent,
                 ..
             } => {
-                observation_is_current(runtime, snapshot, discovery)
-                    && observation_is_current(runtime, snapshot, transition)
-                    && parent.remains_equal_in(runtime, snapshot)
+                observation_is_current(execution, runtime, snapshot, discovery)
+                    && observation_is_current(execution, runtime, snapshot, transition)
+                    && parent.remains_equal_in(execution, runtime, snapshot)
             }
         }
     }

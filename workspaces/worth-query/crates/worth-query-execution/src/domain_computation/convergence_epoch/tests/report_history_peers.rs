@@ -22,16 +22,26 @@ fn same_semantic_direct_peers_bind_distinct_report_histories() {
             direct_admission_fixture_with_report_history_probe(FixtureDisposition::Converged);
         let (right_fixture, right_probe) =
             direct_admission_fixture_with_report_history_probe(FixtureDisposition::Converged);
-        let left_started = left_fixture
-            .admit()
-            .begin_iteration(execution, request("same-report-scope"))
-            .unwrap_or_else(|_| panic!("left direct peer must begin"));
-        let right_started = right_fixture
-            .admit()
-            .begin_iteration(execution, request("same-report-scope"))
-            .unwrap_or_else(|_| panic!("right direct peer must begin"));
-        let left = direct_terminal(left_started.advance(execution));
-        let right = direct_terminal(right_started.advance(execution));
+        let left_started = {
+            let fixture_state = left_fixture.admit();
+            let installed_fixture_phase = fixture_state.fixture_phase(&execution);
+            fixture_state.begin_iteration(&installed_fixture_phase, request("same-report-scope"))
+        }
+        .unwrap_or_else(|_| panic!("left direct peer must begin"));
+        let right_started = {
+            let fixture_state = right_fixture.admit();
+            let installed_fixture_phase = fixture_state.fixture_phase(&execution);
+            fixture_state.begin_iteration(&installed_fixture_phase, request("same-report-scope"))
+        }
+        .unwrap_or_else(|_| panic!("right direct peer must begin"));
+        let left = direct_terminal({
+            let installed_fixture_phase = left_started.fixture_phase(execution);
+            left_started.advance(&installed_fixture_phase)
+        });
+        let right = direct_terminal({
+            let installed_fixture_phase = right_started.fixture_phase(execution);
+            right_started.advance(&installed_fixture_phase)
+        });
 
         assert_distinct_histories(
             left.latest_report().unwrap(),
@@ -56,24 +66,34 @@ fn same_stage_workflow_peers_bind_distinct_report_histories() {
             workflow_admission_fixture_with_report_history_probe(FixtureDisposition::Converged);
         let (right_fixture, right_probe) =
             workflow_admission_fixture_with_report_history_probe(FixtureDisposition::Converged);
-        let left_started = left_fixture
-            .admit()
-            .begin_stage_iteration(
-                execution,
+        let left_started = {
+            let fixture_state = left_fixture.admit();
+            let installed_fixture_phase = fixture_state.fixture_phase(&execution);
+            fixture_state.begin_stage_iteration(
+                &installed_fixture_phase,
                 WORKFLOW_STAGE,
                 request("same-workflow-report-scope"),
             )
-            .unwrap_or_else(|_| panic!("left workflow peer must begin"));
-        let right_started = right_fixture
-            .admit()
-            .begin_stage_iteration(
-                execution,
+        }
+        .unwrap_or_else(|_| panic!("left workflow peer must begin"));
+        let right_started = {
+            let fixture_state = right_fixture.admit();
+            let installed_fixture_phase = fixture_state.fixture_phase(&execution);
+            fixture_state.begin_stage_iteration(
+                &installed_fixture_phase,
                 WORKFLOW_STAGE,
                 request("same-workflow-report-scope"),
             )
-            .unwrap_or_else(|_| panic!("right workflow peer must begin"));
-        let left = workflow_terminal(left_started.advance(execution));
-        let right = workflow_terminal(right_started.advance(execution));
+        }
+        .unwrap_or_else(|_| panic!("right workflow peer must begin"));
+        let left = workflow_terminal({
+            let installed_fixture_phase = left_started.fixture_phase(execution);
+            left_started.advance(&installed_fixture_phase)
+        });
+        let right = workflow_terminal({
+            let installed_fixture_phase = right_started.fixture_phase(execution);
+            right_started.advance(&installed_fixture_phase)
+        });
 
         assert_distinct_histories(
             left.latest_report().unwrap(),

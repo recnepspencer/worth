@@ -65,7 +65,10 @@ fn test_runtime_basis_package() -> WorthQueryDomainPackage<TestRuntimeBasisDomai
 }
 #[test]
 fn runtime_public_handle_contract_freezes_inspection_sections_and_future_state_lanes() {
-    let workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("task.handle-contract")
         .expect("task runtime should open a named workspace");
     let contract = workspace.public_handle_contract();
@@ -115,7 +118,10 @@ fn runtime_public_handle_contract_freezes_inspection_sections_and_future_state_l
 
 #[test]
 fn runtime_workspace_rejects_empty_names_before_public_use() {
-    let error = match stateful_bridge_task_runtime().workspace("  ") {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let error = match stateful_bridge_task_runtime(request_execution).workspace("  ") {
         Ok(_) => panic!("empty workspace names should not enter the public API"),
         Err(error) => error,
     };
@@ -132,13 +138,23 @@ fn runtime_workspace_rejects_empty_names_before_public_use() {
 
 #[test]
 fn runtime_workspace_declares_and_inspects_with_preferred_names() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("task.workspace")
         .expect("task runtime should open a named workspace");
     let view: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view_request("tasks.workspace-table", task_live_request(), task_schema())
+        .live_view_request(
+            request_execution,
+            "tasks.workspace-table",
+            task_live_request(),
+            task_schema(),
+        )
         .expect("workspace live view should declare");
-    let inspection = workspace.inspect(&view).expect("inspect should succeed");
+    let inspection = workspace
+        .inspect(request_execution, &view)
+        .expect("inspect should succeed");
 
     assert_eq!(workspace.name(), "task.workspace");
     match inspection {
@@ -151,11 +167,14 @@ fn runtime_workspace_declares_and_inspects_with_preferred_names() {
 
 #[test]
 fn runtime_workspace_closure_builders_cover_live_computed_effect_dx() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("task.builder-workspace")
         .expect("task runtime should open a named workspace");
     let view: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.builder-table", |q| {
+        .live_view(request_execution, "tasks.builder-table", |q| {
             q.from("Task")
                 .select([
                     crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
@@ -173,6 +192,7 @@ fn runtime_workspace_closure_builders_cover_live_computed_effect_dx() {
         .expect("workspace live builder should lower to a live view");
     let titles = workspace
         .computed::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "tasks.builder-title-list",
             |c| {
                 c.depends_on_live(&view)
@@ -196,7 +216,7 @@ fn runtime_workspace_closure_builders_cover_live_computed_effect_dx() {
         .expect("workspace effect builder should lower to an effect");
 
     workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(
                 test_aspect_touch("identity.id"),
                 test_authored_string_aspect_value("task-1"),
@@ -208,7 +228,9 @@ fn runtime_workspace_closure_builders_cover_live_computed_effect_dx() {
         })
         .expect("builder workspace write should route through declared surfaces");
     let computed_patches = workspace.observe_computed(&titles);
-    let effect_inspection = workspace.inspect(&effect).expect("inspect should succeed");
+    let effect_inspection = workspace
+        .inspect(request_execution, &effect)
+        .expect("inspect should succeed");
 
     assert_eq!(computed_patches.derived_patches.len(), 1);
     match effect_inspection {
@@ -252,11 +274,14 @@ fn runtime_public_declaration_builders_support_downstream_vocab_layers() {
 
 #[test]
 fn runtime_workspace_state_snapshots_are_async_safe_and_support_gated() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("task.state-workspace")
         .expect("task runtime should open a named workspace");
     let view: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.state-table", |q| {
+        .live_view(request_execution, "tasks.state-table", |q| {
             q.from("Task")
                 .select([
                     crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
@@ -269,6 +294,7 @@ fn runtime_workspace_state_snapshots_are_async_safe_and_support_gated() {
         .expect("workspace live builder should lower to a live view");
     let titles = workspace
         .computed::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "tasks.state-title-list",
             |c| {
                 c.depends_on_live(&view)
@@ -280,7 +306,7 @@ fn runtime_workspace_state_snapshots_are_async_safe_and_support_gated() {
         .expect("workspace computed builder should lower to a derived view");
 
     workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(
                 test_aspect_touch("identity.id"),
                 test_authored_string_aspect_value("task-1"),
@@ -292,12 +318,14 @@ fn runtime_workspace_state_snapshots_are_async_safe_and_support_gated() {
         })
         .expect("write should route through state surfaces");
 
-    let live_state = workspace.state(&view).expect("live state should snapshot");
+    let live_state = workspace
+        .state(request_execution, &view)
+        .expect("live state should snapshot");
     let computed_state = workspace
-        .state(&titles)
+        .state(request_execution, &titles)
         .expect("computed state should snapshot");
     let temporal_state = workspace
-        .state(WorthQueryRuntimeFacadeFamily::Temporal)
+        .state(request_execution, WorthQueryRuntimeFacadeFamily::Temporal)
         .expect("runtime-backed temporal family should report a typed state");
 
     assert_eq!(live_state.kind(), WorthQueryRuntimeStateKind::Ready);

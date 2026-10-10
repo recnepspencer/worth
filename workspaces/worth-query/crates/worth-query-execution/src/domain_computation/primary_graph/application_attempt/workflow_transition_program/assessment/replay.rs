@@ -32,6 +32,7 @@ where
         Query,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         required: &RequiredWorkflowAssessment,
         settlement: &WorthQueryOutputDemandSettlement,
@@ -100,6 +101,7 @@ where
             ),
         };
         resolve_replay(
+            execution,
             runtime,
             admission,
             transition_locator,
@@ -115,6 +117,7 @@ where
 
 #[allow(clippy::too_many_arguments)]
 fn resolve_replay<Schema, Operation, Input, Scope, Query>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     admission: &crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
         Schema,
@@ -150,7 +153,8 @@ where
     let transition_identity = decode_hex_identity(required.transition_identity())
         .expect("workflow transition identity is an encoded SHA-256 digest");
     let resolution = runtime
-        .resolve_admitted_application_idempotency(
+        .resolve_admitted_application_idempotency_with_request(
+            execution,
             admission,
             idempotency
                 .bind_workflow_transition(&transition_identity)
@@ -164,21 +168,25 @@ where
                 super::super::super::WorthQueryApplicationCommitDenial::idempotency_intent_drift(),
             )),
         ),
-        WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => {
-            Some(runtime.primary_provider.graph.with_runtime(|relational| {
-                super::super::publication::project(
-                    relational,
-                    receipt,
-                    required.transition_identity().to_owned(),
-                    transition_locator.clone(),
-                    required.node_path().to_owned(),
-                    false,
-                    Some(assessment),
-                    None,
-                    None,
-                    true,
-                )
-            }))
-        }
+        WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => Some(
+            runtime
+                .primary_provider
+                .graph
+                .with_runtime(execution, |relational| {
+                    super::super::publication::project(
+                        execution,
+                        relational,
+                        receipt,
+                        required.transition_identity().to_owned(),
+                        transition_locator.clone(),
+                        required.node_path().to_owned(),
+                        false,
+                        Some(assessment),
+                        None,
+                        None,
+                        true,
+                    )
+                }),
+        ),
     })
 }

@@ -200,6 +200,7 @@ where
         LinkKey,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         view: &WorthQueryManagedDerivedView<MembershipQuery, Value>,
         product: &WorthQueryProductBranchLease,
         key: &WorthQueryManagedDerivedViewKey,
@@ -237,6 +238,7 @@ where
         view.state
             .requires_entry_refresh(key, product.selected_commit())?;
         let (issued_key, value, dependencies) = self.read_managed_entry_pair(
+            execution,
             view,
             product,
             key.root(),

@@ -17,18 +17,22 @@ fn name_index(runtime: &RelationalRuntime, name: &str, branch_scoped: bool) -> D
 
 #[test]
 fn a_fresh_fork_needs_its_own_branch_scoped_generation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_index_field_aspects();
     let anchor = create_entity_outcome(&runtime, "fork-currency-anchor");
     let scoped = name_index(&runtime, "fork-currency.scoped", true);
     let global = name_index(&runtime, "fork-currency.global", false);
     let main = BranchId("main".into());
-    let main_build = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    let main_build = runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id: anchor.commit.commit_id,
             branch_id: main.clone(),
             index_ids: vec![scoped, global],
-        });
+        },
+    );
     assert!(main_build.failed_indexes.is_empty());
     let fork = create_branch_from_main(&runtime, "fork-currency");
     let (_, fork_basis) = runtime
@@ -69,6 +73,7 @@ fn a_fresh_fork_needs_its_own_branch_scoped_generation() {
                 maximum_cold_record_slots: 0,
                 maximum_derived_rows: 0,
             },
+            execution,
         )
         .unwrap();
     assert_eq!(fork_build.generations.len(), 2);

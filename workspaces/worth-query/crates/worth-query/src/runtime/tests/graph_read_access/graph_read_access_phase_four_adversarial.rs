@@ -10,8 +10,11 @@ use support::public_bridge_runtime::PublicBridgeRuntimeHarness;
 
 #[test]
 fn every_traversal_bearing_read_derives_access_structure_requirements() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let harness = PublicBridgeRuntimeHarness::new();
-    let runtime = harness.bridge_backed_runtime();
+    let runtime = harness.bridge_backed_runtime(request_execution);
     let mut workspace = runtime
         .workspace("graph-read-access.phase-four.completeness")
         .expect("runtime should open workspace");
@@ -43,8 +46,11 @@ fn every_traversal_bearing_read_derives_access_structure_requirements() {
 
 #[test]
 fn requirement_counters_explain_structural_breadth_not_elapsed_time() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let harness = PublicBridgeRuntimeHarness::new();
-    let runtime = harness.bridge_backed_runtime();
+    let runtime = harness.bridge_backed_runtime(request_execution);
     let mut workspace = runtime
         .workspace("graph-read-access.phase-four.counters")
         .expect("runtime should open workspace");

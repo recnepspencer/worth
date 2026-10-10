@@ -6,10 +6,14 @@ use super::*;
 
 #[test]
 fn moved_artifact_advancement_opens_before_its_reader() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     verify(
         "artifact move advance",
         || {
-            let (mut workspace, _probe) = artifact_move_workspace("artifact-move-custody").unwrap();
+            let (mut workspace, _probe) =
+                artifact_move_workspace(request_execution, "artifact-move-custody").unwrap();
             let run = bind_artifact_workflow(&workspace)
                 .admit_workflow_resources(execution_resource_request(), &workspace)
                 .unwrap()
@@ -38,11 +42,14 @@ fn moved_artifact_advancement_opens_before_its_reader() {
 
 #[test]
 fn leased_artifact_advancement_opens_before_its_reader() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     verify(
         "artifact lease advance",
         || {
             let (mut workspace, _probe) =
-                artifact_lease_workspace("artifact-lease-custody").unwrap();
+                artifact_lease_workspace(request_execution, "artifact-lease-custody").unwrap();
             let run = bind_artifact_workflow(&workspace)
                 .admit_workflow_resources(execution_resource_request(), &workspace)
                 .unwrap()

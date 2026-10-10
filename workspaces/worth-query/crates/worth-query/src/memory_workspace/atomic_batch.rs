@@ -43,6 +43,7 @@ type PreparedIntent = (MutationIntent, PreparedMutation);
 impl WorthQueryMemoryWorkspace {
     pub(crate) fn apply_batch_atomically(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         mutations: Vec<WorthQueryMemoryBatchMutation>,
     ) -> Result<Vec<WorthQueryMutationReceipt>, WorthQueryWorkspaceError> {
         if mutations.is_empty() {
@@ -56,21 +57,23 @@ impl WorthQueryMemoryWorkspace {
             .next_client_key
             .checked_add(insert_count as u64)
             .ok_or_else(|| WorthQueryWorkspaceError::new("batch client-key space exhausted"))?;
-        let (batch, prepared) = self.prepare_batch(mutations)?;
-        let (result, snapshot) = self.commit_batch(batch)?;
+        let (batch, prepared) = self.prepare_batch(execution, mutations)?;
+        let (result, snapshot) = self.commit_batch(execution, batch)?;
         self.next_client_key = next_key;
         self.batch_receipts(result, snapshot, prepared)
     }
 
     fn prepare_batch(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         mutations: Vec<WorthQueryMemoryBatchMutation>,
     ) -> Result<(WorkerIntentBatch, Vec<PreparedMutation>), WorthQueryWorkspaceError> {
         let mut insert_index = 0_u64;
         let mut batch = WorkerIntentBatch::new("query-memory-atomic-batch");
         let mut prepared = Vec::with_capacity(mutations.len());
         for mutation in mutations {
-            let (intent, descriptor) = self.prepare_mutation(mutation, &mut insert_index)?;
+            let (intent, descriptor) =
+                self.prepare_mutation(execution, mutation, &mut insert_index)?;
             batch = batch.push(intent);
             prepared.push(descriptor);
         }
@@ -79,6 +82,7 @@ impl WorthQueryMemoryWorkspace {
 
     fn prepare_mutation(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         mutation: WorthQueryMemoryBatchMutation,
         insert_index: &mut u64,
     ) -> Result<PreparedIntent, WorthQueryWorkspaceError> {
@@ -91,9 +95,9 @@ impl WorthQueryMemoryWorkspace {
                 entity,
                 patch,
                 touches,
-            } => self.prepare_update(entity, patch, touches),
+            } => self.prepare_update(execution, entity, patch, touches),
             WorthQueryMemoryBatchMutation::Delete { entity, touches } => {
-                self.prepare_delete(entity, touches)
+                self.prepare_delete(execution, entity, touches)
             }
         }
     }
@@ -123,12 +127,13 @@ impl WorthQueryMemoryWorkspace {
 
     fn prepare_update(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity: WorthQueryEntityIdentity,
         patch: PortableRecordAspectPatch,
         touches: Vec<crate::runtime::WorthQueryAspectTouch>,
     ) -> Result<PreparedIntent, WorthQueryWorkspaceError> {
         let entity_id = super::runtime_identity::entity_id_from_identity(entity.clone())?;
-        self.ensure_entity_exists(entity_id)?;
+        self.ensure_entity_exists(execution, entity_id)?;
         let intent = MutationIntent::Entity(EntityMutationIntent::ApplyAspectPatch(
             ApplyEntityAspectPatchIntent {
                 entity_id,
@@ -143,11 +148,12 @@ impl WorthQueryMemoryWorkspace {
 
     fn prepare_delete(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity: WorthQueryEntityIdentity,
         touches: Vec<crate::runtime::WorthQueryAspectTouch>,
     ) -> Result<PreparedIntent, WorthQueryWorkspaceError> {
         let entity_id = super::runtime_identity::entity_id_from_identity(entity.clone())?;
-        self.ensure_entity_exists(entity_id)?;
+        self.ensure_entity_exists(execution, entity_id)?;
         let intent = MutationIntent::Entity(EntityMutationIntent::Delete(DeleteEntityIntent {
             entity_id,
         }));

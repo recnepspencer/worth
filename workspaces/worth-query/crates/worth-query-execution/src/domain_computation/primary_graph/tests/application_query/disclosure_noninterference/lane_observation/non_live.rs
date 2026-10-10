@@ -10,16 +10,23 @@ use crate::domain_computation::primary_graph::{
 };
 
 pub(super) fn observe_one_shot(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     context: &GovernedObservationContext<'_>,
     occurrences: &mut GraphWorkOccurrences,
 ) -> LaneObservation {
-    let capability =
-        admit_touch_account_capability(context.world, context.principal, context.request).unwrap();
+    let capability = admit_touch_account_capability(
+        &(phase_custody).test_host_request(),
+        context.world,
+        context.principal,
+        context.request,
+    )
+    .unwrap();
     let access = WorthQueryApplicationQueryAccessContext::new(context.principal, context.account);
     let plan = context
         .world
-        .selected_product()
+        .selected_product(&(phase_custody).test_host_request())
         .admit_governed_application_query(
+            &phase_custody.phase_for_application(&context.world.application),
             context.query,
             &access,
             capability,
@@ -34,22 +41,32 @@ pub(super) fn observe_one_shot(
     let result = context
         .world
         .application
-        .execute_application_query_one_shot(plan)
+        .execute_application_query_one_shot(
+            &phase_custody.phase_for_application(&context.world.application),
+            plan,
+        )
         .unwrap();
     capture_lane(result.rows().to_vec(), result.receipt(), occurrences)
 }
 
 pub(super) fn observe_continuation(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     context: &GovernedObservationContext<'_>,
     occurrences: &mut GraphWorkOccurrences,
 ) -> ContinuationObservation {
-    let capability =
-        admit_touch_account_capability(context.world, context.principal, context.request).unwrap();
+    let capability = admit_touch_account_capability(
+        &(phase_custody).test_host_request(),
+        context.world,
+        context.principal,
+        context.request,
+    )
+    .unwrap();
     let access = WorthQueryApplicationQueryAccessContext::new(context.principal, context.account);
     let plan = context
         .world
-        .selected_product()
+        .selected_product(&(phase_custody).test_host_request())
         .admit_governed_application_query_continuation(
+            &phase_custody.phase_for_application(&context.world.application),
             context.query,
             &access,
             capability,
@@ -64,19 +81,28 @@ pub(super) fn observe_continuation(
     let page = context
         .world
         .application
-        .execute_application_query_continuation_page(plan)
+        .execute_application_query_continuation_page(
+            &phase_custody.phase_for_application(&context.world.application),
+            plan,
+        )
         .unwrap();
     let (rows, continuation, receipt) = page.into_parts();
     let first = capture_lane(rows, &receipt, occurrences);
     let continuation = continuation.expect("the first activity page must continue");
     let first_next_page_ordinal = continuation.page_ordinal();
 
-    let fresh =
-        admit_touch_account_capability(context.world, context.principal, context.request).unwrap();
+    let fresh = admit_touch_account_capability(
+        &(phase_custody).test_host_request(),
+        context.world,
+        context.principal,
+        context.request,
+    )
+    .unwrap();
     let plan = context
         .world
         .application
         .readmit_governed_application_query_continuation(
+            &phase_custody.phase_for_application(&context.world.application),
             context.query,
             &access,
             fresh,
@@ -88,7 +114,10 @@ pub(super) fn observe_continuation(
     let page = context
         .world
         .application
-        .execute_application_query_continuation_page(plan)
+        .execute_application_query_continuation_page(
+            &phase_custody.phase_for_application(&context.world.application),
+            plan,
+        )
         .unwrap();
     let (rows, continuation, receipt) = page.into_parts();
     ContinuationObservation {

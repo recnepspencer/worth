@@ -42,6 +42,7 @@ pub(super) fn query_denial(denial: BankApplicationQueryDenial) -> BankHttpDenial
 fn product_selection(kind: BankProductSelectionDenialKind) -> BankHttpDenial {
     use BankProductSelectionDenialKind as Selection;
     match kind {
+        Selection::ForeignPhase => internal_denied(),
         Selection::ForeignOwner
         | Selection::RetiredBranch
         | Selection::IncarnationChanged
@@ -120,6 +121,9 @@ fn admission(kind: BankApplicationQueryAdmissionDenialKind) -> BankHttpDenial {
 fn execution(kind: BankApplicationOneShotDenialKind) -> BankHttpDenial {
     use BankApplicationOneShotDenialKind as Execution;
     match kind {
+        Execution::ExecutionRequest(kind) => {
+            super::mutation_application::pending_execution_denial(kind)
+        }
         Execution::Authorization(kind) => authorization_denial(kind),
         Execution::Cancelled => cancelled(),
         Execution::DeadlineExceeded => deadline(),
@@ -176,6 +180,7 @@ fn projection(kind: BankApplicationProjectionDenialKind) -> BankHttpDenial {
 fn entity(kind: BankEntityResolutionDenialKind) -> BankHttpDenial {
     use BankEntityResolutionDenialKind as Entity;
     match kind {
+        Entity::ForeignPhase => internal_denied(),
         Entity::Cancelled => cancelled(),
         Entity::DeadlineExceeded => deadline(),
         Entity::UnknownEntity => BankHttpDenial::new(Kind::NotFound, Next::CorrectRequest),

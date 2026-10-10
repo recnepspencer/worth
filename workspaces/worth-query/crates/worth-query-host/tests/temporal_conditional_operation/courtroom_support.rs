@@ -3,9 +3,10 @@ use worth_query_host::facade::primary_graph;
 use super::world::{request_scope, CourtroomWorld};
 
 pub(super) fn observe(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &CourtroomWorld,
 ) -> primary_graph::WorthQueryConditionalClockObservationReceipt<super::adapters::CourtroomClock> {
-    let outcome = raw_observe(world);
+    let outcome = raw_observe(request_execution, world);
     let primary_graph::WorthQueryConditionalClockObservationOutcome::Accepted(receipt) = outcome
     else {
         panic!(
@@ -38,9 +39,10 @@ pub(super) fn outcome_kind<Clock>(
 }
 
 pub(super) fn raw_observe(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &CourtroomWorld,
 ) -> primary_graph::WorthQueryConditionalClockObservationOutcome<super::adapters::CourtroomClock> {
-    world.conditional_clock().observe()
+    world.conditional_clock().observe(request_execution)
 }
 
 pub(super) fn assert_authoritative_value<Entity, Aspect, Field, Value, Write, Unit>(
@@ -65,16 +67,22 @@ pub(super) fn assert_authoritative_value<Entity, Aspect, Field, Value, Write, Un
 {
     world
         .application
-        .on_branch(world.application.current_world())
-        .select()
-        .expect("the selected product branch remains admitted")
-        .resolve_entity(
-            field,
-            value,
-            &request_scope(),
-            primary_graph::WorthQueryPrincipalResolutionMode::Certification,
-        )
-        .expect("expected value must remain authoritative");
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .on_branch(world.application.current_world())
+                .select(&phase)
+                .expect("the selected product branch remains admitted")
+                .resolve_entity(
+                    &phase,
+                    field,
+                    value,
+                    &request_scope(),
+                    primary_graph::WorthQueryPrincipalResolutionMode::Certification,
+                )
+                .expect("expected value must remain authoritative")
+        })
+        .expect("installed host call opens");
 }
 
 pub(super) fn wake_evidence<Clock>(

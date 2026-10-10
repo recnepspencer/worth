@@ -22,6 +22,7 @@ pub struct BankPreviewSessionDiscardReceipt {
 
 impl BankPreviewSession {
     pub(crate) fn open(
+        phase: &worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
         application: &WorthQueryPrimaryGraphApplicationRuntime<BankSchema>,
         request: &WorthQueryRequestScope,
     ) -> Result<Self, BankApplicationQueryDenial> {
@@ -40,7 +41,7 @@ impl BankPreviewSession {
         }
         let branch = application.current_world();
         let observation =
-            WorthQueryApplicationReadObservation::retain_on_branch(application, branch)
+            WorthQueryApplicationReadObservation::retain_on_branch(phase, application, branch)
                 .map_err(BankApplicationQueryDenial::from_product_selection)?;
         Ok(Self { observation })
     }

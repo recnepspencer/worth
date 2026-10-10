@@ -39,6 +39,7 @@ pub(super) struct WorthQueryPrincipalTargetObservation {
 }
 
 pub(super) fn observe_mapping(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,
     mapping_id: EntityId,
@@ -47,16 +48,24 @@ pub(super) fn observe_mapping(
 ) -> Result<WorthQueryPrincipalMappingObservation, WorthQueryPrincipalResolutionDenial> {
     let view = runtime
         .read_truth()
-        .project_snapshot(snapshot)
+        .project_snapshot(snapshot, execution)
         .ok_or_else(|| stale_proof_denial(binding))?;
     let scope = mapping_projection_scope(layout);
     let identity_revision = view
-        .entity_field_revision(mapping_id, &authoritative(&layout.identity_locator))
+        .entity_field_revision(
+            execution,
+            mapping_id,
+            &authoritative(&layout.identity_locator),
+        )
         .ok_or_else(|| stale_proof_denial(binding))?;
     let status_revision = view
-        .entity_field_revision(mapping_id, &authoritative(&layout.status_locator))
+        .entity_field_revision(
+            execution,
+            mapping_id,
+            &authoritative(&layout.status_locator),
+        )
         .ok_or_else(|| stale_proof_denial(binding))?;
-    view.entity_record_with_projection_scope(mapping_id, scope, |record| {
+    view.entity_record_with_projection_scope(execution, mapping_id, scope, |record| {
         if record.kind_id() != layout.mapping_kind
             || record.lifecycle() != RecordLifecycleState::Live
         {
@@ -79,6 +88,7 @@ pub(super) fn observe_mapping(
 }
 
 pub(super) fn resolve_principal_target(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,
     mapping_id: EntityId,
@@ -110,8 +120,14 @@ pub(super) fn resolve_principal_target(
         .ok_or_else(|| stale_proof_denial(binding))?;
     let outcome = runtime
         .read_truth()
-        .execute_query_plan(plan)
-        .ok_or_else(|| stale_proof_denial(binding))?;
+        .execute_query_plan(
+            plan,
+            execution,
+            worth_relational::facade::runtime::RelationalQueryReadStrategy::CallingThread,
+        )
+        .map_err(|stop| super::resolution_denial::query_read_resolution_denial(&stop, binding))?
+        .ok_or_else(|| stale_proof_denial(binding))?
+        .outcome;
     let mut relations = outcome.result.relations.iter().filter(|relation| {
         relation.kind.kind_id == layout.relation_kind
             && relation.source == mapping_id
@@ -142,10 +158,16 @@ pub(super) fn resolve_principal_target(
             binding,
         ));
     }
-    let (principal_identity, principal_identity_revision) =
-        observe_principal_identity(runtime, snapshot, principal.entity_id, layout, binding)?;
+    let (principal_identity, principal_identity_revision) = observe_principal_identity(
+        execution,
+        runtime,
+        snapshot,
+        principal.entity_id,
+        layout,
+        binding,
+    )?;
     let adjacency_revision =
-        principal_adjacency_revision(runtime, snapshot, mapping_id, layout, binding)?;
+        principal_adjacency_revision(execution, runtime, snapshot, mapping_id, layout, binding)?;
     Ok(WorthQueryPrincipalTargetObservation {
         relation_id: relation.relation_id,
         relation_kind: relation.kind.kind_id,
@@ -159,6 +181,7 @@ pub(super) fn resolve_principal_target(
 }
 
 pub(super) fn observe_exact_principal_target(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,
     relation_id: RelationId,
@@ -168,10 +191,11 @@ pub(super) fn observe_exact_principal_target(
 ) -> Result<WorthQueryPrincipalTargetObservation, WorthQueryPrincipalResolutionDenial> {
     let view = runtime
         .read_truth()
-        .project_snapshot(snapshot)
+        .project_snapshot(snapshot, execution)
         .ok_or_else(|| stale_proof_denial(binding))?;
     let relation = view
         .relation_record_with_projection_scope(
+            execution,
             relation_id,
             ProjectionAspectScope::empty(),
             |record| {
@@ -186,6 +210,7 @@ pub(super) fn observe_exact_principal_target(
         .ok_or_else(|| stale_proof_denial(binding))?;
     let principal = view
         .entity_record_with_projection_scope(
+            execution,
             principal_id,
             ProjectionAspectScope::empty(),
             |record| Some((record.kind_id(), record.lifecycle())),
@@ -201,9 +226,9 @@ pub(super) fn observe_exact_principal_target(
         return Err(stale_proof_denial(binding));
     }
     let (principal_identity, principal_identity_revision) =
-        observe_principal_identity(runtime, snapshot, principal_id, layout, binding)?;
+        observe_principal_identity(execution, runtime, snapshot, principal_id, layout, binding)?;
     let adjacency_revision =
-        principal_adjacency_revision(runtime, snapshot, relation.2, layout, binding)?;
+        principal_adjacency_revision(execution, runtime, snapshot, relation.2, layout, binding)?;
     Ok(WorthQueryPrincipalTargetObservation {
         relation_id,
         relation_kind: relation.0,
@@ -217,6 +242,7 @@ pub(super) fn observe_exact_principal_target(
 }
 
 fn observe_principal_identity(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,
     principal_id: EntityId,
@@ -231,18 +257,19 @@ fn observe_principal_identity(
 > {
     let view = runtime
         .read_truth()
-        .project_snapshot(snapshot)
+        .project_snapshot(snapshot, execution)
         .ok_or_else(|| stale_proof_denial(binding))?;
     let scope = ProjectionAspectScope::from_requirements([projection_requirement(
         &layout.principal_identity_locator,
     )]);
     let revision = view
         .entity_field_revision(
+            execution,
             principal_id,
             &authoritative(&layout.principal_identity_locator),
         )
         .ok_or_else(|| stale_proof_denial(binding))?;
-    view.entity_record_with_projection_scope(principal_id, scope, |record| {
+    view.entity_record_with_projection_scope(execution, principal_id, scope, |record| {
         if record.kind_id() != layout.principal_kind
             || record.lifecycle() != RecordLifecycleState::Live
         {
@@ -275,6 +302,7 @@ fn authoritative(
 }
 
 fn principal_adjacency_revision(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,
     mapping: EntityId,
@@ -286,9 +314,9 @@ fn principal_adjacency_revision(
 > {
     let view = runtime
         .read_truth()
-        .project_snapshot(snapshot)
+        .project_snapshot(snapshot, execution)
         .ok_or_else(|| stale_proof_denial(binding))?;
-    view.bounded_adjacency_structural_revision(
+    view.bounded_adjacency_structural_revision(execution,
         mapping,
         layout.relation_kind,
         worth_relational::facade::runtime::RelationalAdjacencyDirection::Outgoing,

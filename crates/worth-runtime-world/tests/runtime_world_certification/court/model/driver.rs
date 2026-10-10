@@ -11,7 +11,11 @@ pub(super) struct ModelRun {
     pub observer: ProductObserver,
     pub steps: Vec<String>,
 }
-pub(in super::super) fn run(seed: u64, rounds: usize) {
+pub(in super::super) fn run(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    seed: u64,
+    rounds: usize,
+) {
     let court = CompositeSupplyChainCourt::compile();
     let model = ProductModel::bootstrap();
     let root = court.bootstrap();
@@ -24,57 +28,57 @@ pub(in super::super) fn run(seed: u64, rounds: usize) {
         steps: vec!["bootstrap".into()],
     };
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        run.check();
+        run.check(request_execution);
         for (index, (relational, signal)) in
             [(false, false), (true, false), (false, true), (true, true)]
                 .into_iter()
                 .enumerate()
         {
-            run.create(index, relational, signal);
-            run.retire_and_reclaim();
+            run.create(request_execution, index, relational, signal);
+            run.retire_and_reclaim(request_execution);
         }
         let mut random = seed;
         for round in 0..rounds {
             random ^= random << 13;
             random ^= random >> 7;
             random ^= random << 17;
-            run.create(round + 4, true, true);
+            run.create(request_execution, round + 4, true, true);
             // Vary legal boundary adjacencies, while every round still visits
             // all publication postures, cancellation, staleness and recovery.
             let early_hold = random & 1 == 0;
             if early_hold {
-                run.hold();
+                run.hold(request_execution);
             }
             let amount = 1 + random % 11;
             if random & 2 == 0 {
-                run.publish(Some(amount), false);
+                run.publish(request_execution, Some(amount), false);
                 if !early_hold {
-                    run.hold();
+                    run.hold(request_execution);
                 }
-                run.publish(None, true);
+                run.publish(request_execution, None, true);
             } else {
-                run.publish(None, true);
+                run.publish(request_execution, None, true);
                 if !early_hold {
-                    run.hold();
+                    run.hold(request_execution);
                 }
-                run.publish(Some(amount), false);
+                run.publish(request_execution, Some(amount), false);
             }
-            run.publish(Some(1 + (random >> 8) % 11), true);
+            run.publish(request_execution, Some(1 + (random >> 8) % 11), true);
             if random & 4 == 0 {
-                run.release();
+                run.release(request_execution);
             }
             if random & 8 == 0 {
-                run.cancel();
-                run.stale();
+                run.cancel(request_execution);
+                run.stale(request_execution);
             } else {
-                run.stale();
-                run.cancel();
+                run.stale(request_execution);
+                run.cancel(request_execution);
             }
             if random & 4 != 0 {
-                run.release();
+                run.release(request_execution);
             }
-            run.partial_cleanup();
-            run.retire_and_reclaim();
+            run.partial_cleanup(request_execution);
+            run.retire_and_reclaim(request_execution);
         }
     }));
     if let Err(payload) = result {
@@ -89,23 +93,34 @@ pub(in super::super) fn run(seed: u64, rounds: usize) {
     run.court.finish();
 }
 impl ModelRun {
-    fn hold(&mut self) {
+    fn hold(&mut self, request_execution: &worth_execution::ExecutionRequest<'_, '_>) {
         self.steps.push("observe/retain".into());
         self.model.hold(0, "work");
         self.held.insert(0, self.court.observe(&self.heads["work"]));
-        self.check();
+        self.check(request_execution);
     }
-    fn release(&mut self) {
+    fn release(&mut self, request_execution: &worth_execution::ExecutionRequest<'_, '_>) {
         self.steps.push("release observation".into());
         self.model.release(0);
         self.held.remove(&0);
-        self.check();
+        self.check(request_execution);
     }
-    pub fn check(&mut self) {
-        self.observer
-            .check(&self.court, &self.model, &self.heads, &self.held);
+    pub fn check(&mut self, request_execution: &worth_execution::ExecutionRequest<'_, '_>) {
+        self.observer.check(
+            request_execution,
+            &self.court,
+            &self.model,
+            &self.heads,
+            &self.held,
+        );
     }
-    fn create(&mut self, index: usize, relational: bool, signal: bool) {
+    fn create(
+        &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        index: usize,
+        relational: bool,
+        signal: bool,
+    ) {
         self.steps
             .push(format!("create work/{relational}/{signal}/{index}"));
         self.model.create("work", relational, signal);
@@ -140,9 +155,12 @@ impl ModelRun {
             panic!("model predicts a healthy branch creation");
         };
         self.heads.insert("work".into(), head);
-        self.check();
+        self.check(request_execution);
     }
-    fn retire_and_reclaim(&mut self) {
+    fn retire_and_reclaim(
+        &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) {
         self.steps.push("retire work".into());
         let head = self.heads.remove("work").unwrap();
         let chain = self.model.ancestry(self.model.branches["work"].head);
@@ -174,7 +192,7 @@ impl ModelRun {
                 .unwrap(),
         );
         drop(head);
-        self.check();
+        self.check(request_execution);
         for identity in chain {
             self.steps.push(format!("reclaim {identity}"));
             let expected = self.model.reclaim(identity);
@@ -198,7 +216,7 @@ impl ModelRun {
                     &[]
                 }
             );
-            self.check();
+            self.check(request_execution);
         }
         for keys in keys.chunks(2) {
             let report = self

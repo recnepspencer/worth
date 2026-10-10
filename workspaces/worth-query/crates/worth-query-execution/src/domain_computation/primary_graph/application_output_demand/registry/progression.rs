@@ -131,13 +131,18 @@ impl WorthQueryOutputDemandRegistry {
         performed_source: Option<WorthQueryPerformedOutputDemandSource>,
         result: &mut Result<WorthQueryOutputSchedulingResult, WorthQueryOutputDemandDenial>,
     ) {
-        let interrupted = scheduling_was_interrupted(result);
+        let rescheduled = match result {
+            Ok(WorthQueryOutputSchedulingResult::NoEffect(denial)) | Err(denial) => {
+                execution_failure_reschedules(denial)
+            }
+            _ => false,
+        };
         match result {
             Ok(WorthQueryOutputSchedulingResult::NoEffect(denial)) | Err(denial) => {
                 use crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture;
                 // An interrupted scheduling attempt leaves the row for a later claim,
                 // with the same caller posture as interrupted execution.
-                denial.recovery_posture = if interrupted && execution_failure_is_retryable(denial) {
+                denial.recovery_posture = if rescheduled && execution_failure_is_retryable(denial) {
                     WorthQueryOutputDemandRecoveryPosture::Retryable
                 } else {
                     WorthQueryOutputDemandRecoveryPosture::Terminal
@@ -156,7 +161,7 @@ impl WorthQueryOutputDemandRegistry {
         if demand_record_is_closed(record) {
             return;
         }
-        if interrupted {
+        if rescheduled {
             // A carried request can stop Signal before the producer starts.
             // Give the reopened Ready back, just as interrupted execution does.
             record.performed_source = performed_source;
@@ -284,8 +289,7 @@ impl WorthQueryOutputDemandRegistry {
         }
         output.checkpoint = Some(checkpoint);
         output.advancement = match denial {
-            Some(denial) if denial.recovery_posture()
-                != crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable => {
+            Some(denial) if super::required_stop::fails_row(denial) => {
                 WorthQueryOutputAdvancement::Stopped {
                     denial: denial.clone(),
                     interrupted_claim: None,
@@ -355,7 +359,10 @@ pub(super) fn execution_failure_is_retryable(denial: &WorthQueryOutputDemandDeni
         == crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable
         || matches!(
             denial.kind(),
-            crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::PublicationStale
+            crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(
+                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(_)
+            )
+                | crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::PublicationStale
                 | crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::Cancelled
                 | crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::TimedOut
                 | crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::PublicationCapacityExceeded
@@ -367,12 +374,4 @@ pub(super) fn execution_failure_is_retryable(denial: &WorthQueryOutputDemandDeni
 /// request that met it, which still sees it as Terminal unless retryable.
 pub(super) fn execution_failure_reschedules(denial: &WorthQueryOutputDemandDenial) -> bool {
     !super::required_stop::fails_row(denial)
-}
-
-/// In-flight interruption belongs to this attempt, not to its retained Ready.
-pub(super) fn scheduling_was_interrupted(
-    result: &Result<WorthQueryOutputSchedulingResult, WorthQueryOutputDemandDenial>,
-) -> bool {
-    use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind as Kind;
-    matches!(result, Err(denial) if matches!(denial.kind(), Kind::Cancelled | Kind::TimedOut))
 }

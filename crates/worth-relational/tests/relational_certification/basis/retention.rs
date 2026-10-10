@@ -9,7 +9,10 @@ use worth_relational::facade::history::BranchId;
 
 #[test]
 fn external_component_pin_is_the_last_readmission_obligation() {
-    let (world, _) = certified_supply_chain_world(SupplyChainScale::court());
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
     let runtime = world.runtime;
     let program = world.program;
     let handles = world.handles;
@@ -21,6 +24,7 @@ fn external_component_pin_is_the_last_readmission_obligation() {
     let external = runtime.retain_component_basis(&basis).unwrap();
 
     let batch = lower_supply_chain_production_delta(
+        execution,
         &runtime,
         &program,
         &handles,
@@ -48,7 +52,10 @@ fn external_component_pin_is_the_last_readmission_obligation() {
 
 #[test]
 fn foreign_release_denial_preserves_the_owner_obligation() {
-    let (world, _) = certified_supply_chain_world(SupplyChainScale::court());
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
     let runtime = world.runtime;
     let program = world.program;
     let handles = world.handles;
@@ -60,6 +67,7 @@ fn foreign_release_denial_preserves_the_owner_obligation() {
     let external = runtime.retain_component_basis(&basis).unwrap();
 
     let batch = lower_supply_chain_production_delta(
+        execution,
         &runtime,
         &program,
         &handles,
@@ -71,7 +79,7 @@ fn foreign_release_denial_preserves_the_owner_obligation() {
     commit_branch_batch(&runtime, branch_id, batch);
     drop(basis);
 
-    let foreign = certified_supply_chain_world(SupplyChainScale::court())
+    let foreign = certified_supply_chain_world(execution, SupplyChainScale::court())
         .0
         .runtime;
     let owner_before_denial = runtime.branch_basis_cost_counters();
@@ -108,7 +116,10 @@ fn foreign_release_denial_preserves_the_owner_obligation() {
 
 #[test]
 fn dropping_external_retention_uses_the_same_terminal_accounting_path() {
-    let (world, _) = certified_supply_chain_world(SupplyChainScale::court());
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
     let runtime = world.runtime;
     let identity = runtime.main_branch_identity();
     let (_, basis) = runtime.observe_branch(&identity).unwrap();

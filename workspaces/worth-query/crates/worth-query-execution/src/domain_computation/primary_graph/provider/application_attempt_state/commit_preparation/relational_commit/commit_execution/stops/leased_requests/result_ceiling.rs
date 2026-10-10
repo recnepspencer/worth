@@ -11,6 +11,9 @@ use worth_relational::facade::{
 
 #[test]
 fn index_result_capacity_reaches_application_caller() {
+    let host_request = crate::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     in_isolated_process(
         concat!(
             module_path!(),
@@ -95,7 +98,7 @@ fn index_result_capacity_reaches_application_caller() {
             };
             let baseline = runtime
                 .index_authority()
-                .build_for_commit(build_request.clone());
+                .build_for_commit(execution, build_request.clone());
             assert!(baseline.execution_denial.is_none());
             let published = baseline.generations[0].generation_id;
             // The existing large-index oracle uses one worker and 64 KiB:
@@ -103,9 +106,11 @@ fn index_result_capacity_reaches_application_caller() {
             let lease = authority()
                 .request_lease(request(64 * 1024, 1_000_000))
                 .unwrap();
-            let build = runtime
-                .index_authority()
-                .build_for_commit_with_lease(build_request.clone(), &lease);
+            let build = runtime.index_authority().build_for_commit_with_lease(
+                execution,
+                build_request.clone(),
+                &lease,
+            );
             assert!(build.generations.is_empty());
             let denial = build
                 .execution_denial

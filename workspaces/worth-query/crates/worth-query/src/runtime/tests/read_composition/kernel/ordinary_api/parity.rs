@@ -16,14 +16,14 @@ use crate::runtime::{
 };
 
 macro_rules! assert_ordinary_internal_parity {
-    ($author:path, $context:expr, $workspace_name:literal) => {{
+    ($execution:expr, $author:path, $context:expr, $workspace_name:literal) => {{
         let declaration = declare($author).expect("ordinary declaration should build");
-        let mut workspace = read_runtime()
+        let mut workspace = read_runtime($execution)
             .workspace($workspace_name)
             .expect("ordinary workspace should open");
         let completion = declaration
             .using($context)
-            .run(&mut workspace)
+            .run($execution, &mut workspace)
             .into_result()
             .expect("ordinary read should execute");
         let ordinary_context_receipt = completion.context_receipt().clone();
@@ -48,7 +48,7 @@ macro_rules! assert_ordinary_internal_parity {
             WorthQueryReadFamily::new_kernel_only("declared_read", oracle_read_graph);
         let oracle = workspace
             .read_family_intent_in_graph_read_authority(&oracle_family, &oracle_authority)
-            .execute()
+            .execute($execution)
             .expect("internal phase-chain oracle should execute");
 
         assert_eq!(
@@ -78,9 +78,13 @@ macro_rules! assert_ordinary_internal_parity {
 
 #[test]
 fn ordinary_read_matches_internal_phase_chain_result_and_receipt_identity() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let declaration = declare(local_identity_read).expect("ordinary declaration should build");
     let declaration_identity = declaration.identity().as_str().to_string();
     let ordinary = assert_ordinary_internal_parity!(
+        request_execution,
         local_identity_read,
         current(),
         "ordinary-read-detail-parity"
@@ -97,7 +101,11 @@ fn ordinary_read_matches_internal_phase_chain_result_and_receipt_identity() {
 
 #[test]
 fn ordinary_collection_preserves_family_and_matches_internal_phase_chain() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let result = assert_ordinary_internal_parity!(
+        request_execution,
         local_identity_collection_read,
         current(),
         "ordinary-read-collection-parity"
@@ -116,7 +124,11 @@ fn ordinary_collection_preserves_family_and_matches_internal_phase_chain() {
 
 #[test]
 fn ordinary_graph_read_preserves_traversal_and_matches_internal_phase_chain() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let result = assert_ordinary_internal_parity!(
+        request_execution,
         anchored_manager_graph_read,
         current_bounded_manager_relationship_context(),
         "ordinary-read-graph-parity"
@@ -142,7 +154,11 @@ fn ordinary_graph_read_preserves_traversal_and_matches_internal_phase_chain() {
 
 #[test]
 fn ordinary_composed_read_matches_internal_phase_chain_without_scalarizing_evidence() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let result = assert_ordinary_internal_parity!(
+        request_execution,
         local_manager_relationship_read,
         current_manager_relationship_context(),
         "ordinary-read-composed-parity"
@@ -161,17 +177,23 @@ fn ordinary_composed_read_matches_internal_phase_chain_without_scalarizing_evide
 
 #[test]
 fn scope_and_template_composition_execute_through_the_same_admitted_chain() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let direct = assert_ordinary_internal_parity!(
+        request_execution,
         local_named_direct_read,
         current(),
         "ordinary-read-declarative-composition-parity"
     );
     let scoped = assert_ordinary_internal_parity!(
+        request_execution,
         local_named_scoped_read,
         current(),
         "ordinary-read-declarative-composition-parity"
     );
     let templated = assert_ordinary_internal_parity!(
+        request_execution,
         local_named_template_read,
         current(),
         "ordinary-read-declarative-composition-parity"
@@ -191,12 +213,18 @@ fn scope_and_template_composition_execute_through_the_same_admitted_chain() {
 
 #[test]
 fn ordinary_read_exposes_success_without_phase_artifacts() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let declaration = declare(local_identity_read).expect("ordinary declaration should build");
-    let mut workspace = read_runtime()
+    let mut workspace = read_runtime(request_execution)
         .workspace("ordinary-read-outcome")
         .expect("ordinary workspace should open");
 
-    match declaration.using(current()).run(&mut workspace) {
+    match declaration
+        .using(current())
+        .run(request_execution, &mut workspace)
+    {
         WorthQueryReadOutcome::Completed(completion) => {
             assert!(!completion.result().receipt().query_digest().is_empty());
             assert_eq!(

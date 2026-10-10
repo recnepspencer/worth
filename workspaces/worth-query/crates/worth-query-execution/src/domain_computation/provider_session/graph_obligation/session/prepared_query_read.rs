@@ -45,18 +45,19 @@ impl WorthQueryManagedGraphWorkSession {
 impl WorthQueryPreparedSessionRead<'_> {
     pub(in crate::domain_computation) fn execute<T>(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         read: impl FnOnce(
             &worth_relational::facade::runtime::RelationalRuntime,
             &WorthQueryPrimaryGraphLayout,
         ) -> T,
     ) -> Result<(T, WorthQueryPreparedReadCompletion), WorthQueryManagedGraphReadDenial> {
         use super::super::owner_execution::WorthQueryGraphReadOwnerPortDenial as PortDenial;
-        let output =
-            self.port
-                .execute_prepared(self.binding, read)
-                .map_err(|cause| match cause {
-                    PortDenial::ForeignGraph => WorthQueryManagedGraphReadDenial::ForeignGraph,
-                })?;
+        let output = self
+            .port
+            .execute_prepared(execution, self.binding, read)
+            .map_err(|cause| match cause {
+                PortDenial::ForeignGraph => WorthQueryManagedGraphReadDenial::ForeignGraph,
+            })?;
         Ok((
             output,
             WorthQueryPreparedReadCompletion {

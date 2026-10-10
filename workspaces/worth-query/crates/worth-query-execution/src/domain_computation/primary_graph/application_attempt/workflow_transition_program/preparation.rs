@@ -74,6 +74,7 @@ where
         Spec,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         instance: PublishedWorkflowInstanceRef,
         admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
@@ -87,6 +88,7 @@ where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
         self.prepare_workflow_transition::<Capability, Operation, Input, Scope, Spec>(
+            execution,
             installed,
             instance,
             admission,
@@ -102,6 +104,7 @@ where
         Spec,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         instance: PublishedWorkflowInstanceRef,
         admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
@@ -115,6 +118,7 @@ where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
         self.prepare_workflow_transition::<Capability, Operation, Input, Scope, Spec>(
+            execution,
             installed,
             instance,
             admission,
@@ -130,6 +134,7 @@ where
         Spec,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         instance: PublishedWorkflowInstanceRef,
         node_path: String,
@@ -144,6 +149,7 @@ where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
         self.prepare_workflow_transition::<Capability, Operation, Input, Scope, Spec>(
+            execution,
             installed,
             instance,
             admission,
@@ -153,6 +159,7 @@ where
 
     fn prepare_workflow_transition<Capability, Operation, Input, Scope, Spec>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         instance: PublishedWorkflowInstanceRef,
         admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
@@ -188,7 +195,8 @@ where
         let (_, projection, _) = self
             .application()
             .mutation_projection
-            .project_admitted_operation(
+            .project_admitted_operation_with_request(
+                execution,
                 &admission,
                 |_, _| {},
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -197,13 +205,15 @@ where
             .into_parts();
         let read_set = self
             .application()
-            .begin_projected_application_read_attempt(
+            .begin_projected_application_read_attempt_with_request(
+                execution,
                 admission,
                 projection,
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )
             .map_err(WorkflowTransitionPreparationDenial::Attempt)?
-            .complete_projected_dependencies(
+            .complete_projected_dependencies_with_request(
+                execution,
                 crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
             .map_err(WorkflowTransitionPreparationDenial::Attempt)?;
@@ -218,6 +228,7 @@ where
         }
         read_set
             .materialize_workflow_advance::<Capability, Spec>(
+                execution,
                 installed,
                 instance,
                 request_kind,
@@ -235,6 +246,7 @@ where
         Spec,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         workflow: WorthQueryWorkflowVocabulary<'_, Schema, Spec>,
         instance: PublishedWorkflowInstanceRef,
         required: &RequiredWorkflowApproval,
@@ -273,7 +285,8 @@ where
         let (_, projection, _) = self
             .application()
             .mutation_projection
-            .project_admitted_operation(
+            .project_admitted_operation_with_request(
+                execution,
                 &admission,
                 |_, _| {},
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -282,13 +295,15 @@ where
             .into_parts();
         let read_set = self
             .application()
-            .begin_projected_application_read_attempt(
+            .begin_projected_application_read_attempt_with_request(
+                execution,
                 admission,
                 projection,
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )
             .map_err(WorkflowTransitionPreparationDenial::Attempt)?
-            .complete_projected_dependencies(
+            .complete_projected_dependencies_with_request(
+                execution,
                 crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
             .map_err(WorkflowTransitionPreparationDenial::Attempt)?;
@@ -303,6 +318,7 @@ where
         }
         read_set
             .materialize_workflow_approval::<Capability, Spec>(
+                execution,
                 workflow,
                 installed,
                 instance,

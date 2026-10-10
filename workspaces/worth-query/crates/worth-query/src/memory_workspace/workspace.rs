@@ -1,5 +1,7 @@
+mod runtime_builder;
 use super::*;
 use crate::runtime::{WorthQueryAspectTouch, WorthQueryAuthoredAspectMutation};
+use runtime_builder::memory_runtime_builder;
 use worth_foundational::facade::AspectValue;
 use worth_relational::facade::config::{RelationalConfigOverride, RelationalRuntimeProfile};
 use worth_relational::facade::runtime::{
@@ -126,10 +128,12 @@ impl WorthQueryMemoryWorkspace {
 
     pub fn insert_aspects(
         &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         aspects: Vec<WorthQueryAuthoredAspectMutation>,
     ) -> Result<WorthQueryMutationReceipt, WorthQueryWorkspaceError> {
         let patch = self.portable_creation_patch_from_authored(&aspects)?;
         self.insert_portable_patch_with_touches(
+            request_execution,
             &patch,
             aspects.iter().map(|aspect| aspect.aspect_touch()).collect(),
         )
@@ -137,11 +141,13 @@ impl WorthQueryMemoryWorkspace {
 
     pub fn update_aspects(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_identity: WorthQueryEntityIdentity,
         aspects: Vec<WorthQueryAuthoredAspectMutation>,
     ) -> Result<WorthQueryMutationReceipt, WorthQueryWorkspaceError> {
         let patch = self.portable_mutation_patch_from_authored(&aspects)?;
         self.update_portable_patch_with_touches(
+            execution,
             entity_identity,
             &patch,
             aspects.iter().map(|aspect| aspect.aspect_touch()).collect(),
@@ -150,10 +156,12 @@ impl WorthQueryMemoryWorkspace {
 
     pub fn delete(
         &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_identity: WorthQueryEntityIdentity,
     ) -> Result<WorthQueryMutationReceipt, WorthQueryWorkspaceError> {
         let entity_id = super::runtime_identity::entity_id_from_identity(entity_identity.clone())?;
         let (result, snapshot) = self.commit_batch(
+            request_execution,
             WorkerIntentBatch::new("query-memory-delete").push(MutationIntent::Entity(
                 EntityMutationIntent::Delete(DeleteEntityIntent { entity_id }),
             )),
@@ -177,15 +185,20 @@ impl WorthQueryMemoryWorkspace {
         Ok(receipt)
     }
 
-    pub fn entities(&self) -> Result<Vec<WorthQueryEntity>, WorthQueryWorkspaceError> {
-        self.runtime.with_runtime(|runtime| {
+    pub fn entities(
+        &self,
+
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Vec<WorthQueryEntity>, WorthQueryWorkspaceError> {
+        self.runtime.with_runtime(execution, |runtime| {
             let basis = Self::current_main_basis(runtime)?;
             let projection_scope = self.workspace_projection_scope();
             let view = runtime
                 .read_truth()
-                .project_observation(&basis.observation())
+                .project_observation(execution, &basis.observation())
                 .map_err(|_| workspace_basis_unavailable("workspace entity collection"))?;
             Ok(view.entity_records_with_projection_scope(
+                execution,
                 self.kind_id,
                 projection_scope,
                 |record| {
@@ -204,46 +217,61 @@ impl WorthQueryMemoryWorkspace {
 
     pub(crate) fn entity(
         &self,
+
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         identity: &WorthQueryEntityIdentity,
     ) -> Result<Option<WorthQueryEntity>, WorthQueryWorkspaceError> {
         let entity_id = super::runtime_identity::entity_id_from_identity(identity.clone())
             .map_err(|_| WorthQueryWorkspaceError::new("entity identity is malformed"))?;
-        self.runtime.with_runtime(|runtime| {
+        self.runtime.with_runtime(execution, |runtime| {
             let basis = Self::current_main_basis(runtime)?;
             let projection_scope = self.workspace_projection_scope();
             Ok(runtime
                 .read_truth()
-                .project_observation(&basis.observation())
+                .project_observation(execution, &basis.observation())
                 .map_err(|_| workspace_basis_unavailable("workspace entity lookup"))?
-                .entity_record_with_projection_scope(entity_id, projection_scope, |record| {
-                    let (aspect_values, struct_aspect_values, native_field_values) =
-                        self.aspect_projection_from_projection_record(record);
-                    Some(WorthQueryEntity::from_aspect_projection(
-                        super::runtime_identity::entity_identity(record.entity_id()),
-                        aspect_values,
-                        struct_aspect_values,
-                        native_field_values,
-                    ))
-                }))
+                .entity_record_with_projection_scope(
+                    execution,
+                    entity_id,
+                    projection_scope,
+                    |record| {
+                        let (aspect_values, struct_aspect_values, native_field_values) =
+                            self.aspect_projection_from_projection_record(record);
+                        Some(WorthQueryEntity::from_aspect_projection(
+                            super::runtime_identity::entity_identity(record.entity_id()),
+                            aspect_values,
+                            struct_aspect_values,
+                            native_field_values,
+                        ))
+                    },
+                ))
         })
     }
 
-    pub fn snapshot_identity(&self) -> WorthQuerySnapshotIdentity {
-        self.runtime
-            .with_runtime(super::runtime_identity::snapshot_identity_from_runtime)
+    pub fn snapshot_identity(
+        &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> WorthQuerySnapshotIdentity {
+        self.runtime.with_runtime(
+            request_execution,
+            super::runtime_identity::snapshot_identity_from_runtime,
+        )
     }
 
     pub(super) fn ensure_entity_exists(
         &self,
+
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: EntityId,
     ) -> Result<(), WorthQueryWorkspaceError> {
-        self.runtime.with_runtime(|runtime| {
+        self.runtime.with_runtime(execution, |runtime| {
             let basis = Self::current_main_basis(runtime)?;
             runtime
                 .read_truth()
-                .project_observation(&basis.observation())
+                .project_observation(execution, &basis.observation())
                 .map_err(|_| WorthQueryWorkspaceError::new("entity basis is unavailable"))?
                 .entity_record_with_projection_scope(
+                    execution,
                     entity_id,
                     ProjectionAspectScope::empty(),
                     |_| Some(()),
@@ -353,34 +381,4 @@ fn workspace_basis_unavailable(subject: &str) -> WorthQueryWorkspaceError {
         super::WorthQueryWorkspaceErrorKind::RelationalBasisUnavailable,
         format!("{subject} basis is unavailable"),
     )
-}
-
-fn memory_runtime_builder(
-    registry: RelationalSchemaRegistry,
-    invariant_catalog: InvariantCatalog,
-    initial_seed_rows: Option<usize>,
-) -> worth_relational::facade::runtime::RelationalRuntimeBuilder {
-    let builder = RelationalRuntimeApi::builder()
-        .profile(RelationalRuntimeProfile::CertificationCore)
-        .schema_registry(registry)
-        .invariant_catalog(invariant_catalog.canonicalized());
-    let Some(initial_seed_rows) = initial_seed_rows.filter(|rows| *rows > 0) else {
-        return builder;
-    };
-    let defaults = RelationalRuntimeConfig::resolved(
-        RelationalRuntimeProfile::CertificationCore,
-        RelationalConfigOverride::default(),
-    );
-    let mut publication = defaults.publication.policy;
-    publication.max_patch_records_per_commit = publication
-        .max_patch_records_per_commit
-        .max(initial_seed_rows);
-    builder
-        .entity_capacity(
-            defaults
-                .storage
-                .initial_entity_capacity
-                .max(initial_seed_rows),
-        )
-        .publication(publication)
 }

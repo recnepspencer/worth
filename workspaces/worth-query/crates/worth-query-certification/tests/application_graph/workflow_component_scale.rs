@@ -162,19 +162,27 @@ fn qualify(occurrences: u16, key: u64) {
     );
     let validated_ms = started_at.elapsed().as_millis();
     println!("repeated component nodes={nodes} authored_ms={authored_ms} validated_ms={validated_ms} validation_work={work:?}");
-    let cost_scope = runtime
-        .capture_certification_cost_scope(application.current_world())
-        .expect("component branch remains measurable");
-    let draft = runtime
-        .request(&principal, &scope)
-        .mutate(WorkflowDefinitionAuthoringIntent {
-            input: WorkflowDefinitionAuthoringInput {
-                identity: DOCUMENT_IDENTITY.to_owned(),
-                retention_days: 8,
-            },
+    let cost_scope = application
+        .with_host_advancement(|host_phase| {
+            runtime
+                .capture_certification_cost_scope(&host_phase, application.current_world())
+                .expect("component branch remains measurable")
         })
-        .workflow(&application, component_definition(occurrences))
-        .expect("the component binds to installed vocabulary");
+        .expect("installed host call opens");
+    let draft = runtime
+        .with_host_advancement(|host_phase| {
+            runtime
+                .request(&principal, &scope)
+                .mutate(WorkflowDefinitionAuthoringIntent {
+                    input: WorkflowDefinitionAuthoringInput {
+                        identity: DOCUMENT_IDENTITY.to_owned(),
+                        retention_days: 8,
+                    },
+                })
+                .workflow(&host_phase, &application, component_definition(occurrences))
+                .expect("the component binds to installed vocabulary")
+        })
+        .expect("installed host call opens");
     println!(
         "repeated component nodes={nodes} ordinary_draft_ms={}",
         started_at.elapsed().as_millis()
@@ -197,9 +205,13 @@ fn qualify(occurrences: u16, key: u64) {
         published.definition().content_identity(),
         validated.content_identity()
     );
-    let cost = runtime
-        .observe_certification_cost(&cost_scope)
-        .expect("publication cost remains measurable");
+    let cost = application
+        .with_host_advancement(|host_phase| {
+            runtime
+                .observe_certification_cost(&host_phase, &cost_scope)
+                .expect("publication cost remains measurable")
+        })
+        .expect("installed host call opens");
     let sharing = cost.relational().sharing_cost_delta();
     assert_eq!(sharing.copied_truth_bytes, 0);
     assert!(sharing.publication_new_authoritative_bytes > 0);

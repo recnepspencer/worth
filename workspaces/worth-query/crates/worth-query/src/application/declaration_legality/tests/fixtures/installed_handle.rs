@@ -1,12 +1,14 @@
 use super::*;
 
 pub(crate) fn admitted_handle(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     regime: &'static str,
 ) -> crate::application::WorthQueryInstalledDomainDeclarationContext<
     GeometryDomain,
     CollaborativeWorld,
 > {
     crate::application::domain_test_support::installed_declaration_context(
+        request_execution,
         GeometryDomain,
         CollaborativeWorld::named(regime),
         [

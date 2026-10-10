@@ -7,8 +7,11 @@ use super::operation_sharing::settle;
 
 #[test]
 fn settled_snapshot_exports_exact_foundational_rows_without_mutating_operational_truth() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = configured_runtime()
-        .workspace("consumption-cost-export")
+        .workspace(request_execution, "consumption-cost-export")
         .unwrap();
     let settled = settle(&mut workspace);
     let snapshot = settled.consumption_cost_snapshot();

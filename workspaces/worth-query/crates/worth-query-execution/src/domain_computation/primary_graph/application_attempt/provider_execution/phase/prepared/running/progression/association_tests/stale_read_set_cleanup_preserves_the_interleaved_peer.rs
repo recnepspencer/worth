@@ -4,19 +4,20 @@ use super::*;
 
 #[test]
 fn stale_read_set_cleanup_preserves_the_interleaved_peer() {
-    let world =
-        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
-            true,
-        );
-    world.application.with_host_advancement(|active_phase| {
+    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+        let world =
+            crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
+                true,
+            );
+        world.application.with_host_advancement(|active_phase| {
         let phase = &active_phase;
 
-        let baseline = world.invariant.active_snapshot_count();
-        let (victim, peer) = equivalent_programs(&world, "stale-interleaved");
+        let baseline = world.invariant.active_snapshot_count(&active_phase.borrowed_request_for_test());
+        let (victim, peer) = equivalent_programs(&host_custody.phase_for_application(&world.application), &world, "stale-interleaved");
         let victim = start(phase, &world.application, victim, idempotency(147, 148));
         let peer = start(phase, &world.application, peer, idempotency(149, 150));
-        let both_attempts = world.invariant.active_snapshot_count();
-        let winner = equivalent_programs(&world, "stale-winner").0;
+        let both_attempts = world.invariant.active_snapshot_count(&active_phase.borrowed_request_for_test());
+        let winner = equivalent_programs(&host_custody.phase_for_application(&world.application), &world, "stale-winner").0;
         assert!(matches!(
             world
                 .application
@@ -27,16 +28,16 @@ fn stale_read_set_cleanup_preserves_the_interleaved_peer() {
                 , crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation),
             WorthQueryApplicationCommitOutcome::Committed(_)
         ));
-        let victim = finish_application_commit(
+        let victim = finish_application_commit(&phase.borrowed_request_for_test(),
             phase,
             &world.application,
-            progress_application_commit(phase, &world.application, victim, crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation),
+            progress_application_commit(&phase.borrowed_request_for_test(), phase, &world.application, victim, crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation),
         );
         crate::domain_computation::primary_graph::tests::application_attempt::assert_product_basis_stale(
         victim,
         "the interleaved victim bound to the product before the winner",
     );
-        assert_only_peer_remains(&world, baseline, both_attempts);
+        assert_only_peer_remains(&active_phase.borrowed_request_for_test(), &world, baseline, both_attempts);
         finish_peer(
             phase,
             &world,
@@ -45,4 +46,5 @@ fn stale_read_set_cleanup_preserves_the_interleaved_peer() {
             PeerExpectation::ProductBasisStale,
         );
     }).expect("fixture owner admits its advancement");
+    })
 }

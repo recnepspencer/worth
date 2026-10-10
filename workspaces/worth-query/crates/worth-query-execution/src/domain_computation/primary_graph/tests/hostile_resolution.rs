@@ -23,121 +23,85 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrincipalResolutionDenialKind, WorthQueryPrincipalResolutionMode,
 };
 
-#[test]
-fn unknown_disabled_cancelled_and_cross_runtime_resolution_fail_closed() {
-    let enabled = installed_world(&[("alice", WorthQueryPrincipalMappingStatus::Enabled)]);
-    let scope = live_scope();
-    let unknown = enabled.authenticate("unknown", Duration::from_secs(60), &scope);
-    assert_eq!(
-        enabled
-            .selected_product()
-            .resolve_authenticated_principal(
-                &enabled.binding,
-                &unknown,
-                &scope,
-                WorthQueryPrincipalResolutionMode::Ordinary,
-            )
-            .unwrap_err()
-            .kind(),
-        WorthQueryPrincipalResolutionDenialKind::UnknownPrincipal
-    );
-
-    let disabled = installed_world(&[("bob", WorthQueryPrincipalMappingStatus::Disabled)]);
-    let disabled_scope = live_scope();
-    let disabled_external = disabled.authenticate("bob", Duration::from_secs(60), &disabled_scope);
-    assert_eq!(
-        disabled
-            .selected_product()
-            .resolve_authenticated_principal(
-                &disabled.binding,
-                &disabled_external,
-                &disabled_scope,
-                WorthQueryPrincipalResolutionMode::Ordinary,
-            )
-            .unwrap_err()
-            .kind(),
-        WorthQueryPrincipalResolutionDenialKind::DisabledPrincipal
-    );
-
-    let cancellation = WorthQueryCancellationSource::new();
-    let cancelled_external = enabled.authenticate("alice", Duration::from_secs(60), &live_scope());
-    cancellation.cancel();
-    let cancelled_scope = WorthQueryRequestScope::new(
-        std::time::Instant::now() + Duration::from_secs(60),
-        cancellation.token(),
-    );
-    assert_eq!(
-        enabled
-            .selected_product()
-            .resolve_authenticated_principal(
-                &enabled.binding,
-                &cancelled_external,
-                &cancelled_scope,
-                WorthQueryPrincipalResolutionMode::Ordinary,
-            )
-            .unwrap_err()
-            .kind(),
-        WorthQueryPrincipalResolutionDenialKind::Cancelled
-    );
-
-    let foreign = installed_world(&[("alice", WorthQueryPrincipalMappingStatus::Enabled)]);
-    let foreign_external = enabled.authenticate("alice", Duration::from_secs(60), &live_scope());
-    assert_eq!(
-        foreign
-            .selected_product()
-            .resolve_authenticated_principal(
-                &foreign.binding,
-                &foreign_external,
-                &live_scope(),
-                WorthQueryPrincipalResolutionMode::Ordinary,
-            )
-            .unwrap_err()
-            .kind(),
-        WorthQueryPrincipalResolutionDenialKind::ForeignRuntime
-    );
-}
+mod unknown_disabled_cancelled_and_cross_runtime_resolution_fail_clo;
 
 #[test]
 fn ambiguous_index_and_changed_mapping_revoke_application_principal_proof() {
     let mut world = installed_world(&[("alice", WorthQueryPrincipalMappingStatus::Enabled)]);
-    append_duplicate_mapping(&mut world, "alice");
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            append_duplicate_mapping(&host_custody.borrowed_request_for_test(), &world, "alice")
+        })
+        .expect("the fixture read owns its installed host call");
     let scope = live_scope();
     let ambiguous = world.authenticate("alice", Duration::from_secs(60), &scope);
-    assert_eq!(
-        world
-            .selected_product()
-            .resolve_authenticated_principal(
-                &world.binding,
-                &ambiguous,
-                &scope,
-                WorthQueryPrincipalResolutionMode::Ordinary,
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            assert_eq!(
+                world
+                    .selected_product(&(phase).test_host_request(),)
+                    .resolve_authenticated_principal(
+                        &phase,
+                        &world.binding,
+                        &ambiguous,
+                        &scope,
+                        WorthQueryPrincipalResolutionMode::Ordinary,
+                    )
+                    .unwrap_err()
+                    .kind(),
+                WorthQueryPrincipalResolutionDenialKind::AmbiguousPrincipal
             )
-            .unwrap_err()
-            .kind(),
-        WorthQueryPrincipalResolutionDenialKind::AmbiguousPrincipal
-    );
+        })
+        .expect("the fixture read owns its installed host call");
 
     let mut fresh_world = installed_world(&[("carol", WorthQueryPrincipalMappingStatus::Enabled)]);
     let fresh_scope = live_scope();
     let external = fresh_world.authenticate("carol", Duration::from_secs(60), &fresh_scope);
     let principal = fresh_world
-        .selected_product()
-        .resolve_authenticated_principal(
-            &fresh_world.binding,
-            &external,
-            &fresh_scope,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
-    disable_mapping(&mut fresh_world, principal.mapping_entity_id());
-    assert_eq!(
-        fresh_world
-            .selected_product()
-            .validate_authenticated_principal(&principal, &fresh_scope)
-            .unwrap_err()
-            .kind(),
-        WorthQueryPrincipalResolutionDenialKind::StalePrincipalProof
-    );
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            fresh_world
+                .selected_product(&(phase).test_host_request())
+                .resolve_authenticated_principal(
+                    &phase,
+                    &fresh_world.binding,
+                    &external,
+                    &fresh_scope,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
+    fresh_world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            disable_mapping(
+                &host_custody.borrowed_request_for_test(),
+                &fresh_world,
+                principal.mapping_entity_id(),
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    fresh_world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            assert_eq!(
+                fresh_world
+                    .selected_product(&(phase).test_host_request(),)
+                    .validate_authenticated_principal(&phase, &principal, &fresh_scope)
+                    .unwrap_err()
+                    .kind(),
+                WorthQueryPrincipalResolutionDenialKind::StalePrincipalProof
+            )
+        })
+        .expect("the fixture read owns its installed host call");
 }
 
 #[test]
@@ -146,23 +110,36 @@ fn application_principal_proof_expires_with_its_external_authentication() {
     let scope = live_scope();
     let external = world.authenticate("dana", Duration::from_millis(20), &scope);
     let principal = world
-        .selected_product()
-        .resolve_authenticated_principal(
-            &world.binding,
-            &external,
-            &scope,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .selected_product(&(phase).test_host_request())
+                .resolve_authenticated_principal(
+                    &phase,
+                    &world.binding,
+                    &external,
+                    &scope,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     std::thread::sleep(Duration::from_millis(30));
-    assert_eq!(
-        world
-            .selected_product()
-            .validate_authenticated_principal(&principal, &scope)
-            .unwrap_err()
-            .kind(),
-        WorthQueryPrincipalResolutionDenialKind::ExpiredAuthentication
-    );
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            assert_eq!(
+                world
+                    .selected_product(&(phase).test_host_request(),)
+                    .validate_authenticated_principal(&phase, &principal, &scope)
+                    .unwrap_err()
+                    .kind(),
+                WorthQueryPrincipalResolutionDenialKind::ExpiredAuthentication
+            )
+        })
+        .expect("the fixture read owns its installed host call");
 }
 
 #[test]
@@ -171,28 +148,53 @@ fn changed_typed_principal_identity_revokes_the_resolved_proof() {
     let scope = live_scope();
     let external = world.authenticate("erin", Duration::from_secs(60), &scope);
     let principal = world
-        .selected_product()
-        .resolve_authenticated_principal(
-            &world.binding,
-            &external,
-            &scope,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .selected_product(&(phase).test_host_request())
+                .resolve_authenticated_principal(
+                    &phase,
+                    &world.binding,
+                    &external,
+                    &scope,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     assert_eq!(*principal.principal_identity(), 1);
-    change_principal_identity(&mut world, principal.principal_entity_id(), 2);
-    assert_eq!(
-        world
-            .selected_product()
-            .validate_authenticated_principal(&principal, &scope)
-            .unwrap_err()
-            .kind(),
-        WorthQueryPrincipalResolutionDenialKind::StalePrincipalProof
-    );
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            change_principal_identity(
+                &host_custody.borrowed_request_for_test(),
+                &world,
+                principal.principal_entity_id(),
+                2,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            assert_eq!(
+                world
+                    .selected_product(&(phase).test_host_request(),)
+                    .validate_authenticated_principal(&phase, &principal, &scope)
+                    .unwrap_err()
+                    .kind(),
+                WorthQueryPrincipalResolutionDenialKind::StalePrincipalProof
+            )
+        })
+        .expect("the fixture read owns its installed host call");
 }
 
 fn change_principal_identity(
-    world: &mut super::fixture::IdentityWorld,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    world: &super::fixture::IdentityWorld,
     principal_id: worth_relational::facade::identity::EntityId,
     identity: u64,
 ) {
@@ -207,6 +209,7 @@ fn change_principal_identity(
         U64ApplicationValueBinding::encode(&identity).unwrap(),
     )]));
     super::fixture::publish_relational_mutation_on_application(
+        execution,
         &world.application,
         WorkerIntentBatch::new("change-principal-identity").push(MutationIntent::Entity(
             EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
@@ -218,7 +221,8 @@ fn change_principal_identity(
 }
 
 fn disable_mapping(
-    world: &mut super::fixture::IdentityWorld,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    world: &super::fixture::IdentityWorld,
     mapping_id: worth_relational::facade::identity::EntityId,
 ) {
     let graph = world.application.runtime.primary_graph().unwrap();
@@ -235,6 +239,7 @@ fn disable_mapping(
         .unwrap(),
     )]));
     super::fixture::publish_relational_mutation_on_application(
+        execution,
         &world.application,
         WorkerIntentBatch::new("disable-mapping").push(MutationIntent::Entity(
             EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
@@ -245,7 +250,11 @@ fn disable_mapping(
     );
 }
 
-fn append_duplicate_mapping(world: &mut super::fixture::IdentityWorld, subject: &str) {
+fn append_duplicate_mapping(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    world: &super::fixture::IdentityWorld,
+    subject: &str,
+) {
     let graph = world.application.runtime.primary_graph().unwrap();
     let layout = graph
         .layout
@@ -306,6 +315,10 @@ fn append_duplicate_mapping(world: &mut super::fixture::IdentityWorld, subject: 
                     fields: AspectFieldPatch::default(),
                 },
             )));
-        super::fixture::publish_relational_mutation_on_application(&world.application, batch);
+        super::fixture::publish_relational_mutation_on_application(
+            execution,
+            &world.application,
+            batch,
+        );
     }
 }

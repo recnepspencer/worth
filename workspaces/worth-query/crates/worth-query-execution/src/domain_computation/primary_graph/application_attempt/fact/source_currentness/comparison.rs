@@ -6,6 +6,7 @@ impl WorthQueryApplicationObservedFact {
     pub(super) fn comparison(
         &self,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         maximum_work: usize,
     ) -> Result<(bool, usize), WorthQuerySourceCurrentnessFailure> {
@@ -13,14 +14,17 @@ impl WorthQueryApplicationObservedFact {
             return Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded);
         }
         match self {
-            Self::RetiredOutputEntity { .. } => Ok((self.remains_equal_in(runtime, snapshot), 1)),
+            Self::RetiredOutputEntity { .. } => {
+                Ok((self.remains_equal_in(runtime, execution, snapshot), 1))
+            }
             Self::SourceEntity { entity_id } => {
                 let view = runtime
                     .read_truth()
-                    .project_snapshot(snapshot)
+                    .project_snapshot(snapshot, execution)
                     .ok_or(WorthQuerySourceCurrentnessFailure::Unavailable)?;
                 Ok((
                     view.entity_record_with_projection_scope(
+                        execution,
                         *entity_id,
                         worth_relational::facade::runtime::ProjectionAspectScope::empty(),
                         |record| {
@@ -48,7 +52,14 @@ impl WorthQueryApplicationObservedFact {
                     .read_truth()
                     .exact_snapshot_entity_aspect_version(snapshot, *entity_id, aspect)
                 else {
-                    return unanswered_probe(runtime, snapshot, *entity_id, work, maximum_work);
+                    return unanswered_probe(
+                        runtime,
+                        execution,
+                        snapshot,
+                        *entity_id,
+                        work,
+                        maximum_work,
+                    );
                 };
                 Ok((current == *native_revision, work))
             }
@@ -61,10 +72,17 @@ impl WorthQueryApplicationObservedFact {
                     native_revision.ok_or(WorthQuerySourceCurrentnessFailure::Unavailable)?;
                 let Some(current) = runtime
                     .read_truth()
-                    .project_snapshot(snapshot)
-                    .and_then(|view| view.entity_field_revision(*entity_id, locator))
+                    .project_snapshot(snapshot, execution)
+                    .and_then(|view| view.entity_field_revision(execution, *entity_id, locator))
                 else {
-                    return unanswered_probe(runtime, snapshot, *entity_id, 1, maximum_work);
+                    return unanswered_probe(
+                        runtime,
+                        execution,
+                        snapshot,
+                        *entity_id,
+                        1,
+                        maximum_work,
+                    );
                 };
                 Ok((current == expected, 1))
             }
@@ -77,11 +95,12 @@ impl WorthQueryApplicationObservedFact {
             } => {
                 let view = runtime
                     .read_truth()
-                    .project_snapshot(snapshot)
+                    .project_snapshot(snapshot, execution)
                     .ok_or(WorthQuerySourceCurrentnessFailure::Unavailable)?;
                 // The owner-index lookup costs one unit whatever the fact's
                 // recorded limit.
                 match view.bounded_adjacency_structural_revision(
+                    execution,
                     *anchor,
                     *relation_kind,
                     *direction,
@@ -92,7 +111,7 @@ impl WorthQueryApplicationObservedFact {
                         comparison.work_units(),
                     )),
                     Err(AdjacencyStructuralRevisionDenial::AnchorUnavailable) => {
-                        unanswered_probe(runtime, snapshot, *anchor, 1, maximum_work)
+                        unanswered_probe(runtime, execution, snapshot, *anchor, 1, maximum_work)
                     }
                     Err(AdjacencyStructuralRevisionDenial::WorkBudgetExceeded) => {
                         Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded)
@@ -118,6 +137,7 @@ impl WorthQueryApplicationObservedFact {
             } => {
                 let (relations, work) = super::super::adjacency::observe_adjacency_with_work(
                     runtime,
+                    execution,
                     snapshot,
                     *relation_kind,
                     *from,
@@ -140,6 +160,7 @@ impl WorthQueryApplicationObservedFact {
             } => {
                 let (current, work) = super::super::adjacency::observe_adjacency_with_work(
                     runtime,
+                    execution,
                     snapshot,
                     *relation_kind,
                     *anchor,
@@ -163,6 +184,7 @@ impl WorthQueryApplicationObservedFact {
                 };
                 let (current, work) = super::super::adjacency::observe_adjacency_with_work(
                     runtime,
+                    execution,
                     snapshot,
                     *relation_kind,
                     *lineage,
@@ -186,6 +208,7 @@ impl WorthQueryApplicationObservedFact {
             } => {
                 let (current, work) = super::super::adjacency::observe_adjacency_with_work(
                     runtime,
+                    execution,
                     snapshot,
                     *relation_kind,
                     *lineage,
@@ -210,6 +233,7 @@ impl WorthQueryApplicationObservedFact {
                     .ok_or(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded)?;
                 let (current, work) = super::super::adjacency::observe_adjacency_with_work(
                     runtime,
+                    execution,
                     snapshot,
                     *relation_kind,
                     *lineage,
@@ -230,6 +254,7 @@ impl WorthQueryApplicationObservedFact {
             } => Ok((
                 super::super::workflow_history_basis::remains_equal(
                     runtime,
+                    execution,
                     snapshot,
                     observed,
                     *maximum_transitions,
@@ -250,6 +275,7 @@ impl WorthQueryApplicationObservedFact {
 /// is a snapshot that could not be read.
 fn unanswered_probe(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    _execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     entity: worth_relational::facade::identity::EntityId,
     probe_work: usize,

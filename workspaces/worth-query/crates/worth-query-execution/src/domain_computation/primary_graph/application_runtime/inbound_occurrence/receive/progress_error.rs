@@ -5,6 +5,7 @@ use super::{
 impl Denial {
     pub(in crate::domain_computation::primary_graph) fn pending_reason(self) -> Pending {
         match self {
+            Denial::ExecutionDenied(cause) => Pending::ExecutionRequest(cause),
             Denial::PublicationExecutionDenied { stage, kind } => {
                 Pending::ExecutionDenied { stage, kind }
             }

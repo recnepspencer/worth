@@ -13,8 +13,14 @@ use support::public_bridge_runtime::PublicBridgeRuntimeHarness;
 
 #[test]
 fn operator_matrix_derives_the_expected_structural_requirement_kinds() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for (name, required_kinds) in operator_cases() {
-        let mut workspace = workspace(&format!("graph-read-access.phase-four.{name}"));
+        let mut workspace = workspace(
+            request_execution,
+            &format!("graph-read-access.phase-four.{name}"),
+        );
         let family = operator_family(&mut workspace, name);
         let requirements = explain_graph_read_access_requirements_for_family(&family)
             .expect("operator requirements should derive");
@@ -171,9 +177,12 @@ fn operator_family(
         .expect("operator family should admit")
 }
 
-fn workspace(name: &str) -> crate::runtime::WorthQueryWorkspace {
+fn workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    name: &str,
+) -> crate::runtime::WorthQueryWorkspace {
     PublicBridgeRuntimeHarness::new()
-        .bridge_backed_runtime()
+        .bridge_backed_runtime(request_execution)
         .workspace(name)
         .expect("runtime should open workspace")
 }

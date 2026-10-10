@@ -9,12 +9,12 @@ fn explicit_terminal_repair_rejects_a_foreign_verifier_handle() {
     let world = installed_world();
     let foreign = installed_world();
     assert_eq!(
-        world.application.repair_completed_inbound_index(
-            &foreign.verifier,
+        world.application.with_host_advancement(|phase| world.application.repair_completed_inbound_index(
+            &phase, &foreign.verifier,
             NonZeroUsize::new(32).unwrap(),
             NonZeroUsize::new(32).unwrap(),
             NonZeroUsize::new(32).unwrap(),
-        ),
+        )).expect("installed host call opens"),
         Err(crate::domain_computation::primary_graph::WorthQueryInboundIndexRepairDenial::ForeignVerifier),
     );
 }
@@ -24,35 +24,48 @@ fn retired_original_incarnation_rebuilds_from_world_and_canonical_relational_pat
     let world = installed_world();
     let branch = world
         .application
-        .branches()
-        .fork(world.application.current_world())
-        .components(|components| components.fork_relational().fork_signal())
-        .create()
-        .expect("forked application product must publish");
-    let (correlation, original_world_commit) = {
-        let dispatch = world.commit_dispatch_on(branch, 71, "notice-retired-terminal");
-        let record = dispatch.dispatch_outbox().unwrap();
-        let correlation = *record.correlation();
-        let envelope = signed_envelope(record, [0xb1; 32], record.payload(), false);
-        let request = super::super::fixture::live_scope();
-        assert_eq!(
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
             world
                 .application
-                .receive_inbound_occurrence(&world.verifier, &envelope, &request,)
-                .unwrap()
-                .posture(),
-            WorthQueryInboundReceiptPosture::Performed
-        );
-        let original = dispatch
-            .committed_product_publication()
-            .composite_commit()
-            .clone();
-        (correlation, original)
-    };
-    assert!(matches!(
-        world.application.on_branch(branch).close(),
+                .branches()
+                .fork(world.application.current_world())
+                .components(|components| components.fork_relational().fork_signal())
+                .create(&phase)
+                .expect("forked application product must publish")
+        })
+        .expect("the fixture read owns its installed host call");
+    let (correlation, original_world_commit) = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            {
+                let dispatch =
+                    world.commit_dispatch_on(&phase, branch, 71, "notice-retired-terminal");
+                let record = dispatch.dispatch_outbox().unwrap();
+                let correlation = *record.correlation();
+                let envelope = signed_envelope(record, [0xb1; 32], record.payload(), false);
+                let request = super::super::fixture::live_scope();
+                assert_eq!(
+                    world
+                        .application
+                        .receive_inbound_occurrence(&world.verifier, &envelope, &request,)
+                        .unwrap()
+                        .posture(),
+                    WorthQueryInboundReceiptPosture::Performed
+                );
+                let original = dispatch
+                    .committed_product_publication()
+                    .composite_commit()
+                    .clone();
+                (correlation, original)
+            }
+        })
+        .expect("the fixture read owns its installed host call");
+    world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); assert!(matches!(
+        world.application.on_branch(branch).close(&phase, ),
         Err(crate::domain_computation::primary_graph::WorthQueryApplicationProductBranchCloseDenial::OwnerCleanupPending(_))
-    ));
+    )) }).expect("the fixture read owns its installed host call");
     assert!(world
         .application
         .product_runtime()
@@ -64,12 +77,16 @@ fn retired_original_incarnation_rebuilds_from_world_and_canonical_relational_pat
     assert!(provider.lookup_completed_inbound(&correlation).is_err());
     let complete = world
         .application
-        .repair_completed_inbound_index(
-            &world.verifier,
-            NonZeroUsize::new(32).unwrap(),
-            NonZeroUsize::new(32).unwrap(),
-            NonZeroUsize::new(32).unwrap(),
-        )
+        .with_host_advancement(|phase| {
+            world.application.repair_completed_inbound_index(
+                &phase,
+                &world.verifier,
+                NonZeroUsize::new(32).unwrap(),
+                NonZeroUsize::new(32).unwrap(),
+                NonZeroUsize::new(32).unwrap(),
+            )
+        })
+        .expect("installed host call opens")
         .expect("World-paired canonical commit patch survives branch retirement");
     assert!(complete);
     let rebuilt = provider

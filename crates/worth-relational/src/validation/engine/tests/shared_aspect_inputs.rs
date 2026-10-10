@@ -125,15 +125,24 @@ impl CustomInvariantRule for ReadsSummary {
 
 #[test]
 fn overlapping_field_reads_are_shared_without_sharing_verdicts_or_changed_basis() {
-    assert_overlapping_field_reads(false);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    assert_overlapping_field_reads(execution, false);
 }
 
 #[test]
 fn leased_opaque_field_read_rules_are_denied_before_execution() {
-    assert_overlapping_field_reads(true);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    assert_overlapping_field_reads(execution, true);
 }
 
-fn assert_overlapping_field_reads(leased: bool) {
+fn assert_overlapping_field_reads(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    leased: bool,
+) {
     let target = Arc::new(OnceLock::new());
     let schema = AspectSchemaFixture {
         entity_aspects: vec![
@@ -201,7 +210,7 @@ fn assert_overlapping_field_reads(leased: bool) {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("summary change publication");
-    assert_entity_summary(&runtime, entity, "after", "open");
+    assert_entity_summary(execution, &runtime, entity, "after", "open");
     assert_shared_field_reads(&runtime, false, leased);
 }
 

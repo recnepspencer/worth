@@ -19,19 +19,29 @@ fn broad_host_profile_is_narrowed_before_real_batch_planning_and_custody() {
     let external = block_on(auth.authenticate((), &scope)).unwrap();
     let observation = world
         .application
-        .request(&external, &scope)
-        .retain_read()
-        .unwrap();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .request(&external, &scope)
+                .retain_read(&phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     let observer = world.application.result_buffer_observer();
     let before = observer.observe().retained_bytes();
     let batch = world
         .application
-        .request(&external, &scope)
-        .at(&observation)
-        .query_batch(vec![read("intent-1"), read("intent-1")])
-        .limits(narrow_limits())
-        .execute()
-        .unwrap();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .request(&external, &scope)
+                .at(&observation)
+                .query_batch(vec![read("intent-1"), read("intent-1")])
+                .limits(narrow_limits())
+                .execute(&phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     assert_eq!(batch.items().len(), 2);
     assert_eq!(batch.items()[0].rows()[0].input, "payload");
     assert!(batch.receipt().read_work().peak_bytes() <= 128 * 1024);
@@ -55,18 +65,28 @@ fn oversized_actual_field_refuses_the_narrow_buffer_without_collection_or_leak()
     let external = block_on(auth.authenticate((), &scope)).unwrap();
     let observation = world
         .application
-        .request(&external, &scope)
-        .retain_read()
-        .unwrap();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .request(&external, &scope)
+                .retain_read(&phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     let observer = world.application.result_buffer_observer();
     let before = observer.observe().retained_bytes();
     let outcome = world
         .application
-        .request(&external, &scope)
-        .at(&observation)
-        .query_batch(vec![read("intent-1")])
-        .limits(narrow_limits())
-        .execute();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .request(&external, &scope)
+                .at(&observation)
+                .query_batch(vec![read("intent-1")])
+                .limits(narrow_limits())
+                .execute(&phase)
+        })
+        .expect("installed host call opens");
     assert!(
         matches!(outcome, Err(WorthQueryApplicationQueryBatchDenial::Item {
         index: 0,
@@ -77,8 +97,13 @@ fn oversized_actual_field_refuses_the_narrow_buffer_without_collection_or_leak()
     assert_eq!(observer.observe().active_buffers(), 0);
     let current = world
         .application
-        .request(&external, &scope)
-        .retain_read()
-        .unwrap();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .request(&external, &scope)
+                .retain_read(&phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     assert_eq!(current.selected_commit(), observation.selected_commit());
 }

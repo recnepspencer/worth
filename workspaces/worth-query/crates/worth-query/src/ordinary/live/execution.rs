@@ -10,7 +10,11 @@ use super::{
 };
 
 impl WorthQueryLiveRequest {
-    pub fn open(self, workspace: &mut WorthQueryWorkspace) -> WorthQueryLiveOpenOutcome {
+    pub fn open(
+        self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        workspace: &mut WorthQueryWorkspace,
+    ) -> WorthQueryLiveOpenOutcome {
         let (declaration, context) = self.into_parts();
         let (name, read) = declaration.into_parts();
         let intent = read.into_declared_intent();
@@ -37,7 +41,7 @@ impl WorthQueryLiveRequest {
             .record_planning_completed()
             .record_lower_runtime_execution_attempt();
         let projection_binding = WorthQueryReadProjectionBinding::from_graph(&read_graph);
-        match workspace.open_declared_live_graph(name, read_graph, &authority) {
+        match workspace.open_declared_live_graph(request_execution, name, read_graph, &authority) {
             Ok(view) => WorthQueryLiveOpenOutcome::Opened(WorthQueryLiveOpenCompletion::new(
                 WorthQueryManagedLiveHandle::new(
                     view,

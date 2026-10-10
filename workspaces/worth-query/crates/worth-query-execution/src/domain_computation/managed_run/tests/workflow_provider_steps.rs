@@ -136,9 +136,11 @@ fn workflow_stage_provider_call_uses_stage_resources_and_receipt_evidence() {
             WorthQueryOperationGraphAccess::Project,
         );
         let running = admitted_workflow(&runtime, &operation, resources);
+        let installed_running_phase = execution.phase_for_workflow(&running);
+
         let active = running
             .begin_stage_graph_execution(
-                execution,
+                &installed_running_phase,
                 "stage",
                 &graph,
                 WorthQueryManagedGraphCallRequest::new(
@@ -147,7 +149,7 @@ fn workflow_stage_provider_call_uses_stage_resources_and_receipt_evidence() {
                 ),
             )
             .expect("installed stage resources should start the bounded provider");
-        let pending = match active.advance(execution) {
+        let pending = match active.advance(&installed_running_phase) {
             WorthQueryWorkflowGraphStepOutcome::ChunkReady(pending) => pending,
             _ => panic!("workflow stage did not expose its bounded result chunk"),
         };
@@ -219,9 +221,11 @@ fn workflow_step_derives_artifact_and_checkpoint_evidence_from_governed_ports() 
             output,
         );
         let running = admitted_workflow(&runtime, &operation, resources);
+        let installed_running_phase = execution.phase_for_workflow(&running);
+
         let active = running
             .begin_stage_graph_execution(
-                execution,
+                &installed_running_phase,
                 "producer",
                 &graph,
                 WorthQueryManagedGraphCallRequest::new(
@@ -230,7 +234,7 @@ fn workflow_step_derives_artifact_and_checkpoint_evidence_from_governed_ports() 
                 ),
             )
             .expect("workflow artifact provider should start");
-        let completion = match active.advance(execution) {
+        let completion = match active.advance(&installed_running_phase) {
             WorthQueryWorkflowGraphStepOutcome::Completed(completion) => completion,
             _ => panic!("governed artifact and checkpoint step did not complete"),
         };

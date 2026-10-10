@@ -98,6 +98,7 @@ where
         Unit,
     >(
         &mut self,
+
         relation: ApplicationRelationRef<Schema, Relation, From, To>,
         field: ApplicationFieldRef<Schema, From, Aspect, Field, Value, Write, Equality, Unit>,
         target: &WorthQueryInvariantEntityIdentity<Schema, To>,
@@ -108,8 +109,9 @@ where
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
+        let execution = self.execution;
         let plan = validated_plan::ValidatedAggregatePlan::validate(self, relation, field, target)?;
-        execution::execute::<Schema, Field::Binding>(self, plan)
+        execution::execute::<Schema, Field::Binding>(execution, self, plan)
     }
 }
 

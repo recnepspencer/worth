@@ -9,6 +9,7 @@ use crate::runtime::mutation::graph_composition_error;
 impl WorthQueryWorkspace {
     pub fn compose_graph(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         declaration: impl FnOnce(
             &mut WorthQueryGraphCompositionBuilder,
         ) -> Result<(), WorthQueryRuntimeError>,
@@ -16,7 +17,10 @@ impl WorthQueryWorkspace {
         let mut builder = WorthQueryGraphCompositionBuilder::new();
         declaration(&mut builder)?;
         let (commands, breadth, program) = builder.finish()?;
-        match self.runtime.write_graph_batch(commands, breadth, program) {
+        match self
+            .runtime
+            .write_graph_batch(execution, commands, breadth, program)
+        {
             Err(WorthQueryRuntimeError::ExistingTruthAssertionDenied(denial)) => {
                 let kind = match denial.kind() {
                     WorthQueryExistingTruthAssertionDenialKind::BackendVerificationUnsupported => {

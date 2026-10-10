@@ -14,6 +14,7 @@ use crate::domain_computation::primary_graph::{
 };
 
 pub(super) fn refresh_exact_support<Schema, Capability, Operation, Input>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     requested: &mut WorthQueryRequestedElevation,
     access: &mut WorthQueryAdmittedApplicationCapabilityAccess<
@@ -30,11 +31,13 @@ where
     let installed =
         runtime.installed_capability_plan(requested.binding().supporting().request())?;
     validate_support_owner(requested.binding(), installed)?;
-    let current = observe_current_support(runtime, requested.binding(), access, installed)?;
+    let current =
+        observe_current_support(execution, runtime, requested.binding(), access, installed)?;
     requested.apply_current_support(current, access, installed.contract().name())
 }
 
 fn observe_current_support<Schema, Capability, Operation, Input>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     requested: &WorthQueryElevationRequestBinding,
     access: &WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
@@ -45,8 +48,12 @@ where
     Input: ApplicationCapabilityRequest<Schema, Capability>,
 {
     access
-        .with_exact_observation(runtime, |observation| {
-            observation.observe_current_elevation_support(installed, requested.supporting())
+        .with_exact_observation(execution, runtime, |observation| {
+            observation.observe_current_elevation_support(
+                execution,
+                installed,
+                requested.supporting(),
+            )
         })
         .ok_or_else(|| stale_support(installed.contract().name()))?
         .map_err(|denial| support_observation_denial(installed.contract().name(), denial))

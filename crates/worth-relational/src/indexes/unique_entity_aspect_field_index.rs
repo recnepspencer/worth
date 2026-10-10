@@ -33,6 +33,7 @@ pub(crate) fn refresh_unique_entity_aspect_field_index_for_records(
 }
 
 pub(crate) fn rebuild_unique_entity_aspect_field_indexes(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
 ) -> Result<(), crate::branch::RelationalBranchBasisDenial> {
     let tracked_fields = tracked_unique_entity_aspect_fields(runtime);
@@ -45,14 +46,15 @@ pub(crate) fn rebuild_unique_entity_aspect_field_indexes(
         runtime.indexes.clear_unique_index();
         return Ok(());
     };
-    let projection = runtime
-        .read_truth()
-        .project_branch_head(&branch_id, head.version_id)?;
+    let projection =
+        runtime
+            .read_truth()
+            .project_branch_head(execution, &branch_id, head.version_id)?;
     let Some(projection) = projection else {
         return Ok(());
     };
     let rebuilt_values =
-        collect_all_unique_entity_aspect_field_entries(&projection, &tracked_fields);
+        collect_all_unique_entity_aspect_field_entries(execution, &projection, &tracked_fields);
     runtime.indexes.clear_unique_index();
     write_unique_entity_aspect_field_index_entries(runtime, rebuilt_values);
     Ok(())
@@ -101,6 +103,7 @@ fn write_unique_entity_aspect_field_index_entries(
 }
 
 fn collect_all_unique_entity_aspect_field_entries(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &crate::runtime::VisibilityProjectionView<'_>,
     tracked_fields: &BTreeSet<AspectFieldLocator>,
 ) -> Vec<(
@@ -113,7 +116,7 @@ fn collect_all_unique_entity_aspect_field_entries(
         .expect("current unique-index projection must carry an exact basis");
     for field_locator in tracked_fields {
         entries.extend(
-            build_entity_aspect_field_index(&source, field_locator)
+            build_entity_aspect_field_index(execution, &source, field_locator)
                 .into_iter()
                 .flat_map(|(value, entity_ids)| {
                     entity_ids

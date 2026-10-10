@@ -23,6 +23,8 @@ mod producer_predicate_checkpoint;
 mod restored_primary_backend;
 #[path = "application_graph/restored_replay.rs"]
 mod restored_replay;
+#[path = "support/execution_policy.rs"]
+mod test_request_policy;
 #[path = "application_graph/unpublished_recovery.rs"]
 mod unpublished_recovery;
 #[path = "application_graph/workflow.rs"]

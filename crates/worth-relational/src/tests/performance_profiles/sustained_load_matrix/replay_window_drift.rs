@@ -1,6 +1,9 @@
 use super::*;
 
-pub(super) fn certify_replay_window_drift_stability(suite: &'static str) {
+pub(super) fn certify_replay_window_drift_stability(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    suite: &'static str,
+) {
     let replay_window_drift_samples =
         capture_perf_samples(suite, "replay_window_drift_stability", || {
             let runtime = persisted_runtime_with_test_schema_profile(
@@ -24,14 +27,15 @@ pub(super) fn certify_replay_window_drift_stability(suite: &'static str) {
 
             for commit_id in commit_ids.iter().rev().take(REPLAY_WINDOW) {
                 let replay_started_at = Instant::now();
-                let outcome = runtime
-                    .replay_authority()
-                    .replay_commit(RelationalReplayRequest {
+                let outcome = runtime.replay_authority().replay_commit(
+                    RelationalReplayRequest {
                         commit_id: *commit_id,
                         branch_id: BranchId("main".to_string()),
                         execution_mode: ReplayExecutionMode::SerialDeterministic,
                         verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-                    });
+                    },
+                    execution,
+                );
                 let replay_micros = replay_started_at.elapsed().as_micros();
                 assert!(
                     outcome.failure.is_none(),

@@ -32,9 +32,16 @@ pub(super) struct ReservationWorld {
 impl ReservationWorld {
     pub(super) fn selected_product(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     ) -> WorthQuerySelectedProductOperation<'_, ReservationSchema> {
+        let execution = phase
+            .execution_request_for(self.application.product_runtime())
+            .expect("fixture lends its installed phase");
         self.application
-            .select_product_branch(self.application.product_runtime().default_branch())
+            .select_product_branch(
+                &execution,
+                self.application.product_runtime().default_branch(),
+            )
             .expect("the fixture Product branch remains admitted")
     }
 }
@@ -99,6 +106,7 @@ pub(super) fn installed_world() -> ReservationWorld {
         let invariant = bootstrap.retain_invariant_projection_authority();
         let application = bootstrap
             .publish_application_runtime(
+                &active_phase.borrowed_request_for_test(),
                 &phase,
                 runtime,
                 authority,
@@ -114,6 +122,7 @@ pub(super) fn installed_world() -> ReservationWorld {
 }
 
 pub(super) fn authenticated_principal(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     world: &ReservationWorld,
     request: &WorthQueryRequestScope,
 ) -> WorthQueryAuthenticatedPrincipal<ReservationSchema, Principal, u64> {
@@ -123,8 +132,9 @@ pub(super) fn authenticated_principal(
         .principal_binding(IdentityBinding::reference())
         .unwrap();
     world
-        .selected_product()
+        .selected_product(phase_custody)
         .resolve_authenticated_principal(
+            phase_custody,
             &binding,
             &external,
             request,
@@ -134,13 +144,15 @@ pub(super) fn authenticated_principal(
 }
 
 pub(super) fn resolved_account(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     world: &ReservationWorld,
     status: &str,
     request: &WorthQueryRequestScope,
 ) -> WorthQueryApplicationEntityIdentity<ReservationSchema, Account> {
     world
-        .selected_product()
+        .selected_product(phase_custody)
         .resolve_entity(
+            phase_custody,
             AccountStatus::reference(),
             status.to_owned(),
             request,

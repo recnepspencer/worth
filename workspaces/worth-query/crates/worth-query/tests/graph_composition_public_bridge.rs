@@ -11,64 +11,75 @@ use support::test_entity_identities::relational_test_entity_identity;
 
 #[test]
 fn graph_composition_public_bridge_executes_symbolic_followup_and_relation_retirement() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let harness = PublicBridgeRuntimeHarness::new();
-    let runtime = harness.bridge_backed_runtime();
+    let runtime = harness.bridge_backed_runtime(request_execution);
     let mut workspace = runtime
         .workspace("public.graph-composition-lifecycle")
         .expect("runtime should open a named workspace");
     let tasks: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("public.graph-composition-lifecycle-tasks", |q| {
-            q.from("Task")
-                .select([
-                    worth_query::facade::foundation::AspectFieldKey::from_authoring_parts(
-                        "identity", "id",
+        .live_view(
+            request_execution,
+            "public.graph-composition-lifecycle-tasks",
+            |q| {
+                q.from("Task")
+                    .select([
+                        worth_query::facade::foundation::AspectFieldKey::from_authoring_parts(
+                            "identity", "id",
+                        )
+                        .unwrap(),
+                        worth_query::facade::foundation::AspectFieldKey::from_authoring_parts(
+                            "title", "value",
+                        )
+                        .unwrap(),
+                    ])
+                    .order_by(
+                        worth_query::facade::foundation::AspectFieldKey::from_authoring_parts(
+                            "title", "value",
+                        )
+                        .unwrap(),
                     )
-                    .unwrap(),
-                    worth_query::facade::foundation::AspectFieldKey::from_authoring_parts(
-                        "title", "value",
-                    )
-                    .unwrap(),
-                ])
-                .order_by(
-                    worth_query::facade::foundation::AspectFieldKey::from_authoring_parts(
-                        "title", "value",
-                    )
-                    .unwrap(),
-                )
-                .schema_basis("public-graph-composition-lifecycle-tasks")
-        })
+                    .schema_basis("public-graph-composition-lifecycle-tasks")
+            },
+        )
         .expect("task live view should declare");
     let edges: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("public.graph-composition-lifecycle-edges", |q| {
-            q.from("TaskEdge")
-                .select([
-                    worth_query::facade::foundation::AspectFieldKey::from_authoring_parts(
-                        "edge", "kind",
+        .live_view(
+            request_execution,
+            "public.graph-composition-lifecycle-edges",
+            |q| {
+                q.from("TaskEdge")
+                    .select([
+                        worth_query::facade::foundation::AspectFieldKey::from_authoring_parts(
+                            "edge", "kind",
+                        )
+                        .unwrap(),
+                        worth_query::facade::foundation::AspectFieldKey::from_authoring_parts(
+                            "edge",
+                            "source_identity",
+                        )
+                        .unwrap(),
+                        worth_query::facade::foundation::AspectFieldKey::from_authoring_parts(
+                            "edge",
+                            "target_identity",
+                        )
+                        .unwrap(),
+                    ])
+                    .order_by(
+                        worth_query::facade::foundation::AspectFieldKey::from_authoring_parts(
+                            "edge", "kind",
+                        )
+                        .unwrap(),
                     )
-                    .unwrap(),
-                    worth_query::facade::foundation::AspectFieldKey::from_authoring_parts(
-                        "edge",
-                        "source_identity",
-                    )
-                    .unwrap(),
-                    worth_query::facade::foundation::AspectFieldKey::from_authoring_parts(
-                        "edge",
-                        "target_identity",
-                    )
-                    .unwrap(),
-                ])
-                .order_by(
-                    worth_query::facade::foundation::AspectFieldKey::from_authoring_parts(
-                        "edge", "kind",
-                    )
-                    .unwrap(),
-                )
-                .schema_basis("public-graph-composition-lifecycle-edges")
-        })
+                    .schema_basis("public-graph-composition-lifecycle-edges")
+            },
+        )
         .expect("edge live view should declare");
 
     let receipt = workspace
-        .compose_graph(|graph| {
+        .compose_graph(request_execution, |graph| {
             let draft = graph.insert_entity("draft-task", "Task", |task| {
                 task.set_aspect(touch("identity.id"), authored_text("task-lifecycle"))
                     .set_aspect(touch("title.value"), authored_text("Draft task"))
@@ -95,12 +106,12 @@ fn graph_composition_public_bridge_executes_symbolic_followup_and_relation_retir
             Ok(())
         })
         .expect("graph composition lifecycle should execute");
-    let task_rows = workspace.read(&tasks);
-    let edge_rows = workspace.read(&edges);
+    let task_rows = workspace.read(request_execution, &tasks);
+    let edge_rows = workspace.read(request_execution, &edges);
     let inspection = workspace
         .inspections()
         .expect("inspection lane should admit")
-        .inspect(&receipt)
+        .inspect(request_execution, &receipt)
         .expect("receipt should inspect");
 
     assert_eq!(receipt.write_receipts().len(), 4);

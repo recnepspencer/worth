@@ -17,7 +17,10 @@ use super::domain::{
 
 #[test]
 fn legality_evidence_maps_to_planning_receipt_and_published_support() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
     let evidence = handle
         .describe_foundational(
             WorthQueryDeclarationFoundationalEvidenceInput::legality_evidence(
@@ -64,7 +67,10 @@ fn legality_evidence_maps_to_planning_receipt_and_published_support() {
 
 #[test]
 fn denied_and_degraded_paths_stay_distinct() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
     let declaration = handle
         .declare(Declaration::<IllegalRoleFamily>::new("edge:42"))
         .unwrap_or_else(|_| panic!("declaration should admit"));
@@ -105,8 +111,11 @@ fn denied_and_degraded_paths_stay_distinct() {
 
 #[test]
 fn deferred_stale_rebind_and_failed_progression_map_honestly() {
-    let collaborative = admitted_handle("collaborative");
-    let restricted = admitted_handle("restricted");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let collaborative = admitted_handle(request_execution, "collaborative");
+    let restricted = admitted_handle(request_execution, "restricted");
 
     let deferred = collaborative
         .describe_foundational(

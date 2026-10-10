@@ -4,9 +4,12 @@ use worth_relational::facade::history::BranchId;
 
 #[test]
 fn phase4_reference_cost_probe_separates_setup_and_operation_work() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for fanout in [1usize, 64, 512] {
-        let (world, expected) = certified_supply_chain_world(SupplyChainScale::court());
-        assert_oracle_matches(&world, &expected);
+        let (world, expected) = certified_supply_chain_world(execution, SupplyChainScale::court());
+        assert_oracle_matches(execution, &world, &expected);
         let catalog_commit = world
             .runtime
             .history()

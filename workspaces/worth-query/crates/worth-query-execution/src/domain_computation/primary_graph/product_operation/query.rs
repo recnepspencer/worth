@@ -46,6 +46,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         Scope,
     >(
         self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         query: &'runtime WorthQueryInstalledApplicationQuery<
             Schema,
             Query,
@@ -75,8 +76,15 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         >,
         WorthQueryApplicationQueryAdmissionDenial,
     > {
+        let request = match phase.execution_request_for(&self.application().product_runtime) {
+            Ok(request) => request,
+            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::Authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::ForeignPhase), query.name())),
+        };
+        let execution = &request;
+
         let (application, product, application_basis) = self.into_parts();
         application.admit_application_query(
+            execution,
             query,
             access,
             parameters,
@@ -102,6 +110,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         Scope,
     >(
         self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         retained: WorthQuerySelectedProductOperation<'runtime, Schema>,
         query: &'runtime WorthQueryInstalledApplicationQuery<
             Schema,
@@ -132,9 +141,15 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         >,
         WorthQueryApplicationQueryAdmissionDenial,
     > {
+        let request = match phase.execution_request_for(&self.application().product_runtime) {
+            Ok(request) => request,
+            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::Authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::ForeignPhase), query.name())),
+        };
+        let execution = &request;
+
         let (application, controls) =
             self.retained_query_controls(retained, query.name(), controls)?;
-        application.admit_application_query(query, access, parameters, controls)
+        application.admit_application_query(execution, query, access, parameters, controls)
     }
 
     pub fn admit_application_query_continuation<
@@ -146,6 +161,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         Scope,
     >(
         self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         query: &'runtime WorthQueryInstalledApplicationQuery<
             Schema,
             Query,
@@ -175,8 +191,15 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         >,
         WorthQueryApplicationQueryAdmissionDenial,
     > {
+        let request = match phase.execution_request_for(&self.application().product_runtime) {
+            Ok(request) => request,
+            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::Authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::ForeignPhase), query.name())),
+        };
+        let execution = &request;
+
         let (application, product, application_basis) = self.into_parts();
         application.admit_application_query(
+            execution,
             query,
             access,
             parameters,
@@ -203,6 +226,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         Input,
     >(
         self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         query: &'runtime WorthQueryInstalledApplicationQuery<
             Schema,
             Query,
@@ -241,8 +265,15 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
     where
         Input: ApplicationCapabilityRequest<Schema, Capability, Scope = Scope>,
     {
+        let request = match phase.execution_request_for(&self.application().product_runtime) {
+            Ok(request) => request,
+            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::Authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::ForeignPhase), query.name())),
+        };
+        let execution = &request;
+
         let (application, product, application_basis) = self.into_parts();
         application.admit_governed_application_query(
+            execution,
             query,
             access,
             capability,
@@ -270,6 +301,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         Input,
     >(
         self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         query: &'runtime WorthQueryInstalledApplicationQuery<
             Schema,
             Query,
@@ -308,8 +340,15 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
     where
         Input: ApplicationCapabilityRequest<Schema, Capability, Scope = Scope>,
     {
+        let request = match phase.execution_request_for(&self.application().product_runtime) {
+            Ok(request) => request,
+            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::Authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::ForeignPhase), query.name())),
+        };
+        let execution = &request;
+
         let (application, product, application_basis) = self.into_parts();
         application.admit_governed_application_query(
+            execution,
             query,
             access,
             capability,

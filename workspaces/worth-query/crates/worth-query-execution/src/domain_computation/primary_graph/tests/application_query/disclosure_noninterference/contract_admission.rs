@@ -61,38 +61,8 @@ fn contract_incompatible_projection_mask_denies_before_result_construction() {
     );
 }
 
-#[test]
-fn result_disclosure_rule_cannot_open_a_predicate_read() {
-    let context = admission_context();
-    let query = context
-        .world
-        .application
-        .installed_schema()
-        .certification_query(ResultRulePredicateQuery::reference())
-        .unwrap();
-    let capability =
-        admit_touch_account_capability(&context.world, &context.principal, &context.request)
-            .unwrap();
-    let access = WorthQueryApplicationQueryAccessContext::new(&context.principal, &context.account);
-    let denial = context
-        .world
-        .selected_product()
-        .admit_governed_application_query(
-            &query,
-            &access,
-            capability,
-            ApplicationQueryParameterSet::new()
-                .bind(status_parameter(), "open".to_owned())
-                .expect("fixture query parameter must encode"),
-            controls(&context.request),
-        )
-        .err()
-        .expect("result disclosure must not counterfeit internal authority");
-    assert_eq!(
-        denial.kind(),
-        WorthQueryApplicationQueryAdmissionDenialKind::DisclosureContractInvalid
-    );
-}
+#[path = "contract_admission/predicate_access.rs"]
+mod predicate_access;
 
 #[test]
 fn incomplete_result_contract_denies_before_result_construction() {
@@ -103,26 +73,44 @@ fn incomplete_result_contract_denies_before_result_construction() {
         .installed_schema()
         .certification_query(IncompleteDisclosureQuery::reference())
         .unwrap();
-    let capability =
-        admit_touch_account_capability(&context.world, &context.principal, &context.request)
-            .unwrap();
-    let access = WorthQueryApplicationQueryAccessContext::new(&context.principal, &context.account);
-    let denial = context
+    context
         .world
-        .selected_product()
-        .admit_governed_application_query(
-            &query,
-            &access,
-            capability,
-            ApplicationQueryParameterSet::<IncompleteDisclosureQuery>::new(),
-            controls(&context.request),
-        )
-        .err()
-        .expect("every result slot requires an explicit disclosure rule");
-    assert_eq!(
-        denial.kind(),
-        WorthQueryApplicationQueryAdmissionDenialKind::DisclosureContractInvalid
-    );
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+
+            let capability = admit_touch_account_capability(
+                &(host_custody.phase_for_application(&context.world.application))
+                    .test_host_request(),
+                &context.world,
+                &context.principal,
+                &context.request,
+            )
+            .unwrap();
+            let access =
+                WorthQueryApplicationQueryAccessContext::new(&context.principal, &context.account);
+            let denial = context
+                .world
+                .selected_product(
+                    &(host_custody.phase_for_application(&context.world.application))
+                        .test_host_request(),
+                )
+                .admit_governed_application_query(
+                    &host_custody.phase_for_application(&context.world.application),
+                    &query,
+                    &access,
+                    capability,
+                    ApplicationQueryParameterSet::<IncompleteDisclosureQuery>::new(),
+                    controls(&context.request),
+                )
+                .err()
+                .expect("every result slot requires an explicit disclosure rule");
+            assert_eq!(
+                denial.kind(),
+                WorthQueryApplicationQueryAdmissionDenialKind::DisclosureContractInvalid
+            );
+        })
+        .expect("the fixture block owns its installed host call")
 }
 
 #[test]
@@ -134,28 +122,46 @@ fn forbidden_predicate_influence_denies_before_result_construction() {
         .installed_schema()
         .certification_query(ForbiddenInfluenceQuery::reference())
         .unwrap();
-    let capability =
-        admit_touch_account_capability(&context.world, &context.principal, &context.request)
-            .unwrap();
-    let access = WorthQueryApplicationQueryAccessContext::new(&context.principal, &context.account);
-    let denial = context
+    context
         .world
-        .selected_product()
-        .admit_governed_application_query(
-            &query,
-            &access,
-            capability,
-            ApplicationQueryParameterSet::new()
-                .bind(status_parameter(), "open".to_owned())
-                .expect("fixture query parameter must encode"),
-            controls(&context.request),
-        )
-        .err()
-        .expect("predicate reads require row-presence and count influence");
-    assert_eq!(
-        denial.kind(),
-        WorthQueryApplicationQueryAdmissionDenialKind::DisclosureContractInvalid
-    );
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+
+            let capability = admit_touch_account_capability(
+                &(host_custody.phase_for_application(&context.world.application))
+                    .test_host_request(),
+                &context.world,
+                &context.principal,
+                &context.request,
+            )
+            .unwrap();
+            let access =
+                WorthQueryApplicationQueryAccessContext::new(&context.principal, &context.account);
+            let denial = context
+                .world
+                .selected_product(
+                    &(host_custody.phase_for_application(&context.world.application))
+                        .test_host_request(),
+                )
+                .admit_governed_application_query(
+                    &host_custody.phase_for_application(&context.world.application),
+                    &query,
+                    &access,
+                    capability,
+                    ApplicationQueryParameterSet::new()
+                        .bind(status_parameter(), "open".to_owned())
+                        .expect("fixture query parameter must encode"),
+                    controls(&context.request),
+                )
+                .err()
+                .expect("predicate reads require row-presence and count influence");
+            assert_eq!(
+                denial.kind(),
+                WorthQueryApplicationQueryAdmissionDenialKind::DisclosureContractInvalid
+            );
+        })
+        .expect("the fixture block owns its installed host call")
 }
 
 #[test]
@@ -167,26 +173,44 @@ fn forbidden_ordering_influence_denies_before_result_construction() {
         .installed_schema()
         .certification_query(ForbiddenHiddenOrderingQuery::reference())
         .unwrap();
-    let capability =
-        admit_touch_account_capability(&context.world, &context.principal, &context.request)
-            .unwrap();
-    let access = WorthQueryApplicationQueryAccessContext::new(&context.principal, &context.account);
-    let denial = context
+    context
         .world
-        .selected_product()
-        .admit_governed_application_query(
-            &query,
-            &access,
-            capability,
-            ApplicationQueryParameterSet::<ForbiddenHiddenOrderingQuery>::new(),
-            controls(&context.request),
-        )
-        .err()
-        .expect("a protected ordering value requires ordering influence");
-    assert_eq!(
-        denial.kind(),
-        WorthQueryApplicationQueryAdmissionDenialKind::DisclosureContractInvalid
-    );
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+
+            let capability = admit_touch_account_capability(
+                &(host_custody.phase_for_application(&context.world.application))
+                    .test_host_request(),
+                &context.world,
+                &context.principal,
+                &context.request,
+            )
+            .unwrap();
+            let access =
+                WorthQueryApplicationQueryAccessContext::new(&context.principal, &context.account);
+            let denial = context
+                .world
+                .selected_product(
+                    &(host_custody.phase_for_application(&context.world.application))
+                        .test_host_request(),
+                )
+                .admit_governed_application_query(
+                    &host_custody.phase_for_application(&context.world.application),
+                    &query,
+                    &access,
+                    capability,
+                    ApplicationQueryParameterSet::<ForbiddenHiddenOrderingQuery>::new(),
+                    controls(&context.request),
+                )
+                .err()
+                .expect("a protected ordering value requires ordering influence");
+            assert_eq!(
+                denial.kind(),
+                WorthQueryApplicationQueryAdmissionDenialKind::DisclosureContractInvalid
+            );
+        })
+        .expect("the fixture block owns its installed host call")
 }
 
 #[test]
@@ -198,26 +222,44 @@ fn forbidden_live_scope_influence_denies_before_result_construction() {
         .installed_schema()
         .certification_query(ForbiddenLiveScopeIdentityQuery::reference())
         .unwrap();
-    let capability =
-        admit_touch_account_capability(&context.world, &context.principal, &context.request)
-            .unwrap();
-    let access = WorthQueryApplicationQueryAccessContext::new(&context.principal, &context.account);
-    let denial = context
+    context
         .world
-        .selected_product()
-        .admit_governed_application_query(
-            &query,
-            &access,
-            capability,
-            forbidden_live_identity_parameters::<ForbiddenLiveScopeIdentityQuery>(),
-            controls(&context.request),
-        )
-        .err()
-        .expect("a protected live scope identity requires live-membership influence");
-    assert_eq!(
-        denial.kind(),
-        WorthQueryApplicationQueryAdmissionDenialKind::DisclosureContractInvalid
-    );
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+
+            let capability = admit_touch_account_capability(
+                &(host_custody.phase_for_application(&context.world.application))
+                    .test_host_request(),
+                &context.world,
+                &context.principal,
+                &context.request,
+            )
+            .unwrap();
+            let access =
+                WorthQueryApplicationQueryAccessContext::new(&context.principal, &context.account);
+            let denial = context
+                .world
+                .selected_product(
+                    &(host_custody.phase_for_application(&context.world.application))
+                        .test_host_request(),
+                )
+                .admit_governed_application_query(
+                    &host_custody.phase_for_application(&context.world.application),
+                    &query,
+                    &access,
+                    capability,
+                    forbidden_live_identity_parameters::<ForbiddenLiveScopeIdentityQuery>(),
+                    controls(&context.request),
+                )
+                .err()
+                .expect("a protected live scope identity requires live-membership influence");
+            assert_eq!(
+                denial.kind(),
+                WorthQueryApplicationQueryAdmissionDenialKind::DisclosureContractInvalid
+            );
+        })
+        .expect("the fixture block owns its installed host call")
 }
 
 #[test]
@@ -229,26 +271,44 @@ fn forbidden_live_target_influence_denies_before_result_construction() {
         .installed_schema()
         .certification_query(ForbiddenLiveTargetIdentityQuery::reference())
         .unwrap();
-    let capability =
-        admit_touch_account_capability(&context.world, &context.principal, &context.request)
-            .unwrap();
-    let access = WorthQueryApplicationQueryAccessContext::new(&context.principal, &context.account);
-    let denial = context
+    context
         .world
-        .selected_product()
-        .admit_governed_application_query(
-            &query,
-            &access,
-            capability,
-            forbidden_live_identity_parameters::<ForbiddenLiveTargetIdentityQuery>(),
-            controls(&context.request),
-        )
-        .err()
-        .expect("a protected live target identity requires live-membership influence");
-    assert_eq!(
-        denial.kind(),
-        WorthQueryApplicationQueryAdmissionDenialKind::DisclosureContractInvalid
-    );
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+
+            let capability = admit_touch_account_capability(
+                &(host_custody.phase_for_application(&context.world.application))
+                    .test_host_request(),
+                &context.world,
+                &context.principal,
+                &context.request,
+            )
+            .unwrap();
+            let access =
+                WorthQueryApplicationQueryAccessContext::new(&context.principal, &context.account);
+            let denial = context
+                .world
+                .selected_product(
+                    &(host_custody.phase_for_application(&context.world.application))
+                        .test_host_request(),
+                )
+                .admit_governed_application_query(
+                    &host_custody.phase_for_application(&context.world.application),
+                    &query,
+                    &access,
+                    capability,
+                    forbidden_live_identity_parameters::<ForbiddenLiveTargetIdentityQuery>(),
+                    controls(&context.request),
+                )
+                .err()
+                .expect("a protected live target identity requires live-membership influence");
+            assert_eq!(
+                denial.kind(),
+                WorthQueryApplicationQueryAdmissionDenialKind::DisclosureContractInvalid
+            );
+        })
+        .expect("the fixture block owns its installed host call")
 }
 
 fn admission_context() -> AdmissionContext {
@@ -259,28 +319,50 @@ fn admission_context() -> AdmissionContext {
     ]);
     let request = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
-    let principal = world
+
+    let (principal, account) = world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
-        .expect("the selected product branch remains admitted")
-        .resolve_authenticated_principal(
-            &world.binding,
-            &external,
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
-    let account = world
-        .application
-        .select_product_branch(world.application.product_runtime().default_branch())
-        .expect("the selected product branch remains admitted")
-        .resolve_entity(
-            AccountIdentity::reference(),
-            "account-1".to_owned(),
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+        .with_host_advancement(|phase| {
+            let host_request = phase.test_host_request();
+            let phase_custody = &host_request;
+            let borrowed_execution = phase
+                .execution_request_for(world.application.product_runtime())
+                .expect("the fixture lends its installed phase");
+            let execution = &borrowed_execution;
+            let principal = world
+                .application
+                .select_product_branch(
+                    execution,
+                    world.application.product_runtime().default_branch(),
+                )
+                .expect("the selected product branch remains admitted")
+                .resolve_authenticated_principal(
+                    &phase_custody.phase_for_application(&world.application),
+                    &world.binding,
+                    &external,
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap();
+            let account = world
+                .application
+                .select_product_branch(
+                    execution,
+                    world.application.product_runtime().default_branch(),
+                )
+                .expect("the selected product branch remains admitted")
+                .resolve_entity(
+                    &phase_custody.phase_for_application(&world.application),
+                    AccountIdentity::reference(),
+                    "account-1".to_owned(),
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap();
+
+            (principal, account)
+        })
+        .expect("the read-context fixture owns its identity call");
     AdmissionContext {
         world,
         request,

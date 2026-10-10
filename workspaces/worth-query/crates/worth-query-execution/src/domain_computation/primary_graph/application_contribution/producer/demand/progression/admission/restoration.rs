@@ -13,6 +13,7 @@ where
 {
     pub(super) fn readmit_checkpoint_output<Query>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         producer: &str,
         output_binding: std::any::TypeId,
         expected_idempotency_key: [u8; 32],
@@ -94,7 +95,7 @@ where
         };
         let selected = self
             .on_branch(source_read.product_branch())
-            .select()
+            .select_with_request(execution)
             .map_err(|_| denial(WorthQueryOutputDemandDenialKind::Superseded, ""))?;
         admission
             .charge_external_work(4)
@@ -197,12 +198,13 @@ where
         ).map_err(restoration_resource_denial)? else {
             return Ok(None);
         };
-        let (current, verified_at) = graph.with_runtime(|relational| {
+        let (current, verified_at) = graph.with_runtime(execution, |relational| {
             let snapshot = selected.application_basis().snapshot_handle();
             let current = witness
                 .get()
                 .expect("checkpoint constructor sealed its witness")
                 .checkpoint_facts_current_in(
+                    execution,
                     relational,
                     snapshot,
                     &observed_source_facts,
@@ -285,6 +287,7 @@ where
 
     pub(super) fn record_restored_output(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         source_scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
         readmitted: &ReadmittedOutput,
         admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
@@ -334,7 +337,7 @@ where
             if let Some(facts) = recorded.facts.for_comparison().filter(|_| {
                 use crate::domain_computation::primary_graph::output_lineage::HeadCellRegistrationStop;
                 use worth_relational::facade::mvcc::PublicationCompanionRegistrationStop as NativeStop;
-                match source_owner.mint_mark_cell_at_head(head.branch_id(), admission) {
+                match source_owner.mint_mark_cell_at_head(execution, head.branch_id(), admission) {
                     Ok(()) => true,
                     Err(HeadCellRegistrationStop::Admission(_) | HeadCellRegistrationStop::LookupChanged) => false,
                     Err(HeadCellRegistrationStop::Native(NativeStop::HeadCellPublicationContended)) => false,

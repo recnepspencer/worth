@@ -23,6 +23,9 @@ impl domain::WorthQueryOnDemandTriggerFamily for ManualRefresh {
 
 #[test]
 fn portable_condition_trigger_and_temporal_drift_keep_exact_owner_dimensions() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let source = dependency(domain::WorthQuerySemanticLocality::SourceRecord);
     let cases = [
         (
@@ -76,11 +79,18 @@ fn portable_condition_trigger_and_temporal_drift_keep_exact_owner_dimensions() {
     ];
 
     for (index, (subject, candidate, expected)) in cases.into_iter().enumerate() {
-        let left =
-            conditional_workspace(&format!("conditional-portable-left-{index}"), subject).unwrap();
-        let right =
-            conditional_workspace(&format!("conditional-portable-right-{index}"), candidate)
-                .unwrap();
+        let left = conditional_workspace(
+            request_execution,
+            &format!("conditional-portable-left-{index}"),
+            subject,
+        )
+        .unwrap();
+        let right = conditional_workspace(
+            request_execution,
+            &format!("conditional-portable-right-{index}"),
+            candidate,
+        )
+        .unwrap();
         let left = bind(&left, &left.domain(GeometryDomain).unwrap());
         let right = bind(&right, &right.domain(GeometryDomain).unwrap());
 
@@ -104,6 +114,9 @@ fn portable_condition_trigger_and_temporal_drift_keep_exact_owner_dimensions() {
 
 #[test]
 fn replaced_lowering_inventory_keeps_query_owned_conditional_mismatch_evidence() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let source = dependency(domain::WorthQuerySemanticLocality::SourceRecord);
     let owner_node = seam_node(
         domain::WorthQueryConditionalEvaluationCondition::aspect_filtered([source]).unwrap(),
@@ -115,9 +128,14 @@ fn replaced_lowering_inventory_keeps_query_owned_conditional_mismatch_evidence()
         domain::WorthQueryConditionalTrigger::DependencyChange,
         domain::WorthQueryMaintenancePosture::LazyUntilObserved,
     );
-    let mut owner =
-        conditional_controlled_workspace("installed-conditional-owner", owner_node).unwrap();
-    let donor = conditional_workspace("installed-conditional-donor", donor_node).unwrap();
+    let mut owner = conditional_controlled_workspace(
+        request_execution,
+        "installed-conditional-owner",
+        owner_node,
+    )
+    .unwrap();
+    let donor = conditional_workspace(request_execution, "installed-conditional-donor", donor_node)
+        .unwrap();
     let installed = owner.domain(GeometryDomain).unwrap();
     let subject = bind(&owner, &installed);
 
@@ -142,13 +160,17 @@ fn replaced_lowering_inventory_keeps_query_owned_conditional_mismatch_evidence()
 
 #[test]
 fn relationship_oracles_select_affinity_or_continuity_at_the_bridge_boundary() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let declaration = node(
         "conditional-owner-selector",
         domain::WorthQueryComparatorRequirement::ExactCanonicalValue,
         domain::WorthQuerySemanticLocality::SourceRecord,
     );
-    let (mut owner, donor) =
-        conditional_controlled_workspace_with_donor(ConditionalDonorWorkspaceScenario {
+    let (mut owner, donor) = conditional_controlled_workspace_with_donor(
+        request_execution,
+        ConditionalDonorWorkspaceScenario {
             owner: ConditionalWorkspacePlacement {
                 name: "conditional-owner-selector-owner",
                 partition: "geometry-signal",
@@ -159,8 +181,9 @@ fn relationship_oracles_select_affinity_or_continuity_at_the_bridge_boundary() {
             },
             node: declaration,
             donor_compute: DirectConditionalCompute,
-        })
-        .unwrap();
+        },
+    )
+    .unwrap();
     let installed = owner.domain(GeometryDomain).unwrap();
     let subject = bind(&owner, &installed);
 
@@ -177,13 +200,17 @@ fn relationship_oracles_select_affinity_or_continuity_at_the_bridge_boundary() {
 
 #[test]
 fn provider_semantic_drift_is_preserved_through_continuity_and_affinity_denials() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let declaration = node(
         "conditional-provider-seam",
         domain::WorthQueryComparatorRequirement::ExactCanonicalValue,
         domain::WorthQuerySemanticLocality::SourceRecord,
     );
-    let (mut owner, donor) =
-        conditional_controlled_workspace_with_donor(ConditionalDonorWorkspaceScenario {
+    let (mut owner, donor) = conditional_controlled_workspace_with_donor(
+        request_execution,
+        ConditionalDonorWorkspaceScenario {
             owner: ConditionalWorkspacePlacement {
                 name: "conditional-provider-owner",
                 partition: "geometry-signal",
@@ -194,8 +221,9 @@ fn provider_semantic_drift_is_preserved_through_continuity_and_affinity_denials(
             },
             node: declaration,
             donor_compute: SemanticallyDifferentCompute,
-        })
-        .unwrap();
+        },
+    )
+    .unwrap();
     let installed = owner.domain(GeometryDomain).unwrap();
     let subject = bind(&owner, &installed);
 

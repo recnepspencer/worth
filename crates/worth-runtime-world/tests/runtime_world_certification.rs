@@ -191,3 +191,6 @@ fn compile_failures_protect_the_public_contract() {
     tests.compile_fail("tests/ui/*.rs");
     tests.pass("tests/pass/*.rs");
 }
+
+#[path = "runtime_world_certification/test_execution_policy.rs"]
+mod test_execution_policy;

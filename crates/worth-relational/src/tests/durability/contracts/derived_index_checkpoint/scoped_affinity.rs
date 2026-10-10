@@ -7,7 +7,9 @@ use crate::runtime::RelationalRuntime;
 const NAME: &str = "scoped-checkpoint-shared-root";
 const FORK: &str = "scoped-checkpoint-real-fork";
 
-fn fork_checkpoint() -> (
+fn fork_checkpoint(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> (
     RecoveryPlan,
     EntityId,
     DerivedIndexId,
@@ -26,6 +28,7 @@ fn fork_checkpoint() -> (
     );
     let index = scoped_name_index(&runtime);
     let built = runtime.index_authority().build_for_basis(
+        execution,
         DerivedIndexBuildRequest {
             source_commit_id: anchor.commit.commit_id,
             branch_id: branch,
@@ -62,9 +65,15 @@ fn name_on_branch(
 
 #[test]
 fn real_shared_parent_root_scoped_checkpoint_restores_lookup_and_content() {
-    let (plan, entity, index, generation) = fork_checkpoint();
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (plan, entity, index, generation) = fork_checkpoint(execution);
     let mut restored = persisted_runtime_with_test_schema();
-    restored.durability_recovery().recover(plan).unwrap();
+    restored
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
     let branch = BranchId(FORK.into());
     let identity = restored.branch_identity(&branch).unwrap();
     let (_, basis) = restored.observe_branch(&identity).unwrap();
@@ -93,13 +102,21 @@ fn real_shared_parent_root_scoped_checkpoint_restores_lookup_and_content() {
     };
     let actual = restored
         .index_access()
-        .execute_bounded_entity_field_lookup(request(), BoundedIndexParityMode::Production)
+        .execute_bounded_entity_field_lookup(
+            request(),
+            BoundedIndexParityMode::Production,
+            execution,
+        )
         .unwrap();
     assert_eq!(actual.generation_id(), generation);
     assert_eq!(actual.candidate_entity_ids(), &[entity]);
     let parity = restored
         .index_access()
-        .execute_bounded_entity_field_lookup(request(), BoundedIndexParityMode::Certification)
+        .execute_bounded_entity_field_lookup(
+            request(),
+            BoundedIndexParityMode::Certification,
+            execution,
+        )
         .unwrap();
     assert_eq!(parity.candidate_entity_ids(), &[entity]);
     assert_eq!(
@@ -111,7 +128,10 @@ fn real_shared_parent_root_scoped_checkpoint_restores_lookup_and_content() {
 
 #[test]
 fn digest_valid_unissued_scoped_branch_denies_without_replacing_target_state() {
-    let (mut plan, _, _, _) = fork_checkpoint();
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (mut plan, _, _, _) = fork_checkpoint(execution);
     let checkpoint = plan.checkpoint.as_mut().unwrap();
     let mut generations = checkpoint
         .derived_index_checkpoint
@@ -143,7 +163,7 @@ fn digest_valid_unissued_scoped_branch_denies_without_replacing_target_state() {
     let retained = create_entity_outcome(&target, "target-must-remain");
     let entity = changed_entities(&retained)[0];
     let index = scoped_name_index(&target);
-    build(&target, index.index_id, &retained);
+    build(execution, &target, index.index_id, &retained);
     release_test_commit_snapshot(&target, &retained);
     let identity = target.main_branch_identity();
     let head = target.observe_branch(&identity).unwrap().0;
@@ -155,7 +175,7 @@ fn digest_valid_unissued_scoped_branch_denies_without_replacing_target_state() {
     );
     let error = target
         .durability_recovery()
-        .recover(plan)
+        .recover(execution, plan)
         .expect_err("digest-valid cache metadata cannot invent a scoped branch");
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
     assert_eq!(target.observe_branch(&identity).unwrap().0, head);

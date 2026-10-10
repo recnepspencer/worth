@@ -158,6 +158,9 @@ fn snapshot_audit_failure_blocks_publication() {
 
 #[test]
 fn bulk_packets_are_the_primary_read_surface() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let entity = create_entity(&runtime, "first");
     let snapshot = runtime.visibility_authority().snapshot();
@@ -174,6 +177,7 @@ fn bulk_packets_are_the_primary_read_surface() {
         )
         .unwrap();
     let result = execute_explicit_query(
+        execution,
         &runtime,
         &snapshot,
         "entities",

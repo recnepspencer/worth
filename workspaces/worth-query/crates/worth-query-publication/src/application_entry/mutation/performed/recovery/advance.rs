@@ -41,6 +41,9 @@ where
     /// result retains every read/publication/cleanup result for promotion.
     pub fn recover_unpublished_required_in_program<Program, Root>(
         mut self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
         recovery: &mut WorthQueryUnpublishedRequiredApplicationMutation<
             Schema,
             Intent,
@@ -64,7 +67,7 @@ where
             >,
     {
         let prepared =
-            self.authorize_required_source::<Program, Root>(application, &recovery.source)?;
+            self.authorize_required_source::<Program, Root>(phase, application, &recovery.source)?;
         recovery
             .phase
             .advance(

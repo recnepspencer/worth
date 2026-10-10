@@ -10,17 +10,23 @@ use crate::tests::support::{
 
 #[test]
 fn compile_execution_ready_merge_plan_rejects_missing_source_record() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
     create_entity(&runtime, "root");
     create_branch_from_main(&runtime, "feature");
     create_entity_outcome_on_branch(&runtime, "feature-only", BranchId("feature".to_string()));
 
     let mut prepared = runtime
-        .prepare_merge_execution(MergeExecutionRequest {
-            target_branch: BranchId("main".to_string()),
-            source_branch: BranchId("feature".to_string()),
-            merge_intent: MergeIntent::ReconcileIntoTarget,
-        })
+        .prepare_merge_execution(
+            execution,
+            MergeExecutionRequest {
+                target_branch: BranchId("main".to_string()),
+                source_branch: BranchId("feature".to_string()),
+                merge_intent: MergeIntent::ReconcileIntoTarget,
+            },
+        )
         .expect("prepared merge");
     prepared.execution_ready_plan_mut_for_test().source_records = Arc::from([]);
 
@@ -35,21 +41,30 @@ fn compile_execution_ready_merge_plan_rejects_missing_source_record() {
 
 #[test]
 fn verify_prepared_merge_execution_rejects_corrupted_compiled_plan() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
     create_entity(&runtime, "root");
     create_branch_from_main(&runtime, "feature");
     create_entity_outcome_on_branch(&runtime, "feature-only", BranchId("feature".to_string()));
 
     let mut prepared = runtime
-        .prepare_merge_execution(MergeExecutionRequest {
-            target_branch: BranchId("main".to_string()),
-            source_branch: BranchId("feature".to_string()),
-            merge_intent: MergeIntent::ReconcileIntoTarget,
-        })
+        .prepare_merge_execution(
+            execution,
+            MergeExecutionRequest {
+                target_branch: BranchId("main".to_string()),
+                source_branch: BranchId("feature".to_string()),
+                merge_intent: MergeIntent::ReconcileIntoTarget,
+            },
+        )
         .expect("prepared merge");
     prepared.bound_executable_plan_mut_for_test().record_plans = Arc::from([]);
 
-    match runtime.merge().verify_prepared_merge_execution(&prepared) {
+    match runtime
+        .merge()
+        .verify_prepared_merge_execution(execution, &prepared)
+    {
         Err(MergeExecutionError::Compilation(
             MergeExecutionCompilationError::PreparedAuthorityBindingMismatch { .. },
         )) => {}

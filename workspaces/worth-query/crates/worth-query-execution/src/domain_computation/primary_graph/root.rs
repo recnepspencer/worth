@@ -1,3 +1,4 @@
+mod runtime_access;
 mod snapshot_release;
 
 use std::collections::BTreeSet;
@@ -307,34 +308,6 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
         }
     }
 
-    #[doc(hidden)]
-    pub fn with_runtime<T>(&self, read: impl FnOnce(&RelationalRuntime) -> T) -> T {
-        self.source_owner.with_runtime(read)
-    }
-
-    pub(crate) fn with_runtime_mut<T>(
-        &self,
-        mutate: impl FnOnce(&mut RelationalRuntime) -> T,
-    ) -> T {
-        self.source_owner.with_runtime_mut(mutate)
-    }
-
-    pub(crate) fn with_runtime_mut_unwind_isolated<T>(
-        &self,
-        mutate: impl FnOnce(&mut RelationalRuntime) -> T,
-    ) -> T {
-        self.source_owner.with_runtime_mut_unwind_isolated(mutate)
-    }
-
-    #[cfg(feature = "test-primary-graph-faults")]
-    pub(in crate::domain_computation) fn with_query_runtime_mut<T>(
-        &self,
-        read: impl FnOnce(&mut RelationalRuntime, &WorthQueryPrimaryGraphLayout) -> T,
-    ) -> T {
-        self.source_owner
-            .with_runtime_mut(|runtime| read(runtime, &self.layout))
-    }
-
     /// Retains the shared relational source for a host-owned runtime Bridge
     /// that must observe this exact primary graph.
     ///
@@ -356,12 +329,14 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
 
     pub(crate) fn bind_current_truth_head(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         branch: &worth_relational::facade::history::BranchId,
     ) -> Result<
         worth_runtime_bridge::facade::TruthSnapshotIdentity,
         worth_relational::facade::branch::RelationalBranchBasisDenial,
     > {
-        self.source_owner.bind_current_truth_head(branch)
+        self.source_owner
+            .bind_current_truth_head_with_request(execution, branch)
     }
 
     pub(crate) fn bind_truth_head_basis_in_runtime(
@@ -381,12 +356,13 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
     #[doc(hidden)]
     pub fn prepare_product_source(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         branch: &worth_relational::facade::branch::RelationalBranchIdentity,
     ) -> Result<
         crate::domain_computation::execution_runtime::product_world::WorthQueryProductRelationalInstallation,
         worth_relational::facade::branch::RelationalBranchBasisDenial,
     >{
-        self.source_owner.prepare_product_source(branch)
+        self.source_owner.prepare_product_source(execution, branch)
     }
 
     pub(crate) const fn truth_partition_role(

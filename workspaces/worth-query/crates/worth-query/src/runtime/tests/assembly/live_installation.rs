@@ -2,6 +2,9 @@ use super::super::support::*;
 
 #[test]
 fn runtime_live_declaration_denies_backend_admission_before_subscription_install() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let source_declarations = std::rc::Rc::new(std::cell::Cell::new(0));
     let mut runtime = test_product_runtime_builder()
         .schema_adapter(DenyingSchemaAdapter)
@@ -13,11 +16,12 @@ fn runtime_live_declaration_denies_backend_admission_before_subscription_install
         .preview_basis(TestPreviewBasis)
         .inspector_evidence(TestInspectorEvidence)
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("backend with denying schema admission should still build");
 
     let error = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "external.schema-denied",
             task_live_request(),
             task_schema(),
@@ -36,6 +40,9 @@ fn runtime_live_declaration_denies_backend_admission_before_subscription_install
 
 #[test]
 fn runtime_live_declaration_closes_active_subscription_when_source_declaration_fails() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::fail_declare())
@@ -46,11 +53,12 @@ fn runtime_live_declaration_closes_active_subscription_when_source_declaration_f
         .preview_basis(TestPreviewBasis)
         .inspector_evidence(TestInspectorEvidence)
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("backend with failing source declaration should still build");
 
     let error = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "external.source-denied",
             task_live_request(),
             task_schema(),
@@ -77,6 +85,9 @@ fn runtime_live_declaration_closes_active_subscription_when_source_declaration_f
 
 #[test]
 fn runtime_equivalent_live_declarations_share_active_lane_with_distinct_consumers() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
@@ -87,14 +98,24 @@ fn runtime_equivalent_live_declarations_share_active_lane_with_distinct_consumer
         .preview_basis(TestPreviewBasis)
         .inspector_evidence(TestInspectorEvidence)
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("complete backend parts should build");
 
     let first: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = runtime
-        .declare_live_view("external.tasks.first", task_live_request(), task_schema())
+        .declare_live_view(
+            request_execution,
+            "external.tasks.first",
+            task_live_request(),
+            task_schema(),
+        )
         .expect("first live view should install active lane");
     let second: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = runtime
-        .declare_live_view("external.tasks.second", task_live_request(), task_schema())
+        .declare_live_view(
+            request_execution,
+            "external.tasks.second",
+            task_live_request(),
+            task_schema(),
+        )
         .expect("equivalent live view should join active lane");
 
     assert_eq!(
@@ -149,6 +170,9 @@ fn runtime_equivalent_live_declarations_share_active_lane_with_distinct_consumer
 
 #[test]
 fn runtime_live_declaration_denies_before_source_when_subscription_activation_rejects() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let source_declarations = std::rc::Rc::new(std::cell::Cell::new(0));
     let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
@@ -160,11 +184,12 @@ fn runtime_live_declaration_denies_before_source_when_subscription_activation_re
         .preview_basis(TestPreviewBasis)
         .inspector_evidence(TestInspectorEvidence)
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("backend with denying activation should still build");
 
     let error = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "external.denied",
             task_live_request(),
             task_schema(),
@@ -183,6 +208,9 @@ fn runtime_live_declaration_denies_before_source_when_subscription_activation_re
 
 #[test]
 fn runtime_live_declaration_denies_when_admission_receipt_drifts_from_request() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let source_declarations = std::rc::Rc::new(std::cell::Cell::new(0));
     let mut runtime = test_product_runtime_builder()
         .schema_adapter(DriftingSchemaReceiptAdapter)
@@ -194,11 +222,12 @@ fn runtime_live_declaration_denies_when_admission_receipt_drifts_from_request() 
         .preview_basis(TestPreviewBasis)
         .inspector_evidence(TestInspectorEvidence)
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("backend with drifting schema receipt should still build");
 
     let error = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "external.receipt-drift",
             task_live_request(),
             task_schema(),
@@ -217,6 +246,9 @@ fn runtime_live_declaration_denies_when_admission_receipt_drifts_from_request() 
 
 #[test]
 fn runtime_live_declaration_denies_when_activation_receipt_drifts_from_request() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let source_declarations = std::rc::Rc::new(std::cell::Cell::new(0));
     let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
@@ -228,11 +260,12 @@ fn runtime_live_declaration_denies_when_activation_receipt_drifts_from_request()
         .preview_basis(TestPreviewBasis)
         .inspector_evidence(TestInspectorEvidence)
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("backend with drifting activation receipt should still build");
 
     let error = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "external.activation-receipt-drift",
             task_live_request(),
             task_schema(),

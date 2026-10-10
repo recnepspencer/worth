@@ -2,7 +2,10 @@ use super::super::super::super::support::*;
 
 #[test]
 fn runtime_public_read_composition_support_report_freezes_phase_one_kernel_surface() {
-    let workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("task.read-composition-support")
         .expect("task runtime should open a named workspace");
     let report = workspace.public_read_composition_support_report();

@@ -132,6 +132,7 @@ impl WorthQueryCollectionMaintenanceIndex {
 
     pub(super) fn preview(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: WorthQueryCollectionPreviewRequest<'_>,
         counters: &mut WorthQueryCollectionDeliveryCounters,
     ) -> Result<WorthQueryCollectionIndexPreview, ()> {
@@ -141,7 +142,7 @@ impl WorthQueryCollectionMaintenanceIndex {
             keys,
             workspace,
         } = request;
-        let delta = self.delta(affected, workspace, counters)?;
+        let delta = self.delta(execution, affected, workspace, counters)?;
         Ok(self.preview_delta(window, affected, keys, delta, counters))
     }
 
@@ -253,6 +254,7 @@ impl WorthQueryCollectionMaintenanceIndex {
 
     fn delta(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         affected: &BTreeSet<WorthQueryEntityIdentity>,
         workspace: &crate::runtime::WorthQueryWorkspace,
         counters: &mut WorthQueryCollectionDeliveryCounters,
@@ -262,7 +264,7 @@ impl WorthQueryCollectionMaintenanceIndex {
         }
         let mut unsupported = false;
         let delta = self.delta_from(affected, counters, |identity| {
-            match workspace.collection_entity(&self.collection, identity) {
+            match workspace.collection_entity(execution, &self.collection, identity) {
                 crate::runtime::WorthQueryBackendEntityLookup::Found(entity) => Some(entity),
                 crate::runtime::WorthQueryBackendEntityLookup::Absent => None,
                 crate::runtime::WorthQueryBackendEntityLookup::Unsupported => {

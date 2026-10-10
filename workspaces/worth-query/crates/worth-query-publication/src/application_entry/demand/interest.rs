@@ -73,7 +73,7 @@ where
         application
             .with_application_advancement(scope, |phase| {
                 let source_result = self.query_source(&phase)?;
-                self.start_ordinary(source_result.into_output_demand_source())
+                self.start_ordinary(&phase, source_result.into_output_demand_source())
             })
             .map_err(WorthQueryApplicationOutputDemandDenial::advancement)?
     }
@@ -110,6 +110,7 @@ where
         let limits = self.resolved_limits();
         let admitted = application
             .admit_program_root_output::<Root>(
+                phase,
                 &worth_query_execution::publication_boundary::program_publication_access(),
                 source_result.into_output_demand_source(),
                 limits,
@@ -187,6 +188,7 @@ where
         let limits = self.resolved_limits();
         let admitted = application
             .recover_program_root_output::<Root>(
+                phase,
                 &worth_query_execution::publication_boundary::program_publication_access(),
                 source_result,
                 current,
@@ -238,6 +240,7 @@ where
         let limits = self.resolved_limits();
         let admitted = application
             .admit_program_dependent_output::<ParentDemand, Connection>(
+                phase,
                 &worth_query_execution::publication_boundary::program_publication_access(),
                 parent,
                 &basis.retained,
@@ -296,6 +299,9 @@ where
 
     fn start_ordinary(
         self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
         source_result: WorthQueryApplicationOutputDemandSource<
             SourceQuery<Schema, Demand>,
             SourceValue<Schema, Demand>,
@@ -311,13 +317,14 @@ where
             Some(observation) => self
                 .application
                 .admit_output_demand_at::<Family<Schema, Demand>>(
+                    phase,
                     source_result,
                     limits,
                     observation,
                 ),
             None => self
                 .application
-                .admit_output_demand::<Family<Schema, Demand>>(source_result, limits),
+                .admit_output_demand::<Family<Schema, Demand>>(phase, source_result, limits),
         }
         .map_err(WorthQueryApplicationOutputDemandDenial::Demand)?;
         Ok(self.handle(admitted))

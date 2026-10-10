@@ -19,6 +19,7 @@ pub(super) struct LoweredRuntimeLiveSubscriptionRequest {
 }
 
 pub(super) fn lower_runtime_live_subscription_request(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     backend: &dyn WorthQueryRuntimeBackend,
     view_name: &str,
     request: &DeclarativeLiveQueryRequest,
@@ -29,7 +30,7 @@ pub(super) fn lower_runtime_live_subscription_request(
         request.clone(),
         schema_view,
         backend
-            .current_snapshot_identity()
+            .current_snapshot_identity(execution)
             .admit_runtime_backend_authority(),
         grouped_baseline_members_or_error(backend, view_name, request)?,
     )
@@ -38,6 +39,7 @@ pub(super) fn lower_runtime_live_subscription_request(
 }
 
 pub(super) fn lower_runtime_live_subscription_read_binding(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     backend: &dyn WorthQueryRuntimeBackend,
     view_name: &str,
     binding: &WorthQueryReadExecutionBinding,
@@ -50,7 +52,7 @@ pub(super) fn lower_runtime_live_subscription_read_binding(
         read_graph.validated().clone(),
         read_graph.execution_plan().clone(),
         backend
-            .current_snapshot_identity()
+            .current_snapshot_identity(execution)
             .admit_runtime_backend_authority(),
         grouped_baseline_members_or_error(backend, view_name, request)?,
     )

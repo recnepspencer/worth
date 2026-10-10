@@ -7,6 +7,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
     #[doc(hidden)]
     pub fn attempt_recovery_refresh_for_test<Family>(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         retained: crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource<
             FamilySourceQuery<Schema, Family>,
             FamilySourceValue<Schema, Family>,
@@ -24,8 +25,11 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         FamilySourceValue<Schema, Family>: 'static,
         FamilySourceQuery<Schema, Family>: 'static,
     {
+        let execution = phase
+            .execution_request_for(&self.product_runtime)
+            .map_err(|cause| WorthQueryOutputDemandDenial::request_admission(cause.into()))?;
         let mut demand = self
-            .admit_recovered_output_demand::<Family>(retained, current, limits, receipt)
+            .admit_recovered_output_demand::<Family>(&execution, retained, current, limits, receipt)
             .expect("certification admits Recovery before exercising its refresh door");
         let (value, source) = redisclosed.into_single_source().ok_or_else(|| {
             denial(
@@ -42,6 +46,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         };
         let mut admission = self.demand_request_admission();
         self.refresh_output_demand(
+            &execution,
             &mut demand,
             &value,
             source,

@@ -12,6 +12,7 @@ use super::super::super::{
 use super::ObservedDelegationParent;
 
 pub(super) fn observe_parent(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     relational: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: worth_relational::facade::snapshots::SnapshotHandle,
     installed: &WorthQueryInstalledCapabilityPlan,
@@ -47,12 +48,14 @@ pub(super) fn observe_parent(
         [],
     )
     .map_err(|_| invalid_policy(installed.contract().name()))?;
-    let evidence = relational.observe_authorization(plan).map_err(|_| {
-        denial(
-            WorthQueryOperationAuthorizationDenialKind::RelationalObservationRejected,
-            installed.contract().name(),
-        )
-    })?;
+    let evidence = relational
+        .observe_authorization(plan, execution)
+        .map_err(|_| {
+            denial(
+                WorthQueryOperationAuthorizationDenialKind::RelationalObservationRejected,
+                installed.contract().name(),
+            )
+        })?;
     let [parent_path, grantee_path] = evidence.paths() else {
         return Err(invalid_policy(installed.contract().name()));
     };

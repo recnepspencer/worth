@@ -20,7 +20,11 @@ use support::graph_read_access::persistent_requirements::{
 
 #[test]
 fn persistent_store_requirement_is_declared_as_a_proof_not_a_materialization() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = persistent_requirement_workspace(
+        request_execution,
         "graph-read-access.phase-ten.predicate-persistent",
         profile_requiring_store_backed_graph_index(
             WorthQueryGraphReadAccessRequirementKind::PredicateSupport,
@@ -108,7 +112,11 @@ fn persistent_store_requirement_is_declared_as_a_proof_not_a_materialization() {
 
 #[test]
 fn persistent_requirement_survives_over_budget_family_instead_of_async_magic() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = persistent_requirement_workspace(
+        request_execution,
         "graph-read-access.phase-ten.broad-persistent",
         profile_requiring_store_backed_graph_index(
             WorthQueryGraphReadAccessRequirementKind::PredicateSupport,
@@ -142,7 +150,11 @@ fn persistent_requirement_survives_over_budget_family_instead_of_async_magic() {
 
 #[test]
 fn persistent_requirement_execution_denies_before_any_ephemeral_allocation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = persistent_requirement_workspace(
+        request_execution,
         "graph-read-access.phase-ten.execute-denied",
         profile_requiring_store_backed_graph_index(
             WorthQueryGraphReadAccessRequirementKind::PredicateSupport,
@@ -151,7 +163,7 @@ fn persistent_requirement_execution_denies_before_any_ephemeral_allocation() {
     let family = persistent_predicate_family(&mut workspace, "phase-ten-execute-denied");
     let denial = workspace
         .read_family_intent(&family)
-        .execute()
+        .execute(request_execution)
         .expect_err("persistent requirement should stop execution");
 
     let WorthQueryRuntimeError::ReadCompositionDenied(read_denial) = denial else {
@@ -187,7 +199,11 @@ fn persistent_requirement_execution_denies_before_any_ephemeral_allocation() {
 
 #[test]
 fn streaming_frontier_remains_distinct_from_persistent_requirement() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = persistent_requirement_workspace(
+        request_execution,
         "graph-read-access.phase-ten.streaming-distinct",
         profile_requiring_store_backed_graph_index(
             WorthQueryGraphReadAccessRequirementKind::PredicateSupport,
@@ -210,7 +226,11 @@ fn streaming_frontier_remains_distinct_from_persistent_requirement() {
 
 #[test]
 fn persistent_requirement_rows_match_store_backed_inventory_rows_exactly() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = persistent_requirement_workspace(
+        request_execution,
         "graph-read-access.phase-ten.inventory-exact",
         profile_requiring_store_backed_graph_index(
             WorthQueryGraphReadAccessRequirementKind::PredicateSupport,
@@ -256,7 +276,11 @@ fn persistent_requirement_rows_match_store_backed_inventory_rows_exactly() {
 
 #[test]
 fn persistent_family_with_missing_inventory_row_fails_closed_without_declaration() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = persistent_requirement_workspace(
+        request_execution,
         "graph-read-access.phase-ten.missing-persistent-row",
         profile_without_graph_support(WorthQueryGraphReadAccessRequirementKind::PredicateSupport),
     );
@@ -294,7 +318,11 @@ fn persistent_family_with_missing_inventory_row_fails_closed_without_declaration
 
 #[test]
 fn near_miss_persistent_support_is_not_treated_as_exact_requirement_identity() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = persistent_requirement_workspace(
+        request_execution,
         "graph-read-access.phase-ten.near-miss-predicate",
         profile_requiring_store_backed_graph_index(
             WorthQueryGraphReadAccessRequirementKind::PredicateSupport,

@@ -6,6 +6,9 @@ use crate::facade::indexes::{
 
 #[test]
 fn prepared_field_selection_keeps_its_root_without_reselecting_the_generation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_index_field_aspects();
     let created = create_entity_outcome(&runtime, "pinned-name");
     let entity = changed_entities(&created)[0];
@@ -18,27 +21,28 @@ fn prepared_field_selection_keeps_its_root_without_reselecting_the_generation() 
         },
         branch_scoped: true,
     });
-    let build = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    let build = runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id: created.commit.commit_id,
             branch_id: BranchId("main".into()),
             index_ids: vec![index.index_id],
-        });
+        },
+    );
     assert!(build.failed_indexes.is_empty());
     let view = runtime
         .read_truth()
-        .project_snapshot(&created.snapshot)
+        .project_snapshot(&created.snapshot, execution)
         .unwrap();
     let before = runtime.index_access().generation_selection_counters();
     let prepared = runtime
         .index_access()
-        .prepare_entity_field_lookup(&view, index.index_id, KindId(1), &locator)
+        .prepare_entity_field_lookup(&view, index.index_id, KindId(1), &locator, execution)
         .unwrap();
     let foreign = runtime_with_index_field_aspects();
     let denied = foreign
         .index_access()
-        .prepare_entity_field_lookup(&view, index.index_id, KindId(1), &locator)
+        .prepare_entity_field_lookup(&view, index.index_id, KindId(1), &locator, execution)
         .unwrap_err();
     assert_eq!(
         denied.kind(),
@@ -62,7 +66,7 @@ fn prepared_field_selection_keeps_its_root_without_reselecting_the_generation() 
     assert_eq!(discarded.removed_generation_count(), 1);
     let cold = runtime
         .index_access()
-        .prepare_entity_field_lookup(&view, index.index_id, KindId(1), &locator)
+        .prepare_entity_field_lookup(&view, index.index_id, KindId(1), &locator, execution)
         .unwrap_err();
     assert_eq!(
         cold.kind(),
@@ -88,6 +92,7 @@ fn prepared_field_selection_keeps_its_root_without_reselecting_the_generation() 
                 &string_aspect_value(name),
                 1024,
                 BoundedIndexParityMode::Production,
+                execution,
                 || Ok::<_, ()>(()),
             )
             .unwrap();
@@ -110,6 +115,7 @@ fn prepared_field_selection_keeps_its_root_without_reselecting_the_generation() 
             &string_aspect_value("pinned-name"),
             1024,
             BoundedIndexParityMode::Certification,
+            execution,
             || Ok::<_, ()>(()),
         )
         .unwrap();
@@ -123,6 +129,7 @@ fn prepared_field_selection_keeps_its_root_without_reselecting_the_generation() 
             &string_aspect_value("pinned-name"),
             1024,
             BoundedIndexParityMode::Production,
+            execution,
             || {
                 contacted = true;
                 Ok::<_, ()>(())
@@ -138,6 +145,7 @@ fn prepared_field_selection_keeps_its_root_without_reselecting_the_generation() 
             &string_aspect_value("pinned-name"),
             1024,
             BoundedIndexParityMode::Production,
+            execution,
             || Err("cancelled"),
         )
         .unwrap_err();

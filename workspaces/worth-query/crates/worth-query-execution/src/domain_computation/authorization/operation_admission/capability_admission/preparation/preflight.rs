@@ -248,6 +248,7 @@ pub(super) fn mint_operation_admission<Schema, Capability, Operation, Input>(
 }
 
 pub(super) fn start_graph_work<Schema, Principal, PrincipalIdentity, Capability, Operation, Input>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     product: crate::basis::WorthQueryProductBranchLease,
     principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
@@ -258,6 +259,7 @@ where
     Schema: ApplicationSchema,
 {
     start_capability_graph_work(
+        execution,
         runtime,
         product,
         operation,

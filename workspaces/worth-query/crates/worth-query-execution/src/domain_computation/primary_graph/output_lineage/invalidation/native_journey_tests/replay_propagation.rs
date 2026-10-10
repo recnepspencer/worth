@@ -5,17 +5,33 @@ use super::*;
 
 #[test]
 fn retained_re_registration_marks_existing_consumers_pending() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = installed_authorization_world(true);
-    let selected = world.selected_product();
-    let entity = selected
-        .resolve_entity(
-            AccountStatus::reference(),
-            "open".to_owned(),
-            &live_scope(),
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap()
-        .entity_id();
+    let selected = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world.selected_product(&(phase).test_host_request())
+        })
+        .expect("the fixture read owns its installed host call");
+    let entity = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            selected
+                .resolve_entity(
+                    &phase,
+                    AccountStatus::reference(),
+                    "open".to_owned(),
+                    &live_scope(),
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+                .entity_id()
+        })
+        .expect("the fixture read owns its installed host call");
     let (_, product, _) = selected.into_parts();
     let coordinate = ProductCoordinate {
         occurrence: product.observation().lifecycle_incarnation(),
@@ -45,46 +61,63 @@ fn retained_re_registration_marks_existing_consumers_pending() {
         coordinate,
         0,
     );
-    handle.with_runtime_mut(|runtime| {
-        write_field(runtime, entity, status.clone(), "prime");
-        let (before_handle, before) = snapshot(runtime);
-        let before_facts: Arc<[_]> =
-            Arc::from([field_fact(runtime, &before_handle, entity, status.clone())]);
-        write_field(runtime, entity, status.clone(), "closed");
-        let (after_handle, after) = snapshot(runtime);
-        let after_facts: Arc<[_]> = Arc::from([field_fact(runtime, &after_handle, entity, status)]);
-        register(owner, upstream.clone(), after_facts, &after, OrdSet::new());
-        register(
-            owner,
-            consumer.clone(),
-            Arc::from([]),
-            &after,
-            OrdSet::unit(upstream.clone()),
-        );
-        assert!(matches!(
-            currentness(owner, &after, &consumer),
-            SourceSettlementCurrentness::Clean
-        ));
-        // The same settlement now settles from the older read; replay marks it.
-        register(
-            owner,
-            upstream.clone(),
-            before_facts,
-            &before,
-            OrdSet::new(),
-        );
-        assert!(matches!(
-            currentness(owner, &after, &upstream),
-            SourceSettlementCurrentness::Dirty(_)
-        ));
-        match currentness(owner, &after, &consumer) {
-            SourceSettlementCurrentness::PendingUpstream(pending) => {
-                assert_eq!(pending, OrdSet::unit(upstream))
-            }
-            _ => panic!("a consumer of a replayed-dirty row must not stay clean"),
-        }
-        for snapshot in [before_handle, after_handle] {
-            runtime.snapshots().release_snapshot(&snapshot).unwrap();
-        }
-    });
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            handle.with_runtime_mut(request_execution, |runtime| {
+                write_field(runtime, entity, status.clone(), "prime");
+                let (before_handle, before) = snapshot(runtime);
+                let before_facts: Arc<[_]> = Arc::from([field_fact(
+                    &host_custody.borrowed_request_for_test(),
+                    runtime,
+                    &before_handle,
+                    entity,
+                    status.clone(),
+                )]);
+                write_field(runtime, entity, status.clone(), "closed");
+                let (after_handle, after) = snapshot(runtime);
+                let after_facts: Arc<[_]> = Arc::from([field_fact(
+                    &host_custody.borrowed_request_for_test(),
+                    runtime,
+                    &after_handle,
+                    entity,
+                    status,
+                )]);
+                register(owner, upstream.clone(), after_facts, &after, OrdSet::new());
+                register(
+                    owner,
+                    consumer.clone(),
+                    Arc::from([]),
+                    &after,
+                    OrdSet::unit(upstream.clone()),
+                );
+                assert!(matches!(
+                    currentness(owner, &after, &consumer),
+                    SourceSettlementCurrentness::Clean
+                ));
+                // The same settlement now settles from the older read; replay marks it.
+                register(
+                    owner,
+                    upstream.clone(),
+                    before_facts,
+                    &before,
+                    OrdSet::new(),
+                );
+                assert!(matches!(
+                    currentness(owner, &after, &upstream),
+                    SourceSettlementCurrentness::Dirty(_)
+                ));
+                match currentness(owner, &after, &consumer) {
+                    SourceSettlementCurrentness::PendingUpstream(pending) => {
+                        assert_eq!(pending, OrdSet::unit(upstream))
+                    }
+                    _ => panic!("a consumer of a replayed-dirty row must not stay clean"),
+                }
+                for snapshot in [before_handle, after_handle] {
+                    runtime.snapshots().release_snapshot(&snapshot).unwrap();
+                }
+            })
+        })
+        .expect("the fixture read owns its installed host call");
 }

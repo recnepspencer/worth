@@ -14,6 +14,9 @@ use worth_query::facade::runtime::WorthQueryUnrefinedLiveShape;
 
 #[test]
 fn ordinary_mutation_roundtrips_every_foundational_scalar_family() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let values = scalar_samples();
     let contracts = values
         .iter()
@@ -30,7 +33,7 @@ fn ordinary_mutation_roundtrips_every_foundational_scalar_family() {
     }
     let mut workspace = in_memory_test_runtime()
         .with_schema(schema)
-        .workspace("phase-26-native-scalar-matrix")
+        .workspace(request_execution, "phase-26-native-scalar-matrix")
         .unwrap();
     let declaration = declare(|builder| {
         let builder = values.iter().enumerate().fold(
@@ -43,10 +46,16 @@ fn ordinary_mutation_roundtrips_every_foundational_scalar_family() {
     })
     .unwrap();
 
-    let context = authoritative(&workspace).unwrap();
-    let outcome = declaration.using(context).run(&mut workspace);
+    let context = authoritative(request_execution, &workspace).unwrap();
+    let outcome = declaration
+        .using(context)
+        .run(request_execution, &mut workspace);
     assert!(outcome.completed().is_some());
-    let rows = read_rows(&mut workspace, "phase-26-native-scalar-read");
+    let rows = read_rows(
+        request_execution,
+        &mut workspace,
+        "phase-26-native-scalar-read",
+    );
     assert_eq!(rows.len(), 1);
     for (index, expected) in values.iter().enumerate() {
         let key = AspectKey::new(format!("native_{index}")).unwrap();
@@ -56,6 +65,9 @@ fn ordinary_mutation_roundtrips_every_foundational_scalar_family() {
 
 #[test]
 fn ordinary_mutation_preserves_struct_set_clear_null_and_denial_boundaries() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let profile = profile_contract();
     let schema = native_matrix_schema()
         .aspect_contract(profile.clone())
@@ -66,7 +78,7 @@ fn ordinary_mutation_preserves_struct_set_clear_null_and_denial_boundaries() {
         .unwrap();
     let mut workspace = in_memory_test_runtime()
         .with_schema(schema)
-        .workspace("phase-26-native-struct")
+        .workspace(request_execution, "phase-26-native-struct")
         .unwrap();
     let initial = StructAspectValue::new([
         (FieldKey::new("title").unwrap(), text("Draft")),
@@ -80,8 +92,8 @@ fn ordinary_mutation_preserves_struct_set_clear_null_and_denial_boundaries() {
             .build_insert("NativeRecord")
     })
     .unwrap()
-    .using(authoritative(&workspace).unwrap())
-    .run(&mut workspace);
+    .using(authoritative(request_execution, &workspace).unwrap())
+    .run(request_execution, &mut workspace);
     let entity = insert
         .completed()
         .unwrap()
@@ -90,8 +102,12 @@ fn ordinary_mutation_preserves_struct_set_clear_null_and_denial_boundaries() {
         .unwrap()
         .clone();
     assert_eq!(
-        read_rows(&mut workspace, "phase-26-native-struct-initial")[0]
-            .struct_aspect_value(profile.key()),
+        read_rows(
+            request_execution,
+            &mut workspace,
+            "phase-26-native-struct-initial"
+        )[0]
+        .struct_aspect_value(profile.key()),
         Some(&initial)
     );
 
@@ -102,10 +118,14 @@ fn ordinary_mutation_preserves_struct_set_clear_null_and_denial_boundaries() {
             .build_update(entity.clone())
     })
     .unwrap()
-    .using(authoritative(&workspace).unwrap())
-    .run(&mut workspace);
+    .using(authoritative(request_execution, &workspace).unwrap())
+    .run(request_execution, &mut workspace);
     assert!(update.completed().is_some());
-    let after_clear = read_rows(&mut workspace, "phase-26-native-struct-cleared");
+    let after_clear = read_rows(
+        request_execution,
+        &mut workspace,
+        "phase-26-native-struct-cleared",
+    );
     let profile_value = after_clear[0].struct_aspect_value(profile.key()).unwrap();
     assert_eq!(profile_value.get(&FieldKey::new("title").unwrap()), None);
     assert_eq!(
@@ -119,14 +139,18 @@ fn ordinary_mutation_preserves_struct_set_clear_null_and_denial_boundaries() {
             .build_update(entity)
     })
     .unwrap()
-    .using(authoritative(&workspace).unwrap())
-    .run(&mut workspace);
+    .using(authoritative(request_execution, &workspace).unwrap())
+    .run(request_execution, &mut workspace);
     let WorthQueryMutationOutcome::Stopped(stop) = denied else {
         panic!("wrong-family mutation must stop before lower-runtime execution");
     };
     assert_eq!(stop.counters().lower_runtime_execution_attempt_count(), 0);
     assert_eq!(stop.counters().lower_runtime_execution_completed_count(), 0);
-    let after_denial = read_rows(&mut workspace, "phase-26-native-struct-denied");
+    let after_denial = read_rows(
+        request_execution,
+        &mut workspace,
+        "phase-26-native-struct-denied",
+    );
     assert_eq!(
         after_denial[0].struct_aspect_value(profile.key()),
         Some(profile_value)
@@ -135,6 +159,9 @@ fn ordinary_mutation_preserves_struct_set_clear_null_and_denial_boundaries() {
 
 #[test]
 fn invalid_native_values_deny_before_lower_runtime_execution_without_residue() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let decimal = scalar_contract(700, ScalarAspectType::Decimal);
     let entity_ref = scalar_contract(701, ScalarAspectType::EntityRef);
     let profile = profile_contract();
@@ -155,7 +182,7 @@ fn invalid_native_values_deny_before_lower_runtime_execution_without_residue() {
         .unwrap();
     let mut workspace = in_memory_test_runtime()
         .with_schema(schema)
-        .workspace("phase-26-native-denials")
+        .workspace(request_execution, "phase-26-native-denials")
         .unwrap();
     let insert = declare(|builder| {
         builder
@@ -163,8 +190,8 @@ fn invalid_native_values_deny_before_lower_runtime_execution_without_residue() {
             .build_insert("NativeRecord")
     })
     .unwrap()
-    .using(authoritative(&workspace).unwrap())
-    .run(&mut workspace);
+    .using(authoritative(request_execution, &workspace).unwrap())
+    .run(request_execution, &mut workspace);
     let entity = insert
         .completed()
         .unwrap()
@@ -193,12 +220,16 @@ fn invalid_native_values_deny_before_lower_runtime_execution_without_residue() {
                 .build_update(entity.clone())
         })
         .unwrap()
-        .using(authoritative(&workspace).unwrap())
-        .run(&mut workspace);
+        .using(authoritative(request_execution, &workspace).unwrap())
+        .run(request_execution, &mut workspace);
         assert_pre_execution_denial(denied);
     }
 
-    let rows = read_rows(&mut workspace, "phase-26-native-denials-readback");
+    let rows = read_rows(
+        request_execution,
+        &mut workspace,
+        "phase-26-native-denials-readback",
+    );
     assert_eq!(rows.len(), 1);
     assert_eq!(rows[0].aspect_value(decimal.key()), None);
     assert_eq!(rows[0].aspect_value(entity_ref.key()), None);
@@ -214,16 +245,17 @@ fn assert_pre_execution_denial(outcome: WorthQueryMutationOutcome) {
 }
 
 fn read_rows(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace: &mut worth_query::facade::runtime::WorthQueryWorkspace,
     name: &str,
 ) -> Vec<worth_query::facade::foundation::WorthQueryEntity> {
     let view = workspace
-        .live_view::<WorthQueryUnrefinedLiveShape>(name, |view| {
+        .live_view::<WorthQueryUnrefinedLiveShape>(request_execution, name, |view| {
             view.from("NativeRecord")
                 .select([AspectFieldKey::from_authoring_parts("identity", "id").unwrap()])
         })
         .unwrap();
-    workspace.read(&view)
+    workspace.read(request_execution, &view)
 }
 
 fn native_matrix_schema() -> WorthQueryTestBackendSchema {

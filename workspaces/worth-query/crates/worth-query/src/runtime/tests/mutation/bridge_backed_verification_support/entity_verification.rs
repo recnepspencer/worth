@@ -2,14 +2,21 @@ use super::*;
 
 #[test]
 fn bridge_backed_entity_verification_rows_match_runtime_behavior() {
-    let runtime =
-        stateful_bridge_runtime_with_support(&["Task"], admitted_profile("direct_entity_identity"));
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = stateful_bridge_runtime_with_support(
+        request_execution,
+        &["Task"],
+        admitted_profile("direct_entity_identity"),
+    );
     let mut workspace = runtime
         .workspace("tasks.bridge-backed-entity-verification-support")
         .expect("workspace should open");
     let support = workspace.public_authoritative_mutation_evidence_support();
     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
         .live_view(
+            request_execution,
             "tasks.bridge-backed-entity-verification-support-table",
             |q| {
                 q.from("Task")
@@ -29,7 +36,7 @@ fn bridge_backed_entity_verification_rows_match_runtime_behavior() {
         .expect("entity live view should declare");
 
     let seed = workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(
                 test_aspect_touch("identity.id"),
                 test_authored_string_aspect_value("task-1"),
@@ -70,7 +77,7 @@ fn bridge_backed_entity_verification_rows_match_runtime_behavior() {
     }
 
     workspace
-        .verify_existing(binding.clone(), |task| {
+        .verify_existing(request_execution, binding.clone(), |task| {
             task.set_aspect(
                 test_aspect_touch("status.value"),
                 test_authored_string_aspect_value("open"),
@@ -78,10 +85,15 @@ fn bridge_backed_entity_verification_rows_match_runtime_behavior() {
         })
         .expect("entity verify_existing should execute");
     workspace
-        .probe_existing(binding.clone(), test_aspect_touches(["status.value"]))
+        .probe_existing(
+            request_execution,
+            binding.clone(),
+            test_aspect_touches(["status.value"]),
+        )
         .expect("entity probe_existing should execute");
     workspace
         .update_existing_verified(
+            request_execution,
             binding.clone(),
             |verify| {
                 verify.set_aspect(
@@ -99,6 +111,7 @@ fn bridge_backed_entity_verification_rows_match_runtime_behavior() {
         .expect("entity update_existing_verified should execute");
     workspace
         .delete_existing_verified(
+            request_execution,
             binding,
             |verify| {
                 verify.set_aspect(
@@ -113,14 +126,19 @@ fn bridge_backed_entity_verification_rows_match_runtime_behavior() {
 
 #[test]
 fn primary_entity_bridge_backed_verification_rows_match_runtime_denials() {
-    let mut workspace =
-        bridge_runtime_with_support(WorthQueryRuntimeSupportProfile::bridge_backed(
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = bridge_runtime_with_support(
+        request_execution,
+        WorthQueryRuntimeSupportProfile::bridge_backed(
             "test-subscription-activation",
             "test-preview-basis",
             "test-inspector-evidence",
-        ))
-        .workspace("tasks.primary-entity-verification-support")
-        .expect("workspace should open");
+        ),
+    )
+    .workspace("tasks.primary-entity-verification-support")
+    .expect("workspace should open");
     let support = workspace.public_authoritative_mutation_evidence_support();
     let binding = workspace
         .bind_existing_entity(
@@ -143,18 +161,18 @@ fn primary_entity_bridge_backed_verification_rows_match_runtime_denials() {
     );
 
     assert!(matches!(
-        workspace.verify_existing(binding.clone(), |task| task.set_aspect(test_aspect_touch("status.value"), test_authored_string_aspect_value("open"))),
+        workspace.verify_existing(request_execution, binding.clone(), |task| task.set_aspect(test_aspect_touch("status.value"), test_authored_string_aspect_value("open"))),
         Err(WorthQueryRuntimeError::ExistingTruthAssertionDenied(denial))
             if denial.kind() == WorthQueryExistingTruthAssertionDenialKind::BackendVerificationUnsupported
     ));
     assert!(matches!(
-        workspace.probe_existing(binding.clone(), test_aspect_touches(["status.value"])),
+        workspace.probe_existing(request_execution, binding.clone(), test_aspect_touches(["status.value"])),
         Err(WorthQueryRuntimeError::ExistingTruthProbeDenied(denial))
             if denial.kind() == WorthQueryExistingTruthProbeDenialKind::BackendProbeUnsupported
     ));
     assert!(matches!(
         workspace.update_existing_verified(
-            binding.clone(),
+            request_execution, binding.clone(),
             |verify| verify.set_aspect(test_aspect_touch("status.value"), test_authored_string_aspect_value("open")),
             |update| update.set_aspect(test_aspect_touch("status.value"), test_authored_string_aspect_value("closed")),
         ),
@@ -163,7 +181,7 @@ fn primary_entity_bridge_backed_verification_rows_match_runtime_denials() {
     ));
     assert!(matches!(
         workspace.delete_existing_verified(
-            binding,
+            request_execution, binding,
             |verify| verify.set_aspect(test_aspect_touch("status.value"), test_authored_string_aspect_value("closed")),
             |delete| delete.touch(test_aspect_touch("status.value")),
         ),

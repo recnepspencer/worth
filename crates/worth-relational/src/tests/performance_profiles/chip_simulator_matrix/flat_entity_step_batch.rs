@@ -1,6 +1,9 @@
 use super::*;
 
-pub(super) fn certify_flat_entity_step_batch_compile_window(suite: &'static str) {
+pub(super) fn certify_flat_entity_step_batch_compile_window(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    suite: &'static str,
+) {
     let flat_step_batch_samples = capture_perf_samples(
         suite,
         "flat_entity_step_batch_compile_window",
@@ -112,7 +115,11 @@ pub(super) fn certify_flat_entity_step_batch_compile_window(suite: &'static str)
                         .read_truth()
                         .plan_query_packet(&snapshot, explicit_packet)
                         .expect("planned chip flat batch explicit query"),
+                    execution,
+                    crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                 )
+                .expect("request remains live")
+                .map(|read| read.outcome)
                 .expect("chip flat batch explicit outcome");
             let explicit_query_micros = explicit_started_at.elapsed().as_micros();
             assert!(runtime

@@ -1,6 +1,9 @@
 use super::*;
 
-pub(super) fn certify_merge_planning_divergent_update(suite: &'static str) {
+pub(super) fn certify_merge_planning_divergent_update(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    suite: &'static str,
+) {
     let merge_planning_samples =
         capture_perf_samples(suite, "merge_planning_divergent_update", || {
             let runtime = persisted_runtime_with_test_schema();
@@ -18,11 +21,14 @@ pub(super) fn certify_merge_planning_divergent_update(suite: &'static str) {
             let started_at = Instant::now();
             let artifact = runtime
                 .merge()
-                .inspect_planning_scope(crate::merge::data::MergePlanningRequest::new(
-                    BranchId("main".to_string()),
-                    BranchId("feature".to_string()),
-                    MergeIntent::ReconcileIntoTarget,
-                ))
+                .inspect_planning_scope(
+                    execution,
+                    crate::merge::data::MergePlanningRequest::new(
+                        BranchId("main".to_string()),
+                        BranchId("feature".to_string()),
+                        MergeIntent::ReconcileIntoTarget,
+                    ),
+                )
                 .expect("merge planning artifact");
             let elapsed_micros = started_at.elapsed().as_micros();
             let counters = runtime.performance_access().counters();

@@ -13,29 +13,56 @@ const WINDOW: usize = 4;
 
 #[test]
 fn an_expired_chain_origin_does_not_block_a_fresh_terminal() {
-    chain_expiration(false, false);
+    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+        chain_expiration(
+            &host_custody,
+            &host_custody.borrowed_request_for_test(),
+            false,
+            false,
+        );
+    })
 }
 
 #[test]
 fn an_expired_chain_terminal_is_compared_and_reestablished_or_changed() {
-    chain_expiration(true, false);
+    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+        chain_expiration(
+            &host_custody,
+            &host_custody.borrowed_request_for_test(),
+            true,
+            false,
+        );
+    })
 }
 
 #[test]
 fn an_expired_chain_detects_a_changed_output_with_an_unchanged_source() {
-    chain_expiration(true, true);
+    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+        chain_expiration(
+            &host_custody,
+            &host_custody.borrowed_request_for_test(),
+            true,
+            true,
+        );
+    })
 }
 
-fn chain_expiration(expire_terminal: bool, output_only: bool) {
+fn chain_expiration(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    expire_terminal: bool,
+    output_only: bool,
+) {
     let world = super::marking_ceiling::world_installing(|defaults| {
         WorthQueryInvalidationResourceInstallation {
             maximum_retained_positions: WINDOW,
             ..defaults
         }
     });
-    let selected = world.selected_product();
+    let selected = world.selected_product(&(phase_custody).test_host_request());
     let entity = selected
         .resolve_entity(
+            &phase_custody.phase_for_application(&world.application),
             AccountStatus::reference(),
             "open".to_owned(),
             &live_scope(),
@@ -79,19 +106,19 @@ fn chain_expiration(expire_terminal: bool, output_only: bool) {
         .unwrap()
         .clone();
     let churn = if output_only { &note } else { &label };
-    handle.with_runtime_mut(|runtime| {
+    handle.with_runtime_mut(execution, |runtime| {
         write_field(runtime, entity, label.clone(), "prime");
         if output_only {
             write_field(runtime, entity, note.clone(), "prime");
         }
         let (origin_handle, origin_basis) = snapshot(runtime);
-        let origin_fact = field_fact(runtime, &origin_handle, entity, status.clone());
+        let origin_fact = field_fact(execution, runtime, &origin_handle, entity, status.clone());
         // This actor fixture's output is the existing live native entity.
         // Its projection is an actual native liveness fact, not a synthetic stamp.
         let mut admission = owner.edit_admission();
         let output = super::super::output_facts::RegisteredOutputFacts {
             facts: Arc::from([if output_only {
-                field_fact(runtime, &origin_handle, entity, label.clone())
+                field_fact(execution, runtime, &origin_handle, entity, label.clone())
             } else {
                 WorthQueryApplicationObservedFact::SourceEntity { entity_id: entity }
             }]),
@@ -127,7 +154,7 @@ fn chain_expiration(expire_terminal: bool, output_only: bool) {
                 SettlementRegistration {
                     work_membership: None,
                     identity: Arc::clone(&terminal),
-                    facts: RetainedSourceFacts::for_test(false, Arc::from([field_fact(
+                    facts: RetainedSourceFacts::for_test(false, Arc::from([field_fact(execution,
                         runtime,
                         &terminal_handle,
                         entity,
@@ -160,7 +187,7 @@ fn chain_expiration(expire_terminal: bool, output_only: bool) {
             )
         ));
         let verify = |runtime: &RelationalRuntime, snapshot, basis| {
-            ConsumedOutputEvidence::verify_candidate_with_admission(
+            ConsumedOutputEvidence::verify_candidate_with_admission(execution,
                 &origin,
                 &crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::for_test(false, Arc::from([origin_fact.clone()])).for_comparison().unwrap(),
                 &[],

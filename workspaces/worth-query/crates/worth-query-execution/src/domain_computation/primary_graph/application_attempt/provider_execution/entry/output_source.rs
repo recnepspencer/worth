@@ -7,6 +7,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Scope,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
 
         presented: &WorthQueryPresentedProgram<'_>,
@@ -17,10 +18,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     where
         Input: Clone + Send + Sync + 'static,
     {
-        if let Err(outcome) = self.require_occurrence_owns_output_source(presented, &program) {
+        if let Err(outcome) =
+            self.require_occurrence_owns_output_source(execution, presented, &program)
+        {
             return outcome;
         }
         self.compare_and_commit_application_with_output_observation(
+            execution,
             phase,
             program,
             idempotency,
@@ -35,6 +39,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Scope,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
 
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
@@ -58,11 +63,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             );
         }
         if let Err(outcome) =
-            self.require_occurrence_program_commit_binding(&program, selected_program)
+            self.require_occurrence_program_commit_binding(execution, &program, selected_program)
         {
             return outcome;
         }
         self.compare_and_commit_application_with_output_observation(
+            execution,
             phase,
             program,
             idempotency,
@@ -77,6 +83,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Scope,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
 
         presented: &WorthQueryPresentedProgram,
@@ -103,7 +110,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 WorthQueryApplicationCommitDenial::application_program_required(),
             );
         };
-        let occurrence = match resolve_occurrence_program(support, &program) {
+        let occurrence = match resolve_occurrence_program(execution, support, &program) {
             Ok(occurrence) => occurrence,
             Err(denial) => return WorthQueryApplicationCommitOutcome::Denied(denial),
         };
@@ -117,6 +124,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             );
         }
         self.compare_and_commit_application_with_causality(
+            execution,
             phase,
             program,
             idempotency,

@@ -78,6 +78,9 @@ fn cdc_certification_schema_boundary_continuation_is_explained_and_counted() {
 
 #[test]
 fn diff_cdc_truth_parity_test() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = persisted_runtime_with_test_schema();
     let baseline = create_entity_outcome(&runtime, "anchor");
     let baseline_checkpoint =
@@ -191,7 +194,7 @@ fn diff_cdc_truth_parity_test() {
         live_counters.schema_normalized_descriptor_compositions,
     );
 
-    let (_recovery, recovered) = checkpoint_and_recover_with(&runtime, || {
+    let (_recovery, recovered) = checkpoint_and_recover_with(execution, &runtime, || {
         let registry = AspectSchemaFixture {
             schema_version_id: SchemaVersionId(3),
             ..AspectSchemaFixture::with_default_declared_aspects(

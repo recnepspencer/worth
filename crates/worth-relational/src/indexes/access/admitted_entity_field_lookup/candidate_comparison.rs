@@ -1,6 +1,7 @@
 use super::*;
 
 pub(super) fn borrowed_matches<E>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     view: &VisibilityProjectionView<'_>,
     entity: EntityId,
     locator: &AspectFieldLocator,
@@ -20,7 +21,7 @@ pub(super) fn borrowed_matches<E>(
         0,
     )?;
     prepare(SelectedIndexReadWork::OrderedNavigation(navigation), 0).map_err(Stop::Admission)?;
-    view.with_exact_entity_state(entity, |metadata, state| {
+    view.with_exact_entity_state(execution, entity, |metadata, state| {
         let matches = state_matches(state, locator, expected, prepare)?;
         Ok((metadata.entity_id, metadata.kind_id, matches))
     })

@@ -26,6 +26,7 @@ pub enum LineageEvidenceScenario {
 }
 
 pub fn lineage_workflow_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
     lineage: domain::WorthQueryOperationLineageContract,
     promotion_on_reference: bool,
@@ -35,6 +36,7 @@ pub fn lineage_workflow_workspace(
     worth_query::facade::consumer_kit::WorthQueryTestBackendError,
 > {
     lineage_workflow_workspace_with_grouping(
+        request_execution,
         name,
         lineage,
         promotion_on_reference,
@@ -44,6 +46,7 @@ pub fn lineage_workflow_workspace(
 }
 
 pub(crate) fn lineage_invalidation_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
 ) -> Result<
     runtime::WorthQueryWorkspace,
@@ -86,9 +89,9 @@ pub(crate) fn lineage_invalidation_workspace(
             domain::WorthQueryConsumerSupportDimension::DependencyImpact,
             domain::WorthQueryConsumerSupportPosture::Supported,
         )
-        .workspace(name)?;
+        .workspace(request_execution, name)?;
     let seed = workspace
-        .insert("Vertex", |vertex| {
+        .insert(request_execution, "Vertex", |vertex| {
             vertex.aspect("identity.id", "lineage-authoritative-target")
         })
         .expect("lineage invalidation target inserts through Query mutation authority");
@@ -99,6 +102,7 @@ pub(crate) fn lineage_invalidation_workspace(
 }
 
 fn lineage_workflow_workspace_with_grouping(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
     lineage: domain::WorthQueryOperationLineageContract,
     promotion_on_reference: bool,
@@ -127,9 +131,9 @@ fn lineage_workflow_workspace_with_grouping(
         ReadFamily,
         WorkflowParallelProvider,
     )
-    .workspace(name)?;
+    .workspace(request_execution, name)?;
     let seed = workspace
-        .insert("Vertex", |vertex| {
+        .insert(request_execution, "Vertex", |vertex| {
             vertex.aspect("identity.id", "lineage-authoritative-target")
         })
         .expect("lineage fixture target inserts through Query mutation authority");

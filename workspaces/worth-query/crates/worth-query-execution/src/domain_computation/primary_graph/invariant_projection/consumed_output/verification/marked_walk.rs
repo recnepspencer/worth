@@ -4,6 +4,7 @@ use super::*;
 
 impl ConsumedOutputEvidence {
     pub(super) fn verify_marked_views<'a>(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         roots: impl ExactSizeIterator<Item = EvidenceView<'a>>,
         owner: &SourceInvalidationOwner,
         runtime: &RelationalRuntime,
@@ -47,16 +48,17 @@ impl ConsumedOutputEvidence {
                     continue;
                 }
                 ConsumedOutputCurrentness::PendingEqualSuccessor => {
-                    if let Some(changed) =
-                        Self::compare_own(evidence, direct, runtime, snapshot, admission)?
-                    {
+                    if let Some(changed) = Self::compare_own(
+                        execution, evidence, direct, runtime, snapshot, admission,
+                    )? {
                         return Ok(changed);
                     }
                     return Err(ConsumedOutputVerificationStop::PendingUpstream);
                 }
                 ConsumedOutputCurrentness::FullVerificationRequired => {
                     let recovered = Self::compare_equal_chain(
-                        evidence, owner, runtime, snapshot, selected, recovered, admission,
+                        execution, evidence, owner, runtime, snapshot, selected, recovered,
+                        admission,
                     )?;
                     if recovered != ConsumedOutputVerification::Current {
                         return Ok(recovered);
@@ -72,9 +74,9 @@ impl ConsumedOutputEvidence {
                     marked.push(Arc::clone(evidence.identity));
                 }
                 SourceSettlementCurrentness::PendingUpstream(_) => {
-                    if let Some(changed) =
-                        Self::compare_own(evidence, direct, runtime, snapshot, admission)?
-                    {
+                    if let Some(changed) = Self::compare_own(
+                        execution, evidence, direct, runtime, snapshot, admission,
+                    )? {
                         return Ok(changed);
                     }
                     return Err(ConsumedOutputVerificationStop::PendingUpstream);
@@ -87,6 +89,7 @@ impl ConsumedOutputEvidence {
                     if evidence.verification_requirement.is_none() =>
                 {
                     let reverified = owner.reverify_dirty(
+                        execution,
                         runtime,
                         snapshot,
                         selected,
@@ -117,8 +120,9 @@ impl ConsumedOutputEvidence {
                 unmarked @ (SourceSettlementCurrentness::Clean
                 | SourceSettlementCurrentness::Dirty(_)
                 | SourceSettlementCurrentness::FullVerificationRequired(_)) => {
-                    let changed =
-                        Self::compare_own(evidence, direct, runtime, snapshot, admission)?;
+                    let changed = Self::compare_own(
+                        execution, evidence, direct, runtime, snapshot, admission,
+                    )?;
                     if let Some(changed) = changed {
                         return Ok(changed);
                     }

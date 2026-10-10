@@ -31,6 +31,7 @@ where
         LinkKey,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         view: &WorthQueryManagedDerivedView<MembershipQuery, Value>,
         product: &WorthQueryProductBranchLease,
         expected_root: EntityId,
@@ -82,7 +83,7 @@ where
             return Err(Denial::ForeignQuery);
         }
         let first_result = self
-            .execute_application_query_one_shot(first)
+            .execute_application_query_one_shot_with_request(execution, first)
             .map_err(|denial| Denial::ReadDenied {
                 root: expected_root,
                 denial,

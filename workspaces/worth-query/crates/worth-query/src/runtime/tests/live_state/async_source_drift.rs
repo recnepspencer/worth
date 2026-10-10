@@ -7,9 +7,12 @@ use worth_signal::facade::NodeId;
 
 #[test]
 fn late_result_retains_basis_drift_against_the_current_bridge_binding() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let basis_a = authoritative_basis("commit-a", "snapshot-a");
     let basis_b = authoritative_basis("commit-b", "snapshot-b");
-    let batch = late_result_after_revalidation(basis_a, basis_b);
+    let batch = late_result_after_revalidation(request_execution, basis_a, basis_b);
     let state = batch.states().last().expect("late result must project");
 
     assert_ne!(state.basis_identity(), batch.expected_basis_identity());
@@ -21,8 +24,11 @@ fn late_result_retains_basis_drift_against_the_current_bridge_binding() {
 
 #[test]
 fn late_result_retains_generation_drift_when_the_truth_basis_is_stable() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let basis = authoritative_basis("commit-stable", "snapshot-stable");
-    let batch = late_result_after_retry(basis);
+    let batch = late_result_after_retry(request_execution, basis);
     let state = batch.states().last().expect("late result must project");
 
     assert_eq!(state.basis_identity(), batch.expected_basis_identity());
@@ -33,6 +39,7 @@ fn late_result_retains_generation_drift_when_the_truth_basis_is_stable() {
 }
 
 fn late_result_after_retry(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     basis: BridgeAsyncRequestTruthViewBasis,
 ) -> WorthQueryAsyncResultTransitionBatch {
     let bridge = test_bridge();
@@ -43,11 +50,12 @@ fn late_result_after_retry(
     );
     let mut workspace = WorthQueryWorkspace::new(
         "bridge-async-generation-drift",
-        stateful_bridge_task_runtime(),
+        stateful_bridge_task_runtime(request_execution),
     )
     .expect("valid Query workspace");
     let view: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
         .declare_bridge_async_live_view(
+            request_execution,
             "tasks.production-async-generation-drift",
             task_live_request(),
             task_schema(),
@@ -87,17 +95,21 @@ fn late_result_after_retry(
 }
 
 fn late_result_after_revalidation(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     original_basis: BridgeAsyncRequestTruthViewBasis,
     replacement_basis: BridgeAsyncRequestTruthViewBasis,
 ) -> WorthQueryAsyncResultTransitionBatch {
     let bridge = test_bridge();
     let (request, completion) =
         admitted_async_request_and_completion(&bridge, NodeId::new(409, 0), original_basis, 64);
-    let mut workspace =
-        WorthQueryWorkspace::new("bridge-async-drift", stateful_bridge_task_runtime())
-            .expect("valid Query workspace");
+    let mut workspace = WorthQueryWorkspace::new(
+        "bridge-async-drift",
+        stateful_bridge_task_runtime(request_execution),
+    )
+    .expect("valid Query workspace");
     let view: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
         .declare_bridge_async_live_view(
+            request_execution,
             "tasks.production-async-drift",
             task_live_request(),
             task_schema(),

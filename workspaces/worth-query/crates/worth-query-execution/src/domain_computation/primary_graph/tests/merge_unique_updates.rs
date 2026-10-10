@@ -41,34 +41,43 @@ const NOTE: &str = "note";
 
 #[test]
 fn a_merge_that_updates_to_a_value_the_target_holds_is_denied() {
+    let host_request = crate::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut world = UpdateWorld::new();
-    world.create("ada", "taken");
-    let bob = world.create("bob", "bob-label");
+    world.create(execution, "ada", "taken");
+    let bob = world.create(execution, "bob", "bob-label");
     world.fork();
-    world.update(bob, "bob", "taken");
-    assert_eq!(world.admit(), Err(Kind::ValueTaken));
+    world.update(execution, bob, "bob", "taken");
+    assert_eq!(world.admit(execution,), Err(Kind::ValueTaken));
 }
 
 #[test]
 fn a_merge_that_updates_to_a_free_value_is_admitted() {
+    let host_request = crate::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut world = UpdateWorld::new();
-    world.create("ada", "taken");
-    let bob = world.create("bob", "bob-label");
+    world.create(execution, "ada", "taken");
+    let bob = world.create(execution, "bob", "bob-label");
     world.fork();
-    world.update(bob, "bob", "free");
-    assert_eq!(world.admit(), Ok(()));
+    world.update(execution, bob, "bob", "free");
+    assert_eq!(world.admit(execution,), Ok(()));
 }
 
 /// An entity the merge updates keeps its own unique label: holding the
 /// value itself is not a collision.
 #[test]
 fn a_merge_that_keeps_the_updated_entitys_own_value_is_admitted() {
+    let host_request = crate::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut world = UpdateWorld::new();
-    world.create("ada", "taken");
-    let bob = world.create("bob", "bob-label");
+    world.create(execution, "ada", "taken");
+    let bob = world.create(execution, "bob", "bob-label");
     world.fork();
-    world.update_note(bob, "bob", "bob-label", "edited");
-    let prepared = world.prepared_merge();
+    world.update_note(execution, bob, "bob", "bob-label", "edited");
+    let prepared = world.prepared_merge(execution);
     assert!(
         prepared.merged_intents().iter().any(|intent| matches!(
             intent,
@@ -78,7 +87,7 @@ fn a_merge_that_keeps_the_updated_entitys_own_value_is_admitted() {
         "the merge updates bob: {:?}",
         prepared.merged_intents()
     );
-    assert_eq!(world.admit_prepared(&prepared), Ok(()));
+    assert_eq!(world.admit_prepared(execution, &prepared), Ok(()));
 }
 
 /// A raw runtime whose one kind has an identity `name` and a unique `label`
@@ -107,7 +116,12 @@ impl UpdateWorld {
         Self { runtime, index }
     }
 
-    fn create(&mut self, name: &str, label: &str) -> EntityId {
+    fn create(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        name: &str,
+        label: &str,
+    ) -> EntityId {
         let created = CreatedEntityRef {
             partition_id: PartitionId::main(),
             kind_id: KIND,
@@ -125,15 +139,28 @@ impl UpdateWorld {
         let entity = committed
             .created_entity(&created)
             .expect("the create issued");
-        self.close(committed);
+        self.close(execution, committed);
         entity
     }
 
-    fn update(&mut self, entity_id: EntityId, name: &str, label: &str) {
-        self.update_note(entity_id, name, label, NOTE);
+    fn update(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        entity_id: EntityId,
+        name: &str,
+        label: &str,
+    ) {
+        self.update_note(execution, entity_id, name, label, NOTE);
     }
 
-    fn update_note(&mut self, entity_id: EntityId, name: &str, label: &str, note: &str) {
+    fn update_note(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        entity_id: EntityId,
+        name: &str,
+        label: &str,
+        note: &str,
+    ) {
         let committed = self.commit(
             FEATURE,
             MutationIntent::Entity(EntityMutationIntent::UpdateFields(
@@ -143,7 +170,7 @@ impl UpdateWorld {
                 },
             )),
         );
-        self.close(committed);
+        self.close(execution, committed);
     }
 
     fn fork(&mut self) {
@@ -158,8 +185,8 @@ impl UpdateWorld {
 
     /// Admits the feature-into-main merge, which must carry the label as a
     /// field update, under the label's unique law.
-    fn admit(&mut self) -> Result<(), Kind> {
-        let prepared = self.prepared_merge();
+    fn admit(&mut self, execution: &worth_execution::ExecutionRequest<'_, '_>) -> Result<(), Kind> {
+        let prepared = self.prepared_merge(execution);
         assert!(
             prepared.merged_intents().iter().any(|intent| matches!(
                 intent,
@@ -169,16 +196,23 @@ impl UpdateWorld {
             "the merge writes the label as a field update: {:?}",
             prepared.merged_intents()
         );
-        self.admit_prepared(&prepared)
+        self.admit_prepared(execution, &prepared)
     }
 
-    fn admit_prepared(&self, prepared: &PreparedMergeExecution) -> Result<(), Kind> {
+    fn admit_prepared(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        prepared: &PreparedMergeExecution,
+    ) -> Result<(), Kind> {
         let unique = WorthQueryUniqueFieldFixture::new(KIND, locator("label"), Some(self.index));
-        admit_merge_unique_values(unique.fields(), &self.runtime, prepared)
+        admit_merge_unique_values(unique.fields(), &self.runtime, execution, prepared)
             .map_err(|denial| denial.kind())
     }
 
-    fn prepared_merge(&mut self) -> PreparedMergeExecution {
+    fn prepared_merge(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> PreparedMergeExecution {
         let request = MergeExecutionRequest::new(
             BranchId("main".to_owned()),
             BranchId(FEATURE.to_owned()),
@@ -189,7 +223,7 @@ impl UpdateWorld {
             .bind_merge_execution_request(request)
             .expect("the merge binds");
         self.runtime
-            .prepare_merge_execution(bound)
+            .prepare_merge_execution(execution, bound)
             .expect("a last-writer-wins source edit prepares")
     }
 
@@ -226,15 +260,19 @@ impl UpdateWorld {
     }
 
     /// Builds the label index at the new commit and releases its snapshot.
-    fn close(&mut self, committed: worth_relational::facade::transactions::CommitResult) {
-        let built = self
-            .runtime
-            .index_authority()
-            .build_for_commit(DerivedIndexBuildRequest {
+    fn close(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        committed: worth_relational::facade::transactions::CommitResult,
+    ) {
+        let built = self.runtime.index_authority().build_for_commit(
+            execution,
+            DerivedIndexBuildRequest {
                 source_commit_id: committed.commit.commit_id,
                 branch_id: committed.commit.branch_id.clone(),
                 index_ids: vec![self.index],
-            });
+            },
+        );
         assert_eq!(
             built.generations.len(),
             1,

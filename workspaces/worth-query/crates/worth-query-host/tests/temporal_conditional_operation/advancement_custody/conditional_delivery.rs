@@ -11,7 +11,12 @@ fn conditional_delivery_refuses_before_its_retained_truth_reader() {
             .require_committed()
             .unwrap();
         let mut change = publication.take_performed_relational_product_change();
-        let selected = world.application.on_branch(branch).select().unwrap();
+        let selected = world
+            .application
+            .with_host_advancement(|phase| {
+                world.application.on_branch(branch).select(&phase).unwrap()
+            })
+            .expect("installed host call opens");
         let scope = super::super::world::request_scope();
         for memory in [false, true] {
             bound(Some(worth_foundational::ExecutionBudget::new(
@@ -94,14 +99,22 @@ fn foreign_phase_cannot_deliver_on_another_installed_world() {
             .unwrap();
         let a_selected = a
             .application
-            .on_branch(a.application.current_world())
-            .select()
-            .unwrap();
+            .with_host_advancement(|phase| {
+                a.application
+                    .on_branch(a.application.current_world())
+                    .select(&phase)
+                    .unwrap()
+            })
+            .expect("installed host call opens");
         let b_selected = b
             .application
-            .on_branch(b.application.current_world())
-            .select()
-            .unwrap();
+            .with_host_advancement(|phase| {
+                b.application
+                    .on_branch(b.application.current_world())
+                    .select(&phase)
+                    .unwrap()
+            })
+            .expect("installed host call opens");
         let scope = super::super::world::request_scope();
         reports();
         // First isolate the refused work: neither installation charges anything for B.

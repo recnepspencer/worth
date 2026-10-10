@@ -1,3 +1,4 @@
+mod resource_support;
 use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 use std::sync::Arc;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationSchema};
@@ -338,28 +339,18 @@ where
     #[doc(hidden)]
     pub fn custom_invariant_candidate_input_counters(
         &self,
-    ) -> worth_relational::facade::runtime::RelationalCandidateInputCounters {
-        self.primary_provider
+        phase: &super::WorthQueryAdvancementPhase<'_>,
+    ) -> Result<
+        worth_relational::facade::runtime::RelationalCandidateInputCounters,
+        super::WorthQueryForeignAdvancementPhase,
+    > {
+        let execution = phase.execution_request_for(&self.product_runtime)?;
+        Ok(self
+            .primary_provider
             .graph
-            .with_runtime(|runtime| runtime.custom_invariant_candidate_input_counters())
-    }
-
-    pub(in crate::domain_computation) fn graph_work_resource_support(
-        &self,
-    ) -> worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceSupportSnapshot
-    {
-        self.primary_provider.application_resource_support()
-    }
-
-    pub(in crate::domain_computation) fn graph_work_resource_support_ref(
-        &self,
-    ) -> &worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceSupportSnapshot
-    {
-        self.primary_provider.application_resource_support_ref()
-    }
-
-    pub(in crate::domain_computation) fn graph_work_provider_identity(&self) -> &str {
-        self.primary_graph_authority.provider_identity()
+            .with_runtime(&execution, |runtime| {
+                runtime.custom_invariant_candidate_input_counters()
+            }))
     }
 
     /// Closes ordinary live delivery without closing the authoritative graph.

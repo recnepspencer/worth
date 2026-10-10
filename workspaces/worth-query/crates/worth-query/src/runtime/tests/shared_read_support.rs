@@ -103,19 +103,24 @@ impl WorthQueryDerivedViewMaintainer for SharedReadPublishingMaintainer {
     }
 }
 
-pub(super) fn shared_read_workspace(name: &str) -> WorthQueryWorkspace {
-    stateful_bridge_task_runtime()
+pub(super) fn shared_read_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    name: &str,
+) -> WorthQueryWorkspace {
+    stateful_bridge_task_runtime(request_execution)
         .workspace(name)
         .expect("workspace should build")
 }
 
 pub(super) fn declare_shared_read_derived(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace: &mut WorthQueryWorkspace,
     suffix: &str,
     maintainer: SharedReadPublishingMaintainer,
 ) -> WorthQueryDerivedViewHandle<WorthQueryUnrefinedLiveShape> {
     let live: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
         .live_view_request(
+            request_execution,
             format!("tasks.{suffix}"),
             task_live_request(),
             task_schema(),
@@ -123,6 +128,7 @@ pub(super) fn declare_shared_read_derived(
         .expect("live view should declare");
     workspace
         .computed_view(
+            request_execution,
             crate::program::WorthQueryDerivedView::new(
                 format!("derived.{suffix}"),
                 test_aspect_touches(["title.value"]),
@@ -133,9 +139,14 @@ pub(super) fn declare_shared_read_derived(
         .expect("derived view should declare")
 }
 
-pub(super) fn insert_task(workspace: &mut WorthQueryWorkspace, id: &str, title: &str) {
+pub(super) fn insert_task(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    workspace: &mut WorthQueryWorkspace,
+    id: &str,
+    title: &str,
+) {
     workspace
-        .insert("Task", |builder| {
+        .insert(request_execution, "Task", |builder| {
             builder
                 .set_aspect(
                     test_aspect_touch("identity.id"),

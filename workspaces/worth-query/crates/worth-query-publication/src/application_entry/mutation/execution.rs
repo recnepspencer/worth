@@ -91,7 +91,7 @@ where
         let identities = self
             .identities()
             .map_err(WorthQueryApplicationProgramMigrationPreparationDenial::Request)?;
-        let mut prepared = super::authorization::prepare(&self, &identities, staged)
+        let mut prepared = super::authorization::prepare(phase, &self, &identities, staged)
             .map_err(WorthQueryApplicationProgramMigrationPreparationDenial::Request)?;
         if let Some(pending) = prepared.pending_source.take() {
             pending
@@ -195,7 +195,7 @@ where
                 worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork::NotStarted);
         }
         self.execute_with_preparation_and_commit_report(&phase,
-            super::authorization::prepare,
+            |request, identities, staged| super::authorization::prepare(&phase, request, identities, staged),
             |application, program, binding| {
                 application.compare_and_commit_application_in_advancement(&phase,
                     program,
@@ -330,6 +330,9 @@ where
 
     pub(super) fn resolve_idempotency(
         &self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
         admission: &WorthQueryAdmittedApplicationOperation<
             Schema,
             <Intent::Binding as ApplicationMutationBinding<Schema>>::Operation,
@@ -349,7 +352,7 @@ where
         let resolution = match self
             .request
             .application
-            .resolve_admitted_application_idempotency(admission, idempotency)
+            .resolve_admitted_application_idempotency(phase, admission, idempotency)
         {
             Ok(read) => read.into_resolution(),
             Err(denial) => {

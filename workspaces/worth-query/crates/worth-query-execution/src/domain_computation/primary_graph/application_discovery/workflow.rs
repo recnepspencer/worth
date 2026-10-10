@@ -57,6 +57,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     /// its definition superseded or retired says so with a typed outcome.
     pub fn discover_workflow_definition<Spec>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         identity: &ApplicationWorkflowDefinitionIdentity,
     ) -> Result<WorthQueryWorkflowDefinitionDiscovery, WorthQueryWorkflowDefinitionDiscoveryDenial>
     where
@@ -66,20 +67,25 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         let layout = graph.layout.workflow();
         let snapshot = self.application_basis().snapshot_handle();
         let branch = self.product().product_branch();
-        graph.with_runtime_mut(|runtime| {
+        graph.with_runtime_mut(execution, |runtime| {
             // A fork that has not committed still needs its own generation of
             // the lineage index before it can be read.
             graph
-                .ensure_primary_indexes_for_basis(runtime, self.product().relational_basis())
+                .ensure_primary_indexes_for_basis(
+                    execution,
+                    runtime,
+                    self.product().relational_basis(),
+                )
                 .map_err(|_| WorthQueryWorkflowDefinitionDiscoveryDenial::IndexUnavailable)?;
             let runtime = &*runtime;
-            let lineage = select_lineage(runtime, snapshot, layout, identity.as_str())
+            let lineage = select_lineage(runtime, execution, snapshot, layout, identity.as_str())
                 .ok_or(WorthQueryWorkflowDefinitionDiscoveryDenial::LineageUnreadable)?;
             let Some(lineage) = lineage else {
                 return Ok(WorthQueryWorkflowDefinitionDiscovery::Unpublished);
             };
             let spec = observe_field_value(
                 runtime,
+                execution,
                 snapshot,
                 lineage,
                 layout.lineage.entity_kind,
@@ -89,7 +95,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             if spec != text(Spec::IDENTITY.as_str()) {
                 return Err(WorthQueryWorkflowDefinitionDiscoveryDenial::ForeignLineage);
             }
-            match current_definition(runtime, snapshot, layout, branch, lineage) {
+            match current_definition(runtime, execution, snapshot, layout, branch, lineage) {
                 Some(WorkflowDefinitionCurrentness::Current(current)) => {
                     Ok(WorthQueryWorkflowDefinitionDiscovery::Current(current))
                 }
@@ -113,6 +119,7 @@ pub(in crate::domain_computation::primary_graph) enum WorkflowDefinitionCurrentn
 /// content identity cannot be read.
 pub(in crate::domain_computation::primary_graph) fn current_definition(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
     branch: crate::basis::WorthQueryProductBranch,
@@ -120,6 +127,7 @@ pub(in crate::domain_computation::primary_graph) fn current_definition(
 ) -> Option<WorkflowDefinitionCurrentness> {
     let relations = observe_adjacency(
         runtime,
+        execution,
         snapshot,
         layout.current_definition_relation,
         lineage,
@@ -133,6 +141,7 @@ pub(in crate::domain_computation::primary_graph) fn current_definition(
     };
     let AspectValue::String(InternedString::Raw(recorded)) = observe_field_value(
         runtime,
+        execution,
         snapshot,
         current,
         layout.definition.entity_kind,
@@ -150,12 +159,14 @@ pub(in crate::domain_computation::primary_graph) fn current_definition(
 /// The lineage published under `identity`, `Some(None)` when there is none.
 fn select_lineage(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
     identity: &str,
 ) -> Option<Option<EntityId>> {
     let selection = observe_indexed_entity_selection(
         runtime,
+        execution,
         snapshot,
         layout.lineage.identity_index_id,
         layout.lineage.entity_kind,

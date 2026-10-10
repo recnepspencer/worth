@@ -9,6 +9,9 @@ use crate::tests::support::*;
 
 #[test]
 fn concurrent_snapshot_and_version_reads_match_serial_truth() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema_profile(RelationalRuntimeProfile::AiWorkflow);
     let created = create_entity_outcome(&runtime, "before");
     let created_version_id = created.version_id;
@@ -18,14 +21,16 @@ fn concurrent_snapshot_and_version_reads_match_serial_truth() {
     let serial_snapshot_name = {
         let read = runtime
             .read_truth()
-            .read_snapshot(&explicit_snapshot)
+            .read_snapshot(&explicit_snapshot, execution)
             .unwrap();
         read_entity_name(read.get_entity(entity).unwrap())
             .unwrap()
             .to_string()
     };
     let serial_version_name = {
-        let read = runtime.read_truth().read_version(created_version_id);
+        let read = runtime
+            .read_truth()
+            .read_version(execution, created_version_id);
         read_entity_name(read.get_entity(entity).unwrap())
             .unwrap()
             .to_string()
@@ -33,7 +38,7 @@ fn concurrent_snapshot_and_version_reads_match_serial_truth() {
     let serial_latest_name = {
         let read = runtime
             .read_truth()
-            .read_snapshot(&updated.snapshot)
+            .read_snapshot(&updated.snapshot, execution)
             .unwrap();
         read_entity_name(read.get_entity(entity).unwrap())
             .unwrap()
@@ -50,12 +55,14 @@ fn concurrent_snapshot_and_version_reads_match_serial_truth() {
             snapshot_threads.push(scope.spawn(move || {
                 let snapshot_read = runtime
                     .read_truth()
-                    .read_snapshot(&explicit_snapshot)
+                    .read_snapshot(&explicit_snapshot, execution)
                     .unwrap();
-                let version_read = runtime.read_truth().read_version(created_version_id);
+                let version_read = runtime
+                    .read_truth()
+                    .read_version(execution, created_version_id);
                 let latest_read = runtime
                     .read_truth()
-                    .read_snapshot(&published_snapshot)
+                    .read_snapshot(&published_snapshot, execution)
                     .unwrap();
                 (
                     read_entity_name(snapshot_read.get_entity(entity).unwrap())
@@ -82,6 +89,9 @@ fn concurrent_snapshot_and_version_reads_match_serial_truth() {
 
 #[test]
 fn concurrent_read_pressure_keeps_cache_diagnostics_coherent() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema_profile(RelationalRuntimeProfile::GeometryKernel);
     let created = create_entity_outcome(&runtime, "baseline");
     let created_version_id = created.version_id;
@@ -109,7 +119,9 @@ fn concurrent_read_pressure_keeps_cache_diagnostics_coherent() {
                     .read_truth()
                     .inspect_snapshot_read_path(&published_snapshot)
                     .expect("published snapshot diagnostics");
-                let historical = runtime.read_truth().read_version(created_version_id);
+                let historical = runtime
+                    .read_truth()
+                    .read_version(execution, created_version_id);
                 let historical_name = read_entity_name(historical.get_entity(entity).unwrap())
                     .unwrap()
                     .to_string();
@@ -162,6 +174,9 @@ fn published_snapshot_read_diagnostics_use_authoritative_binding_version() {
 
 #[test]
 fn concurrent_pinned_traversal_reads_stay_snapshot_stable_under_hot_rewrite_pressure() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::GeometryKernel)
         .schema_registry(declared_aspect_schema_registry(
@@ -218,7 +233,11 @@ fn concurrent_pinned_traversal_reads_stay_snapshot_stable_under_hot_rewrite_pres
                 .read_truth()
                 .plan_query_packet(&snapshot, packet.clone())
                 .expect("baseline query plan"),
+            execution,
+            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
         )
+        .expect("request remains live")
+        .map(|read| read.outcome)
         .expect("baseline query outcome")
         .result;
 
@@ -249,7 +268,11 @@ fn concurrent_pinned_traversal_reads_stay_snapshot_stable_under_hot_rewrite_pres
                             .read_truth()
                             .plan_query_packet(&snapshot, packet)
                             .expect("thread query plan"),
+                        execution,
+                        crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                     )
+                    .expect("request remains live")
+                    .map(|read| read.outcome)
                     .expect("thread query outcome")
                     .result;
                 assert_eq!(result, expected);
@@ -264,6 +287,9 @@ fn concurrent_pinned_traversal_reads_stay_snapshot_stable_under_hot_rewrite_pres
 
 #[test]
 fn concurrent_relation_index_certification_parity_stays_stable_under_scheduler_pressure() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let source = create_entity_outcome(&runtime, "source");
     let source_id = changed_entities(&source)[0];
@@ -290,13 +316,14 @@ fn concurrent_relation_index_certification_parity_stays_stable_under_scheduler_p
         },
         branch_scoped: false,
     });
-    runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id: commit.commit.commit_id,
             branch_id: BranchId("main".to_string()),
             index_ids: vec![relation_index.index_id],
-        });
+        },
+    );
 
     let snapshot = commit.snapshot.clone();
     let context = runtime
@@ -327,7 +354,9 @@ fn concurrent_relation_index_certification_parity_stays_stable_under_scheduler_p
                 .plan_query_packet(&snapshot, packet.clone())
                 .expect("baseline plan"),
             IndexParityMode::CertificationParity,
+            execution,
         )
+        .expect("request remains live")
         .expect("baseline outcome");
     let runtime = Arc::new(runtime);
 
@@ -347,7 +376,9 @@ fn concurrent_relation_index_certification_parity_stays_stable_under_scheduler_p
                             .plan_query_packet(&snapshot, packet)
                             .expect("thread plan"),
                         IndexParityMode::CertificationParity,
+                        execution,
                     )
+                    .expect("request remains live")
                     .expect("thread outcome");
                 assert_eq!(outcome.access_path, expected.access_path);
                 assert_eq!(outcome.execution.result, expected.execution.result);

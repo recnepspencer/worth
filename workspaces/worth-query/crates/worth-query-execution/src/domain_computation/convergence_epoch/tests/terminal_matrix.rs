@@ -189,6 +189,9 @@ fn managed_signal_cancellation_remains_a_distinct_convergence_terminal() {
         let execution = phase;
 
         let epoch = direct_epoch_fixture(FixtureDisposition::Converged);
+
+        let installed_fixture_phase = epoch.fixture_phase(execution);
+        let execution = &installed_fixture_phase;
         let started = match epoch.begin_iteration(
             execution,
             WorthQueryManagedGraphCallRequest::new(

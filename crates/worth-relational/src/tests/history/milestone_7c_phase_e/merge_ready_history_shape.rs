@@ -5,8 +5,11 @@ use super::fixtures::execute_feature_into_main_merge;
 
 #[test]
 fn execute_prepared_merge_produces_merge_ready_history_shape() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let (runtime, merge, main_head_commit_id, feature_head_commit_id) =
-        execute_feature_into_main_merge();
+        execute_feature_into_main_merge(execution);
     let envelope = runtime
         .replay()
         .canonical_commit_envelope(merge.commit.commit.commit_id)
@@ -32,12 +35,15 @@ fn execute_prepared_merge_produces_merge_ready_history_shape() {
     assert_eq!(
         runtime
             .replay_authority()
-            .replay_commit(RelationalReplayRequest {
-                commit_id: merge.commit.commit.commit_id,
-                branch_id: BranchId("main".to_string()),
-                execution_mode: ReplayExecutionMode::SerialDeterministic,
-                verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-            })
+            .replay_commit(
+                RelationalReplayRequest {
+                    commit_id: merge.commit.commit.commit_id,
+                    branch_id: BranchId("main".to_string()),
+                    execution_mode: ReplayExecutionMode::SerialDeterministic,
+                    verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
+                },
+                execution
+            )
             .commit
             .expect("replayed merge commit")
             .ordered_parents()

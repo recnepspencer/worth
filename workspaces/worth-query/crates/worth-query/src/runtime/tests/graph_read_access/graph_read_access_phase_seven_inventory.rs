@@ -22,8 +22,17 @@ use support::graph_index_inventory::runtime_profiles::{
 
 #[test]
 fn graph_index_inventory_digest_is_stable_for_the_same_runtime_assembly() {
-    let first = default_graph_support_workspace("graph-read-access.phase-seven.inventory.first");
-    let second = default_graph_support_workspace("graph-read-access.phase-seven.inventory.second");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let first = default_graph_support_workspace(
+        request_execution,
+        "graph-read-access.phase-seven.inventory.first",
+    );
+    let second = default_graph_support_workspace(
+        request_execution,
+        "graph-read-access.phase-seven.inventory.second",
+    );
     let first_report = first.graph_index_inventory();
     let second_report = second.graph_index_inventory();
     let default_report = worth_query_graph_index_inventory();
@@ -46,9 +55,15 @@ fn graph_index_inventory_digest_is_stable_for_the_same_runtime_assembly() {
 
 #[test]
 fn graph_index_inventory_digest_changes_when_runtime_assembly_changes() {
-    let default_workspace =
-        default_graph_support_workspace("graph-read-access.phase-seven.inventory.default");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let default_workspace = default_graph_support_workspace(
+        request_execution,
+        "graph-read-access.phase-seven.inventory.default",
+    );
     let omitted_workspace = workspace_with_graph_support(
+        request_execution,
         "graph-read-access.phase-seven.inventory.omitted",
         profile_without_graph_support(
             WorthQueryGraphReadAccessRequirementKind::DirectionalAdjacency,
@@ -63,8 +78,14 @@ fn graph_index_inventory_digest_changes_when_runtime_assembly_changes() {
 
 #[test]
 fn verified_graph_index_rows_carry_certified_support_state_and_required_bases() {
-    let inventory = default_graph_support_workspace("graph-read-access.phase-seven.certified")
-        .graph_index_inventory();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let inventory = default_graph_support_workspace(
+        request_execution,
+        "graph-read-access.phase-seven.certified",
+    )
+    .graph_index_inventory();
 
     for row in inventory
         .rows()
@@ -80,8 +101,14 @@ fn verified_graph_index_rows_carry_certified_support_state_and_required_bases() 
 
 #[test]
 fn graph_index_inventory_rows_localize_support_posture_without_generic_missing_index() {
-    let inventory = default_graph_support_workspace("graph-read-access.phase-seven.inventory.rows")
-        .graph_index_inventory();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let inventory = default_graph_support_workspace(
+        request_execution,
+        "graph-read-access.phase-seven.inventory.rows",
+    )
+    .graph_index_inventory();
     let directional = inventory
         .row_for_requirement_kind(&WorthQueryGraphReadAccessRequirementKind::DirectionalAdjacency)
         .expect("directional adjacency support row should exist");
@@ -126,7 +153,13 @@ fn graph_index_inventory_rows_localize_support_posture_without_generic_missing_i
 
 #[test]
 fn admission_consumes_runtime_bound_graph_index_inventory_match_report_before_planning() {
-    let mut workspace = default_graph_support_workspace("graph-read-access.phase-seven.admission");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = default_graph_support_workspace(
+        request_execution,
+        "graph-read-access.phase-seven.admission",
+    );
     let family = predicate_collection_family(&mut workspace, "phase-seven-admission");
     let review = workspace
         .read_family_intent(&family)
@@ -168,7 +201,11 @@ fn admission_consumes_runtime_bound_graph_index_inventory_match_report_before_pl
 
 #[test]
 fn missing_runtime_support_localizes_to_exact_requirement_row_and_denies_admission() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = workspace_with_graph_support(
+        request_execution,
         "graph-read-access.phase-seven.missing-directional",
         profile_without_graph_support(
             WorthQueryGraphReadAccessRequirementKind::DirectionalAdjacency,
@@ -210,7 +247,11 @@ fn missing_runtime_support_localizes_to_exact_requirement_row_and_denies_admissi
 
 #[test]
 fn temporary_runtime_support_unavailability_maps_to_async_materialization_denial() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = workspace_with_graph_support(
+        request_execution,
         "graph-read-access.phase-seven.unavailable-predicate",
         profile_with_graph_support_temporarily_unavailable(
             WorthQueryGraphReadAccessRequirementKind::PredicateSupport,
@@ -244,7 +285,11 @@ fn temporary_runtime_support_unavailability_maps_to_async_materialization_denial
 
 #[test]
 fn capability_registration_required_support_maps_to_registration_denial() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = workspace_with_graph_support(
+        request_execution,
         "graph-read-access.phase-seven.registration-predicate",
         profile_requiring_graph_access_capability_registration(
             WorthQueryGraphReadAccessRequirementKind::PredicateSupport,
@@ -278,7 +323,11 @@ fn capability_registration_required_support_maps_to_registration_denial() {
 
 #[test]
 fn store_backed_required_support_is_visible_without_pretending_runtime_support_exists() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = workspace_with_graph_support(
+        request_execution,
         "graph-read-access.phase-seven.store-backed-predicate",
         profile_requiring_store_backed_graph_index(
             WorthQueryGraphReadAccessRequirementKind::PredicateSupport,

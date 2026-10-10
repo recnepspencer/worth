@@ -127,6 +127,7 @@ fn execute_mutation_stage(
 }
 
 pub fn mutation_workflow_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
 ) -> Result<
     runtime::WorthQueryWorkspace,
@@ -139,7 +140,7 @@ pub fn mutation_workflow_workspace(
             MutationFamily,
             MutationWorkflowExecutor,
         )
-        .workspace(name)
+        .workspace(request_execution, name)
 }
 
 fn mutation_workflow_package() -> domain::WorthQueryDomainPackage<GeometryDomain> {

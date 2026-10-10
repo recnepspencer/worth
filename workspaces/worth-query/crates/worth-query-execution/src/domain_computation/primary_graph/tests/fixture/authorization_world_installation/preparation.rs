@@ -1,7 +1,7 @@
 use super::*;
 
 pub(super) fn prepare_authorization_world(
-    phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    phase: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     resources: WorthQueryApplicationQueryResourceProfile,
     relational: Option<worth_relational::facade::runtime::RelationalRuntime>,
     product_resources: crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldResources,

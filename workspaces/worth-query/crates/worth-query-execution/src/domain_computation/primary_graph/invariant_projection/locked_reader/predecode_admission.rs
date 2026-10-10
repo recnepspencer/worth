@@ -58,6 +58,7 @@ where
         self.work.record_field();
         observe_field_value_borrowed(
             self.runtime,
+            self.execution,
             self.snapshot,
             identity.entity_id,
             identity.kind,

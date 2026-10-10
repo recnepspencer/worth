@@ -36,6 +36,7 @@ impl<'definition> RelatedEntityOrderingProjection<'definition> {
 }
 
 pub(in crate::indexes) fn build_related_entity_ordering_index_checked(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &IndexProjectionSource<'_, '_>,
     contract: &RelatedEntityOrderingProjection<'_>,
     context: &mut crate::execution::PacketKernelContext<'_, '_, '_>,
@@ -46,6 +47,7 @@ pub(in crate::indexes) fn build_related_entity_ordering_index_checked(
     let mut entries = BTreeMap::new();
     let budget = std::cell::RefCell::new(context);
     projection.try_for_each_relation(
+        request_execution,
         contract.relation_kind,
         |bytes| {
             budget.borrow_mut().checkpoint(1)?;
@@ -62,6 +64,7 @@ pub(in crate::indexes) fn build_related_entity_ordering_index_checked(
                 .check_scratch_peak(projection.candidate_entity_bytes(child))?;
             let values = projection
                 .with_entity(
+                    request_execution,
                     child,
                     |record| -> Result<
                         Option<(Vec<worth_foundational::facade::AspectValue>, u64)>,
@@ -136,18 +139,19 @@ pub(in crate::indexes) fn build_related_entity_ordering_index_checked(
 }
 
 pub(in crate::indexes) fn build_related_entity_ordering_index(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &IndexProjectionSource<'_, '_>,
     contract: &RelatedEntityOrderingProjection<'_>,
 ) -> BTreeMap<crate::identity::data::EntityId, Vec<RelatedEntityOrderingEntry>> {
     let mut entries =
         BTreeMap::<crate::identity::data::EntityId, Vec<RelatedEntityOrderingEntry>>::new();
-    projection.for_each_relation(contract.relation_kind, |relation| {
+    projection.for_each_relation(execution, contract.relation_kind, |relation| {
         let (parent, child) = match contract.parent_endpoint {
             RelatedEntityEndpoint::SourceParent => (relation.source, relation.target),
             RelatedEntityEndpoint::TargetParent => (relation.target, relation.source),
         };
         let values = projection
-            .with_entity(child, |record| {
+            .with_entity(execution, child, |record| {
                 if record.kind.kind_id != contract.child_kind {
                     return None;
                 }
@@ -155,7 +159,12 @@ pub(in crate::indexes) fn build_related_entity_ordering_index(
                     .ordering
                     .iter()
                     .map(|field| {
-                        entity_aspect_field_ordering_value(projection, child, field.locator())
+                        entity_aspect_field_ordering_value(
+                            execution,
+                            projection,
+                            child,
+                            field.locator(),
+                        )
                     })
                     .collect::<Option<Vec<_>>>()
             })

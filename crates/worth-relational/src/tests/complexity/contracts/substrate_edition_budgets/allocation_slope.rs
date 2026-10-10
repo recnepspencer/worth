@@ -50,11 +50,14 @@ fn bounded_adjacency_allocation_is_flat_in_partitions_the_anchor_is_not_in() {
 #[test]
 #[cfg(feature = "allocation-probes")]
 fn isolated_bounded_adjacency_fanout_allocation_slope_probe() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     if std::env::var_os(PROBE_GATE).is_none() {
         return;
     }
-    let narrow = measured_bounded_read(MEASURED_FANOUT, 0);
-    let wide = measured_bounded_read(WIDE_FANOUT, 0);
+    let narrow = measured_bounded_read(request_execution, MEASURED_FANOUT, 0);
+    let wide = measured_bounded_read(request_execution, WIDE_FANOUT, 0);
 
     // Same budget, same refusal, thirty-two times the fanout. Materializing the
     // kind slice before applying the bound would put that factor here.
@@ -66,11 +69,14 @@ fn isolated_bounded_adjacency_fanout_allocation_slope_probe() {
 #[test]
 #[cfg(feature = "allocation-probes")]
 fn isolated_bounded_adjacency_partition_allocation_slope_probe() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     if std::env::var_os(PROBE_GATE).is_none() {
         return;
     }
-    let narrow = measured_bounded_read(MEASURED_FANOUT, 0);
-    let wide = measured_bounded_read(MEASURED_FANOUT, UNRELATED_PARTITIONS);
+    let narrow = measured_bounded_read(request_execution, MEASURED_FANOUT, 0);
+    let wide = measured_bounded_read(request_execution, MEASURED_FANOUT, UNRELATED_PARTITIONS);
 
     // The answer never leaves one partition, so ninety-six unrelated ones must
     // cost nothing. Copying the partition map per record lookup would put a
@@ -112,7 +118,11 @@ fn run_isolated_probe(probe_name: &str) {
 /// within the budget, the same work bound, the same refusal. Only the source
 /// breadth around it moves.
 #[cfg(feature = "allocation-probes")]
-fn measured_bounded_read(fanout: usize, unrelated_partitions: usize) -> stats_alloc::Stats {
+fn measured_bounded_read(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    fanout: usize,
+    unrelated_partitions: usize,
+) -> stats_alloc::Stats {
     let runtime = runtime_with_test_schema();
     let anchor = create_entity(&runtime, "anchor-0000");
     for edge in 0..fanout {
@@ -132,6 +142,7 @@ fn measured_bounded_read(fanout: usize, unrelated_partitions: usize) -> stats_al
     let refusal = runtime
         .read_truth()
         .bounded_outgoing_relations_of_kind_at_version(
+            request_execution,
             anchor,
             RELATION_KIND,
             version_id,

@@ -2,6 +2,9 @@ use super::*;
 
 #[test]
 fn planned_query_execution_supports_outgoing_neighborhood_with_canonical_traversal_order() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     let a = create_entity_in_partition(&runtime, "a", PartitionId(7));
     let b = create_entity_in_partition(&runtime, "b", PartitionId(11));
@@ -35,7 +38,13 @@ fn planned_query_execution_supports_outgoing_neighborhood_with_canonical_travers
         .expect("planned query packet");
     let outcome = runtime
         .read_truth()
-        .execute_query_plan(plan)
+        .execute_query_plan(
+            plan,
+            execution,
+            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
+        )
+        .expect("request remains live")
+        .map(|read| read.outcome)
         .expect("query execution outcome");
 
     assert_eq!(outcome.complexity.packet_count, 1);
@@ -61,6 +70,9 @@ fn planned_query_execution_supports_outgoing_neighborhood_with_canonical_travers
 
 #[test]
 fn planned_query_execution_supports_incoming_neighborhood_with_canonical_traversal_order() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     let a = create_entity_in_partition(&runtime, "a", PartitionId(7));
     let b = create_entity_in_partition(&runtime, "b", PartitionId(11));
@@ -94,7 +106,13 @@ fn planned_query_execution_supports_incoming_neighborhood_with_canonical_travers
         .expect("planned query packet");
     let outcome = runtime
         .read_truth()
-        .execute_query_plan(plan)
+        .execute_query_plan(
+            plan,
+            execution,
+            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
+        )
+        .expect("request remains live")
+        .map(|read| read.outcome)
         .expect("query execution outcome");
 
     assert_eq!(
@@ -119,6 +137,9 @@ fn planned_query_execution_supports_incoming_neighborhood_with_canonical_travers
 
 #[test]
 fn planned_query_execution_supports_connectivity_traversal_with_depth_bound() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     let a = create_entity_in_partition(&runtime, "a", PartitionId(7));
     let b = create_entity_in_partition(&runtime, "b", PartitionId(11));
@@ -153,7 +174,13 @@ fn planned_query_execution_supports_connectivity_traversal_with_depth_bound() {
         .expect("planned query packet");
     let outcome = runtime
         .read_truth()
-        .execute_query_plan(plan)
+        .execute_query_plan(
+            plan,
+            execution,
+            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
+        )
+        .expect("request remains live")
+        .map(|read| read.outcome)
         .expect("query execution outcome");
 
     assert_eq!(
@@ -180,6 +207,9 @@ fn planned_query_execution_supports_connectivity_traversal_with_depth_bound() {
 
 #[test]
 fn planned_query_execution_normalizes_traversal_seed_order_deterministically() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     let a = create_entity_in_partition(&runtime, "a", PartitionId(7));
     let b = create_entity_in_partition(&runtime, "b", PartitionId(11));
@@ -230,7 +260,11 @@ fn planned_query_execution_normalizes_traversal_seed_order_deterministically() {
                 .read_truth()
                 .plan_query_packet(&snapshot, descending_packet)
                 .expect("descending plan"),
+            execution,
+            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
         )
+        .expect("request remains live")
+        .map(|read| read.outcome)
         .expect("descending outcome");
     let ascending = runtime
         .read_truth()
@@ -239,7 +273,11 @@ fn planned_query_execution_normalizes_traversal_seed_order_deterministically() {
                 .read_truth()
                 .plan_query_packet(&snapshot, ascending_packet)
                 .expect("ascending plan"),
+            execution,
+            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
         )
+        .expect("request remains live")
+        .map(|read| read.outcome)
         .expect("ascending outcome");
 
     assert_eq!(descending.result.entities, ascending.result.entities);

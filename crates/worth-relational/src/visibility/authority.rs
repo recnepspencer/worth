@@ -44,6 +44,7 @@ impl<'runtime> VisibilityAuthority<'runtime> {
         entity_id: crate::identity::data::EntityId,
         expected_kind_id: crate::identity::data::KindId,
         projection_scope: crate::visibility::materialization::read_records::ProjectionAspectScope,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         project: impl FnMut(
             crate::visibility::materialization::read_records::EntityProjectionRecord<'_>,
         ) -> Option<T>,
@@ -106,10 +107,11 @@ impl<'runtime> VisibilityAuthority<'runtime> {
         let projection = self
             .runtime
             .read_truth()
-            .project_snapshot(&snapshot)
+            .project_snapshot(&snapshot, execution)
             .ok_or_else(projection_binding_denial)
             .and_then(|view| {
                 view.entity_record_of_expected_kind_with_projection_scope(
+                    execution,
                     entity_id,
                     expected_kind_id,
                     projection_scope,

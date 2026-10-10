@@ -184,8 +184,10 @@ fn provider_start_failure_preserves_escaped_arena_recovery() {
                 retained: Arc::clone(&retained),
             },
         );
+        let installed_running_phase = execution.phase_for_direct(&running);
+
         let failure = match running.begin_graph_execution(
-            execution,
+            &installed_running_phase,
             &graph,
             WorthQueryManagedGraphCallRequest::new(
                 WorthQueryGraphProviderCallKind::Observe,
@@ -321,41 +323,51 @@ fn workflow_cleanup_retries_each_live_provider_arena_before_completion() {
 }
 
 fn complete_call(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     running: WorthQueryRunningDirectRun,
     graph: &WorthQueryInstalledGraphParticipationAuthority,
     scope: &str,
 ) -> WorthQueryRunningDirectRun {
-    let active = running
-        .begin_graph_execution(
-            execution,
+    let active = {
+        let installed_fixture_phase = running.fixture_phase(execution);
+        running.begin_graph_execution(
+            &installed_fixture_phase,
             graph,
             WorthQueryManagedGraphCallRequest::new(WorthQueryGraphProviderCallKind::Observe, scope),
         )
-        .expect("provider call should start");
-    match active.advance(execution) {
+    }
+    .expect("provider call should start");
+    match {
+        let installed_fixture_phase = active.fixture_phase(execution);
+        active.advance(&installed_fixture_phase)
+    } {
         WorthQueryDirectGraphStepOutcome::Completed(completion) => completion.into_running(),
         _ => panic!("escaping-memory provider did not complete"),
     }
 }
 
 fn complete_workflow_memory_call(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     running: crate::domain_computation::WorthQueryRunningWorkflowRun,
     graph: &WorthQueryInstalledGraphParticipationAuthority,
     scope: &str,
 ) -> crate::domain_computation::WorthQueryRunningWorkflowRun {
-    let active = running
-        .begin_stage_graph_execution(
-            execution,
+    let active = {
+        let installed_fixture_phase = running.fixture_phase(execution);
+        running.begin_stage_graph_execution(
+            &installed_fixture_phase,
             "stage",
             graph,
             WorthQueryManagedGraphCallRequest::new(WorthQueryGraphProviderCallKind::Observe, scope),
         )
-        .expect("workflow memory provider call should start");
-    match active.advance(execution) {
+    }
+    .expect("workflow memory provider call should start");
+    match {
+        let installed_fixture_phase = active.fixture_phase(execution);
+        active.advance(&installed_fixture_phase)
+    } {
         WorthQueryWorkflowGraphStepOutcome::Completed(completion) => completion.into_running(),
         _ => panic!("workflow memory provider did not complete"),
     }

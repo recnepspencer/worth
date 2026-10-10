@@ -62,6 +62,8 @@ fn concurrent_reference_readers_observe_only_complete_old_or_new_roots() {
     assert_eq!(publication_gate.wait_count(), 1);
     let observed_identity = identity.clone();
     let reader = std::thread::spawn(move || {
+        let reader_request = crate::test_execution_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&reader_request);
         let mut observations = Vec::new();
         let completion_deadline = std::time::Instant::now() + std::time::Duration::from_secs(1);
         while !reader_done.load(Ordering::Acquire) {
@@ -78,7 +80,7 @@ fn concurrent_reference_readers_observe_only_complete_old_or_new_roots() {
             assert_public_observation_is_complete(&descriptor, &basis);
             let entity_count = runtime
                 .read_truth()
-                .read_observation(&basis.observation())
+                .read_observation(execution, &basis.observation())
                 .expect("concurrent complete basis reads")
                 .entities()
                 .len();
@@ -92,7 +94,7 @@ fn concurrent_reference_readers_observe_only_complete_old_or_new_roots() {
         assert_public_observation_is_complete(&descriptor, &basis);
         let entity_count = runtime
             .read_truth()
-            .read_observation(&basis.observation())
+            .read_observation(execution, &basis.observation())
             .expect("final complete basis reads")
             .entities()
             .len();
@@ -188,11 +190,13 @@ fn fork_and_publication_consume_complete_old_and_new_roots() {
     let race = Arc::new(std::sync::Barrier::new(2));
     let fork_race = Arc::clone(&race);
     let forker = std::thread::spawn(move || {
+        let fork_request = crate::test_execution_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&fork_request);
         let mut successful_forks = Vec::new();
         let mut stale_count = 0;
         fork_race.wait();
         match runtime.fork_branch(BranchId("cutover-fork-0".to_owned()), fork_source) {
-            Ok(forked) => record_complete_fork(&runtime, &forked, &mut successful_forks),
+            Ok(forked) => record_complete_fork(execution, &runtime, &forked, &mut successful_forks),
             Err(crate::branch::RelationalForkDenial::StaleSource) => stale_count += 1,
             Err(denial) => panic!("concurrent fork has a typed cutover result: {denial:?}"),
         }
@@ -203,7 +207,9 @@ fn fork_and_publication_consume_complete_old_and_new_roots() {
                 .observe_fork_source(&BranchId("main".to_owned()))
                 .expect("current source remains forkable during cutover");
             match runtime.fork_branch(BranchId(format!("cutover-fork-{ordinal}")), source) {
-                Ok(forked) => record_complete_fork(&runtime, &forked, &mut successful_forks),
+                Ok(forked) => {
+                    record_complete_fork(execution, &runtime, &forked, &mut successful_forks)
+                }
                 Err(crate::branch::RelationalForkDenial::StaleSource) => stale_count += 1,
                 Err(denial) => panic!("concurrent fork has a typed cutover result: {denial:?}"),
             }
@@ -225,7 +231,7 @@ fn fork_and_publication_consume_complete_old_and_new_roots() {
         let final_fork = runtime
             .fork_branch(BranchId(format!("cutover-fork-{ordinal}")), final_source)
             .expect("post-cutover fork consumes the complete new root");
-        record_complete_fork(&runtime, &final_fork, &mut successful_forks);
+        record_complete_fork(execution, &runtime, &final_fork, &mut successful_forks);
         (runtime, successful_forks, stale_count)
     });
     race.wait();
@@ -260,6 +266,7 @@ fn fork_and_publication_consume_complete_old_and_new_roots() {
 }
 
 fn record_complete_fork(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::facade::runtime::RelationalRuntime,
     forked: &crate::branch::RelationalForkOutcome,
     records: &mut Vec<(
@@ -278,7 +285,7 @@ fn record_complete_fork(
         .expect("non-empty fork carries a commit");
     let entity_count = runtime
         .read_truth()
-        .read_observation(&basis.observation())
+        .read_observation(execution, &basis.observation())
         .expect("successful fork reads its complete root")
         .entities()
         .len();

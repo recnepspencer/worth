@@ -303,6 +303,7 @@ fn schema_field(aspect: &str, field: &str) -> SchemaFieldView {
 }
 
 pub(super) fn run_policy_context(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     epoch: u64,
 ) -> crate::ordinary::read::WorthQueryReadContextReceipt {
     let declaration = declare(local_identity_read).expect("read declaration should canonicalize");
@@ -313,12 +314,12 @@ pub(super) fn run_policy_context(
         policy_tenant.branch,
         policy_tenant.schema,
     );
-    let mut workspace = read_runtime()
+    let mut workspace = read_runtime(request_execution)
         .workspace(format!("ordinary-read-policy-epoch-{epoch}"))
         .expect("ordinary workspace should open");
     declaration
         .using(context)
-        .run(&mut workspace)
+        .run(request_execution, &mut workspace)
         .into_result()
         .expect("policy context should execute")
         .context_receipt()
@@ -326,6 +327,7 @@ pub(super) fn run_policy_context(
 }
 
 pub(super) fn run_relationship_context<const PROOF_COUNT: usize>(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     proofs: [WorthQueryReadRelationshipProof; PROOF_COUNT],
 ) -> crate::ordinary::read::WorthQueryReadCompletion {
     let declaration = declare(local_manager_relationship_read)
@@ -341,12 +343,12 @@ pub(super) fn run_relationship_context<const PROOF_COUNT: usize>(
             policy_tenant.schema,
         )
         .with_relationship_proofs(relationships);
-    let mut workspace = read_runtime()
+    let mut workspace = read_runtime(request_execution)
         .workspace("ordinary-read-relationship-order")
         .expect("ordinary workspace should open");
     declaration
         .using(context)
-        .run(&mut workspace)
+        .run(request_execution, &mut workspace)
         .into_result()
         .expect("relationship context should execute")
 }

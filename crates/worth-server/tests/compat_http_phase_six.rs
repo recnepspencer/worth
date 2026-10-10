@@ -4,6 +4,8 @@ mod compat_http_phase_six_assertions;
 mod compat_http_phase_six_runtime;
 #[path = "support/query_handoff/runtime.rs"]
 mod query_handoff_runtime;
+#[path = "support/test_execution_policy.rs"]
+mod test_execution_policy;
 
 #[path = "compat_http_phase_six/cleanup_receipts.rs"]
 mod cleanup_receipts;

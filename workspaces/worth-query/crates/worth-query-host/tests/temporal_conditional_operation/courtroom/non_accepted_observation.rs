@@ -26,25 +26,38 @@ enum FollowingReading {
 /// the reading. A stale reading must not lose that commit's invalidation: the
 /// next accepted observation emits it.
 pub fn a_stale_clock_reading_after_a_foreign_commit_keeps_its_invalidation_for_the_next_accepted_observation(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) {
-    following_reading_emits_consumed_invalidation_once(FollowingReading::Stale);
+    following_reading_emits_consumed_invalidation_once(request_execution, FollowingReading::Stale);
 }
 
 /// Same as the stale case for a reading whose coordinate runs backwards.
 pub fn a_reordered_clock_reading_after_a_foreign_commit_keeps_its_invalidation_for_the_next_accepted_observation(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) {
-    following_reading_emits_consumed_invalidation_once(FollowingReading::Reordered);
+    following_reading_emits_consumed_invalidation_once(
+        request_execution,
+        FollowingReading::Reordered,
+    );
 }
 
 /// A duplicate reading releases what its observation consumed: its own batch
 /// carries the commit, and the next accepted observation does not repeat it.
-pub fn a_duplicate_clock_reading_after_a_foreign_commit_emits_its_invalidation() {
-    following_reading_emits_consumed_invalidation_once(FollowingReading::Duplicate);
+pub fn a_duplicate_clock_reading_after_a_foreign_commit_emits_its_invalidation(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) {
+    following_reading_emits_consumed_invalidation_once(
+        request_execution,
+        FollowingReading::Duplicate,
+    );
 }
 
-fn following_reading_emits_consumed_invalidation_once(following: FollowingReading) {
+fn following_reading_emits_consumed_invalidation_once(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    following: FollowingReading,
+) {
     let world = CourtroomWorld::publish("blocked");
-    observe(&world);
+    observe(request_execution, &world);
     let intent = world.intent_record_identity();
     // One more relevant native commit than a single observation reconsiders,
     // so the last one is consumed by the observation that follows.
@@ -57,12 +70,19 @@ fn following_reading_emits_consumed_invalidation_once(following: FollowingReadin
     // the accepted reading that the following one is judged against.
     let selected = world
         .application
-        .on_branch(world.application.current_world())
-        .select()
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .on_branch(world.application.current_world())
+                .select(&phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
+    let mut clock = selected
+        .conditional_clock(request_execution, &world.clock)
         .unwrap();
-    let mut clock = selected.conditional_clock(&world.clock).unwrap();
     world.clock_control.push(2, 10);
-    let mut first = accepted(clock.observe());
+    let mut first = accepted(clock.observe(request_execution));
     assert_eq!(first.authoritative_commit_count(), COMMITS_PER_OBSERVATION);
     assert!(
         first.authoritative_work_remaining(),
@@ -78,7 +98,7 @@ fn following_reading_emits_consumed_invalidation_once(following: FollowingReadin
         FollowingReading::Reordered => world.clock_control.push(3, 9),
         FollowingReading::Duplicate => world.clock_control.push(2, 10),
     }
-    let duplicate_batch = match (following, clock.observe()) {
+    let duplicate_batch = match (following, clock.observe(request_execution)) {
         (FollowingReading::Stale, Outcome::Stale)
         | (FollowingReading::Reordered, Outcome::Reordered) => None,
         (FollowingReading::Duplicate, Outcome::Duplicate(mut duplicate)) => {
@@ -88,7 +108,7 @@ fn following_reading_emits_consumed_invalidation_once(following: FollowingReadin
     };
 
     world.clock_control.push(4, 11);
-    let mut next = accepted(clock.observe());
+    let mut next = accepted(clock.observe(request_execution));
     assert!(!next.authoritative_work_remaining());
     let next_batch = next.take_granular_invalidation_batch();
     let (carrier, after) = match duplicate_batch {

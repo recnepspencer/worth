@@ -17,14 +17,20 @@ use super::super::super::fixture::{
 use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode;
 
 pub(super) fn complete_review_out_of_band(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &super::super::super::fixture::AuthorizationWorld,
     reviewer: EntityId,
 ) {
     let review = world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
+        .select_product_branch(
+            execution,
+            world.application.product_runtime().default_branch(),
+        )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
+            &phase_custody.phase_for_application(&world.application),
             CapabilityReviewIdentity::reference(),
             "review-2".to_owned(),
             &live_scope(),
@@ -51,6 +57,7 @@ pub(super) fn complete_review_out_of_band(
         .unwrap(),
     )]));
     super::super::super::fixture::publish_relational_mutation(
+        execution,
         world,
         WorkerIntentBatch::new("complete-review-out-of-band")
             .push(MutationIntent::Entity(EntityMutationIntent::UpdateFields(
@@ -73,14 +80,20 @@ pub(super) fn complete_review_out_of_band(
 }
 
 pub(super) fn replace_support_grantor_with_custodian(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &super::super::super::fixture::AuthorizationWorld,
     principal: EntityId,
 ) {
     let grant = world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
+        .select_product_branch(
+            execution,
+            world.application.product_runtime().default_branch(),
+        )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
+            &phase_custody.phase_for_application(&world.application),
             CapabilityIdentity::reference(),
             "capability-1".to_owned(),
             &live_scope(),
@@ -99,12 +112,12 @@ pub(super) fn replace_support_grantor_with_custodian(
         .unwrap()
         .kind;
     let handle = graph.integration_handle();
-    let selected = world.selected_product();
-    let grantor = handle.with_runtime_mut(|runtime| {
+    let selected = world.selected_product(&(phase_custody).test_host_request());
+    let grantor = handle.with_runtime_mut(execution, |runtime| {
         let snapshot = selected.application_basis().snapshot_handle();
         let grantor = runtime
             .read_truth()
-            .visible_relations_of_kind(grantor_kind, snapshot.version_id())
+            .visible_relations_of_kind(execution, grantor_kind, snapshot.version_id())
             .into_iter()
             .find(|record| record.source == principal && record.target == grant.entity_id())
             .expect("the request support has one current grantor path")
@@ -112,6 +125,7 @@ pub(super) fn replace_support_grantor_with_custodian(
         grantor
     });
     super::super::super::fixture::publish_relational_mutation(
+        execution,
         world,
         WorkerIntentBatch::new("replace-elevation-support-policy-path")
             .push(MutationIntent::Relation(RelationMutationIntent::Delete(

@@ -1,0 +1,53 @@
+//! capability governed operation rejects conventional authorization.
+use super::*;
+
+#[test]
+fn capability_governed_operation_rejects_conventional_authorization() {
+    let world = installed_capability_authorization_world();
+    let request = live_scope();
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let operation = world
+        .application
+        .installed_schema()
+        .installed_operation(CapabilityTouchOperation::reference())
+        .unwrap();
+
+    assert!(operation.contracts().authorization().requires_capability());
+    assert!(operation.contracts().ability_requirements().is_empty());
+    let Err(denial) = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .selected_product(&(phase).test_host_request())
+                .authorize_operation(
+                    &phase,
+                    &principal,
+                    &account,
+                    &operation,
+                    Default::default(),
+                    &request,
+                )
+        })
+        .expect("the fixture read owns its installed host call")
+    else {
+        panic!("principal authority cannot substitute for capability access");
+    };
+    assert_eq!(
+        denial.kind(),
+        WorthQueryOperationAuthorizationDenialKind::CapabilityRequired
+    );
+}

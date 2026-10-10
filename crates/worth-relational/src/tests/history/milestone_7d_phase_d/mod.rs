@@ -253,12 +253,14 @@ fn create_entity_with_aspect_fields_on_branch(
 }
 
 fn update_entity_aspect_fields_on_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut crate::facade::runtime::RelationalRuntime,
     entity_id: crate::facade::identity::EntityId,
     fields: crate::transactions::data::AspectFieldPatch,
     branch_id: BranchId,
 ) {
     let stable_name = read_entity_aspect_field_display(
+        execution,
         runtime,
         &branch_id,
         entity_id,
@@ -303,6 +305,7 @@ fn aspect_fields_with_identity_name(
 }
 
 fn read_entity_aspect_field_display(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::facade::runtime::RelationalRuntime,
     branch: &BranchId,
     entity_id: crate::facade::identity::EntityId,
@@ -316,7 +319,7 @@ fn read_entity_aspect_field_display(
         .version_id;
     runtime
         .read_truth()
-        .read_version(version_id)
+        .read_version(execution, version_id)
         .get_entity(entity_id)
         .and_then(|entity| read_entity_aspect_field(entity, aspect_key, field))
         .expect("aspect field display value")

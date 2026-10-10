@@ -61,29 +61,39 @@ pub(in crate::domain_computation::authorization) trait WorthQueryCapabilityObser
 {
     fn observe_active_capability(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         exact_grant: Option<worth_relational::facade::identity::EntityId>,
         expected: Option<&WorthQueryAuthorizationDecisionFact>,
     ) -> Result<WorthQueryObservedCapabilityDecision, WorthQueryOperationAuthorizationDenial> {
-        WorthQueryBoundCapabilityObservation::from_source(self)
-            .observe_active(exact_grant, expected)
+        WorthQueryBoundCapabilityObservation::from_source(self).observe_active(
+            execution,
+            exact_grant,
+            expected,
+        )
     }
 
     fn observe_upper_bound_capability(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         exact_grant: worth_relational::facade::identity::EntityId,
         expected: Option<&WorthQueryAuthorizationDecisionFact>,
     ) -> Result<WorthQueryObservedCapabilityDecision, WorthQueryOperationAuthorizationDenial> {
-        WorthQueryBoundCapabilityObservation::from_source(self)
-            .observe_upper_bound(exact_grant, expected)
+        WorthQueryBoundCapabilityObservation::from_source(self).observe_upper_bound(
+            execution,
+            exact_grant,
+            expected,
+        )
     }
 
     fn observe_retained_capability(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         posture: WorthQueryCapabilityObservationPosture,
         exact_grant: worth_relational::facade::identity::EntityId,
         expected: Option<&WorthQueryAuthorizationDecisionFact>,
     ) -> Result<WorthQueryObservedCapabilityDecision, WorthQueryOperationAuthorizationDenial> {
         WorthQueryBoundCapabilityObservation::from_source(self).observe_retained(
+            execution,
             posture,
             exact_grant,
             expected,
@@ -233,10 +243,12 @@ impl<'observation> WorthQueryBoundCapabilityObservation<'observation> {
 impl WorthQueryBoundCapabilityObservation<'_> {
     pub(super) fn observe_active(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         exact_grant: Option<worth_relational::facade::identity::EntityId>,
         expected: Option<&WorthQueryAuthorizationDecisionFact>,
     ) -> Result<WorthQueryObservedCapabilityDecision, WorthQueryOperationAuthorizationDenial> {
         self.observe(
+            execution,
             exact_grant,
             expected,
             WorthQueryCapabilityObservationPosture::Active,
@@ -245,10 +257,12 @@ impl WorthQueryBoundCapabilityObservation<'_> {
 
     pub(super) fn observe_upper_bound(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         exact_grant: worth_relational::facade::identity::EntityId,
         expected: Option<&WorthQueryAuthorizationDecisionFact>,
     ) -> Result<WorthQueryObservedCapabilityDecision, WorthQueryOperationAuthorizationDenial> {
         self.observe(
+            execution,
             Some(exact_grant),
             expected,
             WorthQueryCapabilityObservationPosture::UpperBound,
@@ -257,23 +271,25 @@ impl WorthQueryBoundCapabilityObservation<'_> {
 
     pub(super) fn observe_retained(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         posture: WorthQueryCapabilityObservationPosture,
         exact_grant: worth_relational::facade::identity::EntityId,
         expected: Option<&WorthQueryAuthorizationDecisionFact>,
     ) -> Result<WorthQueryObservedCapabilityDecision, WorthQueryOperationAuthorizationDenial> {
-        self.observe(Some(exact_grant), expected, posture)
+        self.observe(execution, Some(exact_grant), expected, posture)
     }
 
     fn observe(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         exact_grant: Option<worth_relational::facade::identity::EntityId>,
         expected: Option<&WorthQueryAuthorizationDecisionFact>,
         posture: WorthQueryCapabilityObservationPosture,
     ) -> Result<WorthQueryObservedCapabilityDecision, WorthQueryOperationAuthorizationDenial> {
-        let leaf = observe_policy(&self, posture, self.request, exact_grant)?;
+        let leaf = observe_policy(execution, &self, posture, self.request, exact_grant)?;
         let leaf = leaf.into_seed();
         let observed = leaf.try_progress(|leaf_grant, leaf_policy| {
-            observe_lineage(&self, leaf_grant, leaf_policy, posture)
+            observe_lineage(execution, &self, leaf_grant, leaf_policy, posture)
         })?;
         if expected.is_some_and(|expected| !expected.has_same_lineage(observed.decision())) {
             return Err(denial(

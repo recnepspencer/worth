@@ -109,7 +109,7 @@ where
     {
         let request_scope = self.request_scope().clone();
         let runtime = self.application_runtime();
-        runtime.with_application_advancement(&request_scope, |_phase| {
+        runtime.with_application_advancement(&request_scope, |phase| {
 
         let workflow = workflow.into();
         let application = self.application_runtime();
@@ -117,19 +117,19 @@ where
         if !std::ptr::eq(application, workflow.runtime()) {
             return Err(WorthQueryWorkflowProposalPreparationDenial::RuntimeMismatch);
         }
-        let selected = application.on_branch(self.product_branch()).select()
+        let selected = application.on_branch(self.product_branch()).select(&phase, )
             .map_err(WorthQueryApplicationRequestMutationDenial::ProductSelection)
             .map_err(WorthQueryWorkflowProposalPreparationDenial::RequestAdmission)?;
         let staged = self.stage().map_err(WorthQueryWorkflowProposalPreparationDenial::RequestAdmission)?;
         let identities = self
             .identities()
             .map_err(WorthQueryWorkflowProposalPreparationDenial::RequestAdmission)?;
-        let mutation = authorization::prepare_capability_selected(&self, &identities, staged, &selected)
+        let mutation = authorization::prepare_capability_selected(&phase, &self, &identities, staged, &selected)
             .map_err(WorthQueryWorkflowProposalPreparationDenial::RequestAdmission)?;
         if instance.branch() != request_branch {
             return Err(WorthQueryWorkflowProposalPreparationDenial::InstanceBranchMismatch);
         }
-        if let Some(outcome) = WorthQueryWorkflowProposalAdapter::resolve_replay(
+        if let Some(outcome) = WorthQueryWorkflowProposalAdapter::resolve_replay(&phase,
             application,
             &mutation.admission,
             mutation.idempotency,
@@ -141,7 +141,7 @@ where
                 execution: WorkflowProposalRequestExecution::Resolved(outcome),
             });
         }
-        let prepared = WorthQueryWorkflowProposalAdapter::prepare(
+        let prepared = WorthQueryWorkflowProposalAdapter::prepare(&phase,
             &selected,
             workflow.workflow_spec_for(&selected),
             instance,

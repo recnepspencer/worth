@@ -5,11 +5,21 @@ use worth_relational::facade::history::BranchId;
 
 #[test]
 fn a_stale_preflight_after_an_unindexed_fork_winner_cannot_poison_later_writes() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = world_installing(|defaults| WorthQueryInvalidationResourceInstallation {
         maximum_retained_bytes: MAXIMUM_RETAINED_BYTES,
         ..defaults
     });
-    let entity = resolved_account(&world, "open", &live_scope()).entity_id();
+    let entity = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            resolved_account(&(phase).test_host_request(), &world, "open", &live_scope())
+                .entity_id()
+        })
+        .expect("the fixture read owns its installed host call");
     let graph = world.application.runtime.primary_graph().unwrap();
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
@@ -26,7 +36,7 @@ fn a_stale_preflight_after_an_unindexed_fork_winner_cannot_poison_later_writes()
             MAXIMUM_RETAINED_BYTES - owner.resources.retained_capacity_bytes(),
         )
         .unwrap();
-    handle.with_runtime_mut(|runtime| {
+    handle.with_runtime_mut(request_execution, |runtime| {
         let (_, source) = runtime
             .observe_fork_source(runtime.main_branch_identity().branch_id())
             .unwrap();

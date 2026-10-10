@@ -1,5 +1,4 @@
-//! One wave's required chain: the caller's own Ready first, then the dirty
-//! records popped from the shared queue as frames.
+//! One required wave: the caller's Ready, then dirty records as queued frames.
 
 use super::super::super::required_continuations::{
     resume_held_upstream, ContinuationCustody, HeldUpstream, RequiredContinuations,
@@ -16,13 +15,11 @@ use super::selection::committed_ready;
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::producer::WorthQueryProducerCommitAuthority;
 
-/// The caller's own chain runs first; its errors end the call.
-/// Dirty required records popped from the shared queue then run as frames
-/// with the rest of the request. A queue chain never promotes or settles the
-/// caller: its item is acknowledged when the item itself is Current on this
-/// wave and is otherwise held for a later advance.
+/// The caller's chain runs first; its errors end the call. Queued records use the remaining request.
+/// Each queue item is acknowledged only when Current on this wave; otherwise it is held for a later advance.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn drive_required_wave<'runtime, Schema, Family>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     phase: &WorthQueryAdvancementPhase<'_>,
     runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
@@ -38,8 +35,7 @@ where
     Schema: ApplicationSchema + 'static,
     Family: WorthQueryProducerOutputFamily<Schema>,
 {
-    // Only an actual consumed-output edge can extend this closure. Initial
-    // downstream B/C rows are irrelevant while their producer A is settling.
+    // Only consumed-output edges extend this closure; downstream rows wait while their producer settles.
     let mut stack = RequiredWaveStack::new();
     let mut current: Option<SelectedReadyReadmission> = None;
     let mut current_contacts = 0usize;
@@ -311,7 +307,7 @@ where
                             }
                             requested_refusal::RequestedRefusal::Held(head) => {
                                 resume_held!('required, head;
-                                    phase;
+                                    phase, execution;
                                     runtime, principal, request_scope;
                                     wave, resolved_on_wave, queue, frame_custody;
                                     demand, admission;
@@ -353,7 +349,7 @@ where
                             successor.producer_contacts()
                         };
                         if committed_ready(&ready, admission)? {
-                            wave = reselect_required_wave(runtime, wave, admission)?;
+                            wave = reselect_required_wave(execution, runtime, wave, admission)?;
                             resolved_on_wave.clear();
                             queue.wave_moved();
                         }
@@ -387,7 +383,7 @@ where
             RequiredWaveStep::Held(head) => {
                 drop(slot);
                 resume_held!('required, head;
-                                    phase;
+                                    phase, execution;
                                     runtime, principal, request_scope;
                                     wave, resolved_on_wave, queue, frame_custody;
                                     demand, admission;

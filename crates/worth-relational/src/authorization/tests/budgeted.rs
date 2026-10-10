@@ -50,21 +50,23 @@ impl RelationalAuthorizationObservationAdmission for Budget {
 
 #[test]
 fn budgeted_observer_matches_ordinary_authorization_and_held_old_root() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let fixture = authorization_fixture();
     let snapshot = fixture.runtime.visibility_authority().snapshot();
     let ordinary = fixture
         .runtime
-        .observe_authorization(allow_plan(
-            snapshot.clone(),
-            fixture.principal,
-            fixture.scope,
-            [],
-        ))
+        .observe_authorization(
+            allow_plan(snapshot.clone(), fixture.principal, fixture.scope, []),
+            execution,
+        )
         .unwrap();
     let observe = |snapshot, budget: &mut Budget| {
         fixture.runtime.observe_authorization_budgeted(
             allow_plan(snapshot, fixture.principal, fixture.scope, []),
             budget,
+            execution,
         )
     };
     let bounded = observe(snapshot.clone(), &mut Budget::unlimited()).unwrap();
@@ -85,30 +87,32 @@ fn budgeted_observer_matches_ordinary_authorization_and_held_old_root() {
 
 #[test]
 fn budgeted_currentness_preserves_legacy_result_and_carried_refusal() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let fixture = authorization_fixture();
     let snapshot = fixture.runtime.visibility_authority().snapshot();
     let evidence = fixture
         .runtime
-        .observe_authorization(allow_plan(
-            snapshot.clone(),
-            fixture.principal,
-            fixture.scope,
-            [],
-        ))
+        .observe_authorization(
+            allow_plan(snapshot.clone(), fixture.principal, fixture.scope, []),
+            execution,
+        )
         .unwrap();
     let mut measured = Budget::unlimited();
     assert_eq!(
         fixture.runtime.compare_authorization_observation_budgeted(
             &evidence,
             &snapshot,
-            &mut measured
+            &mut measured,
+            execution
         ),
         Ok(RelationalAuthorizationObservationFreshness::Fresh)
     );
     assert_eq!(
         fixture
             .runtime
-            .compare_authorization_observation(&evidence, snapshot.clone()),
+            .compare_authorization_observation(&evidence, snapshot.clone(), execution),
         RelationalAuthorizationObservationFreshness::Fresh
     );
     assert!(measured.work > 1 && measured.bytes > 0);
@@ -121,6 +125,7 @@ fn budgeted_currentness_preserves_legacy_result_and_carried_refusal() {
             &evidence,
             &snapshot,
             &mut late_work,
+            execution,
         ),
         Err(Stop::Admission(Exhausted::Work))
     ));
@@ -134,6 +139,7 @@ fn budgeted_currentness_preserves_legacy_result_and_carried_refusal() {
             &evidence,
             &snapshot,
             &mut late_bytes,
+            execution,
         ),
         Err(Stop::Admission(Exhausted::Preparation))
     ));
@@ -147,25 +153,32 @@ fn budgeted_currentness_preserves_legacy_result_and_carried_refusal() {
             &evidence,
             &revoked.snapshot,
             &mut Budget::unlimited(),
+            execution,
         ),
         Ok(RelationalAuthorizationObservationFreshness::Stale)
     );
     assert_eq!(
-        fixture
-            .runtime
-            .compare_authorization_observation(&evidence, revoked.snapshot.clone()),
+        fixture.runtime.compare_authorization_observation(
+            &evidence,
+            revoked.snapshot.clone(),
+            execution
+        ),
         RelationalAuthorizationObservationFreshness::Stale
     );
 }
 
 #[test]
 fn carried_stop_survives_initial_and_late_work_or_preparation_exhaustion() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let fixture = authorization_fixture();
     let snapshot = fixture.runtime.visibility_authority().snapshot();
     let observe = |budget: &mut Budget| {
         fixture.runtime.observe_authorization_budgeted(
             allow_plan(snapshot.clone(), fixture.principal, fixture.scope, []),
             budget,
+            execution,
         )
     };
     let mut measured = Budget::unlimited();
@@ -206,16 +219,19 @@ fn carried_stop_survives_initial_and_late_work_or_preparation_exhaustion() {
 
 #[test]
 fn reconstructed_projection_refuses_exact_borrow_without_policy_denial() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     use crate::runtime::RelationalBorrowedRecordReadDenial;
     let fixture = authorization_fixture();
     let snapshot = fixture.runtime.visibility_authority().snapshot();
     let reconstructed = fixture
         .runtime
         .read_truth()
-        .try_project_historical_version(snapshot.version_id)
+        .try_project_historical_version(execution, snapshot.version_id)
         .unwrap();
     let mut called = false;
-    let result = reconstructed.with_exact_entity_state(fixture.principal, |_, _| {
+    let result = reconstructed.with_exact_entity_state(execution, fixture.principal, |_, _| {
         called = true;
     });
     assert_eq!(
@@ -224,7 +240,7 @@ fn reconstructed_projection_refuses_exact_borrow_without_policy_denial() {
     );
     assert!(!called);
     assert_eq!(
-        reconstructed.exact_relation_metadata(fixture.role_scope_relation),
+        reconstructed.exact_relation_metadata(execution, fixture.role_scope_relation),
         Err(RelationalBorrowedRecordReadDenial::ExactBasisRequired)
     );
 }

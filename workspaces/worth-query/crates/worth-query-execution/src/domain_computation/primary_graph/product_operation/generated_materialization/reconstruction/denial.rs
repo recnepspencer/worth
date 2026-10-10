@@ -7,6 +7,7 @@ use super::super::WorthQuerySuspendedGeneratedOutput;
 pub enum WorthQueryGeneratedOutputReconstructionDenial {
     /// The suspended output belongs to another runtime.
     ForeignRuntime,
+    ForeignPhase,
     /// The suspended output was produced by a different producer.
     ForeignProducer,
     /// The producer's provider changed, or the producer is no longer installed.

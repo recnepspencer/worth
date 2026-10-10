@@ -7,6 +7,9 @@ use crate::facade::indexes::{
 
 #[test]
 fn retained_dangling_endpoint_deletion_matches_full_index_builds() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::RetainDanglingForAudit);
     let parent = create_entity(&runtime, "parent");
     let left = create_entity(&runtime, "left");
@@ -60,7 +63,7 @@ fn retained_dangling_endpoint_deletion_matches_full_index_builds() {
     };
     let built = runtime
         .index_authority()
-        .build_for_commit(request(before.commit.commit_id));
+        .build_for_commit(execution, request(before.commit.commit_id));
     assert!(built.failed_indexes.is_empty());
     let deleted = delete_entity(&runtime, shared);
     let (_, basis) = runtime
@@ -77,12 +80,15 @@ fn retained_dangling_endpoint_deletion_matches_full_index_builds() {
                 maximum_cold_record_slots: 0,
                 maximum_derived_rows: 100_000,
             },
+            execution,
         )
         .unwrap();
     assert_eq!(local.work.cold_record_slots, 0);
-    let rebuilt = runtime
-        .index_authority()
-        .build_for_basis(request(deleted.commit.commit_id), &basis);
+    let rebuilt = runtime.index_authority().build_for_basis(
+        execution,
+        request(deleted.commit.commit_id),
+        &basis,
+    );
     assert!(rebuilt.failed_indexes.is_empty());
     assert_eq!(local.generations.len(), rebuilt.generations.len());
     for (incremental, cold) in local.generations.iter().zip(&rebuilt.generations) {
@@ -104,11 +110,14 @@ fn retained_dangling_endpoint_deletion_matches_full_index_builds() {
                 maximum_cold_record_slots: 0,
                 maximum_derived_rows: 100_000,
             },
+            execution,
         )
         .unwrap();
-    let rebuilt = runtime
-        .index_authority()
-        .build_for_basis(request(child_changed.commit.commit_id), &basis);
+    let rebuilt = runtime.index_authority().build_for_basis(
+        execution,
+        request(child_changed.commit.commit_id),
+        &basis,
+    );
     assert!(rebuilt.failed_indexes.is_empty());
     assert_eq!(local.generations.len(), rebuilt.generations.len());
     for (incremental, cold) in local.generations.iter().zip(&rebuilt.generations) {

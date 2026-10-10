@@ -27,6 +27,7 @@ where
         Query,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
 
         selected: &WorthQuerySelectedApplicationProducer,
@@ -45,7 +46,7 @@ where
                     format!("{}: Signal route was not installed", selected.identity),
                 )
             })?;
-        let selected_branch = match self.on_branch(branch).select() {
+        let selected_branch = match self.on_branch(branch).select_with_request(execution) {
             Ok(selected) => selected,
             Err(error) if error.is_transient() => {
                 return Ok(WorthQueryOutputSchedulingResult::Deferred)

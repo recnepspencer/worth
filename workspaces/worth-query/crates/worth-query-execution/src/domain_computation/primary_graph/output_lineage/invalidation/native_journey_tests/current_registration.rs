@@ -7,17 +7,33 @@ use worth_relational::facade::mvcc::CompanionCellEditStop;
 
 #[test]
 fn current_source_registration_rejects_native_movement_while_ordinary_replay_remains_valid() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = installed_authorization_world(true);
-    let selected = world.selected_product();
-    let entity = selected
-        .resolve_entity(
-            AccountStatus::reference(),
-            "open".to_owned(),
-            &live_scope(),
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap()
-        .entity_id();
+    let selected = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world.selected_product(&(phase).test_host_request())
+        })
+        .expect("the fixture read owns its installed host call");
+    let entity = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            selected
+                .resolve_entity(
+                    &phase,
+                    AccountStatus::reference(),
+                    "open".to_owned(),
+                    &live_scope(),
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+                .entity_id()
+        })
+        .expect("the fixture read owns its installed host call");
     let (_, product, _) = selected.into_parts();
     let observation = product.observation();
     let coordinate = ProductCoordinate {
@@ -45,12 +61,26 @@ fn current_source_registration_rejects_native_movement_while_ordinary_replay_rem
         .field_locator(label_ref.entity(), label_ref.aspect(), label_ref.field())
         .unwrap()
         .clone();
-    handle.with_runtime_mut(|runtime| write_field(runtime, entity, label, "prime"));
-    let (before_handle, before, facts) = handle.with_runtime(|runtime| {
-        let (snapshot, basis) = snapshot(runtime);
-        let facts: Arc<[_]> = Arc::from([field_fact(runtime, &snapshot, entity, status.clone())]);
-        (snapshot, basis, facts)
+    handle.with_runtime_mut(request_execution, |runtime| {
+        write_field(runtime, entity, label, "prime")
     });
+    let (before_handle, before, facts) = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            handle.with_runtime(request_execution, |runtime| {
+                let (snapshot, basis) = snapshot(runtime);
+                let facts: Arc<[_]> = Arc::from([field_fact(
+                    &host_custody.borrowed_request_for_test(),
+                    runtime,
+                    &snapshot,
+                    entity,
+                    status.clone(),
+                )]);
+                (snapshot, basis, facts)
+            })
+        })
+        .expect("the fixture read owns its installed host call");
     let identity = RecordedSettlementIdentity::retain(&source, coordinate, 0);
     let registration = |identity| SettlementRegistration {
         work_membership: None,
@@ -80,8 +110,10 @@ fn current_source_registration_rejects_native_movement_while_ordinary_replay_rem
         SourceSettlementCurrentness::Clean
     ));
 
-    handle.with_runtime_mut(|runtime| write_field(runtime, entity, status, "closed"));
-    let (after_handle, after) = handle.with_runtime(snapshot);
+    handle.with_runtime_mut(request_execution, |runtime| {
+        write_field(runtime, entity, status, "closed")
+    });
+    let (after_handle, after) = handle.with_runtime(request_execution, snapshot);
     let next = RecordedSettlementIdentity::retain(&source, coordinate, 1);
     let stopped = owner.prepare_current_settlement(
         registration(Arc::clone(&next)),
@@ -126,7 +158,7 @@ fn current_source_registration_rejects_native_movement_while_ordinary_replay_rem
         SourceSettlementCurrentness::Dirty(ordinals) => assert_eq!(ordinals, OrdSet::unit(0)),
         _ => panic!("a registration stale at its own read basis starts dirty"),
     }
-    handle.with_runtime_mut(|runtime| {
+    handle.with_runtime_mut(request_execution, |runtime| {
         runtime
             .snapshots()
             .release_snapshot(&before_handle)

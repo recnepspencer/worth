@@ -79,17 +79,33 @@ fn candidate(
 
 #[test]
 fn two_first_candidates_cannot_orphan_the_performed_publications_cell() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = installed_authorization_world(true);
-    let selected = world.selected_product();
-    let entity = selected
-        .resolve_entity(
-            AccountStatus::reference(),
-            "open".to_owned(),
-            &live_scope(),
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap()
-        .entity_id();
+    let selected = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world.selected_product(&(phase).test_host_request())
+        })
+        .expect("the fixture read owns its installed host call");
+    let entity = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            selected
+                .resolve_entity(
+                    &phase,
+                    AccountStatus::reference(),
+                    "open".to_owned(),
+                    &live_scope(),
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+                .entity_id()
+        })
+        .expect("the fixture read owns its installed host call");
     let graph = world.application.runtime.primary_graph().unwrap();
     let handle = graph.integration_handle();
     let owner = Arc::clone(&handle.source_owner.invalidation_owner);
@@ -99,7 +115,7 @@ fn two_first_candidates_cannot_orphan_the_performed_publications_cell() {
         .field_locator(reference.entity(), reference.aspect(), reference.field())
         .unwrap()
         .clone();
-    let result: Result<_, &'static str> = handle.with_runtime_mut(|runtime| {
+    let result: Result<_, &'static str> = handle.with_runtime_mut(request_execution, |runtime| {
         // A real Native fork has no Query lookup cell before its first write.
         // No derived table, Native head or existing registration is erased.
         let branch = BranchId("concurrent-first-native-fork".to_owned());

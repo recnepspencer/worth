@@ -108,13 +108,15 @@ impl WorthQueryLowerRuntimeCloseoutReport {
     }
 }
 
-pub fn worth_query_lower_runtime_closeout_report() -> WorthQueryLowerRuntimeCloseoutReport {
-    let certification_bundle = certify_lower_runtime_routing();
-    let closure_test = worth_query_lower_runtime_closure_test();
+pub fn worth_query_lower_runtime_closeout_report(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryLowerRuntimeCloseoutReport {
+    let certification_bundle = certify_lower_runtime_routing(execution);
+    let closure_test = worth_query_lower_runtime_closure_test(execution);
     let phase_manifest = worth_query_lower_runtime_phase_manifest();
-    let acceptance_suite = worth_query_lower_runtime_acceptance_suite();
+    let acceptance_suite = worth_query_lower_runtime_acceptance_suite(execution);
     let boundary_reconciliation = worth_query_lower_runtime_boundary_reconciliation_report();
-    let synthetic_tail_report = worth_query_lower_runtime_synthetic_tail_report();
+    let synthetic_tail_report = worth_query_lower_runtime_synthetic_tail_report(execution);
 
     assert_eq!(
         closure_test
@@ -194,8 +196,10 @@ pub fn worth_query_lower_runtime_closeout_report() -> WorthQueryLowerRuntimeClos
     )
 }
 
-pub fn worth_query_lower_runtime_closeout_report_digest() -> String {
-    worth_query_lower_runtime_closeout_report()
+pub fn worth_query_lower_runtime_closeout_report_digest(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> String {
+    worth_query_lower_runtime_closeout_report(execution)
         .report_digest()
         .to_string()
 }
@@ -206,7 +210,10 @@ mod tests {
 
     #[test]
     fn closeout_report_keeps_stabilization_inputs_in_sync() {
-        let report = worth_query_lower_runtime_closeout_report();
+        let host_request = crate::test_execution_policy::serial_request();
+        let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+        let report = worth_query_lower_runtime_closeout_report(request_execution);
 
         assert_eq!(
             report
@@ -264,10 +271,13 @@ mod tests {
 
     #[test]
     fn closeout_report_digest_is_distinct_from_bundle_digest() {
-        let report = worth_query_lower_runtime_closeout_report();
+        let host_request = crate::test_execution_policy::serial_request();
+        let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+        let report = worth_query_lower_runtime_closeout_report(request_execution);
 
         assert_eq!(
-            worth_query_lower_runtime_closeout_report_digest(),
+            worth_query_lower_runtime_closeout_report_digest(request_execution),
             report.report_digest()
         );
         assert_ne!(

@@ -81,7 +81,9 @@ mod opening_custody;
 use opening_custody::OpeningCustody;
 
 impl QueryRequestExecution<'_> {
-    fn execution_request(&self) -> Result<ExecutionRequest<'_, '_>, Resource> {
+    pub(in crate::domain_computation::primary_graph) fn execution_request(
+        &self,
+    ) -> Result<ExecutionRequest<'_, '_>, Resource> {
         match &self.form {
             Form::Leased { lease, .. } => lease
                 .as_ref()
@@ -124,13 +126,18 @@ impl QueryRequestExecution<'_> {
         }
         let mut body_unwind = None;
         let outcome = request.run(ExecutionWorkCeiling::new(self.declared_work), |_| {
-            let active = ActiveAdvancement {
-                execution: self,
-                owner,
-                source_instance,
+            let active = ActiveAdvancement { execution: self };
+            let source = match (source_instance, owner) {
+                (Some(source), _) => phase_custody::AdvancementSource::Relational(source),
+                (None, Some(owner)) => phase_custody::AdvancementSource::ProductOwner(owner),
+                (None, None) => phase_custody::AdvancementSource::Bootstrap,
             };
             match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                body(WorthQueryAdvancementPhase { active: &active })
+                body(WorthQueryAdvancementPhase {
+                    active: &active,
+                    source,
+                    owner,
+                })
             })) {
                 Ok(result) => Some(result),
                 Err(payload) => {
@@ -298,15 +305,13 @@ pub use observation::{
 
 #[cfg(test)]
 pub(crate) fn with_test_advancement<R>(
-    body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
+    body: impl for<'scope> FnOnce(test_host_policy::TestHostRequest<'scope>) -> R,
 ) -> R {
     let policy =
         crate::domain_computation::execution_runtime::product_world::test_product_world_resources()
             .execution_policy();
     with_bootstrap_advancement(policy, |bootstrap| {
-        body(WorthQueryAdvancementPhase {
-            active: bootstrap.active,
-        })
+        body(test_host_policy::TestHostRequest::new(bootstrap.active))
     })
     .expect("the declared fixture policy admits its host call")
 }
@@ -319,3 +324,8 @@ mod tests;
 
 #[cfg(feature = "test-query-execution-observer")]
 pub(in crate::domain_computation::primary_graph) use observation::record_caller_pass;
+
+#[cfg(test)]
+mod test_host_policy;
+#[cfg(test)]
+pub(crate) use test_host_policy::TestHostRequest;

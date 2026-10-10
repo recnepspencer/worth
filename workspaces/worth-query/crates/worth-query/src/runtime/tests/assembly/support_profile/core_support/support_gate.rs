@@ -2,7 +2,10 @@ use super::*;
 
 #[test]
 fn runtime_public_support_gate_denies_deferred_and_unsupported_families_before_use() {
-    let workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("task.support-gate")
         .expect("task runtime should open a named workspace");
 

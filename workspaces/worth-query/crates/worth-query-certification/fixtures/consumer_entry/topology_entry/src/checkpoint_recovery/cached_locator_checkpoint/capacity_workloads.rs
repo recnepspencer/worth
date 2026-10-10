@@ -26,8 +26,12 @@ pub(super) fn run_root(budget: usize) -> Attempt {
     drop(principal);
     drop(scope);
     let checkpoint = application
-        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
-        .unwrap();
+        .with_host_advancement(|host_phase| {
+            application
+                .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     drop(application);
     let reopened = support::install_program::<CheckpointProgram>(Some(checkpoint), profile);
     let (scope, principal) = authenticate(&reopened);
@@ -115,8 +119,12 @@ pub(super) fn run_pair(budget: usize) -> Attempt {
     drop(principal);
     drop(scope);
     let checkpoint = application
-        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
-        .unwrap();
+        .with_host_advancement(|host_phase| {
+            application
+                .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     drop(application);
 
     let reopened = support::install_program::<CheckpointProgram>(Some(checkpoint), profile);
@@ -157,8 +165,12 @@ pub(super) fn run_pair(budget: usize) -> Attempt {
     drop(principal);
     drop(scope);
     let preserved_checkpoint = reopened
-        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
-        .unwrap();
+        .with_host_advancement(|host_phase| {
+            reopened
+                .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     drop(reopened);
 
     let reopened_again =

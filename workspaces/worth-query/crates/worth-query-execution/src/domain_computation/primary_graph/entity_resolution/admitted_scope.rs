@@ -26,6 +26,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     /// selected-index, snapshot and bounded Native lookup Work.
     pub(super) fn resolve_encoded_entity_admitted<Entity>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity: &str,
         field: &str,
         encoded: AspectValue,
@@ -45,7 +46,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             .primary_graph()
             .ok_or_else(|| entity_denial(Kind::PrimaryGraphNotInstalled, entity))?;
         let installed = graph.retain_entity_resolution_context();
-        let lookup = graph.with_runtime_mut(|relational| {
+        let lookup = graph.with_runtime_mut(execution, |relational| {
             selected_index_is_current_admitted(
                 relational,
                 self.product().relational_basis(),
@@ -59,6 +60,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 .read_truth()
                 .project_snapshot_admitted(
                     self.application_basis().snapshot_handle(),
+                    execution,
                     |work, bytes| {
                         admission.admit_read_scratch(bytes)?;
                         admission.charge_external_work(work)
@@ -75,15 +77,18 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 .ok_or_else(|| entity_denial(Kind::ForeignResolutionTruth, field))?;
             relational
                 .index_access()
-                .execute_bounded_entity_field_lookup_admitted(
-                    &view,
-                    index,
-                    layout.entity_kind,
-                    &layout.locator,
-                    &encoded,
-                    2,
+                .execute_bounded_entity_field_lookup(
+                    worth_relational::facade::indexes::BoundedEntityFieldSelectedLookup::new(
+                        &view,
+                        index,
+                        layout.entity_kind,
+                        &layout.locator,
+                        &encoded,
+                        2,
+                        |work, bytes| admission.charge_selected_index_read(work, bytes),
+                    ),
                     BoundedIndexParityMode::Production,
-                    |work, bytes| admission.charge_selected_index_read(work, bytes),
+                    execution,
                 )
                 .map_err(|stop| match stop {
                     BoundedEntityFieldLookupAdmissionStop::Lookup(denial) => {

@@ -104,6 +104,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
             <Input as ApplicationCapabilityRequest<Schema, CommandCapability>>::Scope,
         >,
         prepare: impl FnOnce(
+            &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
             WorthQueryAdmittedApplicationOperation<
                 Schema,
                 Operation,
@@ -163,10 +164,11 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
                 let selected = self
                     .application
                     .on_branch(self.branch)
-                    .select()
+                    .select(&phase)
                     .map_err(Denial::ProductSelection)?;
                 let principal = selected
                     .resolve_authenticated_principal(
+                        &phase,
                         &principal_binding,
                         self.principal,
                         self.scope,
@@ -188,6 +190,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
                 let replay_input = input.clone();
                 let mut access = selected
                     .admit_encoded_capability_access(
+                        &phase,
                         &publication,
                         &principal,
                         &command_capability,
@@ -200,6 +203,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
                     .installed_operation(operation)
                     .map_err(Denial::OperationInstallation)?;
                 let admission = match self.application.authorize_capability_delegation(
+                    &phase,
                     access,
                     &target_capability,
                     &operation,
@@ -208,6 +212,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
                     Ok(admission) => admission,
                     Err(denial) => {
                         if let Ok(mut replay_access) = selected.admit_encoded_capability_access(
+                            &phase,
                             &publication,
                             &principal,
                             &command_capability,
@@ -220,6 +225,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
                             match self
                                 .application
                                 .replay_capability_delegation_after_fresh_denial(
+                                    &phase,
                                     replay_access,
                                     &target_capability,
                                     &operation,
@@ -238,7 +244,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
                 };
                 match self
                     .application
-                    .resolve_admitted_application_idempotency(&admission, idempotency)
+                    .resolve_admitted_application_idempotency(&phase, &admission, idempotency)
                     .map_err(Denial::Idempotency)?
                     .into_resolution()
                 {
@@ -252,7 +258,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
                     }
                     WorthQueryApplicationIdempotencyResolution::Unseen => {}
                 }
-                let prepared = prepare(admission).map_err(Denial::Preparation)?;
+                let prepared = prepare(&phase, admission).map_err(Denial::Preparation)?;
                 Ok(
                     program_action.compare_and_commit_capability_delegation_in_advancement(
                         &phase,

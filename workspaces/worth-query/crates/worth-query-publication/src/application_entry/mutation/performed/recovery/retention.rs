@@ -32,6 +32,9 @@ where
     /// Every failed admission or transfer returns the complete owned failure.
     pub fn retry_required_output_retention<Program, Root>(
         mut self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
         mut failure: WorthQueryRequiredOutputRetentionFailure<Schema, Intent, Program, Root>,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
     ) -> Result<
@@ -52,12 +55,19 @@ where
     {
         let admitted = (|| {
             let custody = failure.custody.as_ref().ok_or_else(mismatch)?;
-            let prepared =
-                self.authorize_required_source::<Program, Root>(application, custody.source())?;
+            let prepared = self.authorize_required_source::<Program, Root>(
+                phase,
+                application,
+                custody.source(),
+            )?;
             let read = self
                 .request
                 .application
-                .resolve_admitted_application_idempotency(&prepared.admission, prepared.idempotency)
+                .resolve_admitted_application_idempotency(
+                    phase,
+                    &prepared.admission,
+                    prepared.idempotency,
+                )
                 .map_err(WorthQueryApplicationRecoveryRequestDenial::Idempotency)?;
             self.check_required_recovery_liveness()?;
             match read.into_resolution() {

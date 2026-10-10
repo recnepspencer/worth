@@ -23,6 +23,9 @@ fn subscriber_stream_matches_patch_stream_for_committed_history() {
 
 #[test]
 fn durable_source_subscriber_stream_matches_recovered_runtime_patch_stream() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
     let first = create_entity_outcome(&runtime, "a");
     runtime.durability_authority().checkpoint().unwrap();
@@ -47,7 +50,7 @@ fn durable_source_subscriber_stream_matches_recovered_runtime_patch_stream() {
     let mut recovered = persisted_runtime_with_test_schema();
     recovered
         .durability_recovery()
-        .recover(recovery_plan)
+        .recover(execution, recovery_plan)
         .unwrap();
     let recovered_patch_batch = recovered
         .publication()

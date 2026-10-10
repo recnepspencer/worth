@@ -6,11 +6,13 @@ use crate::domain_computation::primary_graph::{
 };
 
 pub(super) fn admit<Schema>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     product: WorthQueryProductObservationLease,
     application_basis: super::super::resource_lifecycle::WorthQueryApplicationBasisLease,
 ) -> Result<WorthQueryApplicationQueryBasisCustody, WorthQueryApplicationQueryAdmissionDenial> {
-    let selected = admit_selected_permission_basis(application, product, application_basis)?;
+    let selected =
+        admit_selected_permission_basis(execution, application, product, application_basis)?;
     let graph = application
         .runtime
         .primary_graph()
@@ -22,8 +24,9 @@ pub(super) fn admit<Schema>(
         })?
         .integration_handle();
     graph
-        .with_runtime_mut(|runtime| {
+        .with_runtime_mut(execution, |runtime| {
             graph.ensure_primary_indexes_for_basis(
+                execution,
                 runtime,
                 selected.selected_product().relational_basis(),
             )
@@ -36,6 +39,7 @@ pub(super) fn admit<Schema>(
 /// needs graph execution. Read and disclosure permission can use this custody
 /// without rebuilding unrelated indexes on a Clean demand.
 pub(super) fn admit_selected_permission_basis<Schema>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     product: WorthQueryProductObservationLease,
     application_basis: super::super::resource_lifecycle::WorthQueryApplicationBasisLease,
@@ -47,7 +51,7 @@ pub(super) fn admit_selected_permission_basis<Schema>(
             "product World owner",
         ));
     }
-    if !application_basis.is_live() {
+    if !application_basis.is_live(execution) {
         return Err(admission_denial(
             WorthQueryApplicationQueryAdmissionDenialKind::BasisUnavailable,
             "retained product snapshot",
@@ -60,6 +64,7 @@ pub(super) fn admit_selected_permission_basis<Schema>(
 }
 
 pub(super) fn admit_retained<Schema: worth_query_installation::facade::ApplicationSchema>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     product: WorthQueryProductObservationLease,
 ) -> Result<WorthQueryApplicationQueryBasisCustody, WorthQueryApplicationQueryAdmissionDenial> {
@@ -71,12 +76,16 @@ pub(super) fn admit_retained<Schema: worth_query_installation::facade::Applicati
         ));
     }
     let mut application_basis = application
-        .retain_product_application_basis(product.observation())
+        .retain_product_application_basis(execution, product.observation())
         .map_err(map_product_admission_denial)?;
     let _ = application
-        .bind_selected_program_interpretation(product.relational_basis(), &mut application_basis)
+        .bind_selected_program_interpretation(
+            execution,
+            product.relational_basis(),
+            &mut application_basis,
+        )
         .map_err(map_product_admission_denial)?;
-    admit(application, product, application_basis)
+    admit(execution, application, product, application_basis)
 }
 
 fn map_product_admission_denial(

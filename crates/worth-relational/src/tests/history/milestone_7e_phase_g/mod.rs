@@ -24,10 +24,13 @@ use serde_support::{forged_row_with_basis, recomputed_witness, row_payloads, wit
 
 #[test]
 fn retained_merge_correspondence_witness_preserves_exact_admitted_truth() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = merge_ready_runtime();
     let prepared = runtime
         .merge()
-        .prepare_merge_execution(merge_request())
+        .prepare_merge_execution(execution, merge_request())
         .expect("prepared merge");
     let witness = runtime
         .merge()
@@ -62,10 +65,13 @@ fn retained_merge_correspondence_witness_preserves_exact_admitted_truth() {
 
 #[test]
 fn retained_merge_correspondence_witness_rejects_forged_or_incomplete_truth() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = merge_ready_runtime();
     let prepared = runtime
         .merge()
-        .prepare_merge_execution(merge_request())
+        .prepare_merge_execution(execution, merge_request())
         .expect("prepared merge");
     let witness = runtime
         .merge()
@@ -128,10 +134,13 @@ fn retained_merge_correspondence_witness_rejects_forged_or_incomplete_truth() {
 
 #[test]
 fn retained_merge_correspondence_witness_preserves_authority_basis_distinctions() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = merge_ready_runtime();
     let prepared = runtime
         .merge()
-        .prepare_merge_execution(merge_request())
+        .prepare_merge_execution(execution, merge_request())
         .expect("prepared merge");
     let witness = runtime
         .merge()
@@ -163,6 +172,9 @@ fn retained_merge_correspondence_witness_preserves_authority_basis_distinctions(
 
 #[test]
 fn retained_merge_correspondence_witness_preserves_runtime_declared_key_ambiguity_as_denial() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_key_identity_registry();
     create_entity(&runtime, "shared-name");
     create_entity(&runtime, "shared-name");
@@ -171,11 +183,14 @@ fn retained_merge_correspondence_witness_preserves_runtime_declared_key_ambiguit
 
     let artifact = runtime
         .merge()
-        .inspect_planning_scope(crate::facade::merge::MergePlanningRequest::new(
-            BranchId("main".to_string()),
-            BranchId("feature".to_string()),
-            MergeIntent::ReconcileIntoTarget,
-        ))
+        .inspect_planning_scope(
+            execution,
+            crate::facade::merge::MergePlanningRequest::new(
+                BranchId("main".to_string()),
+                BranchId("feature".to_string()),
+                MergeIntent::ReconcileIntoTarget,
+            ),
+        )
         .expect("planning artifact");
     let witness = runtime
         .merge()
@@ -199,12 +214,15 @@ fn retained_merge_correspondence_witness_preserves_runtime_declared_key_ambiguit
 
 #[test]
 fn retained_merge_correspondence_witness_survives_publication_and_recovery() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = merge_ready_runtime();
-    let outcome = execute_merge(&runtime);
+    let outcome = execute_merge(execution, &runtime);
     let live_witness = outcome.execution_summary.correspondence_witness.clone();
     let live_authority = published_merge_authority(&runtime, outcome.commit.commit.commit_id);
     let (_recovery, recovered) =
-        checkpoint_and_recover_with(&runtime, persisted_runtime_with_test_schema);
+        checkpoint_and_recover_with(execution, &runtime, persisted_runtime_with_test_schema);
     let recovered_authority =
         published_merge_authority(&recovered, outcome.commit.commit.commit_id);
 
@@ -289,13 +307,16 @@ fn merge_request() -> MergeExecutionRequest {
     )
 }
 
-fn execute_merge(runtime: &RelationalRuntime) -> MergeExecutionOutcome {
+fn execute_merge(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+) -> MergeExecutionOutcome {
     let prepared = runtime
         .merge()
-        .prepare_merge_execution(merge_request())
+        .prepare_merge_execution(execution, merge_request())
         .expect("prepared merge");
     runtime
-        .execute_prepared_merge(prepared)
+        .execute_prepared_merge(execution, prepared)
         .expect("executed merge")
 }
 

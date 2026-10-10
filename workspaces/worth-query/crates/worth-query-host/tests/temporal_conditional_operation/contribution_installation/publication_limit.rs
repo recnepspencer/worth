@@ -8,6 +8,9 @@ type Application = application_installation::WorthQueryProgramApplicationRuntime
 
 #[test]
 fn explicit_publication_limit_survives_checkpoint_installation_and_enforces_commit_boundary() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let source = application_installation::in_memory_program(
         validated_program(),
         TemporalHostSchema::declaration().unwrap(),
@@ -23,8 +26,12 @@ fn explicit_publication_limit_survives_checkpoint_installation_and_enforces_comm
     )
     .expect("ordinary source installation");
     let checkpoint = source
-        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
-        .unwrap();
+        .with_host_advancement(|host_phase| {
+            source
+                .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     let original = read_intent(&source);
     drop(source);
     for maximum in [1, 65_536] {
@@ -41,6 +48,7 @@ fn explicit_publication_limit_survives_checkpoint_installation_and_enforces_comm
         let installed = application.conditional::<TemporalConditional>().unwrap();
         let installed = installed.as_ref().as_ref().unwrap();
         let outcome = change_input(
+            request_execution,
             &application,
             &installed.invariant,
             application.current_world(),
@@ -105,44 +113,67 @@ fn read_intent(application: &Application) -> IntentQueryResult {
     let authentication = admit_identity_adapter(schema);
     let external = block_on(authentication.authenticate((), &request)).unwrap();
     let selected = application
-        .on_branch(application.current_world())
-        .select()
-        .unwrap();
-    let principal = selected
-        .resolve_authenticated_principal(
-            &binding,
-            &external,
-            &request,
-            primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
-    let scope = selected
-        .resolve_entity(
-            IntentIdentityField::reference(),
-            "intent-1".to_owned(),
-            &request,
-            primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+        .with_host_advancement(|host_phase| {
+            application
+                .on_branch(application.current_world())
+                .select(&host_phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
+    let principal = application
+        .with_host_advancement(|host_phase| {
+            selected
+                .resolve_authenticated_principal(
+                    &host_phase,
+                    &binding,
+                    &external,
+                    &request,
+                    primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("installed host call opens");
+    let scope = application
+        .with_host_advancement(|host_phase| {
+            selected
+                .resolve_entity(
+                    &host_phase,
+                    IntentIdentityField::reference(),
+                    "intent-1".to_owned(),
+                    &request,
+                    primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("installed host call opens");
     let query = schema
         .certification_query(TemporalIntentQuery::reference())
         .unwrap();
     let access = primary_graph::WorthQueryApplicationQueryAccessContext::new(&principal, &scope);
-    let plan = selected
-        .admit_application_query(
-            &query,
-            &access,
-            ApplicationQueryParameterSet::new(),
-            primary_graph::WorthQueryProductQueryControls::new(
-                std::num::NonZeroUsize::new(8).unwrap(),
-                std::num::NonZeroUsize::new(64).unwrap(),
-                &request,
-            ),
-        )
-        .unwrap();
+    let plan = application
+        .with_host_advancement(|host_phase| {
+            selected
+                .admit_application_query(
+                    &host_phase,
+                    &query,
+                    &access,
+                    ApplicationQueryParameterSet::new(),
+                    primary_graph::WorthQueryProductQueryControls::new(
+                        std::num::NonZeroUsize::new(8).unwrap(),
+                        std::num::NonZeroUsize::new(64).unwrap(),
+                        &request,
+                    ),
+                )
+                .unwrap()
+        })
+        .expect("installed host call opens");
     let result = application
-        .execute_application_query_one_shot(plan)
-        .expect("authoritative fields remain readable");
+        .with_host_advancement(|phase| {
+            application
+                .execute_application_query_one_shot(&phase, plan)
+                .expect("authoritative fields remain readable")
+        })
+        .expect("installed host call opens");
     assert_eq!(result.rows().len(), 1);
     result.rows()[0].clone()
 }

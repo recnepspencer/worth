@@ -55,18 +55,38 @@ pub(in crate::domain_computation::primary_graph) fn commit_live_activity_on_prod
     idempotency_key: u8,
     request_digest: u8,
 ) -> WorthQueryApplicationCommitReceipt {
-    let account = world
+    let program = world
         .application
-        .select_product_branch(product)
-        .expect("the selected product branch remains admitted")
-        .resolve_entity(
-            AccountStatus::reference(),
-            "open".to_owned(),
-            request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
-    let program = live_activity_program(world, product, principal, &account, request, label);
+        .with_host_advancement(|phase| {
+            let phase_custody = phase.test_host_request();
+            let request_execution = phase
+                .execution_request_for(world.application.product_runtime())
+                .expect("the fixture lends its installed phase");
+            let execution = &request_execution;
+            let account = world
+                .application
+                .select_product_branch(execution, product)
+                .expect("the selected product branch remains admitted")
+                .resolve_entity(
+                    &phase_custody.phase_for_application(&world.application),
+                    AccountStatus::reference(),
+                    "open".to_owned(),
+                    request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap();
+            live_activity_program(
+                &phase_custody,
+                &(phase_custody).borrowed_request_for_test(),
+                world,
+                product,
+                principal,
+                &account,
+                request,
+                label,
+            )
+        })
+        .expect("the live fixture opens its preparation call");
     match world.application.compare_and_commit_application(
         program,
         WorthQueryApplicationIdempotencyBinding::new([idempotency_key; 32], [request_digest; 32]),
@@ -78,6 +98,8 @@ pub(in crate::domain_computation::primary_graph) fn commit_live_activity_on_prod
 }
 
 pub(in crate::domain_computation::primary_graph) fn live_activity_program(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &AuthorizationWorld,
     product: &worth_runtime_world::facade::ProductBranchIdentity,
     principal: &WorthQueryAuthenticatedPrincipal<IdentityExecutionSchema, Principal, u64>,
@@ -97,13 +119,21 @@ pub(in crate::domain_computation::primary_graph) fn live_activity_program(
         .unwrap();
     let admission = world
         .application
-        .select_product_branch(product)
+        .select_product_branch(execution, product)
         .expect("the selected live product remains admitted")
-        .authorize_operation(principal, account, &operation, Default::default(), request)
+        .authorize_operation(
+            &phase_custody.phase_for_application(&world.application),
+            principal,
+            account,
+            &operation,
+            Default::default(),
+            request,
+        )
         .unwrap();
     let (_, projection, _) = world
         .invariant
         .project_admitted_operation(
+            &phase_custody.phase_for_application(&world.application),
             &admission,
             |reader, projected| {
                 reader
@@ -120,6 +150,7 @@ pub(in crate::domain_computation::primary_graph) fn live_activity_program(
     let reads = world
         .application
         .begin_projected_application_read_attempt(
+            &phase_custody.phase_for_application(&world.application),
             admission,
             projection,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -127,6 +158,7 @@ pub(in crate::domain_computation::primary_graph) fn live_activity_program(
         .unwrap();
     let mut effects = reads
         .complete_projected_dependencies(
+            &phase_custody.phase_for_application(&world.application),
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap()

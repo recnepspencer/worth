@@ -40,20 +40,51 @@ fn response_loss_retry_performs_no_second_managed_application_attempt() {
         .application
         .install_external_effect_transport(transport.clone())
         .unwrap();
-    let original = commit_response_lost(&world, &transport);
-    retry_without_managed_work(&world, &transport, &original);
-    consume_armed_session_and_invariant_sentinels(&world);
-    assert_unseen_commit_uses_the_managed_path(&world);
+    let original = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            commit_response_lost(&phase, &world, &transport)
+        })
+        .expect("the fixture read owns its installed host call");
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            retry_without_managed_work(&phase, &world, &transport, &original)
+        })
+        .expect("the fixture read owns its installed host call");
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            consume_armed_session_and_invariant_sentinels(&phase, &world)
+        })
+        .expect("the fixture read owns its installed host call");
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            assert_unseen_commit_uses_the_managed_path(&phase, &world)
+        })
+        .expect("the fixture read owns its installed host call");
 }
 
 fn commit_response_lost(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     world: &AuthorizationWorld,
     transport: &CompletingTransport,
 ) -> WorthQueryApplicationCommitReceipt {
     let request = live_scope();
-    let principal = authenticated_principal(world, &request);
-    let account = resolved_account(world, "open", &request);
+    let principal = authenticated_principal(&(phase_custody).test_host_request(), world, &request);
+    let account = resolved_account(
+        &(phase_custody).test_host_request(),
+        world,
+        "open",
+        &request,
+    );
     let original = retained_status_program(
+        &(phase_custody).test_host_request(),
         world,
         &principal,
         &account,
@@ -88,14 +119,22 @@ fn commit_response_lost(
 }
 
 fn retry_without_managed_work(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     world: &AuthorizationWorld,
     transport: &CompletingTransport,
     original: &WorthQueryApplicationCommitReceipt,
 ) {
     let retry_request = live_scope();
-    let retry_principal = authenticated_principal(world, &retry_request);
-    let retry_account = resolved_account(world, "response-lost", &retry_request);
+    let retry_principal =
+        authenticated_principal(&(phase_custody).test_host_request(), world, &retry_request);
+    let retry_account = resolved_account(
+        &(phase_custody).test_host_request(),
+        world,
+        "response-lost",
+        &retry_request,
+    );
     let retry = retained_status_program(
+        &(phase_custody).test_host_request(),
         world,
         &retry_principal,
         &retry_account,
@@ -128,11 +167,20 @@ fn retry_without_managed_work(
     assert_eq!(world.application.provider_session_resource_count(), 0);
 }
 
-fn consume_armed_session_and_invariant_sentinels(world: &AuthorizationWorld) {
+fn consume_armed_session_and_invariant_sentinels(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    world: &AuthorizationWorld,
+) {
     let request = live_scope();
-    let principal = authenticated_principal(world, &request);
-    let probe_account = resolved_account(world, "unrelated", &request);
+    let principal = authenticated_principal(&(phase_custody).test_host_request(), world, &request);
+    let probe_account = resolved_account(
+        &(phase_custody).test_host_request(),
+        world,
+        "unrelated",
+        &request,
+    );
     let rejected_session = admitted_program(
+        phase_custody,
         world,
         &principal,
         &probe_account,
@@ -153,9 +201,15 @@ fn consume_armed_session_and_invariant_sentinels(world: &AuthorizationWorld) {
         WorthQueryApplicationCommitDenialStage::ProviderPlan
     );
     let request = live_scope();
-    let principal = authenticated_principal(world, &request);
-    let probe_account = resolved_account(world, "unrelated", &request);
+    let principal = authenticated_principal(&(phase_custody).test_host_request(), world, &request);
+    let probe_account = resolved_account(
+        &(phase_custody).test_host_request(),
+        world,
+        "unrelated",
+        &request,
+    );
     let rejected_invariant = admitted_program(
+        phase_custody,
         world,
         &principal,
         &probe_account,
@@ -177,11 +231,20 @@ fn consume_armed_session_and_invariant_sentinels(world: &AuthorizationWorld) {
     );
 }
 
-fn assert_unseen_commit_uses_the_managed_path(world: &AuthorizationWorld) {
+fn assert_unseen_commit_uses_the_managed_path(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    world: &AuthorizationWorld,
+) {
     let request = live_scope();
-    let principal = authenticated_principal(world, &request);
-    let probe_account = resolved_account(world, "unrelated", &request);
+    let principal = authenticated_principal(&(phase_custody).test_host_request(), world, &request);
+    let probe_account = resolved_account(
+        &(phase_custody).test_host_request(),
+        world,
+        "unrelated",
+        &request,
+    );
     let positive_control = admitted_program(
+        phase_custody,
         world,
         &principal,
         &probe_account,

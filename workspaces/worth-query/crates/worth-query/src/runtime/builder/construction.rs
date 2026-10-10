@@ -1,7 +1,10 @@
 use super::*;
 
 impl WorthQueryRuntimeBuilder {
-    pub fn build(mut self) -> Result<WorthQueryRuntime, WorthQueryRuntimeError> {
+    pub fn build(
+        mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<WorthQueryRuntime, WorthQueryRuntimeError> {
         self.queue_installed_domain_substrates();
         let mut conditional_runtime_bridge = self.conditional_runtime_bridge.take();
         let conditional_signal_graph = self.conditional_signal_graph.take();
@@ -136,6 +139,7 @@ impl WorthQueryRuntimeBuilder {
             .expect("sealed conditional runtime installation requires its resource configuration");
         let installed_product =
             super::super::installed_product::WorthQueryInstalledProduct::install(
+                request_execution,
                 backend.as_ref(),
                 conditional,
                 managed_execution_bridge,

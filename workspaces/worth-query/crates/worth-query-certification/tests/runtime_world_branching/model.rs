@@ -125,9 +125,14 @@ fn execute(
             let branch = branches[&posture.branch()];
             let selected = world
                 .application
-                .on_branch(branch)
-                .select()
-                .expect("the seeded model branch must be selectable");
+                .with_host_advancement(|host_phase| {
+                    world
+                        .application
+                        .on_branch(branch)
+                        .select(&host_phase)
+                        .expect("the seeded model branch must be selectable")
+                })
+                .expect("installed host call opens");
             assert_eq!(selected.product().product_branch(), branch);
             coverage.selections[posture.index()] = true;
         }
@@ -145,9 +150,14 @@ fn execute(
             let handle = branches[&branch];
             let close = world
                 .application
-                .on_branch(handle)
-                .close()
-                .expect("the modeled branch must close through the application facade");
+                .with_host_advancement(|host_phase| {
+                    world
+                        .application
+                        .on_branch(handle)
+                        .close(&host_phase)
+                        .expect("the modeled branch must close through the application facade")
+                })
+                .expect("installed host call opens");
             assert!(close.is_complete());
             branches.remove(&branch);
             expected.retire(branch);
@@ -169,7 +179,16 @@ fn create_branch(
     root: WorthQueryProductBranch,
     posture: BranchPosture,
 ) -> WorthQueryProductBranch {
-    let source = world.application.on_branch(root).select().unwrap();
+    let source = world
+        .application
+        .with_host_advancement(|host_phase| {
+            world
+                .application
+                .on_branch(root)
+                .select(&host_phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     match posture {
         BranchPosture::Reuse => reuse_exact_product(world, &source, "model-reuse"),
         BranchPosture::Relational => {
@@ -177,11 +196,18 @@ fn create_branch(
         }
         BranchPosture::Signal => world
             .application
-            .branches()
-            .fork(root)
-            .components(|components| components.reuse_exact_relational_basis().fork_signal())
-            .create()
-            .expect("the Signal-only posture must publish"),
+            .with_host_advancement(|host_phase| {
+                world
+                    .application
+                    .branches()
+                    .fork(root)
+                    .components(|components| {
+                        components.reuse_exact_relational_basis().fork_signal()
+                    })
+                    .create(&host_phase)
+                    .expect("the Signal-only posture must publish")
+            })
+            .expect("installed host call opens"),
         BranchPosture::Independent => {
             fork_independent_product(world, &source, "model-i", "model-i-data", "model-i-signal")
         }
@@ -248,7 +274,16 @@ fn apply_effect(
             coverage.signal += 1;
             for _ in 0..2 {
                 let (replacement, _) = ReplacementPredicate::controlled(world.contacts.clone());
-                let selected = world.application.on_branch(branch).select().unwrap();
+                let selected = world
+                    .application
+                    .with_host_advancement(|host_phase| {
+                        world
+                            .application
+                            .on_branch(branch)
+                            .select(&host_phase)
+                            .unwrap()
+                    })
+                    .expect("installed host call opens");
                 let cancellation = runtime::RuntimeWorldCancellationSource::new();
                 let outcome = selected
                     .publish_conditional_definition(

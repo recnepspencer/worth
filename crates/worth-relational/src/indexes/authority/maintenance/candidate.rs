@@ -54,9 +54,11 @@ impl IndexAuthority<'_> {
         index_ids: &[DerivedIndexId],
         before: Option<&SnapshotHandle>,
         budget: DerivedIndexMaintenanceBudget,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<DerivedIndexMaintenanceWork, DerivedIndexMaintenanceDenial> {
         let mut work = MaintenanceWork::new(budget);
-        let result = self.prepare_candidate_indexes(candidate, index_ids, before, &mut work);
+        let result =
+            self.prepare_candidate_indexes(candidate, index_ids, before, &mut work, execution);
         result.map(|()| work.counts).map_err(|kind| work.deny(kind))
     }
 
@@ -66,6 +68,7 @@ impl IndexAuthority<'_> {
         index_ids: &[DerivedIndexId],
         before: Option<&SnapshotHandle>,
         work: &mut MaintenanceWork,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<(), Denial> {
         if candidate.runtime_instance_id() != self.runtime.runtime_instance_id() {
             return Err(Denial::ForeignCandidate);
@@ -103,13 +106,13 @@ impl IndexAuthority<'_> {
                 }
                 self.runtime
                     .read_truth()
-                    .project_snapshot(snapshot)
+                    .project_snapshot(snapshot, execution)
                     .ok_or(Denial::SnapshotUnavailable)
             })
             .transpose()?;
         validate_expected_root(&expected_root, before.as_ref())?;
         basis::validate_prepared(&request, before.as_ref(), &after)?;
-        let prepared = self.prepare_refresh(&request, before.as_ref(), &after, work)?;
+        let prepared = self.prepare_refresh(execution, &request, before.as_ref(), &after, work)?;
         work.charge(prepared.entries.len())?;
         work.counts.generation_publications_reserved = prepared.entries.len();
         let generation_ids = self

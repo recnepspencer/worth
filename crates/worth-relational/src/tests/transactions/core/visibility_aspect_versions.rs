@@ -66,21 +66,24 @@ fn visibility_aspect_versions_reject_stale_generation_ids() {
 
 #[test]
 fn selected_basis_aspect_revision_reads_only_the_requested_aspect() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     let created = create_entity_outcome(&runtime, "alpha");
     let entity = changed_entities(&created)[0];
     let updated = update_entity(&runtime, entity, "beta");
     let view = runtime
         .read_truth()
-        .project_snapshot(&updated.snapshot)
+        .project_snapshot(&updated.snapshot, execution)
         .expect("the committed basis remains projectable");
 
     assert_eq!(
-        view.entity_aspect_version(entity, &AspectKey::new("name").unwrap()),
+        view.entity_aspect_version(execution, entity, &AspectKey::new("name").unwrap()),
         Some(Some(updated.version_id.0))
     );
     assert_eq!(
-        view.entity_aspect_version(entity, &AspectKey::new("unrelated").unwrap()),
+        view.entity_aspect_version(execution, entity, &AspectKey::new("unrelated").unwrap()),
         Some(None)
     );
     let stale = EntityId::new(
@@ -89,7 +92,7 @@ fn selected_basis_aspect_revision_reads_only_the_requested_aspect() {
         entity.generation.0 + 1,
     );
     assert_eq!(
-        view.entity_aspect_version(stale, &AspectKey::new("name").unwrap()),
+        view.entity_aspect_version(execution, stale, &AspectKey::new("name").unwrap()),
         None
     );
 }

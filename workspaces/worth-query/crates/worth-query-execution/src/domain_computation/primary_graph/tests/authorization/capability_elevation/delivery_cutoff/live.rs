@@ -16,12 +16,17 @@ use crate::domain_computation::primary_graph::{
 
 #[test]
 fn revocation_after_a_queued_live_cause_terminates_delivery() {
-    let mut context = context(true);
-    context.script_current_time();
-    let capability = context.elevated_access();
-    let mut lease = context
+    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+        let mut context = context(
+            &host_custody,
+            &host_custody.borrowed_request_for_test(),
+            true,
+        );
+        context.script_current_time();
+        let capability = context.elevated_access(&host_custody);
+        let mut lease = context
         .world
-        .selected_product()
+        .selected_product(&host_custody, )
         .open_governed_application_query_live::<
             ElevatedAccountActivityQuery,
             AccountSummaryParameters,
@@ -34,7 +39,7 @@ fn revocation_after_a_queued_live_cause_terminates_delivery() {
             _,
             _,
             _,
-        >(
+        >(&host_custody.phase_for_application(&context.world.application),
             context.query,
             &context.principal,
             context.account,
@@ -44,33 +49,47 @@ fn revocation_after_a_queued_live_cause_terminates_delivery() {
                 .unwrap(),
         )
         .unwrap();
-    commit_live_activity(&context.world, &context.committer, &context.request);
-    let approved = context.approved.take().unwrap();
-    close_elevation(&context.world, &context.request, approved);
+        commit_live_activity(&context.world, &context.committer, &context.request);
+        let approved = context.approved.take().unwrap();
+        close_elevation(&host_custody, &context.world, &context.request, approved);
 
-    assert_authorization_denied(
-        lease.next(&context.principal, &context.request),
-        WorthQueryOperationAuthorizationDenialKind::StaleAuthorization,
-    );
-    assert!(matches!(
-        lease.next(&context.principal, &context.request),
-        WorthQueryApplicationLiveOutcome::Closed
-    ));
-    drop(lease);
-    assert_resources_released(&context.world);
+        assert_authorization_denied(
+            lease.next(
+                &host_custody.phase_for_application(&context.world.application),
+                &context.principal,
+                &context.request,
+            ),
+            WorthQueryOperationAuthorizationDenialKind::StaleAuthorization,
+        );
+        assert!(matches!(
+            lease.next(
+                &host_custody.phase_for_application(&context.world.application),
+                &context.principal,
+                &context.request
+            ),
+            WorthQueryApplicationLiveOutcome::Closed
+        ));
+        drop(lease);
+        assert_resources_released(&context.world);
+    })
 }
 
 #[test]
 fn query_time_expiry_after_a_queued_live_cause_terminates_delivery() {
-    let context = context(true);
-    context
+    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+        let context = context(
+            &host_custody,
+            &host_custody.borrowed_request_for_test(),
+            true,
+        );
+        context
+            .world
+            .authorization_time
+            .script([time(100), time(100), time(100), time(106)]);
+        let capability = context.elevated_access(&host_custody);
+        let mut lease = context
         .world
-        .authorization_time
-        .script([time(100), time(100), time(100), time(106)]);
-    let capability = context.elevated_access();
-    let mut lease = context
-        .world
-        .selected_product()
+        .selected_product(&host_custody, )
         .open_governed_application_query_live::<
             ElevatedAccountActivityQuery,
             AccountSummaryParameters,
@@ -83,7 +102,7 @@ fn query_time_expiry_after_a_queued_live_cause_terminates_delivery() {
             _,
             _,
             _,
-        >(
+        >(&host_custody.phase_for_application(&context.world.application),
             context.query,
             &context.principal,
             context.account,
@@ -93,18 +112,27 @@ fn query_time_expiry_after_a_queued_live_cause_terminates_delivery() {
                 .unwrap(),
         )
         .unwrap();
-    commit_live_activity(&context.world, &context.committer, &context.request);
+        commit_live_activity(&context.world, &context.committer, &context.request);
 
-    assert_authorization_denied(
-        lease.next(&context.principal, &context.request),
-        WorthQueryOperationAuthorizationDenialKind::ElevationExpired,
-    );
-    assert!(matches!(
-        lease.next(&context.principal, &context.request),
-        WorthQueryApplicationLiveOutcome::Closed
-    ));
-    drop(lease);
-    assert_resources_released(&context.world);
+        assert_authorization_denied(
+            lease.next(
+                &host_custody.phase_for_application(&context.world.application),
+                &context.principal,
+                &context.request,
+            ),
+            WorthQueryOperationAuthorizationDenialKind::ElevationExpired,
+        );
+        assert!(matches!(
+            lease.next(
+                &host_custody.phase_for_application(&context.world.application),
+                &context.principal,
+                &context.request
+            ),
+            WorthQueryApplicationLiveOutcome::Closed
+        ));
+        drop(lease);
+        assert_resources_released(&context.world);
+    })
 }
 
 fn assert_authorization_denied(
@@ -123,11 +151,17 @@ fn assert_authorization_denied(
 }
 
 fn close_elevation(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     world: &AuthorizationWorld,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     approved: WorthQueryApprovedElevation,
 ) {
-    let mandatory = super::super::terminal_lifecycle_support::close_exact(world, request, approved);
+    let mandatory = super::super::terminal_lifecycle_support::close_exact(
+        phase_custody,
+        world,
+        request,
+        approved,
+    );
     assert_eq!(
         mandatory.closure_kind(),
         WorthQueryElevationClosureKind::Revoked

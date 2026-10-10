@@ -9,8 +9,12 @@ use super::installed_operation_fixture::{
 
 #[test]
 fn partition_dependency_crosses_the_real_relational_source_and_signal_delivery_path() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let partition = worth_foundational::facade::TruthPartitionRole::new("model-main").unwrap();
     let workspace = conditional_workspace(
+        request_execution,
         "partition-correspondence",
         node(
             "partition-node",

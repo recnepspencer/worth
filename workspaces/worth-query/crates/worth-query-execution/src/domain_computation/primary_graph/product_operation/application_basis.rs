@@ -8,6 +8,7 @@ use worth_runtime_world::facade::ProductBranchObservation;
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(in crate::domain_computation::primary_graph) fn retain_product_application_basis(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         observation: &ProductBranchObservation,
     ) -> Result<WorthQueryApplicationBasisLease, WorthQueryProductBranchAdmissionDenial> {
         if observation.owner_identity() != self.product_runtime.owner.owner_identity() {
@@ -16,6 +17,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         let mut lease = self
             .basis_leases
             .register(
+                execution,
                 observation.basis().relational_basis().clone(),
                 self.primary_provider.graph.clone(),
             )

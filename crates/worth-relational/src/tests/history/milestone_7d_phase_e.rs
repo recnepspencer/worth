@@ -20,6 +20,9 @@ use worth_foundational::facade::AspectKey;
 
 #[test]
 fn inspection_input_round_trips_deleted_vs_modified_without_host_projection() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
     let entity = create_entity(&runtime, "shared");
     create_branch_from_main(&runtime, "feature");
@@ -33,13 +36,13 @@ fn inspection_input_round_trips_deleted_vs_modified_without_host_projection() {
     };
     let planning = runtime
         .merge()
-        .inspect_planning_scope(request.clone().into())
+        .inspect_planning_scope(execution, request.clone().into())
         .expect("planning artifact");
     let input = planning.inspection_input();
     let from_input = RelationalMergeInspectionArtifact::from_input(input.clone());
     let from_access = runtime
         .merge()
-        .inspect_execution_surface(request.clone().into())
+        .inspect_execution_surface(execution, request.clone().into())
         .expect("execution surface");
     let normalized_request = runtime
         .merge()
@@ -69,6 +72,9 @@ fn inspection_input_round_trips_deleted_vs_modified_without_host_projection() {
 
 #[test]
 fn execution_surface_preserves_topology_region_conflict_authority_rows() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_topology_identity_registry(unique_test_store_path(
         "worth-relational-7d-phase-e-topology-inspection",
     ));
@@ -104,6 +110,7 @@ fn execution_surface_preserves_topology_region_conflict_authority_rows() {
     let artifact = runtime
         .merge()
         .inspect_execution_surface(
+            execution,
             MergeExecutionRequest {
                 target_branch: BranchId("main".to_string()),
                 source_branch: BranchId("feature".to_string()),

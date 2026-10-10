@@ -15,15 +15,21 @@ use super::{
 };
 
 pub(crate) fn admitted_handle(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &'static str,
 ) -> crate::application::WorthQueryInstalledDomainDeclarationContext<
     ContinuationDomain,
     ContinuationWorld,
 > {
-    configured_handle(world, WorthQueryConfig::runtime_backed_default())
+    configured_handle(
+        request_execution,
+        world,
+        WorthQueryConfig::runtime_backed_default(),
+    )
 }
 
 pub(crate) fn admitted_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &'static str,
 ) -> (
     crate::runtime::WorthQueryWorkspace,
@@ -32,17 +38,18 @@ pub(crate) fn admitted_workspace(
         ContinuationWorld,
     >,
 ) {
-    installed_workspace(ContinuationWorld(world))
+    installed_workspace(request_execution, ContinuationWorld(world))
 }
 
 pub(crate) fn configured_handle(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &'static str,
     _config: WorthQueryConfig,
 ) -> crate::application::WorthQueryInstalledDomainDeclarationContext<
     ContinuationDomain,
     ContinuationWorld,
 > {
-    installed_context(ContinuationWorld(world))
+    installed_context(request_execution, ContinuationWorld(world))
 }
 
 pub(crate) fn drifted_readmission_handle_in(
@@ -73,16 +80,18 @@ pub(crate) fn continuation_handle_in(
 }
 
 fn installed_context<C>(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     context: C,
 ) -> crate::application::WorthQueryInstalledDomainDeclarationContext<ContinuationDomain, C>
 where
     C: crate::application::WorthQueryDomainOperatingContext<ContinuationDomain>,
 {
-    let (_, context) = installed_workspace(context);
+    let (_, context) = installed_workspace(request_execution, context);
     context
 }
 
 fn installed_workspace<C>(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     context: C,
 ) -> (
     crate::runtime::WorthQueryWorkspace,
@@ -92,6 +101,7 @@ where
     C: crate::application::WorthQueryDomainOperatingContext<ContinuationDomain>,
 {
     crate::application::domain_test_support::installed_declaration_workspace(
+        request_execution,
         ContinuationDomain,
         context,
         declaration_families(),

@@ -22,11 +22,16 @@ impl<'installation, Schema: ApplicationSchema>
 {
     #[cfg(feature = "test-durability-faults")]
     #[doc(hidden)]
-    pub fn fail_next_durable_append_for_test(&self) {
+    pub fn fail_next_durable_append_for_test(
+        &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) {
         self.graph
             .graph
             .integration_handle()
-            .with_runtime(|runtime| runtime.fail_next_durable_append_for_test());
+            .with_runtime(request_execution, |runtime| {
+                runtime.fail_next_durable_append_for_test()
+            });
     }
 
     pub(super) fn new(

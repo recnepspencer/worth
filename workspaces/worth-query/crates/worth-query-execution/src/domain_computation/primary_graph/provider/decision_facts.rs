@@ -34,6 +34,7 @@ impl WorthQueryDecisionFactProvider for Arc<WorthQueryPrimaryGraphProvider> {
 
     fn compare_decision_fact(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         session: WorthQueryProviderSessionView<'_>,
         evidence: WorthQueryDecisionFactEvidenceView<'_>,
         admission: WorthQueryDecisionFactComparisonAdmission,
@@ -47,7 +48,9 @@ impl WorthQueryDecisionFactProvider for Arc<WorthQueryPrimaryGraphProvider> {
         };
         let fresh = self
             .graph
-            .with_runtime_mut(|runtime| fact_basis.remains_equal_in(runtime))
+            .with_runtime_mut(execution, |runtime| {
+                fact_basis.remains_equal_in(execution, runtime)
+            })
             .map_err(snapshot_read_set_failure)?;
         admission.observe_current_version(if fresh {
             evidence.physical_version_evidence().to_owned()

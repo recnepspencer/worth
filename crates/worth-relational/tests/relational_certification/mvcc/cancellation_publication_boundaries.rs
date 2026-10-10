@@ -9,7 +9,10 @@ use worth_relational::facade::mvcc::{
 
 #[test]
 fn cancellation_immediately_before_the_supply_chain_critical_section_moves_nothing() {
-    let (world, _) = certified_supply_chain_world(SupplyChainScale::court());
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (world, _) = certified_supply_chain_world(request_execution, SupplyChainScale::court());
     let identity = world.runtime.main_branch_identity();
     let (_, basis) = world.runtime.observe_branch(&identity).unwrap();
     let before = world
@@ -60,7 +63,10 @@ fn cancellation_immediately_before_the_supply_chain_critical_section_moves_nothi
 
 #[test]
 fn cancellation_inside_the_supply_chain_critical_section_is_deferred() {
-    let (world, _) = certified_supply_chain_world(SupplyChainScale::court());
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (world, _) = certified_supply_chain_world(request_execution, SupplyChainScale::court());
     let identity = world.runtime.main_branch_identity();
     let (_, basis) = world.runtime.observe_branch(&identity).unwrap();
     let before = world

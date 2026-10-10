@@ -4,7 +4,10 @@ use crate::identity::hash_parts;
 #[test]
 fn intent_admission_certification_topology_and_representative_family_artifacts_match_phase_six_scope(
 ) {
-    let bundle = certify_intent_admission();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let bundle = certify_intent_admission(request_execution);
     let basis_bundle = crate::basis_lifecycle::certify_basis_lifecycle();
     let projection_bundle =
         crate::projection_consumption::certify_projection_consumption_closeout_core();

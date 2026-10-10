@@ -70,61 +70,30 @@ impl ApplicationOperationMarkerIdentity<IdentityExecutionSchema>
     const IDENTIFIER: &'static str = "AliasedRequestCapabilityElevationOperation";
 }
 
-#[test]
-fn exact_active_elevation_admits_and_revalidates_with_ordinary_capability_authority() {
-    let (world, request, approved) = approval_transition::exact_approved_world();
-    assert_eq!(
-        world
-            .application
-            .capability_plan_compilation_evidence()
-            .elevation_lifecycle_operation_count(),
-        4
-    );
-    let (_, _, request_role) = world
-        .application
-        .authorization
-        .elevation_lifecycle_operation::<IdentityExecutionSchema, RequestCapabilityElevationOperation>(
-            "RequestCapabilityElevationOperation",
-            <RequestElevationInput as worth_query_declaration::facade::portable_identity::WorthQueryPortableType>::PORTABLE_TYPE_IDENTITY.as_str(),
-        )
-        .expect("the request marker must match installed lifecycle identity")
-        .expect("the request operation must have one lifecycle owner");
-    assert_eq!(format!("{request_role:?}"), "Request");
-    assert!(world
-        .application
-        .authorization
-        .elevation_lifecycle_operation::<
-            IdentityExecutionSchema,
-            AliasedRequestCapabilityElevationOperation,
-        >(
-            "RequestCapabilityElevationOperation",
-            <RequestElevationInput as worth_query_declaration::facade::portable_identity::WorthQueryPortableType>::PORTABLE_TYPE_IDENTITY.as_str(),
-        )
-        .is_err());
-    world.authorization_time.script([time(100), time(100)]);
-    let principal = authenticated_principal(&world, &request);
-    let access = admit(&world, &approved, &principal, &request, Some("elevation-2")).unwrap();
-
-    assert_eq!(access.authorization_decision_fact_count(), 2);
-    let operation = world
-        .application
-        .installed_schema()
-        .installed_operation(ElevatedCapabilityTouchOperation::reference())
-        .unwrap();
-    world
-        .application
-        .authorize_capability_operation(access, &operation, Default::default())
-        .expect("the exact active elevation must survive fresh operation re-admission");
-}
+#[path = "capability_elevation/exact_active_elevation_admits_and_revalidates_with_ordinary_capa.rs"]
+mod exact_active_elevation_admits_and_revalidates_with_ordinary_capa;
 
 #[test]
 fn selector_only_admission_cannot_bypass_the_approval_transition() {
     let world = installed_elevated_capability_world(CapabilityElevationScenario::Active);
     world.authorization_time.script([time(100)]);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
 
-    let Err(denial) = admit_raw(&world, &principal, &request, Some("elevation-1")) else {
+    let Err(denial) = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            admit_raw(&phase, &world, &principal, &request, Some("elevation-1"))
+        })
+        .expect("the fixture read owns its installed host call")
+    else {
         panic!("a raw selector must not substitute for approved lifecycle authority");
     };
 
@@ -139,9 +108,22 @@ fn governed_capability_without_elevation_preserves_required_explanation() {
     let world = installed_elevated_capability_world(CapabilityElevationScenario::Active);
     world.authorization_time.script([time(100)]);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
 
-    let Err(denial) = admit_raw(&world, &principal, &request, None) else {
+    let Err(denial) = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            admit_raw(&phase, &world, &principal, &request, None)
+        })
+        .expect("the fixture read owns its installed host call")
+    else {
         panic!("a governed capability cannot omit elevation")
     };
 
@@ -157,151 +139,124 @@ fn governed_capability_without_elevation_preserves_required_explanation() {
 
 #[test]
 fn resource_selector_cannot_substitute_for_the_declared_elevation_identity() {
-    let (world, request, approved) = approval_transition::exact_approved_world();
-    let principal = authenticated_principal(&world, &request);
-    let capability = installed_capability(&world);
-    let mut input = elevated_input(Some("elevation-2"));
-    input.substitute_resource_selector = true;
+    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+        let (world, request, approved) = approval_transition::exact_approved_world(&host_custody);
+        let principal = authenticated_principal(&host_custody, &world, &request);
+        let capability = installed_capability(&world);
+        let mut input = elevated_input(Some("elevation-2"));
+        input.substitute_resource_selector = true;
 
-    let Err(denial) = world.selected_product().admit_approved_elevation_access(
-        &approved,
-        &principal,
-        &capability,
-        input,
-        &request,
-    ) else {
-        panic!("a selector for another installed entity kind must not open elevation authority");
-    };
-
-    assert_eq!(
-        denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::ElevationProjectionRejected
-    );
-}
-
-#[test]
-fn non_governed_capability_rejects_an_elevation_selector() {
-    let world = installed_elevated_capability_world(CapabilityElevationScenario::Active);
-    let capability = world
-        .application
-        .installed_schema()
-        .capability(
-            TouchAccountCapability::reference(),
-            CapabilityTouchOperation::reference(),
-        )
-        .unwrap();
-    let projection = ApplicationCapabilityRequestProjection::new(
-        ApplicationCapabilityEntitySelector::new(
-            AccountIdentity::reference(),
-            ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
-                "account-1".to_owned(),
+        let Err(denial) = world
+            .selected_product(&host_custody)
+            .admit_approved_elevation_access(
+                &host_custody.phase_for_application(&world.application),
+                &approved,
+                &principal,
+                &capability,
+                input,
+                &request,
             )
-            .expect("fixture account identity must encode"),
-        ),
-        ApplicationEncodedScalarValue::<CapabilityActionBinding>::try_new(CapabilityAction::Touch)
-            .expect("fixture capability action must encode"),
-        ApplicationEncodedScalarValue::<CapabilityPurposeBinding>::try_new(
-            CapabilityPurpose::AccountMaintenance,
-        )
-        .expect("fixture capability purpose must encode"),
-        ApplicationCapabilityRequestContext::new(CapabilityRequestContext::reference()),
-    )
-    .elevation(ApplicationCapabilityEntitySelector::new(
-        CapabilityElevationIdentity::reference(),
-        ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
-            "elevation-1".to_owned(),
-        )
-        .expect("fixture elevation identity must encode"),
-    ));
+        else {
+            panic!(
+                "a selector for another installed entity kind must not open elevation authority"
+            );
+        };
 
-    let denial = crate::domain_computation::authorization::validate_elevation_projection(
-        capability.contract(),
-        &projection,
-    )
-    .unwrap_err();
-
-    assert_eq!(
-        denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::ElevationNotApplicable
-    );
+        assert_eq!(
+            denial.kind(),
+            WorthQueryOperationAuthorizationDenialKind::ElevationProjectionRejected
+        );
+    })
 }
+
+#[path = "capability_elevation/non_governed_capability_rejects_an_elevation_selector.rs"]
+mod non_governed_capability_rejects_an_elevation_selector;
 
 #[test]
 fn revoked_approved_elevation_cannot_open_active_authority() {
-    let (world, request, approved) = approval_transition::exact_approved_world();
-    world.authorization_time.script([time(100)]);
-    let principal = authenticated_principal(&world, &request);
-    mutation::set_status(&world, "elevation-2", CapabilityElevationStatus::Revoked);
+    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+        let (world, request, approved) = approval_transition::exact_approved_world(&host_custody);
+        world.authorization_time.script([time(100)]);
+        let principal = authenticated_principal(&host_custody, &world, &request);
+        mutation::set_status(
+            &host_custody,
+            &host_custody.borrowed_request_for_test(),
+            &world,
+            "elevation-2",
+            CapabilityElevationStatus::Revoked,
+        );
 
-    let Err(denial) = admit(&world, &approved, &principal, &request, Some("elevation-2")) else {
-        panic!("revoked approved authority must not open active use");
-    };
+        let Err(denial) = admit(
+            &host_custody,
+            &world,
+            &approved,
+            &principal,
+            &request,
+            Some("elevation-2"),
+        ) else {
+            panic!("revoked approved authority must not open active use");
+        };
 
-    assert_eq!(
-        denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::ElevationInactive
-    );
-    assert_eq!(
-        denial.explanation_cause(),
-        Some(WorthQueryApplicationAuthorizationExplanationCause::ElevationDenied)
-    );
+        assert_eq!(
+            denial.kind(),
+            WorthQueryOperationAuthorizationDenialKind::ElevationInactive
+        );
+        assert_eq!(
+            denial.explanation_cause(),
+            Some(WorthQueryApplicationAuthorizationExplanationCause::ElevationDenied)
+        );
+    })
 }
 
-#[test]
-fn elevation_status_drift_after_admission_is_stale_at_operation_progression() {
-    let (world, request, approved) = approval_transition::exact_approved_world();
-    world.authorization_time.script([time(100), time(100)]);
-    let principal = authenticated_principal(&world, &request);
-    let access = admit(&world, &approved, &principal, &request, Some("elevation-2")).unwrap();
-    mutation::set_status(&world, "elevation-2", CapabilityElevationStatus::Revoked);
-    let operation = world
-        .application
-        .installed_schema()
-        .installed_operation(ElevatedCapabilityTouchOperation::reference())
-        .unwrap();
-
-    let Err(denial) =
-        world
-            .application
-            .authorize_capability_operation(access, &operation, Default::default())
-    else {
-        panic!("revoked elevation evidence must not progress to operation authority");
-    };
-
-    assert_eq!(
-        denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::StaleAuthorization
-    );
-}
+#[path = "capability_elevation/elevation_status_drift_after_admission_is_stale_at_operation_pro.rs"]
+mod elevation_status_drift_after_admission_is_stale_at_operation_pro;
 
 #[test]
 fn approver_drift_after_admission_is_stale_before_operation_authority() {
-    let (world, request, approved) = approval_transition::exact_approved_world();
-    world.authorization_time.script([time(100), time(100)]);
-    let principal = authenticated_principal(&world, &request);
-    let access = admit(&world, &approved, &principal, &request, Some("elevation-2")).unwrap();
-    mutation::add_self_approver(&world, "elevation-2", principal.principal_entity_id());
-    let operation = world
-        .application
-        .installed_schema()
-        .installed_operation(ElevatedCapabilityTouchOperation::reference())
+    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+        let (world, request, approved) = approval_transition::exact_approved_world(&host_custody);
+        world.authorization_time.script([time(100), time(100)]);
+        let principal = authenticated_principal(&host_custody, &world, &request);
+        let access = admit(
+            &host_custody,
+            &world,
+            &approved,
+            &principal,
+            &request,
+            Some("elevation-2"),
+        )
         .unwrap();
-
-    let Err(denial) =
-        world
+        mutation::add_self_approver(
+            &host_custody,
+            &host_custody.borrowed_request_for_test(),
+            &world,
+            "elevation-2",
+            principal.principal_entity_id(),
+        );
+        let operation = world
             .application
-            .authorize_capability_operation(access, &operation, Default::default())
-    else {
-        panic!("changed exact approver relationships must stale admitted elevation evidence");
-    };
+            .installed_schema()
+            .installed_operation(ElevatedCapabilityTouchOperation::reference())
+            .unwrap();
 
-    assert_eq!(
-        denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::StaleAuthorization
-    );
+        let Err(denial) = world.application.authorize_capability_operation(
+            &host_custody.phase_for_application(&world.application),
+            access,
+            &operation,
+            Default::default(),
+        ) else {
+            panic!("changed exact approver relationships must stale admitted elevation evidence");
+        };
+
+        assert_eq!(
+            denial.kind(),
+            WorthQueryOperationAuthorizationDenialKind::StaleAuthorization
+        );
+    })
 }
 
 fn admit(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     world: &super::super::fixture::AuthorizationWorld,
     approved: &WorthQueryApprovedElevation,
     principal: &crate::domain_computation::primary_graph::WorthQueryAuthenticatedPrincipal<
@@ -321,16 +276,20 @@ fn admit(
     crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial,
 > {
     let capability = installed_capability(world);
-    world.selected_product().admit_approved_elevation_access(
-        approved,
-        principal,
-        &capability,
-        elevated_input(elevation),
-        request,
-    )
+    world
+        .selected_product(phase_custody)
+        .admit_approved_elevation_access(
+            &phase_custody.phase_for_application(&world.application),
+            approved,
+            principal,
+            &capability,
+            elevated_input(elevation),
+            request,
+        )
 }
 
 fn admit_raw(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     world: &super::super::fixture::AuthorizationWorld,
     principal: &crate::domain_computation::primary_graph::WorthQueryAuthenticatedPrincipal<
         super::super::fixture::IdentityExecutionSchema,
@@ -349,12 +308,15 @@ fn admit_raw(
     crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial,
 > {
     let capability = installed_capability(world);
-    world.selected_product().admit_capability_access(
-        principal,
-        &capability,
-        elevated_input(elevation),
-        request,
-    )
+    world
+        .selected_product(&(phase_custody).test_host_request())
+        .admit_capability_access(
+            phase_custody,
+            principal,
+            &capability,
+            elevated_input(elevation),
+            request,
+        )
 }
 
 fn installed_capability(

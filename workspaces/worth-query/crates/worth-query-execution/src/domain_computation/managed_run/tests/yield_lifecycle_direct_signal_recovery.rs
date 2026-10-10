@@ -14,9 +14,11 @@ fn signal_terminalized_after_safe_point_cannot_be_relabelled_as_yielded() {
             WorthQueryOperationGraphAccess::Observe,
             YieldProvider::installed(5),
         );
+        let installed_running_phase = execution.phase_for_direct(&running);
+
         let active = running
             .begin_graph_execution(
-                execution,
+                &installed_running_phase,
                 &graph,
                 WorthQueryManagedGraphCallRequest::new(
                     WorthQueryGraphProviderCallKind::Observe,
@@ -24,7 +26,7 @@ fn signal_terminalized_after_safe_point_cannot_be_relabelled_as_yielded() {
                 ),
             )
             .unwrap();
-        let paused = match active.advance(execution) {
+        let paused = match active.advance(&installed_running_phase) {
             WorthQueryDirectGraphStepOutcome::Continue(paused) => paused,
             _ => panic!("provider did not pause"),
         };
@@ -103,7 +105,7 @@ fn timeout_and_rejection_after_safe_point_cannot_mint_yielded_authority() {
 }
 
 fn paused_direct_yield_target(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     scope: &str,
 ) -> (
@@ -114,14 +116,16 @@ fn paused_direct_yield_target(
         WorthQueryOperationGraphAccess::Observe,
         YieldProvider::installed(5),
     );
+    let installed_running_phase = execution.phase_for_direct(&running);
+
     let active = running
         .begin_graph_execution(
-            execution,
+            &installed_running_phase,
             &graph,
             WorthQueryManagedGraphCallRequest::new(WorthQueryGraphProviderCallKind::Observe, scope),
         )
         .unwrap();
-    let paused = match active.advance(execution) {
+    let paused = match active.advance(&installed_running_phase) {
         WorthQueryDirectGraphStepOutcome::Continue(paused) => paused,
         _ => panic!("provider did not pause"),
     };

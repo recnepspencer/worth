@@ -3,6 +3,9 @@ use crate::tests::support::*;
 
 #[test]
 fn fieldless_entity_create_commits_with_absent_authoritative_aspect_state() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(test_schema_registry())
         .build();
@@ -27,7 +30,7 @@ fn fieldless_entity_create_commits_with_absent_authoritative_aspect_state() {
         .unwrap();
     let read = runtime
         .read_truth()
-        .read_snapshot(&outcome.snapshot)
+        .read_snapshot(&outcome.snapshot, execution)
         .unwrap();
     let entity_id = read.entities().first().unwrap().entity_id;
 

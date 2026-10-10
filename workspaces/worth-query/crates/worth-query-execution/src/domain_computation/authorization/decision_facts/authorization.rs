@@ -40,13 +40,14 @@ impl WorthQueryAuthorizationDecisionFact {
             })
     }
     pub(in crate::domain_computation::authorization) fn from_capability_observation(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         _permit: crate::domain_computation::authorization::capability_observation::WorthQueryAuthorizationDecisionPermit,
         session_identity: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         relational: RelationalAuthorizationObservationEvidence,
         bridge: BridgeAuthorizationDecisionEvidence,
     ) -> Result<Self, ()> {
-        let dependencies = durable_dependencies::capture(runtime, &relational)?;
+        let dependencies = durable_dependencies::capture(execution, runtime, &relational)?;
         let mut decision = Self::mint(session_identity, relational, bridge);
         decision.native_dependencies = Some(dependencies);
         Ok(decision)
@@ -176,37 +177,40 @@ impl WorthQueryAuthorizationDecisionFact {
 
     pub(in crate::domain_computation) fn remains_current_in(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         bridge: &BridgeAuthorizationRuntime,
     ) -> bool {
         self.bridge_is_retained(bridge)
-            && observation_is_current(runtime, snapshot, &self.relational)
-            && self
-                .delegation
-                .as_ref()
-                .is_none_or(|delegation| delegation.remains_current_in(runtime, snapshot, bridge))
+            && observation_is_current(execution, runtime, snapshot, &self.relational)
+            && self.delegation.as_ref().is_none_or(|delegation| {
+                delegation.remains_current_in(execution, runtime, snapshot, bridge)
+            })
             && self
                 .delegation_activation
                 .as_ref()
-                .is_none_or(|activation| activation.remains_current_in(runtime, snapshot, bridge))
+                .is_none_or(|activation| {
+                    activation.remains_current_in(execution, runtime, snapshot, bridge)
+                })
     }
 
     pub(in crate::domain_computation) fn remains_equal_in(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     ) -> bool {
         bridge_matches(&self.relational, &self.bridge)
-            && observation_is_current(runtime, snapshot, &self.relational)
+            && observation_is_current(execution, runtime, snapshot, &self.relational)
             && self
                 .delegation
                 .as_ref()
-                .is_none_or(|delegation| delegation.remains_equal_in(runtime, snapshot))
+                .is_none_or(|delegation| delegation.remains_equal_in(execution, runtime, snapshot))
             && self
                 .delegation_activation
                 .as_ref()
-                .is_none_or(|activation| activation.remains_equal_in(runtime, snapshot))
+                .is_none_or(|activation| activation.remains_equal_in(execution, runtime, snapshot))
     }
 
     pub(in crate::domain_computation::authorization) fn has_same_lineage(
@@ -222,11 +226,12 @@ impl WorthQueryAuthorizationDecisionFact {
 }
 
 pub(super) fn observation_is_current(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     observation: &RelationalAuthorizationObservationEvidence,
 ) -> bool {
-    runtime.compare_authorization_observation(observation, snapshot.clone())
+    runtime.compare_authorization_observation(observation, snapshot.clone(), execution)
         == RelationalAuthorizationObservationFreshness::Fresh
 }
 

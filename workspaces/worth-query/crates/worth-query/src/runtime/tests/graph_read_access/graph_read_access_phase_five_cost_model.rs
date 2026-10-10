@@ -16,7 +16,13 @@ use crate::runtime::tests::graph_read_access::support::graph_read_access_cost_mo
 
 #[test]
 fn dense_boolean_traversal_exceeds_inline_ephemeral_budget_conservatively() {
-    let mut workspace = workspace("graph-read-access.phase-five.dense-budget");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = workspace(
+        request_execution,
+        "graph-read-access.phase-five.dense-budget",
+    );
     let family = dense_traversal_family(&mut workspace, "phase-five-dense-budget");
     let requirements = explain_graph_read_access_requirements_for_family(&family)
         .expect("requirements should derive");
@@ -50,7 +56,13 @@ fn dense_boolean_traversal_exceeds_inline_ephemeral_budget_conservatively() {
 
 #[test]
 fn equivalent_access_requirements_produce_identical_cost_estimate_digests() {
-    let mut workspace = workspace("graph-read-access.phase-five.equivalence");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = workspace(
+        request_execution,
+        "graph-read-access.phase-five.equivalence",
+    );
     let first = simple_traversal_family(&mut workspace, "phase-five-equivalence-a");
     let second = reordered_simple_traversal_family(&mut workspace, "phase-five-equivalence-b");
     let first_requirements = explain_graph_read_access_requirements_for_family(&first)
@@ -76,7 +88,13 @@ fn equivalent_access_requirements_produce_identical_cost_estimate_digests() {
 
 #[test]
 fn memory_estimate_names_each_relevant_access_structure_bucket() {
-    let mut workspace = workspace("graph-read-access.phase-five.memory-buckets");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = workspace(
+        request_execution,
+        "graph-read-access.phase-five.memory-buckets",
+    );
     let family = frontier_search_family(&mut workspace, "phase-five-memory-buckets");
     let requirements = explain_graph_read_access_requirements_for_family(&family)
         .expect("requirements should derive");
@@ -172,7 +190,13 @@ fn assert_frontier_search_bucket_contract(estimate: &WorthQueryGraphReadAccessCo
 
 #[test]
 fn proof_memory_is_counted_without_consuming_inline_index_capacity() {
-    let mut workspace = workspace("graph-read-access.phase-five.proof-memory");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = workspace(
+        request_execution,
+        "graph-read-access.phase-five.proof-memory",
+    );
     let family = frontier_search_family(&mut workspace, "phase-five-proof-memory");
     let requirements = explain_graph_read_access_requirements_for_family(&family)
         .expect("requirements should derive");
@@ -220,7 +244,13 @@ fn proof_memory_is_counted_without_consuming_inline_index_capacity() {
 
 #[test]
 fn intermediate_set_pressure_marks_broad_even_when_index_bytes_fit() {
-    let mut workspace = workspace("graph-read-access.phase-five.intermediate-broadness");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = workspace(
+        request_execution,
+        "graph-read-access.phase-five.intermediate-broadness",
+    );
     let family = intermediate_pressure_family(&mut workspace, "phase-five-intermediate-broadness");
     let requirements = explain_graph_read_access_requirements_for_family(&family)
         .expect("requirements should derive");
@@ -259,7 +289,13 @@ fn intermediate_set_pressure_marks_broad_even_when_index_bytes_fit() {
 
 #[test]
 fn cost_estimation_is_planning_pure_not_execution_observation() {
-    let mut workspace = workspace("graph-read-access.phase-five.planning-purity");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = workspace(
+        request_execution,
+        "graph-read-access.phase-five.planning-purity",
+    );
     let family = frontier_search_family(&mut workspace, "phase-five-planning-purity");
     let requirements = explain_graph_read_access_requirements_for_family(&family)
         .expect("requirements should derive");

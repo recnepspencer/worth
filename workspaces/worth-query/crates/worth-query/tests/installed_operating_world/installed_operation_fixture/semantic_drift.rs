@@ -8,6 +8,7 @@ use super::{
 };
 
 pub fn semantic_drift_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
     mutate: fn(&mut domain::WorthQueryDomainOperationSemanticClosure),
 ) -> Result<
@@ -45,5 +46,5 @@ pub fn semantic_drift_workspace(
     .operation(drifted);
     configured_runtime_without_executors(package)
         .domain_operation_executor(GeometryDomain, ReadVertex, ReadFamily, ReadVertexExecutor)
-        .workspace(name)
+        .workspace(request_execution, name)
 }

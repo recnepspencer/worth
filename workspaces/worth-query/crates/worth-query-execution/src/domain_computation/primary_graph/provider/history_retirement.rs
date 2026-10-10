@@ -60,7 +60,10 @@ impl<Schema>
     /// World history metadata bytes, unique World component pins and
     /// Relational retired branch roots awaiting reclamation.
     #[doc(hidden)]
-    pub fn history_retained_for_test(&self) -> (usize, usize, usize, usize) {
+    pub fn history_retained_for_test(
+        &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> (usize, usize, usize, usize) {
         let world = self.product_runtime.owner.inspection_port();
         let history = world
             .history_snapshot()
@@ -74,7 +77,9 @@ impl<Schema>
             retention.unique_pins(),
             self.primary_provider
                 .graph
-                .with_runtime(|runtime| runtime.retired_branch_root_count()),
+                .with_runtime(request_execution, |runtime| {
+                    runtime.retired_branch_root_count()
+                }),
         )
     }
 

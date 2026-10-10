@@ -314,6 +314,7 @@ pub trait WorthQueryDecisionFactProvider: Send + Sync + 'static {
 
     fn compare_decision_fact(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         session: WorthQueryProviderSessionView<'_>,
         evidence: WorthQueryDecisionFactEvidenceView<'_>,
         admission: WorthQueryDecisionFactComparisonAdmission,

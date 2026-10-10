@@ -73,7 +73,10 @@ pub(in crate::domain_computation::primary_graph) fn request() -> LeaseRequest {
     }
 }
 
-fn refused_index_build(request: LeaseRequest) -> DerivedIndexBuildOutcome {
+fn refused_index_build(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    request: LeaseRequest,
+) -> DerivedIndexBuildOutcome {
     let key = AspectKey::new("name").unwrap();
     let field = FieldKey::new("name").unwrap();
     let locator = AspectFieldLocator::new(
@@ -152,7 +155,7 @@ fn refused_index_build(request: LeaseRequest) -> DerivedIndexBuildOutcome {
     };
     let baseline = runtime
         .index_authority()
-        .build_for_commit(build_request.clone());
+        .build_for_commit(execution, build_request.clone());
     assert!(baseline.execution_denial.is_none());
 
     assert_eq!(baseline.generations.len(), 1);
@@ -160,7 +163,7 @@ fn refused_index_build(request: LeaseRequest) -> DerivedIndexBuildOutcome {
     let lease = authority().request_lease(request).unwrap();
     runtime
         .index_authority()
-        .build_for_commit_with_lease(build_request, &lease)
+        .build_for_commit_with_lease(execution, build_request, &lease)
 }
 #[test]
 fn result_refusal_is_typed_with_partition_identity() {
@@ -171,7 +174,8 @@ fn result_refusal_is_typed_with_partition_identity() {
                 "::result_refusal_is_typed_with_partition_identity"
             ),
             || {
-                let build = refused_index_build(request());
+                let build =
+                    refused_index_build(&_active_phase.borrowed_request_for_test(), request());
                 let refusal = build.execution_denial.expect("real execution refusal");
                 assert!(refusal.partition_identity.is_some());
                 assert_eq!(
@@ -196,6 +200,9 @@ fn result_refusal_is_typed_with_partition_identity() {
 
 #[test]
 fn cancellation_and_deadline_are_control_stops() {
+    let host_request = crate::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     isolated(
         concat!(
             module_path!(),
@@ -212,7 +219,7 @@ fn cancellation_and_deadline_are_control_stops() {
                 (cancelled, Control::Cancelled),
                 (timed_out, Control::TimedOut),
             ] {
-                let build = refused_index_build(request);
+                let build = refused_index_build(execution, request);
                 assert!(build.execution_denial.is_some());
                 let denied = identity_indexes_built(build, 1).unwrap_err();
                 assert_eq!(

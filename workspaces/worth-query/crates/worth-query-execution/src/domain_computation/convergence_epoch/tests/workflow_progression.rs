@@ -15,6 +15,9 @@ fn real_installed_workflow_seals_its_evidence_stage_and_converges() {
         let execution = phase;
 
         let epoch = workflow_epoch_fixture(FixtureDisposition::Converged);
+
+        let installed_fixture_phase = epoch.fixture_phase(execution);
+        let execution = &installed_fixture_phase;
         let rejection = match epoch.begin_stage_iteration(
             execution,
             "foreign-stage",
@@ -95,24 +98,29 @@ fn same_semantic_candidate_in_same_stage_workflow_peers_has_distinct_occurrences
 }
 
 fn start_workflow_peer(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     scope: &str,
 ) -> WorthQueryStartedWorkflowConvergenceIteration {
     let epoch = workflow_epoch_fixture(FixtureDisposition::Converged);
-    epoch
-        .begin_stage_iteration(
-            execution,
+    {
+        let installed_fixture_phase = epoch.fixture_phase(execution);
+        epoch.begin_stage_iteration(
+            &installed_fixture_phase,
             WORKFLOW_STAGE,
             WorthQueryManagedGraphCallRequest::new(WorthQueryGraphProviderCallKind::Observe, scope),
         )
-        .unwrap_or_else(|_| panic!("real workflow peer must begin"))
+    }
+    .unwrap_or_else(|_| panic!("real workflow peer must begin"))
 }
 
 fn complete_workflow_peer(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     started: WorthQueryStartedWorkflowConvergenceIteration,
 ) -> String {
-    let outcome = match started.advance(execution) {
+    let outcome = match {
+        let installed_fixture_phase = started.fixture_phase(execution);
+        started.advance(&installed_fixture_phase)
+    } {
         WorthQueryWorkflowConvergenceStepOutcome::Completed(outcome) => outcome,
         _ => panic!("real workflow peer must complete"),
     };
@@ -143,6 +151,9 @@ fn incompatible_stage_queue_contract_denies_before_iteration_and_terminates_clea
         let execution = phase;
 
         let epoch = workflow_epoch_fixture(FixtureDisposition::StageQueueContractMismatch);
+
+        let installed_fixture_phase = epoch.fixture_phase(execution);
+        let execution = &installed_fixture_phase;
         let rejection = match epoch.begin_stage_iteration(
             execution,
             WORKFLOW_STAGE,

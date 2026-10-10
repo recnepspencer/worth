@@ -8,15 +8,34 @@ use crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome
 fn owner_terminal_evidence_resolves_the_direct_provider_commit() {
     let world = installed_authorization_world(true);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
-    let program = admitted_program(
-        &world,
-        &principal,
-        &account,
-        &request,
-        "typed-terminal-evidence",
-    );
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let program = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            admitted_program(
+                &phase,
+                &world,
+                &principal,
+                &account,
+                &request,
+                "typed-terminal-evidence",
+            )
+        })
+        .expect("the fixture read owns its installed host call");
     let WorthQueryApplicationCommitOutcome::Committed(receipt) =
         world.application.compare_and_commit_application(
             program,

@@ -23,17 +23,20 @@ pub(crate) struct StatefulBridgeMergeProbe {
 }
 
 impl StatefulBridgeMergeProbe {
-    pub(crate) fn main_entity_count(&self) -> usize {
+    pub(crate) fn main_entity_count(
+        &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> usize {
         self.state
             .borrow()
             .relational_source
-            .with_runtime_mut(|runtime| {
+            .with_runtime_mut(request_execution, |runtime| {
                 let snapshot = crate::harness::fixtures::effect_authorities::exact_branch_snapshot(
                     runtime, "main",
                 );
                 let read = runtime
                     .read_truth()
-                    .read_snapshot(&snapshot)
+                    .read_snapshot(&snapshot, request_execution)
                     .expect("merge probe reads the exact target branch snapshot");
                 read.entities().len()
             })
@@ -45,11 +48,18 @@ pub(in crate::runtime::tests) fn custom_backend_without_primary_graph_transfer_b
     stateful_bridge_builder(["Task"], graph_test_support_profile(), test_product_root())
 }
 
-pub(crate) fn stateful_bridge_task_runtime() -> WorthQueryRuntime {
-    stateful_bridge_runtime_via_custom_backend(["Task"], graph_test_support_profile())
+pub(crate) fn stateful_bridge_task_runtime(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryRuntime {
+    stateful_bridge_runtime_via_custom_backend(
+        request_execution,
+        ["Task"],
+        graph_test_support_profile(),
+    )
 }
 
 pub(in crate::runtime::tests) fn stateful_bridge_task_runtime_with_domain<D>(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     package: crate::domain_installation::WorthQueryDomainPackage<D>,
 ) -> WorthQueryRuntime
 where
@@ -58,20 +68,24 @@ where
     stateful_bridge_builder(["Task"], graph_test_support_profile(), test_product_root())
         .domain_package(package)
         .expect("test domain package should admit")
-        .build()
+        .build(request_execution)
         .expect("stateful bridge runtime with domain should build")
 }
 
-pub(crate) fn stateful_bridge_task_runtime_with_merge() -> WorthQueryRuntime {
-    stateful_bridge_task_runtime_with_merge_posture(false).0
+pub(crate) fn stateful_bridge_task_runtime_with_merge(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryRuntime {
+    stateful_bridge_task_runtime_with_merge_posture(request_execution, false).0
 }
 
 pub(crate) fn stateful_bridge_task_runtime_with_merge_durable_fault(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> (WorthQueryRuntime, StatefulBridgeMergeProbe) {
-    stateful_bridge_task_runtime_with_merge_posture(true)
+    stateful_bridge_task_runtime_with_merge_posture(request_execution, true)
 }
 
 fn stateful_bridge_task_runtime_with_merge_posture(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     fail_next_durable_append: bool,
 ) -> (WorthQueryRuntime, StatefulBridgeMergeProbe) {
     let mut relational =
@@ -116,63 +130,103 @@ fn stateful_bridge_task_runtime_with_merge_posture(
         )
         .aspect_contracts(stateful_bridge_aspect_contracts())
         .expect("stateful bridge aspect contracts should admit")
-        .build()
+        .build(request_execution)
         .expect("stateful bridge runtime with merge should build");
     (runtime, probe)
 }
 
-pub(crate) fn stateful_bridge_task_runtime_without_writeback() -> WorthQueryRuntime {
+pub(crate) fn stateful_bridge_task_runtime_without_writeback(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryRuntime {
     stateful_bridge_builder(
         ["Task"],
         graph_test_support_profile(),
         test_product_root_without_writeback(),
     )
-    .build()
+    .build(request_execution)
     .expect("stateful bridge runtime without writeback should build")
 }
 
-pub(crate) fn stateful_bridge_task_issue_runtime() -> WorthQueryRuntime {
-    stateful_bridge_runtime_via_custom_backend(["Task", "Issue"], graph_test_support_profile())
-}
-
-pub(crate) fn stateful_bridge_grouped_task_runtime() -> WorthQueryRuntime {
-    stateful_bridge_runtime_via_custom_backend(["Task"], graph_test_support_profile())
-}
-
-pub(in crate::runtime::tests) fn stateful_bridge_task_edge_runtime() -> WorthQueryRuntime {
-    stateful_bridge_runtime_via_custom_backend(["Task", "TaskEdge"], graph_test_support_profile())
-}
-
-pub(in crate::runtime::tests) fn stateful_bridge_task_relation_runtime() -> WorthQueryRuntime {
+pub(crate) fn stateful_bridge_task_issue_runtime(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryRuntime {
     stateful_bridge_runtime_via_custom_backend(
+        request_execution,
+        ["Task", "Issue"],
+        graph_test_support_profile(),
+    )
+}
+
+pub(crate) fn stateful_bridge_grouped_task_runtime(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryRuntime {
+    stateful_bridge_runtime_via_custom_backend(
+        request_execution,
+        ["Task"],
+        graph_test_support_profile(),
+    )
+}
+
+pub(in crate::runtime::tests) fn stateful_bridge_task_edge_runtime(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryRuntime {
+    stateful_bridge_runtime_via_custom_backend(
+        request_execution,
+        ["Task", "TaskEdge"],
+        graph_test_support_profile(),
+    )
+}
+
+pub(in crate::runtime::tests) fn stateful_bridge_task_relation_runtime(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryRuntime {
+    stateful_bridge_runtime_via_custom_backend(
+        request_execution,
         ["Task", "TaskRelation"],
         graph_test_support_profile(),
     )
 }
 
-pub(in crate::runtime::tests) fn stateful_bridge_vertex_runtime() -> WorthQueryRuntime {
-    stateful_bridge_runtime_via_custom_backend(["Vertex"], graph_test_support_profile())
+pub(in crate::runtime::tests) fn stateful_bridge_vertex_runtime(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryRuntime {
+    stateful_bridge_runtime_via_custom_backend(
+        request_execution,
+        ["Vertex"],
+        graph_test_support_profile(),
+    )
 }
 
 pub(in crate::runtime::tests) fn stateful_bridge_runtime_with_collections(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     collections: &[&'static str],
 ) -> WorthQueryRuntime {
-    stateful_bridge_runtime_with_support(collections, graph_test_support_profile())
+    stateful_bridge_runtime_with_support(
+        request_execution,
+        collections,
+        graph_test_support_profile(),
+    )
 }
 
 pub(in crate::runtime::tests) fn stateful_bridge_runtime_with_support(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     collections: &[&'static str],
     support_profile: WorthQueryRuntimeSupportProfile,
 ) -> WorthQueryRuntime {
-    stateful_bridge_runtime_via_custom_backend(collections.iter().copied(), support_profile)
+    stateful_bridge_runtime_via_custom_backend(
+        request_execution,
+        collections.iter().copied(),
+        support_profile,
+    )
 }
 
 fn stateful_bridge_runtime_via_custom_backend(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     collections: impl IntoIterator<Item = &'static str>,
     support_profile: WorthQueryRuntimeSupportProfile,
 ) -> WorthQueryRuntime {
     stateful_bridge_builder(collections, support_profile, test_product_root())
-        .build()
+        .build(request_execution)
         .expect("stateful bridge-backed runtime should build")
 }
 

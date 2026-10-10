@@ -23,6 +23,7 @@ pub(super) const fn cold_index_reconstruction_budget() -> DerivedIndexMaintenanc
 /// Seal the exact candidate's primary indexes before World can publish it.
 /// Only a missing compatible prior generation may enter the finite cold lane.
 pub(super) fn prepare_candidate_with_cold_fallback(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     candidate: &mut worth_relational::facade::mvcc::PreparedRelationalCommitCandidate,
     index_ids: &[worth_relational::facade::indexes::DerivedIndexId],
@@ -37,6 +38,7 @@ pub(super) fn prepare_candidate_with_cold_fallback(
         index_ids,
         Some(before),
         ordinary_budget,
+        execution,
     );
     if matches!(
         &initial,
@@ -48,6 +50,7 @@ pub(super) fn prepare_candidate_with_cold_fallback(
             index_ids,
             Some(before),
             cold_index_reconstruction_budget(),
+            execution,
         )
     } else {
         initial
@@ -58,6 +61,7 @@ pub(super) fn prepare_candidate_with_cold_fallback(
 /// prior generation. Retry only that specific absence through the explicit
 /// finite cold lane; ordinary work exhaustion never becomes an unbounded scan.
 pub(super) fn refresh_with_cold_fallback(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     request: worth_relational::facade::indexes::DerivedIndexBuildRequest,
     basis: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
@@ -75,6 +79,7 @@ pub(super) fn refresh_with_cold_fallback(
         } else {
             cold_index_reconstruction_budget()
         },
+        execution,
     );
     if matches!(
         &initial,
@@ -86,6 +91,7 @@ pub(super) fn refresh_with_cold_fallback(
             basis,
             before,
             cold_index_reconstruction_budget(),
+            execution,
         )
     } else {
         initial

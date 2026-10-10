@@ -365,3 +365,6 @@ pub(super) fn limits_with_history_and_policy(
 mod authentication_fixture;
 pub(super) use authentication_fixture::authenticate;
 pub(super) use authentication_fixture::external_identity;
+
+mod observation_policy;
+pub(super) use observation_policy::{host_call, retain_read};

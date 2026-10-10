@@ -143,7 +143,10 @@ pub(super) fn run(custody_budget: usize, tight: bool) -> Attempt {
         closed_ready_custody <= custody_budget,
         "closed Ready custody fits its declared budget"
     );
-    let current_commit = request.retain_read().unwrap().selected_commit().clone();
+    let current_commit = crate::checkpoint_recovery::support::retain_read(&application, &request)
+        .unwrap()
+        .selected_commit()
+        .clone();
     // Unchanged cached rows retain their custody plateau without publication.
     for reopen in 0..8 {
         let mut b = request
@@ -160,7 +163,9 @@ pub(super) fn run(custody_budget: usize, tight: bool) -> Attempt {
             "reopen {reopen}: closed Ready custody stays on its actual plateau"
         );
         assert_eq!(
-            request.retain_read().unwrap().selected_commit(),
+            crate::checkpoint_recovery::support::retain_read(&application, &request)
+                .unwrap()
+                .selected_commit(),
             &current_commit,
             "reopen {reopen}: unchanged output is not republished"
         );

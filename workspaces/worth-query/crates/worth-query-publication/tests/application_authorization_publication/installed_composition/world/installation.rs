@@ -67,7 +67,7 @@ fn install_in_advancement(
 
     let runtime = graph
         .publish_application_runtime(
-            phase,
+            &phase.execution_request(), phase,
             runtime,
             authority,
             schema,

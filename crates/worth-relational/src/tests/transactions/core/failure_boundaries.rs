@@ -199,6 +199,9 @@ fn duplicate_relation_identity_is_rejected() {
 
 #[test]
 fn savepoint_rollback_discards_inner_work_only() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
@@ -221,7 +224,7 @@ fn savepoint_rollback_discards_inner_work_only() {
         .unwrap();
     let read = runtime
         .read_truth()
-        .read_snapshot(&outcome.snapshot)
+        .read_snapshot(&outcome.snapshot, execution)
         .unwrap();
     let rollback_summary = rollback.summary();
 
@@ -234,6 +237,9 @@ fn savepoint_rollback_discards_inner_work_only() {
 
 #[test]
 fn snapshot_audit_failure_discards_only_touched_overlay() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema_and_invariants(InvariantCatalog {
         registrations: vec![InvariantRegistration::snapshot_publication_blocking(
             InvariantRule::MaxSnapshotEntities(1),
@@ -255,7 +261,7 @@ fn snapshot_audit_failure_discards_only_touched_overlay() {
         .unwrap_err();
     let committed_read = runtime
         .read_truth()
-        .read_snapshot(&baseline.snapshot)
+        .read_snapshot(&baseline.snapshot, execution)
         .unwrap();
 
     assert!(matches!(
@@ -276,6 +282,9 @@ fn snapshot_audit_failure_discards_only_touched_overlay() {
 
 #[test]
 fn audit_retained_relations_remain_visible_after_endpoint_delete() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let schema = RelationalSchemaRegistry::new()
         .register_entity_kind(EntityKindRegistration {
             kind_id: KindId(1),
@@ -308,7 +317,7 @@ fn audit_retained_relations_remain_visible_after_endpoint_delete() {
     let deleted = delete_entity(&runtime, source);
     let read = runtime
         .read_truth()
-        .read_snapshot(&deleted.snapshot)
+        .read_snapshot(&deleted.snapshot, execution)
         .unwrap();
     let relation = read.get_relation(relation).unwrap();
 

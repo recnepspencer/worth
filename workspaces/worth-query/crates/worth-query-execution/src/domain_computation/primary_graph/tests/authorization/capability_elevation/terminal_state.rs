@@ -13,12 +13,20 @@ use crate::domain_computation::primary_graph::{
 
 type World = super::approval_transition::World;
 
-pub(super) fn elevation_status(world: &World) -> CapabilityElevationStatus {
+pub(super) fn elevation_status(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    world: &World,
+) -> CapabilityElevationStatus {
     let identity = world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
+        .select_product_branch(
+            execution,
+            world.application.product_runtime().default_branch(),
+        )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
+            &phase_custody.phase_for_application(&world.application),
             CapabilityElevationIdentity::reference(),
             "elevation-2".to_owned(),
             &live_scope(),
@@ -36,6 +44,7 @@ pub(super) fn elevation_status(world: &World) -> CapabilityElevationStatus {
         .unwrap()
         .clone();
     let value = observed_field(
+        execution,
         &world.application,
         identity.entity_id(),
         identity.entity_kind(),
@@ -44,8 +53,12 @@ pub(super) fn elevation_status(world: &World) -> CapabilityElevationStatus {
     CapabilityElevationStatusBinding::decode(&value).unwrap()
 }
 
-pub(super) fn review_status(world: &World) -> CapabilityReviewStatus {
-    let (review, kind) = resolved_review(world);
+pub(super) fn review_status(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    world: &World,
+) -> CapabilityReviewStatus {
+    let (review, kind) = resolved_review(phase_custody, execution, world);
     let field = CapabilityReviewStatusField::reference();
     let locator = world
         .application
@@ -56,45 +69,62 @@ pub(super) fn review_status(world: &World) -> CapabilityReviewStatus {
         .field_locator(field.entity(), field.aspect(), field.field())
         .unwrap()
         .clone();
-    let value = observed_field(&world.application, review, kind, &locator);
+    let value = observed_field(execution, &world.application, review, kind, &locator);
     CapabilityReviewStatusBinding::decode(&value).unwrap()
 }
 
-pub(super) fn has_exact_reviewer(world: &World, reviewer: EntityId) -> bool {
-    let (review, _) = resolved_review(world);
+pub(super) fn has_exact_reviewer(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    world: &World,
+    reviewer: EntityId,
+) -> bool {
+    let (review, _) = resolved_review(phase_custody, execution, world);
     let graph = world.application.runtime.primary_graph().unwrap();
     let relation_kind = graph
         .layout()
         .relation(CapabilityReviewer::reference().name())
         .unwrap()
         .kind;
-    let selected = world.selected_product();
-    graph.integration_handle().with_runtime_mut(|runtime| {
-        let snapshot = selected.application_basis().snapshot_handle();
-        runtime
-            .read_truth()
-            .bounded_incoming_relations_of_kind_at_version(
-                review,
-                relation_kind,
-                snapshot.version_id(),
-                4,
-            )
-            .ok()
-            .is_some_and(|read| {
-                let relations = read.into_records();
-                relations.len() == 1
-                    && relations[0].source == reviewer
-                    && relations[0].target == review
-            })
-    })
+    let selected = world.selected_product(&(phase_custody).test_host_request());
+    graph
+        .integration_handle()
+        .with_runtime_mut(execution, |runtime| {
+            let snapshot = selected.application_basis().snapshot_handle();
+            runtime
+                .read_truth()
+                .bounded_incoming_relations_of_kind_at_version(
+                    execution,
+                    review,
+                    relation_kind,
+                    snapshot.version_id(),
+                    4,
+                )
+                .ok()
+                .is_some_and(|read| {
+                    let relations = read.into_records();
+                    relations.len() == 1
+                        && relations[0].source == reviewer
+                        && relations[0].target == review
+                })
+        })
 }
 
-pub(super) fn has_exact_approver(world: &World, approver: EntityId) -> bool {
+pub(super) fn has_exact_approver(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    world: &World,
+    approver: EntityId,
+) -> bool {
     let elevation = world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
+        .select_product_branch(
+            execution,
+            world.application.product_runtime().default_branch(),
+        )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
+            &phase_custody.phase_for_application(&world.application),
             CapabilityElevationIdentity::reference(),
             "elevation-2".to_owned(),
             &live_scope(),
@@ -107,33 +137,44 @@ pub(super) fn has_exact_approver(world: &World, approver: EntityId) -> bool {
         .relation(CapabilityElevationApprover::reference().name())
         .unwrap()
         .kind;
-    let selected = world.selected_product();
-    graph.integration_handle().with_runtime_mut(|runtime| {
-        let snapshot = selected.application_basis().snapshot_handle();
-        runtime
-            .read_truth()
-            .bounded_incoming_relations_of_kind_at_version(
-                elevation.entity_id(),
-                relation_kind,
-                snapshot.version_id(),
-                4,
-            )
-            .ok()
-            .is_some_and(|read| {
-                let relations = read.into_records();
-                relations.len() == 1
-                    && relations[0].source == approver
-                    && relations[0].target == elevation.entity_id()
-            })
-    })
+    let selected = world.selected_product(&(phase_custody).test_host_request());
+    graph
+        .integration_handle()
+        .with_runtime_mut(execution, |runtime| {
+            let snapshot = selected.application_basis().snapshot_handle();
+            runtime
+                .read_truth()
+                .bounded_incoming_relations_of_kind_at_version(
+                    execution,
+                    elevation.entity_id(),
+                    relation_kind,
+                    snapshot.version_id(),
+                    4,
+                )
+                .ok()
+                .is_some_and(|read| {
+                    let relations = read.into_records();
+                    relations.len() == 1
+                        && relations[0].source == approver
+                        && relations[0].target == elevation.entity_id()
+                })
+        })
 }
 
-fn resolved_review(world: &World) -> (EntityId, KindId) {
+fn resolved_review(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    world: &World,
+) -> (EntityId, KindId) {
     let identity = world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
+        .select_product_branch(
+            execution,
+            world.application.product_runtime().default_branch(),
+        )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
+            &phase_custody.phase_for_application(&world.application),
             CapabilityReviewIdentity::reference(),
             "review-2".to_owned(),
             &live_scope(),
@@ -144,6 +185,7 @@ fn resolved_review(world: &World) -> (EntityId, KindId) {
 }
 
 fn observed_field<Schema>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     entity: EntityId,
     kind: KindId,
@@ -154,13 +196,15 @@ where
 {
     let graph = runtime.runtime.primary_graph().unwrap();
     let selected = runtime
-        .select_product_branch(runtime.product_runtime().default_branch())
+        .select_product_branch(execution, runtime.product_runtime().default_branch())
         .expect("the selected product branch remains admitted");
-    graph.integration_handle().with_runtime_mut(|relational| {
-        let snapshot = selected.application_basis().snapshot_handle();
-        crate::domain_computation::primary_graph::application_attempt::observe_field_value(
-            relational, snapshot, entity, kind, locator,
-        )
-        .unwrap()
-    })
+    graph
+        .integration_handle()
+        .with_runtime_mut(execution, |relational| {
+            let snapshot = selected.application_basis().snapshot_handle();
+            crate::domain_computation::primary_graph::application_attempt::observe_field_value(
+                relational, execution, snapshot, entity, kind, locator,
+            )
+            .unwrap()
+        })
 }

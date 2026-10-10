@@ -17,12 +17,15 @@ use crate::relational_source::snapshot_reading::RuntimePublicationSnapshotReader
 
 #[test]
 fn snapshot_reader_reads_published_entity_values_without_projection_surface() {
+    let host_request = crate::snapshot::test_serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let created = create_entity_outcome(&runtime, "visible");
     let published_snapshot = created.snapshot.clone();
     let published_entity = runtime
         .read_truth()
-        .read_snapshot(&published_snapshot)
+        .read_snapshot(&published_snapshot, request_execution)
         .expect("published snapshot read")
         .entities()
         .first()

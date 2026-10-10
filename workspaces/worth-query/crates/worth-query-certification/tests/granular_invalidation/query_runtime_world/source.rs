@@ -44,13 +44,16 @@ impl IntentSourceProjection {
 impl WorthQueryPrimaryGraphSourceProjection for IntentSourceProjection {
     fn project_live_target(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         graph: &worth_query_execution::facade::integration::WorthQueryPrimaryGraphIntegrationHandle,
         _target: &runtime::WorthQueryLiveArtifactTarget,
     ) -> Vec<foundation::WorthQueryEntity> {
         self.observations
             .full_target_reads
             .fetch_add(1, Ordering::SeqCst);
-        project_record(graph, self.record).into_iter().collect()
+        project_record(request_execution, graph, self.record)
+            .into_iter()
+            .collect()
     }
 
     fn project_granular_scope(
@@ -91,14 +94,15 @@ impl WorthQueryPrimaryGraphSourceProjection for IntentSourceProjection {
 }
 
 fn project_record(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     graph: &worth_query_execution::facade::integration::WorthQueryPrimaryGraphIntegrationHandle,
     record: worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts,
 ) -> Option<foundation::WorthQueryEntity> {
-    graph.with_runtime(|runtime| {
+    graph.with_runtime(request_execution, |runtime| {
         let identity = runtime.main_branch_identity();
         let (_, basis) = runtime.observe_branch(&identity).ok()?;
         let observation = basis.observation();
-        project_observation_record(runtime, &observation, record)
+        project_observation_record(request_execution, runtime, &observation, record)
     })
 }
 
@@ -115,11 +119,15 @@ fn project_record_at_basis(
 }
 
 fn project_observation_record(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     observation: &worth_relational::facade::branch::RelationalBranchObservation,
     record: worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts,
 ) -> Option<foundation::WorthQueryEntity> {
-    let read_view = runtime.read_truth().read_observation(observation).ok()?;
+    let read_view = runtime
+        .read_truth()
+        .read_observation(request_execution, observation)
+        .ok()?;
     let entity = worth_relational::facade::identity::EntityId::new(
         worth_relational::facade::identity::PartitionId::new(record.partition_id()),
         record.local_slot(),

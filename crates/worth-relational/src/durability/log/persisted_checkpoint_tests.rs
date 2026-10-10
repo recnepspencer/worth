@@ -91,6 +91,9 @@ fn partition_alias_wire_readmits_legacy_checkpoint_and_omits_envelope_index_cach
 
 #[test]
 fn partition_alias_wire_preserves_divergent_sibling_roots_and_pinned_reader() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
     create_entity(&runtime, "partition-alias-seed");
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
@@ -160,7 +163,7 @@ fn partition_alias_wire_preserves_divergent_sibling_roots_and_pinned_reader() {
     assert_eq!(
         runtime
             .read_truth()
-            .read_snapshot(&pinned)
+            .read_snapshot(&pinned, execution)
             .unwrap()
             .entities()
             .len(),
@@ -172,13 +175,16 @@ fn partition_alias_wire_preserves_divergent_sibling_roots_and_pinned_reader() {
     );
     plan.checkpoint = Some(restored.checkpoint);
     let mut recovered = persisted_runtime_with_test_schema();
-    recovered.durability_recovery().recover(plan).unwrap();
+    recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
     for branch in [main, sibling] {
         let snapshot = snapshot_for_owner_branch(&recovered, &branch);
         assert_eq!(
             recovered
                 .read_truth()
-                .read_snapshot(&snapshot)
+                .read_snapshot(&snapshot, execution)
                 .unwrap()
                 .entities()
                 .len(),
@@ -255,6 +261,9 @@ fn partition_alias_wire_rejects_unknown_or_inconsistent_aliases() {
 
 #[test]
 fn native_capture_sections_count_exact_written_values_without_changing_wire() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
     let entity = create_entity(&runtime, "section-seed");
     let checkpoint = runtime.durability_authority().checkpoint().unwrap();
@@ -346,7 +355,7 @@ fn native_capture_sections_count_exact_written_values_without_changing_wire() {
     assert_eq!(
         runtime
             .read_truth()
-            .read_snapshot(&pinned)
+            .read_snapshot(&pinned, execution)
             .unwrap()
             .entities()
             .len(),

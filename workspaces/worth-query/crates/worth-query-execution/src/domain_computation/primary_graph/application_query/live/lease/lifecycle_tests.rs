@@ -48,15 +48,31 @@ mod tests {
             let external = world.authenticate("alice", Duration::from_secs(60), &request);
             let principal = world
                 .application
-                .select_product_branch(world.application.product_runtime().default_branch())
-                .expect("the selected product branch remains admitted")
-                .resolve_authenticated_principal(
-                    &world.binding,
-                    &external,
-                    &request,
-                    WorthQueryPrincipalResolutionMode::Ordinary,
-                )
-                .unwrap();
+                .with_host_advancement(|phase| {
+                    let phase_custody = &phase;
+                    let borrowed_execution = phase
+                        .execution_request_for(world.application.product_runtime())
+                        .expect("the installed fixture lends its own phase");
+                    let execution = &borrowed_execution;
+                    let principal = world
+                        .application
+                        .select_product_branch(
+                            execution,
+                            world.application.product_runtime().default_branch(),
+                        )
+                        .expect("the selected product branch remains admitted")
+                        .resolve_authenticated_principal(
+                            phase_custody,
+                            &world.binding,
+                            &external,
+                            &request,
+                            WorthQueryPrincipalResolutionMode::Ordinary,
+                        )
+                        .unwrap();
+
+                    principal
+                })
+                .expect("the fixture host admits its identity reads");
             Self {
                 world,
                 request,
@@ -74,16 +90,24 @@ mod tests {
 
         fn principal(
             &self,
+            phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
             identity: &str,
         ) -> WorthQueryAuthenticatedPrincipal<IdentityExecutionSchema, Principal, u64> {
+            let borrowed_execution = phase_custody.borrowed_request_for_test();
+            let execution = &borrowed_execution;
+
             let external =
                 self.world
                     .authenticate(identity, Duration::from_secs(60), &self.request);
             self.world
                 .application
-                .select_product_branch(self.world.application.product_runtime().default_branch())
+                .select_product_branch(
+                    execution,
+                    self.world.application.product_runtime().default_branch(),
+                )
                 .expect("the selected product branch remains admitted")
                 .resolve_authenticated_principal(
+                    &phase_custody.phase_for_application(&self.world.application),
                     &self.world.binding,
                     &external,
                     &self.request,
@@ -92,7 +116,13 @@ mod tests {
                 .unwrap()
         }
 
-        fn open(&self) -> TestLiveLease<'_> {
+        fn open(
+            &self,
+            phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
+        ) -> TestLiveLease<'_> {
+            let borrowed_execution = phase_custody.borrowed_request_for_test();
+            let execution = &borrowed_execution;
+
             let query = self
                 .world
                 .application
@@ -102,9 +132,13 @@ mod tests {
             let account = self
                 .world
                 .application
-                .select_product_branch(self.world.application.product_runtime().default_branch())
+                .select_product_branch(
+                    execution,
+                    self.world.application.product_runtime().default_branch(),
+                )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
+                    &phase_custody.phase_for_application(&self.world.application),
                     AccountIdentity::reference(),
                     "account-1".to_owned(),
                     &self.request,
@@ -112,7 +146,7 @@ mod tests {
                 )
                 .unwrap();
             self.world
-                .selected_product()
+                .selected_product(&(phase_custody).test_host_request(), )
                 .open_application_query_live::<
                     LiveAccountActivityQuery,
                     AccountSummaryParameters,
@@ -122,7 +156,7 @@ mod tests {
                     Account,
                     Activity,
                     LiveAccountActivityCause,
-                >(
+                >(&phase_custody.phase_for_application(&self.world.application),
                     query,
                     &self.principal,
                     account,
@@ -175,7 +209,14 @@ mod tests {
         let context = LiveContext::new(
             crate::domain_computation::primary_graph::tests::fixture::live_scope(),
         );
-        let lease = context.open();
+        let lease = context
+            .world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+                context.open(&host_custody)
+            })
+            .expect("the fixture read owns its installed host call");
         let bridge = observer(&lease);
         let provider_session_baseline = context.world.application.provider_session_resource_count();
         assert_live(&bridge);
@@ -196,124 +237,88 @@ mod tests {
         context.assert_source_released();
     }
 
-    #[test]
-    fn cancellation_and_deadline_terminalize_all_live_resources() {
-        let cancellation = WorthQueryCancellationSource::new();
-        let request = WorthQueryRequestScope::new(
-            Instant::now() + Duration::from_secs(60),
-            cancellation.token(),
-        );
-        let context = LiveContext::new(request);
-        let mut lease = context.open();
-        let bridge = observer(&lease);
-        cancellation.cancel();
-        assert!(matches!(
-            lease.next(&context.principal, &context.request),
-            WorthQueryApplicationLiveOutcome::Cancelled
-        ));
-        assert_terminal(
-            &bridge,
-            BridgeExecutionBasisLifecycleSignalStatus::Cancelled,
-        );
-        drop(lease);
-        context.assert_source_released();
+    #[path = "../lifecycle_tests/tests/cancellation_and_deadline_terminalize_all_live_resources.rs"]
+    mod cancellation_and_deadline_terminalize_all_live_resources;
 
-        let deadline_context = LiveContext::new(
-            crate::domain_computation::primary_graph::tests::fixture::live_scope(),
-        );
-        let mut deadline_lease = deadline_context.open();
-        let deadline_bridge = observer(&deadline_lease);
-        // Live-lease deadlines still sample wall-clock Instant, not the Gate
-        // 8.3 injectable runtime clock. Open under a non-expiring scope, then
-        // pass an already-expired deadline only to the delivery under test.
-        let expired_request = deadline_context.already_expired_request();
-        assert!(matches!(
-            deadline_lease.next(&deadline_context.principal, &expired_request),
-            WorthQueryApplicationLiveOutcome::DeadlineExceeded
-        ));
-        assert_terminal(
-            &deadline_bridge,
-            BridgeExecutionBasisLifecycleSignalStatus::Cancelled,
-        );
-        drop(deadline_lease);
-        deadline_context.assert_source_released();
-    }
-
-    #[test]
-    fn source_close_overflow_and_abandoned_drop_release_all_live_resources() {
-        let closed_context = LiveContext::new(
-            crate::domain_computation::primary_graph::tests::fixture::live_scope(),
-        );
-        let mut closed = closed_context.open();
-        let closed_bridge = observer(&closed);
-        closed_context.close_source();
-        assert!(matches!(
-            closed.next(&closed_context.principal, &closed_context.request),
-            WorthQueryApplicationLiveOutcome::Closed
-        ));
-        assert_terminal(
-            &closed_bridge,
-            BridgeExecutionBasisLifecycleSignalStatus::Fulfilled,
-        );
-        drop(closed);
-        closed_context.assert_source_released();
-
-        let overflow_context = LiveContext::new(
-            crate::domain_computation::primary_graph::tests::fixture::live_scope(),
-        );
-        let mut overflow = overflow_context.open();
-        let overflow_bridge = observer(&overflow);
-        overflow_context.overflow_source();
-        let WorthQueryApplicationLiveOutcome::Overflow(missed) =
-            overflow.next(&overflow_context.principal, &overflow_context.request)
-        else {
-            panic!("retention loss must terminalize as overflow");
-        };
-        assert_eq!(missed.missed_commit_batches(), 1);
-        assert_terminal(
-            &overflow_bridge,
-            BridgeExecutionBasisLifecycleSignalStatus::Cancelled,
-        );
-        drop(overflow);
-        overflow_context.assert_source_released();
-
-        let abandoned_context = LiveContext::new(
-            crate::domain_computation::primary_graph::tests::fixture::live_scope(),
-        );
-        let abandoned = abandoned_context.open();
-        let abandoned_bridge = observer(&abandoned);
-        drop(abandoned);
-        assert_terminal(
-            &abandoned_bridge,
-            BridgeExecutionBasisLifecycleSignalStatus::Cancelled,
-        );
-        abandoned_context.assert_source_released();
-    }
+    #[path = "../lifecycle_tests/tests/source_close_overflow_and_abandoned_drop_release_all_live_resour.rs"]
+    mod source_close_overflow_and_abandoned_drop_release_all_live_resour;
 
     #[test]
     fn fresh_principal_admission_precedes_empty_and_overflow_progress() {
         let empty_context = LiveContext::new(
             crate::domain_computation::primary_graph::tests::fixture::live_scope(),
         );
-        let mut empty = empty_context.open();
-        let foreign = empty_context.principal("bob");
-        assert!(matches!(
-            empty.next(&foreign, &empty_context.request),
-            WorthQueryApplicationLiveOutcome::AuthorizationDenied(_)
-        ));
+        let mut empty = empty_context
+            .world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+                empty_context.open(&host_custody)
+            })
+            .expect("the fixture read owns its installed host call");
+        let foreign = empty_context
+            .world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+                empty_context.principal(&host_custody, "bob")
+            })
+            .expect("the fixture read owns its installed host call");
+        empty_context
+            .world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+                assert!(matches!(
+                    {
+                        let installed_fixture_phase = empty.fixture_phase(&host_custody);
+                        empty.next(&installed_fixture_phase, &foreign, &empty_context.request)
+                    },
+                    WorthQueryApplicationLiveOutcome::AuthorizationDenied(_)
+                ))
+            })
+            .expect("the fixture read owns its installed host call");
         drop(empty);
         empty_context.assert_source_released();
 
         let overflow_context = LiveContext::new(
             crate::domain_computation::primary_graph::tests::fixture::live_scope(),
         );
-        let mut overflow = overflow_context.open();
+        let mut overflow = overflow_context
+            .world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+                overflow_context.open(&host_custody)
+            })
+            .expect("the fixture read owns its installed host call");
         overflow_context.overflow_source();
-        let foreign = overflow_context.principal("bob");
-        assert!(matches!(
-            overflow.next(&foreign, &overflow_context.request),
-            WorthQueryApplicationLiveOutcome::AuthorizationDenied(_)
-        ));
+        let foreign = overflow_context
+            .world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+                overflow_context.principal(&host_custody, "bob")
+            })
+            .expect("the fixture read owns its installed host call");
+        overflow_context
+            .world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+                assert!(matches!(
+                    {
+                        let installed_fixture_phase = overflow.fixture_phase(&host_custody);
+                        overflow.next(
+                            &installed_fixture_phase,
+                            &foreign,
+                            &overflow_context.request,
+                        )
+                    },
+                    WorthQueryApplicationLiveOutcome::AuthorizationDenied(_)
+                ))
+            })
+            .expect("the fixture read owns its installed host call");
         drop(overflow);
         overflow_context.assert_source_released();
     }

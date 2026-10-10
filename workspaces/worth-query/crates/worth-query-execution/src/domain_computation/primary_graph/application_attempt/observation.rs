@@ -28,6 +28,7 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryApplicationField
 
 pub(in crate::domain_computation::primary_graph) fn observe_field(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     entity_id: worth_relational::facade::identity::EntityId,
     kind: worth_relational::facade::identity::KindId,
@@ -42,8 +43,8 @@ pub(in crate::domain_computation::primary_graph) fn observe_field(
     )]);
     runtime
         .read_truth()
-        .project_snapshot(snapshot)?
-        .entity_record_with_projection_scope(entity_id, scope, |record| {
+        .project_snapshot(snapshot, execution)?
+        .entity_record_with_projection_scope(execution, entity_id, scope, |record| {
             (record.kind_id() == kind && record.lifecycle() == RecordLifecycleState::Live).then(
                 || {
                     record
@@ -60,12 +61,13 @@ pub(in crate::domain_computation::primary_graph) fn observe_field(
 
 pub(in crate::domain_computation::primary_graph) fn observe_field_value(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     entity_id: worth_relational::facade::identity::EntityId,
     kind: worth_relational::facade::identity::KindId,
     locator: &worth_foundational::facade::AspectFieldLocator,
 ) -> Option<worth_foundational::facade::AspectValue> {
-    match observe_field(runtime, snapshot, entity_id, kind, locator)? {
+    match observe_field(runtime, execution, snapshot, entity_id, kind, locator)? {
         WorthQueryApplicationFieldObservation::Present(value) => Some(value),
         WorthQueryApplicationFieldObservation::Absent => None,
     }
@@ -73,6 +75,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_field_value(
 
 pub(super) fn exact_relations(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     relation_kind: worth_relational::facade::identity::KindId,
     from: worth_relational::facade::identity::EntityId,
@@ -104,8 +107,16 @@ pub(super) fn exact_relations(
         .ok_or_else(|| missing_fact("relation plan"))?;
     let outcome = runtime
         .read_truth()
-        .execute_query_plan(plan)
-        .ok_or_else(|| missing_fact("relation execution"))?;
+        .execute_query_plan(
+            plan,
+            execution,
+            worth_relational::facade::runtime::RelationalQueryReadStrategy::CallingThread,
+        )
+        .map_err(|stop| {
+            WorthQueryApplicationAttemptDenial::query_read_denial(&stop, "relation execution")
+        })?
+        .ok_or_else(|| missing_fact("relation execution"))?
+        .outcome;
     Ok(outcome
         .result
         .relations

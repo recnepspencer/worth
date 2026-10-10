@@ -7,6 +7,7 @@ use super::{
 
 pub(super) fn remains_equal(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     relation_kind: KindId,
     lineage: EntityId,
@@ -16,6 +17,7 @@ pub(super) fn remains_equal(
     expected.len() < maximum_instances
         && observe_adjacency(
             runtime,
+            execution,
             snapshot,
             relation_kind,
             lineage,

@@ -74,9 +74,10 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
     #[doc(hidden)]
     pub fn execute_mutation_with_index_refresh<T, E>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         mutate: impl FnOnce(&mut worth_relational::facade::runtime::RelationalRuntime) -> Result<T, E>,
     ) -> Result<Result<T, E>, WorthQueryPrimaryGraphIndexRefreshDenial> {
-        self.source_owner.with_runtime_mut(|runtime| {
+        self.source_owner.with_runtime_mut(execution, |runtime| {
             let before = runtime
                 .observe_branch(&runtime.main_branch_identity())
                 .ok()
@@ -144,9 +145,9 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
                         index_ids: self.primary_index_ids.to_vec(),
                     };
                 let build = if let Some(basis) = basis {
-                    super::index_maintenance_budget::refresh_with_cold_fallback(runtime, request, &basis, prior)
+                    super::index_maintenance_budget::refresh_with_cold_fallback(execution, runtime, request, &basis, prior)
                 } else {
-                    runtime.index_authority().reconstruct_for_commit(
+                    runtime.index_authority().reconstruct_for_commit(execution,
                         request, super::index_maintenance_budget::cold_index_reconstruction_budget())
                 };
                 if !matches!(&build, Ok(outcome) if outcome.generations.len() == self.primary_index_ids.len()) {

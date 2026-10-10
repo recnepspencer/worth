@@ -10,7 +10,13 @@ use crate::domain_computation::primary_graph::tests::fixture::installed_capabili
 #[test]
 fn weak_entry_and_live_lane_share_one_refundable_retained_claim() {
     let world = installed_capability_authorization_world();
-    let selected = world.selected_product();
+    let selected = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world.selected_product(&(phase).test_host_request())
+        })
+        .expect("the fixture read owns its installed host call");
     let observation = selected.product().observation();
     let occurrence = observation.lifecycle_incarnation();
 
@@ -43,7 +49,13 @@ fn weak_entry_and_live_lane_share_one_refundable_retained_claim() {
 #[test]
 fn admitted_lane_denies_before_creating_a_weak_entry() {
     let world = installed_capability_authorization_world();
-    let selected = world.selected_product();
+    let selected = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world.selected_product(&(phase).test_host_request())
+        })
+        .expect("the fixture read owns its installed host call");
     let observation = selected.product().observation();
     let owner = Coordinator::new(usize::MAX);
     let mut short = InvalidationEditAdmission::new(CompanionPreflightBudget {
@@ -74,7 +86,13 @@ fn admitted_lane_denies_before_creating_a_weak_entry() {
 #[test]
 fn expired_weak_replacement_keeps_the_entry_claim_until_retirement() {
     let world = installed_capability_authorization_world();
-    let selected = world.selected_product();
+    let selected = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world.selected_product(&(phase).test_host_request())
+        })
+        .expect("the fixture read owns its installed host call");
     let observation = selected.product().observation();
     let owner = Coordinator::new(usize::MAX);
     let first = owner.lane_for(observation).unwrap();

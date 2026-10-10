@@ -16,6 +16,9 @@ use crate::tenant_basis::{SchemaVariantSnapshot, TenantBasisEpoch, TenantBinding
 
 #[test]
 fn cross_basis_context_denies_before_planning_or_execution() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let inputs = admitted_policy_tenant_inputs(1, true);
     let tenant = TenantBindingSnapshot::synthetic_direct(
         "tenant-a",
@@ -23,12 +26,10 @@ fn cross_basis_context_denies_before_planning_or_execution() {
         "schema-a",
         TenantBasisEpoch::Synthetic(7),
     );
-    let stop = run_identity_with_context(current().under_policy_tenant(
-        inputs.policy,
-        tenant,
-        inputs.branch,
-        inputs.schema,
-    ));
+    let stop = run_identity_with_context(
+        request_execution,
+        current().under_policy_tenant(inputs.policy, tenant, inputs.branch, inputs.schema),
+    );
 
     assert_policy_failure(&stop, PolicyTenantAdmissionFailureClass::BasisMismatch);
     assert_eq!(
@@ -40,14 +41,20 @@ fn cross_basis_context_denies_before_planning_or_execution() {
 
 #[test]
 fn stale_policy_authority_denies_before_planning_or_execution() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let old_policy = policy(1);
     let stale_branch = BranchAccessGrant::synthetic_granted("main", &old_policy);
-    let stop = run_identity_with_context(current().under_policy_tenant(
-        policy(2),
-        tenant("tenant-a", "main", 7),
-        stale_branch,
-        schema("tenant-a"),
-    ));
+    let stop = run_identity_with_context(
+        request_execution,
+        current().under_policy_tenant(
+            policy(2),
+            tenant("tenant-a", "main", 7),
+            stale_branch,
+            schema("tenant-a"),
+        ),
+    );
 
     assert_policy_failure(
         &stop,
@@ -62,14 +69,20 @@ fn stale_policy_authority_denies_before_planning_or_execution() {
 
 #[test]
 fn cross_tenant_context_denies_before_planning_or_execution() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let current_policy = policy(1);
     let branch = BranchAccessGrant::synthetic_granted("main", &current_policy);
-    let stop = run_identity_with_context(current().under_policy_tenant(
-        current_policy,
-        tenant("tenant-b", "main", 7),
-        branch,
-        schema("tenant-a"),
-    ));
+    let stop = run_identity_with_context(
+        request_execution,
+        current().under_policy_tenant(
+            current_policy,
+            tenant("tenant-b", "main", 7),
+            branch,
+            schema("tenant-a"),
+        ),
+    );
 
     assert_policy_failure(&stop, PolicyTenantAdmissionFailureClass::CrossTenant);
     assert_eq!(
@@ -81,6 +94,9 @@ fn cross_tenant_context_denies_before_planning_or_execution() {
 
 #[test]
 fn relationship_proof_for_another_query_denies_without_a_successor() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let declaration = declare(local_manager_relationship_read)
         .expect("relationship declaration should canonicalize");
     let inputs = admitted_policy_tenant_inputs(1, true);
@@ -95,12 +111,12 @@ fn relationship_proof_for_another_query_denies_without_a_successor() {
     let context = current()
         .under_policy_tenant(inputs.policy, inputs.tenant, inputs.branch, inputs.schema)
         .with_relationship_proofs(proofs);
-    let mut workspace = read_runtime()
+    let mut workspace = read_runtime(request_execution)
         .workspace("ordinary-read-mismatched-relationship-proof")
         .expect("workspace should open");
     let stop = declaration
         .using(context)
-        .run(&mut workspace)
+        .run(request_execution, &mut workspace)
         .into_result()
         .expect_err("proof for another relationship must deny");
 
@@ -126,6 +142,9 @@ fn relationship_proof_for_another_query_denies_without_a_successor() {
 
 #[test]
 fn ancestor_proof_cannot_authorize_a_descendant_read() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let declaration = declare(bounded_descendant_manager_read)
         .expect("descendant declaration should canonicalize");
     let inputs = admitted_policy_tenant_inputs(1, true);
@@ -142,12 +161,12 @@ fn ancestor_proof_cannot_authorize_a_descendant_read() {
     let context = current()
         .under_policy_tenant(inputs.policy, inputs.tenant, inputs.branch, inputs.schema)
         .with_relationship_proofs(proofs);
-    let mut workspace = read_runtime()
+    let mut workspace = read_runtime(request_execution)
         .workspace("ordinary-read-wrong-direction-proof")
         .expect("workspace should open");
     let stop = declaration
         .using(context)
-        .run(&mut workspace)
+        .run(request_execution, &mut workspace)
         .into_result()
         .expect_err("ancestor authority must not authorize descendant traversal");
 
@@ -173,9 +192,12 @@ fn ancestor_proof_cannot_authorize_a_descendant_read() {
 
 #[test]
 fn changed_tenant_basis_generation_invalidates_only_that_context() {
-    let generation_seven = run_tenant_generation(7);
-    let repeated_generation_seven = run_tenant_generation(7);
-    let generation_eight = run_tenant_generation(8);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let generation_seven = run_tenant_generation(request_execution, 7);
+    let repeated_generation_seven = run_tenant_generation(request_execution, 7);
+    let generation_eight = run_tenant_generation(request_execution, 8);
 
     assert_eq!(generation_seven, repeated_generation_seven);
     assert_eq!(
@@ -190,20 +212,24 @@ fn changed_tenant_basis_generation_invalidates_only_that_context() {
 }
 
 fn run_identity_with_context(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     context: crate::ordinary::read::WorthQueryCurrentPolicyTenantReadContext,
 ) -> crate::ordinary::read::WorthQueryReadStop {
     let declaration = declare(local_identity_read).expect("declaration should canonicalize");
-    let mut workspace = read_runtime()
+    let mut workspace = read_runtime(request_execution)
         .workspace("ordinary-read-hostile-context")
         .expect("workspace should open");
     declaration
         .using(context)
-        .run(&mut workspace)
+        .run(request_execution, &mut workspace)
         .into_result()
         .expect_err("hostile context must deny")
 }
 
-fn run_tenant_generation(generation: u64) -> crate::ordinary::read::WorthQueryReadContextReceipt {
+fn run_tenant_generation(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    generation: u64,
+) -> crate::ordinary::read::WorthQueryReadContextReceipt {
     let current_policy = policy(1);
     let branch = BranchAccessGrant::synthetic_granted("main", &current_policy);
     let context = current().under_policy_tenant(
@@ -213,12 +239,12 @@ fn run_tenant_generation(generation: u64) -> crate::ordinary::read::WorthQueryRe
         schema("tenant-a"),
     );
     let declaration = declare(local_identity_read).expect("declaration should canonicalize");
-    let mut workspace = read_runtime()
+    let mut workspace = read_runtime(request_execution)
         .workspace(format!("ordinary-read-generation-{generation}"))
         .expect("workspace should open");
     declaration
         .using(context)
-        .run(&mut workspace)
+        .run(request_execution, &mut workspace)
         .into_result()
         .expect("fresh context should execute")
         .context_receipt()

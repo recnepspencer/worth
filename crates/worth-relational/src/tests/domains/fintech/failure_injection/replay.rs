@@ -17,17 +17,17 @@ pub(crate) fn drop_latest_parent_envelope_for_replay(runtime: &RelationalRuntime
 }
 
 pub(crate) fn replay_latest_commit_on_wrong_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
 ) -> Option<RelationalReplayOutcome> {
     let latest = runtime.history().latest_commit()?.commit_id;
-    Some(
-        runtime
-            .replay_authority()
-            .replay_commit(RelationalReplayRequest {
-                commit_id: latest,
-                branch_id: BranchId("wrong".to_string()),
-                execution_mode: ReplayExecutionMode::SerialDeterministic,
-                verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-            }),
-    )
+    Some(runtime.replay_authority().replay_commit(
+        RelationalReplayRequest {
+            commit_id: latest,
+            branch_id: BranchId("wrong".to_string()),
+            execution_mode: ReplayExecutionMode::SerialDeterministic,
+            verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
+        },
+        execution,
+    ))
 }

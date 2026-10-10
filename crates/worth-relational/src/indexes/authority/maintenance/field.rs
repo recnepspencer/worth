@@ -51,6 +51,7 @@ impl PendingField {
 }
 
 pub(super) fn refresh(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     pending: &mut [PendingField],
     patch_changes: Option<&ChangedRecords>,
     cold_changes: Option<&ChangedRecords>,
@@ -60,8 +61,24 @@ pub(super) fn refresh(
 ) -> Result<(), Denial> {
     for (patch, changes, old) in [(true, patch_changes, before), (false, cold_changes, None)] {
         let Some(changes) = changes else { continue };
-        refresh_entities(pending, patch, &changes.entities, old, after, work)?;
-        refresh_relations(pending, patch, &changes.relations, old, after, work)?;
+        refresh_entities(
+            execution,
+            pending,
+            patch,
+            &changes.entities,
+            old,
+            after,
+            work,
+        )?;
+        refresh_relations(
+            execution,
+            pending,
+            patch,
+            &changes.relations,
+            old,
+            after,
+            work,
+        )?;
     }
     for field in pending {
         work.prepare(1, 0)?;
@@ -90,6 +107,7 @@ pub(super) fn refresh(
 }
 
 fn refresh_entities(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     pending: &mut [PendingField],
     patch: bool,
     changed: &std::collections::BTreeSet<EntityId>,
@@ -114,8 +132,8 @@ fn refresh_entities(
             (None, None)
         } else {
             (
-                reads::entity(before, *id, work)?,
-                reads::entity(Some(after), *id, work)?,
+                reads::entity(execution, before, *id, work)?,
+                reads::entity(execution, Some(after), *id, work)?,
             )
         };
         for field in pending.iter_mut() {
@@ -163,6 +181,7 @@ fn refresh_entities(
 }
 
 fn refresh_relations(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     pending: &mut [PendingField],
     patch: bool,
     changed: &std::collections::BTreeSet<RelationId>,
@@ -187,8 +206,8 @@ fn refresh_relations(
             (None, None)
         } else {
             (
-                reads::relation(before, *id, work)?,
-                reads::relation(Some(after), *id, work)?,
+                reads::relation(execution, before, *id, work)?,
+                reads::relation(execution, Some(after), *id, work)?,
             )
         };
         for field in pending.iter_mut() {

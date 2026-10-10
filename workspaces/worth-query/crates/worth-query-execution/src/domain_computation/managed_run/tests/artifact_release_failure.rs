@@ -119,10 +119,10 @@ fn yielded_cleanup_maps_double_artifact_release_panic_into_recovery_evidence() {
         let execution = phase;
 
         let world = double_panicking_yield_world("yielded-artifact-double-panic");
-        let active = world
-            .running
-            .begin_stage_graph_execution(
-                execution,
+        let active = {
+            let installed_fixture_phase = world.running.fixture_phase(execution);
+            world.running.begin_stage_graph_execution(
+                &installed_fixture_phase,
                 "producer",
                 &world.graph,
                 WorthQueryManagedGraphCallRequest::new(
@@ -130,8 +130,12 @@ fn yielded_cleanup_maps_double_artifact_release_panic_into_recovery_evidence() {
                     "yielded-artifact-double-panic",
                 ),
             )
-            .expect("double-panic yield provider should begin");
-        let paused = match active.advance(execution) {
+        }
+        .expect("double-panic yield provider should begin");
+        let paused = match {
+            let installed_fixture_phase = active.fixture_phase(execution);
+            active.advance(&installed_fixture_phase)
+        } {
             WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused,
             _ => panic!("double-panic yield provider did not expose its safe point"),
         };

@@ -10,7 +10,10 @@ fn provider_restore_panic_remains_typed_recovery_with_retained_authority() {
 
         let (yielded, bridge, runtime) =
             yielded_direct_with_provider(execution, YieldProvider::checkpoint_restore_panic(7));
-        let recovery = match yielded.readmit_same_runtime(active_request, &runtime, &bridge) {
+        let recovery = match {
+            let installed_fixture_phase = yielded.fixture_phase(active_request);
+            yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+        } {
             crate::domain_computation::WorthQueryDirectReadmissionOutcome::RecoveryRequired(
                 recovery,
             ) => recovery,
@@ -59,7 +62,10 @@ fn provider_restore_rejection_after_admission_carries_exact_release_evidence() {
             execution,
             YieldProvider::checkpoint_restore_reject_after_admission(7),
         );
-        let recovery = match yielded.readmit_same_runtime(active_request, &runtime, &bridge) {
+        let recovery = match {
+            let installed_fixture_phase = yielded.fixture_phase(active_request);
+            yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+        } {
             crate::domain_computation::WorthQueryDirectReadmissionOutcome::RecoveryRequired(
                 recovery,
             ) => recovery,
@@ -122,7 +128,10 @@ fn restore_panic_and_replacement_destructor_panic_flow_into_terminal_cleanup() {
             execution,
             YieldProvider::checkpoint_restore_panic_after_admission(7),
         );
-        let recovery = match yielded.readmit_same_runtime(active_request, &runtime, &bridge) {
+        let recovery = match {
+            let installed_fixture_phase = yielded.fixture_phase(active_request);
+            yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+        } {
             crate::domain_computation::WorthQueryDirectReadmissionOutcome::RecoveryRequired(
                 recovery,
             ) => recovery,

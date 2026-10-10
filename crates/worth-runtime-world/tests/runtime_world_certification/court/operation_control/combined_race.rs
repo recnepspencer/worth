@@ -13,6 +13,9 @@ impl Drop for ReleaseRelational {
 
 #[test]
 fn combined_loser_retains_relational_movement_without_calling_signal_after_head_change() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut court = CompositeSupplyChainCourt::compile();
     let policy = match court.world.execution_placement() {
         worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy)
@@ -52,7 +55,7 @@ fn combined_loser_retains_relational_movement_without_calling_signal_after_head_
         .owner_service_cost_snapshot()
         .unwrap()
         .canonical_movements();
-    let mut context = court.context(&root);
+    let mut context = court.context(request_execution, &root);
     let port = court.world.publication_port();
     std::thread::scope(|scope| {
         let release = ReleaseRelational(gate);
@@ -76,7 +79,7 @@ fn combined_loser_retains_relational_movement_without_calling_signal_after_head_
             court.world.publication_port().execute_with_signal(
                 worth_execution::ExecutionRequest::serial(&super::serial_request(policy)),
                 single,
-                &mut court.context(&root),
+                &mut court.context(request_execution, &root),
                 &RuntimeWorldCancellationSource::new().token(),
                 |_| Ok(()),
             )
@@ -109,7 +112,7 @@ fn combined_loser_retains_relational_movement_without_calling_signal_after_head_
         assert_eq!(
             court
                 .records
-                .read(&direct)
+                .read(request_execution, &direct)
                 .records
                 .get("grain")
                 .map(String::as_str),
@@ -118,7 +121,7 @@ fn combined_loser_retains_relational_movement_without_calling_signal_after_head_
         assert_eq!(
             court
                 .records
-                .read(head.basis().relational_basis())
+                .read(request_execution, head.basis().relational_basis())
                 .records
                 .get("grain")
                 .map(String::as_str),

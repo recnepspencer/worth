@@ -131,11 +131,12 @@ where
 
     fn select_product_binding(
         &mut self,
+execution: &worth_execution::ExecutionRequest<'_, '_>,
         bridge: &BridgeSealedRuntimeAssembly,
         runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         truth: &WorthQueryConditionalTruthBasis,
     ) -> Result<(), super::super::installation::WorthQueryConditionalRuntimeInstallationDenial> {
-        self.select_product_evaluation_binding(bridge, runtime, truth)
+        self.select_product_evaluation_binding(execution, bridge, runtime, truth)
     }
 
     fn reconstruct(
@@ -155,6 +156,7 @@ where
 
     fn prepare_derived_runtime_reinstallation(
         &self,
+execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
             Schema,
         >,
@@ -172,7 +174,7 @@ where
             product,
         )?;
         prepared.authoritative_commit_cursor = runtime.primary_provider.graph.source_owner.invalidation_owner.latest_position();
-        let reconstruction = super::super::temporal_reconstruction::reconstruct_temporal_intents(
+        let reconstruction = super::super::temporal_reconstruction::reconstruct_temporal_intents(execution,
             runtime, &self.definition.binding, &self.definition.reconstruction, self.definition.execution.identity_field,
             product,
         )?;
@@ -231,6 +233,14 @@ where
         >,
         truth: &WorthQueryConditionalTruthBasis,
     ) -> ErasedClockObservationOutcome {
+        let execution = match phase.execution_request_for(&runtime.product_runtime) {
+            Ok(execution) => execution,
+            Err(_) => return ErasedClockObservationOutcome::Failed {
+                kind: super::WorthQueryConditionalClockObservationFailureKind::ExecutionRequest(
+                    crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase),
+                detail: "foreign conditional advancement phase".to_string(),
+            },
+        };
         let observation = match isolate_clock_source(|| self.definition.binding.observe_clock_for_runtime()) {
             Ok(observation) => observation,
             Err(outcome) => return outcome,
@@ -278,7 +288,7 @@ where
                 // rebuilding from the selected truth, then progress once more.
                 authoritative_clock_progression::AuthoritativeClockStop::Lagging { resume_after } if !rebuilt => {
                     rebuilt = true;
-                    if let Err(denial) = self.rebuild_lagging_evaluation_binding(bridge, runtime, truth, resume_after) {
+                    if let Err(denial) = self.rebuild_lagging_evaluation_binding(&execution, bridge, runtime, truth, resume_after) {
                         return authoritative_clock_progression::reconstruction_failure(denial);
                     }
                 }
@@ -341,7 +351,7 @@ where
                 .node()
                 .operation()
                 .application_operation();
-            let counts = super::super::application_operation_reentry::reenter_retained_wakes(phase,
+            let counts = super::super::application_operation_reentry::reenter_retained_wakes(&execution, phase,
                 runtime,
                 truth.product(),
                 bridge,

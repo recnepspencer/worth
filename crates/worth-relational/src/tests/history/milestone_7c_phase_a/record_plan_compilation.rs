@@ -23,17 +23,23 @@ use worth_foundational::facade::AspectKey;
 
 #[test]
 fn prepare_merge_execution_compiles_source_addition_record_plan() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
     create_entity(&runtime, "root");
     create_branch_from_main(&runtime, "feature");
     create_entity_outcome_on_branch(&runtime, "feature-only", BranchId("feature".to_string()));
 
     let prepared = runtime
-        .prepare_merge_execution(MergeExecutionRequest {
-            target_branch: BranchId("main".to_string()),
-            source_branch: BranchId("feature".to_string()),
-            merge_intent: MergeIntent::ReconcileIntoTarget,
-        })
+        .prepare_merge_execution(
+            execution,
+            MergeExecutionRequest {
+                target_branch: BranchId("main".to_string()),
+                source_branch: BranchId("feature".to_string()),
+                merge_intent: MergeIntent::ReconcileIntoTarget,
+            },
+        )
         .expect("prepared merge");
 
     assert_eq!(prepared.bound_executable_plan().record_plans.len(), 1);
@@ -53,6 +59,9 @@ fn prepare_merge_execution_compiles_source_addition_record_plan() {
 
 #[test]
 fn prepare_merge_execution_compiles_exact_shared_record_plan() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let registry = RelationalSchemaRegistry::new()
         .register_entity_kind(EntityKindRegistration {
             kind_id: KindId(1),
@@ -88,11 +97,14 @@ fn prepare_merge_execution_compiles_exact_shared_record_plan() {
     update_entity_on_branch(&runtime, shared, "same", BranchId("feature".to_string()));
 
     let prepared = runtime
-        .prepare_merge_execution(MergeExecutionRequest {
-            target_branch: BranchId("main".to_string()),
-            source_branch: BranchId("feature".to_string()),
-            merge_intent: MergeIntent::ReconcileIntoTarget,
-        })
+        .prepare_merge_execution(
+            execution,
+            MergeExecutionRequest {
+                target_branch: BranchId("main".to_string()),
+                source_branch: BranchId("feature".to_string()),
+                merge_intent: MergeIntent::ReconcileIntoTarget,
+            },
+        )
         .expect("prepared merge");
 
     assert_eq!(prepared.bound_executable_plan().record_plans.len(), 1);
@@ -126,6 +138,9 @@ fn prepare_merge_execution_compiles_exact_shared_record_plan() {
 
 #[test]
 fn prepare_merge_execution_compiles_reconcile_record_plan() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let name_key = AspectKey::new("name").unwrap();
     let registry = RelationalSchemaRegistry::new()
         .register_entity_kind(EntityKindRegistration {
@@ -172,11 +187,14 @@ fn prepare_merge_execution_compiles_reconcile_record_plan() {
     create_entity_outcome_on_branch(&runtime, "shared-name", BranchId("feature".to_string()));
 
     let prepared = runtime
-        .prepare_merge_execution(MergeExecutionRequest {
-            target_branch: BranchId("main".to_string()),
-            source_branch: BranchId("feature".to_string()),
-            merge_intent: MergeIntent::ReconcileIntoTarget,
-        })
+        .prepare_merge_execution(
+            execution,
+            MergeExecutionRequest {
+                target_branch: BranchId("main".to_string()),
+                source_branch: BranchId("feature".to_string()),
+                merge_intent: MergeIntent::ReconcileIntoTarget,
+            },
+        )
         .expect("prepared merge");
 
     assert_eq!(prepared.bound_executable_plan().record_plans.len(), 1);

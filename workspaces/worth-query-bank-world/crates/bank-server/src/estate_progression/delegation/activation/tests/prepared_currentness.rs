@@ -10,14 +10,23 @@ fn unrelated_revocation_preserves_the_prepared_delegation_and_a_taken_child_id_s
     let action = delegated_action();
     let command = delegation_command(action).unwrap();
     let prepare = || {
-        let admission = fixture
-            .runtime
-            .admit_delegation(&specialist, action, command.child, &request_scope())
+        let admission =
+            crate::test_host_policy::with_phase(fixture.runtime.application_runtime(), |phase| {
+                fixture.runtime.admit_delegation(
+                    phase,
+                    &specialist,
+                    action,
+                    command.child,
+                    &request_scope(),
+                )
+            })
             .unwrap();
-        fixture
-            .runtime
-            .materialize_delegation(admission, command.child)
-            .expect("the exact activation program must retain only relevant support")
+        crate::test_host_policy::with_phase(fixture.runtime.application_runtime(), |phase| {
+            fixture
+                .runtime
+                .materialize_delegation(phase, admission, command.child)
+        })
+        .expect("the exact activation program must retain only relevant support")
     };
     let program = prepare();
     let retry = prepare();

@@ -1,6 +1,9 @@
 use super::*;
 #[test]
 fn cancellation_before_and_after_signal_movement_has_honest_terminal_truth() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for boundary in [
         Boundary::BeforeCanonicalMovement,
         Boundary::AfterCanonicalMovement,
@@ -16,7 +19,7 @@ fn cancellation_before_and_after_signal_movement_has_honest_terminal_truth() {
         let source = RuntimeWorldCancellationSource::new();
         let token = source.token();
         let prepared = signal_prepared(&court, &root, &token);
-        let mut context = court.context(&root);
+        let mut context = court.context(request_execution, &root);
         let port = court.world.publication_port();
         let signal = court
             .signal
@@ -73,6 +76,9 @@ fn cancellation_before_and_after_signal_movement_has_honest_terminal_truth() {
 }
 #[test]
 fn injected_signal_unwind_retains_any_moved_truth() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for boundary in [
         Boundary::BeforeCanonicalMovement,
         Boundary::AfterCanonicalMovement,
@@ -106,7 +112,7 @@ fn injected_signal_unwind_retains_any_moved_truth() {
             court.world.publication_port().execute_with_signal(
                 worth_execution::ExecutionRequest::serial(&super::serial_request(policy)),
                 prepared,
-                &mut court.context(&root),
+                &mut court.context(request_execution, &root),
                 &token,
                 |_| Ok(()),
             )

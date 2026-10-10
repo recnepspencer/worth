@@ -16,74 +16,7 @@ use worth_query_admission::facade::authenticated_principal::{
 };
 use worth_query_declaration::facade::application_query::ApplicationQueryParameterSet;
 
-#[test]
-fn retained_continuation_releases_the_query_registry_basis() {
-    let world = installed_authorization_world(true);
-    let request = super::super::fixture::live_scope();
-    let external = world.authenticate("alice", Duration::from_secs(60), &request);
-    let principal = world
-        .application
-        .select_product_branch(world.application.product_runtime().default_branch())
-        .expect("the selected product branch remains admitted")
-        .resolve_authenticated_principal(
-            &world.binding,
-            &external,
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
-    let account = world
-        .application
-        .select_product_branch(world.application.product_runtime().default_branch())
-        .expect("the selected product branch remains admitted")
-        .resolve_entity(
-            AccountIdentity::reference(),
-            "account-1".to_owned(),
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
-    let query = super::installed_live_query(&world);
-    let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
-    let plan = world
-        .selected_product()
-        .admit_application_query_continuation(
-            &query,
-            &access,
-            live_account_parameters("account-1"),
-            crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
-                NonZeroUsize::new(1).unwrap(),
-                NonZeroUsize::new(10_000).unwrap(),
-                &request,
-            ),
-        )
-        .unwrap();
-    let basis = plan.basis_identity().clone();
-    let session = plan.graph_work_session_identity();
-    assert!(basis_is_live(&world, &basis));
-
-    let page = world
-        .application
-        .execute_application_query_continuation_page(plan)
-        .unwrap();
-    let (_, continuation, receipt) = page.into_parts();
-    let continuation = continuation.expect("one of two activities must retain a next page");
-
-    assert_eq!(continuation.page_ordinal(), 2);
-    assert!(receipt.basis_released());
-    assert_eq!(receipt.read_completion().session_identity(), session);
-    assert_eq!(receipt.read_completion().basis_identity(), &basis);
-    assert_eq!(
-        receipt
-            .read_completion()
-            .release()
-            .released_reservation_count(),
-        1
-    );
-    assert!(!basis_is_live(&world, &basis));
-    drop(continuation);
-    assert!(!basis_is_live(&world, &basis));
-}
+mod retained_continuation_releases_the_query_registry_basis;
 
 #[test]
 fn foreign_runtime_rejects_plan_and_releases_its_basis() {
@@ -93,47 +26,80 @@ fn foreign_runtime_rejects_plan_and_releases_its_basis() {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
-        .expect("the selected product branch remains admitted")
-        .resolve_authenticated_principal(
-            &world.binding,
-            &external,
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .select_product_branch(
+                    &host_custody.borrowed_request_for_test(),
+                    world.application.product_runtime().default_branch(),
+                )
+                .expect("the selected product branch remains admitted")
+                .resolve_authenticated_principal(
+                    &phase,
+                    &world.binding,
+                    &external,
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let account = world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
-        .expect("the selected product branch remains admitted")
-        .resolve_entity(
-            AccountStatus::reference(),
-            "open".to_string(),
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .select_product_branch(
+                    &host_custody.borrowed_request_for_test(),
+                    world.application.product_runtime().default_branch(),
+                )
+                .expect("the selected product branch remains admitted")
+                .resolve_entity(
+                    &phase,
+                    AccountStatus::reference(),
+                    "open".to_string(),
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let query = installed_query(&world);
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
     let plan = world
-        .selected_product()
-        .admit_application_query(
-            &query,
-            &access,
-            ApplicationQueryParameterSet::new()
-                .bind(status_parameter(), "open".to_string())
-                .expect("fixture query parameter must encode"),
-            current_controls(&request),
-        )
-        .unwrap();
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .selected_product(&(phase).test_host_request())
+                .admit_application_query(
+                    &phase,
+                    &query,
+                    &access,
+                    ApplicationQueryParameterSet::new()
+                        .bind(status_parameter(), "open".to_string())
+                        .expect("fixture query parameter must encode"),
+                    current_controls(&request),
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let basis = plan.basis_identity().clone();
     assert!(basis_is_live(&world, &basis));
 
     let denial = foreign
         .application
-        .execute_application_query_one_shot(plan)
-        .err()
-        .expect("foreign runtime cannot consume a sealed plan");
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            foreign
+                .application
+                .execute_application_query_one_shot(&phase, plan)
+                .err()
+                .expect("foreign runtime cannot consume a sealed plan")
+        })
+        .expect("the fixture read owns its installed host call");
     assert_eq!(
         denial.kind(),
         WorthQueryApplicationOneShotDenialKind::ForeignPlan
@@ -146,42 +112,75 @@ fn exact_query_observation_reuses_its_live_snapshot_for_fresh_security_stages() 
     let world = installed_authorization_world(true);
     let request = super::super::fixture::live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
-    let selected = world.selected_product();
-    let principal = selected
-        .resolve_authenticated_principal(
-            &world.binding,
-            &external,
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
-    let account = selected
-        .resolve_entity(
-            AccountStatus::reference(),
-            "open".to_string(),
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+    let selected = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world.selected_product(&(phase).test_host_request())
+        })
+        .expect("the fixture read owns its installed host call");
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            selected
+                .resolve_authenticated_principal(
+                    &phase,
+                    &world.binding,
+                    &external,
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            selected
+                .resolve_entity(
+                    &phase,
+                    AccountStatus::reference(),
+                    "open".to_string(),
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
     let query = installed_query(&world);
     let observer = world.application.application_query_basis_observer();
     let before = observer.observe();
-    let plan = selected
-        .admit_application_query(
-            &query,
-            &access,
-            ApplicationQueryParameterSet::new()
-                .bind(status_parameter(), "open".to_string())
-                .unwrap(),
-            current_controls(&request),
-        )
-        .unwrap();
+    let plan = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            selected
+                .admit_application_query(
+                    &phase,
+                    &query,
+                    &access,
+                    ApplicationQueryParameterSet::new()
+                        .bind(status_parameter(), "open".to_string())
+                        .unwrap(),
+                    current_controls(&request),
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     assert_eq!(observer.observe().acquisitions(), before.acquisitions());
     let result = world
         .application
-        .execute_application_query_one_shot(plan)
-        .unwrap();
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .execute_application_query_one_shot(&phase, plan)
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     assert_eq!(result.rows().len(), 1);
     assert!(result.receipt().basis_released());
     assert_eq!(observer.observe().acquisitions(), before.acquisitions());
@@ -199,39 +198,66 @@ fn cancellation_after_admission_releases_basis_before_projection() {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
-        .expect("the selected product branch remains admitted")
-        .resolve_authenticated_principal(
-            &world.binding,
-            &external,
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .select_product_branch(
+                    &host_custody.borrowed_request_for_test(),
+                    world.application.product_runtime().default_branch(),
+                )
+                .expect("the selected product branch remains admitted")
+                .resolve_authenticated_principal(
+                    &phase,
+                    &world.binding,
+                    &external,
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let account = world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
-        .expect("the selected product branch remains admitted")
-        .resolve_entity(
-            AccountStatus::reference(),
-            "open".to_string(),
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .select_product_branch(
+                    &host_custody.borrowed_request_for_test(),
+                    world.application.product_runtime().default_branch(),
+                )
+                .expect("the selected product branch remains admitted")
+                .resolve_entity(
+                    &phase,
+                    AccountStatus::reference(),
+                    "open".to_string(),
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let query = installed_query(&world);
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
     let plan = world
-        .selected_product()
-        .admit_application_query(
-            &query,
-            &access,
-            ApplicationQueryParameterSet::new()
-                .bind(status_parameter(), "open".to_string())
-                .expect("fixture query parameter must encode"),
-            current_controls(&request),
-        )
-        .unwrap();
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .selected_product(&(phase).test_host_request())
+                .admit_application_query(
+                    &phase,
+                    &query,
+                    &access,
+                    ApplicationQueryParameterSet::new()
+                        .bind(status_parameter(), "open".to_string())
+                        .expect("fixture query parameter must encode"),
+                    current_controls(&request),
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let basis = plan.basis_identity().clone();
     let result_buffer = world.application.result_buffer_observer();
     assert!(basis_is_live(&world, &basis));
@@ -239,9 +265,15 @@ fn cancellation_after_admission_releases_basis_before_projection() {
 
     let denial = world
         .application
-        .execute_application_query_one_shot(plan)
-        .err()
-        .expect("cancelled request cannot enter provider execution");
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .execute_application_query_one_shot(&phase, plan)
+                .err()
+                .expect("cancelled request cannot enter provider execution")
+        })
+        .expect("the fixture read owns its installed host call");
     assert_eq!(
         denial.kind(),
         WorthQueryApplicationOneShotDenialKind::Cancelled
@@ -251,123 +283,9 @@ fn cancellation_after_admission_releases_basis_before_projection() {
     assert_eq!(result_buffer.observe().retained_bytes(), 0);
 }
 
-#[test]
-fn principal_revocation_after_product_admission_denies_before_projection() {
-    let world = installed_authorization_world(true);
-    let request = super::super::fixture::live_scope();
-    let external = world.authenticate("alice", Duration::from_secs(60), &request);
-    let principal = world
-        .application
-        .select_product_branch(world.application.product_runtime().default_branch())
-        .expect("the selected product branch remains admitted")
-        .resolve_authenticated_principal(
-            &world.binding,
-            &external,
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
-    let account = world
-        .application
-        .select_product_branch(world.application.product_runtime().default_branch())
-        .expect("the selected product branch remains admitted")
-        .resolve_entity(
-            AccountStatus::reference(),
-            "open".to_string(),
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
-    let query = installed_query(&world);
-    let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
-    let plan = world
-        .selected_product()
-        .admit_application_query(
-            &query,
-            &access,
-            ApplicationQueryParameterSet::new()
-                .bind(status_parameter(), "open".to_string())
-                .expect("fixture query parameter must encode"),
-            current_controls(&request),
-        )
-        .unwrap();
-    let basis = plan.basis_identity().clone();
-    disable_mapping(&world, principal.mapping_entity_id());
+mod principal_revocation_after_product_admission_denies_before_proje;
 
-    let denial = world
-        .application
-        .execute_application_query_one_shot(plan)
-        .err()
-        .expect("revocation must deny before reading the retained data basis");
-    assert_eq!(
-        denial.kind(),
-        WorthQueryApplicationOneShotDenialKind::StalePrincipal
-    );
-    assert!(!basis_is_live(&world, &basis));
-}
-
-#[test]
-fn scope_revocation_after_product_admission_denies_before_projection() {
-    let world = installed_authorization_world(true);
-    let request = super::super::fixture::live_scope();
-    let external = world.authenticate("alice", Duration::from_secs(60), &request);
-    let principal = world
-        .application
-        .select_product_branch(world.application.product_runtime().default_branch())
-        .expect("the selected product branch remains admitted")
-        .resolve_authenticated_principal(
-            &world.binding,
-            &external,
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
-    let account = world
-        .application
-        .select_product_branch(world.application.product_runtime().default_branch())
-        .expect("the selected product branch remains admitted")
-        .resolve_entity(
-            AccountStatus::reference(),
-            "open".to_string(),
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
-    let query = installed_query(&world);
-    let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
-    let plan = world
-        .selected_product()
-        .admit_application_query(
-            &query,
-            &access,
-            ApplicationQueryParameterSet::new()
-                .bind(status_parameter(), "open".to_string())
-                .expect("fixture query parameter must encode"),
-            current_controls(&request),
-        )
-        .unwrap();
-    let basis = plan.basis_identity().clone();
-    revoke_account_ownership(&world, account.entity_id());
-    let observer = world.application.application_query_basis_observer();
-    let acquisitions_before = observer.observe().acquisitions();
-
-    let denial = world
-        .application
-        .execute_application_query_one_shot(plan)
-        .err()
-        .expect("revoked scope authorization must deny before projection");
-    assert_eq!(
-        denial.kind(),
-        WorthQueryApplicationOneShotDenialKind::Authorization(
-            crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::StaleAuthorization,
-        )
-    );
-    assert!(!basis_is_live(&world, &basis));
-    assert!(
-        observer.observe().acquisitions() > acquisitions_before,
-        "branch drift must use a newly registered security basis, not the selected data snapshot"
-    );
-}
+mod scope_revocation_after_product_admission_denies_before_projectio;
 
 pub(super) fn basis_is_live(
     world: &super::super::fixture::AuthorizationWorld,

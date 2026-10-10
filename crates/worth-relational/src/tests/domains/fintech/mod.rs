@@ -58,16 +58,24 @@ pub(crate) fn perf_capture_post_mutation_observability(world: &FintechWorld) -> 
     probes::capture_observability_probe(world, probes::ProbeStage::PostMutation)
 }
 
-pub(crate) fn perf_capture_intraday_risk_probe(world: &FintechWorld) -> CaseTruthProbe {
+pub(crate) fn perf_capture_intraday_risk_probe(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    world: &FintechWorld,
+) -> CaseTruthProbe {
     probes::capture_case_truth_probe(
+        execution,
         world,
         fixture::FintechCaseRole::IntradayRisk,
         probes::ProbeStage::PostMutation,
     )
 }
 
-pub(crate) fn perf_capture_trade_correction_probe(world: &FintechWorld) -> CaseTruthProbe {
+pub(crate) fn perf_capture_trade_correction_probe(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    world: &FintechWorld,
+) -> CaseTruthProbe {
     probes::capture_case_truth_probe(
+        execution,
         world,
         fixture::FintechCaseRole::LateTradeCorrection,
         probes::ProbeStage::PostMutation,

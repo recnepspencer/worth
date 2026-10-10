@@ -16,6 +16,7 @@ impl VisibilityProjectionView<'_> {
     /// than `maximum_work_units` on examined slots and materialized records.
     pub fn bounded_entities_of_kind(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         kind_id: KindId,
         maximum_work_units: usize,
     ) -> Result<BoundedEntityKindTruthRead, EntityKindTruthReadLimitExceeded> {
@@ -44,6 +45,7 @@ impl VisibilityProjectionView<'_> {
     /// than `maximum_work_units` on examined slots and materialized records.
     pub fn bounded_relations_of_kind(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         kind_id: KindId,
         maximum_work_units: usize,
     ) -> Result<BoundedRelationKindTruthRead, RelationKindTruthReadDenial> {

@@ -14,6 +14,7 @@ use crate::domain_computation::primary_graph::workflow::{
 };
 
 pub(in crate::domain_computation::primary_graph) fn observe_workflow_proposal_coverages(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
@@ -28,9 +29,10 @@ pub(in crate::domain_computation::primary_graph) fn observe_workflow_proposal_co
 > {
     check_request_live(observation_request, "workflow coverage")?;
     let mut facts = Vec::new();
-    let scope = observe_proposal_scope(runtime, snapshot, layout, proposal, &mut facts)?;
+    let scope = observe_proposal_scope(execution, runtime, snapshot, layout, proposal, &mut facts)?;
     let kind = layout.proposal.entity_kind;
     let count = required_u64(
+        execution,
         runtime,
         snapshot,
         proposal,
@@ -42,6 +44,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_workflow_proposal_co
         .map_err(|_| denial("workflow proposal coverage count exceeds this host"))?;
     check_request_live(observation_request, "workflow coverage")?;
     let coverages = observe_coverages(
+        execution,
         runtime,
         snapshot,
         layout,
@@ -56,6 +59,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_workflow_proposal_co
 }
 
 fn observe_proposal_scope(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
@@ -64,6 +68,7 @@ fn observe_proposal_scope(
 ) -> Result<WorkflowProposalCoverageScope, WorthQueryApplicationAttemptDenial> {
     let kind = layout.proposal.entity_kind;
     let operation = required_text(
+        execution,
         runtime,
         snapshot,
         proposal,
@@ -72,6 +77,7 @@ fn observe_proposal_scope(
         facts,
     )?;
     let input_type = required_text(
+        execution,
         runtime,
         snapshot,
         proposal,
@@ -80,6 +86,7 @@ fn observe_proposal_scope(
         facts,
     )?;
     let input_identity_text = required_text(
+        execution,
         runtime,
         snapshot,
         proposal,
@@ -90,6 +97,7 @@ fn observe_proposal_scope(
     let input_identity = decode_identity(&input_identity_text)
         .ok_or_else(|| denial("workflow proposal input identity is malformed"))?;
     let source_identity = optional_identity(
+        execution,
         runtime,
         snapshot,
         proposal,
@@ -106,6 +114,7 @@ fn observe_proposal_scope(
 }
 
 pub(super) fn observe_coverages(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
@@ -121,6 +130,7 @@ pub(super) fn observe_coverages(
         .ok_or_else(|| crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial::Representability.into_attempt_denial("workflow proposal coverage"))?;
     let relations = observe_adjacency(
         runtime,
+        execution,
         snapshot,
         layout.proposal_coverage_relation,
         proposal,
@@ -148,6 +158,7 @@ pub(super) fn observe_coverages(
             kind,
         });
         let identity = required_text(
+            execution,
             runtime,
             snapshot,
             entity,
@@ -156,6 +167,7 @@ pub(super) fn observe_coverages(
             facts,
         )?;
         let selector_text = required_text(
+            execution,
             runtime,
             snapshot,
             entity,
@@ -167,6 +179,7 @@ pub(super) fn observe_coverages(
             ApplicationWorkflowSubjectSelector::from_persistence_identity(&selector_text)
                 .ok_or_else(|| denial("workflow proposal coverage selector is malformed"))?;
         let partition = required_u64(
+            execution,
             runtime,
             snapshot,
             entity,
@@ -175,6 +188,7 @@ pub(super) fn observe_coverages(
             facts,
         )?;
         let slot = required_u64(
+            execution,
             runtime,
             snapshot,
             entity,
@@ -183,6 +197,7 @@ pub(super) fn observe_coverages(
             facts,
         )?;
         let generation = required_u64(
+            execution,
             runtime,
             snapshot,
             entity,

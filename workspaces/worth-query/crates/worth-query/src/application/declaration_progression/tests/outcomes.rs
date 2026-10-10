@@ -12,7 +12,10 @@ use crate::target_binding::WorthQueryBindingTargetWitness;
 
 #[test]
 fn progression_exposes_deferred_denied_and_failed_outcomes() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
 
     match handle.progress_declaration_checked(legal(
         &handle,
@@ -45,8 +48,11 @@ fn progression_exposes_deferred_denied_and_failed_outcomes() {
 
 #[test]
 fn checked_recipe_lane_preserves_non_success_outcomes() {
-    let collaborative = admitted_handle("collaborative");
-    let restricted = admitted_handle("restricted");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let collaborative = admitted_handle(request_execution, "collaborative");
+    let restricted = admitted_handle(request_execution, "restricted");
 
     match collaborative.progress_declaration_recipe_checked(
         collaborative.declaration_progression_recipe(legal(
@@ -89,8 +95,11 @@ fn checked_recipe_lane_preserves_non_success_outcomes() {
 
 #[test]
 fn progression_preserves_stale_and_rebind_required_separately() {
-    let collaborative = admitted_handle("collaborative");
-    let restricted = admitted_handle("restricted");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let collaborative = admitted_handle(request_execution, "collaborative");
+    let restricted = admitted_handle(request_execution, "restricted");
 
     match collaborative.progress_declaration_checked(legal(
         &collaborative,
@@ -117,7 +126,10 @@ fn progression_preserves_stale_and_rebind_required_separately() {
 
 #[test]
 fn descriptive_signal_deferred_families_can_still_progress() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
     let progressed = progressed(
         &handle,
         Declaration::<DescriptiveDeferredSignalFamily>::new("edge:42"),
@@ -128,7 +140,10 @@ fn descriptive_signal_deferred_families_can_still_progress() {
 
 #[test]
 fn progression_digest_changes_when_legality_truth_changes() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
     let admitted = progressed(&handle, Declaration::<AdmittedFamily>::new("edge:42"));
     let receipt = progressed(&handle, Declaration::<ReceiptFamily>::new("edge:42"));
 
@@ -137,7 +152,10 @@ fn progression_digest_changes_when_legality_truth_changes() {
 
 #[test]
 fn progressed_artifacts_expose_aspect_contract_and_reviewed_coverage() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
     let progressed = progressed(&handle, Declaration::<AdmittedFamily>::new("edge:42"));
 
     assert_declaration_aspect_projections(
@@ -159,7 +177,10 @@ fn progressed_artifacts_expose_aspect_contract_and_reviewed_coverage() {
 
 #[test]
 fn progression_binding_digest_changes_when_aspect_contract_changes() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
     let left = progressed(&handle, Declaration::<AdmittedFamily>::new("edge:42"));
     let right = progressed(
         &handle,
@@ -174,7 +195,10 @@ fn progression_binding_digest_changes_when_aspect_contract_changes() {
 
 #[test]
 fn progression_binding_semantics_preserve_masked_reviewed_coverage() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
     let progressed = progressed(&handle, Declaration::<MaskedCoverageFamily>::new("edge:42"));
 
     assert_declaration_aspect_projections(

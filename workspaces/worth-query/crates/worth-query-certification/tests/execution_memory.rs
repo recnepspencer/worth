@@ -179,8 +179,13 @@ fn execution_memory_is_shared_by_installed_worlds_and_reselected_on_checkpoint_r
     }
     let checkpoint = first
         .runtime
-        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
-        .unwrap();
+        .with_host_advancement(|host_phase| {
+            first
+                .runtime
+                .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     first.runtime.close_conditional_runtime().unwrap();
     drop(first);
     second.runtime.close_conditional_runtime().unwrap();

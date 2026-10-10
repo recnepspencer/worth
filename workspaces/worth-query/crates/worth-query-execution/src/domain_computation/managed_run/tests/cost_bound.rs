@@ -133,14 +133,17 @@ fn unrelated_artifact_run_in_runtime(
 }
 
 fn direct_readmission_work(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     unrelated_width: usize,
 ) -> WorthQueryReadmissionEvidence {
     let active_request = execution;
 
     let (yielded, bridge, runtime) = super::readmission_direct::yielded_direct(execution);
     let (unrelated, disposed) = unrelated_authority(&runtime, unrelated_width);
-    let readmitted = match yielded.readmit_same_runtime(active_request, &runtime, &bridge) {
+    let readmitted = match {
+        let installed_fixture_phase = yielded.fixture_phase(active_request);
+        yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+    } {
         WorthQueryDirectReadmissionOutcome::Readmitted(readmitted) => readmitted,
         _ => panic!("direct cost target should readmit"),
     };
@@ -157,7 +160,7 @@ fn direct_readmission_work(
 }
 
 fn workflow_readmission_work(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     unrelated_width: usize,
 ) -> WorthQueryReadmissionEvidence {
     let active_request = execution;
@@ -167,7 +170,10 @@ fn workflow_readmission_work(
         super::yield_fixture::YieldProvider::installed(7),
     );
     let (unrelated, disposed) = unrelated_authority(&runtime, unrelated_width);
-    let readmitted = match yielded.readmit_same_runtime(active_request, &runtime, &bridge) {
+    let readmitted = match {
+        let installed_fixture_phase = yielded.fixture_phase(active_request);
+        yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+    } {
         WorthQueryWorkflowReadmissionOutcome::Readmitted(readmitted) => readmitted,
         _ => panic!("workflow cost target should readmit"),
     };
@@ -186,7 +192,7 @@ fn workflow_readmission_work(
 }
 
 fn denied_readmission_work(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     unrelated_width: usize,
 ) -> WorthQueryReadmissionEvidence {
     let active_request = execution;
@@ -194,7 +200,10 @@ fn denied_readmission_work(
     let (yielded, bridge, runtime) = super::readmission_direct::yielded_direct(execution);
     let (unrelated, disposed) = unrelated_authority(&runtime, unrelated_width);
     let foreign = query_runtime();
-    let denial = match yielded.readmit_same_runtime(active_request, &foreign, &bridge) {
+    let denial = match {
+        let installed_fixture_phase = yielded.fixture_phase(active_request);
+        yielded.readmit_same_runtime(&installed_fixture_phase, &foreign, &bridge)
+    } {
         WorthQueryDirectReadmissionOutcome::Denied(denial) => denial,
         _ => panic!("foreign Query runtime should deny readmission"),
     };

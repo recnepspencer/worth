@@ -58,6 +58,7 @@ impl
 }
 
 pub fn provisional_workflow_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
 ) -> Result<
     runtime::WorthQueryWorkspace,
@@ -100,7 +101,7 @@ pub fn provisional_workflow_workspace(
             ProvisionalDiscardFamily,
             ProvisionalExecutor,
         )
-        .workspace(name)
+        .workspace(request_execution, name)
 }
 
 fn one_stage_workflow() -> domain::WorthQueryPortableWorkflowDefinition {

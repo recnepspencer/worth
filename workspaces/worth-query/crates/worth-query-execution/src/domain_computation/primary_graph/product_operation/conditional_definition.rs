@@ -53,6 +53,7 @@ impl From<super::super::product_activation::WorthQueryProductConditionalPublicat
     ) -> Self {
         use super::super::product_activation::WorthQueryProductConditionalPublicationDenial as D;
         match denial {
+            D::ExecutionRequest(cause) => Self::ExecutionRequest(cause),
             D::ProductActivation(denial) => Self::ProductActivation {
                 detail: format!("{denial:?}"),
             },

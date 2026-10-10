@@ -15,8 +15,13 @@ use crate::runtime::tests::graph_read_access::support::graph_read_access::async_
 
 #[test]
 fn async_required_admission_derives_materialization_request_with_budget_proof() {
-    let mut workspace =
-        async_materialization_workspace("graph-read-access.async-materialization.request-proof");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = async_materialization_workspace(
+        request_execution,
+        "graph-read-access.async-materialization.request-proof",
+    );
     let family = async_required_graph_read_family(&mut workspace, "async-request-proof");
     let admission = workspace
         .read_family_intent(&family)
@@ -82,8 +87,13 @@ fn async_required_admission_derives_materialization_request_with_budget_proof() 
 
 #[test]
 fn inline_admission_cannot_be_smuggled_into_async_materialization() {
-    let mut workspace =
-        async_materialization_workspace("graph-read-access.async-materialization.reject-inline");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = async_materialization_workspace(
+        request_execution,
+        "graph-read-access.async-materialization.reject-inline",
+    );
     let family = inline_graph_read_family(&mut workspace, "async-reject-inline");
     let admission = workspace
         .read_family_intent(&family)
@@ -106,7 +116,11 @@ fn inline_admission_cannot_be_smuggled_into_async_materialization() {
 
 #[test]
 fn required_async_materialization_denial_runs_through_materialization_lifecycle() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = workspace_with_graph_support(
+        request_execution,
         "graph-read-access.async-materialization.required-async",
         profile_with_graph_support_temporarily_unavailable(
             WorthQueryGraphReadAccessRequirementKind::PredicateSupport,
@@ -141,7 +155,7 @@ fn required_async_materialization_denial_runs_through_materialization_lifecycle(
 
     let receipt = workspace
         .graph_read_materializations()
-        .admit(request)
+        .admit(request_execution, request)
         .expect("required-async request should admit")
         .start()
         .expect("job should start")

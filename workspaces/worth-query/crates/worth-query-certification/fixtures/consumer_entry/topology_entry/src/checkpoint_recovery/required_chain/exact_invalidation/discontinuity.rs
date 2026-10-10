@@ -17,8 +17,12 @@ fn settled_checkpoint(
     }
     drop((principal, scope));
     application
-        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
-        .unwrap()
+        .with_host_advancement(|host_phase| {
+            application
+                .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
+                .unwrap()
+        })
+        .expect("installed host call opens")
 }
 
 #[test]
@@ -234,12 +238,14 @@ fn a_forked_branch_verifies_what_its_parent_settled() {
         court.demand_ring(&mut rings, index, "on the parent branch");
     }
 
-    let branch = application
-        .branches()
-        .fork(application.current_world())
-        .components(|components| components.fork_relational().reuse_exact_signal_basis())
-        .create()
-        .unwrap();
+    let branch = crate::checkpoint_recovery::support::host_call(&application, |phase| {
+        application
+            .branches()
+            .fork(application.current_world())
+            .components(|components| components.fork_relational().reuse_exact_signal_basis())
+            .create(phase)
+    })
+    .unwrap();
     let branch_request = application.request(&principal, &scope).on_branch(branch);
     let forked = Court::new(&application, &branch_request, 0x9176_3de0);
     let mut forked_rings = rings.clone();

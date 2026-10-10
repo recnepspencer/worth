@@ -108,21 +108,27 @@ fn foundational_current_basis_bridge_and_readmission_preserve_exact_basis_truth(
 #[test]
 fn foundational_current_basis_lowering_rejects_published_historical_basis_in_live_and_recovered_lanes(
 ) {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = merge_ready_runtime();
     let prepared = runtime
-        .prepare_merge_execution(crate::facade::merge::MergeExecutionRequest {
-            target_branch: BranchId("main".to_string()),
-            source_branch: BranchId("feature".to_string()),
-            merge_intent: MergeIntent::ReconcileIntoTarget,
-        })
+        .prepare_merge_execution(
+            execution,
+            crate::facade::merge::MergeExecutionRequest {
+                target_branch: BranchId("main".to_string()),
+                source_branch: BranchId("feature".to_string()),
+                merge_intent: MergeIntent::ReconcileIntoTarget,
+            },
+        )
         .expect("prepared merge");
     let merge = runtime
-        .execute_prepared_merge(prepared)
+        .execute_prepared_merge(execution, prepared)
         .expect("executed merge");
     let live_authority = published_merge_authority(&runtime, merge.commit.commit.commit_id);
 
     let (_recovery, recovered) =
-        checkpoint_and_recover_with(&runtime, persisted_runtime_with_test_schema);
+        checkpoint_and_recover_with(execution, &runtime, persisted_runtime_with_test_schema);
     let recovered_authority = published_merge_authority(&recovered, merge.commit.commit.commit_id);
 
     assert_historical_summary_basis_denies_as_current(&runtime, &live_authority);

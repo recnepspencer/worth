@@ -24,6 +24,7 @@ impl WorthQueryRuntimeSourceAdapter for RepresentativeSourceAdapter {
 
     fn live_entities_for_target(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         _target: &WorthQueryLiveArtifactTarget,
     ) -> Vec<WorthQueryEntity> {
         Vec::new()

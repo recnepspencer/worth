@@ -20,8 +20,11 @@ use worth_relational::facade::runtime::RelationalRuntime;
 
 #[test]
 fn phase6_selection_lane_is_independent_of_live_owner_storage() {
-    let court = observe_seeded_main(SupplyChainScale::court());
-    let standard = observe_seeded_main(SupplyChainScale::standard());
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let court = observe_seeded_main(execution, SupplyChainScale::court());
+    let standard = observe_seeded_main(execution, SupplyChainScale::standard());
 
     assert_eq!(court.branch_count(), 1);
     assert_eq!(standard.branch_count(), 1);
@@ -51,8 +54,11 @@ fn phase6_selection_lane_is_independent_of_live_owner_storage() {
 
 #[test]
 fn phase6_recorded_cost_lane_is_not_substitutable_for_the_live_lane() {
-    let (mut world, expected) = certified_supply_chain_world(SupplyChainScale::court());
-    assert_oracle_matches(&world, &expected);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (mut world, expected) = certified_supply_chain_world(execution, SupplyChainScale::court());
+    assert_oracle_matches(execution, &world, &expected);
     let main = world.runtime.main_branch_identity();
     let main_before_fork = observe(&world.runtime, std::slice::from_ref(&main));
 
@@ -112,8 +118,11 @@ fn phase6_recorded_cost_lane_is_not_substitutable_for_the_live_lane() {
 
 #[test]
 fn phase6_coordination_lane_stays_branch_local_under_a_shared_root() {
-    let (mut world, expected) = certified_supply_chain_world(SupplyChainScale::court());
-    assert_oracle_matches(&world, &expected);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (mut world, expected) = certified_supply_chain_world(execution, SupplyChainScale::court());
+    assert_oracle_matches(execution, &world, &expected);
     let main = world.runtime.main_branch_identity();
     fork_from_main(&mut world.runtime, "metric-truth-lane-cell");
     let fork = branch_identity(&world.runtime, "metric-truth-lane-cell");
@@ -155,9 +164,12 @@ fn observe(
         .expect("the selected branches remain inspectable")
 }
 
-fn observe_seeded_main(scale: SupplyChainScale) -> RelationalBranchSharingObservation {
-    let (world, expected) = certified_supply_chain_world(scale);
-    assert_oracle_matches(&world, &expected);
+fn observe_seeded_main(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    scale: SupplyChainScale,
+) -> RelationalBranchSharingObservation {
+    let (world, expected) = certified_supply_chain_world(execution, scale);
+    assert_oracle_matches(execution, &world, &expected);
     let main = world.runtime.main_branch_identity();
     observe(&world.runtime, &[main])
 }

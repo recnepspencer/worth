@@ -1,9 +1,16 @@
 use super::{ExecutionRequest, QueryRequestExecution};
 
+/// The source is always known; bootstrap and owner-only phases cannot lend a
+/// Relational request by omitting a comparison.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(super) enum AdvancementSource {
+    Relational(u64),
+    ProductOwner(worth_runtime_world::facade::RuntimeWorldOwnerIdentity),
+    Bootstrap,
+}
+
 /// Runtime custody of an active request, never retained in a product.
 pub(in crate::domain_computation::primary_graph) struct ActiveAdvancement<'scope> {
-    pub(super) source_instance: Option<u64>,
-    pub(super) owner: Option<worth_runtime_world::facade::RuntimeWorldOwnerIdentity>,
     pub(super) execution: &'scope QueryRequestExecution<'scope>,
 }
 
@@ -21,7 +28,7 @@ impl From<WorthQueryForeignAdvancementPhase> for super::WorthQueryAdvancementDen
 /// Completion consumes it; neither a caller nor a product can manufacture it.
 ///
 /// A callback cannot return its phase.
-/// ```compile_fail
+/// ```compile_fail,E0521
 /// use worth_query_execution::facade::product::WorthQueryPrimaryGraphApplicationRuntime;
 /// use worth_query_installation::facade::ApplicationSchema;
 /// use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
@@ -29,7 +36,8 @@ impl From<WorthQueryForeignAdvancementPhase> for super::WorthQueryAdvancementDen
 ///     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
 ///     request: &WorthQueryRequestScope,
 /// ) {
-///     let _ = runtime.with_application_advancement(request, |phase| phase);
+///     fn return_to_host<T: 'static>(value: T) -> T { value }
+///     let _ = runtime.with_application_advancement(request, |phase| return_to_host(phase));
 /// }
 /// ```
 /// ```
@@ -40,12 +48,13 @@ impl From<WorthQueryForeignAdvancementPhase> for super::WorthQueryAdvancementDen
 ///     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
 ///     request: &WorthQueryRequestScope,
 /// ) {
-///     let _ = runtime.with_application_advancement(request, |phase| phase.complete());
+///     fn return_to_host<T: 'static>(value: T) -> T { value }
+///     let _ = runtime.with_application_advancement(request, |phase| return_to_host(phase.complete()));
 /// }
 /// ```
 ///
 /// A paused slot outside the callback cannot retain a phase.
-/// ```compile_fail
+/// ```compile_fail,E0521
 /// use worth_query_execution::facade::product::WorthQueryPrimaryGraphApplicationRuntime;
 /// use worth_query_installation::facade::ApplicationSchema;
 /// use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
@@ -75,7 +84,7 @@ impl From<WorthQueryForeignAdvancementPhase> for super::WorthQueryAdvancementDen
 /// ```
 ///
 /// A host-held product cannot contain borrowed execution custody.
-/// ```compile_fail
+/// ```compile_fail,E0521
 /// use worth_query_execution::facade::product::WorthQueryPrimaryGraphApplicationRuntime;
 /// use worth_query_installation::facade::ApplicationSchema;
 /// use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
@@ -137,10 +146,12 @@ impl From<WorthQueryForeignAdvancementPhase> for super::WorthQueryAdvancementDen
 /// ```
 pub struct WorthQueryAdvancementPhase<'scope> {
     pub(super) active: &'scope ActiveAdvancement<'scope>,
+    pub(super) source: AdvancementSource,
+    pub(super) owner: Option<worth_runtime_world::facade::RuntimeWorldOwnerIdentity>,
 }
 
 impl<'scope> WorthQueryAdvancementPhase<'scope> {
-    fn admitted_request(&self) -> ExecutionRequest<'_, '_> {
+    fn admitted_request(&self) -> ExecutionRequest<'scope, 'scope> {
         self.active
             .execution
             .execution_request()
@@ -150,29 +161,33 @@ impl<'scope> WorthQueryAdvancementPhase<'scope> {
     pub fn execution_request_for(
         &self,
         runtime: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime,
-    ) -> Result<ExecutionRequest<'_, '_>, WorthQueryForeignAdvancementPhase> {
+    ) -> Result<ExecutionRequest<'scope, 'scope>, WorthQueryForeignAdvancementPhase> {
         self.request_for_owner(runtime.owner.owner_identity())
     }
 
     pub(crate) fn request_for_owner(
         &self,
         owner: worth_runtime_world::facade::RuntimeWorldOwnerIdentity,
-    ) -> Result<ExecutionRequest<'_, '_>, WorthQueryForeignAdvancementPhase> {
-        if self.active.owner != Some(owner) {
+    ) -> Result<ExecutionRequest<'scope, 'scope>, WorthQueryForeignAdvancementPhase> {
+        if self.owner != Some(owner) {
             return Err(WorthQueryForeignAdvancementPhase(()));
         }
         Ok(self.admitted_request())
     }
 
+    /// Lends the existing request after accepting the concrete native owner.
+    pub fn execution_request_for_relational_runtime(
+        &self,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    ) -> Result<ExecutionRequest<'scope, 'scope>, WorthQueryForeignAdvancementPhase> {
+        self.request_for_source(runtime.runtime_instance_id())
+    }
+
     pub(crate) fn request_for_source(
         &self,
         source_instance: u64,
-    ) -> Result<ExecutionRequest<'_, '_>, WorthQueryForeignAdvancementPhase> {
-        if self
-            .active
-            .source_instance
-            .is_some_and(|issued| issued != source_instance)
-        {
+    ) -> Result<ExecutionRequest<'scope, 'scope>, WorthQueryForeignAdvancementPhase> {
+        if self.source != AdvancementSource::Relational(source_instance) {
             return Err(WorthQueryForeignAdvancementPhase(()));
         }
         Ok(self.admitted_request())
@@ -181,7 +196,7 @@ impl<'scope> WorthQueryAdvancementPhase<'scope> {
     pub(in crate::domain_computation) fn request_for_managed(
         &self,
         observation: &crate::domain_computation::managed_run::WorthQueryManagedRelationalObservation,
-    ) -> Result<ExecutionRequest<'_, '_>, WorthQueryForeignAdvancementPhase> {
+    ) -> Result<ExecutionRequest<'scope, 'scope>, WorthQueryForeignAdvancementPhase> {
         match observation.owner_identity() {
             Some(owner) => self.request_for_owner(owner),
             None => self.request_for_source(observation.identity().runtime_instance_id()),
@@ -199,7 +214,16 @@ impl<'scope> WorthQueryAdvancementPhase<'scope> {
 }
 
 #[cfg(test)]
-impl WorthQueryAdvancementPhase<'_> {
+impl<'scope> WorthQueryAdvancementPhase<'scope> {
+    pub(crate) fn test_host_request(&self) -> super::test_host_policy::TestHostRequest<'scope> {
+        super::test_host_policy::TestHostRequest::from_installed(self)
+    }
+
+    /// Budget-only fixture controls borrow the existing host request.
+    pub(crate) fn borrowed_request_for_test(&self) -> ExecutionRequest<'_, '_> {
+        self.admitted_request()
+    }
+
     /// Internal installation fixtures borrow their existing test request, without opening again.
     pub(crate) fn bootstrap_for_test(&self) -> super::WorthQueryBootstrapAdvancementPhase<'_> {
         super::WorthQueryBootstrapAdvancementPhase {

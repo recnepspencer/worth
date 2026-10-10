@@ -251,13 +251,14 @@ pub(super) fn clear_recovery_partition_pins(restored: &mut RelationalRuntime) {
 }
 
 pub(super) fn finalize_restored_runtime(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     restored: &mut RelationalRuntime,
     original_durability_mode: DurabilityMode,
 ) -> Result<(), crate::durability::data::DurabilityError> {
     restored.set_durability_mode(original_durability_mode);
     restored
         .index_authority()
-        .rebuild_unique_entity_aspect_field_indexes()
+        .rebuild_unique_entity_aspect_field_indexes(execution)
         .map_err(|denial| {
             crate::durability::data::DurabilityError::new(
                 crate::durability::data::RecoveryFailureClass::ReplayFailure,

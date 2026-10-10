@@ -1,6 +1,7 @@
 use super::*;
 
 pub(super) fn certify_hundred_k_nodes_pseudorealistic_narrow_round_trip(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     suite: &'static str,
     node_count: usize,
     query_target_count: usize,
@@ -22,8 +23,12 @@ pub(super) fn certify_hundred_k_nodes_pseudorealistic_narrow_round_trip(
                 config.publication.policy.max_patch_records_per_commit = node_count * 2
             });
             let diagnostics_start = runtime.publication().diagnostic_artifacts().len();
-            let seeded =
-                seed_pseudorealistic_rocketship_world(&runtime, node_count, query_target_count);
+            let seeded = seed_pseudorealistic_rocketship_world(
+                execution,
+                &runtime,
+                node_count,
+                query_target_count,
+            );
 
             runtime.performance_access().reset_counters();
             let hot_update_started_at = Instant::now();
@@ -50,7 +55,13 @@ pub(super) fn certify_hundred_k_nodes_pseudorealistic_narrow_round_trip(
             let explicit_execution_started_at = Instant::now();
             let explicit_outcome = runtime
                 .read_truth()
-                .execute_query_plan(explicit_plan)
+                .execute_query_plan(
+                    explicit_plan,
+                    execution,
+                    crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
+                )
+                .expect("request remains live")
+                .map(|read| read.outcome)
                 .expect("pseudorealistic explicit query outcome");
             let explicit_query_execution_micros =
                 explicit_execution_started_at.elapsed().as_micros();
@@ -84,7 +95,13 @@ pub(super) fn certify_hundred_k_nodes_pseudorealistic_narrow_round_trip(
             let traversal_execution_started_at = Instant::now();
             let traversal_outcome = runtime
                 .read_truth()
-                .execute_query_plan(traversal_plan)
+                .execute_query_plan(
+                    traversal_plan,
+                    execution,
+                    crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
+                )
+                .expect("request remains live")
+                .map(|read| read.outcome)
                 .expect("pseudorealistic traversal outcome");
             let traversal_execution_micros = traversal_execution_started_at.elapsed().as_micros();
             let counters = runtime.performance_access().counters();

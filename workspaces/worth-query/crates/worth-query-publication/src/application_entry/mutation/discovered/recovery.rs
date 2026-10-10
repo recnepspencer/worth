@@ -84,7 +84,7 @@ where
     {
         application
             .runtime()
-            .with_application_advancement(self.scope, |_phase| {
+            .with_application_advancement(self.scope, |phase| {
                 if !std::ptr::eq(application.runtime(), self.application) {
                     return Err(WorthQueryRequiredOutputPreparationDenial::ForeignProgram);
                 }
@@ -96,6 +96,7 @@ where
                     .map_err(WorthQueryRequiredOutputPreparationDenial::DemandExecution)?;
                 application
                     .validate_discovered_program_source::<Root>(
+                        &phase,
                         &worth_query_execution::publication_boundary::program_publication_access(),
                         &prepared,
                         receipt,

@@ -12,7 +12,7 @@ fn complexity_budget_query_packetization_reports_parallel_shape_for_cross_partit
     let lease = test_execution_lease();
     let _ = runtime
         .read_truth()
-        .execute_query_plan_with_lease(
+        .execute_query_plan(
             planned_explicit_query(
                 &runtime,
                 &snapshot,
@@ -23,8 +23,10 @@ fn complexity_budget_query_packetization_reports_parallel_shape_for_cross_partit
                     crate::facade::transactions::RecordRef::Entity(right),
                 ],
             ),
-            &lease,
+            &worth_execution::ExecutionRequest::leased(&lease),
+            crate::facade::runtime::RelationalQueryReadStrategy::RequestPatterns,
         )
+        .map(|read| read.map(|read| read.outcome))
         .expect("leased query execution")
         .expect("query outcome");
     let counters = runtime.performance_access().counters();
@@ -55,15 +57,17 @@ fn complexity_budget_query_packetization_reports_narrow_shape_with_a_lease() {
     let lease = test_execution_lease();
     let _ = runtime
         .read_truth()
-        .execute_query_plan_with_lease(
+        .execute_query_plan(
             planned_explicit_query(
                 &runtime,
                 &snapshot,
                 "single-target",
                 vec![crate::facade::transactions::RecordRef::Entity(entity)],
             ),
-            &lease,
+            &worth_execution::ExecutionRequest::leased(&lease),
+            crate::facade::runtime::RelationalQueryReadStrategy::RequestPatterns,
         )
+        .map(|read| read.map(|read| read.outcome))
         .expect("leased query execution")
         .expect("query outcome");
     let counters = runtime.performance_access().counters();

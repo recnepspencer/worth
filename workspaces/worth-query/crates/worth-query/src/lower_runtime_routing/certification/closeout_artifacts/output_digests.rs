@@ -20,6 +20,7 @@ use crate::lower_runtime_routing::certification::{
 };
 
 pub(super) fn certification_output_digests(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     surface: &WorthQueryLowerRuntimeRepresentativeSurface,
     _acceptance: &WorthQueryLowerRuntimeAcceptanceSuite,
     non_bypass: &WorthQueryLowerRuntimeNonBypassAudit,
@@ -118,13 +119,13 @@ pub(super) fn certification_output_digests(
         ),
         output(
             "route_synthetic_tail_report_digest",
-            worth_query_lower_runtime_synthetic_tail_report()
+            worth_query_lower_runtime_synthetic_tail_report(execution)
                 .report_digest()
                 .to_string(),
         ),
         output(
             "route_synthetic_tail_justification_digest",
-            worth_query_lower_runtime_synthetic_tail_report()
+            worth_query_lower_runtime_synthetic_tail_report(execution)
                 .justification_digest()
                 .to_string(),
         ),
@@ -215,7 +216,7 @@ pub(super) fn certification_output_digests(
         ),
         output(
             "route_synthetic_tail_width",
-            worth_query_lower_runtime_synthetic_tail_report()
+            worth_query_lower_runtime_synthetic_tail_report(execution)
                 .rows()
                 .len()
                 .to_string(),

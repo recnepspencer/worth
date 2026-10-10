@@ -21,6 +21,7 @@ use super::{
 };
 
 pub(super) fn scalar_mutation_row(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     index: usize,
     stepper: &mut SeedStepper,
 ) -> EffectLifecycleSeededCertificationRow {
@@ -44,7 +45,10 @@ pub(super) fn scalar_mutation_row(
     let scoped = scope_admitted_effect_plan(admitted);
     let lowered = scoped.lower().expect("mutation scenario should lower");
     let executed = lowered
-        .execute_with(EffectExecutionAuthority::relational(&mut runtime))
+        .execute_with(
+            execution,
+            EffectExecutionAuthority::relational(&mut runtime),
+        )
         .expect("mutation scenario should execute");
     scalar_or_terminal_row(
         format!("seeded-mutation-executed-{index}"),
@@ -80,6 +84,7 @@ pub(super) fn scalar_mutation_row(
 }
 
 pub(super) fn scalar_writeback_row(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     index: usize,
     stepper: &mut SeedStepper,
 ) -> EffectLifecycleSeededCertificationRow {
@@ -104,7 +109,7 @@ pub(super) fn scalar_writeback_row(
     let lowered = scoped.lower().expect("writeback scenario should lower");
     let bridge = test_bridge_with_writeback_authority();
     let executed = lowered
-        .execute_with(EffectExecutionAuthority::bridge(&bridge))
+        .execute_with(execution, EffectExecutionAuthority::bridge(&bridge))
         .expect("writeback scenario should execute");
     scalar_or_terminal_row(
         format!("seeded-writeback-executed-{index}"),
@@ -194,6 +199,7 @@ pub(super) fn merge_lowered_row(
 }
 
 pub(super) fn batch_mutation_row(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     index: usize,
     stepper: &mut SeedStepper,
 ) -> EffectLifecycleSeededCertificationRow {
@@ -234,7 +240,10 @@ pub(super) fn batch_mutation_row(
     let lowered = admitted.lower().expect("batch scenario should lower");
     let lowered_digest = lowered.batch_for_reporting().to_string();
     let executed = lowered
-        .execute_with(EffectExecutionAuthority::relational(&mut runtime))
+        .execute_with(
+            execution,
+            EffectExecutionAuthority::relational(&mut runtime),
+        )
         .expect("batch scenario should execute");
     scalar_or_terminal_row(
         format!("seeded-batch-executed-{index}"),

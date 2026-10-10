@@ -243,13 +243,15 @@ impl LoweredEffectBatchExecutionPlan {
 
     pub(crate) fn execute_with(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         mut authority: EffectExecutionAuthority<'_>,
     ) -> Result<ExecutedEffectBatchPlan, EffectBatchExecutionStop> {
-        self.execute_with_authority(&mut authority)
+        self.execute_with_authority(execution, &mut authority)
     }
 
     fn execute_with_authority(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         authority: &mut EffectExecutionAuthority<'_>,
     ) -> Result<ExecutedEffectBatchPlan, EffectBatchExecutionStop> {
         let lowered = self.clone();
@@ -277,41 +279,37 @@ impl LoweredEffectBatchExecutionPlan {
                         "lowered relational mutation batch execution requires a relational runtime authority",
                     ))
                 })?;
-                let aggregate_commit =
-                    match execute_lowered_mutation_batch(runtime, batch.declarations()) {
-                        Ok(commit) => commit,
-                        Err(super::RelationalEffectExecutionFailure::Deferred {
-                            kind,
-                            message,
-                        }) => {
-                            return Err(EffectBatchExecutionStop::Deferred(
-                                EffectBatchExecutionDeferred::new(&lowered, kind, message),
-                            ));
-                        }
-                        Err(super::RelationalEffectExecutionFailure::Denied { kind, message }) => {
-                            return Err(EffectBatchExecutionStop::Denied(
-                                EffectBatchExecutionDenial::aggregate(kind, message),
-                            ));
-                        }
-                        Err(super::RelationalEffectExecutionFailure::ControlStopped {
-                            kind,
-                            message,
-                        }) => {
-                            return Err(EffectBatchExecutionStop::ControlStopped(
-                                super::EffectBatchExecutionControlStopped::new(
-                                    &lowered, kind, message,
-                                ),
-                            ));
-                        }
-                        Err(super::RelationalEffectExecutionFailure::SettlementDeferred(
-                            deferred,
-                        )) => {
-                            let (message, settlement) = deferred.into_parts();
-                            return Err(EffectBatchExecutionStop::SettlementDeferred(
-                                EffectBatchSettlementDeferred::new(&lowered, message, settlement),
-                            ));
-                        }
-                    };
+                let aggregate_commit = match execute_lowered_mutation_batch(
+                    execution,
+                    runtime,
+                    batch.declarations(),
+                ) {
+                    Ok(commit) => commit,
+                    Err(super::RelationalEffectExecutionFailure::Deferred { kind, message }) => {
+                        return Err(EffectBatchExecutionStop::Deferred(
+                            EffectBatchExecutionDeferred::new(&lowered, kind, message),
+                        ));
+                    }
+                    Err(super::RelationalEffectExecutionFailure::Denied { kind, message }) => {
+                        return Err(EffectBatchExecutionStop::Denied(
+                            EffectBatchExecutionDenial::aggregate(kind, message),
+                        ));
+                    }
+                    Err(super::RelationalEffectExecutionFailure::ControlStopped {
+                        kind,
+                        message,
+                    }) => {
+                        return Err(EffectBatchExecutionStop::ControlStopped(
+                            super::EffectBatchExecutionControlStopped::new(&lowered, kind, message),
+                        ));
+                    }
+                    Err(super::RelationalEffectExecutionFailure::SettlementDeferred(deferred)) => {
+                        let (message, settlement) = deferred.into_parts();
+                        return Err(EffectBatchExecutionStop::SettlementDeferred(
+                            EffectBatchSettlementDeferred::new(&lowered, message, settlement),
+                        ));
+                    }
+                };
                 let components = batch
                     .declarations
                     .into_iter()
@@ -338,9 +336,10 @@ impl LoweredEffectBatchExecutionPlan {
 
     pub fn execute_receipt_with(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         mut authority: EffectExecutionAuthority<'_>,
     ) -> Result<EffectExecutionReceipt, EffectBatchExecutionStop> {
-        let executed = self.execute_with_authority(&mut authority)?;
+        let executed = self.execute_with_authority(execution, &mut authority)?;
         let receipt = executed.receipt();
         super::receipt_snapshot_release::release_batch(&mut authority, &executed);
         Ok(receipt)

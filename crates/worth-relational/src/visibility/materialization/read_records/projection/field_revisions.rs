@@ -17,10 +17,11 @@ impl VisibilityProjectionView<'_> {
     /// checkpoint images retain native revisions, including absent revisions.
     pub fn entity_field_revision(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity: EntityId,
         locator: &AspectFieldLocator,
     ) -> Option<RelationalFieldRevision> {
-        self.entity_field_revision_admitted(entity, locator, |_| {
+        self.entity_field_revision_admitted(_execution, entity, locator, |_| {
             Ok::<_, std::convert::Infallible>(())
         })
         .unwrap_or_else(|never| match never {})
@@ -28,6 +29,7 @@ impl VisibilityProjectionView<'_> {
 
     pub fn relation_field_revision(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         relation: RelationId,
         locator: &AspectFieldLocator,
     ) -> Option<RelationalFieldRevision> {
@@ -110,6 +112,9 @@ mod tests {
 
     #[test]
     fn exact_field_revisions_keep_unrelated_sibling_and_absence_stable() {
+        let host_request = crate::test_execution_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
         let runtime = AspectSchemaFixture {
             entity_aspects: vec![entity_summary_struct_aspect(
                 aspect_key("summary"),
@@ -146,10 +151,13 @@ mod tests {
         let title = locator("summary", "title");
         let status = locator("summary", "status");
         let read = |snapshot| {
-            let view = runtime.read_truth().project_snapshot(snapshot).unwrap();
+            let view = runtime
+                .read_truth()
+                .project_snapshot(snapshot, execution)
+                .unwrap();
             (
-                view.entity_field_revision(entity, &title),
-                view.entity_field_revision(entity, &status),
+                view.entity_field_revision(execution, entity, &title),
+                view.entity_field_revision(execution, entity, &status),
             )
         };
         let before = read(&created.snapshot);
@@ -198,6 +206,9 @@ mod tests {
 
     #[test]
     fn absent_present_absent_aba_has_distinct_native_revision() {
+        let host_request = crate::test_execution_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
         let binding = entity_summary_struct_aspect(aspect_key("summary"), field_key("summary"));
         let contract = binding.contract.clone();
         let runtime = AspectSchemaFixture {
@@ -235,18 +246,18 @@ mod tests {
         let revision = |snapshot| {
             runtime
                 .read_truth()
-                .project_snapshot(snapshot)
+                .project_snapshot(snapshot, execution)
                 .unwrap()
-                .entity_field_revision(entity, &status)
+                .entity_field_revision(execution, entity, &status)
                 .unwrap()
         };
         let initial = revision(&created.snapshot);
         assert_eq!(initial.presence(), RelationalFieldPresence::Absent);
         let title_initial = runtime
             .read_truth()
-            .project_snapshot(&created.snapshot)
+            .project_snapshot(&created.snapshot, execution)
             .unwrap()
-            .entity_field_revision(entity, &title);
+            .entity_field_revision(execution, entity, &title);
 
         let mut set = test_owner_begin_transaction_for_main(&runtime);
         set.push_batch(
@@ -306,9 +317,9 @@ mod tests {
             title_initial,
             runtime
                 .read_truth()
-                .project_snapshot(&absent_again.snapshot)
+                .project_snapshot(&absent_again.snapshot, execution)
                 .unwrap()
-                .entity_field_revision(entity, &title)
+                .entity_field_revision(execution, entity, &title)
         );
         for outcome in [&created, &present, &absent_again] {
             release_test_commit_snapshot(&runtime, outcome);
@@ -317,31 +328,34 @@ mod tests {
 
     #[test]
     fn forked_updates_preserve_the_original_field_revision_and_recreation_changes_identity() {
+        let host_request = crate::test_execution_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
         let runtime = runtime_with_test_schema();
         let created = create_entity_outcome(&runtime, "first");
         let entity = changed_entities(&created)[0];
         let name = locator("name", "name");
         let original = runtime
             .read_truth()
-            .project_snapshot(&created.snapshot)
+            .project_snapshot(&created.snapshot, execution)
             .unwrap()
-            .entity_field_revision(entity, &name)
+            .entity_field_revision(execution, entity, &name)
             .unwrap();
         let fork = create_branch_from_main(&runtime, "field-revision-fork");
         let changed = update_entity_on_branch(&runtime, entity, "second", fork.clone());
         let on_fork = runtime
             .read_truth()
-            .project_snapshot(&changed.snapshot)
+            .project_snapshot(&changed.snapshot, execution)
             .unwrap()
-            .entity_field_revision(entity, &name)
+            .entity_field_revision(execution, entity, &name)
             .unwrap();
         assert_ne!(on_fork, original);
         assert_eq!(
             runtime
                 .read_truth()
-                .project_snapshot(&created.snapshot)
+                .project_snapshot(&created.snapshot, execution)
                 .unwrap()
-                .entity_field_revision(entity, &name),
+                .entity_field_revision(execution, entity, &name),
             Some(original)
         );
         let main = snapshot_for_owner_branch(
@@ -351,9 +365,9 @@ mod tests {
         assert_eq!(
             runtime
                 .read_truth()
-                .project_snapshot(&main)
+                .project_snapshot(&main, execution)
                 .unwrap()
-                .entity_field_revision(entity, &name),
+                .entity_field_revision(execution, entity, &name),
             Some(original)
         );
         runtime.snapshots().release_snapshot(&main).unwrap();
@@ -362,9 +376,9 @@ mod tests {
         assert_eq!(
             runtime
                 .read_truth()
-                .project_snapshot(&deleted.snapshot)
+                .project_snapshot(&deleted.snapshot, execution)
                 .unwrap()
-                .entity_field_revision(entity, &name),
+                .entity_field_revision(execution, entity, &name),
             None
         );
         let recreated = create_entity_outcome(&runtime, "first");
@@ -373,9 +387,9 @@ mod tests {
         assert_ne!(
             runtime
                 .read_truth()
-                .project_snapshot(&recreated.snapshot)
+                .project_snapshot(&recreated.snapshot, execution)
                 .unwrap()
-                .entity_field_revision(new_entity, &name),
+                .entity_field_revision(execution, new_entity, &name),
             Some(original)
         );
         for outcome in [&created, &changed, &deleted, &recreated] {

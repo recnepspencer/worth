@@ -26,19 +26,29 @@ worth_query_declaration::worth_query_operation_reads!(
 fn installed_handler_reader_admits_actual_raw_scalar_and_uses_declared_decoder() {
     let world = installed_authorization_world(true);
     let request = live_scope();
-    let completed = projection::with_reader(&world, &request, |reader| {
-        let scope = reader.scope().clone();
-        reader.field_with_predecode_admission(&scope, AccountStatus::reference(), |raw, check| {
-            check().unwrap();
-            let AspectValue::String(InternedString::Raw(text)) = raw else {
-                panic!("actual native string carrier expected")
-            };
-            assert_eq!(text, "open");
-            assert_eq!(raw.semantic_byte_width(), 5);
-            assert!(raw.owned_allocation_capacity_bytes() >= text.len());
-            Ok::<_, ()>(())
+    let completed = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            projection::with_reader(&phase, &world, &request, |reader| {
+                let scope = reader.scope().clone();
+                reader.field_with_predecode_admission(
+                    &scope,
+                    AccountStatus::reference(),
+                    |raw, check| {
+                        check().unwrap();
+                        let AspectValue::String(InternedString::Raw(text)) = raw else {
+                            panic!("actual native string carrier expected")
+                        };
+                        assert_eq!(text, "open");
+                        assert_eq!(raw.semantic_byte_width(), 5);
+                        assert!(raw.owned_allocation_capacity_bytes() >= text.len());
+                        Ok::<_, ()>(())
+                    },
+                )
+            })
         })
-    });
+        .expect("the fixture read owns its installed host call");
     assert_eq!(completed.unwrap().unwrap(), Some("open".to_owned()));
 }
 
@@ -48,12 +58,20 @@ fn actual_admission_denial_is_preserved_without_a_decoded_value() {
     struct OwnerDenied(usize);
     let world = installed_authorization_world(true);
     let request = live_scope();
-    let result = projection::with_reader(&world, &request, |reader| {
-        let scope = reader.scope().clone();
-        reader.field_with_predecode_admission(&scope, AccountStatus::reference(), |raw, _| {
-            Err(OwnerDenied(raw.semantic_byte_width()))
+    let result = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            projection::with_reader(&phase, &world, &request, |reader| {
+                let scope = reader.scope().clone();
+                reader.field_with_predecode_admission(
+                    &scope,
+                    AccountStatus::reference(),
+                    |raw, _| Err(OwnerDenied(raw.semantic_byte_width())),
+                )
+            })
         })
-    });
+        .expect("the fixture read owns its installed host call");
     assert_eq!(result.unwrap(), Err(OwnerDenied(5)));
 }
 
@@ -64,34 +82,59 @@ fn large_carrier_denial_allocates_only_projection_metadata_before_decoder() {
     let payload = "q".repeat(128 * 1024);
     let world = installed_authorization_world_with_label(&payload);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
-    let admission = admitted_operation(&world, &principal, &account, &request);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let admission = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            admitted_operation(&phase, &world, &principal, &account, &request)
+        })
+        .expect("the fixture read owns its installed host call");
     let mut allocated = 0;
     let completed = world
-        .invariant
-        .project_admitted_operation(
-            &admission,
-            |reader, scope| {
-                let region = stats_alloc::Region::new(&stats_alloc::INSTRUMENTED_SYSTEM);
-                let result = reader.decision_field_with_predecode_admission(
-                    scope,
-                    AccountLabel::reference(),
-                    |raw, _| {
-                        let AspectValue::String(InternedString::Raw(actual)) = raw else {
-                            panic!("actual label carrier expected")
-                        };
-                        assert_eq!(actual.len(), payload.len());
-                        Err::<(), _>("owner-work-limit")
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .invariant
+                .project_admitted_operation(
+                    &phase,
+                    &admission,
+                    |reader, scope| {
+                        let region = stats_alloc::Region::new(&stats_alloc::INSTRUMENTED_SYSTEM);
+                        let result = reader.decision_field_with_predecode_admission(
+                            scope,
+                            AccountLabel::reference(),
+                            |raw, _| {
+                                let AspectValue::String(InternedString::Raw(actual)) = raw else {
+                                    panic!("actual label carrier expected")
+                                };
+                                assert_eq!(actual.len(), payload.len());
+                                Err::<(), _>("owner-work-limit")
+                            },
+                            &|| Ok(()),
+                        );
+                        allocated = region.change().bytes_allocated;
+                        result
                     },
-                    &|| Ok(()),
-                );
-                allocated = region.change().bytes_allocated;
-                result
-            },
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     assert_eq!(
         completed.output().as_ref().unwrap(),
         &Err("owner-work-limit")
@@ -125,31 +168,43 @@ fn ordinary_decision_field_decodes_without_a_carrier_copy() {
 
 #[test]
 fn isolated_ordinary_field_decode() {
-    if std::env::var_os("WORTH_QUERY_BORROWED_FIELD_DECODE_PROBE").is_none() {
-        return;
-    }
-    let small = installed_authorization_world_with_label("small");
-    let (_, fixed_allocation) = ordinary_field_allocation(&small);
-    let payload = "q".repeat(128 * 1024);
-    let large = installed_authorization_world_with_label(&payload);
-    let (actual, allocated) = ordinary_field_allocation(&large);
-    assert_eq!(actual, payload);
-    assert!(
-        allocated <= fixed_allocation + payload.len(),
-        "only the owned decoded String grows with the carrier: \
+    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+        if std::env::var_os("WORTH_QUERY_BORROWED_FIELD_DECODE_PROBE").is_none() {
+            return;
+        }
+        let small = installed_authorization_world_with_label("small");
+        let (_, fixed_allocation) = ordinary_field_allocation(&host_custody, &small);
+        let payload = "q".repeat(128 * 1024);
+        let large = installed_authorization_world_with_label(&payload);
+        let (actual, allocated) = ordinary_field_allocation(&host_custody, &large);
+        assert_eq!(actual, payload);
+        assert!(
+            allocated <= fixed_allocation + payload.len(),
+            "only the owned decoded String grows with the carrier: \
          allocated {allocated}, fixed allocation {fixed_allocation}"
-    );
+        );
+    })
 }
 
-fn ordinary_field_allocation(world: &super::super::fixture::AuthorizationWorld) -> (String, usize) {
+fn ordinary_field_allocation(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
+    world: &super::super::fixture::AuthorizationWorld,
+) -> (String, usize) {
     let request = live_scope();
-    let principal = authenticated_principal(world, &request);
-    let account = resolved_account(world, "open", &request);
-    let admission = admitted_operation(world, &principal, &account, &request);
+    let principal = authenticated_principal(phase_custody, world, &request);
+    let account = resolved_account(phase_custody, world, "open", &request);
+    let admission = admitted_operation(
+        &phase_custody.phase_for_application(&world.application),
+        world,
+        &principal,
+        &account,
+        &request,
+    );
     let mut allocated = 0;
     let completed = world
         .invariant
         .project_admitted_operation(
+            &phase_custody.phase_for_application(&world.application),
             &admission,
             |reader, scope| {
                 // Measure only this ordinary field call, not installation, authorization,
@@ -170,12 +225,14 @@ fn ordinary_field_allocation(world: &super::super::fixture::AuthorizationWorld) 
     let _reads = world
         .application
         .begin_projected_application_read_attempt(
+            &phase_custody.phase_for_application(&world.application),
             admission,
             projection,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap()
         .complete_projected_dependencies(
+            &phase_custody.phase_for_application(&world.application),
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
@@ -187,26 +244,43 @@ fn undeclared_and_foreign_reads_deny_before_raw_callback() {
     let world = installed_authorization_world(true);
     let other = installed_authorization_world(true);
     let request = live_scope();
-    let foreign = other
-        .invariant
-        .project(
-            |reader| {
-                reader
-                    .resolve_entity(AccountStatus::reference(), "open".into())
-                    .unwrap()
-            },
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
-        .into_parts()
-        .0;
-    let called = Cell::new(false);
-    let result = projection::with_reader(&world, &request, |reader| {
-        reader.field_with_predecode_admission(&foreign, AccountStatus::reference(), |_, _| {
-            called.set(true);
-            Ok::<_, ()>(())
+    let foreign = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            other
+                .invariant
+                .project(
+                    &phase,
+                    |reader| {
+                        reader
+                            .resolve_entity(AccountStatus::reference(), "open".into())
+                            .unwrap()
+                    },
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap()
+                .into_parts()
+                .0
         })
-    });
+        .expect("the fixture read owns its installed host call");
+    let called = Cell::new(false);
+    let result = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            projection::with_reader(&phase, &world, &request, |reader| {
+                reader.field_with_predecode_admission(
+                    &foreign,
+                    AccountStatus::reference(),
+                    |_, _| {
+                        called.set(true);
+                        Ok::<_, ()>(())
+                    },
+                )
+            })
+        })
+        .expect("the fixture read owns its installed host call");
     let denial = result
         .unwrap_err()
         .downcast::<crate::domain_computation::primary_graph::WorthQueryInvariantDecisionPlanDenial>()
@@ -217,14 +291,20 @@ fn undeclared_and_foreign_reads_deny_before_raw_callback() {
     );
     assert!(!called.get());
 
-    let result = projection::with_reader(&world, &request, |reader| {
-        let scope = reader.scope().clone();
-        // ProgramRequiredOperation declares only AccountStatus, not AccountLabel.
-        reader.field_with_predecode_admission(&scope, AccountLabel::reference(), |_, _| {
-            called.set(true);
-            Ok::<_, ()>(())
+    let result = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            projection::with_reader(&phase, &world, &request, |reader| {
+                let scope = reader.scope().clone();
+                // ProgramRequiredOperation declares only AccountStatus, not AccountLabel.
+                reader.field_with_predecode_admission(&scope, AccountLabel::reference(), |_, _| {
+                    called.set(true);
+                    Ok::<_, ()>(())
+                })
+            })
         })
-    });
+        .expect("the fixture read owns its installed host call");
     let denial = result
         .unwrap_err()
         .downcast::<crate::domain_computation::primary_graph::WorthQueryInvariantDecisionPlanDenial>()

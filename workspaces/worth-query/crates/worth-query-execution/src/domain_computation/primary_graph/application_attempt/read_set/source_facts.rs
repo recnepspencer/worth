@@ -16,6 +16,7 @@ mod indexed_selection;
 mod merging;
 
 pub(super) fn validate_source_facts<Schema, Operation, Input, Scope>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     admission: &mut WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     lease: &WorthQueryApplicationSnapshotLease,
 ) -> Result<Vec<WorthQueryApplicationObservedFact>, WorthQueryApplicationAttemptDenial> {
@@ -26,9 +27,9 @@ pub(super) fn validate_source_facts<Schema, Operation, Input, Scope>(
                 StoreDenial::RequestInterruption(stop).into_attempt_denial(admission.operation())
             );
         }
-        let fresh = lease
-            .handle()
-            .with_runtime(|runtime| fact.remains_equal_in(runtime, lease.snapshot()));
+        let fresh = lease.handle().with_runtime(execution, |runtime| {
+            fact.remains_equal_in(runtime, execution, lease.snapshot())
+        });
         if !fresh {
             let kind = if matches!(fact, WorthQueryApplicationObservedFact::SourceEntity { .. }) {
                 WorthQueryApplicationAttemptDenialKind::SourceRetired

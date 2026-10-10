@@ -9,8 +9,12 @@ use super::installed_operation_fixture::{
 
 #[test]
 fn admitted_parallel_frontier_retains_lower_proof_and_converges_with_serial_trace() {
-    let serial = complete_serial_trace("workflow-serial-reference");
-    let mut workspace = workflow_workspace("workflow-parallel-frontier").unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let serial = complete_serial_trace(request_execution, "workflow-serial-reference");
+    let mut workspace =
+        workflow_workspace(request_execution, "workflow-parallel-frontier").unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let run = workspace
         .observe_operating_world(workspace.current_world())
@@ -77,7 +81,12 @@ fn admitted_parallel_frontier_retains_lower_proof_and_converges_with_serial_trac
 
 #[test]
 fn nondeterministic_lowering_cannot_enter_parallel_progression() {
-    let mut workspace = nondeterministic_workflow_workspace("workflow-nondeterministic").unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace =
+        nondeterministic_workflow_workspace(request_execution, "workflow-nondeterministic")
+            .unwrap();
     let installed = workspace.domain(GeometryDomain).unwrap();
     let run = workspace
         .observe_operating_world(workspace.current_world())
@@ -123,7 +132,13 @@ fn nondeterministic_lowering_cannot_enter_parallel_progression() {
 
 #[test]
 fn parallel_workflow_requires_an_exact_admission_provider_at_runtime_construction() {
-    let denial = match missing_parallel_provider_workspace("workflow-parallel-provider-missing") {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let denial = match missing_parallel_provider_workspace(
+        request_execution,
+        "workflow-parallel-provider-missing",
+    ) {
         Ok(_) => panic!("parallel workflow must not install without its lower admission provider"),
         Err(denial) => denial,
     };
@@ -134,8 +149,12 @@ fn parallel_workflow_requires_an_exact_admission_provider_at_runtime_constructio
 
 #[test]
 fn lower_runtime_parallel_denial_stops_before_frontier_graph_or_executor_work() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace =
-        serial_parallel_provider_workspace("workflow-parallel-lower-denial").unwrap();
+        serial_parallel_provider_workspace(request_execution, "workflow-parallel-lower-denial")
+            .unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let run = workspace
         .observe_operating_world(workspace.current_world())
@@ -186,7 +205,11 @@ fn lower_runtime_parallel_denial_stops_before_frontier_graph_or_executor_work() 
 
 #[test]
 fn parallel_frontier_accepts_ready_incomparable_stages_with_distinct_predecessors() {
-    let mut workspace = divergent_frontier_workspace("workflow-divergent-frontier").unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace =
+        divergent_frontier_workspace(request_execution, "workflow-divergent-frontier").unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let run = workspace
         .observe_operating_world(workspace.current_world())
@@ -240,8 +263,11 @@ fn parallel_frontier_accepts_ready_incomparable_stages_with_distinct_predecessor
     );
 }
 
-fn complete_serial_trace(name: &str) -> String {
-    let mut workspace = workflow_workspace(name).unwrap();
+fn complete_serial_trace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    name: &str,
+) -> String {
+    let mut workspace = workflow_workspace(request_execution, name).unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     workspace
         .observe_operating_world(workspace.current_world())

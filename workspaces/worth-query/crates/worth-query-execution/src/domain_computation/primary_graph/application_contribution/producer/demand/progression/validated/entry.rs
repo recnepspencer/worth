@@ -91,6 +91,7 @@ where
         Family,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
 
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
@@ -117,6 +118,7 @@ where
         let waiting = || CallerPass::Answer(WorthQueryOutputDemandAdvance::Pending);
         let wave_authority = commit_authority.clone();
         let checkpoint_progress = match self.advance_validated_output_demand_with_schedule(
+            execution,
             phase,
             demand,
             principal,
@@ -142,6 +144,7 @@ where
             match self.output_demands.begin_published(interest) {
                 Admission::AdvanceCheckpoint { claim, checkpoint } => {
                     if !self.advance_output_checkpoint(
+                        execution,
                         phase,
                         interest,
                         &demand.selected.identity,
@@ -158,6 +161,7 @@ where
         };
         if matches!(checkpoint_progress, CheckpointProgress::Published(_)) {
             return self.settle_own_ready(
+                execution,
                 phase,
                 demand,
                 &completion,
@@ -168,6 +172,7 @@ where
         // The Ready this call reached is certified as any Ready is: by the
         // required wave when it has one, and otherwise on its own proof.
         if let Some(advance) = super::super::required_wave::advance_required_before_caller(
+            execution,
             phase,
             self,
             demand,
@@ -180,6 +185,7 @@ where
             return Ok(CallerPass::Answer(advance));
         }
         self.settle_own_ready(
+            execution,
             phase,
             demand,
             &completion,
@@ -192,6 +198,7 @@ where
         Family,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
 
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
@@ -217,6 +224,7 @@ where
         // checkpoint itself.
         Ok(
             match self.advance_validated_output_demand_with_schedule(
+                execution,
                 phase,
                 demand,
                 principal,

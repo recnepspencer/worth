@@ -49,6 +49,9 @@ impl WorthQueryDomainEntryMarker for ForeignHostDomain {
 
 #[test]
 fn host_installs_the_exact_builder_admitted_package_set_into_one_runtime() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let builder = complete_backend_from_parts_builder()
         .domain_package(host_package())
         .expect("host package admits")
@@ -58,7 +61,7 @@ fn host_installs_the_exact_builder_admitted_package_set_into_one_runtime() {
         .install(request.generation(), request.into_packages())
         .expect("host installs the exact admitted set");
     let runtime = completion
-        .complete(installation)
+        .complete(request_execution, installation)
         .expect("the issuing builder consumes the host installation");
 
     assert!(runtime.domain(HostInstalledDomain).is_ok());
@@ -66,6 +69,9 @@ fn host_installs_the_exact_builder_admitted_package_set_into_one_runtime() {
 
 #[test]
 fn host_completion_rejects_missing_packages_before_runtime_publication() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let builder = complete_backend_from_parts_builder()
         .domain_package(host_package())
         .expect("host package admits")
@@ -76,13 +82,16 @@ fn host_completion_rejects_missing_packages_before_runtime_publication() {
         .expect("an empty host index is structurally valid");
 
     assert_installation_denial(
-        completion.complete(installation),
+        completion.complete(request_execution, installation),
         WorthQueryHostRuntimeInstallationDenialKind::PackageCountMismatch,
     );
 }
 
 #[test]
 fn host_completion_rejects_equal_width_package_substitution() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let builder = complete_backend_from_parts_builder()
         .domain_package(host_package())
         .expect("host package admits")
@@ -99,13 +108,16 @@ fn host_completion_rejects_equal_width_package_substitution() {
         .expect("the foreign package set is independently valid");
 
     assert_installation_denial(
-        completion.complete(installation),
+        completion.complete(request_execution, installation),
         WorthQueryHostRuntimeInstallationDenialKind::MissingDomain,
     );
 }
 
 #[test]
 fn host_completion_rejects_generation_substitution() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let builder = complete_backend_from_parts_builder()
         .domain_package(host_package())
         .expect("host package admits")
@@ -116,7 +128,7 @@ fn host_completion_rejects_generation_substitution() {
         .expect("the successor-generation index is independently valid");
 
     assert_installation_denial(
-        completion.complete(installation),
+        completion.complete(request_execution, installation),
         WorthQueryHostRuntimeInstallationDenialKind::GenerationMismatch,
     );
 }

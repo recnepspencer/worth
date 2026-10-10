@@ -14,6 +14,7 @@ use super::execution_relational_scalar::{
 use super::RelationalEffectExecutionFailure;
 
 pub(super) fn execute_lowered_mutation_batch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
     declarations: &[LoweredMutationIntentDeclaration],
 ) -> Result<CommitResult, RelationalEffectExecutionFailure> {
@@ -48,6 +49,7 @@ pub(super) fn execute_lowered_mutation_batch(
         .map(|declaration| {
             lower_batch_component(
                 runtime,
+                execution,
                 declaration,
                 &transaction_validation_input,
                 &snapshot,
@@ -123,6 +125,7 @@ pub(super) fn execute_lowered_mutation_batch(
 
 fn lower_batch_component(
     runtime: &mut RelationalRuntime,
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     declaration: &LoweredMutationIntentDeclaration,
     transaction_basis: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
@@ -138,7 +141,7 @@ fn lower_batch_component(
         })?;
     let execution: StrategyExecutionDraft = runtime
         .commit_strategies()
-        .execute(&canonical, snapshot)
+        .execute(&canonical, snapshot, request_execution)
         .map_err(|error| {
             lower_runtime_error(
                 error,

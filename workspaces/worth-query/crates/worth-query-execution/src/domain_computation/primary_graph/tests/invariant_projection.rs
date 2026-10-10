@@ -9,16 +9,23 @@ use std::time::Duration;
 
 #[test]
 fn installed_invariant_projection_reads_one_pinned_typed_graph_snapshot() {
+    let host_request = crate::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = installed_authorization_world(true);
-    let snapshot = world.invariant.snapshot().expect("invariant snapshot");
-    let accounts = snapshot.entities(Account::reference());
-    let principals = snapshot.entities(Principal::reference());
-    let owners = snapshot.relations(AccountOwner::reference());
+    let snapshot = world
+        .application
+        .with_host_advancement(|phase| world.invariant.snapshot(&phase))
+        .expect("installed host call opens")
+        .expect("invariant snapshot");
+    let accounts = snapshot.entities(execution, Account::reference());
+    let principals = snapshot.entities(execution, Principal::reference());
+    let owners = snapshot.relations(execution, AccountOwner::reference());
     let mut statuses = accounts
         .iter()
         .map(|account| {
             snapshot
-                .field(account, AccountStatus::reference())
+                .field(execution, account, AccountStatus::reference())
                 .expect("installed account status must project")
         })
         .collect::<Vec<String>>();
@@ -36,16 +43,31 @@ fn installed_invariant_projection_reads_one_pinned_typed_graph_snapshot() {
 
 #[test]
 fn independently_installed_graphs_mint_distinct_projection_identities() {
+    let host_request = crate::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let first = installed_authorization_world(true);
     let second = installed_authorization_world(true);
-    let first_snapshot = first.invariant.snapshot().expect("first snapshot");
-    let second_snapshot = second.invariant.snapshot().expect("second snapshot");
-    let first_account = first_snapshot.entities(Account::reference()).remove(0);
-    let second_account = second_snapshot.entities(Account::reference()).remove(0);
+    let first_snapshot = first
+        .application
+        .with_host_advancement(|phase| first.invariant.snapshot(&phase))
+        .expect("installed host call opens")
+        .expect("first snapshot");
+    let second_snapshot = second
+        .application
+        .with_host_advancement(|phase| second.invariant.snapshot(&phase))
+        .expect("installed host call opens")
+        .expect("second snapshot");
+    let first_account = first_snapshot
+        .entities(execution, Account::reference())
+        .remove(0);
+    let second_account = second_snapshot
+        .entities(execution, Account::reference())
+        .remove(0);
 
     assert_ne!(first_account, second_account);
     assert_eq!(
-        second_snapshot.field(&first_account, AccountStatus::reference()),
+        second_snapshot.field(execution, &first_account, AccountStatus::reference()),
         None,
         "a foreign projection identity must not be reinterpreted in this graph"
     );
@@ -55,20 +77,27 @@ fn independently_installed_graphs_mint_distinct_projection_identities() {
 fn invariant_entity_identity_exposes_the_resolved_instance() {
     let world = installed_authorization_world(true);
     let completed = world
-        .invariant
-        .project(
-            |reader| {
-                let open = reader
-                    .resolve_entity(AccountStatus::reference(), "open".to_string())
-                    .unwrap();
-                let unrelated = reader
-                    .resolve_entity(AccountStatus::reference(), "unrelated".to_string())
-                    .unwrap();
-                (open.entity_id(), unrelated.entity_id())
-            },
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("invariant projection");
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .invariant
+                .project(
+                    &phase,
+                    |reader| {
+                        let open = reader
+                            .resolve_entity(AccountStatus::reference(), "open".to_string())
+                            .unwrap();
+                        let unrelated = reader
+                            .resolve_entity(AccountStatus::reference(), "unrelated".to_string())
+                            .unwrap();
+                        (open.entity_id(), unrelated.entity_id())
+                    },
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .expect("invariant projection")
+        })
+        .expect("the fixture read owns its installed host call");
 
     assert_ne!(completed.output().0, completed.output().1);
 }
@@ -77,35 +106,42 @@ fn invariant_entity_identity_exposes_the_resolved_instance() {
 fn locked_projection_uses_indexes_and_directional_adjacency_without_graph_scans() {
     let world = installed_authorization_world(true);
     let completed = world
-        .invariant
-        .project(
-            |reader| {
-                let principal = reader
-                    .resolve_entity(PrincipalIdentityField::reference(), 1_u64)
-                    .unwrap();
-                let owned = reader
-                    .relations_from(AccountOwner::reference(), &principal)
-                    .unwrap();
-                let open = reader
-                    .resolve_entity(AccountStatus::reference(), "open".to_string())
-                    .unwrap();
-                let owners = reader
-                    .relations_to(AccountOwner::reference(), &open)
-                    .unwrap();
-                let mut statuses = owned
-                    .iter()
-                    .map(|relation| {
-                        reader
-                            .field(relation.to(), AccountStatus::reference())
-                            .unwrap()
-                    })
-                    .collect::<Vec<String>>();
-                statuses.sort();
-                (owned.len(), owners.len(), statuses)
-            },
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("invariant projection");
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .invariant
+                .project(
+                    &phase,
+                    |reader| {
+                        let principal = reader
+                            .resolve_entity(PrincipalIdentityField::reference(), 1_u64)
+                            .unwrap();
+                        let owned = reader
+                            .relations_from(AccountOwner::reference(), &principal)
+                            .unwrap();
+                        let open = reader
+                            .resolve_entity(AccountStatus::reference(), "open".to_string())
+                            .unwrap();
+                        let owners = reader
+                            .relations_to(AccountOwner::reference(), &open)
+                            .unwrap();
+                        let mut statuses = owned
+                            .iter()
+                            .map(|relation| {
+                                reader
+                                    .field(relation.to(), AccountStatus::reference())
+                                    .unwrap()
+                            })
+                            .collect::<Vec<String>>();
+                        statuses.sort();
+                        (owned.len(), owners.len(), statuses)
+                    },
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .expect("invariant projection")
+        })
+        .expect("the fixture read owns its installed host call");
 
     assert_eq!(
         completed.output(),
@@ -125,17 +161,27 @@ fn locked_projection_uses_indexes_and_directional_adjacency_without_graph_scans(
 fn optional_locked_resolution_distinguishes_absence_from_ambiguity_and_counts_work() {
     let world = installed_authorization_world(true);
     let completed = world
-        .invariant
-        .project(
-            |reader| {
-                reader
-                    .resolve_optional_entity(AccountStatus::reference(), "missing".to_string())
-                    .unwrap()
-                    .is_none()
-            },
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("optional invariant projection");
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .invariant
+                .project(
+                    &phase,
+                    |reader| {
+                        reader
+                            .resolve_optional_entity(
+                                AccountStatus::reference(),
+                                "missing".to_string(),
+                            )
+                            .unwrap()
+                            .is_none()
+                    },
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .expect("optional invariant projection")
+        })
+        .expect("the fixture read owns its installed host call");
 
     assert_eq!(completed.output(), &true);
     assert_eq!(completed.work().equality_lookups(), 1);
@@ -144,24 +190,44 @@ fn optional_locked_resolution_distinguishes_absence_from_ambiguity_and_counts_wo
 
 #[test]
 fn panicking_projection_releases_its_snapshot_without_poisoning_the_graph() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = installed_authorization_world(true);
-    let baseline = world.invariant.active_snapshot_count();
-    let panic = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        let _ = world.invariant.project::<()>(
-            |_| panic!("hostile projector"),
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        );
-    }));
+    let baseline = world.invariant.active_snapshot_count(request_execution);
+    let panic = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                let _ = world.invariant.project::<()>(
+                    &phase,
+                    |_| panic!("hostile projector"),
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                );
+            }))
+        })
+        .expect("the fixture read owns its installed host call");
 
     assert!(panic.is_err());
-    assert_eq!(world.invariant.active_snapshot_count(), baseline);
+    assert_eq!(
+        world.invariant.active_snapshot_count(request_execution),
+        baseline
+    );
     let completed = world
-        .invariant
-        .project(
-            |reader| reader.version(),
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("projection after hostile projector");
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .invariant
+                .project(
+                    &phase,
+                    |reader| reader.version(),
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .expect("projection after hostile projector")
+        })
+        .expect("the fixture read owns its installed host call");
     assert!(!completed.output().is_zero());
 }
 
@@ -172,44 +238,84 @@ fn admitted_projection_supplies_its_exact_root_without_an_equality_lookup() {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
-        .expect("the selected product branch remains admitted")
-        .resolve_authenticated_principal(
-            &world.binding,
-            &external,
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .select_product_branch(
+                    &host_custody.borrowed_request_for_test(),
+                    world.application.product_runtime().default_branch(),
+                )
+                .expect("the selected product branch remains admitted")
+                .resolve_authenticated_principal(
+                    &phase,
+                    &world.binding,
+                    &external,
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let scope = world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
-        .expect("the selected product branch remains admitted")
-        .resolve_entity(
-            AccountStatus::reference(),
-            "open".to_string(),
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .select_product_branch(
+                    &host_custody.borrowed_request_for_test(),
+                    world.application.product_runtime().default_branch(),
+                )
+                .expect("the selected product branch remains admitted")
+                .resolve_entity(
+                    &phase,
+                    AccountStatus::reference(),
+                    "open".to_string(),
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let operation = world
         .application
         .installed_schema()
         .installed_operation(TouchAccountOperation::reference())
         .unwrap();
     let admission = world
-        .selected_product()
-        .authorize_operation(&principal, &scope, &operation, Default::default(), &request)
-        .unwrap();
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .selected_product(&(phase).test_host_request())
+                .authorize_operation(
+                    &phase,
+                    &principal,
+                    &scope,
+                    &operation,
+                    Default::default(),
+                    &request,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
 
     let completed = world
-        .invariant
-        .project_admitted_operation(
-            &admission,
-            |reader, root| reader.field(root, AccountStatus::reference()),
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .invariant
+                .project_admitted_operation(
+                    &phase,
+                    &admission,
+                    |reader, root| reader.field(root, AccountStatus::reference()),
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
 
     assert_eq!(completed.output(), &Some("open".to_string()));
     assert_eq!(completed.work().equality_lookups(), 0);
@@ -217,72 +323,4 @@ fn admitted_projection_supplies_its_exact_root_without_an_equality_lookup() {
     assert_eq!(completed.work().field_reads(), 1);
 }
 
-#[test]
-fn admitted_projection_budget_exhaustion_mints_no_snapshot_authority() {
-    let world = installed_authorization_world(true);
-    let request = live_scope();
-    let external = world.authenticate("alice", Duration::from_secs(60), &request);
-    let principal = world
-        .application
-        .select_product_branch(world.application.product_runtime().default_branch())
-        .expect("the selected product branch remains admitted")
-        .resolve_authenticated_principal(
-            &world.binding,
-            &external,
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
-    let scope = world
-        .application
-        .select_product_branch(world.application.product_runtime().default_branch())
-        .expect("the selected product branch remains admitted")
-        .resolve_entity(
-            AccountStatus::reference(),
-            "open".to_string(),
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
-    let operation = world
-        .application
-        .installed_schema()
-        .installed_operation(TouchAccountOperation::reference())
-        .unwrap();
-    assert_eq!(operation.contracts().projection_work_budget(), 32);
-    let admission = world
-        .selected_product()
-        .authorize_operation(&principal, &scope, &operation, Default::default(), &request)
-        .unwrap();
-    let baseline = world.invariant.active_snapshot_count();
-
-    let denial = world
-        .invariant
-        .project_admitted_operation(
-            &admission,
-            |reader, _| {
-                let account = reader
-                    .resolve_entity(AccountStatus::reference(), "open".to_string())
-                    .unwrap();
-                for _ in 0..31 {
-                    let _ = reader.field(&account, AccountStatus::reference());
-                }
-            },
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .err()
-        .expect("provider work beyond the installed limit must deny");
-
-    assert_eq!(
-        denial.kind(),
-        WorthQueryOperationProjectionDenialKind::WorkBudgetExceeded
-    );
-    let work = denial
-        .projection_work()
-        .expect("the exhausted reader retains actual work");
-    assert_eq!(work.equality_lookups(), 1);
-    assert_eq!(work.index_candidates_examined(), 1);
-    assert_eq!(work.field_reads(), 30);
-    assert_eq!(work.provider_work_units(), 32);
-    assert_eq!(world.invariant.active_snapshot_count(), baseline);
-}
+mod admitted_projection_budget_exhaustion_mints_no_snapshot_authorit;

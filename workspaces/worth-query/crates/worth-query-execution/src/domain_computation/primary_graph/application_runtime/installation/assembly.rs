@@ -9,6 +9,7 @@ use crate::domain_computation::primary_graph::{
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationSchema;
 pub(super) fn assemble_application_runtime<Schema>(
+    phase: &crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase<'_>,
     graph: PublishedApplicationGraph<
         crate::domain_computation::primary_graph::managed_bridge::WorthQueryInstalledApplicationBridge,
     >,
@@ -40,7 +41,7 @@ where
     )
     .expect("installed invalidation resources retain at least one position");
     let product_runtime = crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime::install(
-        graph.primary_provider.graph.prepare_product_source(&graph.relational_branch_identity)
+        graph.primary_provider.graph.prepare_product_source(&phase.execution_request(), &graph.relational_branch_identity)
             .map_err(|denial| WorthQueryPrimaryGraphInstallationDenial::new(
                 WorthQueryPrimaryGraphInstallationDenialKind::RelationalSchemaRejected,
                 format!("Product source admission: {denial:?}"),

@@ -10,7 +10,10 @@ use crate::domain_computation::primary_graph::{
 
 #[test]
 fn republication_keeps_a_performed_read_without_inventing_cutoff_proofs() {
-    staged(|mut stage| {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    staged(request_execution, |mut stage| {
         let selection = WorthQueryObservedSourceSelection::selecting_for_test(2);
         let facts: Arc<[Fact]> = Arc::from([source_entity(1), source_entity(2)]);
         let consumed = Arc::from([]);
@@ -43,7 +46,10 @@ fn republication_keeps_a_performed_read_without_inventing_cutoff_proofs() {
 
 #[test]
 fn restoring_existing_unverified_facts_drops_state_as_restored() {
-    staged(|mut stage| {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    staged(request_execution, |mut stage| {
         let facts: Arc<[Fact]> = Arc::from([source_entity(1)]);
         let computation = stage.lineage.retain_computation(
             sealed_run_for_lineage_test(),
@@ -72,7 +78,11 @@ fn restoring_existing_unverified_facts_drops_state_as_restored() {
 
 #[test]
 fn republication_continues_an_opaque_reader_record() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     republish_untracked(
+        request_execution,
         crate::domain_computation::primary_graph::DecisionContextUse::default()
             .raw_reader_for_test(),
     );
@@ -80,14 +90,21 @@ fn republication_continues_an_opaque_reader_record() {
 
 #[test]
 fn republication_continues_a_request_context_record() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     republish_untracked(
+        request_execution,
         crate::domain_computation::primary_graph::DecisionContextUse::default()
             .request_context_for_test(),
     );
 }
 
-fn republish_untracked(context: crate::domain_computation::primary_graph::DecisionContextUse) {
-    staged(|mut stage| {
+fn republish_untracked(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    context: crate::domain_computation::primary_graph::DecisionContextUse,
+) {
+    staged(request_execution, |mut stage| {
         let selection = WorthQueryObservedSourceSelection::selecting_for_test(2);
         let facts: Arc<[Fact]> = Arc::from([source_entity(1), source_entity(2)]);
         let consumed = Arc::from([]);

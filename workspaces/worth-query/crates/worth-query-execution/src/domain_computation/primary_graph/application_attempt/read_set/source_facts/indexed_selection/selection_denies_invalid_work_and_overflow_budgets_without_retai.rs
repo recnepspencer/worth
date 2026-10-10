@@ -1,0 +1,164 @@
+//! selection denies invalid work and overflow budgets without retaining partial results.
+use super::*;
+
+#[test]
+fn selection_denies_invalid_work_and_overflow_budgets_without_retaining_partial_results() {
+    let world = installed_authorization_world(true);
+    let request = live_scope();
+    let label = AccountLabel::reference();
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            set_unrelated_value(
+                &phase,
+                &world,
+                "primary",
+                (label.entity(), label.aspect(), label.field()),
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let actor = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let operation = world
+        .application
+        .installed_schema()
+        .installed_operation(TouchAccountOperation::reference())
+        .unwrap();
+    let admission = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .selected_product(&(phase).test_host_request())
+                .authorize_operation(
+                    &phase,
+                    &actor,
+                    &account,
+                    &operation,
+                    Default::default(),
+                    &request,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
+    let over_budget = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world.invariant.project_admitted_operation(
+                &phase,
+                &admission,
+                |reader, _| {
+                    let denial = reader
+                        .decision_select_entities(
+                            AccountLabel::reference(),
+                            "primary".to_owned(),
+                            32,
+                        )
+                        .unwrap_err()
+                        .downcast::<WorthQueryEntityResolutionDenial>()
+                        .unwrap();
+                    assert_eq!(
+                        denial.kind(),
+                        WorthQueryEntityResolutionDenialKind::ProjectionWorkBudgetExceeded
+                    );
+                },
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    assert!(
+        over_budget.is_err(),
+        "an exhausted projection cannot be sealed after a handler ignores its denial"
+    );
+    let (_, projection, work) = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .invariant
+                .project_admitted_operation(
+                    &phase,
+                    &admission,
+                    |reader, _| {
+                        for (limit, expected) in [
+                            (
+                                0,
+                                WorthQueryEntityResolutionDenialKind::InvalidCandidateLimit,
+                            ),
+                            (
+                                usize::MAX,
+                                WorthQueryEntityResolutionDenialKind::InvalidCandidateLimit,
+                            ),
+                            (
+                                1,
+                                WorthQueryEntityResolutionDenialKind::CandidateLimitExceeded {
+                                    maximum: 1,
+                                },
+                            ),
+                        ] {
+                            let denial = reader
+                                .decision_select_entities(
+                                    AccountLabel::reference(),
+                                    "primary".to_owned(),
+                                    limit,
+                                )
+                                .unwrap_err()
+                                .downcast::<WorthQueryEntityResolutionDenial>()
+                                .unwrap();
+                            assert_eq!(denial.kind(), expected);
+                        }
+                    },
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap()
+                .into_parts()
+        })
+        .expect("the fixture read owns its installed host call");
+    assert_eq!(
+        work.equality_lookups(),
+        1,
+        "invalid budgets deny before index work"
+    );
+    assert_eq!(work.index_candidates_examined(), 1);
+    let reads = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .begin_projected_application_read_attempt(
+                    &phase,
+                    admission,
+                    projection,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap()
+                .complete_projected_dependencies(
+                    &phase,
+                    crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
+    assert!(
+        !reads
+            .facts
+            .iter()
+            .any(|fact| matches!(fact, Fact::IndexedEntitySelection { .. })),
+        "an overflowing prefix cannot become a complete source fact"
+    );
+}

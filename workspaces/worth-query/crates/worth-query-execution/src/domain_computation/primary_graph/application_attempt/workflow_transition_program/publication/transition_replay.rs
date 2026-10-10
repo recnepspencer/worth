@@ -20,6 +20,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt::workflow_t
 impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation, Input, Scope> {
     pub(super) fn resolve_transition_replay(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
     ) -> Result<Option<WorkflowProgressOutcome>, WorthQueryApplicationIdempotencyResolutionDenial>
@@ -102,7 +103,8 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
             ),
         };
         if let Some(probe_identity) = replays.probe_identity {
-            let probe = runtime.resolve_admitted_application_idempotency(
+            let probe = runtime.resolve_admitted_application_idempotency_with_request(
+                execution,
                 admission,
                 idempotency.bind_workflow_transition(&probe_identity),
             )?;
@@ -129,15 +131,17 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
             )
         });
         let resolutions =
-            runtime.resolve_admitted_application_idempotencies(admission, bindings)?;
+            runtime.resolve_admitted_application_idempotencies(execution, admission, bindings)?;
         for (replay, resolution) in replays.iter().zip(resolutions) {
             match resolution.into_resolution() {
                 WorthQueryApplicationIdempotencyResolution::Unseen => {}
                 WorthQueryApplicationIdempotencyResolution::IntentDrift => drift = true,
                 WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => {
                     return Ok(Some(runtime.primary_provider.graph.with_runtime(
+                        execution,
                         |relational| {
                             super::project(
+                                execution,
                                 relational,
                                 receipt,
                                 replay.identity.clone(),
@@ -165,6 +169,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
         Binding,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         required: &RequiredWorkflowOperation,
         receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
@@ -276,7 +281,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
             .bind_workflow_transition(&replay.identity_bytes)
             .bind_workflow_operation(&receipt_identity);
         let [resolution] = runtime
-            .resolve_admitted_application_idempotencies(admission, [binding])?
+            .resolve_admitted_application_idempotencies(execution, admission, [binding])?
             .try_into()
             .expect("one operation replay binding returns one resolution");
         Ok(match resolution.into_resolution() {
@@ -286,22 +291,26 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                     WorthQueryApplicationCommitDenial::idempotency_intent_drift(),
                 )),
             ),
-            WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => {
-                Some(runtime.primary_provider.graph.with_runtime(|relational| {
-                    super::project(
-                        relational,
-                        receipt,
-                        replay.identity.clone(),
-                        locator.clone(),
-                        replay.node_path.clone(),
-                        replay.terminal,
-                        None,
-                        None,
-                        Some(receipt_identity),
-                        true,
-                    )
-                }))
-            }
+            WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => Some(
+                runtime
+                    .primary_provider
+                    .graph
+                    .with_runtime(execution, |relational| {
+                        super::project(
+                            execution,
+                            relational,
+                            receipt,
+                            replay.identity.clone(),
+                            locator.clone(),
+                            replay.node_path.clone(),
+                            replay.terminal,
+                            None,
+                            None,
+                            Some(receipt_identity),
+                            true,
+                        )
+                    }),
+            ),
         })
     }
 }

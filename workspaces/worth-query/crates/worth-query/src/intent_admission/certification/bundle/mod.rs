@@ -214,7 +214,9 @@ impl WorthQueryIntentAdmissionCertificationBundle {
     }
 }
 
-pub fn certify_intent_admission() -> WorthQueryIntentAdmissionCertificationBundle {
+pub fn certify_intent_admission(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryIntentAdmissionCertificationBundle {
     WorthQueryIntentAdmissionCertificationBundle::new(
         worth_query_intent_admission_family_inventory(),
         worth_query_intent_admission_coverage_inventory(),
@@ -222,13 +224,13 @@ pub fn certify_intent_admission() -> WorthQueryIntentAdmissionCertificationBundl
         WorthQueryIntentAdmissionPublicBoundaryAudit::new(),
         worth_query_intent_admission_proof_shape_audit(),
         WorthQueryIntentAdmissionTopologyAudit::new(),
-        worth_query_intent_admission_representative_output_report(),
-        worth_query_intent_admission_representative_family_report(),
-        worth_query_intent_admission_oracle_report(),
-        worth_query_intent_admission_legacy_parity_report(),
-        worth_query_intent_admission_support_traceability_report(),
-        worth_query_intent_admission_seeded_certification_report(),
-        worth_query_intent_admission_slope_report(),
+        worth_query_intent_admission_representative_output_report(execution),
+        worth_query_intent_admission_representative_family_report(execution),
+        worth_query_intent_admission_oracle_report(execution),
+        worth_query_intent_admission_legacy_parity_report(execution),
+        worth_query_intent_admission_support_traceability_report(execution),
+        worth_query_intent_admission_seeded_certification_report(execution),
+        worth_query_intent_admission_slope_report(execution),
     )
 }
 

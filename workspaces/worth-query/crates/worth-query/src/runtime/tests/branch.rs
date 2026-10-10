@@ -1,6 +1,9 @@
 use super::support::*;
 
-fn branch_intent_runtime(attempted: std::rc::Rc<std::cell::Cell<usize>>) -> WorthQueryRuntime {
+fn branch_intent_runtime(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    attempted: std::rc::Rc<std::cell::Cell<usize>>,
+) -> WorthQueryRuntime {
     test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
@@ -13,7 +16,7 @@ fn branch_intent_runtime(attempted: std::rc::Rc<std::cell::Cell<usize>>) -> Wort
         .intent_authority(CountingIntentAuthority { attempted })
         .support_profile(intent_support_profile())
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("intent-capable runtime should build")
 }
 
@@ -29,11 +32,15 @@ fn branch_intent_input(
 
 #[test]
 fn branch_local_intent_is_policy_admitted_without_authoritative_execution() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let attempted = std::rc::Rc::new(std::cell::Cell::new(0));
-    let mut runtime = branch_intent_runtime(attempted.clone());
+    let mut runtime = branch_intent_runtime(request_execution, attempted.clone());
 
     let mut branch = runtime
         .branch_with_options(
+            request_execution,
             test_session_label("branch local intent"),
             WorthQueryBranchOptions::sandboxed_write_intent(),
         )
@@ -90,7 +97,7 @@ fn branch_local_intent_is_policy_admitted_without_authoritative_execution() {
     );
 
     let inspection = runtime
-        .inspect_branch_intent_receipt(&receipt)
+        .inspect_branch_intent_receipt(request_execution, &receipt)
         .expect("branch intent inspection should succeed");
     assert_eq!(inspection.intent_name(), "branch-reconcile");
     assert_eq!(
@@ -115,12 +122,18 @@ fn branch_local_intent_is_policy_admitted_without_authoritative_execution() {
 
 #[test]
 fn derive_only_branch_intent_denies_before_authoritative_execution() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let attempted = std::rc::Rc::new(std::cell::Cell::new(0));
-    let mut runtime = branch_intent_runtime(attempted.clone());
+    let mut runtime = branch_intent_runtime(request_execution, attempted.clone());
 
     let error = {
         let mut branch = runtime
-            .branch(test_session_label("derive-only branch intent"))
+            .branch(
+                request_execution,
+                test_session_label("derive-only branch intent"),
+            )
             .expect("branch session should be admitted");
         branch
             .execute_intent(WorthQueryIntentDeclaration::strategy_commit(
@@ -156,6 +169,9 @@ fn derive_only_branch_intent_denies_before_authoritative_execution() {
 
 #[test]
 fn branch_local_intent_requires_intent_support_for_branch_lane() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let attempted = std::rc::Rc::new(std::cell::Cell::new(0));
     let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
@@ -183,12 +199,13 @@ fn branch_local_intent_requires_intent_support_for_branch_lane() {
             )),
         )
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("runtime can support authoritative-only intents");
 
     let error = {
         let mut branch = runtime
             .branch_with_options(
+                request_execution,
                 test_session_label("branch lane unsupported"),
                 WorthQueryBranchOptions::sandboxed_write_intent(),
             )

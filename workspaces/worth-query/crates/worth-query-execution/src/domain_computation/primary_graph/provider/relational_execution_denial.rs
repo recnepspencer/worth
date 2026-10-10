@@ -118,3 +118,22 @@ pub(in crate::domain_computation::primary_graph) fn native_preparation_kind(
     let CommitExecutionDenialKind::Cause(cause) = denial.kind;
     relational_execution_kind(cause, denial.partition_identity).ok()
 }
+
+/// Query reads retain native resource and control causes through this same conversion.
+pub(in crate::domain_computation::primary_graph) fn query_read_execution_kind(
+    stop: &worth_relational::facade::runtime::QueryReadExecutionStop,
+) -> Result<
+    Option<crate::domain_computation::WorthQueryProviderSessionDenialKind>,
+    crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+> {
+    let Some(denial) = stop.execution_denial() else {
+        return Ok(None);
+    };
+    let worth_relational::facade::transactions::CommitExecutionDenialKind::Cause(cause) =
+        denial.kind;
+    relational_execution_kind(cause, denial.partition_identity).map(Some)
+}
+
+#[cfg(test)]
+#[path = "relational_execution_denial/tests.rs"]
+mod tests;

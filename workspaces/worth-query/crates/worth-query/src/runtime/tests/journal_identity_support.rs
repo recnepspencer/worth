@@ -4,21 +4,23 @@ use crate::application::{
     WorthQueryJournalReplaySurfaceEvidence,
 };
 
-pub(super) fn journal_replay_surface_evidence() -> WorthQueryJournalReplaySurfaceEvidence {
-    let mut workspace = stateful_bridge_task_runtime()
+pub(super) fn journal_replay_surface_evidence(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryJournalReplaySurfaceEvidence {
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("tasks.journal-position.certification-replay")
         .expect("task runtime should open replay workspace");
-    let first = submit_task(&mut workspace, "task-1", "First");
-    let second = submit_task(&mut workspace, "task-2", "Second");
+    let first = submit_task(request_execution, &mut workspace, "task-1", "First");
+    let second = submit_task(request_execution, &mut workspace, "task-2", "Second");
     let segment = WorthQueryJournalSegmentIdentity::between(
         first.journal_position(),
         second.journal_position(),
     )
     .expect("committed segment identity should build");
     let request = WorthQueryJournalReplayRequest::new(segment)
-        .with_basis_snapshot(workspace.snapshot_identity());
+        .with_basis_snapshot(workspace.snapshot_identity_with_request(request_execution));
     let outcome = workspace
-        .replay_journal_segment(request)
+        .replay_journal_segment(request_execution, request)
         .expect("journal replay should succeed");
     let counter_snapshot = workspace
         .journal_replay_diagnostics()
@@ -58,6 +60,7 @@ pub(super) fn assert_closed_replay_boundary_certification(
 }
 
 fn submit_task(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace: &mut WorthQueryWorkspace,
     id: &str,
     title: &str,
@@ -76,6 +79,6 @@ fn submit_task(
     workspace
         .submissions()
         .expect("submission lane should be admitted")
-        .submit(command)
+        .submit(request_execution, command)
         .expect("replay certification command should commit")
 }

@@ -118,6 +118,7 @@ impl PreparedNativeOutputWitness {
     /// this optional reuse proof ineligible.
     pub(in crate::domain_computation::primary_graph) fn finish(
         mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         correspondence: &WorthQueryApplicationOutputCorrespondence,
         runtime: &RelationalRuntime,
         committed: &SnapshotHandle,
@@ -132,7 +133,7 @@ impl PreparedNativeOutputWitness {
                 return None;
             }
             if role.posture == WorthQueryApplicationOutputPosture::Retire {
-                let metadata = retirement::native_metadata(runtime, committed, entity)?;
+                let metadata = retirement::native_metadata(execution, runtime, committed, entity)?;
                 if metadata.kind != role.kind || metadata.deleted_at != committed.version_id() {
                     return None;
                 }
@@ -211,6 +212,7 @@ impl SealedNativeOutputWitness {
 
     pub(in crate::domain_computation::primary_graph) fn unchanged_in(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &RelationalRuntime,
         selected: &SnapshotHandle,
         admission: &mut InvalidationEditAdmission,
@@ -224,7 +226,8 @@ impl SealedNativeOutputWitness {
             if role.posture == WorthQueryApplicationOutputPosture::Retire {
                 admission.charge_external_work(3)?;
                 if role.retirement.is_none()
-                    || retirement::native_metadata(runtime, selected, entity) != role.retirement
+                    || retirement::native_metadata(execution, runtime, selected, entity)
+                        != role.retirement
                 {
                     return Ok(false);
                 }

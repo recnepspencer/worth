@@ -3,7 +3,7 @@
 // Both accepted dependencies and a fresh decision resume the exact held row.
 macro_rules! resume_held {
     ($label:lifetime, $head:expr;
-     $phase:ident;
+     $phase:ident, $execution:ident;
      $runtime:ident, $principal:ident, $request_scope:ident;
      $wave:ident, $resolved_on_wave:ident, $queue:ident, $frame_custody:ident;
      $demand:ident, $admission:ident;
@@ -28,7 +28,7 @@ macro_rules! resume_held {
             Ok(HeldUpstream::Ready(ready)) => {
                 $runtime.output_demands.clear_required_stop(&head);
                 if committed_ready(&ready, $admission)? {
-                    $wave = reselect_required_wave($runtime, $wave, $admission)?;
+                    $wave = reselect_required_wave($execution, $runtime, $wave, $admission)?;
                     $resolved_on_wave.clear();
                     $queue.wave_moved();
                 }

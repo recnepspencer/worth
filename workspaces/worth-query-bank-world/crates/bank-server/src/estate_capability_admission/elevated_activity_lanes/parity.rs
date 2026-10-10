@@ -23,7 +23,9 @@ fn exact_activity_meaning_survives_every_public_lane() {
         .execute_with_approved_elevation(&world.approved)
         .expect("the exact approved activity view should execute");
     let historical = ready(&world, controls(8))
-        .admit_historical_with_approved_elevation(&world.approved, |admitted| admitted.execute())
+        .admit_historical_with_approved_elevation(&world.approved, |phase, admitted| {
+            admitted.execute(phase)
+        })
         .expect("historical activity should retain the approval-commit meaning");
     let preview_session = world
         .fixture
@@ -31,9 +33,11 @@ fn exact_activity_meaning_survives_every_public_lane() {
         .open_preview(&super::super::fixture::request_scope())
         .unwrap();
     let preview = ready(&world, controls(8))
-        .admit_preview_with_approved_elevation(&world.approved, &preview_session, |admitted| {
-            admitted.execute()
-        })
+        .admit_preview_with_approved_elevation(
+            &world.approved,
+            &preview_session,
+            |phase, admitted| admitted.execute(phase),
+        )
         .expect("preview activity should preserve current meaning");
     let expected = items(one_shot.rows());
     assert_terminal_release(one_shot.receipt());
@@ -74,7 +78,9 @@ fn exact_activity_meaning_survives_every_public_lane() {
         .execute_with_approved_elevation(&world.approved)
         .expect("current one-shot should remain lawful after the matching cause");
     let historical_after_change = ready(&world, controls(8))
-        .admit_historical_with_approved_elevation(&world.approved, |admitted| admitted.execute())
+        .admit_historical_with_approved_elevation(&world.approved, |phase, admitted| {
+            admitted.execute(phase)
+        })
         .expect("historical activity should retain the approval-commit rows");
     let delivered = items(update.rows());
     let current_items = items(current.rows());

@@ -44,9 +44,11 @@ impl WorthQueryWorkspace {
 
     pub(crate) fn execute_bound_live_read_execution(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: WorthQueryLiveReadExecutionBinding,
     ) -> Result<WorthQueryLiveReadResult, WorthQueryRuntimeError> {
-        self.runtime.execute_live_read_execution_binding(binding)
+        self.runtime
+            .execute_live_read_execution_binding(execution, binding)
     }
 
     pub(crate) fn live_read_execution_non_admitted_error(
@@ -120,17 +122,19 @@ impl WorthQueryRuntime {
 
     pub(crate) fn execute_live_read_execution_binding(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: WorthQueryLiveReadExecutionBinding,
     ) -> Result<WorthQueryLiveReadResult, WorthQueryRuntimeError> {
         self.admit_facade_family(WorthQueryRuntimeFacadeFamily::Read)?;
         let target =
             WorthQueryLiveArtifactTarget::from_subscription_installation(binding.installation());
-        let source_rows = self.backend.live_entities_for_target(&target);
-        self.finish_live_read_execution(binding, target, source_rows, None)
+        let source_rows = self.backend.live_entities_for_target(execution, &target);
+        self.finish_live_read_execution(execution, binding, target, source_rows, None)
     }
 
     pub(crate) fn execute_granular_live_read_execution_binding(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: WorthQueryLiveReadExecutionBinding,
         scope: &crate::live::WorthQueryMaintenanceScope,
         basis: &crate::runtime::WorthQueryGranularSourceReadBasis,
@@ -142,11 +146,12 @@ impl WorthQueryRuntime {
             .backend
             .live_entities_for_granular_scope(&target, scope, basis)
             .map_err(WorthQueryRuntimeError::Workspace)?;
-        self.finish_live_read_execution(binding, target, source_rows, Some(basis))
+        self.finish_live_read_execution(execution, binding, target, source_rows, Some(basis))
     }
 
     fn finish_live_read_execution(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: WorthQueryLiveReadExecutionBinding,
         target: WorthQueryLiveArtifactTarget,
         source_rows: Vec<crate::memory_workspace::WorthQueryEntity>,
@@ -177,7 +182,7 @@ impl WorthQueryRuntime {
                     "the admitted granular source basis is not a relational snapshot identity",
                 ))
             })?,
-            None => self.current_snapshot_identity(),
+            None => self.current_snapshot_identity_with_request(execution),
         };
         let snapshot_evidence_identity = snapshot_identity.evidence_identity();
         let materialized_fact_posture = self.materialized_fact_posture_for_live_read(

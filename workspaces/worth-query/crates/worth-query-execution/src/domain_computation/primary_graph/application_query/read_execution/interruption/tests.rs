@@ -58,39 +58,66 @@ fn cancellation_during_real_nested_materialization_releases_all_read_resources()
         cancellation.token(),
     );
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
-    let selected = world.selected_product();
-    let principal = selected
-        .resolve_authenticated_principal(
-            &world.binding,
-            &external,
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
-    let scope = selected
-        .resolve_entity(
-            AccountStatus::reference(),
-            "open".to_owned(),
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+    let selected = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world.selected_product(&(phase).test_host_request())
+        })
+        .expect("the fixture read owns its installed host call");
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            selected
+                .resolve_authenticated_principal(
+                    &phase,
+                    &world.binding,
+                    &external,
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
+    let scope = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            selected
+                .resolve_entity(
+                    &phase,
+                    AccountStatus::reference(),
+                    "open".to_owned(),
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let query = world
         .application
         .installed_schema()
         .certification_query(NestedAccountQuery::reference())
         .unwrap();
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &scope);
-    let plan = selected
-        .admit_application_query(
-            &query,
-            &access,
-            ApplicationQueryParameterSet::new()
-                .bind(status_parameter(), "open".to_owned())
-                .unwrap(),
-            WorthQueryProductQueryControls::new(nz(10), nz(10_000), &request),
-        )
-        .unwrap();
+    let plan = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            selected
+                .admit_application_query(
+                    &phase,
+                    &query,
+                    &access,
+                    ApplicationQueryParameterSet::new()
+                        .bind(status_parameter(), "open".to_owned())
+                        .unwrap(),
+                    WorthQueryProductQueryControls::new(nz(10), nz(10_000), &request),
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let buffers = world.application.result_buffer_observer();
     let observed = buffers.clone();
     let triggered = Rc::new(Cell::new(false));
@@ -109,9 +136,15 @@ fn cancellation_during_real_nested_materialization_releases_all_read_resources()
     let _guard = CheckpointGuard;
     let denial = world
         .application
-        .execute_application_query_one_shot(plan)
-        .err()
-        .expect("cancelled read cannot publish rows");
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .execute_application_query_one_shot(&phase, plan)
+                .err()
+                .expect("cancelled read cannot publish rows")
+        })
+        .expect("the fixture read owns its installed host call");
     assert!(
         triggered.get(),
         "must cancel inside nested traversal after real buffer claims"
@@ -147,40 +180,67 @@ fn direct_query_admission_cannot_bypass_host_work_policy() {
         cancellation.token(),
     );
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
-    let selected = world.selected_product();
-    let principal = selected
-        .resolve_authenticated_principal(
-            &world.binding,
-            &external,
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
-    let scope = selected
-        .resolve_entity(
-            AccountStatus::reference(),
-            "open".to_owned(),
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+    let selected = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world.selected_product(&(phase).test_host_request())
+        })
+        .expect("the fixture read owns its installed host call");
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            selected
+                .resolve_authenticated_principal(
+                    &phase,
+                    &world.binding,
+                    &external,
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
+    let scope = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            selected
+                .resolve_entity(
+                    &phase,
+                    AccountStatus::reference(),
+                    "open".to_owned(),
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let query = world
         .application
         .installed_schema()
         .certification_query(NestedAccountQuery::reference())
         .unwrap();
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &scope);
-    let denial = selected
-        .admit_application_query(
-            &query,
-            &access,
-            ApplicationQueryParameterSet::new()
-                .bind(status_parameter(), "open".to_owned())
-                .unwrap(),
-            WorthQueryProductQueryControls::new(nz(10), nz(101), &request),
-        )
-        .err()
-        .expect("lower admission must enforce the host guard without front-door help");
+    let denial = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            selected
+                .admit_application_query(
+                    &phase,
+                    &query,
+                    &access,
+                    ApplicationQueryParameterSet::new()
+                        .bind(status_parameter(), "open".to_owned())
+                        .unwrap(),
+                    WorthQueryProductQueryControls::new(nz(10), nz(101), &request),
+                )
+                .err()
+                .expect("lower admission must enforce the host guard without front-door help")
+        })
+        .expect("the fixture read owns its installed host call");
     assert_eq!(
         denial.kind(),
         WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded

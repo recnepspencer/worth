@@ -45,6 +45,9 @@ where
         Root,
     >(
         &mut self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
         source: &worth_query_execution::facade::application_installation::WorthQueryUnpublishedProgramOutputSource,
     ) -> Result<PreparedMutation<Schema, Intent::Binding>, WorthQueryApplicationRecoveryRequestDenial>
@@ -73,7 +76,7 @@ where
             .request
             .application
             .on_branch(self.request.branch)
-            .select()
+            .select(phase)
             .map_err(WorthQueryApplicationRequestMutationDenial::ProductSelection)?;
         let owner = application.selected_program_owner(&selected).map_err(
             crate::application_entry::mutation::selected_program::map_selected_program_owner_denial,
@@ -83,6 +86,7 @@ where
         // Only bind the original source proof. The retained native attempt owns
         // its original facts; pending_source must not author another candidate.
         let prepared = crate::application_entry::mutation::authorization::prepare_selected(
+            phase,
             self,
             &identities,
             staged,

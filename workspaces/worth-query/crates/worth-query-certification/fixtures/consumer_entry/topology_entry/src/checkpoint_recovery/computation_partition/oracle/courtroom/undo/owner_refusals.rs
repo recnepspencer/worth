@@ -88,29 +88,28 @@ fn undo_and_redo_refuse_inactive_unowned_unguarded_and_foreign_admissions() {
                     &identities,
                     Some(recovery.handle()),
                 );
-                let selected = app
-                    .runtime()
-                    .on_branch(app.current_world())
-                    .select()
-                    .unwrap();
+                let selected = crate::checkpoint_recovery::support::host_call(&app, |phase| {
+                    app.runtime().on_branch(app.current_world()).select(phase)
+                })
+                .unwrap();
                 let intent = selected.derive_redo_intent(recovery.proved()).unwrap();
-                let admitted = selected
-                    .admit_redo(recovery, &authority.unwrap(), &intent)
-                    .unwrap();
+                let admitted = crate::checkpoint_recovery::support::host_call(&app, |phase| {
+                    selected.admit_redo(phase, recovery, &authority.unwrap(), &intent)
+                })
+                .unwrap();
                 drop(selected);
                 Handoff::Redo(aftermath::progress_admitted_redo(admitted).unwrap())
             } else {
                 drop(program);
                 Handoff::Undo(undo)
             };
-            let before = app
-                .runtime()
-                .on_branch(app.current_world())
-                .select()
-                .unwrap()
-                .product()
-                .selected_commit()
-                .clone();
+            let before = crate::checkpoint_recovery::support::host_call(&app, |phase| {
+                app.runtime().on_branch(app.current_world()).select(phase)
+            })
+            .unwrap()
+            .product()
+            .selected_commit()
+            .clone();
             let key = first_key + 3;
             let owner_before = app.producer_contacts_on_this_thread_for_test();
             let outcome = if cause == 2 {
@@ -166,13 +165,14 @@ fn undo_and_redo_refuse_inactive_unowned_unguarded_and_foreign_admissions() {
             }
             assert_eq!(
                 before,
-                app.runtime()
+                crate::checkpoint_recovery::support::host_call(&app, |phase| app
+                    .runtime()
                     .on_branch(app.current_world())
-                    .select()
-                    .unwrap()
-                    .product()
-                    .selected_commit()
-                    .clone(),
+                    .select(phase))
+                .unwrap()
+                .product()
+                .selected_commit()
+                .clone(),
                 "redo={redo}, cause={cause}: no publication"
             );
         }

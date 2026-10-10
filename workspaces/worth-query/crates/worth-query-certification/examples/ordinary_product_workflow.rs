@@ -25,9 +25,14 @@ fn run() {
     let scope = product_workflow_support::adapters::request_scope();
     let principal = principal(&application, &scope);
     let request = application.runtime.request(&principal, &scope);
-    let retained = request
-        .retain_read()
-        .expect("the initial application read must be retainable");
+    let retained = application
+        .runtime
+        .with_host_advancement(|host_phase| {
+            request
+                .retain_read(&host_phase)
+                .expect("the initial application read must be retainable")
+        })
+        .expect("installed host call opens");
     let initial = request
         .query(TemporalIntentRead {
             identity: "intent-1".to_owned(),

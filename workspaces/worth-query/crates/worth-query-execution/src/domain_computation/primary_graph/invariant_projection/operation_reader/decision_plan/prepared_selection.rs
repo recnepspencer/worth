@@ -49,6 +49,7 @@ impl<Schema: ApplicationSchema, Operation>
 {
     pub fn prepare_entity_selection<Entity, Aspect, Field, Value, Write, Unit>(
         &mut self,
+
         field: ApplicationFieldRef<
             Schema,
             Entity,
@@ -77,6 +78,7 @@ impl<Schema: ApplicationSchema, Operation>
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
+        let execution = self.reader.execution;
         self.reader
             .retention_control
             .check_live()
@@ -107,7 +109,7 @@ impl<Schema: ApplicationSchema, Operation>
             .reader
             .runtime
             .read_truth()
-            .project_observation(&self.reader.observation)
+            .project_observation(execution, &self.reader.observation)
             .map_err(|_| {
                 selection_denial(
                     WorthQueryEntityResolutionDenialKind::EqualityIndexUnavailable,
@@ -118,7 +120,13 @@ impl<Schema: ApplicationSchema, Operation>
             .reader
             .runtime
             .index_access()
-            .prepare_entity_field_lookup(&view, index, layout.entity_kind, &layout.locator)
+            .prepare_entity_field_lookup(
+                &view,
+                index,
+                layout.entity_kind,
+                &layout.locator,
+                execution,
+            )
             .map_err(|_| {
                 selection_denial(
                     WorthQueryEntityResolutionDenialKind::EqualityIndexUnavailable,
@@ -143,6 +151,7 @@ impl<Schema: ApplicationSchema, Operation>
 
     pub fn decision_select_entities_prepared<Entity, Aspect, Field, Value, Write, Unit>(
         &mut self,
+
         prepared: &WorthQueryPreparedEntitySelection<
             Schema,
             Operation,
@@ -161,6 +170,7 @@ impl<Schema: ApplicationSchema, Operation>
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
+        let execution = self.reader.execution;
         if prepared.authority_identity != self.reader.authority_identity
             || prepared.snapshot != *self.reader.snapshot
             || prepared.snapshot.runtime_instance_id() != self.reader.runtime.runtime_instance_id()
@@ -193,6 +203,7 @@ impl<Schema: ApplicationSchema, Operation>
                 &value,
                 candidate_limit,
                 BoundedIndexParityMode::Production,
+                execution,
                 || control.check_live(),
             )
             .map_err(|stop| match stop {

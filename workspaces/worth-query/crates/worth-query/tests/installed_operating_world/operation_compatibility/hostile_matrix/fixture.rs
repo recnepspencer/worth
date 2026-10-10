@@ -121,10 +121,14 @@ pub(in super::super) fn bind_branch(
     installed: &domain::WorthQueryInstalledDomainHandle<GeometryDomain>,
 ) -> BoundRead {
     let branch = workspace
-        .branches()
-        .fork(workspace.current_world())
-        .components(|components| components.reuse_exact_relational_basis().fork_signal())
-        .create()
+        .with_advancement(|phase| {
+            workspace
+                .branches()
+                .fork(workspace.current_world())
+                .components(|components| components.reuse_exact_relational_basis().fork_signal())
+                .create(&phase)
+        })
+        .expect("installed host call opens")
         .unwrap();
     workspace
         .observe_operating_world(branch)

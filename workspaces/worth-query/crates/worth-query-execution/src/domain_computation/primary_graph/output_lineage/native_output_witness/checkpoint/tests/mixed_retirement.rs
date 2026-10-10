@@ -5,18 +5,34 @@ use worth_relational::facade::transactions::DeleteEntityIntent;
 
 #[test]
 fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = installed_authorization_world(true);
-    let selected = world.selected_product();
+    let selected = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world.selected_product(&(phase).test_host_request())
+        })
+        .expect("the fixture read owns its installed host call");
     let resolve = |key: &str| {
-        selected
-            .resolve_entity(
-                AccountIdentity::reference(),
-                key.to_owned(),
-                &live_scope(),
-                WorthQueryPrincipalResolutionMode::Ordinary,
-            )
-            .unwrap()
-            .entity_id()
+        world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+                selected
+                    .resolve_entity(
+                        &phase,
+                        AccountIdentity::reference(),
+                        key.to_owned(),
+                        &live_scope(),
+                        WorthQueryPrincipalResolutionMode::Ordinary,
+                    )
+                    .unwrap()
+                    .entity_id()
+            })
+            .expect("the fixture invocation owns its installed host call")
     };
     let live = resolve("account-1");
     let retired = resolve("account-2");
@@ -26,8 +42,14 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
     let owner = &handle.source_owner.invalidation_owner;
     let correspondence = mixed_correspondence(live, retired);
     let foreign = installed_authorization_world(true);
-    let foreign_selected = foreign.selected_product();
-    handle.with_runtime_mut(|runtime| {
+    let foreign_selected = foreign
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            foreign.selected_product(&(phase).test_host_request())
+        })
+        .expect("the fixture read owns its installed host call");
+    world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); handle.with_runtime_mut(request_execution, |runtime| {
         let before = snapshot(runtime);
         let prepare = || {
             PreparedNativeOutputWitness::prepare_republication(
@@ -41,7 +63,7 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
         };
         assert!(
             prepare()
-                .finish(&correspondence, runtime, &before)
+                .finish(&host_custody.borrowed_request_for_test(), &correspondence, runtime, &before)
                 .is_none(),
             "live is not retired"
         );
@@ -78,11 +100,11 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
         );
         let committed = snapshot(runtime);
         let witness = prepared
-            .finish(&correspondence, runtime, &committed)
+            .finish(&host_custody.borrowed_request_for_test(), &correspondence, runtime, &committed)
             .expect("actual commit seals every role");
         let witness = witness.get().unwrap();
         let equivalent = prepare()
-            .finish(&correspondence, runtime, &committed)
+            .finish(&host_custody.borrowed_request_for_test(), &correspondence, runtime, &committed)
             .unwrap();
         assert!(
             witness
@@ -90,7 +112,7 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
                 .unwrap()
         );
         let mut changed = prepare()
-            .finish(&correspondence, runtime, &committed)
+            .finish(&host_custody.borrowed_request_for_test(), &correspondence, runtime, &committed)
             .unwrap();
         let changed = Arc::get_mut(&mut changed).unwrap().get_mut().unwrap();
         changed.roles[1].posture = WorthQueryApplicationOutputPosture::Preserve;
@@ -101,7 +123,7 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
             "matching entity and revisions cannot erase a retirement posture"
         );
         changed.roles[1].posture = WorthQueryApplicationOutputPosture::Retire;
-        let metadata = retirement::native_metadata(runtime, &committed, retired).unwrap();
+        let metadata = retirement::native_metadata(&host_custody.borrowed_request_for_test(), runtime, &committed, retired).unwrap();
         assert_ne!(metadata.created_at, metadata.deleted_at);
         changed.roles[1].retirement.as_mut().unwrap().created_at = metadata.deleted_at;
         assert!(
@@ -125,17 +147,17 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
         );
         assert!(
             witness
-                .unchanged_in(runtime, &committed, &mut owner.edit_admission())
+                .unchanged_in(&host_custody.borrowed_request_for_test(), runtime, &committed, &mut owner.edit_admission())
                 .unwrap()
         );
         assert!(
             !witness
-                .unchanged_in(runtime, &before, &mut owner.edit_admission())
+                .unchanged_in(&host_custody.borrowed_request_for_test(), runtime, &before, &mut owner.edit_admission())
                 .unwrap()
         );
         assert!(
             !witness
-                .unchanged_in(
+                .unchanged_in(&host_custody.borrowed_request_for_test(),
                     runtime,
                     foreign_selected.application_basis().snapshot_handle(),
                     &mut owner.edit_admission()
@@ -157,7 +179,7 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
             deleted_at: metadata.deleted_at,
             read_locator: "original-decision-read".into(),
         }];
-        assert!(facts[0].remains_equal_in(runtime, &committed));
+        assert!(facts[0].remains_equal_in(runtime,&host_custody.borrowed_request_for_test(),  &committed));
         assert!(
             SealedNativeOutputWitness::from_checkpoint_facts(
                 &correspondence,
@@ -175,10 +197,10 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
                 .covers_content_fact(&external_dead, &mut owner.edit_admission())
                 .unwrap()
         );
-        assert!(!external_dead.remains_equal_in(runtime, &committed));
+        assert!(!external_dead.remains_equal_in(runtime,&host_custody.borrowed_request_for_test(),  &committed));
         assert!(
             !witness
-                .checkpoint_facts_current_in(
+                .checkpoint_facts_current_in(&host_custody.borrowed_request_for_test(),
                     runtime,
                     &committed,
                     &facts,
@@ -197,7 +219,7 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
             Err(CompanionPreflightStop::WorkExhausted { .. })
         ));
         assert!(matches!(
-            witness.unchanged_in(runtime, &committed, &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission::new(worth_relational::facade::mvcc::CompanionPreflightBudget { maximum_work_visits: 0, maximum_preparation_bytes: 0 })),
+            witness.unchanged_in(&host_custody.borrowed_request_for_test(), runtime, &committed, &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission::new(worth_relational::facade::mvcc::CompanionPreflightBudget { maximum_work_visits: 0, maximum_preparation_bytes: 0 })),
             Err(CompanionPreflightStop::WorkExhausted { .. })
         ));
         let wrong_generation = mixed_correspondence(
@@ -210,23 +232,23 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
         );
         assert!(
             prepare()
-                .finish(&wrong_generation, runtime, &committed)
+                .finish(&host_custody.borrowed_request_for_test(), &wrong_generation, runtime, &committed)
                 .is_none()
         );
         let missing = WorthQueryApplicationOutputCorrespondence::default();
-        assert!(prepare().finish(&missing, runtime, &committed).is_none());
+        assert!(prepare().finish(&host_custody.borrowed_request_for_test(), &missing, runtime, &committed).is_none());
         let mut wrong_kind = prepare();
         wrong_kind.roles[1].kind = KindId::new(metadata.kind.as_u32() + 1);
         assert!(
             wrong_kind
-                .finish(&correspondence, runtime, &committed)
+                .finish(&host_custody.borrowed_request_for_test(), &correspondence, runtime, &committed)
                 .is_none()
         );
         let mut wrong_posture = prepare();
         wrong_posture.roles[1].posture = WorthQueryApplicationOutputPosture::Preserve;
         assert!(
             wrong_posture
-                .finish(&correspondence, runtime, &committed)
+                .finish(&host_custody.borrowed_request_for_test(), &correspondence, runtime, &committed)
                 .is_none()
         );
         let label_ref = AccountLabel::reference();
@@ -237,17 +259,17 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
         change_label(runtime, live, label.clone());
         let later = snapshot(runtime);
         assert_eq!(
-            retirement::native_metadata(runtime, &later, retired),
+            retirement::native_metadata(&host_custody.borrowed_request_for_test(), runtime, &later, retired),
             Some(metadata),
             "original tuple persists at later observations"
         );
         assert!(
-            prepare().finish(&correspondence, runtime, &later).is_none(),
+            prepare().finish(&host_custody.borrowed_request_for_test(), &correspondence, runtime, &later).is_none(),
             "later version cannot issue an old retirement anew"
         );
         assert!(
             !witness
-                .unchanged_in(runtime, &later, &mut owner.edit_admission())
+                .unchanged_in(&host_custody.borrowed_request_for_test(), runtime, &later, &mut owner.edit_admission())
                 .unwrap(),
             "live aspects still invalidate the mixed proof"
         );
@@ -266,27 +288,27 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
         let aba = snapshot(runtime);
         assert!(
             !witness
-                .unchanged_in(runtime, &aba, &mut owner.edit_admission())
+                .unchanged_in(&host_custody.borrowed_request_for_test(), runtime, &aba, &mut owner.edit_admission())
                 .unwrap(),
             "same-value ABA keeps its changed revision"
         );
         assert!(
             witness
-                .unchanged_in(runtime, &committed, &mut owner.edit_admission())
+                .unchanged_in(&host_custody.borrowed_request_for_test(), runtime, &committed, &mut owner.edit_admission())
                 .unwrap(),
             "the original held native observation remains exact after ABA"
         );
         runtime.snapshots().release_snapshot(&aba).unwrap();
         assert!(
             !witness
-                .unchanged_in(runtime, &aba, &mut owner.edit_admission())
+                .unchanged_in(&host_custody.borrowed_request_for_test(), runtime, &aba, &mut owner.edit_admission())
                 .unwrap(),
             "released basis cannot authorize a witness"
         );
         for snapshot in [&before, &committed, &later] {
             runtime.snapshots().release_snapshot(snapshot).unwrap();
         }
-    });
+    }) }).expect("the fixture read owns its installed host call");
 }
 
 fn mixed_correspondence(

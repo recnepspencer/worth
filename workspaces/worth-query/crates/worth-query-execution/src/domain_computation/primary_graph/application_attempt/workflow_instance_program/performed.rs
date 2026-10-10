@@ -48,6 +48,7 @@ pub(super) fn own_effects(
 /// Effects the instance carries from its own migration, each at the path of
 /// the node that performed it. A read that fails is denied as `kind`.
 pub(super) fn inherited_effects(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
@@ -60,6 +61,7 @@ pub(super) fn inherited_effects(
     let bound = maximum_transitions.saturating_add(1);
     let carried = observe_adjacency(
         runtime,
+        execution,
         snapshot,
         layout.instance_prior_effect_relation,
         source,
@@ -79,6 +81,7 @@ pub(super) fn inherited_effects(
     for relation in carried {
         let nodes = observe_adjacency(
             runtime,
+            execution,
             snapshot,
             layout.transition_node_relation,
             relation.to,
@@ -99,6 +102,7 @@ pub(super) fn inherited_effects(
         });
         let Some(AspectValue::String(InternedString::Raw(path))) = observe_field_value(
             runtime,
+            execution,
             snapshot,
             node,
             layout.node.entity_kind,

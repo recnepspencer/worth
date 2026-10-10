@@ -25,37 +25,57 @@ fn governed_temporal_operation_uses_real_capability_progression() {
         UNIX_EPOCH + Duration::from_secs(100),
     ]);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
-    let operation = world
+    world
         .application
-        .installed_schema()
-        .installed_operation(CapabilityTouchOperation::reference())
-        .unwrap();
-    let capability = world
-        .application
-        .installed_schema()
-        .capability(
-            TouchAccountCapability::reference(),
-            CapabilityTouchOperation::reference(),
-        )
-        .unwrap();
-    let input = admitted_input();
-    let authorization = WorthQueryGovernedTemporalOperationAuthorization::new(capability);
-    let selected = world.selected_product();
-    let admission = authorization
-        .authorize(
-            &selected,
-            &principal,
-            &account,
-            &operation,
-            &input,
-            Default::default(),
-            &request,
-        )
-        .expect("current capability must admit the temporal operation");
-    assert_eq!(admission.operation(), "CapabilityTouchOperation");
-    assert!(admission.authorization_requirement_count() > 0);
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            let borrowed_execution = host_custody.borrowed_request_for_test();
+            let execution = &borrowed_execution;
+            let principal = authenticated_principal(
+                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &world,
+                &request,
+            );
+            let account = resolved_account(
+                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &world,
+                "open",
+                &request,
+            );
+            let operation = world
+                .application
+                .installed_schema()
+                .installed_operation(CapabilityTouchOperation::reference())
+                .unwrap();
+            let capability = world
+                .application
+                .installed_schema()
+                .capability(
+                    TouchAccountCapability::reference(),
+                    CapabilityTouchOperation::reference(),
+                )
+                .unwrap();
+            let input = admitted_input();
+            let authorization = WorthQueryGovernedTemporalOperationAuthorization::new(capability);
+            let selected = world.selected_product(
+                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+            );
+            let admission = authorization
+                .authorize(
+                    execution,
+                    &selected,
+                    &principal,
+                    &account,
+                    &operation,
+                    &input,
+                    Default::default(),
+                    &request,
+                )
+                .expect("current capability must admit the temporal operation");
+            assert_eq!(admission.operation(), "CapabilityTouchOperation");
+            assert!(admission.authorization_requirement_count() > 0);
+        })
+        .expect("the fixture block owns its installed host call")
 }
 
 #[test]
@@ -66,28 +86,45 @@ fn governed_temporal_reconstruction_uses_real_capability_progression() {
         UNIX_EPOCH + Duration::from_secs(100),
     ]);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
-    let query = world
+    world
         .application
-        .installed_schema()
-        .certification_query(GovernedAccountOmissionQuery::reference())
-        .unwrap();
-    let capability = world
-        .application
-        .installed_schema()
-        .capability(
-            TouchAccountCapability::reference(),
-            CapabilityTouchOperation::reference(),
-        )
-        .unwrap();
-    let authorization =
-        WorthQueryGovernedTemporalQueryAuthorization::new(capability, admitted_input());
-    let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
-    let selected = world.selected_product();
-    let (_, product, application_basis) = selected.into_parts();
-    let plan = authorization
-        .admit(
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            let borrowed_execution = host_custody.borrowed_request_for_test();
+            let execution = &borrowed_execution;
+            let principal = authenticated_principal(
+                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &world,
+                &request,
+            );
+            let account = resolved_account(
+                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &world,
+                "open",
+                &request,
+            );
+            let query = world
+                .application
+                .installed_schema()
+                .certification_query(GovernedAccountOmissionQuery::reference())
+                .unwrap();
+            let capability = world
+                .application
+                .installed_schema()
+                .capability(
+                    TouchAccountCapability::reference(),
+                    CapabilityTouchOperation::reference(),
+                )
+                .unwrap();
+            let authorization =
+                WorthQueryGovernedTemporalQueryAuthorization::new(capability, admitted_input());
+            let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
+            let selected = world.selected_product(
+                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+            );
+            let (_, product, application_basis) = selected.into_parts();
+            let plan = authorization
+        .admit(execution,
             &world.application,
             &query,
             &access,
@@ -101,7 +138,9 @@ fn governed_temporal_reconstruction_uses_real_capability_progression() {
             ),
         )
         .expect("current capability must admit temporal reconstruction");
-    assert!(plan.graph_work_capability_identity().is_some());
+            assert!(plan.graph_work_capability_identity().is_some());
+        })
+        .expect("the fixture block owns its installed host call")
 }
 
 fn admitted_input() -> CapabilityTouchInput {

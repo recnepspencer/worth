@@ -236,6 +236,7 @@ impl<'a> WorthQueryOperationExecutionContext<'a> {
         workspace: &mut WorthQueryOperationWorkspace<'_>,
     ) -> Result<crate::ordinary::read::WorthQueryReadCompletion, WorthQueryOperationExecutorFailure>
     {
+        let execution = &self.execution;
         let declaration = self.installed_read.ok_or_else(|| {
             WorthQueryOperationExecutorFailure::new(
                 crate::domain_installation::WorthQueryOperationFailureClass::Indeterminate,
@@ -252,7 +253,7 @@ impl<'a> WorthQueryOperationExecutionContext<'a> {
         declaration
             .clone_for_installed_execution()
             .using(crate::ordinary::read::current())
-            .run(workspace.workspace)
+            .run(execution, workspace.workspace)
             .into_result()
             .map_err(|stop| {
                 WorthQueryOperationExecutorFailure::new(

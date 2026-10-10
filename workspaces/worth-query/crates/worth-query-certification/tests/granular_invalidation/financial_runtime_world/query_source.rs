@@ -53,14 +53,25 @@ impl FinancialSourceProjection {
 impl WorthQueryPrimaryGraphSourceProjection for FinancialSourceProjection {
     fn project_live_target(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         graph: &worth_query_execution::facade::integration::WorthQueryPrimaryGraphIntegrationHandle,
         _target: &runtime::WorthQueryLiveArtifactTarget,
     ) -> Vec<foundation::WorthQueryEntity> {
-        let mut rows = project_financial_record(graph, self.record, self.derive_risk_from_curve)
-            .into_iter()
-            .collect::<Vec<_>>();
+        let mut rows = project_financial_record(
+            request_execution,
+            graph,
+            self.record,
+            self.derive_risk_from_curve,
+        )
+        .into_iter()
+        .collect::<Vec<_>>();
         rows.extend(self.secondary_record.and_then(|record| {
-            project_financial_record(graph, record, self.derive_risk_from_curve)
+            project_financial_record(
+                request_execution,
+                graph,
+                record,
+                self.derive_risk_from_curve,
+            )
         }));
         rows.extend(unrelated_portfolio_rows(
             self.record,
@@ -165,15 +176,22 @@ fn unrelated_portfolio_rows(
 }
 
 fn project_financial_record(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     graph: &worth_query_execution::facade::integration::WorthQueryPrimaryGraphIntegrationHandle,
     record: worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts,
     derive_risk_from_curve: bool,
 ) -> Option<foundation::WorthQueryEntity> {
-    graph.with_runtime(|runtime| {
+    graph.with_runtime(request_execution, |runtime| {
         let identity = runtime.main_branch_identity();
         let (_, basis) = runtime.observe_branch(&identity).ok()?;
         let observation = basis.observation();
-        project_financial_observation_record(runtime, &observation, record, derive_risk_from_curve)
+        project_financial_observation_record(
+            request_execution,
+            runtime,
+            &observation,
+            record,
+            derive_risk_from_curve,
+        )
     })
 }
 
@@ -195,12 +213,16 @@ fn project_financial_record_at_basis(
 }
 
 fn project_financial_observation_record(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     observation: &worth_relational::facade::branch::RelationalBranchObservation,
     record: worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts,
     derive_risk_from_curve: bool,
 ) -> Option<foundation::WorthQueryEntity> {
-    let read_view = runtime.read_truth().read_observation(observation).ok()?;
+    let read_view = runtime
+        .read_truth()
+        .read_observation(request_execution, observation)
+        .ok()?;
     let entity = worth_relational::facade::identity::EntityId::new(
         worth_relational::facade::identity::PartitionId::new(record.partition_id()),
         record.local_slot(),

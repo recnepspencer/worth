@@ -24,6 +24,7 @@ impl ConsumedOutputEvidence {
     /// Compare one settlement's source facts and its output witness at
     /// `snapshot`. `None` when all of them are unchanged there.
     pub(super) fn compare_own(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         evidence: EvidenceView<'_>,
         direct: bool,
         runtime: &RelationalRuntime,
@@ -31,6 +32,7 @@ impl ConsumedOutputEvidence {
         admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<ConsumedOutputVerification>, ConsumedOutputVerificationStop> {
         Self::compare_facts(
+            execution,
             evidence.source_facts,
             None,
             evidence.native_output_witness.map(Arc::as_ref),
@@ -42,6 +44,7 @@ impl ConsumedOutputEvidence {
     }
 
     pub(super) fn compare_facts(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         source_facts: &crate::domain_computation::primary_graph::output_lineage::ComparableSourceFacts,
         output_facts: Option<&[WorthQueryApplicationObservedFact]>,
         witness: Option<&OnceLock<SealedNativeOutputWitness>>,
@@ -51,7 +54,7 @@ impl ConsumedOutputEvidence {
         admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<ConsumedOutputVerification>, ConsumedOutputVerificationStop> {
         for (ordinal, fact) in source_facts.iter().enumerate() {
-            if !fact_is_current(fact, runtime, snapshot, admission)? {
+            if !fact_is_current(execution, fact, runtime, snapshot, admission)? {
                 return Ok(Some(if direct {
                     ConsumedOutputVerification::ChangedDirectFact(ordinal)
                 } else {
@@ -61,7 +64,7 @@ impl ConsumedOutputEvidence {
         }
         if let Some(output_facts) = output_facts {
             for fact in output_facts {
-                if !fact_is_current(fact, runtime, snapshot, admission)? {
+                if !fact_is_current(execution, fact, runtime, snapshot, admission)? {
                     return Ok(Some(ConsumedOutputVerification::ChangedUpstream));
                 }
             }
@@ -70,7 +73,7 @@ impl ConsumedOutputEvidence {
                 .get()
                 .ok_or(ConsumedOutputVerificationStop::Unavailable)?;
             if !witness
-                .unchanged_in(runtime, snapshot, admission)
+                .unchanged_in(execution, runtime, snapshot, admission)
                 .map_err(map_admission_stop)?
             {
                 return Ok(Some(ConsumedOutputVerification::ChangedUpstream));
@@ -84,6 +87,7 @@ impl ConsumedOutputEvidence {
     /// child's evidence; only a disjoint changed fact can reject those edges.
     /// This comparison grants no currentness.
     pub(in crate::domain_computation::primary_graph) fn own_evidence_is_current(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         facts: &[WorthQueryApplicationObservedFact],
         consumed: &[ConsumedOutputEvidence],
         witness: &SealedNativeOutputWitness,
@@ -108,12 +112,12 @@ impl ConsumedOutputEvidence {
                     break;
                 }
             }
-            if !child_content && !fact_is_current(fact, runtime, snapshot, admission)? {
+            if !child_content && !fact_is_current(execution, fact, runtime, snapshot, admission)? {
                 return Ok(false);
             }
         }
         witness
-            .unchanged_in(runtime, snapshot, admission)
+            .unchanged_in(execution, runtime, snapshot, admission)
             .map_err(map_admission_stop)
     }
 
@@ -123,6 +127,7 @@ impl ConsumedOutputEvidence {
     /// released; the reader never takes it on its position alone. Both the
     /// marked and the full comparison are paid from the reader's meter.
     pub(in crate::domain_computation::primary_graph) fn verify_at_observation(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         identity: &Arc<RecordedSettlementIdentity>,
         source_facts: &crate::domain_computation::primary_graph::output_lineage::ComparableSourceFacts,
         upstream: &[ConsumedOutputEvidence],
@@ -135,6 +140,7 @@ impl ConsumedOutputEvidence {
         admission: &mut InvalidationEditAdmission,
     ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
         let marked = Self::verify_candidate_at(
+            execution,
             identity,
             source_facts,
             upstream,
@@ -152,6 +158,7 @@ impl ConsumedOutputEvidence {
         }
         // No marks are retained for this position.
         Self::compare_in_full(
+            execution,
             EvidenceView {
                 identity,
                 source_facts,
@@ -168,6 +175,7 @@ impl ConsumedOutputEvidence {
     }
 
     pub(super) fn compare_in_full<'a>(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         root: EvidenceView<'a>,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
@@ -190,7 +198,8 @@ impl ConsumedOutputEvidence {
             if !reads_at_or_after(selected, evidence.selected_native_root) {
                 return Ok(ConsumedOutputVerification::ChangedUpstream);
             }
-            let changed = Self::compare_own(evidence, direct, runtime, snapshot, admission)?;
+            let changed =
+                Self::compare_own(execution, evidence, direct, runtime, snapshot, admission)?;
             if let Some(changed) = changed {
                 return Ok(changed);
             }

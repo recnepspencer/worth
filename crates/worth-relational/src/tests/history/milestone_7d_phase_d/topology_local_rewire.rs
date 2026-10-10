@@ -2,6 +2,9 @@ use super::*;
 
 #[test]
 fn topology_endpoint_divergence_denial_is_stable_across_recovery() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let store_path = unique_test_store_path("worth-relational-7d-topology");
     let runtime = persisted_runtime_with_topology_identity_registry(store_path.clone());
     let source = create_entity(&runtime, "source");
@@ -24,6 +27,7 @@ fn topology_endpoint_divergence_denial_is_stable_across_recovery() {
     let live_artifact = runtime
         .merge()
         .inspect_planning_scope(
+            execution,
             MergeExecutionRequest {
                 target_branch: BranchId("main".to_string()),
                 source_branch: BranchId("feature".to_string()),
@@ -65,12 +69,13 @@ fn topology_endpoint_divergence_denial_is_stable_across_recovery() {
         })
         .expect("live topology index");
 
-    let (_recovery, recovered) = checkpoint_and_recover_with(&runtime, move || {
+    let (_recovery, recovered) = checkpoint_and_recover_with(execution, &runtime, move || {
         persisted_runtime_with_topology_identity_registry(store_path.clone())
     });
     let recovered_artifact = recovered
         .merge()
         .inspect_planning_scope(
+            execution,
             MergeExecutionRequest {
                 target_branch: BranchId("main".to_string()),
                 source_branch: BranchId("feature".to_string()),
@@ -165,6 +170,9 @@ fn topology_endpoint_divergence_denial_is_stable_across_recovery() {
 
 #[test]
 fn disjoint_rewire_neighborhoods_do_not_escalate_to_topology_region_conflict() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_topology_identity_registry(unique_test_store_path(
         "worth-relational-7d-topology-disjoint-rewires",
     ));
@@ -204,6 +212,7 @@ fn disjoint_rewire_neighborhoods_do_not_escalate_to_topology_region_conflict() {
     let artifact = runtime
         .merge()
         .inspect_planning_scope(
+            execution,
             MergeExecutionRequest {
                 target_branch: BranchId("main".to_string()),
                 source_branch: BranchId("feature".to_string()),
@@ -273,6 +282,9 @@ fn disjoint_rewire_neighborhoods_do_not_escalate_to_topology_region_conflict() {
 
 #[test]
 fn unrelated_relation_additions_do_not_inflate_topology_region_detection_counters() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_topology_identity_registry(unique_test_store_path(
         "worth-relational-7d-topology-unrelated-breadth",
     ));
@@ -318,6 +330,7 @@ fn unrelated_relation_additions_do_not_inflate_topology_region_detection_counter
     let artifact = runtime
         .merge()
         .inspect_planning_scope(
+            execution,
             MergeExecutionRequest {
                 target_branch: BranchId("main".to_string()),
                 source_branch: BranchId("feature".to_string()),

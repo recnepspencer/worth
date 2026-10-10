@@ -121,7 +121,7 @@ fn abort_failures_are_retried_once_by_the_live_session_guard() {
 }
 
 fn assert_early_failure(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     point: SessionFailurePoint,
     stage: WorthQueryProviderSessionProtocolStage,
@@ -129,16 +129,17 @@ fn assert_early_failure(
     expected_calls: SessionCallObservation,
 ) {
     let observed = with_session(point, |running, graph| {
+        let installed_fixture_phase = running.fixture_phase(execution);
         let plan = running
             .admit_provider_execution_plan(graph)
             .expect("failure fixture plan should admit");
         let failure = match point {
             SessionFailurePoint::ReadmissionRejection | SessionFailurePoint::ReadmissionPanic => {
-                plan.readmit(execution)
+                plan.readmit(&installed_fixture_phase)
                     .expect_err("readmission should fail")
             }
             SessionFailurePoint::PreparationRejection | SessionFailurePoint::PreparationPanic => {
-                plan.readmit(execution)
+                plan.readmit(&installed_fixture_phase)
                     .expect("readmission should succeed")
                     .prepare()
                     .expect_err("preparation should fail")

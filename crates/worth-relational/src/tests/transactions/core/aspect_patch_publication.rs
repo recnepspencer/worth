@@ -4,6 +4,9 @@ use worth_foundational::facade::{AspectKey, AspectValue, ContractValidatedAspect
 
 #[test]
 fn entity_patch_aspects_follow_declared_contract_targets() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
@@ -87,7 +90,7 @@ fn entity_patch_aspects_follow_declared_contract_targets() {
     );
     let updated_read = runtime
         .read_truth()
-        .read_snapshot(&updated.snapshot)
+        .read_snapshot(&updated.snapshot, execution)
         .expect("updated snapshot should read");
     let updated_record = updated_read
         .get_entity(entity)

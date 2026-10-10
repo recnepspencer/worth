@@ -230,6 +230,9 @@ fn interruption_after_movement_retains_its_pending_settlement() {
 /// close the published snapshot that witness is still owed.
 #[test]
 fn durability_repair_leaves_a_live_witness_its_usable_published_snapshot() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
     create_entity(&runtime, "live-witness-repair-anchor");
     let performed = perform_main_write(&runtime, "live-witness-repair");
@@ -269,7 +272,7 @@ fn durability_repair_leaves_a_live_witness_its_usable_published_snapshot() {
     assert!(
         runtime
             .read_truth()
-            .read_snapshot(&settled.snapshot)
+            .read_snapshot(&settled.snapshot, execution)
             .is_some(),
         "durability repair may not close a snapshot its live witness still owns"
     );

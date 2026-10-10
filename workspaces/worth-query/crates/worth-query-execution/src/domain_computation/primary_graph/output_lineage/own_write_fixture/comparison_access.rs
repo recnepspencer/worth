@@ -25,6 +25,9 @@ fn own_write_cutoff_cannot_project_retained_facts_for_comparison() {
 
 #[test]
 fn own_write_dirty_marks_cannot_be_cleared_by_postcondition_comparison() {
+    let host_request = crate::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     with_committed_own_write(|world, _, cell, _| {
         let handle = world
             .application
@@ -33,7 +36,7 @@ fn own_write_dirty_marks_cannot_be_cleared_by_postcondition_comparison() {
             .unwrap()
             .integration_handle();
         let owner = &handle.source_owner.invalidation_owner;
-        handle.with_runtime(|runtime| {
+        handle.with_runtime(execution, |runtime| {
             let basis = runtime
                 .admit_branch_basis(&runtime.main_branch_identity())
                 .unwrap();
@@ -43,6 +46,7 @@ fn own_write_dirty_marks_cannot_be_cleared_by_postcondition_comparison() {
                 .unwrap();
             let selected = runtime.read_truth().positioned_snapshot(&snapshot).unwrap();
             let answer = owner.reverify_dirty(
+                execution,
                 runtime,
                 &snapshot,
                 &selected,

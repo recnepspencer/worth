@@ -2,6 +2,9 @@ use super::*;
 
 #[test]
 fn planned_query_execution_parallelized_traversal_matches_serial_reference() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     fn build_runtime() -> RelationalRuntime {
         RelationalRuntimeApi::builder()
             .profile(RelationalRuntimeProfile::CertificationCore)
@@ -67,20 +70,26 @@ fn planned_query_execution_parallelized_traversal_matches_serial_reference() {
                 .read_truth()
                 .plan_query_packet(&serial_snapshot, serial_packet)
                 .expect("serial query plan"),
+            execution,
+            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
         )
+        .expect("request remains live")
+        .map(|read| read.outcome)
         .expect("serial execution");
 
     let staged_runtime = build_runtime();
     let (staged_snapshot, staged_packet) = build_fixture(&staged_runtime);
     let staged = staged_runtime
         .read_truth()
-        .execute_query_plan_with_lease(
+        .execute_query_plan(
             staged_runtime
                 .read_truth()
                 .plan_query_packet(&staged_snapshot, staged_packet)
                 .expect("staged query plan"),
-            &test_execution_lease(),
+            &worth_execution::ExecutionRequest::leased(&test_execution_lease()),
+            crate::facade::runtime::RelationalQueryReadStrategy::RequestPatterns,
         )
+        .map(|read| read.map(|read| read.outcome))
         .expect("leased execution")
         .expect("staged execution");
 
@@ -107,6 +116,9 @@ fn planned_query_execution_parallelized_traversal_matches_serial_reference() {
 
 #[test]
 fn planned_query_execution_reports_workload_derived_scratch_reuse_consistently_with_a_lease() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     fn build_runtime() -> RelationalRuntime {
         RelationalRuntimeApi::builder()
             .profile(RelationalRuntimeProfile::CertificationCore)
@@ -173,7 +185,11 @@ fn planned_query_execution_reports_workload_derived_scratch_reuse_consistently_w
                 .read_truth()
                 .plan_query_packet(&serial_snapshot, serial_packet)
                 .expect("serial query plan"),
+            execution,
+            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
         )
+        .expect("request remains live")
+        .map(|read| read.outcome)
         .expect("serial execution");
     let serial_counters = serial_runtime.performance_access().counters();
 
@@ -182,13 +198,15 @@ fn planned_query_execution_reports_workload_derived_scratch_reuse_consistently_w
     staged_runtime.performance_access().reset_counters();
     let staged = staged_runtime
         .read_truth()
-        .execute_query_plan_with_lease(
+        .execute_query_plan(
             staged_runtime
                 .read_truth()
                 .plan_query_packet(&staged_snapshot, staged_packet)
                 .expect("staged query plan"),
-            &test_execution_lease(),
+            &worth_execution::ExecutionRequest::leased(&test_execution_lease()),
+            crate::facade::runtime::RelationalQueryReadStrategy::RequestPatterns,
         )
+        .map(|read| read.map(|read| read.outcome))
         .expect("leased execution")
         .expect("staged execution");
     let staged_counters = staged_runtime.performance_access().counters();
@@ -202,6 +220,9 @@ fn planned_query_execution_reports_workload_derived_scratch_reuse_consistently_w
 
 #[test]
 fn planned_query_execution_parallelized_overlapping_seed_traversal_dedupes_and_matches_serial() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     fn build_runtime() -> RelationalRuntime {
         RelationalRuntimeApi::builder()
             .profile(RelationalRuntimeProfile::CertificationCore)
@@ -254,20 +275,26 @@ fn planned_query_execution_parallelized_overlapping_seed_traversal_dedupes_and_m
                 .read_truth()
                 .plan_query_packet(&serial_snapshot, serial_packet)
                 .expect("serial plan"),
+            execution,
+            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
         )
+        .expect("request remains live")
+        .map(|read| read.outcome)
         .expect("serial outcome");
 
     let staged_runtime = build_runtime();
     let (staged_snapshot, staged_packet) = build_fixture(&staged_runtime);
     let staged = staged_runtime
         .read_truth()
-        .execute_query_plan_with_lease(
+        .execute_query_plan(
             staged_runtime
                 .read_truth()
                 .plan_query_packet(&staged_snapshot, staged_packet)
                 .expect("staged plan"),
-            &test_execution_lease(),
+            &worth_execution::ExecutionRequest::leased(&test_execution_lease()),
+            crate::facade::runtime::RelationalQueryReadStrategy::RequestPatterns,
         )
+        .map(|read| read.map(|read| read.outcome))
         .expect("leased execution")
         .expect("staged outcome");
 

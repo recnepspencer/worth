@@ -6,6 +6,9 @@ use worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[non_exhaustive]
 pub enum WorthQueryPrincipalResolutionDenialKind {
+    /// The supplied phase belongs to another installed runtime.
+    ForeignPhase,
+    ExecutionRequest(crate::domain_computation::WorthQueryProviderSessionDenialKind),
     /// The primary graph is not installed.
     PrimaryGraphNotInstalled,
     /// The principal binding is not installed.
@@ -45,7 +48,9 @@ pub enum WorthQueryPrincipalResolutionDenialKind {
     /// The principal proof no longer matches current state; resolve again.
     StalePrincipalProof,
     /// The installed limit on concurrently active snapshots was reached.
-    ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
+    ActiveSnapshotCapacityExhausted {
+        maximum_active_snapshots: usize,
+    },
     /// The runtime ran out of snapshot identities.
     SnapshotIdentityExhausted,
     /// No capacity remains to retain a basis.
@@ -116,6 +121,16 @@ pub(super) fn entity_lookup_resolution_denial(
     binding: &str,
 ) -> WorthQueryPrincipalResolutionDenial {
     let resolution_kind = match kind {
+        BoundedEntityFieldLookupDenialKind::Execution(cause) => {
+            use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
+            match super::provider::relational_execution_denial::relational_execution_kind(
+                cause, None,
+            ) {
+                Ok(kind) => WorthQueryPrincipalResolutionDenialKind::ExecutionRequest(kind),
+                Err(Control::Cancelled) => WorthQueryPrincipalResolutionDenialKind::Cancelled,
+                Err(Control::TimedOut) => WorthQueryPrincipalResolutionDenialKind::DeadlineExceeded,
+            }
+        }
         BoundedEntityFieldLookupDenialKind::SnapshotUnavailable => {
             WorthQueryPrincipalResolutionDenialKind::StalePrincipalProof
         }
@@ -171,4 +186,19 @@ mod tests {
             WorthQueryPrincipalResolutionDenialKind::BranchMaterializationSuspended
         );
     }
+}
+
+pub(super) fn query_read_resolution_denial(
+    stop: &worth_relational::facade::runtime::QueryReadExecutionStop,
+    binding: &str,
+) -> WorthQueryPrincipalResolutionDenial {
+    use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
+    use WorthQueryPrincipalResolutionDenialKind as Kind;
+    let kind = match super::provider::relational_execution_denial::query_read_execution_kind(stop) {
+        Ok(Some(kind)) => Kind::ExecutionRequest(kind),
+        Ok(None) => Kind::StalePrincipalProof,
+        Err(Control::Cancelled) => Kind::Cancelled,
+        Err(Control::TimedOut) => Kind::DeadlineExceeded,
+    };
+    resolution_denial(kind, binding)
 }

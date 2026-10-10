@@ -40,8 +40,12 @@ fn a_restored_host_keeps_each_branch_on_the_program_it_adopted() {
     }
     let checkpoint = host
         .runtime()
-        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
-        .expect("the adopted world captures");
+        .with_host_advancement(|host_phase| {
+            host.runtime()
+                .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
+                .expect("the adopted world captures")
+        })
+        .expect("installed host call opens");
     drop(host);
 
     let restored = restore_on_first_program(
@@ -51,10 +55,14 @@ fn a_restored_host_keeps_each_branch_on_the_program_it_adopted() {
     .expect("the host restores under the roster it installed");
     assert_eq!(restored.installed_program().revision(), &source);
     let selected = restored
-        .runtime()
-        .on_branch(restored.current_world())
-        .select()
-        .expect("the restored world is selectable");
+        .with_host_advancement(|host_phase| {
+            restored
+                .runtime()
+                .on_branch(restored.current_world())
+                .select(&host_phase)
+                .expect("the restored world is selectable")
+        })
+        .expect("installed host call opens");
     assert_eq!(
         selected.inspect_selected_program().unwrap().revision(),
         &target,

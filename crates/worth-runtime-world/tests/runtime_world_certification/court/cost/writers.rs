@@ -3,7 +3,10 @@ use std::sync::mpsc;
 use std::time::Duration;
 
 /// Concurrent totals are kept separate from the returned per-attempt costs.
-pub(super) fn run(width: usize) -> (u128, CompositePublicationCostCounters) {
+pub(super) fn run(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    width: usize,
+) -> (u128, CompositePublicationCostCounters) {
     let mut court = CompositeSupplyChainCourt::compile();
     let policy = match court.world.execution_placement() {
         worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy)
@@ -34,7 +37,7 @@ pub(super) fn run(width: usize) -> (u128, CompositePublicationCostCounters) {
                 None,
             )
             .unwrap();
-        jobs.push((prepared, court.context(&head)));
+        jobs.push((prepared, court.context(request_execution, &head)));
         heads.push(head);
     }
     let signal = court

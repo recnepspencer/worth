@@ -17,21 +17,28 @@ pub(super) struct DeterministicCdcScenario {
     pub(super) baseline_checkpoint: SubscriberCheckpoint,
 }
 
-pub(super) fn run_seeded_cdc_scenario(seed: u64, steps: usize) -> DeterministicCdcScenario {
-    let world: SeededScenarioWorld = run_seeded_scenario(SeededScenarioConfig {
-        seed,
-        steps,
-        checkpoint_stride: CertificationPressureProfile::WindowSplit.steps() / 6,
-        runtime_mode: crate::tests::harness::fixtures::runtime::RuntimeHarnessMode::InMemory(
-            RelationalRuntimeProfile::GeometryKernel,
-        ),
-        relation_pressure: false,
-        durable_checkpoint_every: None,
-        durable_compact_every: None,
-        retention_pass_every: None,
-        branch_pressure: false,
-        replacement_pressure: false,
-    });
+pub(super) fn run_seeded_cdc_scenario(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    seed: u64,
+    steps: usize,
+) -> DeterministicCdcScenario {
+    let world: SeededScenarioWorld = run_seeded_scenario(
+        execution,
+        SeededScenarioConfig {
+            seed,
+            steps,
+            checkpoint_stride: CertificationPressureProfile::WindowSplit.steps() / 6,
+            runtime_mode: crate::tests::harness::fixtures::runtime::RuntimeHarnessMode::InMemory(
+                RelationalRuntimeProfile::GeometryKernel,
+            ),
+            relation_pressure: false,
+            durable_checkpoint_every: None,
+            durable_compact_every: None,
+            retention_pass_every: None,
+            branch_pressure: false,
+            replacement_pressure: false,
+        },
+    );
 
     DeterministicCdcScenario {
         runtime: world.runtime,

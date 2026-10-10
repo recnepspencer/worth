@@ -4,6 +4,9 @@ use crate::transactions::data::ConflictClass;
 
 #[test]
 fn relation_endpoint_update_preserves_relation_identity_and_rewrites_endpoints() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let source = create_entity(&runtime, "source");
     let original_target = create_entity(&runtime, "original-target");
@@ -31,7 +34,7 @@ fn relation_endpoint_update_preserves_relation_identity_and_rewrites_endpoints()
         .expect("relation update should commit");
     let read = runtime
         .read_truth()
-        .read_snapshot(&outcome.snapshot)
+        .read_snapshot(&outcome.snapshot, execution)
         .expect("updated snapshot should read");
     let updated = read
         .relations()
@@ -98,6 +101,9 @@ fn relation_endpoint_update_rejects_duplicate_relation_identity() {
 
 #[test]
 fn relation_endpoint_update_accepts_same_batch_created_target() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let source = create_entity(&runtime, "source");
     let old_target = create_entity(&runtime, "old-target");
@@ -136,7 +142,7 @@ fn relation_endpoint_update_accepts_same_batch_created_target() {
         .expect("relation update to same-batch created target should commit");
     let read = runtime
         .read_truth()
-        .read_snapshot(&outcome.snapshot)
+        .read_snapshot(&outcome.snapshot, execution)
         .expect("updated snapshot should read");
     let updated = read
         .relations()
@@ -156,6 +162,9 @@ fn relation_endpoint_update_accepts_same_batch_created_target() {
 
 #[test]
 fn relation_endpoint_update_to_same_batch_created_target_survives_old_target_retirement() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let source = create_entity(&runtime, "source");
     let old_target = create_entity(&runtime, "old-target");
@@ -199,7 +208,7 @@ fn relation_endpoint_update_to_same_batch_created_target_survives_old_target_ret
         .expect("moved relation should survive retirement of its old endpoint");
     let read = runtime
         .read_truth()
-        .read_snapshot(&outcome.snapshot)
+        .read_snapshot(&outcome.snapshot, execution)
         .expect("updated snapshot should read");
     let updated = read
         .relations()
@@ -230,6 +239,9 @@ fn relation_endpoint_update_to_same_batch_created_target_survives_old_target_ret
 
 #[test]
 fn relation_endpoint_update_to_same_batch_created_source_survives_old_source_retirement() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let old_source = create_entity(&runtime, "old-source");
     let target = create_entity(&runtime, "target");
@@ -273,7 +285,7 @@ fn relation_endpoint_update_to_same_batch_created_source_survives_old_source_ret
         .expect("moved relation should survive retirement of its old source");
     let read = runtime
         .read_truth()
-        .read_snapshot(&outcome.snapshot)
+        .read_snapshot(&outcome.snapshot, execution)
         .expect("updated snapshot should read");
     let updated = read
         .relations()
@@ -304,6 +316,9 @@ fn relation_endpoint_update_to_same_batch_created_source_survives_old_source_ret
 
 #[test]
 fn relation_identity_can_be_replaced_in_one_transaction() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let source = create_entity(&runtime, "source");
     let target = create_entity(&runtime, "target");
@@ -339,7 +354,7 @@ fn relation_identity_can_be_replaced_in_one_transaction() {
         .expect("retiring an identity permits its same-transaction replacement");
     let read = runtime
         .read_truth()
-        .read_snapshot(&outcome.snapshot)
+        .read_snapshot(&outcome.snapshot, execution)
         .expect("replacement snapshot should read");
     let replacements = read
         .relations()

@@ -54,6 +54,7 @@ where
         Spec,
     >(
         mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         published: PublishedWorkflowDefinitionRef,
         selected_occurrence: &WorthQueryProductBranchReadIdentity,
@@ -71,8 +72,14 @@ where
             selected_occurrence,
         )?;
         let layout = self.lease.layout.workflow().clone();
-        let observed = self.lease.handle().with_runtime(|runtime| {
-            observe_retirement::<Spec>(runtime, self.lease.snapshot(), &layout, &published)
+        let observed = self.lease.handle().with_runtime(execution, |runtime| {
+            observe_retirement::<Spec>(
+                execution,
+                runtime,
+                self.lease.snapshot(),
+                &layout,
+                &published,
+            )
         })?;
         check_request_live(
             self.admission.publication_request(),
@@ -179,6 +186,7 @@ struct ObservedWorkflowDefinitionRetirement {
 }
 
 fn observe_retirement<Spec: ApplicationWorkflowSpec>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
@@ -190,6 +198,7 @@ fn observe_retirement<Spec: ApplicationWorkflowSpec>(
     let content = text(published.content_identity().to_string());
     if observe_field_value(
         runtime,
+        execution,
         snapshot,
         definition,
         layout.definition.entity_kind,
@@ -215,9 +224,12 @@ fn observe_retirement<Spec: ApplicationWorkflowSpec>(
             value: content,
         },
     ];
-    let lineage = observe_lineage(runtime, snapshot, layout, definition, subject, &mut facts)?;
+    let lineage = observe_lineage(
+        execution, runtime, snapshot, layout, definition, subject, &mut facts,
+    )?;
     let relations = observe_adjacency(
         runtime,
+        execution,
         snapshot,
         layout.current_definition_relation,
         lineage,
@@ -254,6 +266,7 @@ fn observe_retirement<Spec: ApplicationWorkflowSpec>(
 }
 
 fn observe_lineage(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
@@ -263,6 +276,7 @@ fn observe_lineage(
 ) -> Result<EntityId, WorthQueryApplicationAttemptDenial> {
     let relations = observe_adjacency(
         runtime,
+        execution,
         snapshot,
         layout.lineage_definition_relation,
         definition,
@@ -286,7 +300,7 @@ fn observe_lineage(
         kind: layout.lineage.entity_kind,
     });
     facts.extend(lineage_identity_facts(
-        runtime, snapshot, layout, lineage, subject, subject,
+        runtime, execution, snapshot, layout, lineage, subject, subject,
     )?);
     Ok(lineage)
 }

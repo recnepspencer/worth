@@ -40,6 +40,9 @@ fn intent(retention_days: u64) -> SetRetentionIntent {
 
 #[test]
 fn fresh_request_recovers_the_actual_unpublished_commit_without_rerunning_handler() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     // This value is reserved here for the fixture's real decision/candidate observers.
     const RETENTION: u64 = 18;
     reset_candidate_count(RETENTION);
@@ -52,7 +55,7 @@ fn fresh_request_recovers_the_actual_unpublished_commit_without_rerunning_handle
     let before = observe_head(runtime, branch).selected_commit().clone();
     let key = 0xaced_1801;
 
-    runtime.fail_next_durable_append_for_test();
+    runtime.fail_next_durable_append_for_test(request_execution);
     let outcome = runtime
         .request(&principal, &scope)
         .on_branch(branch)
@@ -79,12 +82,14 @@ fn fresh_request_recovers_the_actual_unpublished_commit_without_rerunning_handle
     stopped.cancel();
     assert!(matches!(
         runtime
-            .request(&principal, &stopped_scope)
-            .on_branch(branch)
-            .mutate(intent(RETENTION))
-            .without_source()
-            .idempotency(&key)
-            .recover_unpublished_in_program(&recovery, &host),
+            .with_host_advancement(|host_phase| runtime
+                .request(&principal, &stopped_scope)
+                .on_branch(branch)
+                .mutate(intent(RETENTION))
+                .without_source()
+                .idempotency(&key)
+                .recover_unpublished_in_program(&host_phase, &recovery, &host))
+            .expect("installed host call opens"),
         Err(WorthQueryApplicationRecoveryRequestDenial::Interrupted(
             WorthQueryRequestInterruption::Cancelled
         ))
@@ -95,12 +100,14 @@ fn fresh_request_recovers_the_actual_unpublished_commit_without_rerunning_handle
     let fresh_principal = authenticate_operator(host.installed_schema(), &fresh_scope);
     assert!(matches!(
         runtime
-            .request(&fresh_principal, &fresh_scope)
-            .on_branch(branch)
-            .mutate(intent(RETENTION + 1))
-            .without_source()
-            .idempotency(&key)
-            .recover_unpublished_in_program(&recovery, &host),
+            .with_host_advancement(|host_phase| runtime
+                .request(&fresh_principal, &fresh_scope)
+                .on_branch(branch)
+                .mutate(intent(RETENTION + 1))
+                .without_source()
+                .idempotency(&key)
+                .recover_unpublished_in_program(&host_phase, &recovery, &host))
+            .expect("installed host call opens"),
         Err(WorthQueryApplicationRecoveryRequestDenial::Recovery(
             WorthQueryManagedApplicationRecoveryDenial::BindingMismatch
         ))
@@ -110,12 +117,14 @@ fn fresh_request_recovers_the_actual_unpublished_commit_without_rerunning_handle
     let wrong_key = key + 1;
     assert!(matches!(
         runtime
-            .request(&fresh_principal, &fresh_scope)
-            .on_branch(branch)
-            .mutate(intent(RETENTION))
-            .without_source()
-            .idempotency(&wrong_key)
-            .recover_unpublished_in_program(&recovery, &host),
+            .with_host_advancement(|host_phase| runtime
+                .request(&fresh_principal, &fresh_scope)
+                .on_branch(branch)
+                .mutate(intent(RETENTION))
+                .without_source()
+                .idempotency(&wrong_key)
+                .recover_unpublished_in_program(&host_phase, &recovery, &host))
+            .expect("installed host call opens"),
         Err(WorthQueryApplicationRecoveryRequestDenial::Recovery(
             WorthQueryManagedApplicationRecoveryDenial::BindingMismatch
         ))
@@ -123,13 +132,17 @@ fn fresh_request_recovers_the_actual_unpublished_commit_without_rerunning_handle
     assert!(recovery.inspect().unwrap().relational_requires_settlement());
 
     let recovered = runtime
-        .request(&fresh_principal, &fresh_scope)
-        .on_branch(branch)
-        .mutate(intent(RETENTION))
-        .without_source()
-        .idempotency(&key)
-        .recover_unpublished_in_program(&recovery, &host)
-        .expect("fresh current authorization recovers the original intent");
+        .with_host_advancement(|host_phase| {
+            runtime
+                .request(&fresh_principal, &fresh_scope)
+                .on_branch(branch)
+                .mutate(intent(RETENTION))
+                .without_source()
+                .idempotency(&key)
+                .recover_unpublished_in_program(&host_phase, &recovery, &host)
+                .expect("fresh current authorization recovers the original intent")
+        })
+        .expect("installed host call opens");
     let WorthQueryManagedApplicationRecoveryOutcome::Performed(performed) = recovered else {
         panic!("settled owner effects must produce a performed product successor");
     };
@@ -144,27 +157,33 @@ fn fresh_request_recovers_the_actual_unpublished_commit_without_rerunning_handle
     assert_eq!(read_retention(runtime, branch), RETENTION);
 
     let resolved = runtime
-        .request(&fresh_principal, &fresh_scope)
-        .on_branch(branch)
-        .mutate(intent(RETENTION))
-        .without_source()
-        .idempotency(&key)
-        .resolve_idempotency_in_program(&host)
-        .unwrap();
+        .with_host_advancement(|host_phase| {
+            runtime
+                .request(&fresh_principal, &fresh_scope)
+                .on_branch(branch)
+                .mutate(intent(RETENTION))
+                .without_source()
+                .idempotency(&key)
+                .resolve_idempotency_in_program(&host_phase, &host)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     let Resolution::AlreadyCommitted(replayed) = resolved.into_resolution() else {
         panic!("fresh resolution must retain the actual original commit");
     };
     assert_eq!(replayed.commit_reference(), receipt.commit_reference());
     assert!(matches!(
         runtime
-            .request(&fresh_principal, &fresh_scope)
-            .on_branch(branch)
-            .mutate(intent(RETENTION + 1))
-            .without_source()
-            .idempotency(&key)
-            .resolve_idempotency_in_program(&host)
-            .unwrap()
-            .into_resolution(),
+            .with_host_advancement(|host_phase| runtime
+                .request(&fresh_principal, &fresh_scope)
+                .on_branch(branch)
+                .mutate(intent(RETENTION + 1))
+                .without_source()
+                .idempotency(&key)
+                .resolve_idempotency_in_program(&host_phase, &host)
+                .unwrap()
+                .into_resolution())
+            .expect("installed host call opens"),
         Resolution::IntentDrift
     ));
     assert_eq!(observe_head(runtime, branch).selected_commit(), &after);
@@ -204,37 +223,43 @@ fn recovery_reads_require_the_current_program_and_refuse_workflow_bound_actions(
     let key = 0xaced_1802;
     assert!(matches!(
         runtime
-            .request(&principal, &scope)
-            .on_branch(branch)
-            .mutate(intent(9))
-            .without_source()
-            .idempotency(&key)
-            .resolve_idempotency_in_program(&host),
+            .with_host_advancement(|host_phase| runtime
+                .request(&principal, &scope)
+                .on_branch(branch)
+                .mutate(intent(9))
+                .without_source()
+                .idempotency(&key)
+                .resolve_idempotency_in_program(&host_phase, &host))
+            .expect("installed host call opens"),
         Err(WorthQueryApplicationRecoveryRequestDenial::Request(
             WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired
         ))
     ));
     assert!(matches!(
         runtime
-            .request(&principal, &scope)
-            .on_branch(branch)
-            .mutate(ReviewedSetRetentionIntent {
-                input: intent(9).input
-            })
-            .without_source()
-            .idempotency(&key)
-            .resolve_idempotency_in_program(&host),
+            .with_host_advancement(|host_phase| runtime
+                .request(&principal, &scope)
+                .on_branch(branch)
+                .mutate(ReviewedSetRetentionIntent {
+                    input: intent(9).input
+                })
+                .without_source()
+                .idempotency(&key)
+                .resolve_idempotency_in_program(&host_phase, &host))
+            .expect("installed host call opens"),
         Err(WorthQueryApplicationRecoveryRequestDenial::WorkflowUnsupported)
     ));
     let foreign = publish_on_second_program();
     assert!(matches!(
         runtime
-            .request(&principal, &scope)
-            .on_branch(branch)
-            .mutate(intent(9))
-            .without_source()
-            .idempotency(&key)
-            .resolve_idempotency_in_program(&foreign),
+            .with_host_advancement(|host_phase| runtime
+                .request(&principal, &scope)
+                .on_branch(branch)
+                .mutate(intent(9))
+                .without_source()
+                .idempotency(&key)
+                .resolve_idempotency_in_program(&host_phase, &foreign))
+            .expect("installed host call opens"),
         Err(WorthQueryApplicationRecoveryRequestDenial::Request(
             WorthQueryApplicationRequestMutationDenial::ApplicationProgramMismatch
         ))

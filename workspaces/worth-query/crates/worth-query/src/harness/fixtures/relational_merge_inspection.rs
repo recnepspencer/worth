@@ -25,7 +25,9 @@ use crate::aspect_field_authoring::single_native_string_aspect_field_patch;
 const TARGET_BRANCH: &str = "main";
 const SOURCE_BRANCH: &str = "candidate";
 
-pub fn source_addition_inspection_artifact() -> RelationalMergeInspectionArtifact {
+pub fn source_addition_inspection_artifact(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> RelationalMergeInspectionArtifact {
     let mut runtime = runtime_with_default_merge_registry();
     create_entity_on_branch(&mut runtime, "root", BranchId(TARGET_BRANCH.to_string()));
     create_branch_from_main(&mut runtime, SOURCE_BRANCH);
@@ -34,10 +36,12 @@ pub fn source_addition_inspection_artifact() -> RelationalMergeInspectionArtifac
         "feature-only",
         BranchId(SOURCE_BRANCH.to_string()),
     );
-    inspect_execution_surface(&runtime)
+    inspect_execution_surface(request_execution, &runtime)
 }
 
-pub fn deleted_vs_modified_inspection_artifact() -> RelationalMergeInspectionArtifact {
+pub fn deleted_vs_modified_inspection_artifact(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> RelationalMergeInspectionArtifact {
     let mut runtime = runtime_with_default_merge_registry();
     let entity =
         create_entity_on_branch(&mut runtime, "shared", BranchId(TARGET_BRANCH.to_string()));
@@ -49,10 +53,12 @@ pub fn deleted_vs_modified_inspection_artifact() -> RelationalMergeInspectionArt
         BranchId(TARGET_BRANCH.to_string()),
     );
     delete_entity_on_branch(&mut runtime, entity, BranchId(SOURCE_BRANCH.to_string()));
-    inspect_execution_surface(&runtime)
+    inspect_execution_surface(request_execution, &runtime)
 }
 
-pub fn topology_region_conflict_inspection_artifact() -> RelationalMergeInspectionArtifact {
+pub fn topology_region_conflict_inspection_artifact(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> RelationalMergeInspectionArtifact {
     let mut runtime = runtime_with_topology_merge_registry();
     let source =
         create_entity_on_branch(&mut runtime, "source", BranchId(TARGET_BRANCH.to_string()));
@@ -121,10 +127,13 @@ pub fn topology_region_conflict_inspection_artifact() -> RelationalMergeInspecti
         BranchId(SOURCE_BRANCH.to_string()),
     );
 
-    inspect_execution_surface(&runtime)
+    inspect_execution_surface(request_execution, &runtime)
 }
 
-fn inspect_execution_surface(runtime: &RelationalRuntime) -> RelationalMergeInspectionArtifact {
+fn inspect_execution_surface(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+) -> RelationalMergeInspectionArtifact {
     let request = runtime
         .bind_merge_planning_request(MergePlanningRequest::new(
             BranchId(TARGET_BRANCH.to_string()),
@@ -134,7 +143,7 @@ fn inspect_execution_surface(runtime: &RelationalRuntime) -> RelationalMergeInsp
         .expect("merge inspection branches should be owner-bound");
     runtime
         .merge()
-        .inspect_execution_surface(request)
+        .inspect_execution_surface(request_execution, request)
         .expect("relational merge inspection should succeed")
 }
 

@@ -2,9 +2,13 @@ use super::super::support::*;
 
 #[test]
 fn effect_expression_suppression_and_failure_are_typed_and_counted() {
-    let mut runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let live = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "tasks.table",
             task_live_request(),
             task_schema(),
@@ -40,16 +44,19 @@ fn effect_expression_suppression_and_failure_are_typed_and_counted() {
         .expect("failing effect should declare");
 
     let write = runtime
-        .write(insert_command(
-            "Task",
-            [
-                ("identity.id", test_string_aspect_value("")),
-                ("title.value", test_string_aspect_value("Conditional task")),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [
+                    ("identity.id", test_string_aspect_value("")),
+                    ("title.value", test_string_aspect_value("Conditional task")),
+                ],
+            ),
+        )
         .expect("write should route effects");
     let suppressed_evidence = runtime
-        .inspect_effect(&suppressed_effect)
+        .inspect_effect(request_execution, &suppressed_effect)
         .expect("suppressed terminal artifact should inspect before drain");
     let suppressed = runtime
         .drain_effect_deliveries(&suppressed_effect)
@@ -91,9 +98,13 @@ fn effect_expression_suppression_and_failure_are_typed_and_counted() {
 
 #[test]
 fn meaningful_change_suppression_counts_semantic_delta_suppression() {
-    let mut runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let live = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "tasks.table",
             task_live_request(),
             task_schema(),
@@ -111,13 +122,16 @@ fn meaningful_change_suppression_counts_semantic_delta_suppression() {
         .expect("meaningful effect should declare");
 
     let inserted = runtime
-        .write(insert_command(
-            "Task",
-            [
-                ("identity.id", test_string_aspect_value("")),
-                ("title.value", test_string_aspect_value("Meaningful task")),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [
+                    ("identity.id", test_string_aspect_value("")),
+                    ("title.value", test_string_aspect_value("Meaningful task")),
+                ],
+            ),
+        )
         .expect("insert should deliver because whole-row delta is meaningful");
     assert_eq!(inserted.delivered_effect_count(), 1);
     assert_eq!(inserted.meaningful_effect_suppression_count(), 0);
@@ -130,14 +144,17 @@ fn meaningful_change_suppression_counts_semantic_delta_suppression() {
     );
 
     let churn = runtime
-        .write(test_update_string_aspect_command(
-            inserted.deltas()[0].entity_identity.clone(),
-            "identity.id",
-            "semantic-churn",
-        ))
+        .write(
+            request_execution,
+            test_update_string_aspect_command(
+                inserted.deltas()[0].entity_identity.clone(),
+                "identity.id",
+                "semantic-churn",
+            ),
+        )
         .expect("irrelevant aspect update should be suppressed as churn");
     let evidence = runtime
-        .inspect_effect(&effect)
+        .inspect_effect(request_execution, &effect)
         .expect("meaningful effect should inspect");
     let suppressed = runtime
         .drain_effect_deliveries(&effect)

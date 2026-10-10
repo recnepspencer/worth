@@ -83,14 +83,22 @@ where
         self.runtime
             .runtime
             .with_application_advancement(&request, |active_phase| {
-                self.runtime
+                let execution = active_phase
+                    .execution_request_for(&self.runtime.runtime.product_runtime)
+                    .map_err(
+                        crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from,
+                    )?;
+                Ok(self
+                    .runtime
                     .runtime
                     .compare_and_commit_elevation_request_for_program(
+                        &execution,
                         &active_phase,
                         candidate.take().expect("candidate admitted once"),
                         idempotency,
-                    )
+                    ))
             })
+            .and_then(std::convert::identity)
             .unwrap_or_else(|denial| match candidate.take() {
                 Some(candidate) => self
                     .runtime
@@ -113,15 +121,23 @@ where
         self.runtime
             .runtime
             .with_application_advancement(&request, |active_phase| {
-                self.runtime
+                let execution = active_phase
+                    .execution_request_for(&self.runtime.runtime.product_runtime)
+                    .map_err(
+                        crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from,
+                    )?;
+                Ok(self
+                    .runtime
                     .runtime
                     .compare_and_commit_elevation_approval_for_program(
+                        &execution,
                         &active_phase,
                         candidate.take().expect("candidate admitted once"),
                         idempotency,
                         None,
-                    )
+                    ))
             })
+            .and_then(std::convert::identity)
             .unwrap_or_else(|denial| match candidate.take() {
                 Some(candidate) => self
                     .runtime
@@ -144,15 +160,23 @@ where
         self.runtime
             .runtime
             .with_application_advancement(&request, |active_phase| {
-                self.runtime
+                let execution = active_phase
+                    .execution_request_for(&self.runtime.runtime.product_runtime)
+                    .map_err(
+                        crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from,
+                    )?;
+                Ok(self
+                    .runtime
                     .runtime
                     .compare_and_commit_elevation_close_for_program(
+                        &execution,
                         &active_phase,
                         candidate.take().expect("candidate admitted once"),
                         idempotency,
                         None,
-                    )
+                    ))
             })
+            .and_then(std::convert::identity)
             .unwrap_or_else(|denial| match candidate.take() {
                 Some(candidate) => self
                     .runtime
@@ -175,15 +199,23 @@ where
         self.runtime
             .runtime
             .with_application_advancement(&request, |active_phase| {
-                self.runtime
+                let execution = active_phase
+                    .execution_request_for(&self.runtime.runtime.product_runtime)
+                    .map_err(
+                        crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from,
+                    )?;
+                Ok(self
+                    .runtime
                     .runtime
                     .compare_and_commit_mandatory_review_for_program(
+                        &execution,
                         &active_phase,
                         candidate.take().expect("candidate admitted once"),
                         idempotency,
                         None,
-                    )
+                    ))
             })
+            .and_then(std::convert::identity)
             .unwrap_or_else(|denial| match candidate.take() {
                 Some(candidate) => self
                     .runtime
@@ -206,14 +238,22 @@ where
         self.runtime
             .runtime
             .with_application_advancement(&request, |active_phase| {
-                self.runtime
+                let execution = active_phase
+                    .execution_request_for(&self.runtime.runtime.product_runtime)
+                    .map_err(
+                        crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from,
+                    )?;
+                Ok(self
+                    .runtime
                     .runtime
                     .compare_and_commit_capability_delegation_for_program(
+                        &execution,
                         &active_phase,
                         candidate.take().expect("candidate admitted once"),
                         idempotency,
-                    )
+                    ))
             })
+            .and_then(std::convert::identity)
             .unwrap_or_else(|denial| denial.into_commit_outcome())
     }
 
@@ -230,14 +270,22 @@ where
         self.runtime
             .runtime
             .with_application_advancement(&request, |active_phase| {
-                self.runtime
+                let execution = active_phase
+                    .execution_request_for(&self.runtime.runtime.product_runtime)
+                    .map_err(
+                        crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from,
+                    )?;
+                Ok(self
+                    .runtime
                     .runtime
                     .compare_and_commit_capability_revocation_for_program(
+                        &execution,
                         &active_phase,
                         candidate.take().expect("candidate admitted once"),
                         idempotency,
-                    )
+                    ))
             })
+            .and_then(std::convert::identity)
             .unwrap_or_else(|denial| denial.into_commit_outcome())
     }
 }

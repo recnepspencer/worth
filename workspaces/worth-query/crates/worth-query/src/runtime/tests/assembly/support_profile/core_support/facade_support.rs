@@ -2,10 +2,13 @@ use super::*;
 
 #[test]
 fn runtime_support_profiles_expose_facade_family_posture() {
-    let primary_runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let primary_runtime = stateful_bridge_task_runtime(request_execution);
     let bridge_runtime = complete_backend_from_parts_builder()
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("complete backend parts should build");
 
     for family in [
@@ -68,7 +71,10 @@ fn runtime_support_profiles_expose_facade_family_posture() {
 
 #[test]
 fn runtime_public_api_contract_closes_runtime_backed_temporal_async_surfaces() {
-    let runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = stateful_bridge_task_runtime(request_execution);
     let contract = runtime.public_api_contract();
 
     assert_eq!(

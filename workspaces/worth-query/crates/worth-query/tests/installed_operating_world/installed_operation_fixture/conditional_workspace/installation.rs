@@ -48,8 +48,12 @@ impl ConditionalInstallation {
         self.prepare(owner.clone(), bridge, record)
     }
 
-    pub(crate) fn prepare_public(self) -> PreparedConditionalInstallation {
-        let (owner, seed) = super::source_seed::standalone(self.semantic.clone());
+    pub(crate) fn prepare_public(
+        self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> PreparedConditionalInstallation {
+        let (owner, seed) =
+            super::source_seed::standalone(request_execution, self.semantic.clone());
         self.prepare_seeded(&owner, &seed)
     }
 

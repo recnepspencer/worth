@@ -40,6 +40,7 @@ where
     /// it neither duplicates the prepared token nor recovers roots from a receipt.
     pub fn validate_discovered_program_source<Root>(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         prepared: &WorthQueryPreparedRequiredOutputSource,
         receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
@@ -53,6 +54,12 @@ where
             + worth_query_declaration::facade::application_program::ApplicationDiscoveredOutputRoot,
         RootConnection<Schema, Root>: WorthQueryApplicationDiscoveredOutputConnection<Schema>,
     {
+        let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
+            Ok(request) => request,
+            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase), "program-source-phase")),
+        };
+        let execution = &phase_request;
+
         self.require_discovered_root::<Root>()?;
         if prepared.runtime_authority != self.runtime.runtime.authority_identity().as_u64()
             || &prepared.source_commit != receipt.committed_product_publication().composite_commit()
@@ -70,7 +77,7 @@ where
             crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Discovered(std::any::TypeId::of::<Root>()),
         )?;
         self.runtime
-            .select_application_read_observation(observation)
+            .select_application_read_observation_with_request(execution, observation)
             .map_err(|denial| {
                 WorthQueryOutputDemandDenial::product_selection(
                     denial,
@@ -161,6 +168,7 @@ where
 
     pub fn admit_performed_discovered_program_root_output<Root>(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         source: WorthQueryApplicationOutputDemandSource<
             SourceQuery<Schema, Root>,
@@ -181,6 +189,12 @@ where
             + worth_query_declaration::facade::application_program::ApplicationDiscoveredOutputRoot,
         RootConnection<Schema, Root>: WorthQueryApplicationDiscoveredOutputConnection<Schema>,
     {
+        let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
+            Ok(request) => request,
+            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase), "output-demand-phase")),
+        };
+        let execution = &phase_request;
+
         self.require_discovered_root::<Root>()?;
         let artifact = self.validate_derived_artifact_demand::<
             <Root as ApplicationOutputGraphShape<Schema>>::RootConnection,
@@ -188,7 +202,7 @@ where
         >()?;
         let limits = self.resolve_artifact_limits(limits, artifact)?;
         self.runtime
-            .admit_performed_output_demand::<Family<Schema, Root>>(
+            .admit_performed_output_demand::<Family<Schema, Root>>(execution,
                 source,
                 limits,
                 prepared,
@@ -203,6 +217,7 @@ where
 
     pub fn recover_discovered_program_root_output<Root>(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         source: WorthQueryApplicationOutputDemandSource<
             SourceQuery<Schema, Root>,
@@ -227,6 +242,12 @@ where
             + worth_query_declaration::facade::application_program::ApplicationDiscoveredOutputRoot,
         RootConnection<Schema, Root>: WorthQueryApplicationDiscoveredOutputConnection<Schema>,
     {
+        let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
+            Ok(request) => request,
+            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase), "output-demand-phase")),
+        };
+        let execution = &phase_request;
+
         self.require_discovered_root::<Root>()?;
         let artifact = self.validate_derived_artifact_demand::<
             <Root as ApplicationOutputGraphShape<Schema>>::RootConnection,
@@ -238,7 +259,7 @@ where
             crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Discovered(std::any::TypeId::of::<Root>()),
         )?;
         self.runtime
-            .admit_recovered_output_demand::<Family<Schema, Root>>(
+            .admit_recovered_output_demand::<Family<Schema, Root>>(execution,
                 source,
                 current,
                 limits,

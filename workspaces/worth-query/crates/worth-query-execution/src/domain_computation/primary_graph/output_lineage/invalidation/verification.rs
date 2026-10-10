@@ -73,6 +73,7 @@ pub(in crate::domain_computation::primary_graph) struct VerifiedDirtySettlement 
 impl SourceInvalidationOwner {
     pub(in crate::domain_computation::primary_graph) fn reverify_dirty(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
         selected: &PositionedRelationalSnapshot,
@@ -139,7 +140,7 @@ impl SourceInvalidationOwner {
                 .fact_at(ordinal)
                 .ok_or(SettlementVerificationStop::Alignment)?;
             let movement = fact
-                .source_currentness_in(runtime, snapshot, admission)?
+                .source_currentness_in(runtime, execution, snapshot, admission)?
                 .map_err(SettlementVerificationStop::SourceRead)?;
             if movement.movement() == Movement::Moved {
                 return Ok(DirtyReverification::ChangedOrdinal(ordinal));

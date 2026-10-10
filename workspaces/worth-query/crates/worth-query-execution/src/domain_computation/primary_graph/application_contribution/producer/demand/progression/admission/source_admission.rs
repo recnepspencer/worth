@@ -12,6 +12,7 @@ where
         Family,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         source: &FamilySourceValue<Schema, Family>,
         observed_source: WorthQueryObservedSource<FamilySourceQuery<Schema, Family>>,
         selection_source: Option<&WorthQueryObservedSource<FamilySourceQuery<Schema, Family>>>,
@@ -64,6 +65,7 @@ where
         // cannot mint a fresh allowance during refresh.
         let (mut selected, entry) = match selected_product {
             Some(selected) => self.select_output_producer_with_remaining_on_selected::<Family>(
+                execution,
                 selection_source.unwrap_or(&observed_source),
                 profile_kind,
                 registry_admission,
@@ -71,6 +73,7 @@ where
                 selected,
             ),
             None => self.select_output_producer_with_remaining::<Family>(
+                execution,
                 selection_source.unwrap_or(&observed_source),
                 profile_kind,
                 registry_admission,
@@ -142,6 +145,7 @@ where
                 )
             })?;
             self.readmit_checkpoint_output(
+                execution,
                 &selected.identity,
                 output_binding,
                 expected_key,
@@ -176,7 +180,12 @@ where
                 registry_admission,
             )?;
             if newly_adopted {
-                self.record_restored_output(source_scope, &readmitted, registry_admission)?;
+                self.record_restored_output(
+                    execution,
+                    source_scope,
+                    &readmitted,
+                    registry_admission,
+                )?;
             }
             let observed_source = observed_source.install(&interest, installed_entry.clone())?;
             #[cfg(feature="test-query-execution-observer")]

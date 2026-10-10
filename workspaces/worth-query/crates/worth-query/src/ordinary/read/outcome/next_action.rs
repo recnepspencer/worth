@@ -124,7 +124,7 @@ fn next_action_for_read_denial(kind: &WorthQueryReadDenialKind) -> WorthQueryRea
         | WorthQueryReadDenialKind::CanonicalizationDenied
         | WorthQueryReadDenialKind::ValidationDenied
         | WorthQueryReadDenialKind::PlanningDenied => WorthQueryReadNextAction::ReviseDeclaration,
-        WorthQueryReadDenialKind::ExecutionDenied => {
+        WorthQueryReadDenialKind::ForeignPhase(_) | WorthQueryReadDenialKind::ExecutionDenied => {
             WorthQueryReadNextAction::InspectOperationalFailure
         }
     }

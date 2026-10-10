@@ -179,14 +179,14 @@ fn isolated_provider_step_allocation_slope_probe() {
 }
 
 fn execute_target(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     unrelated_width: usize,
 ) -> StepCostEvidence {
     execute_target_with_chunks(execution, unrelated_width, 1)
 }
 
 fn execute_target_with_chunks(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     unrelated_width: usize,
     admitted_chunk_count: usize,
@@ -235,7 +235,7 @@ fn measured_target(unrelated_width: usize) -> stats_alloc::Stats {
 }
 
 fn prepared_target(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     unrelated_width: usize,
     admitted_chunk_count: usize,
@@ -259,29 +259,37 @@ fn prepared_target(
             chunk_count: admitted_chunk_count,
         },
     );
-    let active = running
-        .begin_graph_execution(
-            execution,
+    let active = {
+        let installed_fixture_phase = running.fixture_phase(execution);
+        running.begin_graph_execution(
+            &installed_fixture_phase,
             &graph,
             WorthQueryManagedGraphCallRequest::new(
                 WorthQueryGraphProviderCallKind::Project,
                 "cost-slope",
             ),
         )
-        .expect("cost-slope provider should start");
+    }
+    .expect("cost-slope provider should start");
     (active, unrelated, advances)
 }
 
 fn complete_target(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     active: crate::domain_computation::WorthQueryActiveDirectGraphExecution,
 ) -> crate::domain_computation::WorthQueryCompletedDirectGraphExecution {
-    let mut outcome = active.advance(execution);
+    let mut outcome = {
+        let installed_fixture_phase = active.fixture_phase(execution);
+        active.advance(&installed_fixture_phase)
+    };
     loop {
         outcome = match outcome {
             WorthQueryDirectGraphStepOutcome::ChunkReady(pending) => pending.acknowledge(),
-            WorthQueryDirectGraphStepOutcome::Continue(paused) => paused.advance(execution),
+            WorthQueryDirectGraphStepOutcome::Continue(paused) => {
+                let installed_fixture_phase = paused.fixture_phase(execution);
+                paused.advance(&installed_fixture_phase)
+            }
             WorthQueryDirectGraphStepOutcome::Completed(completion) => return completion,
             _ => panic!("cost-slope provider left the admitted chunk progression"),
         };

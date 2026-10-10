@@ -129,6 +129,9 @@ where
         WorthQueryPreparedPartitionedComputation<Schema, Feature, Computation, Owner>,
         Denial<Schema, Feature, Computation, Owner>,
     > {
+        let request = execution
+            .execution_request()
+            .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
         let owner = &*self.owner;
         reader.begin_computation_reads();
         let mut remaining_work = RemainingWork::declared(
@@ -160,7 +163,13 @@ where
                     Owner::PartitionResult,
                     _,
                     _,
-                >(reader, &self.installation, input_digest, remaining_work)
+                >(
+                    &request,
+                    reader,
+                    &self.installation,
+                    input_digest,
+                    remaining_work,
+                )
             }
         };
         let deposit = reader.computation_deposit();

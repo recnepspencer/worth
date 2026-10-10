@@ -2,6 +2,9 @@ use super::*;
 
 #[test]
 fn graph_summary_is_scope_explicit_and_canonical() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let left = create_entity(&runtime, "left");
     let right = create_entity(&runtime, "right");
@@ -9,15 +12,16 @@ fn graph_summary_is_scope_explicit_and_canonical() {
 
     let summary = runtime
         .inspect_what_happened()
-        .graph_summary(&current_graph_request(None, None, true));
-    let kind_summary = runtime
-        .inspect_what_happened()
-        .kind_summary(&KindInspectionRequest {
+        .graph_summary(execution, &current_graph_request(None, None, true));
+    let kind_summary = runtime.inspect_what_happened().kind_summary(
+        execution,
+        &KindInspectionRequest {
             scope: InspectionScope::Current,
             partition_scope: None,
             kind_id: crate::facade::identity::KindId(1),
             record_class: crate::facade::inspection::InspectionRecordClass::Entity,
-        });
+        },
+    );
 
     assert_eq!(summary.entity_count, 2);
     assert_eq!(summary.relation_count, 1);
@@ -26,6 +30,9 @@ fn graph_summary_is_scope_explicit_and_canonical() {
 
 #[test]
 fn current_graph_surfaces_match_version_and_snapshot_scopes_for_same_truth() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let left_a = crate::tests::support::create_entity_in_partition(
         &runtime,
@@ -53,62 +60,68 @@ fn current_graph_surfaces_match_version_and_snapshot_scopes_for_same_truth() {
     let snapshot = runtime.visibility_authority().snapshot();
     let version_id = runtime.current_version_id();
 
-    let current_graph = runtime
-        .inspect_what_happened()
-        .graph_summary(&current_graph_request(
+    let current_graph = runtime.inspect_what_happened().graph_summary(
+        execution,
+        &current_graph_request(
             Some(vec![crate::facade::identity::PartitionId(7)]),
             Some(vec![crate::facade::identity::KindId(2)]),
             true,
-        ));
-    let version_graph = runtime
-        .inspect_what_happened()
-        .graph_summary(&version_graph_request(
+        ),
+    );
+    let version_graph = runtime.inspect_what_happened().graph_summary(
+        execution,
+        &version_graph_request(
             version_id,
             Some(vec![crate::facade::identity::PartitionId(7)]),
             Some(vec![crate::facade::identity::KindId(2)]),
             true,
-        ));
-    let snapshot_graph = runtime
-        .inspect_what_happened()
-        .graph_summary(&snapshot_graph_request(
+        ),
+    );
+    let snapshot_graph = runtime.inspect_what_happened().graph_summary(
+        execution,
+        &snapshot_graph_request(
             InspectionScope::Snapshot(snapshot.clone()),
             Some(vec![crate::facade::identity::PartitionId(7)]),
             Some(vec![crate::facade::identity::KindId(2)]),
             true,
-        ));
-    let current_connectivity =
+        ),
+    );
+    let current_connectivity = runtime.inspect_what_happened().connectivity_summary(
+        execution,
+        &connectivity_request(
+            InspectionScope::Current,
+            Some(vec![crate::facade::identity::PartitionId(7)]),
+            Some(vec![crate::facade::identity::KindId(2)]),
+            true,
+        ),
+    );
+    let version_connectivity = runtime.inspect_what_happened().connectivity_summary(
+        execution,
+        &connectivity_request(
+            InspectionScope::Version(version_id),
+            Some(vec![crate::facade::identity::PartitionId(7)]),
+            Some(vec![crate::facade::identity::KindId(2)]),
+            true,
+        ),
+    );
+    let snapshot_connectivity = runtime.inspect_what_happened().connectivity_summary(
+        execution,
+        &connectivity_request(
+            InspectionScope::Snapshot(snapshot),
+            Some(vec![crate::facade::identity::PartitionId(7)]),
+            Some(vec![crate::facade::identity::KindId(2)]),
+            true,
+        ),
+    );
+    let neighbors_current =
         runtime
             .inspect_what_happened()
-            .connectivity_summary(&connectivity_request(
-                InspectionScope::Current,
-                Some(vec![crate::facade::identity::PartitionId(7)]),
-                Some(vec![crate::facade::identity::KindId(2)]),
-                true,
-            ));
-    let version_connectivity =
-        runtime
-            .inspect_what_happened()
-            .connectivity_summary(&connectivity_request(
-                InspectionScope::Version(version_id),
-                Some(vec![crate::facade::identity::PartitionId(7)]),
-                Some(vec![crate::facade::identity::KindId(2)]),
-                true,
-            ));
-    let snapshot_connectivity =
-        runtime
-            .inspect_what_happened()
-            .connectivity_summary(&connectivity_request(
-                InspectionScope::Snapshot(snapshot),
-                Some(vec![crate::facade::identity::PartitionId(7)]),
-                Some(vec![crate::facade::identity::KindId(2)]),
-                true,
-            ));
-    let neighbors_current = runtime
-        .inspect_what_happened()
-        .neighbors(InspectionScope::Current, left_a);
-    let neighbors_version = runtime
-        .inspect_what_happened()
-        .neighbors(InspectionScope::Version(version_id), left_a);
+            .neighbors(execution, InspectionScope::Current, left_a);
+    let neighbors_version = runtime.inspect_what_happened().neighbors(
+        execution,
+        InspectionScope::Version(version_id),
+        left_a,
+    );
 
     assert_eq!(current_graph.entity_count, version_graph.entity_count);
     assert_eq!(current_graph.entity_count, snapshot_graph.entity_count);
@@ -151,6 +164,9 @@ fn current_graph_surfaces_match_version_and_snapshot_scopes_for_same_truth() {
 
 #[test]
 fn snapshot_graph_summary_fails_closed_when_snapshot_handle_is_unavailable() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let created = create_entity_outcome(&runtime, "alpha");
     assert!(runtime
@@ -158,14 +174,15 @@ fn snapshot_graph_summary_fails_closed_when_snapshot_handle_is_unavailable() {
         .release_snapshot(&created.snapshot)
         .is_ok());
 
-    let summary = runtime
-        .inspect_what_happened()
-        .graph_summary(&snapshot_graph_request(
+    let summary = runtime.inspect_what_happened().graph_summary(
+        execution,
+        &snapshot_graph_request(
             InspectionScope::Snapshot(created.snapshot.clone()),
             None,
             None,
             true,
-        ));
+        ),
+    );
 
     assert_eq!(
         summary.scope,
@@ -182,12 +199,16 @@ fn snapshot_graph_summary_fails_closed_when_snapshot_handle_is_unavailable() {
 
 #[test]
 fn connectivity_summary_refuses_oversized_budget_with_explicit_degradation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let left = create_entity(&runtime, "left");
     let right = create_entity(&runtime, "right");
     let _relation = create_relation(&runtime, left, right, "rel");
 
     let summary = runtime.inspect_what_happened().connectivity_summary(
+        execution,
         &crate::facade::inspection::ConnectivityInspectionRequest {
             scope: InspectionScope::Current,
             partition_scope: None,

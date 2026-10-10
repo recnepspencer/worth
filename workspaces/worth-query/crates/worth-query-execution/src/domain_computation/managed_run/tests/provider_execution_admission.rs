@@ -187,8 +187,10 @@ fn admission_from_a_prior_start_cannot_enter_a_fresh_provider_start() {
                 retained: Arc::clone(&retained),
             },
         );
+        let installed_running_phase = execution.phase_for_direct(&running);
+
         let first_failure = match running.begin_graph_execution(
-            execution,
+            &installed_running_phase,
             &graph,
             WorthQueryManagedGraphCallRequest::new(
                 WorthQueryGraphProviderCallKind::Observe,
@@ -204,7 +206,7 @@ fn admission_from_a_prior_start_cannot_enter_a_fresh_provider_start() {
     );
 
         let foreign_failure = match first_failure.into_running().begin_graph_execution(
-            execution,
+            &installed_running_phase,
             &graph,
             WorthQueryManagedGraphCallRequest::new(
                 WorthQueryGraphProviderCallKind::Observe,
@@ -232,8 +234,10 @@ fn ignored_second_execution_admission_denies_the_provider_start() {
             WorthQueryOperationGraphAccess::Observe,
             MultipleAdmissionProvider,
         );
+        let installed_running_phase = execution.phase_for_direct(&running);
+
         let failure = match running.begin_graph_execution(
-            execution,
+            &installed_running_phase,
             &graph,
             WorthQueryManagedGraphCallRequest::new(
                 WorthQueryGraphProviderCallKind::Observe,
@@ -341,7 +345,7 @@ fn panic_after_admission_contains_an_independent_destructor_panic() {
 }
 
 fn post_admission_failure(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     behavior: PostAdmissionBehavior,
     destructor_panics: bool,
@@ -357,8 +361,10 @@ fn post_admission_failure(
             destructor_panics,
         },
     );
+    let installed_running_phase = execution.phase_for_direct(&running);
+
     match running.begin_graph_execution(
-        execution,
+        &installed_running_phase,
         &graph,
         WorthQueryManagedGraphCallRequest::new(
             WorthQueryGraphProviderCallKind::Observe,

@@ -2,33 +2,40 @@ use super::*;
 
 #[test]
 fn naming_existing_target_denies_missing_binding_typed_and_early() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("tasks.naming-denial")
         .expect("task runtime should open a named workspace");
 
     let error = workspace
-        .update(test_entity_identity("entity:0:1:0"), |task| {
-            task.naming_attach_existing_target(
-                crate::runtime::WorthQueryMutationAuthorityIdentity::naming_attachment(
-                    crate::runtime::WorthQueryNamingAttachmentAuthorityLabel::new(
-                        "persistent-name:task-1",
+        .update(
+            request_execution,
+            test_entity_identity("entity:0:1:0"),
+            |task| {
+                task.naming_attach_existing_target(
+                    crate::runtime::WorthQueryMutationAuthorityIdentity::naming_attachment(
+                        crate::runtime::WorthQueryNamingAttachmentAuthorityLabel::new(
+                            "persistent-name:task-1",
+                        )
+                        .expect("naming attachment authority label"),
                     )
-                    .expect("naming attachment authority label"),
-                )
-                .expect("naming attachment identity"),
-                crate::runtime::WorthQueryMutationAuthorityIdentity::naming_target_authority(
-                    crate::runtime::WorthQueryNamingTargetAuthorityLabel::new(
-                        "persistent-name:task-1",
+                    .expect("naming attachment identity"),
+                    crate::runtime::WorthQueryMutationAuthorityIdentity::naming_target_authority(
+                        crate::runtime::WorthQueryNamingTargetAuthorityLabel::new(
+                            "persistent-name:task-1",
+                        )
+                        .expect("naming target authority label"),
                     )
-                    .expect("naming target authority label"),
+                    .expect("naming target authority identity"),
                 )
-                .expect("naming target authority identity"),
-            )
-            .set_aspect(
-                test_aspect_touch("title.value"),
-                test_authored_string_aspect_value("No binding"),
-            )
-        })
+                .set_aspect(
+                    test_aspect_touch("title.value"),
+                    test_authored_string_aspect_value("No binding"),
+                )
+            },
+        )
         .expect_err("naming attach-to-existing should deny without binding");
 
     match error {
@@ -45,7 +52,10 @@ fn naming_existing_target_denies_missing_binding_typed_and_early() {
 
 #[test]
 fn naming_remove_denies_non_delete_family_typed_and_early() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("tasks.naming-remove-denial")
         .expect("task runtime should open a named workspace");
 
@@ -70,7 +80,7 @@ fn naming_remove_denies_non_delete_family_typed_and_early() {
         continuity_intent: None,
     };
     let error = workspace
-        .write(command)
+        .write(request_execution, command)
         .expect_err("naming remove should deny on non-delete mutation family");
 
     match error {

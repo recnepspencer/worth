@@ -128,7 +128,9 @@ fn close_query_derived_product_readiness(
         declaration.operation_name(),
         admission.operation_request().identity().basis_digest(),
         &workspace
-            .snapshot_identity()
+            .with_advancement(|phase| workspace.snapshot_identity(&phase))
+            .expect("installed snapshot host call opens")
+            .expect("snapshot phase belongs to workspace")
             .terminal_projection_for_reporting(),
     )
     .map(WorthServerOperationPreconditionPosture::ProductBasis)

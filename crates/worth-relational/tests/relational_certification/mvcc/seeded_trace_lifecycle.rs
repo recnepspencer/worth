@@ -11,6 +11,7 @@ use worth_relational::facade::publication::PatchStreamRequest;
 use worth_relational::facade::snapshots::SnapshotHandle;
 
 pub(super) fn archive_and_observe(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &mut ProductionSeededSupplyChainWorld,
     trace: &ProductionModelTrace,
     scenario_index: usize,
@@ -45,6 +46,7 @@ pub(super) fn archive_and_observe(
         trace_panic(trace, scenario_index, "archive posture", reference);
     }
     super::seeded_trace_observation::observe_snapshot_against_oracle(
+        execution,
         world,
         trace,
         scenario_index,
@@ -67,6 +69,7 @@ pub(super) fn archive_and_observe(
 }
 
 pub(super) fn delete_and_prove_absence(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &mut ProductionSeededSupplyChainWorld,
     trace: &ProductionModelTrace,
     scenario_index: usize,
@@ -88,6 +91,7 @@ pub(super) fn delete_and_prove_absence(
         .snapshot_for_observation(&basis.observation())
         .unwrap_or_else(|error| trace_panic(trace, scenario_index, "delete snapshot", error));
     super::seeded_trace_observation::observe_snapshot_against_oracle(
+        execution,
         world,
         trace,
         scenario_index,
@@ -95,7 +99,14 @@ pub(super) fn delete_and_prove_absence(
         &state.oracle,
         "pre-delete oracle",
     );
-    let before = observe_snapshot(world, trace, scenario_index, &snapshot, "pre-delete truth");
+    let before = observe_snapshot(
+        execution,
+        world,
+        trace,
+        scenario_index,
+        &snapshot,
+        "pre-delete truth",
+    );
     let catalog = world.runtime.history().immutable_commit_count();
     let replay = world.runtime.publication().latest_replay();
     let stream = world
@@ -135,7 +146,14 @@ pub(super) fn delete_and_prove_absence(
     {
         trace_panic(trace, scenario_index, "delete residue", &deleted);
     }
-    prove_surviving_truth(world, trace, scenario_index, branches, &state.branch);
+    prove_surviving_truth(
+        execution,
+        world,
+        trace,
+        scenario_index,
+        branches,
+        &state.branch,
+    );
     let inspection = world
         .runtime
         .read_truth()
@@ -145,6 +163,7 @@ pub(super) fn delete_and_prove_absence(
         trace_panic(trace, scenario_index, "deleted root lease", inspection);
     }
     let after = observe_snapshot(
+        execution,
         world,
         trace,
         scenario_index,
@@ -160,6 +179,7 @@ pub(super) fn delete_and_prove_absence(
 }
 
 fn prove_surviving_truth(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &mut ProductionSeededSupplyChainWorld,
     trace: &ProductionModelTrace,
     scenario_index: usize,
@@ -168,6 +188,7 @@ fn prove_surviving_truth(
 ) {
     let main = OracleBranch::genesis(OracleState::from_definition(world.program.definition()));
     observe_live_branch(
+        execution,
         world,
         trace,
         scenario_index,
@@ -177,6 +198,7 @@ fn prove_surviving_truth(
     for state in branches.iter().filter(|state| &state.branch != excluded) {
         if let Some(snapshot) = &state.retained_snapshot {
             super::seeded_trace_observation::observe_snapshot_against_oracle(
+                execution,
                 world,
                 trace,
                 scenario_index,
@@ -185,12 +207,20 @@ fn prove_surviving_truth(
                 "archived survivor oracle",
             );
         } else {
-            observe_live_branch(world, trace, scenario_index, &state.branch, &state.oracle);
+            observe_live_branch(
+                execution,
+                world,
+                trace,
+                scenario_index,
+                &state.branch,
+                &state.oracle,
+            );
         }
     }
 }
 
 fn observe_live_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &mut ProductionSeededSupplyChainWorld,
     trace: &ProductionModelTrace,
     scenario_index: usize,
@@ -211,6 +241,7 @@ fn observe_live_branch(
         .snapshot_for_observation(&basis.observation())
         .unwrap_or_else(|error| trace_panic(trace, scenario_index, "survivor snapshot", error));
     super::seeded_trace_observation::observe_snapshot_against_oracle(
+        execution,
         world,
         trace,
         scenario_index,
@@ -247,6 +278,7 @@ fn survivor_references(
 }
 
 fn observe_snapshot(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &ProductionSeededSupplyChainWorld,
     trace: &ProductionModelTrace,
     scenario_index: usize,
@@ -254,6 +286,7 @@ fn observe_snapshot(
     operation: &'static str,
 ) -> ObservedSupplyChainState {
     observe_supply_chain_snapshot(
+        execution,
         &world.program,
         &world.handles.for_snapshot(snapshot.clone()),
         &world.runtime,

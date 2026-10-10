@@ -9,23 +9,43 @@ fn declared_public_occurrence_query_reads_only_its_typed_scope() {
     let world = installed_authorization_world(true);
     let request = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
-    let selected = world.selected_product();
-    let principal = selected
-        .resolve_authenticated_principal(
-            &world.binding,
-            &external,
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
-    let open = selected
-        .resolve_entity(
-            AccountStatus::reference(),
-            "open".to_string(),
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+    let selected = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world.selected_product(&(phase).test_host_request())
+        })
+        .expect("the fixture read owns its installed host call");
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            selected
+                .resolve_authenticated_principal(
+                    &phase,
+                    &world.binding,
+                    &external,
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
+    let open = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            selected
+                .resolve_entity(
+                    &phase,
+                    AccountStatus::reference(),
+                    "open".to_string(),
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let query = world
         .application
         .installed_schema()
@@ -37,17 +57,25 @@ fn declared_public_occurrence_query_reads_only_its_typed_scope() {
         AccountSummaryResult,
     > = world
         .application
-        .execute_application_query_one_shot(
-            selected
-                .admit_application_query(
-                    &query,
-                    &access,
-                    ApplicationQueryParameterSet::new(),
-                    current_controls(&request),
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .execute_application_query_one_shot(
+                    &phase,
+                    selected
+                        .admit_application_query(
+                            &phase,
+                            &query,
+                            &access,
+                            ApplicationQueryParameterSet::new(),
+                            current_controls(&request),
+                        )
+                        .unwrap(),
                 )
-                .unwrap(),
-        )
-        .unwrap();
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     assert_eq!(result.rows().len(), 1);
     assert_eq!(result.rows()[0].label(), "primary");
     assert_eq!(

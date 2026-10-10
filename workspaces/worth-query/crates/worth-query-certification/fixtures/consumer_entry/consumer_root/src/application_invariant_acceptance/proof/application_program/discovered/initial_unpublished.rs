@@ -38,7 +38,16 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn i
     };
     let key = 10_061;
     reset_planar_source_adjustment_contacts(&observed_input);
-    world.application.fail_next_durable_append_for_test();
+    world
+        .application
+        .with_host_advancement(|phase| {
+            world.application.fail_next_durable_append_for_test(
+                &phase
+                    .execution_request_for(world.application.product_runtime())
+                    .expect("matching installed phase"),
+            )
+        })
+        .expect("installed host call opens");
     let outcome = request
         .mutate(intent.clone())
         .without_source()
@@ -64,35 +73,59 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn i
     let fresh_scope = authentication::request_scope();
     let fresh_request = world.application.request(&principal, &fresh_scope);
     assert_eq!(
-        fresh_request
-            .mutate(intent.clone())
-            .without_source()
-            .idempotency(&key)
-            .recover_unpublished_discovered_in_program(&mut recovery, &world.application)
-            .unwrap(),
+        world
+            .application
+            .with_host_advancement(|host_phase| fresh_request
+                .mutate(intent.clone())
+                .without_source()
+                .idempotency(&key)
+                .recover_unpublished_discovered_in_program(
+                    &host_phase,
+                    &mut recovery,
+                    &world.application
+                )
+                .unwrap())
+            .expect("installed host call opens"),
         WorthQueryDiscoveredRecoveryProgress::Performed
     );
     // Re-entering a performed phase cannot take the one-use native carrier again.
     assert_eq!(
-        fresh_request
-            .mutate(intent.clone())
-            .without_source()
-            .idempotency(&key)
-            .recover_unpublished_discovered_in_program(&mut recovery, &world.application)
-            .unwrap(),
+        world
+            .application
+            .with_host_advancement(|host_phase| fresh_request
+                .mutate(intent.clone())
+                .without_source()
+                .idempotency(&key)
+                .recover_unpublished_discovered_in_program(
+                    &host_phase,
+                    &mut recovery,
+                    &world.application
+                )
+                .unwrap())
+            .expect("installed host call opens"),
         WorthQueryDiscoveredRecoveryProgress::Performed
     );
     let controls = WorthQueryOutputDemandControls::new(
         NonZeroUsize::new(4_096).unwrap(),
         NonZeroUsize::new(8_192).unwrap(),
     );
-    let (mut outputs, initial_cause, performed, prior_cleanup) = fresh_request
-        .mutate(intent.clone())
-        .without_source()
-        .idempotency(&key)
-        .promote_recovered_discovered_outputs(recovery, &world.application, controls)
-        .unwrap_or_else(|(denial, _)| panic!("initial source promotion: {denial:?}"))
-        .into_parts();
+    let (mut outputs, initial_cause, performed, prior_cleanup) = world
+        .application
+        .with_host_advancement(|host_phase| {
+            fresh_request
+                .mutate(intent.clone())
+                .without_source()
+                .idempotency(&key)
+                .promote_recovered_discovered_outputs(
+                    &host_phase,
+                    recovery,
+                    &world.application,
+                    controls,
+                )
+                .unwrap_or_else(|(denial, _)| panic!("initial source promotion: {denial:?}"))
+                .into_parts()
+        })
+        .expect("installed host call opens");
     assert_eq!(initial_cause, ProductUnpublishedCause::SettlementPending);
     let (read, publication_failure, cleanup_failure) = performed.into_parts();
     assert!(publication_failure.is_none());

@@ -17,9 +17,9 @@ type Live = domain::WorthQueryLiveBoundDomainProjection<
     foundation::ObservationLaneWitness,
 >;
 
-fn workspace() -> Workspace {
+fn workspace(request_execution: &worth_execution::ExecutionRequest<'_, '_>) -> Workspace {
     configured_runtime()
-        .workspace("direct-root-custody")
+        .workspace(request_execution, "direct-root-custody")
         .unwrap()
 }
 fn admitted(
@@ -73,8 +73,12 @@ fn current(workspace: &mut Workspace) -> Current {
         .unwrap()
         .into_lifecycle()
 }
-fn promoted(current: Current, workspace: &mut Workspace) -> Live {
-    match current.promote(workspace) {
+fn promoted(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    current: Current,
+    workspace: &mut Workspace,
+) -> Live {
+    match current.promote(request_execution, workspace) {
         domain::WorthQueryProjectionPromotionOutcome::Promoted(live) => live,
         _ => panic!("honest direct projection promotes"),
     }
@@ -82,10 +86,13 @@ fn promoted(current: Current, workspace: &mut Workspace) -> Live {
 
 #[test]
 fn direct_execute_opens_before_its_reader() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     verify(
         "direct execute",
         || {
-            let workspace = workspace();
+            let workspace = workspace(request_execution);
             let operation = admitted(&workspace);
             (workspace, operation)
         },
@@ -102,14 +109,17 @@ fn direct_execute_opens_before_its_reader() {
 
 #[test]
 fn direct_promotion_opens_before_its_reader() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     verify(
         "direct promotion",
         || {
-            let mut workspace = workspace();
+            let mut workspace = workspace(request_execution);
             let current = current(&mut workspace);
             (workspace, current)
         },
-        |current, workspace| match current.promote(workspace) {
+        |current, workspace| match current.promote(request_execution, workspace) {
             domain::WorthQueryProjectionPromotionOutcome::Promoted(_) => None,
             domain::WorthQueryProjectionPromotionOutcome::Denied(stop) => match stop.kind() {
                 domain::WorthQueryProjectionPromotionDenialKind::ExecutionRequest(cause) => {
@@ -124,19 +134,25 @@ fn direct_promotion_opens_before_its_reader() {
 
 #[test]
 fn direct_replacement_opens_before_its_reader() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     verify(
         "direct replacement",
         || {
-            let mut workspace = workspace();
+            let mut workspace = workspace(request_execution);
             let current = current(&mut workspace);
-            let live = promoted(current, &mut workspace);
+            let live = promoted(request_execution, current, &mut workspace);
             let candidate = self::current(&mut workspace);
             let witness = live.replacement_witness_for(&candidate).unwrap();
             (workspace, (live, candidate, witness))
         },
-        |(live, candidate, witness), workspace| match live
-            .replace_with(candidate, witness, workspace)
-        {
+        |(live, candidate, witness), workspace| match live.replace_with(
+            request_execution,
+            candidate,
+            witness,
+            workspace,
+        ) {
             domain::WorthQueryProjectionReplacementOutcome::Replaced(_) => None,
             domain::WorthQueryProjectionReplacementOutcome::Stopped(stop) => match stop.kind() {
                 domain::WorthQueryProjectionTransitionDenialKind::ExecutionRequest(cause) => {
@@ -151,15 +167,18 @@ fn direct_replacement_opens_before_its_reader() {
 
 #[test]
 fn direct_rebinding_opens_before_its_reader() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     verify(
         "direct rebinding",
         || {
             let mut workspace = configured_runtime()
-                .controlled_workspace("direct-rebind-custody")
+                .controlled_workspace(request_execution, "direct-rebind-custody")
                 .unwrap();
             let prior = workspace.domain(GeometryDomain).unwrap();
             let current = current(&mut workspace);
-            let live = promoted(current, &mut workspace);
+            let live = promoted(request_execution, current, &mut workspace);
             workspace.advance_domain_installation_generation().unwrap();
             let (_, receipt) = workspace
                 .rebind_domain(prior.rebind_request())
@@ -169,9 +188,12 @@ fn direct_rebinding_opens_before_its_reader() {
             let witness = live.rebind_witness_for(&candidate, receipt).unwrap();
             (workspace, (live, candidate, witness))
         },
-        |(live, candidate, witness), workspace| match live
-            .rebind_with(candidate, witness, workspace)
-        {
+        |(live, candidate, witness), workspace| match live.rebind_with(
+            request_execution,
+            candidate,
+            witness,
+            workspace,
+        ) {
             domain::WorthQueryProjectionRebindOutcome::Rebound(_) => None,
             domain::WorthQueryProjectionRebindOutcome::Stopped(stop) => match stop.kind() {
                 domain::WorthQueryProjectionTransitionDenialKind::ExecutionRequest(cause) => {

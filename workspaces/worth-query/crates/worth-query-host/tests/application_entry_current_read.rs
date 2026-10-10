@@ -111,11 +111,16 @@ fn request_targets_the_selected_product_occurrence() {
     let parent = world.application.current_world();
     let child = world
         .application
-        .branches()
-        .fork(parent)
-        .components(|components| components.fork_relational().reuse_exact_signal_basis())
-        .create()
-        .expect("the retained product forks");
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .branches()
+                .fork(parent)
+                .components(|components| components.fork_relational().reuse_exact_signal_basis())
+                .create(&phase)
+                .expect("the retained product forks")
+        })
+        .expect("installed host call opens");
 
     world
         .change_input_on_branch(parent, "parent-only")

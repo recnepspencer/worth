@@ -106,6 +106,7 @@ impl WorthQueryRuntimeSourceAdapter for TestSourceAdapter {
 
     fn live_entities_for_target(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         _target: &WorthQueryLiveArtifactTarget,
     ) -> Vec<WorthQueryEntity> {
         Vec::new()
@@ -205,9 +206,11 @@ impl WorthQueryRuntimeSourceAdapter for CountingSourceAdapter {
 
     fn live_entities_for_target(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         target: &WorthQueryLiveArtifactTarget,
     ) -> Vec<WorthQueryEntity> {
-        self.inner.live_entities_for_target(target)
+        self.inner
+            .live_entities_for_target(request_execution, target)
     }
 
     fn drain_live_patches_for_target(
@@ -229,7 +232,10 @@ impl WorthQueryRuntimeSourceAdapter for CountingSourceAdapter {
 pub(in crate::runtime::tests) struct TestSnapshotIdentityAdapter;
 
 impl WorthQueryRuntimeSnapshotIdentityAdapter for TestSnapshotIdentityAdapter {
-    fn current_snapshot_identity(&self) -> WorthQuerySnapshotIdentity {
+    fn current_snapshot_identity(
+        &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> WorthQuerySnapshotIdentity {
         WorthQuerySnapshotIdentity::preview(
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::RuntimeStateSnapshot)
                 .field_shape(
@@ -248,7 +254,10 @@ pub(in crate::runtime::tests) struct DriftingSnapshotIdentityAdapter {
 }
 
 impl WorthQueryRuntimeSnapshotIdentityAdapter for DriftingSnapshotIdentityAdapter {
-    fn current_snapshot_identity(&self) -> WorthQuerySnapshotIdentity {
+    fn current_snapshot_identity(
+        &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> WorthQuerySnapshotIdentity {
         let snapshot_sequence = self.snapshot_sequence.get().saturating_add(1);
         self.snapshot_sequence.set(snapshot_sequence);
         WorthQuerySnapshotIdentity::preview(

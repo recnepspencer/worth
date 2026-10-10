@@ -29,6 +29,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
     /// than the declared slot-examination and record-materialization work.
     pub fn bounded_visible_relations_of_kind(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         kind_id: crate::identity::data::KindId,
         version_id: crate::identity::data::VersionId,
         maximum_work_units: usize,

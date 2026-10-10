@@ -85,7 +85,9 @@ where
         let principal_identity = prepared.principal_identity;
         let mut admission = prepared.admission;
         let commit_binding = WorthQueryMutationCommitBinding::new(&identities, prepared.extension);
-        if let Some(outcome) = self.resolve_idempotency(&admission, commit_binding.idempotency())? {
+        if let Some(outcome) =
+            self.resolve_idempotency(phase, &admission, commit_binding.idempotency())?
+        {
             return Ok(CandidatePreparation::Settled(outcome));
         }
         if let Some(pending) = prepared.pending_source {
@@ -101,7 +103,7 @@ where
             workflow_authority
                 .as_ref()
                 .ok_or(WorthQueryApplicationRequestMutationDenial::WorkflowAuthoritySpent)?
-                .validate_before_handler(self.request.application, self.request.scope)
+                .validate_before_handler(phase, self.request.application, self.request.scope)
                 .map_err(
                     WorthQueryApplicationRequestMutationDenial::WorkflowTransitionCurrentness,
                 )?;
@@ -145,7 +147,7 @@ where
         let (mut program, result) = completed.into_parts();
         if let Some(authority) = workflow_authority.as_ref() {
             program = program
-                .bind_workflow_operation_authority(authority, allocation_policy)
+                .bind_workflow_operation_authority(phase, authority, allocation_policy)
                 .map_err(
                     WorthQueryApplicationRequestMutationDenial::WorkflowTransitionCurrentness,
                 )?;

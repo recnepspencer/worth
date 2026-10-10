@@ -63,6 +63,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Scope,
     >(
         &'a self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         query: &'a WorthQueryInstalledApplicationQuery<
             Schema,
             Query,
@@ -97,7 +98,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             query, access, observed, controls, admission,
         )?;
         let (parameters, controls) = prepared.into_parts();
-        self.finish_application_query_readmission(query, access, parameters, controls, admission)
+        self.finish_application_query_readmission(
+            execution, query, access, parameters, controls, admission,
+        )
     }
 
     pub(in crate::domain_computation::primary_graph) fn prepare_application_query_from_observed<

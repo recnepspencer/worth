@@ -86,9 +86,10 @@ impl WorthQueryIntentAdmissionLegacyParityReport {
 }
 
 pub fn worth_query_intent_admission_legacy_parity_report(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorthQueryIntentAdmissionLegacyParityReport {
-    let fixture = legacy_delegation_parity_fixture();
-    let routing_fixture = routing_delegation_parity_fixture();
+    let fixture = legacy_delegation_parity_fixture(execution);
+    let routing_fixture = routing_delegation_parity_fixture(execution);
     let rows = vec![
         authoritative_execution_row(&fixture),
         effect_execution_row(&fixture),

@@ -223,65 +223,7 @@ fn apply(edit: Edit, entries: &mut BTreeMap<u64, (u64, u64)>, seeded: &mut Seede
     }
 }
 
-#[test]
-fn every_edit_retains_what_a_fresh_full_run_retains() {
-    let world = installed_authorization_world(true);
-    let mut applied = std::collections::BTreeSet::new();
-    for seed in [0x9e37_79b9_7f4a_7c15_u64, 7, 0x00c0_ffee, 31_337] {
-        let installed = WorthQueryInstalledPartitionedComputation::<_, _, Computation, _>::new(
-            Rerouted::default(),
-            ComputationRetention::ProducerOperation,
-        );
-        let mut seeded = Seeded(seed);
-        let mut entries = (1..=6)
-            .map(|id| (id, (id % 3, 10 * id)))
-            .collect::<BTreeMap<_, _>>();
-        *installed.owner.entries.lock().unwrap() = entries.clone();
-        let fresh = || Some(ComputationPrior::new(edition(), Err(Cause::FirstRun), None));
-        let mut last = attempt(&world, &installed, fresh())
-            .sealed
-            .unwrap()
-            .unwrap();
-        for step in 0..12 {
-            let edit = seeded.pick(&EDITS).unwrap();
-            if !apply(edit, &mut entries, &mut seeded) {
-                continue;
-            }
-            applied.insert(edit);
-            let before = std::mem::replace(
-                &mut *installed.owner.entries.lock().unwrap(),
-                entries.clone(),
-            );
-            // Every fourth step moves the label every key read, so every item
-            // is keyed again; otherwise only the items that are new or whose
-            // key or value changed are.
-            let keys = step % 4 == 3;
-            let touched = entries
-                .iter()
-                .filter(|(id, entry)| keys || before.get(id) != Some(entry));
-            let touched = touched.map(|(id, _)| *id).collect::<Vec<_>>();
-            installed.owner.keyed.lock().unwrap().clear();
-            let next = attempt(&world, &installed, Some(moved_facts(last, keys)));
-            let keyed = std::mem::take(&mut *installed.owner.keyed.lock().unwrap());
-            let full = attempt(&world, &installed, fresh());
-            let context = format!("seed {seed:#x}, step {step}, {edit:?}, items {entries:?}");
-            assert!(
-                matches!(next.runs.as_slice(), [(Run::Incremental, None)]),
-                "{context}"
-            );
-            assert_eq!(keyed, touched, "{context}: only touched items are keyed");
-            if edit == Edit::Unchanged {
-                assert!(next.gathered.is_empty(), "{context}");
-            }
-            assert_eq!(next.outcome, full.outcome, "{context}");
-            let next = next.sealed.unwrap().expect("the next run retains");
-            let full = full.sealed.unwrap().expect("the full run retains");
-            assert_eq!(retained(&next), retained(&full), "{context}");
-            last = next;
-        }
-    }
-    assert_eq!(applied, EDITS.into_iter().collect(), "every edit ran");
-}
+mod every_edit_retains_what_a_fresh_full_run_retains;
 
 #[test]
 fn every_record_absence_rebuilds_the_same_state_as_a_fresh_run() {
@@ -292,62 +234,69 @@ fn every_record_absence_rebuilds_the_same_state_as_a_fresh_run() {
         ComputationRetention::ProducerOperation,
     );
     *installed.owner.entries.lock().unwrap() = (1..=6).map(|id| (id, (id % 3, 10 * id))).collect();
-    let full = attempt(
-        &world,
-        &installed,
-        Some(ComputationPrior::new(edition(), Err(Cause::FirstRun), None)),
-    );
-    let expected = retained(full.sealed.as_ref().unwrap().as_ref().unwrap());
-    for (absence, cause) in [
-        (PriorAbsence::FirstRun, Cause::FirstRun),
-        (PriorAbsence::Restored, Cause::Restored),
-        (PriorAbsence::Republished, Cause::Republished),
-        (PriorAbsence::NotProduced, Cause::NotProduced),
-        (PriorAbsence::Unmeasured, Cause::Unmeasured),
-        (PriorAbsence::Moved, Cause::Moved),
-        (PriorAbsence::Evicted, Cause::Evicted),
-        (PriorAbsence::Stopped, Cause::Stopped),
-        (
-            PriorAbsence::Suppressed(super::super::Suppression::Policy),
-            Cause::RetentionPolicy,
-        ),
-        (
-            PriorAbsence::Suppressed(super::super::Suppression::Several),
-            Cause::SeveralComputations,
-        ),
-        (
-            PriorAbsence::Suppressed(super::super::Suppression::Collision),
-            Cause::CollisionSuppressed,
-        ),
-    ] {
-        installed.owner.keyed.lock().unwrap().clear();
-        let next = attempt(
+    world.application.with_host_advancement(|phase| {
+let host_custody = phase.test_host_request();
+
+let full = attempt(
+            &(host_custody.phase_for_application(&world.application)).test_host_request(),
             &world,
             &installed,
-            Some(ComputationPrior::new(
-                edition(),
-                Err(absence.full_cause()),
-                None,
-            )),
+            Some(ComputationPrior::new(edition(), Err(Cause::FirstRun), None)),
         );
-        assert!(
-            matches!(next.runs.as_slice(), [(Run::Full(observed), Some(_))] if *observed == cause)
-        );
-        assert_eq!(
-            *installed.owner.keyed.lock().unwrap(),
-            (1..=6).collect::<Vec<_>>(),
-            "every key is routed afresh"
-        );
-        assert_eq!(
-            next.outcome, full.outcome,
-            "{cause:?}: outcome and charged work"
-        );
-        assert_eq!(
-            retained(next.sealed.as_ref().unwrap().as_ref().unwrap()),
-            expected,
-            "{cause:?}: full retained state"
-        );
-    }
+        let expected = retained(full.sealed.as_ref().unwrap().as_ref().unwrap());
+        for (absence, cause) in [
+            (PriorAbsence::FirstRun, Cause::FirstRun),
+            (PriorAbsence::Restored, Cause::Restored),
+            (PriorAbsence::Republished, Cause::Republished),
+            (PriorAbsence::NotProduced, Cause::NotProduced),
+            (PriorAbsence::Unmeasured, Cause::Unmeasured),
+            (PriorAbsence::Moved, Cause::Moved),
+            (PriorAbsence::Evicted, Cause::Evicted),
+            (PriorAbsence::Stopped, Cause::Stopped),
+            (
+                PriorAbsence::Suppressed(super::super::Suppression::Policy),
+                Cause::RetentionPolicy,
+            ),
+            (
+                PriorAbsence::Suppressed(super::super::Suppression::Several),
+                Cause::SeveralComputations,
+            ),
+            (
+                PriorAbsence::Suppressed(super::super::Suppression::Collision),
+                Cause::CollisionSuppressed,
+            ),
+        ] {
+            installed.owner.keyed.lock().unwrap().clear();
+            let next = attempt(
+                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &world,
+                &installed,
+                Some(ComputationPrior::new(
+                    edition(),
+                    Err(absence.full_cause()),
+                    None,
+                )),
+            );
+            assert!(
+                matches!(next.runs.as_slice(), [(Run::Full(observed), Some(_))] if *observed == cause)
+            );
+            assert_eq!(
+                *installed.owner.keyed.lock().unwrap(),
+                (1..=6).collect::<Vec<_>>(),
+                "every key is routed afresh"
+            );
+            assert_eq!(
+                next.outcome, full.outcome,
+                "{cause:?}: outcome and charged work"
+            );
+            assert_eq!(
+                retained(next.sealed.as_ref().unwrap().as_ref().unwrap()),
+                expected,
+                "{cause:?}: full retained state"
+            );
+        }
+
+}).expect("the fixture block owns its installed host call")
 }
 
 #[test]
@@ -357,21 +306,28 @@ fn a_missing_call_measurement_is_recorded_as_unmeasured_at_the_discard() {
     };
     let world = installed_authorization_world(true);
     let installed = installed(StatusRead::Gather(1), sum);
-    let first = first_run(&world, &installed);
-    let report = first.runs[0].1.unwrap();
-    let sealed = first.sealed.unwrap().unwrap();
-    let typed = sealed
-        .state
-        .typed
-        .downcast_ref::<RetainedPartitions<Parity, Number, u64>>()
-        .unwrap();
-    let mut recording =
-        FullRecording::<Parity, Number>::new(RetainedBasisToken(sealed.state.basis.clone()));
-    // A reader that could not measure the call supplies None here. This
-    // invokes the production discard, with a real completed reduction tree.
-    recording.membership(None, &typed.items, Arc::clone(&typed.digests));
-    let request = live_scope();
-    let execution = QueryRequestExecution::open(
+    world.application.with_host_advancement(|phase| {
+let host_custody = phase.test_host_request();
+
+let first = first_run(
+            &(host_custody.phase_for_application(&world.application)).test_host_request(),
+            &world,
+            &installed,
+        );
+        let report = first.runs[0].1.unwrap();
+        let sealed = first.sealed.unwrap().unwrap();
+        let typed = sealed
+            .state
+            .typed
+            .downcast_ref::<RetainedPartitions<Parity, Number, u64>>()
+            .unwrap();
+        let mut recording =
+            FullRecording::<Parity, Number>::new(RetainedBasisToken(sealed.state.basis.clone()));
+        // A reader that could not measure the call supplies None here. This
+        // invokes the production discard, with a real completed reduction tree.
+        recording.membership(None, &typed.items, Arc::clone(&typed.digests));
+        let request = live_scope();
+        let execution = QueryRequestExecution::open(
         RuntimeWorldExecutionPlacement::Serial(
             crate::domain_computation::primary_graph::application_contribution::request_execution::test_policy(
                 std::num::NonZeroUsize::MIN,
@@ -380,18 +336,20 @@ fn a_missing_call_measurement_is_recorded_as_unmeasured_at_the_discard() {
         ),
         &request,
     );
-    let result = recording.complete(
-        BTreeMap::new(),
-        typed.tree.clone(),
-        execution
-            .reserve(typed.tree.additional_charged_bytes())
-            .unwrap(),
-        0,
-        Cause::FirstRun,
-        report,
-    );
-    assert!(matches!(
-        result,
-        CompletedComputationRetention::Absent(PriorAbsence::Unmeasured)
-    ));
+        let result = recording.complete(
+            BTreeMap::new(),
+            typed.tree.clone(),
+            execution
+                .reserve(typed.tree.additional_charged_bytes())
+                .unwrap(),
+            0,
+            Cause::FirstRun,
+            report,
+        );
+        assert!(matches!(
+            result,
+            CompletedComputationRetention::Absent(PriorAbsence::Unmeasured)
+        ));
+
+}).expect("the fixture block owns its installed host call")
 }

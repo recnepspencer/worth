@@ -27,7 +27,10 @@ type SettledWorkflow = domain::WorthQuerySettledWorkflowProjection<
 
 #[test]
 fn workflow_promotion_preserves_settled_authority_native_plan_and_trace() {
-    let mut workspace = workflow_workspace("workflow-lifecycle-parity").unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = workflow_workspace(request_execution, "workflow-lifecycle-parity").unwrap();
     let (settled, key) = settle_workflow(&mut workspace);
     let settled_identity = settled.identity().to_string();
     let trace_identity = settled.trace().identity().to_string();
@@ -37,7 +40,7 @@ fn workflow_promotion_preserves_settled_authority_native_plan_and_trace() {
     let predecessor = current.identity().to_string();
 
     let domain::WorthQueryWorkflowProjectionPromotionOutcome::Promoted(live) =
-        current.promote(&mut workspace)
+        current.promote(request_execution, &mut workspace)
     else {
         panic!("settled workflow projection did not promote")
     };
@@ -60,7 +63,7 @@ fn workflow_promotion_preserves_settled_authority_native_plan_and_trace() {
     );
     assert_eq!(native.counters().indexed_accesses, 1);
     assert_eq!(native.counters().fact_scans, 0);
-    let refreshed = live.refresh(&mut workspace).unwrap();
+    let refreshed = live.refresh(request_execution, &mut workspace).unwrap();
     assert_eq!(
         refreshed.authority().consumer_contract(),
         &authority_contract
@@ -85,11 +88,15 @@ fn workflow_promotion_preserves_settled_authority_native_plan_and_trace() {
 
 #[test]
 fn workflow_promotion_denies_foreign_and_stale_authority_before_lifecycle_work() {
-    let mut owner = workflow_workspace("workflow-lifecycle-owner").unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut owner = workflow_workspace(request_execution, "workflow-lifecycle-owner").unwrap();
     let (settled, _) = settle_workflow(&mut owner);
-    let mut foreign = workflow_workspace("workflow-lifecycle-foreign").unwrap();
-    let domain::WorthQueryWorkflowProjectionPromotionOutcome::Denied(stop) =
-        settled.into_lifecycle().promote(&mut foreign)
+    let mut foreign = workflow_workspace(request_execution, "workflow-lifecycle-foreign").unwrap();
+    let domain::WorthQueryWorkflowProjectionPromotionOutcome::Denied(stop) = settled
+        .into_lifecycle()
+        .promote(request_execution, &mut foreign)
     else {
         panic!("foreign runtime did not deny workflow promotion")
     };
@@ -99,15 +106,17 @@ fn workflow_promotion_denies_foreign_and_stale_authority_before_lifecycle_work()
     );
     assert_zero_lifecycle_work(stop.counters());
     assert!(matches!(
-        stop.into_current().promote(&mut owner),
+        stop.into_current().promote(request_execution, &mut owner),
         domain::WorthQueryWorkflowProjectionPromotionOutcome::Promoted(_)
     ));
 
-    let mut controlled = controlled_workflow_workspace("workflow-lifecycle-stale").unwrap();
+    let mut controlled =
+        controlled_workflow_workspace(request_execution, "workflow-lifecycle-stale").unwrap();
     let (settled, _) = settle_workflow(&mut controlled);
     controlled.advance_domain_installation_generation().unwrap();
-    let domain::WorthQueryWorkflowProjectionPromotionOutcome::Stale(stale) =
-        settled.into_lifecycle().promote(&mut controlled)
+    let domain::WorthQueryWorkflowProjectionPromotionOutcome::Stale(stale) = settled
+        .into_lifecycle()
+        .promote(request_execution, &mut controlled)
     else {
         panic!("stale workflow generation did not retain stale-readable state")
     };
@@ -115,13 +124,13 @@ fn workflow_promotion_denies_foreign_and_stale_authority_before_lifecycle_work()
     assert!(!stale.snapshot().trace().identity().is_empty());
 
     let mut live_controlled =
-        controlled_workflow_workspace("workflow-lifecycle-live-stale").unwrap();
+        controlled_workflow_workspace(request_execution, "workflow-lifecycle-live-stale").unwrap();
     let (settled, _) = settle_workflow(&mut live_controlled);
-    let live = promoted(settled, &mut live_controlled);
+    let live = promoted(request_execution, settled, &mut live_controlled);
     live_controlled
         .advance_domain_installation_generation()
         .unwrap();
-    let stop = match live.refresh(&mut live_controlled) {
+    let stop = match live.refresh(request_execution, &mut live_controlled) {
         Err(domain::WorthQueryLiveProjectionRefreshError::Authority(stop)) => stop,
         _ => panic!("stale workflow live projection reached maintenance or delivery"),
     };
@@ -140,12 +149,16 @@ fn workflow_promotion_denies_foreign_and_stale_authority_before_lifecycle_work()
 
 #[test]
 fn workflow_promotion_reevaluates_only_operation_and_publication_conditionals() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let operation_node = conditional_node("workflow-lifecycle-operation");
     let mut installation = conditional_installation(&operation_node);
     installation.providers =
         worth_runtime_bridge::facade::BridgeConditionalProviderSet::new().trigger(RequestedTrigger);
     let operation_versions = Arc::new(AtomicU64::new(0));
     let mut operation_workspace = operation_conditional_workflow_workspace_with(
+        request_execution,
         "workflow-lifecycle-operation",
         operation_node,
         installation,
@@ -157,7 +170,11 @@ fn workflow_promotion_reevaluates_only_operation_and_publication_conditionals() 
         .signal_projection()
         .label()
         .to_string();
-    let operation_live = promoted(operation_settled, &mut operation_workspace);
+    let operation_live = promoted(
+        request_execution,
+        operation_settled,
+        &mut operation_workspace,
+    );
     assert_eq!(operation_live.conditional_provenance().len(), 1);
     assert_ne!(
         operation_live.conditional_provenance()[0]
@@ -176,6 +193,7 @@ fn workflow_promotion_reevaluates_only_operation_and_publication_conditionals() 
         worth_runtime_bridge::facade::BridgeConditionalProviderSet::new().trigger(RequestedTrigger);
     let publication_versions = Arc::new(AtomicU64::new(0));
     let mut publication_workspace = stage_conditional_workflow_workspace_with(
+        request_execution,
         "workflow-lifecycle-publication",
         publication_node,
         "publish",
@@ -194,7 +212,11 @@ fn workflow_promotion_reevaluates_only_operation_and_publication_conditionals() 
         .signal_projection()
         .label()
         .to_string();
-    let publication_live = promoted(publication_settled, &mut publication_workspace);
+    let publication_live = promoted(
+        request_execution,
+        publication_settled,
+        &mut publication_workspace,
+    );
     assert_eq!(publication_live.conditional_provenance().len(), 1);
     assert_ne!(
         publication_live.conditional_provenance()[0]
@@ -278,6 +300,7 @@ pub(super) fn settle_workflow(
 }
 
 pub(super) fn promoted(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     settled: SettledWorkflow,
     workspace: &mut worth_query::facade::runtime::WorthQueryWorkspace,
 ) -> domain::WorthQueryLiveBoundWorkflowProjection<
@@ -286,7 +309,10 @@ pub(super) fn promoted(
     ReadFamily,
     foundation::ObservationLaneWitness,
 > {
-    match settled.into_lifecycle().promote(workspace) {
+    match settled
+        .into_lifecycle()
+        .promote(request_execution, workspace)
+    {
         domain::WorthQueryWorkflowProjectionPromotionOutcome::Promoted(live) => live,
         domain::WorthQueryWorkflowProjectionPromotionOutcome::Deferred(stop) => panic!(
             "workflow lifecycle promotion deferred: {:?} {} {:?}",

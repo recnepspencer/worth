@@ -14,14 +14,17 @@ use super::super::{
 };
 use super::authoring_values::string_aspect_value;
 
-pub(super) fn authoritative_batch_lane() -> AspectApiFinalizationCertificationBundle {
-    let mut workspace = stateful_bridge_task_runtime()
+pub(super) fn authoritative_batch_lane(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> AspectApiFinalizationCertificationBundle {
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("aspect-api.batch")
         .expect("workspace should open");
     let live: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> =
-        task_live_view(&mut workspace, "tasks.cert-batch");
+        task_live_view(request_execution, &mut workspace, "tasks.cert-batch");
     let computed = workspace
         .computed::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "tasks.cert-batch-summary",
             |c| {
                 c.depends_on_live(&live)
@@ -32,7 +35,7 @@ pub(super) fn authoritative_batch_lane() -> AspectApiFinalizationCertificationBu
         )
         .expect("computed should declare");
     let receipt = workspace
-        .batch(|batch| {
+        .batch(request_execution, |batch| {
             batch
                 .insert("Task", |task| {
                     task.set_aspect(identity_id_touch(), string_aspect_value("task-1"))
@@ -46,11 +49,13 @@ pub(super) fn authoritative_batch_lane() -> AspectApiFinalizationCertificationBu
         .expect("batch should execute");
     let patches = workspace.observe(&live);
     let materialization = workspace
-        .materialize_result(&computed)
+        .materialize_result(request_execution, &computed)
         .expect("aspect API certification materialization should execute");
-    let state = workspace.state(&receipt).expect("state should resolve");
+    let state = workspace
+        .state(request_execution, &receipt)
+        .expect("state should resolve");
     let inspection = workspace
-        .inspect(&receipt)
+        .inspect(request_execution, &receipt)
         .expect("inspection should resolve");
 
     AspectApiFinalizationCertificationBundle {
@@ -85,12 +90,15 @@ pub(super) fn authoritative_batch_lane() -> AspectApiFinalizationCertificationBu
     }
 }
 
-pub(super) fn preview_batch_lane() -> AspectApiFinalizationCertificationBundle {
-    let mut workspace = stateful_bridge_task_runtime()
+pub(super) fn preview_batch_lane(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> AspectApiFinalizationCertificationBundle {
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("aspect-api.preview-batch")
         .expect("workspace should open");
     let mut preview = workspace
         .preview_with_options(
+            request_execution,
             WorthQuerySessionLabel::scoped_strs(
                 "aspect-api-finalization-certification",
                 ["preview-batch"],
@@ -100,7 +108,7 @@ pub(super) fn preview_batch_lane() -> AspectApiFinalizationCertificationBundle {
         )
         .expect("preview should open");
     let receipt = preview
-        .batch(|batch| {
+        .batch(request_execution, |batch| {
             batch
                 .insert("Task", |task| {
                     task.set_aspect(identity_id_touch(), string_aspect_value("preview-task-1"))
@@ -120,9 +128,11 @@ pub(super) fn preview_batch_lane() -> AspectApiFinalizationCertificationBundle {
         .expect("preview batch should stage");
     let outcome = preview.discard();
     let inspection = workspace
-        .inspect(&receipt)
+        .inspect(request_execution, &receipt)
         .expect("inspection should resolve");
-    let state = workspace.state(&receipt).expect("state should resolve");
+    let state = workspace
+        .state(request_execution, &receipt)
+        .expect("state should resolve");
 
     AspectApiFinalizationCertificationBundle {
         mutation_surface_label: "preview.batch".to_string(),
@@ -156,8 +166,10 @@ pub(super) fn preview_batch_lane() -> AspectApiFinalizationCertificationBundle {
     }
 }
 
-pub(super) fn mutation_surface_contract_lane() -> AspectApiFinalizationCertificationBundle {
-    let workspace = stateful_bridge_task_runtime()
+pub(super) fn mutation_surface_contract_lane(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> AspectApiFinalizationCertificationBundle {
+    let workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("aspect-api.contract")
         .expect("workspace should open");
     let report = workspace.public_mutation_surface_report();

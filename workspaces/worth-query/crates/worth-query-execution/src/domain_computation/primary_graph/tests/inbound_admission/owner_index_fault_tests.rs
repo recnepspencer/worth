@@ -9,7 +9,13 @@ use crate::domain_computation::primary_graph::{
 #[test]
 fn authenticated_callback_retries_before_acceptance_while_owner_index_is_unavailable() {
     let world = installed_world();
-    let dispatched = world.commit_dispatch(154, "unavailable-terminal-index");
+    let dispatched = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world.commit_dispatch(&phase, 154, "unavailable-terminal-index")
+        })
+        .expect("the fixture read owns its installed host call");
     let record = dispatched.dispatch_outbox().unwrap();
     let envelope = signed_envelope(record, [0xd4; 32], record.payload(), false);
     let request = super::super::fixture::live_scope();
@@ -34,7 +40,14 @@ fn authenticated_callback_retries_before_acceptance_while_owner_index_is_unavail
     let budget = NonZeroUsize::new(32).unwrap();
     assert!(world
         .application
-        .repair_completed_inbound_index(&world.verifier, budget, budget, budget)
+        .with_host_advancement(|phase| world.application.repair_completed_inbound_index(
+            &phase,
+            &world.verifier,
+            budget,
+            budget,
+            budget
+        ))
+        .expect("installed host call opens")
         .unwrap());
     assert_eq!(
         world

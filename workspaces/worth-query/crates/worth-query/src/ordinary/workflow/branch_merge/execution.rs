@@ -13,7 +13,11 @@ use super::{
 };
 
 impl WorthQueryBranchMergeRequest {
-    pub fn run(self, workspace: &mut WorthQueryWorkspace) -> WorthQueryBranchMergeOutcome {
+    pub fn run(
+        self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        workspace: &mut WorthQueryWorkspace,
+    ) -> WorthQueryBranchMergeOutcome {
         let counters = WorthQueryWorkflowCounters::context_checked();
         if self.declaration.identity() != &self.context.declaration_identity {
             return WorthQueryBranchMergeOutcome::Stopped(WorthQueryBranchMergeStop::denied(
@@ -22,8 +26,22 @@ impl WorthQueryBranchMergeRequest {
                 counters,
             ));
         }
-        let authority = match workspace.validate_ordinary_merge_authority(self.context.authority) {
+        let authority = match workspace
+            .validate_ordinary_merge_authority(request_execution, self.context.authority)
+        {
             Ok(authority) => authority,
+            Err(WorthQueryMergeAuthorityValidationError::ForeignPhase(cause)) => {
+                return WorthQueryBranchMergeOutcome::Stopped(
+                    WorthQueryBranchMergeStop::from_execution_denial(
+                        crate::runtime::WorthQueryOrdinaryMergeFailureStage::Basis,
+                        Some(
+                            crate::effect_lifecycle::EffectExecutionDenialKind::ForeignPhase(cause),
+                        ),
+                        "foreign advancement phase".to_owned(),
+                        counters,
+                    ),
+                );
+            }
             Err(WorthQueryMergeAuthorityValidationError::ExecutionDenied(kind)) => {
                 return validation_refusal::execution_denied(kind, counters);
             }
@@ -104,6 +122,7 @@ impl WorthQueryBranchMergeRequest {
         }
         let counters = counters.lower_runtime_attempted();
         let execution = match workspace.execute_ordinary_merge(
+            request_execution,
             authority,
             self.declaration.identity().evidence_identity(),
             materialize_inspection,

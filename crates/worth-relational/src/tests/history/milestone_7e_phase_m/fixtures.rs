@@ -71,22 +71,31 @@ pub(super) fn runtime_with_collaboration_merge_history() -> RelationalRuntime {
         .build()
 }
 
-pub(super) fn execute_feature_merge(runtime: &RelationalRuntime) -> MergeExecutionOutcome {
-    let prepared = prepared_feature_merge(runtime);
+pub(super) fn execute_feature_merge(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+) -> MergeExecutionOutcome {
+    let prepared = prepared_feature_merge(execution, runtime);
     runtime
-        .execute_prepared_merge(prepared)
+        .execute_prepared_merge(execution, prepared)
         .expect("executed feature merge")
 }
 
-pub(super) fn prepared_feature_merge(runtime: &RelationalRuntime) -> PreparedMergeExecution {
+pub(super) fn prepared_feature_merge(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+) -> PreparedMergeExecution {
     install_merge_scenario(runtime);
     runtime
         .merge()
-        .prepare_merge_execution(MergeExecutionRequest::new(
-            BranchId("main".to_string()),
-            BranchId("feature".to_string()),
-            MergeIntent::ReconcileIntoTarget,
-        ))
+        .prepare_merge_execution(
+            execution,
+            MergeExecutionRequest::new(
+                BranchId("main".to_string()),
+                BranchId("feature".to_string()),
+                MergeIntent::ReconcileIntoTarget,
+            ),
+        )
         .expect("prepared feature merge")
 }
 

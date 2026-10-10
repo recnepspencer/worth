@@ -11,8 +11,11 @@ use worth_relational::facade::transactions::{
 
 #[test]
 fn phase5_region_reuse_is_sensitive_to_empty_and_touched_deltas() {
-    let (world, expected) = certified_supply_chain_world(SupplyChainScale::court());
-    assert_oracle_matches(&world, &expected);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (world, expected) = certified_supply_chain_world(execution, SupplyChainScale::court());
+    assert_oracle_matches(execution, &world, &expected);
     let baseline = inspect_main_regions(&world.runtime);
     let baseline_sharing = inspect_main_sharing(&world.runtime);
     let noop_scope = RelationalMvccCostScope::capture(

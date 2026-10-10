@@ -144,3 +144,25 @@ pub(super) fn assert_backing_paid_by_the_request(
         Err(ConsumedOutputVerificationStop::WorkExhausted)
     );
 }
+
+/// Assert the two current closures debit the same carried meter.
+pub(super) fn assert_current_closures_share_custody(
+    owner: &SourceInvalidationOwner,
+    verify_unrelated: impl Fn(
+            &mut InvalidationEditAdmission,
+        ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop>
+        + Copy,
+) {
+    let mut shared = owner.edit_admission();
+    let first = verify_unrelated(&mut shared);
+    assert_eq!(first, Ok(ConsumedOutputVerification::Current));
+    let first_work = shared.charged_work();
+    let first_bytes = shared.charged_bytes();
+    let second = verify_unrelated(&mut shared);
+    assert_eq!(second, Ok(ConsumedOutputVerification::Current));
+    let total_work = shared.charged_work();
+    let total_bytes = shared.charged_bytes();
+    assert!(total_work > first_work && total_bytes > first_bytes);
+    assert_carried_native_verification(owner, total_work, verify_unrelated);
+    assert_closures_share_the_meter(total_work, total_bytes, verify_unrelated);
+}

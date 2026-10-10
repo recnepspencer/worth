@@ -2,7 +2,10 @@ use super::representative::worth_query_domain_capability_representative_report;
 
 #[test]
 fn representative_report_emits_all_required_foundation_digests() {
-    let report = worth_query_domain_capability_representative_report();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let report = worth_query_domain_capability_representative_report(request_execution);
 
     for key in [
         "query_digest",

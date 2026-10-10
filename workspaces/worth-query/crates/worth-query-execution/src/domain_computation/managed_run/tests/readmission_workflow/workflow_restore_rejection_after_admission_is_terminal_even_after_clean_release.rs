@@ -18,7 +18,10 @@ fn workflow_restore_rejection_after_admission_is_terminal_even_after_clean_relea
             .provider_work()
             .provider_execution_release()
             .release_count();
-        let recovery = match yielded.readmit_same_runtime(active_request, &runtime, &bridge) {
+        let recovery = match {
+            let installed_fixture_phase = yielded.fixture_phase(active_request);
+            yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+        } {
             crate::domain_computation::WorthQueryWorkflowReadmissionOutcome::RecoveryRequired(
                 recovery,
             ) => recovery,

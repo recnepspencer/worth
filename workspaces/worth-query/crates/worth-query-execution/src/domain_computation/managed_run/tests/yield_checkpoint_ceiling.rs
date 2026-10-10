@@ -73,7 +73,7 @@ fn checkpoint_memory_mismatch_preserves_exact_release_evidence() {
 }
 
 fn paused_workflow_checkpoint_target(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     provider: YieldProvider,
     label: &str,
@@ -110,15 +110,17 @@ fn paused_workflow_checkpoint_target(
     );
     let running =
         super::workflow_provider_steps::admitted_workflow(&runtime, &operation, resources);
+    let installed_running_phase = execution.phase_for_workflow(&running);
+
     let active = running
         .begin_stage_graph_execution(
-            execution,
+            &installed_running_phase,
             "stage",
             &graph,
             WorthQueryManagedGraphCallRequest::new(WorthQueryGraphProviderCallKind::Observe, label),
         )
         .expect("checkpoint ceiling provider should begin");
-    match active.advance(execution) {
+    match active.advance(&installed_running_phase) {
         WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused,
         _ => panic!("checkpoint ceiling provider did not reach its safe point"),
     }

@@ -170,7 +170,7 @@ where
             .request
             .application
             .on_branch(self.request.branch)
-            .select()
+            .select(phase)
             .map_err(|selection| {
                 WorthQueryPerformedMutationExecutionDenial::Mutation(
                     WorthQueryApplicationRequestMutationDenial::ProductSelection(selection),
@@ -191,7 +191,7 @@ where
         let (outcome, work) = self
             .execute_with_preparation_and_commit_report(phase,
                 move |request, identities, staged| {
-                    crate::application_entry::mutation::authorization::prepare_selected(
+                    crate::application_entry::mutation::authorization::prepare_selected(phase,
                         request, identities, staged, &selected,
                     )
                 },

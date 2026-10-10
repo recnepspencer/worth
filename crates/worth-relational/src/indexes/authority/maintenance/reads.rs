@@ -6,6 +6,7 @@ use crate::storage::data::{EntityReadRecord, RecordLifecycleState, RelationReadR
 use std::collections::BTreeSet;
 
 pub(super) fn entity(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     view: Option<&VisibilityProjectionView<'_>>,
     id: EntityId,
     work: &mut MaintenanceWork,
@@ -15,11 +16,12 @@ pub(super) fn entity(
     };
     work.read()?;
     Ok(view
-        .authoritative_entity_record(id)
+        .authoritative_entity_record(execution, id)
         .filter(|record| record.lifecycle == RecordLifecycleState::Live))
 }
 
 pub(super) fn relation(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     view: Option<&VisibilityProjectionView<'_>>,
     id: RelationId,
     work: &mut MaintenanceWork,
@@ -30,15 +32,18 @@ pub(super) fn relation(
     work.read()?;
     // Full index builds include audit-retained relations but not retired ones.
     // A deleted endpoint alone does not remove field or ordering membership.
-    Ok(view.authoritative_relation_record(id).filter(|record| {
-        matches!(
-            record.lifecycle,
-            RecordLifecycleState::Live | RecordLifecycleState::RetainedDanglingForAudit
-        )
-    }))
+    Ok(view
+        .authoritative_relation_record(execution, id)
+        .filter(|record| {
+            matches!(
+                record.lifecycle,
+                RecordLifecycleState::Live | RecordLifecycleState::RetainedDanglingForAudit
+            )
+        }))
 }
 
 pub(super) fn adjacency(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     view: &VisibilityProjectionView<'_>,
     entity: EntityId,
     kind: KindId,
@@ -47,8 +52,13 @@ pub(super) fn adjacency(
 ) -> Result<Vec<RelationReadRecord>, Denial> {
     work.charge(1)?;
     let frontier = BTreeSet::from([entity]);
-    let result =
-        view.bounded_index_relations_for_frontier(&frontier, kind, outgoing, work.remaining());
+    let result = view.bounded_index_relations_for_frontier(
+        execution,
+        &frontier,
+        kind,
+        outgoing,
+        work.remaining(),
+    );
     match result {
         Ok(read) => {
             let units = read.work_units();

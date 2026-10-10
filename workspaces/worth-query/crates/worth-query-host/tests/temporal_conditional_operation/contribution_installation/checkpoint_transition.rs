@@ -59,8 +59,12 @@ fn source() -> (
     .unwrap();
     (
         application
-            .capture_application_checkpoint(CapturePolicy::SystemAllocation)
-            .unwrap(),
+            .with_host_advancement(|phase| {
+                application
+                    .capture_application_checkpoint(&phase, CapturePolicy::SystemAllocation)
+                    .unwrap()
+            })
+            .expect("installed host call opens"),
         predecessor,
     )
 }
@@ -124,12 +128,18 @@ fn checkpoint_transition_publishes_typed_effects_and_reopens_under_target_roster
     )
     .expect("acknowledged native transition must install a World with successor authority");
     assert!(migrated
-        .on_branch(migrated.current_world())
-        .select()
-        .is_ok());
+        .with_host_advancement(|host_phase| migrated
+            .on_branch(migrated.current_world())
+            .select(&host_phase)
+            .is_ok())
+        .expect("installed host call opens"));
     let checkpoint = migrated
-        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
-        .unwrap();
+        .with_host_advancement(|host_phase| {
+            migrated
+                .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     drop(migrated);
     let reopened = application_installation::in_memory_program_from_checkpoint(
         validated_program(),
@@ -140,23 +150,32 @@ fn checkpoint_transition_publishes_typed_effects_and_reopens_under_target_roster
     )
     .expect("ordinary restore must recognize the target activation");
     assert!(reopened
-        .on_branch(reopened.current_world())
-        .select()
-        .is_ok());
+        .with_host_advancement(|host_phase| reopened
+            .on_branch(reopened.current_world())
+            .select(&host_phase)
+            .is_ok())
+        .expect("installed host call opens"));
     // Resolve the actual migrated row through target World authority; capture
     // alone would not prove that typed effects survived native publication.
     let selected = reopened
-        .on_branch(reopened.current_world())
-        .select()
-        .unwrap();
-    assert!(selected
-        .resolve_entity(
-            UnrelatedValueField::reference(),
-            73_u64,
-            &request_scope(),
-            primary_graph::WorthQueryPrincipalResolutionMode::Ordinary
-        )
-        .is_ok());
+        .with_host_advancement(|host_phase| {
+            reopened
+                .on_branch(reopened.current_world())
+                .select(&host_phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
+    assert!(reopened
+        .with_host_advancement(|host_phase| selected
+            .resolve_entity(
+                &host_phase,
+                UnrelatedValueField::reference(),
+                73_u64,
+                &request_scope(),
+                primary_graph::WorthQueryPrincipalResolutionMode::Ordinary
+            )
+            .is_ok())
+        .expect("installed host call opens"));
 }
 
 #[test]
@@ -244,6 +263,9 @@ fn checkpoint_transition_bounds_retained_key_capacity_even_for_a_short_key() {
 
 #[test]
 fn checkpoint_transition_deferred_settlement_retains_repair_without_rerunning_authoring() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let (source, predecessor) = source();
     let mut calls = 0;
     let denial = transition(
@@ -259,7 +281,7 @@ fn checkpoint_transition_deferred_settlement_retains_repair_without_rerunning_au
                 )
                 .field(UnrelatedValueField::reference(), 89_u64),
             )?;
-            writer.fail_next_durable_append_for_test();
+            writer.fail_next_durable_append_for_test(request_execution);
             Ok(())
         },
     )
@@ -271,13 +293,17 @@ fn checkpoint_transition_deferred_settlement_retains_repair_without_rerunning_au
     else {
         panic!("expected exact native repair custody, got {denial:?}");
     };
-    pending.fail_next_durable_append_for_test();
-    let pending = pending
-        .repair_to_checkpoint(CapturePolicy::SystemAllocation)
-        .expect_err("a refused repair retains the same capsule");
-    let checkpoint = pending
-        .repair_to_checkpoint(CapturePolicy::SystemAllocation)
-        .expect("native repair acknowledges the existing performed transition");
+    pending.fail_next_durable_append_for_test(request_execution);
+    let pending = crate::test_request_policy::with_bootstrap(|bootstrap_phase| {
+        pending
+            .repair_to_checkpoint(&bootstrap_phase, CapturePolicy::SystemAllocation)
+            .expect_err("a refused repair retains the same capsule")
+    });
+    let checkpoint = crate::test_request_policy::with_bootstrap(|bootstrap_phase| {
+        pending
+            .repair_to_checkpoint(&bootstrap_phase, CapturePolicy::SystemAllocation)
+            .expect("native repair acknowledges the existing performed transition")
+    });
     let reopened = application_installation::in_memory_program_from_checkpoint(
         validated_program(),
         TemporalHostSchema::declaration().unwrap(),
@@ -287,17 +313,24 @@ fn checkpoint_transition_deferred_settlement_retains_repair_without_rerunning_au
     )
     .expect("only repaired target checkpoint may create a World");
     let selected = reopened
-        .on_branch(reopened.current_world())
-        .select()
-        .unwrap();
-    assert!(selected
-        .resolve_entity(
-            UnrelatedValueField::reference(),
-            89_u64,
-            &request_scope(),
-            primary_graph::WorthQueryPrincipalResolutionMode::Ordinary
-        )
-        .is_ok());
+        .with_host_advancement(|host_phase| {
+            reopened
+                .on_branch(reopened.current_world())
+                .select(&host_phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
+    assert!(reopened
+        .with_host_advancement(|host_phase| selected
+            .resolve_entity(
+                &host_phase,
+                UnrelatedValueField::reference(),
+                89_u64,
+                &request_scope(),
+                primary_graph::WorthQueryPrincipalResolutionMode::Ordinary
+            )
+            .is_ok())
+        .expect("installed host call opens"));
     assert_eq!(calls, 1, "repair must not rerun typed migration authoring");
 }
 
@@ -346,15 +379,22 @@ fn checkpoint_transition_retains_acknowledged_checkpoint_after_later_installatio
     )
     .expect("corrected configuration ordinary-restores actual acknowledged target effects");
     let selected = reopened
-        .on_branch(reopened.current_world())
-        .select()
-        .unwrap();
-    assert!(selected
-        .resolve_entity(
-            UnrelatedValueField::reference(),
-            101_u64,
-            &request_scope(),
-            primary_graph::WorthQueryPrincipalResolutionMode::Ordinary
-        )
-        .is_ok());
+        .with_host_advancement(|host_phase| {
+            reopened
+                .on_branch(reopened.current_world())
+                .select(&host_phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
+    assert!(reopened
+        .with_host_advancement(|host_phase| selected
+            .resolve_entity(
+                &host_phase,
+                UnrelatedValueField::reference(),
+                101_u64,
+                &request_scope(),
+                primary_graph::WorthQueryPrincipalResolutionMode::Ordinary
+            )
+            .is_ok())
+        .expect("installed host call opens"));
 }

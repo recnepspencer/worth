@@ -63,7 +63,7 @@ fn same_stage_workflow_denials_resume_their_exact_epochs() {
 }
 
 fn direct_denied_peer(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 ) -> DirectDeniedPeer {
     let (fixture, probe) = direct_yield_denial_admission_fixture();
     let DirectAdmissionFixture {
@@ -79,11 +79,16 @@ fn direct_denied_peer(
         .admit_direct_convergence_epoch(&operation, contract, managed, graph)
         .unwrap_or_else(|_| panic!("direct yield-denial peer must admit"))
         .start();
-    let started = epoch
-        .begin_iteration(execution, call("same-scope-yield-denial"))
-        .unwrap_or_else(|_| panic!("direct yield-denial peer must start"));
+    let started = {
+        let installed_fixture_phase = epoch.fixture_phase(execution);
+        epoch.begin_iteration(&installed_fixture_phase, call("same-scope-yield-denial"))
+    }
+    .unwrap_or_else(|_| panic!("direct yield-denial peer must start"));
     let epoch_identity = started.epoch_identity().to_owned();
-    let paused = match started.advance(execution) {
+    let paused = match {
+        let installed_fixture_phase = started.fixture_phase(execution);
+        started.advance(&installed_fixture_phase)
+    } {
         WorthQueryDirectConvergenceStepOutcome::Continue(paused) => paused,
         _ => panic!("direct denial peer must reach its safe point"),
     };
@@ -100,7 +105,7 @@ fn direct_denied_peer(
 }
 
 fn workflow_denied_peer(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 ) -> WorkflowDeniedPeer {
     let (fixture, probe) = workflow_yield_denial_admission_fixture();
     let WorkflowAdmissionFixture {
@@ -117,11 +122,20 @@ fn workflow_denied_peer(
     let epoch = admitted
         .start()
         .unwrap_or_else(|_| panic!("workflow yield-denial peer must start"));
-    let started = epoch
-        .begin_stage_iteration(execution, WORKFLOW_STAGE, call("same-stage-yield-denial"))
-        .unwrap_or_else(|_| panic!("workflow yield-denial stage must start"));
+    let started = {
+        let installed_fixture_phase = epoch.fixture_phase(execution);
+        epoch.begin_stage_iteration(
+            &installed_fixture_phase,
+            WORKFLOW_STAGE,
+            call("same-stage-yield-denial"),
+        )
+    }
+    .unwrap_or_else(|_| panic!("workflow yield-denial stage must start"));
     let epoch_identity = started.epoch_identity().to_owned();
-    let paused = match started.advance(execution) {
+    let paused = match {
+        let installed_fixture_phase = started.fixture_phase(execution);
+        started.advance(&installed_fixture_phase)
+    } {
         WorthQueryWorkflowConvergenceStepOutcome::Continue(paused) => paused,
         _ => panic!("workflow denial peer must reach its safe point"),
     };
@@ -138,10 +152,14 @@ fn workflow_denied_peer(
 }
 
 fn complete_direct_peer(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     peer: DirectDeniedPeer,
 ) -> CompletedPeer {
-    let terminal = match peer.denied.retry().advance(execution) {
+    let terminal = match {
+        let fixture_state = peer.denied.retry();
+        let installed_fixture_phase = fixture_state.fixture_phase(&execution);
+        fixture_state.advance(&installed_fixture_phase)
+    } {
         WorthQueryDirectConvergenceStepOutcome::Completed(
             WorthQueryDirectConvergenceIterationOutcome::Converged(terminal),
         ) => terminal,
@@ -160,10 +178,14 @@ fn complete_direct_peer(
 }
 
 fn complete_workflow_peer(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     peer: WorkflowDeniedPeer,
 ) -> CompletedPeer {
-    let terminal = match peer.denied.retry().advance(execution) {
+    let terminal = match {
+        let fixture_state = peer.denied.retry();
+        let installed_fixture_phase = fixture_state.fixture_phase(&execution);
+        fixture_state.advance(&installed_fixture_phase)
+    } {
         WorthQueryWorkflowConvergenceStepOutcome::Completed(
             WorthQueryWorkflowConvergenceIterationOutcome::Converged(terminal),
         ) => terminal,

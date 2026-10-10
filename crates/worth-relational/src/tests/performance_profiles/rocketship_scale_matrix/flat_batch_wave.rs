@@ -1,6 +1,7 @@
 use super::*;
 
 pub(super) fn certify_hundred_k_nodes_pseudorealistic_flat_batch_wave(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     suite: &'static str,
     node_count: usize,
     query_target_count: usize,
@@ -22,8 +23,12 @@ pub(super) fn certify_hundred_k_nodes_pseudorealistic_flat_batch_wave(
                 config.publication.policy.max_patch_records_per_commit = node_count * 2
             });
             let diagnostics_start = runtime.publication().diagnostic_artifacts().len();
-            let seeded =
-                seed_pseudorealistic_rocketship_world(&runtime, node_count, query_target_count);
+            let seeded = seed_pseudorealistic_rocketship_world(
+                execution,
+                &runtime,
+                node_count,
+                query_target_count,
+            );
 
             let mut partition_targets = BTreeMap::new();
             for entity in &seeded.entities {
@@ -117,7 +122,11 @@ pub(super) fn certify_hundred_k_nodes_pseudorealistic_flat_batch_wave(
                         .read_truth()
                         .plan_query_packet(&snapshot, explicit_packet)
                         .expect("planned rocketship flat batch explicit query"),
+                    execution,
+                    crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                 )
+                .expect("request remains live")
+                .map(|read| read.outcome)
                 .expect("rocketship flat batch explicit outcome");
             let explicit_query_micros = explicit_started_at.elapsed().as_micros();
             assert!(runtime

@@ -29,8 +29,9 @@ impl IndexAccess<'_> {
     /// same caller admission before its work or allocation. The callback budgets
     /// Operation against logical work; OrderedNavigation is one operation plus
     /// a single capacity-bounded keyed descent, never candidates or payload.
-    pub fn execute_bounded_entity_field_lookup_admitted<E>(
+    pub(super) fn collect_admitted_entity_field_lookup<E>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         view: &VisibilityProjectionView<'_>,
         index: DerivedIndexId,
         kind: KindId,
@@ -120,8 +121,9 @@ impl IndexAccess<'_> {
             value,
             prepare: &mut prepare,
         };
-        let (candidates, examined, overflowed) =
-            super::entity_field_collection::collect(rows, index, kind, limit, &mut read)?;
+        let (candidates, examined, overflowed) = super::entity_field_collection::collect(
+            execution, rows, index, kind, limit, &mut read,
+        )?;
         let outcome = BoundedEntityFieldLookupOutcome::new(
             definition,
             generation.generation_id,
@@ -132,6 +134,7 @@ impl IndexAccess<'_> {
         );
         if parity == BoundedIndexParityMode::Certification {
             certify_storage(
+                execution,
                 view,
                 kind,
                 locator,
@@ -178,18 +181,25 @@ impl<E, F: FnMut(SelectedIndexReadWork, u64) -> Result<(), E>>
     }
     fn compare(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity: EntityId,
         previous: usize,
     ) -> Result<Option<(KindId, bool)>, Stop<E>> {
         charge(self.prepare, width(previous + 1)?, 0)?;
-        Ok(
-            borrowed_matches(self.view, entity, self.locator, self.value, self.prepare)?
-                .map(|(_, kind, matches)| (kind, matches)),
-        )
+        Ok(borrowed_matches(
+            execution,
+            self.view,
+            entity,
+            self.locator,
+            self.value,
+            self.prepare,
+        )?
+        .map(|(_, kind, matches)| (kind, matches)))
     }
 }
 
 fn certify_storage<E>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     view: &VisibilityProjectionView<'_>,
     kind: KindId,
     locator: &AspectFieldLocator,
@@ -221,7 +231,7 @@ fn certify_storage<E>(
         for slot in partition.entity_arena.live_bitset.iter_set_slots() {
             let entity = EntityId::new(partition_id, slot as u64, 0);
             let Some((actual_id, actual_kind, matches)) =
-                borrowed_matches(view, entity, locator, value, prepare)?
+                borrowed_matches(execution, view, entity, locator, value, prepare)?
             else {
                 continue;
             };

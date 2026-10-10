@@ -90,13 +90,14 @@ pub(super) fn reserve_pending<T>(
 }
 
 pub(super) fn fact_is_current(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     fact: &WorthQueryApplicationObservedFact,
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<bool, ConsumedOutputVerificationStop> {
     match fact
-        .source_currentness_in(runtime, snapshot, admission)
+        .source_currentness_in(runtime, execution, snapshot, admission)
         .map_err(map_admission_stop)?
     {
         Ok(movement) => Ok(movement.movement() == Movement::Unmoved),

@@ -2,6 +2,7 @@ use super::*;
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityRef;
 
 pub(in crate::application_entry) fn prepare_capability_selected<Schema, Intent, SourcePreparation>(
+phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
     request: &Request<'_, '_, '_, '_, Schema, Intent, SourcePreparation>,
     identities: &Identities<'_, Schema, Intent>,
     staged: WorthQueryStagedMutation<Schema, Intent>,
@@ -35,6 +36,7 @@ where
         .map_err(WorthQueryApplicationRequestMutationDenial::BindingInstallation)?;
     let principal = selected
         .resolve_authenticated_principal(
+            phase,
             binding.principal_binding(),
             request.request.principal,
             request.request.scope,
@@ -58,6 +60,7 @@ where
             .map_err(WorthQueryApplicationRequestMutationDenial::CapabilityInstallation)?;
     let access = selected
         .admit_encoded_capability_access(
+            phase,
             &worth_query_execution::publication_boundary::program_publication_access(),
             &principal,
             &capability,
@@ -70,7 +73,7 @@ where
     let admission = request
         .request
         .application
-        .authorize_capability_operation(access, binding.operation(), staged.preconditions)
+        .authorize_capability_operation(phase, access, binding.operation(), staged.preconditions)
         .map_err(WorthQueryApplicationRequestMutationDenial::Authorization)?;
     prepare_authorized(
         request,

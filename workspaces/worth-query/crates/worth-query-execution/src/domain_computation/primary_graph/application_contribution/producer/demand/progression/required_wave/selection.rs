@@ -1,6 +1,7 @@
 use super::*;
 
 pub(super) fn select_required_wave<'runtime, Schema>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     interest: &WorthQueryOutputDemandInterest,
     branch: WorthQueryProductBranch,
@@ -16,6 +17,7 @@ where
         return Ok(None);
     };
     select_required_wave_from_ready(
+        execution,
         runtime,
         anchor_ready,
         branch,
@@ -28,6 +30,7 @@ where
 /// A performed checkpoint moves the Native head. The caller retains the
 /// authentic original Ready pin while the next frame selects a fresh Product.
 pub(super) fn reselect_required_wave<'runtime, Schema>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     previous: RequiredWaveSelection<'_, Schema>,
     admission: &mut InvalidationEditAdmission,
@@ -43,10 +46,11 @@ where
         target,
     } = previous;
     drop((shared, positioned));
-    select_required_wave_from_ready(runtime, anchor_ready, branch, target, admission)
+    select_required_wave_from_ready(execution, runtime, anchor_ready, branch, target, admission)
 }
 
 fn select_required_wave_from_ready<'runtime, Schema>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     anchor_ready: SelectedReadyReadmission,
     branch: WorthQueryProductBranch,
@@ -56,7 +60,7 @@ fn select_required_wave_from_ready<'runtime, Schema>(
 where
     Schema: ApplicationSchema + 'static,
 {
-    let (shared, positioned) = select_required_basis(runtime, branch, admission)?;
+    let (shared, positioned) = select_required_basis(execution, runtime, branch, admission)?;
     Ok(RequiredWaveSelection {
         shared,
         positioned,
@@ -68,6 +72,7 @@ where
 
 /// The same owner-issued Product/native basis for both kinds of wave anchor.
 pub(super) fn select_required_basis<'runtime, Schema>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     branch: WorthQueryProductBranch,
     admission: &mut InvalidationEditAdmission,
@@ -87,18 +92,21 @@ where
         .primary_provider
         .take_ready_read_snapshot_pressure()
         .then(|| runtime.hold_world_snapshot_pressure_for_test(branch));
-    let selected = runtime.on_branch(branch).select().map_err(|stop| {
-        WorthQueryOutputDemandDenial::new(
-            WorthQueryOutputDemandDenialKind::ProductSelection(stop),
-            "required output Product basis could not be selected",
-        )
-    })?;
+    let selected = runtime
+        .on_branch(branch)
+        .select_with_request(execution)
+        .map_err(|stop| {
+            WorthQueryOutputDemandDenial::new(
+                WorthQueryOutputDemandDenialKind::ProductSelection(stop),
+                "required output Product basis could not be selected",
+            )
+        })?;
     let product = selected.product().read_lease_ref();
     let snapshot = selected.application_basis().snapshot_handle();
     let positioned = runtime
         .primary_provider
         .graph
-        .with_runtime(|native| {
+        .with_runtime(execution, |native| {
             native
                 .read_truth()
                 .positioned_snapshot_admitted(snapshot, |work, bytes| {

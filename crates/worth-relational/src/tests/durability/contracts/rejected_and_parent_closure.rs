@@ -2,6 +2,9 @@ use super::*;
 
 #[test]
 fn durability_contract_recovery_ignores_rejected_relation_integrity_attempts() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let fixture = RelationIntegritySchemaFixture {
         relation_integrity: crate::schema::data::RelationIntegrityDeclarations::new(
             Vec::new(),
@@ -118,7 +121,10 @@ fn durability_contract_recovery_ignores_rejected_relation_integrity_attempts() {
         .durability_mode(DurabilityMode::PersistedSegmentedLocalFs)
         .durable_store_layout(store_layout)
         .build();
-    let outcome = recovered.durability_recovery().recover(plan).unwrap();
+    let outcome = recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
 
     assert_eq!(outcome.latest_commit, latest_commit_before.clone());
     assert_eq!(
@@ -138,6 +144,9 @@ fn durability_contract_recovery_ignores_rejected_relation_integrity_attempts() {
 
 #[test]
 fn durability_contract_failure_missing_authoritative_parent_closure_is_explicit() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let parent = create_entity_outcome(&runtime, "main-a");
     let child = create_entity_outcome(&runtime, "main-b");
@@ -186,7 +195,7 @@ fn durability_contract_failure_missing_authoritative_parent_closure_is_explicit(
     let mut recovered = runtime_with_test_schema();
     let error = recovered
         .durability_recovery()
-        .recover(corrupt_plan)
+        .recover(execution, corrupt_plan)
         .unwrap_err();
 
     assert_eq!(parent.commit.commit_id.0, 1);

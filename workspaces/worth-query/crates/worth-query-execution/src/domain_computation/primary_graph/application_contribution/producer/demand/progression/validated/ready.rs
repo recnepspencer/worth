@@ -31,6 +31,7 @@ where
 {
     pub(super) fn advance_validated_ready<Family>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
         disclosure: ValidatedOutputDisclosure<
@@ -60,7 +61,7 @@ where
         // The disclosed source is the one this demand names: a replaced
         // source left through `leave_replaced_source` before the row began.
         if let ReadyVerdict::Settled(settlement) =
-            self.certify_ready(phase, demand, &completion, delivery_branch)?
+            self.certify_ready(execution, phase, demand, &completion, delivery_branch)?
         {
             return Ok(OwnStages::Answer(WorthQueryOutputDemandAdvance::Settled(
                 settlement,
@@ -70,6 +71,7 @@ where
             .charge_external_work(std::mem::size_of_val(disclosure.source()) as u64)
             .map_err(|_| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, ""))?;
         self.refresh_output_demand(
+            execution,
             demand,
             disclosure.value(),
             disclosure.source().clone(),
@@ -84,6 +86,7 @@ where
     /// within this advance, using the same request admission.
     pub(super) fn settle_own_ready<Family>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
         demand: &WorthQueryAdmittedOutputDemand<Schema, Family>,
         completion: &ReadyCompletion,
@@ -97,18 +100,21 @@ where
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
         Ok(
-            match self.certify_ready(phase, demand, completion, delivery_branch)? {
+            match self.certify_ready(execution, phase, demand, completion, delivery_branch)? {
                 ReadyVerdict::Settled(settlement) => {
                     CallerPass::Answer(WorthQueryOutputDemandAdvance::Settled(settlement))
                 }
                 ReadyVerdict::Unavailable(ReadyUnavailable::Superseded) => match progress {
                     CheckpointProgress::Published(publication) => {
-                        let current = self.on_branch(delivery_branch).select().map_err(|stop| {
-                            WorthQueryOutputDemandDenial::product_selection(
-                                stop,
-                                "own publication readmission",
-                            )
-                        })?;
+                        let current = self
+                            .on_branch(delivery_branch)
+                            .select_with_request(execution)
+                            .map_err(|stop| {
+                                WorthQueryOutputDemandDenial::product_selection(
+                                    stop,
+                                    "own publication readmission",
+                                )
+                            })?;
                         if publication
                             .0
                             .is_selected_at(current.product().observation())
@@ -132,6 +138,7 @@ where
 
     fn certify_ready<Family>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
         demand: &WorthQueryAdmittedOutputDemand<Schema, Family>,
         completion: &ReadyCompletion,
@@ -144,12 +151,15 @@ where
             .interest
             .as_ref()
             .expect("validated Ready retains its live Interest");
-        let current = self.on_branch(delivery_branch).select().map_err(|denial| {
-            WorthQueryOutputDemandDenial::product_selection(
-                denial,
-                "ready output currentness basis could not be selected",
-            )
-        })?;
+        let current = self
+            .on_branch(delivery_branch)
+            .select_with_request(execution)
+            .map_err(|denial| {
+                WorthQueryOutputDemandDenial::product_selection(
+                    denial,
+                    "ready output currentness basis could not be selected",
+                )
+            })?;
         let unavailable = |proof: Result<(), WorthQueryOutputDemandDenial>| match proof {
             Ok(()) => Ok(None),
             Err(denial) => match ready_unavailable(&denial) {
@@ -182,6 +192,7 @@ where
                     return Ok(ReadyVerdict::Unavailable(kind));
                 }
                 match Settlement::from_commit(
+                    execution,
                     self,
                     receipt,
                     &completion.readiness,

@@ -181,9 +181,10 @@ fn yielded_cleanup_releases_artifacts_owned_by_the_provider_checkpoint() {
         );
         let running =
             super::workflow_provider_steps::admitted_workflow(&runtime, &operation, resources);
-        let active = running
-            .begin_stage_graph_execution(
-                execution,
+        let active = {
+            let installed_fixture_phase = running.fixture_phase(execution);
+            running.begin_stage_graph_execution(
+                &installed_fixture_phase,
                 "producer",
                 &graph,
                 WorthQueryManagedGraphCallRequest::new(
@@ -191,8 +192,12 @@ fn yielded_cleanup_releases_artifacts_owned_by_the_provider_checkpoint() {
                     "checkpoint-artifact-yield",
                 ),
             )
-            .unwrap();
-        let paused = match active.advance(execution) {
+        }
+        .unwrap();
+        let paused = match {
+            let installed_fixture_phase = active.fixture_phase(execution);
+            active.advance(&installed_fixture_phase)
+        } {
             WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused,
             _ => panic!("checkpoint-artifact provider did not pause"),
         };

@@ -38,13 +38,14 @@ impl JournalPositionSchedule {
 }
 
 fn submitted_batch_positions_with_inspection(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace_name: &str,
 ) -> (JournalPositionSchedule, Vec<String>) {
-    let mut workspace = stateful_bridge_task_runtime()
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace(workspace_name)
         .expect("task runtime should open a named workspace");
     let receipt = workspace
-        .batch(|batch| {
+        .batch(request_execution, |batch| {
             batch
                 .insert("Task", |task| {
                     task.set_aspect(
@@ -79,7 +80,7 @@ fn submitted_batch_positions_with_inspection(
         })
         .expect("batch should commit");
     let inspection_identities = match workspace
-        .inspect(&receipt)
+        .inspect(request_execution, &receipt)
         .expect("batch receipt should inspect")
     {
         WorthQueryInspection::BatchWriteReceipt(inspection) => inspection
@@ -110,8 +111,11 @@ fn submitted_batch_positions_with_inspection(
     )
 }
 
-fn submitted_schedule_positions(workspace_name: &str) -> JournalPositionSchedule {
-    let mut workspace = stateful_bridge_task_runtime()
+fn submitted_schedule_positions(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    workspace_name: &str,
+) -> JournalPositionSchedule {
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace(workspace_name)
         .expect("task runtime should open a named workspace");
     let mut ordinals = Vec::new();
@@ -121,7 +125,7 @@ fn submitted_schedule_positions(workspace_name: &str) -> JournalPositionSchedule
         let receipt = workspace
             .submissions()
             .expect("submission lane should be admitted")
-            .submit(command)
+            .submit(request_execution, command)
             .expect("scheduled submission should commit");
         assert_eq!(
             receipt.journal_position().authority(),

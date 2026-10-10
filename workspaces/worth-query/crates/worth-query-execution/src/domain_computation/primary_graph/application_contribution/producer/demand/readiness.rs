@@ -17,6 +17,7 @@ where
 {
     pub(super) fn evaluate_current_output_readiness(
         &self,
+execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
 
         producer_identity: &str,
@@ -27,6 +28,7 @@ where
         WorthQueryOutputDemandDenial,
     >{
         self.evaluate_current_output_readiness_core(
+            execution,
             phase,
             producer_identity,
             receipt,
@@ -40,6 +42,7 @@ where
     /// Bridge/Signal conditional keeps its installed serial admission class.
     pub(super) fn evaluate_current_output_readiness_admitted(
         &self,
+execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
 
         producer_identity: &str,
@@ -52,6 +55,7 @@ where
         WorthQueryOutputDemandDenial,
     >{
         self.evaluate_current_output_readiness_core(
+            execution,
             phase,
             producer_identity,
             receipt,
@@ -62,6 +66,7 @@ where
 
     fn evaluate_current_output_readiness_core(
         &self,
+execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
 
         producer_identity: &str,
@@ -118,7 +123,7 @@ where
         };
         let selected = self
             .on_branch(receipt.product_branch())
-            .select()
+            .select_with_request(execution)
             .map_err(|error| {
                 WorthQueryOutputDemandDenial::product_selection(
                     error,

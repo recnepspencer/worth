@@ -17,6 +17,7 @@ struct WorkflowGraphProjectionExecutor;
 struct WorkflowGraphProjectionProvider;
 
 pub fn workflow_graph_projection_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
 ) -> Result<
     runtime::WorthQueryWorkspace,
@@ -37,7 +38,7 @@ pub fn workflow_graph_projection_workspace(
             ReadFamily,
             WorkflowParallelProvider,
         )
-        .workspace(name)
+        .workspace(request_execution, name)
 }
 
 impl domain::WorthQueryDomainWorkflowStageExecutor<GeometryDomain, WorkflowRead, ReadFamily>

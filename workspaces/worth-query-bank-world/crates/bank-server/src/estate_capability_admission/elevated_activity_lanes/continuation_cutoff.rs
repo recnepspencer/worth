@@ -35,9 +35,9 @@ fn exact_support_loss_after_continuation_readmission_denies_before_payload() {
                 std::num::NonZeroUsize::new(20_000).unwrap(),
                 &request,
             ),
-            |admitted| {
+            |phase, admitted| {
                 revoke_exact_support(&world, 151);
-                admitted.execute()
+                admitted.execute(phase)
             },
         );
     let denial = match outcome {

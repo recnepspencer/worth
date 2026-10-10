@@ -75,6 +75,7 @@ where
 }
 
 pub(super) fn authorize_retained_source<'runtime, Schema, Binding>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     external_principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request: &WorthQueryRequestScope,
@@ -88,9 +89,10 @@ where
 {
     let selected = runtime
         .on_branch(branch)
-        .select()
+        .select_with_request(execution)
         .map_err(|error| failed(Binding::IDENTITY, error))?;
     let (installed, principal, scope) = authorize_retained_source_on_selected::<Schema, Binding>(
+        execution,
         runtime,
         external_principal,
         request,
@@ -110,6 +112,7 @@ where
 /// Product occurrence. A required-work wave may borrow this same selection for
 /// each exact producer without choosing another Product or Query authority.
 pub(super) fn authorize_retained_source_on_selected<Schema, Binding>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     external_principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request: &WorthQueryRequestScope,
@@ -138,6 +141,7 @@ where
     }
     let principal = selected
         .resolve_authenticated_principal_admitted(
+            execution,
             installed.principal_binding(),
             external_principal,
             request,
@@ -147,6 +151,7 @@ where
         .map_err(|error| principal_rejected(Binding::IDENTITY, error))?;
     let scope = selected
         .resolve_retained_query_scope(
+            execution,
             SourceBinding::<Schema, Binding>::scope_field(),
             retained.retained_scope_selector(),
             request,
@@ -157,6 +162,7 @@ where
 }
 
 pub(super) fn readmit_source<Schema, Binding>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     external_principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request: &WorthQueryRequestScope,
@@ -179,6 +185,7 @@ where
         WorthQueryApplicationProjection<Schema, SourceQuery<Schema, Binding>>,
 {
     let authorized = authorize_retained_source::<Schema, Binding>(
+        execution,
         runtime,
         external_principal,
         request,
@@ -187,6 +194,7 @@ where
         admission,
     )?;
     readmit_authorized_source::<Schema, Binding>(
+        execution,
         runtime,
         external_principal,
         request,
@@ -203,6 +211,7 @@ where
 /// current-output probe requires a real source disclosure. The owned selection
 /// stays live through the query plan; no second branch or identity is chosen.
 pub(super) fn readmit_authorized_source<'runtime, Schema, Binding>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     external_principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request: &WorthQueryRequestScope,
@@ -255,10 +264,12 @@ where
         request,
     );
     let plan = runtime
-        .readmit_application_query_from_observed(query, &access, retained, controls, admission)
+        .readmit_application_query_from_observed(
+            execution, query, &access, retained, controls, admission,
+        )
         .map_err(|error| query_admission_denied(Binding::IDENTITY, error))?;
     let read = runtime
-        .execute_application_query_one_shot(plan)
+        .execute_application_query_one_shot_with_request(execution, plan)
         .map_err(|error| query_execution_denied(Binding::IDENTITY, error))?;
     admission
         .charge_external_work(read.receipt().total_work_units() as u64)
@@ -270,6 +281,7 @@ where
         })?;
 
     super::super::demand::disclosure::validate_readmitted(
+        execution,
         runtime,
         retained,
         external_principal,

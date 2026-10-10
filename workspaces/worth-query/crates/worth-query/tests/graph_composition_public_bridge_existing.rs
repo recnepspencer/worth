@@ -15,13 +15,17 @@ use graph_composition_public_bridge_existing_support::*;
 
 #[test]
 fn graph_composition_public_bridge_supports_existing_target_retarget_lifecycle() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let harness = PublicBridgeRuntimeHarness::new();
-    let runtime = harness.bridge_backed_runtime();
+    let runtime = harness.bridge_backed_runtime(request_execution);
     let mut workspace = runtime
         .workspace("public.graph-composition-existing-retarget")
         .expect("runtime should open a named workspace");
     let relations: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
         .live_view(
+            request_execution,
             "public.graph-composition-existing-retarget-relations",
             |q| {
                 q.from("TaskRelation")
@@ -54,7 +58,7 @@ fn graph_composition_public_bridge_supports_existing_target_retarget_lifecycle()
         )
         .expect("relation live view should declare");
     let seed = workspace
-        .insert("TaskRelation", |relation| {
+        .insert(request_execution, "TaskRelation", |relation| {
             relation
                 .set_aspect(touch("identity.id"), authored_text("rel-next"))
                 .set_aspect(touch("kind.value"), authored_text("loop_successor"))
@@ -74,7 +78,7 @@ fn graph_composition_public_bridge_supports_existing_target_retarget_lifecycle()
     .expect("relation binding should build");
 
     let receipt = workspace
-        .compose_graph(|graph| {
+        .compose_graph(request_execution, |graph| {
             let _ = graph.insert_entity("draft-task", "Task", |task| {
                 task.set_aspect(touch("identity.id"), authored_text("task-loop-c"))
                     .set_aspect(touch("title.value"), authored_text("Loop successor target"))
@@ -113,14 +117,14 @@ fn graph_composition_public_bridge_supports_existing_target_retarget_lifecycle()
         WorthQueryGraphCompositionLifecycleOutcomeKind::RetargetedIdentityPreserved
     );
     assert_eq!(
-        workspace.read(&relations)[0].scalar_value_at(&field_path("target.id")),
+        workspace.read(request_execution, &relations)[0].scalar_value_at(&field_path("target.id")),
         Some(&text("loop-c"))
     );
 
     match workspace
         .inspections()
         .expect("inspection lane should admit")
-        .inspect(&receipt)
+        .inspect(request_execution, &receipt)
         .expect("receipt should inspect")
     {
         WorthQueryInspection::BatchWriteReceipt(inspection) => {
@@ -146,23 +150,26 @@ fn graph_composition_public_bridge_supports_existing_target_retarget_lifecycle()
 
 #[test]
 fn graph_composition_public_bridge_supports_verified_existing_followup_and_retirement() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let harness = PublicBridgeRuntimeHarness::new();
     let runtime = harness
         .bridge_backed_runtime_builder()
         .support_profile(public_multi_verified_relation_profile())
-        .build();
+        .build(request_execution);
     let mut workspace = runtime
         .workspace("public.graph-composition-verified-existing")
         .expect("workspace should open");
     let update_seed = workspace
-        .insert("TaskRelation", |relation| {
+        .insert(request_execution, "TaskRelation", |relation| {
             relation
                 .set_aspect(touch("identity.id"), authored_text("rel-1"))
                 .set_aspect(touch("status.value"), authored_text("active"))
         })
         .expect("update seed should execute");
     let delete_seed = workspace
-        .insert("TaskRelation", |relation| {
+        .insert(request_execution, "TaskRelation", |relation| {
             relation
                 .set_aspect(touch("identity.id"), authored_text("rel-2"))
                 .set_aspect(touch("kind.value"), authored_text("depends_on"))
@@ -200,7 +207,7 @@ fn graph_composition_public_bridge_supports_verified_existing_followup_and_retir
     );
 
     let receipt = workspace
-        .compose_graph(|graph| {
+        .compose_graph(request_execution, |graph| {
             let _ = graph.insert_entity("draft-task", "Task", |task| {
                 task.set_aspect(
                     touch("identity.id"),
@@ -246,7 +253,7 @@ fn graph_composition_public_bridge_supports_verified_existing_followup_and_retir
     match workspace
         .inspections()
         .expect("inspection lane should admit")
-        .inspect(&receipt)
+        .inspect(request_execution, &receipt)
         .expect("receipt should inspect")
     {
         WorthQueryInspection::BatchWriteReceipt(inspection) => {
@@ -273,16 +280,19 @@ fn graph_composition_public_bridge_supports_verified_existing_followup_and_retir
 
 #[test]
 fn graph_composition_public_bridge_denies_verified_existing_mismatch() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let harness = PublicBridgeRuntimeHarness::new();
     let runtime = harness
         .bridge_backed_runtime_builder()
         .support_profile(public_multi_verified_relation_profile())
-        .build();
+        .build(request_execution);
     let mut workspace = runtime
         .workspace("public.graph-composition-verified-existing-mismatch")
         .expect("workspace should open");
     let update_seed = workspace
-        .insert("TaskRelation", |relation| {
+        .insert(request_execution, "TaskRelation", |relation| {
             relation
                 .set_aspect(touch("identity.id"), authored_text("rel-mismatch"))
                 .set_aspect(touch("status.value"), authored_text("active"))
@@ -305,7 +315,7 @@ fn graph_composition_public_bridge_denies_verified_existing_mismatch() {
     );
 
     let error = workspace
-        .compose_graph(|graph| {
+        .compose_graph(request_execution, |graph| {
             graph.update_existing_verified(
                 update_binding,
                 |verify| verify.set_aspect(touch("status.value"), authored_text("stale")),

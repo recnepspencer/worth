@@ -18,6 +18,7 @@ use crate::domain_computation::primary_graph::application_query::{
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout;
 
 pub(super) fn collect_source_footprints(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &VisibilityProjectionView<'_>,
     graph: &WorthQueryPrimaryGraphLayout,
     contract: &WorthQueryInstalledGraphReadContract,
@@ -61,6 +62,7 @@ pub(super) fn collect_source_footprints(
                 .transpose()?,
         };
         collect_node(
+            execution,
             projection,
             graph,
             contract,
@@ -162,6 +164,7 @@ fn footprint_counts(
 
 #[allow(clippy::too_many_arguments)]
 fn collect_node(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &VisibilityProjectionView<'_>,
     graph: &WorthQueryPrimaryGraphLayout,
     contract: &WorthQueryInstalledGraphReadContract,
@@ -210,6 +213,7 @@ fn collect_node(
             field: field_key,
             contract_revision,
             native_revision: projection.entity_field_revision(
+                execution,
                 node.entity_id(),
                 &worth_foundational::facade::AspectFieldLocator::new(
                     worth_foundational::facade::LocatorAuthority::Authoritative,
@@ -241,7 +245,7 @@ fn collect_node(
         };
         work.checkpoint(relation.result_path())?;
         let revision = projection
-            .bounded_adjacency_structural_revision(
+            .bounded_adjacency_structural_revision(execution,
                 node.entity_id(),
                 layout.kind,
                 direction,
@@ -285,6 +289,7 @@ fn collect_node(
                     field,
                     contract_revision,
                     native_revision: projection.entity_field_revision(
+                        execution,
                         *entity_id,
                         &worth_foundational::facade::AspectFieldLocator::new(
                             worth_foundational::facade::LocatorAuthority::Authoritative,
@@ -330,6 +335,7 @@ fn collect_node(
             });
         for child in projected.rows() {
             collect_node(
+                execution,
                 projection,
                 graph,
                 contract,

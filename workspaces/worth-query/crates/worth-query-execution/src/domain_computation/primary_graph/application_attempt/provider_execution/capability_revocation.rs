@@ -23,15 +23,22 @@ where
         let request = program.request_scope().clone();
         let mut candidate = Some(program);
         self.with_application_advancement(&request, |active_phase| {
+            let execution = active_phase
+                .execution_request_for(&self.product_runtime)
+                .map_err(
+                    crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from,
+                )?;
             if let Some(denial) = self.direct_operation_commit_denial::<Operation>() {
-                return WorthQueryApplicationCommitOutcome::Denied(denial);
+                return Ok(WorthQueryApplicationCommitOutcome::Denied(denial));
             }
-            self.compare_and_commit_capability_revocation_for_program(
+            Ok(self.compare_and_commit_capability_revocation_for_program(
+                &execution,
                 &active_phase,
                 candidate.take().expect("candidate admitted once"),
                 idempotency,
-            )
+            ))
         })
+        .and_then(std::convert::identity)
         .unwrap_or_else(|denial| denial.into_commit_outcome())
     }
 
@@ -41,6 +48,7 @@ where
         Scope,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
 
         program: WorthQueryCapabilityRevocationProgram<Schema, Operation, Input, Scope>,
@@ -50,6 +58,7 @@ where
         Input: Clone + Send + Sync + 'static,
     {
         self.compare_and_commit_application_inner(
+            execution,
             phase,
             program.into_inner(),
             idempotency,

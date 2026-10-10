@@ -22,11 +22,13 @@ use crate::visibility::materialization::read_records::reader::{
 impl VisibilityProjectionView<'_> {
     pub fn bounded_outgoing_relations_of_kind(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: EntityId,
         kind_id: KindId,
         maximum_work_units: usize,
     ) -> Result<BoundedAdjacencyTruthRead, AdjacencyTruthReadLimitExceeded> {
         self.bounded_entity_relations_of_kind(
+            execution,
             entity_id,
             kind_id,
             AdjacencyDirection::Outgoing,
@@ -36,11 +38,13 @@ impl VisibilityProjectionView<'_> {
 
     pub fn bounded_incoming_relations_of_kind(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: EntityId,
         kind_id: KindId,
         maximum_work_units: usize,
     ) -> Result<BoundedAdjacencyTruthRead, AdjacencyTruthReadLimitExceeded> {
         self.bounded_entity_relations_of_kind(
+            execution,
             entity_id,
             kind_id,
             AdjacencyDirection::Incoming,
@@ -50,6 +54,7 @@ impl VisibilityProjectionView<'_> {
 
     fn bounded_entity_relations_of_kind(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: EntityId,
         kind_id: KindId,
         direction: AdjacencyDirection,
@@ -79,7 +84,7 @@ impl VisibilityProjectionView<'_> {
                 ));
             }
             examined += 1;
-            let Some(record) = self.authoritative_relation_record(relation_id) else {
+            let Some(record) = self.authoritative_relation_record(execution, relation_id) else {
                 continue;
             };
             if record.kind.kind_id != kind_id

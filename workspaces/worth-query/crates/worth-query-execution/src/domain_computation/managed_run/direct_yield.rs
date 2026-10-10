@@ -219,3 +219,7 @@ impl WorthQueryYieldedDirectRun {
         super::readmission::readmit_direct(active_request, self, query_runtime, bridge_runtime)
     }
 }
+
+#[cfg(test)]
+#[path = "direct_yield/test_phase_custody.rs"]
+mod test_phase_custody;
