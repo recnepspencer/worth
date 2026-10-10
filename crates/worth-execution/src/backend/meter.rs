@@ -32,9 +32,8 @@ pub(crate) fn active_stop() -> Option<KernelStop> {
         let active = active.borrow();
         let meter = active.last()?.borrow();
         meter.limits.safe_point().err().or_else(|| {
-            (meter.work >= meter.limits.ceiling
-                || meter.checkpoint_stop == Some(KernelStop::WorkCeiling))
-            .then_some(KernelStop::WorkCeiling)
+            (meter.checkpoint_stop == Some(KernelStop::WorkCeiling))
+                .then_some(KernelStop::WorkCeiling)
         })
     })
 }

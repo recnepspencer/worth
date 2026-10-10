@@ -5,7 +5,7 @@ use fixture::{fixture, Fixture};
 use std::num::NonZeroUsize;
 use worth_execution::{
     CancellationSource, CancellationToken, ExecutionRequest, ExecutionScan, ExecutionWorkCeiling,
-    MapKernelFailure, MapStop, ScanOutcome,
+    MapKernelFailure, MapStop, MemoryLimitLevel, ScanOutcome, SerialRequest,
 };
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
@@ -18,14 +18,27 @@ fn lease(
     work: u64,
 ) -> worth_execution::ExecutionResourceLease<'static> {
     crate::snapshot::test_execution_lease_for_policy(
-        ExecutionRequestPolicy::new(
-            ExecutionPosture::Automatic,
-            DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::new(workers).unwrap(), memory, work),
-        ),
+        policy(workers, memory, work),
         CancellationToken::new(),
     )
 }
+fn policy(workers: usize, memory: u64, work: u64) -> ExecutionRequestPolicy {
+    ExecutionRequestPolicy::new(
+        ExecutionPosture::Automatic,
+        DeterminismContract::CanonicalBitwise,
+        ExecutionBudget::new(NonZeroUsize::new(workers).unwrap(), memory, work),
+    )
+}
+fn serial(memory: u64, work: u64) -> SerialRequest {
+    SerialRequest::from_policy(&policy(1, memory, work), CancellationToken::new(), None)
+}
+fn cancelled_serial() -> SerialRequest {
+    let source = CancellationSource::new();
+    let request = serial(1 << 20, 100).with_cancellation(source.token());
+    source.cancel();
+    request
+}
+
 fn cancelled_lease() -> worth_execution::ExecutionResourceLease<'static> {
     let source = CancellationSource::new();
     let lease = lease(1, 1 << 20, 100).controlled_child(source.token(), None);
@@ -33,16 +46,23 @@ fn cancelled_lease() -> worth_execution::ExecutionResourceLease<'static> {
     lease
 }
 
-/// Complete one real scan increment, then refuse the next under the parent's
-/// one-unit ceiling. The parent retains that charge before Bridge is called.
-fn exhaust_active_request(lease: &worth_execution::ExecutionResourceLease<'_>) {
+/// Complete one real scan increment, then contact Bridge while the next
+/// refused charge is still recorded on the active meter.
+fn exhaust_active_request(
+    lease: &worth_execution::ExecutionResourceLease<'_>,
+    mut on_refused: impl FnMut(),
+) {
     let first = PartitionIdentity::new(1);
     let second = PartitionIdentity::new(2);
     let scan =
         ExecutionScan::try_from_ordered(vec![first, second], vec![(first, 1_u64), (second, 2_u64)])
             .unwrap();
     let outcome = scan.run(Some(lease), 0_u64, 0, 0, 0, 0, |sum, item, work| {
-        work.checkpoint(1)?;
+        work.checkpoint(1).map_err(|stop| {
+            assert_eq!(stop, worth_execution::MapKernelStop::WorkCeiling);
+            on_refused();
+            MapKernelFailure::Stop(stop)
+        })?;
         Ok::<_, MapKernelFailure<()>>((sum + item, ()))
     });
     assert_eq!(outcome.report().charged_work(), 1);
@@ -86,6 +106,15 @@ fn assert_delivery_stopped(
     assert!(f.sink.deliveries().is_empty());
 }
 
+fn assert_serial_scope_memory_refused(cause: BridgeExecutionDenial) {
+    let BridgeExecutionDenial::MemoryExhausted(denial) = cause else {
+        panic!("serial framework reservation must refuse memory: {cause:?}");
+    };
+    assert_eq!(denial.level, MemoryLimitLevel::Policy { ancestor: 0 });
+    assert_eq!(denial.admitted, 0);
+    assert!(denial.requested > 0);
+}
+
 #[test]
 fn stopped_requests_refuse_bridge_reads_before_reader_contact() {
     let f = fixture();
@@ -95,18 +124,25 @@ fn stopped_requests_refuse_bridge_reads_before_reader_contact() {
         ExecutionRequest::leased(&cancelled),
         BridgeExecutionDenial::Cancelled,
     );
+    let cancelled = cancelled_serial();
+    assert_read_stopped(
+        &f,
+        ExecutionRequest::serial(&cancelled),
+        BridgeExecutionDenial::Cancelled,
+    );
 
     let active = lease(1, 1 << 20, 100);
     let request = ExecutionRequest::leased(&active);
     let (_, report) = request
         .run(ExecutionWorkCeiling::new(1), |_| {
-            exhaust_active_request(&active);
-            assert_read_stopped(&f, request, BridgeExecutionDenial::WorkCeiling);
+            exhaust_active_request(&active, || {
+                assert_read_stopped(&f, request, BridgeExecutionDenial::WorkCeiling);
+            });
         })
         .unwrap();
     assert_eq!(report.charged_work(), 1);
 
-    // A declared zero budget with no active exhausted meter is not a stop.
+    // A declared zero budget with no refused charge is not a stop.
     for (memory, work) in [(1 << 20, 0), (0, 100)] {
         let f = fixture();
         let lease = lease(1, memory, work);
@@ -116,6 +152,34 @@ fn stopped_requests_refuse_bridge_reads_before_reader_contact() {
             .is_ok());
         assert_eq!(f.contacts.counts(), (0, 1, 0));
     }
+    let lease = lease(1, 1 << 20, 0);
+    let serial = serial(1 << 20, 0);
+    for request in [
+        ExecutionRequest::leased(&lease),
+        ExecutionRequest::serial(&serial),
+    ] {
+        let f = fixture();
+        let (_, report) = request
+            .run(ExecutionWorkCeiling::new(0), |_| {
+                f.context
+                    .read_packet(f.routes[0].read_packet(), request)
+                    .unwrap();
+                assert_eq!(f.contacts.counts(), (0, 1, 0));
+            })
+            .unwrap();
+        assert_eq!(report.charged_work(), 0);
+    }
+    let f = fixture();
+    let serial = self::serial(0, 100);
+    let error = f
+        .context
+        .read_packet(f.routes[0].read_packet(), ExecutionRequest::serial(&serial))
+        .unwrap_err();
+    let BridgeSnapshotReadErrorKind::ExecutionDenied(cause) = error.kind() else {
+        panic!("serial scope must report its memory refusal: {error:?}");
+    };
+    assert_serial_scope_memory_refused(cause);
+    assert_eq!(f.contacts.counts(), (0, 0, 0));
 }
 
 #[test]
@@ -127,13 +191,20 @@ fn stopped_requests_refuse_delivery_before_source_or_sink_contact() {
         ExecutionRequest::leased(&cancelled),
         BridgeExecutionDenial::Cancelled,
     );
+    let cancelled = cancelled_serial();
+    assert_delivery_stopped(
+        &f,
+        ExecutionRequest::serial(&cancelled),
+        BridgeExecutionDenial::Cancelled,
+    );
 
     let active = lease(1, 1 << 20, 100);
     let request = ExecutionRequest::leased(&active);
     let (_, report) = request
         .run(ExecutionWorkCeiling::new(1), |_| {
-            exhaust_active_request(&active);
-            assert_delivery_stopped(&f, request, BridgeExecutionDenial::WorkCeiling);
+            exhaust_active_request(&active, || {
+                assert_delivery_stopped(&f, request, BridgeExecutionDenial::WorkCeiling);
+            });
         })
         .unwrap();
     assert_eq!(report.charged_work(), 1);
@@ -148,6 +219,36 @@ fn stopped_requests_refuse_delivery_before_source_or_sink_contact() {
         assert_eq!(f.contacts.counts(), (1, 1, 1));
         assert_eq!(f.sink.deliveries().len(), 1);
     }
+    let lease = lease(1, 1 << 20, 0);
+    let serial = serial(1 << 20, 0);
+    for request in [
+        ExecutionRequest::leased(&lease),
+        ExecutionRequest::serial(&serial),
+    ] {
+        let f = fixture();
+        let (_, report) = request
+            .run(ExecutionWorkCeiling::new(0), |_| {
+                f.runtime
+                    .deliver_invalidation(f.routes[0].clone(), request)
+                    .unwrap();
+                assert_eq!(f.contacts.counts(), (1, 1, 1));
+                assert_eq!(f.sink.deliveries().len(), 1);
+            })
+            .unwrap();
+        assert_eq!(report.charged_work(), 0);
+    }
+    let f = fixture();
+    let serial = self::serial(0, 100);
+    let error = f
+        .runtime
+        .deliver_invalidation(f.routes[0].clone(), ExecutionRequest::serial(&serial))
+        .unwrap_err();
+    let BridgeDeliveryErrorKind::ExecutionDenied(cause) = error.kind() else {
+        panic!("serial scope must report its memory refusal: {error:?}");
+    };
+    assert_serial_scope_memory_refused(cause);
+    assert_eq!(f.contacts.counts(), (0, 0, 0));
+    assert!(f.sink.deliveries().is_empty());
 }
 
 #[test]
