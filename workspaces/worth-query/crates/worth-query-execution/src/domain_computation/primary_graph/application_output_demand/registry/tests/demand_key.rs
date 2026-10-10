@@ -5,7 +5,21 @@ use crate::domain_computation::primary_graph::application_contribution::{
 };
 use std::{any::TypeId, cmp::Ordering};
 
-struct OtherFamily;
+#[test]
+fn family_key_order_follows_declared_identity() {
+    struct AlphaFamily;
+    struct ZuluFamily;
+    // Rust marker names are not the declared identity of their output.
+    const ALPHA_IDENTITY: &str = "zulu-output";
+    const ZULU_IDENTITY: &str = "alpha-output";
+    let mut alpha = support::key("same-producer", 7, 1);
+    let mut zulu = alpha.clone();
+    assert_ne!(TypeId::of::<AlphaFamily>(), TypeId::of::<ZuluFamily>());
+    alpha.family = crate::domain_computation::primary_graph::output_family_identity::OutputFamilyIdentity::declared(ALPHA_IDENTITY);
+    zulu.family = crate::domain_computation::primary_graph::output_family_identity::OutputFamilyIdentity::declared(ZULU_IDENTITY);
+    assert_eq!(ALPHA_IDENTITY.cmp(ZULU_IDENTITY), Ordering::Greater);
+    assert_eq!(alpha.cmp(&zulu), Ordering::Greater);
+}
 
 fn initial() -> WorthQueryOutputDemandKey {
     let mut key = support::key("initial", 7, 1);
@@ -67,7 +81,7 @@ fn incomparable_preserve_bindings_do_not_pick_a_successor_by_iteration_order() {
 fn family_scope_profile_and_source_movement_do_not_forge_a_successor() {
     let initial = initial();
     let mut foreign = initial.clone();
-    foreign.family = TypeId::of::<OtherFamily>();
+    foreign.family = crate::domain_computation::primary_graph::output_family_identity::OutputFamilyIdentity::declared("other-output-family");
     assert!(!initial.same_occurrence(&foreign));
     assert!(!initial.same_semantic_source(&foreign));
     assert_eq!(initial.replacement_order(&foreign), None);

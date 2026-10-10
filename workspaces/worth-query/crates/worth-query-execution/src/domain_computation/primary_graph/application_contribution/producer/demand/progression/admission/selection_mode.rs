@@ -91,7 +91,7 @@ where
                 }
                 _ => empty_capacity(),
             })?;
-        let same_family = claim.selected().key().family_type() == std::any::TypeId::of::<Family>();
+        let same_family = claim.selected().key().family_identity() == Family::IDENTITY;
         let preserve = selected.applicability.lifecycle()
             == crate::domain_computation::primary_graph::application_contribution::producer::WorthQueryProducerLifecyclePosture::Preserve;
         let same_profile = selected.applicability.profile_kind()

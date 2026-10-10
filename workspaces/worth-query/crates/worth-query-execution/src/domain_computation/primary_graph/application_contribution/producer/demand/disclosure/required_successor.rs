@@ -40,7 +40,7 @@ where
     let installed = successor.installed_entry.as_ref();
     let same_source = predecessor.declaration.source_type == TypeId::of::<Family::Source>()
         && installed.declaration.source_type == TypeId::of::<Family::Source>();
-    let same_family = claim.selected().key().family_type() == TypeId::of::<Family>()
+    let same_family = claim.selected().key().family_identity() == Family::IDENTITY
         && predecessor.declaration.output_family_type == TypeId::of::<Family>()
         && installed.declaration.output_family_type == TypeId::of::<Family>();
     if fresh.0.edition != predecessor.edition || !same_source || !same_family {

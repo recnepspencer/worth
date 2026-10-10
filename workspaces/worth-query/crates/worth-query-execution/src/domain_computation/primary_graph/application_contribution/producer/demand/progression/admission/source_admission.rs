@@ -108,7 +108,7 @@ where
             )?;
         }
         let key = crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandKey::new(
-            std::any::TypeId::of::<Family>(),
+            Family::IDENTITY,
             selected.identity.clone(),
             selected.applicability,
             source_epoch.clone(),

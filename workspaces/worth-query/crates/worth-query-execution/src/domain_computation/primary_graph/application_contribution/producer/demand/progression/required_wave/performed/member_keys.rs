@@ -65,7 +65,7 @@ fn key_comparison_work(
         .ok_or_else(work_denial)
 }
 fn same_key(left: &WorthQueryOutputDemandKey, right: &WorthQueryOutputDemandKey) -> bool {
-    left.family_type() == right.family_type()
+    left.family_identity() == right.family_identity()
         && left.producer_identity() == right.producer_identity()
         && left.applicability() == right.applicability()
         && left.source_epoch().same_occurrence(right.source_epoch())

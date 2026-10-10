@@ -38,7 +38,7 @@ impl super::WorthQueryOutputDemandRegistry {
         super::WorthQueryOutputDemandInterest,
         Arc<RequiredWorkMembership>,
     ) {
-        let output = super::WorthQueryOutputDemandKey::new(std::any::TypeId::of::<super::support::RegistryOutputFamily>(), "native-work-member".to_owned(), crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerApplicability::new("registry-fixture", crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerLifecyclePosture::Preserve),
+        let output = super::WorthQueryOutputDemandKey::new("registry-output-family", "native-work-member".to_owned(), crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerApplicability::new("registry-fixture", crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerLifecyclePosture::Preserve),
             crate::domain_computation::primary_graph::application_query::WorthQueryObservedSourceEpoch::new(
                 [1; 32], [2; 32], root, occurrence, 1, [0; 32]));
         self.fixture_work_membership_at(occurrence, root, output)
