@@ -43,7 +43,6 @@ fn probe_handle(governed_input_identity: Option<[u8; 32]>) -> WorthQueryRecovery
 }
 
 fn proved_and_intent(
-    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     compatibility_generation: u64,
 ) -> (WorthQueryProvedUndo, WorthQueryRedoIntent) {
     let proved = WorthQueryProvedUndo::axis_probe(WorthQueryProvedUndoAxisProbe {
@@ -74,7 +73,6 @@ fn bound_scope_digest() -> [u8; 32] {
 }
 
 fn admit(
-    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     proved: WorthQueryProvedUndo,
     intent: &WorthQueryRedoIntent,
     current_head: RelationalCommitReceipt,
@@ -98,71 +96,62 @@ fn admit(
 
 #[test]
 fn lawful_redo_admits_against_exact_relational_head() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
-        let (proved, intent) = proved_and_intent(&host_custody, 1);
-        let admission = admit(
-            &host_custody,
-            proved,
-            &intent,
-            intent.bound_relational_head().clone(),
-            WorthQueryPriorRedoObservation::Absent,
-            Some([0x66; 32]),
-        )
-        .expect("lawful redo");
-        assert_eq!(admission.redo_admission_work().basis_preparations(), 1);
-        assert_eq!(admission.redo_admission_work().digest_derivations(), 1);
-        assert_eq!(admission.original_input::<()>(), Some(&()));
-        assert_eq!(
-            admission.idempotency_binding().key_identity(),
-            intent.identity().digest().bytes()
-        );
-        assert_eq!(
-            admission.idempotency_binding().intent_identity(),
-            &[0x66; 32]
-        );
-    })
+    let (proved, intent) = proved_and_intent(1);
+    let admission = admit(
+        proved,
+        &intent,
+        intent.bound_relational_head().clone(),
+        WorthQueryPriorRedoObservation::Absent,
+        Some([0x66; 32]),
+    )
+    .expect("lawful redo");
+    assert_eq!(admission.redo_admission_work().basis_preparations(), 1);
+    assert_eq!(admission.redo_admission_work().digest_derivations(), 1);
+    assert_eq!(admission.original_input::<()>(), Some(&()));
+    assert_eq!(
+        admission.idempotency_binding().key_identity(),
+        intent.identity().digest().bytes()
+    );
+    assert_eq!(
+        admission.idempotency_binding().intent_identity(),
+        &[0x66; 32]
+    );
 }
 
 #[test]
 fn missing_original_governed_input_fails_closed() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
-        let (proved, intent) = proved_and_intent(&host_custody, 1);
-        let denied = admit(
-            &host_custody,
-            proved,
-            &intent,
-            intent.bound_relational_head().clone(),
-            WorthQueryPriorRedoObservation::Absent,
-            None,
-        )
-        .expect_err("missing input");
-        assert_eq!(
-            denied.kind(),
-            WorthQueryRedoDenialKind::ChangedOperationMeaning
-        );
-    })
+    let (proved, intent) = proved_and_intent(1);
+    let denied = admit(
+        proved,
+        &intent,
+        intent.bound_relational_head().clone(),
+        WorthQueryPriorRedoObservation::Absent,
+        None,
+    )
+    .expect_err("missing input");
+    assert_eq!(
+        denied.kind(),
+        WorthQueryRedoDenialKind::ChangedOperationMeaning
+    );
 }
 
 #[test]
 fn exact_relational_head_drift_invalidates_without_mutating_intent() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
-        let (proved, intent) = proved_and_intent(&host_custody, 1);
-        let bound = intent.bound_relational_head().clone();
-        let denied = admit(
-            &host_custody,
-            proved,
-            &intent,
-            relational_commit(21),
-            WorthQueryPriorRedoObservation::Absent,
-            Some([0x66; 32]),
-        )
-        .expect_err("diverged");
-        assert_eq!(
-            denied.kind(),
-            WorthQueryRedoDenialKind::DivergenceInvalidation
-        );
-        assert_eq!(intent.bound_relational_head(), &bound);
-    })
+    let (proved, intent) = proved_and_intent(1);
+    let bound = intent.bound_relational_head().clone();
+    let denied = admit(
+        proved,
+        &intent,
+        relational_commit(21),
+        WorthQueryPriorRedoObservation::Absent,
+        Some([0x66; 32]),
+    )
+    .expect_err("diverged");
+    assert_eq!(
+        denied.kind(),
+        WorthQueryRedoDenialKind::DivergenceInvalidation
+    );
+    assert_eq!(intent.bound_relational_head(), &bound);
 }
 
 #[test]
@@ -209,89 +198,81 @@ fn same_world_product_commit_drift_invalidates_before_redo() {
 
 #[test]
 fn copied_intent_and_duplicate_fact_are_distinct_denials() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
-        let (proved, _) = proved_and_intent(&host_custody, 1);
-        let foreign = WorthQueryProvedUndo::axis_probe(WorthQueryProvedUndoAxisProbe {
-            original_operation: [0x99; 32],
-            principal_scope_digest: [0x70; 32],
-            compatibility_generation: 1,
-            runtime_instance: 7,
-        });
-        let foreign_intent = WorthQueryRedoIntent::derive(
-            &foreign,
-            foreign
-                .undo_product_publication()
-                .composite_commit()
-                .clone(),
-            foreign.undo_commit().clone(),
-        )
-        .expect("foreign intent");
-        let copied = admit(
-            &host_custody,
-            proved,
-            &foreign_intent,
-            foreign_intent.bound_relational_head().clone(),
-            WorthQueryPriorRedoObservation::Absent,
-            Some([0x66; 32]),
-        )
-        .expect_err("copied");
-        assert_eq!(copied.kind(), WorthQueryRedoDenialKind::CopiedIntent);
+    let (proved, _) = proved_and_intent(1);
+    let foreign = WorthQueryProvedUndo::axis_probe(WorthQueryProvedUndoAxisProbe {
+        original_operation: [0x99; 32],
+        principal_scope_digest: [0x70; 32],
+        compatibility_generation: 1,
+        runtime_instance: 7,
+    });
+    let foreign_intent = WorthQueryRedoIntent::derive(
+        &foreign,
+        foreign
+            .undo_product_publication()
+            .composite_commit()
+            .clone(),
+        foreign.undo_commit().clone(),
+    )
+    .expect("foreign intent");
+    let copied = admit(
+        proved,
+        &foreign_intent,
+        foreign_intent.bound_relational_head().clone(),
+        WorthQueryPriorRedoObservation::Absent,
+        Some([0x66; 32]),
+    )
+    .expect_err("copied");
+    assert_eq!(copied.kind(), WorthQueryRedoDenialKind::CopiedIntent);
 
-        let (proved, intent) = proved_and_intent(&host_custody, 1);
-        let duplicate = admit(
-            &host_custody,
-            proved,
-            &intent,
-            intent.bound_relational_head().clone(),
-            WorthQueryPriorRedoObservation::Committed,
-            Some([0x66; 32]),
-        )
-        .expect_err("duplicate");
-        assert_eq!(duplicate.kind(), WorthQueryRedoDenialKind::DuplicateRedo);
-    })
+    let (proved, intent) = proved_and_intent(1);
+    let duplicate = admit(
+        proved,
+        &intent,
+        intent.bound_relational_head().clone(),
+        WorthQueryPriorRedoObservation::Committed,
+        Some([0x66; 32]),
+    )
+    .expect_err("duplicate");
+    assert_eq!(duplicate.kind(), WorthQueryRedoDenialKind::DuplicateRedo);
 }
 
 #[test]
 fn current_generation_and_principal_binding_remain_required() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
-        let (proved, intent) = proved_and_intent(&host_custody, 9);
-        let generation = admit(
-            &host_custody,
-            proved,
-            &intent,
-            intent.bound_relational_head().clone(),
-            WorthQueryPriorRedoObservation::Absent,
-            Some([0x66; 32]),
-        )
-        .expect_err("generation drift");
-        assert_eq!(
-            generation.kind(),
-            WorthQueryRedoDenialKind::ChangedOperationMeaning
-        );
+    let (proved, intent) = proved_and_intent(9);
+    let generation = admit(
+        proved,
+        &intent,
+        intent.bound_relational_head().clone(),
+        WorthQueryPriorRedoObservation::Absent,
+        Some([0x66; 32]),
+    )
+    .expect_err("generation drift");
+    assert_eq!(
+        generation.kind(),
+        WorthQueryRedoDenialKind::ChangedOperationMeaning
+    );
 
-        let proved = WorthQueryProvedUndo::axis_probe(WorthQueryProvedUndoAxisProbe {
-            original_operation: [0x44; 32],
-            principal_scope_digest: [0xAB; 32],
-            compatibility_generation: 1,
-            runtime_instance: 7,
-        });
-        let intent = WorthQueryRedoIntent::derive(
-            &proved,
-            proved.undo_product_publication().composite_commit().clone(),
-            proved.undo_commit().clone(),
-        )
-        .expect("derive");
-        let principal = admit(
-            &host_custody,
-            proved,
-            &intent,
-            intent.bound_relational_head().clone(),
-            WorthQueryPriorRedoObservation::Absent,
-            Some([0x66; 32]),
-        )
-        .expect_err("foreign principal");
-        assert_eq!(principal.kind(), WorthQueryRedoDenialKind::ForeignPrincipal);
-    })
+    let proved = WorthQueryProvedUndo::axis_probe(WorthQueryProvedUndoAxisProbe {
+        original_operation: [0x44; 32],
+        principal_scope_digest: [0xAB; 32],
+        compatibility_generation: 1,
+        runtime_instance: 7,
+    });
+    let intent = WorthQueryRedoIntent::derive(
+        &proved,
+        proved.undo_product_publication().composite_commit().clone(),
+        proved.undo_commit().clone(),
+    )
+    .expect("derive");
+    let principal = admit(
+        proved,
+        &intent,
+        intent.bound_relational_head().clone(),
+        WorthQueryPriorRedoObservation::Absent,
+        Some([0x66; 32]),
+    )
+    .expect_err("foreign principal");
+    assert_eq!(principal.kind(), WorthQueryRedoDenialKind::ForeignPrincipal);
 }
 
 #[test]
