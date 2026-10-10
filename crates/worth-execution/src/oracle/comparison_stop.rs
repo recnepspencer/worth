@@ -18,7 +18,7 @@ impl ComparisonStop {
             Self::Encoding(cause) => {
                 ScopeKernelFailure::Kernel(crate::backend::KernelFailure::Domain(cause))
             }
-            Self::Refused => ScopeKernelFailure::Refused(OracleMismatch::Stop),
+            Self::Refused => ScopeKernelFailure::Refused(Self::Refused.finish()),
         }
     }
     pub(super) fn finish(self) -> OracleMismatch {

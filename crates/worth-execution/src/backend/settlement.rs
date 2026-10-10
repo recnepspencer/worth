@@ -56,9 +56,6 @@ pub(crate) fn settle<R, E>(
                     limits.work_stop_owner()
                 });
             }
-            if next.is_none() || limits.work_stop_owner() == NestedStopOwner::Request {
-                super::meter::request_refusal(());
-            }
             stop = Some(BatchStop::WorkExhausted { identity });
             prefix_boundary = Some(identity);
             discarded_work = discarded_work.saturating_add(outcome.work);

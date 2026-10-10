@@ -59,9 +59,13 @@ where
         .map_err(|_| ComparisonStop::Refused.finish())?;
     let _actual_physical = enter_retained_memory(retained_bytes);
     let actual = run_checked_batch(Some(lease), batch, selected, kernel);
-    catch_unwind(AssertUnwindSafe(|| compare(lease, &expected, &actual)))
+    let comparison = catch_unwind(AssertUnwindSafe(|| compare(lease, &expected, &actual)))
         .unwrap_or(Err(ComparisonStop::Encoding(OracleMismatch::Stop)))
-        .map_err(ComparisonStop::finish)?;
+        .map_err(ComparisonStop::finish);
+    if expected.stop_owner == Some(crate::backend::NestedStopOwner::Request) {
+        crate::backend::request_refusal(());
+    }
+    comparison?;
     drop((expected_retained, actual_retained));
     Ok(actual)
 }

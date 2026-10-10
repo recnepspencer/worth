@@ -246,12 +246,15 @@ where
         Some(hold) => settle_hold(hold, result),
         None => result.map_err(ScopeStop::Failure),
     };
+    let stop_owner = result.as_ref().err().map(|stop| match stop {
+        ScopeStop::Admission(_) => NestedStopOwner::Request,
+        ScopeStop::Failure(failure) => context.failure_owner(failure),
+    });
     if charge_parent {
-        let stop_owner = result.as_ref().err().map(|stop| match stop {
-            ScopeStop::Admission(_) => NestedStopOwner::Request,
-            ScopeStop::Failure(failure) => context.failure_owner(failure),
-        });
         record_nested(report, stop_owner);
+    } else if stop_owner == Some(NestedStopOwner::Request) {
+        // An oracle defers its cost, never a producer's request refusal.
+        super::meter::request_refusal(());
     }
     drop(reservation);
     drop(serial_reservation);

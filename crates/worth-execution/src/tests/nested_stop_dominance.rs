@@ -191,3 +191,75 @@ fn destruction_panic_does_not_release_an_interruption() {
         }
     }
 }
+
+#[test]
+fn concurrent_request_dominance_returns_the_serial_failure_work_and_span() {
+    let _guard = TEST_LOCK.lock().unwrap_or_else(|error| error.into_inner());
+    for request_rank in [1_u64, 2] {
+        let mut serial = None;
+        for width in [0_usize, 2, 4] {
+            let parent = authority()
+                .request_lease(request(width.max(1), 2_000, 100))
+                .unwrap();
+            let child = parent.child(request(width.max(1), 2_000, 100)).unwrap();
+            let overlap = std::sync::Barrier::new(2);
+            let outer = run_checked_batch(
+                Some(&parent),
+                &batch(&[1], 0),
+                backend(width),
+                &|_, context| {
+                    context.checkpoint(1)?;
+                    let nested = run_checked_batch(
+                        Some(&child),
+                        &batch(&[1, 2], 0),
+                        backend(width),
+                        &|value, child_context| {
+                            child_context.checkpoint(1)?;
+                            if width != 0 {
+                                overlap.wait();
+                            }
+                            if *value == request_rank {
+                                // This request's real ledger refuses the reservation.
+                                assert!(matches!(
+                                    child.reserve_memory(u64::MAX),
+                                    Err(MemoryLimitDenial { .. })
+                                ));
+                            }
+                            Err::<u64, _>(KernelFailure::Domain(*value))
+                        },
+                    );
+                    assert_eq!(
+                        nested.stop,
+                        Some(BatchStop::Failure {
+                            identity: PartitionIdentity::new(1),
+                            cause: KernelFailure::Domain(1_u64)
+                        })
+                    );
+                    assert_eq!(
+                        (nested.report.charged_work(), nested.report.charged_span()),
+                        (1, 1)
+                    );
+                    assert_eq!(context.take_nested_computation_stop(), None);
+                    Ok::<_, KernelFailure<()>>(1_u64)
+                },
+            );
+            assert_eq!(
+                outer.stop,
+                Some(BatchStop::Failure {
+                    identity: PartitionIdentity::new(1),
+                    cause: KernelFailure::Stop(KernelStop::NestedStopped)
+                })
+            );
+            let actual = (
+                outer.stop,
+                outer.report.charged_work(),
+                outer.report.charged_span(),
+            );
+            if let Some(expected) = &serial {
+                assert_eq!(&actual, expected);
+            } else {
+                serial = Some(actual);
+            }
+        }
+    }
+}
