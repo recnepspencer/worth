@@ -19,10 +19,7 @@ impl Drop for Restore {
 fn redispatch_refuses_before_outbox_reads_and_transport_at_both_placements() {
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
         let _restore = Restore(place(placement), bound(None));
-        let (world, _, handle, admission) =
-            crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
-                real_handle(&host_custody, 221, "redispatch-custody")
-            });
+        let (world, _, handle, admission) = real_handle(221, "redispatch-custody");
         let authority = authority(&world, &handle, &admission);
         let transport = Arc::new(CompletingTransport(AtomicUsize::new(0)));
         world
@@ -45,12 +42,14 @@ fn redispatch_refuses_before_outbox_reads_and_transport_at_both_placements() {
                 ..
             }) = world
                 .application
-                .with_host_advancement(|phase| {
+                .with_application_advancement(admission.publication_request(), |phase| {
                     world.application.redispatch_admitted_external_effect(
                         &phase, &handle, &authority, &admission,
                     )
                 })
-                .expect("installed host call opens")
+                .unwrap_or_else(|cause| {
+                    Err(WorthQueryExternalRedispatchDenial::advancement(cause))
+                })
             else {
                 panic!("redispatch opening retains cause")
             };
@@ -81,12 +80,12 @@ fn redispatch_refuses_before_outbox_reads_and_transport_at_both_placements() {
         let before = reads();
         world
             .application
-            .with_host_advancement(|phase| {
+            .with_application_advancement(admission.publication_request(), |phase| {
                 world
                     .application
                     .redispatch_admitted_external_effect(&phase, &handle, &authority, &admission)
             })
-            .expect("installed host call opens")
+            .unwrap_or_else(|cause| Err(WorthQueryExternalRedispatchDenial::advancement(cause)))
             .unwrap();
         assert!(
             reads() > before,

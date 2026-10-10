@@ -2,103 +2,101 @@
 use super::*;
 #[test]
 fn an_exact_sibling_product_cannot_substitute_at_provider_plan_binding() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
-        let world =
-            crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
-                true,
-            );
-        world
-            .application
-            .with_host_advancement(|active_phase| {
-                let phase = &active_phase;
+    let world =
+        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
+            true,
+        );
+    world
+        .application
+        .with_host_advancement(|active_phase| {
+            let host_custody = active_phase.test_host_request();
+            let phase = &active_phase;
 
-                let running = start(
-                    phase,
+            let running = start(
+                phase,
+                &world,
+                retained_program(
+                    &host_custody.phase_for_application(&world.application),
                     &world,
-                    retained_program(
-                        &host_custody.phase_for_application(&world.application),
-                        &world,
-                        "product-owner",
-                    ),
-                    idempotency(193, 194),
-                );
-                let WorthQueryRunningApplicationCommit {
-                    admission: _admission,
-                    lease,
-                    provider_attempt: _provider_attempt,
-                    authorization: _authorization,
-                    idempotency: _idempotency,
-                    running: mut direct_run,
-                    mutation_run,
-                    attempt_basis: _attempt_basis,
-                    aftermath_causality: _aftermath_causality,
-                    outcome_identity: _outcome_identity,
-                    workflow_settlement_publication: _workflow_settlement_publication,
-                } = running;
-                let sibling = fork_product(&world, lease.product());
-                let sibling = world
-                    .application
-                    .select_product_branch(&phase.borrowed_request_for_test(), &sibling)
-                    .expect("the exact sibling product remains selectable");
-                let (_, sibling_product, sibling_application_basis) = sibling.into_parts();
-                drop(sibling_application_basis);
+                    "product-owner",
+                ),
+                idempotency(193, 194),
+            );
+            let WorthQueryRunningApplicationCommit {
+                admission: _admission,
+                lease,
+                provider_attempt: _provider_attempt,
+                authorization: _authorization,
+                idempotency: _idempotency,
+                running: mut direct_run,
+                mutation_run,
+                attempt_basis: _attempt_basis,
+                aftermath_causality: _aftermath_causality,
+                outcome_identity: _outcome_identity,
+                workflow_settlement_publication: _workflow_settlement_publication,
+            } = running;
+            let sibling = fork_product(&world, lease.product());
+            let sibling = world
+                .application
+                .select_product_branch(&phase.borrowed_request_for_test(), &sibling)
+                .expect("the exact sibling product remains selectable");
+            let (_, sibling_product, sibling_application_basis) = sibling.into_parts();
+            drop(sibling_application_basis);
 
-                let result = direct_run
-                    .admit_provider_execution_plan(&world.application.primary_graph_authority)
-                    .expect("the application authorities admit the provider plan")
-                    .bind_application_product(sibling_product);
-                assert!(result.is_err());
-                finish_uncommitted(mutation_run, direct_run, lease);
-            })
-            .expect("fixture owner admits its advancement");
-    })
+            let result = direct_run
+                .admit_provider_execution_plan(&world.application.primary_graph_authority)
+                .expect("the application authorities admit the provider plan")
+                .bind_application_product(sibling_product);
+            assert!(result.is_err());
+            finish_uncommitted(mutation_run, direct_run, lease);
+        })
+        .expect("fixture owner admits its advancement");
 }
 
 #[test]
 fn the_exact_selected_product_binds_at_provider_plan_boundary() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
-        let world =
-            crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
-                true,
-            );
-        world
-            .application
-            .with_host_advancement(|active_phase| {
-                let phase = &active_phase;
+    let world =
+        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
+            true,
+        );
+    world
+        .application
+        .with_host_advancement(|active_phase| {
+            let host_custody = active_phase.test_host_request();
+            let phase = &active_phase;
 
-                let running = start(
-                    phase,
+            let running = start(
+                phase,
+                &world,
+                retained_program(
+                    &host_custody.phase_for_application(&world.application),
                     &world,
-                    retained_program(
-                        &host_custody.phase_for_application(&world.application),
-                        &world,
-                        "product-owner",
-                    ),
-                    idempotency(195, 196),
-                );
-                let WorthQueryRunningApplicationCommit {
-                    admission: _admission,
-                    lease,
-                    provider_attempt: _provider_attempt,
-                    authorization: _authorization,
-                    idempotency: _idempotency,
-                    running: mut direct_run,
-                    mutation_run,
-                    attempt_basis: _attempt_basis,
-                    aftermath_causality: _aftermath_causality,
-                    outcome_identity: _outcome_identity,
-                    workflow_settlement_publication: _workflow_settlement_publication,
-                } = running;
-                let result = direct_run
-                    .admit_provider_execution_plan(&world.application.primary_graph_authority)
-                    .expect("the application authorities admit the provider plan")
-                    .bind_application_product(lease.product().retained_clone());
-                assert!(result.is_ok());
-                drop(result);
-                finish_uncommitted(mutation_run, direct_run, lease);
-            })
-            .expect("fixture owner admits its advancement");
-    })
+                    "product-owner",
+                ),
+                idempotency(195, 196),
+            );
+            let WorthQueryRunningApplicationCommit {
+                admission: _admission,
+                lease,
+                provider_attempt: _provider_attempt,
+                authorization: _authorization,
+                idempotency: _idempotency,
+                running: mut direct_run,
+                mutation_run,
+                attempt_basis: _attempt_basis,
+                aftermath_causality: _aftermath_causality,
+                outcome_identity: _outcome_identity,
+                workflow_settlement_publication: _workflow_settlement_publication,
+            } = running;
+            let result = direct_run
+                .admit_provider_execution_plan(&world.application.primary_graph_authority)
+                .expect("the application authorities admit the provider plan")
+                .bind_application_product(lease.product().retained_clone());
+            assert!(result.is_ok());
+            drop(result);
+            finish_uncommitted(mutation_run, direct_run, lease);
+        })
+        .expect("fixture owner admits its advancement");
 }
 
 #[cfg(feature = "test-query-execution-observer")]

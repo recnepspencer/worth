@@ -41,35 +41,34 @@ type RunningRetainedCommit = WorthQueryRunningApplicationCommit<
 
 #[test]
 fn occupied_real_registration_cleans_the_conflict_and_preserves_an_interleaved_peer() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
-        let world =
-            crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
-                true,
-            );
-        world
-            .application
-            .with_host_advancement(|active_phase| {
-                let phase = &active_phase;
+    let world =
+        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
+            true,
+        );
+    world
+        .application
+        .with_host_advancement(|active_phase| {
+            let host_custody = active_phase.test_host_request();
+            let phase = &active_phase;
 
-                let (victim, peer) = equivalent_programs(
-                    &host_custody.phase_for_application(&world.application),
-                    &world,
-                    "occupied-registration",
-                );
-                let victim = start(phase, &world, victim, idempotency(181, 182));
-                let peer = start(phase, &world, peer, idempotency(183, 184));
-                let victim = while_peer_is_registered(phase, &world, peer, || {
-                    reject_occupied_registration(phase, &world, victim)
-                });
-                assert!(matches!(
-                    victim,
-                    WorthQueryApplicationCommitOutcome::Denied(ref denial)
-                        if denial.stage() == WorthQueryApplicationCommitDenialStage::ProviderPlan
-                ));
-                assert_eq!(world.application.provider_session_resource_count(), 0);
-            })
-            .expect("fixture owner admits its advancement");
-    })
+            let (victim, peer) = equivalent_programs(
+                &host_custody.phase_for_application(&world.application),
+                &world,
+                "occupied-registration",
+            );
+            let victim = start(phase, &world, victim, idempotency(181, 182));
+            let peer = start(phase, &world, peer, idempotency(183, 184));
+            let victim = while_peer_is_registered(phase, &world, peer, || {
+                reject_occupied_registration(phase, &world, victim)
+            });
+            assert!(matches!(
+                victim,
+                WorthQueryApplicationCommitOutcome::Denied(ref denial)
+                    if denial.stage() == WorthQueryApplicationCommitDenialStage::ProviderPlan
+            ));
+            assert_eq!(world.application.provider_session_resource_count(), 0);
+        })
+        .expect("fixture owner admits its advancement");
 }
 
 fn reject_occupied_registration(

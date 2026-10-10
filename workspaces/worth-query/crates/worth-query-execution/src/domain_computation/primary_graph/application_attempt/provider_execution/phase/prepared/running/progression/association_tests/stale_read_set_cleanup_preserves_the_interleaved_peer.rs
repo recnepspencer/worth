@@ -4,12 +4,12 @@ use super::*;
 
 #[test]
 fn stale_read_set_cleanup_preserves_the_interleaved_peer() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
-        let world =
-            crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
-                true,
-            );
-        world.application.with_host_advancement(|active_phase| {
+    let world =
+        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
+            true,
+        );
+    world.application.with_host_advancement(|active_phase| {
+let host_custody = active_phase.test_host_request();
         let phase = &active_phase;
 
         let baseline = world.invariant.active_snapshot_count(&active_phase.borrowed_request_for_test());
@@ -46,5 +46,4 @@ fn stale_read_set_cleanup_preserves_the_interleaved_peer() {
             PeerExpectation::ProductBasisStale,
         );
     }).expect("fixture owner admits its advancement");
-    })
 }

@@ -44,16 +44,8 @@ pub(in crate::domain_computation::primary_graph) fn seed_program_activation(
     let request = super::live_scope();
     let prepared =
         prepare_relational_mutation_on_application(execution, &world.application, batch, &request);
-    let worth_runtime_world::facade::RuntimeWorldPublicationOutcome::Performed(performed) = world
-        .application
-        .with_application_advancement(&request, |phase| {
-            prepared.execute(
-                phase
-                    .execution_request_for(world.application.product_runtime())
-                    .unwrap(),
-            )
-        })
-        .unwrap()
+    let worth_runtime_world::facade::RuntimeWorldPublicationOutcome::Performed(performed) =
+        prepared.execute(*execution)
     else {
         panic!("activation seed must publish through World");
     };
