@@ -14,6 +14,7 @@ use crate::domain_computation::primary_graph::application_contribution::producer
 mod canonical_apply;
 mod readiness_collection;
 mod requested_refusal;
+mod successor_checkpoint;
 mod wave_execution;
 
 #[allow(clippy::too_many_arguments)]

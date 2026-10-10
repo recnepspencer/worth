@@ -105,11 +105,12 @@ where
                 // before the consuming cursor can yield the next slot.
                 loop {
                     let successor = storage.last_mut();
-                    match runtime
-                        .output_demands
-                        .interest_ready_readmission(successor.interest(), admission)
-                    {
-                        Ok(Some(ready)) => {
+                    let stage = match super::successor_checkpoint::inspect(admission, |admission| {
+                        runtime
+                            .output_demands
+                            .interest_ready_readmission(successor.interest(), admission)
+                    }) {
+                        Ok(super::successor_checkpoint::CheckpointTurn::Current(ready)) => {
                             runtime
                                 .output_demands
                                 .clear_required_stop(successor.interest().key());
@@ -122,9 +123,13 @@ where
                             break;
                         }
                         Err(stop) => return Err(MemberStop { index, stop }),
-                        Ok(None) => {}
-                    }
-                    match successor.advance_checkpoint(phase, runtime, request, admission) {
+                        Ok(super::successor_checkpoint::CheckpointTurn::Awaiting(stage)) => stage,
+                    };
+                    match stage.advance(admission, |admission| {
+                        storage
+                            .last_mut()
+                            .advance_checkpoint(phase, runtime, request, admission)
+                    }) {
                         Ok(true) => continue,
                         Ok(false) => {
                             member.state = MemberState::Pending;
