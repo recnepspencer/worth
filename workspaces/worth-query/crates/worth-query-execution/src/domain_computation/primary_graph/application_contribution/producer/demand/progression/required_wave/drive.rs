@@ -254,6 +254,13 @@ where
         if resumed {
             continue;
         }
+        if wave.target == RequiredWaveTarget::Caller && !queue.draining() {
+            // Pending decides the caller just as Current does. It leaves its
+            // unfinished closure held while independent queue records proceed.
+            queue.finish_caller(WorthQueryOutputDemandAdvance::Pending);
+            resolved.clear();
+            continue;
+        }
         return canonical_apply::finish(runtime, demand, &wave, &mut frontier, queue, admission);
     }
 }
