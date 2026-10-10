@@ -221,9 +221,9 @@ impl QueuedRequiredRoots {
         Ok(())
     }
 
-    /// The queue chain cannot finish on this wave. Budget exhaustion ends the
-    /// queue work and returns the caller's outcome; any other stop keeps the
-    /// item for a later advance and moves on to the next one.
+    /// Hold this failed queued member while independent members proceed.
+    /// Query admission-budget exhaustion ends queue work; request stops return
+    /// through the driver's request-stop door before this holding door.
     pub(super) fn hold_root(
         &mut self,
         index: usize,

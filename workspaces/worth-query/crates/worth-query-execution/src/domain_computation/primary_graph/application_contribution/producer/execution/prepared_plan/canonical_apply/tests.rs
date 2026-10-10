@@ -108,3 +108,5 @@ mod phase_failure;
 mod host_refusal;
 
 mod queue_outcomes;
+
+mod present_interruption;

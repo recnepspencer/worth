@@ -24,11 +24,18 @@ fn author_held_application_and_product_handles_receive_nested_opening() {
         Instant::now() + Duration::from_secs(60),
         cancellation.token(),
     );
-    for workers in [1, 2, 4] {
+    for workers in [0, 1, 2, 4] {
         let root = QueryRequestExecution::open(
-            worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Leased {
-                authority: test_authority(),
-                policy: test_policy(NonZeroUsize::new(workers).unwrap(), 1 << 24),
+            if workers == 0 {
+                worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(test_policy(
+                    NonZeroUsize::MIN,
+                    1 << 24,
+                ))
+            } else {
+                worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Leased {
+                    authority: test_authority(),
+                    policy: test_policy(NonZeroUsize::new(workers).unwrap(), 1 << 24),
+                }
             },
             &scope,
         );

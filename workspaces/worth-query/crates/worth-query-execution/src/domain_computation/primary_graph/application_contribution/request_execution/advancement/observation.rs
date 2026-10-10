@@ -155,22 +155,4 @@ pub(super) fn record_panicked(report: Option<ExecutionReport>) {
     }
 }
 
-pub(super) fn record_opening_refusal(cause: WorthQueryAdvancementDenial) {
-    let posture = ACTIVE.with(|active| {
-        active
-            .borrow()
-            .as_ref()
-            .map_or(ExecutionPosture::Serial, |active| active.posture)
-    });
-    REQUESTS.with(|requests| {
-        requests
-            .borrow_mut()
-            .push(WorthQueryAdvancementObservation {
-                report: ExecutionReport::new(posture, 0, 0, ExecutionPhysicalReport::default()),
-                refusal: Some(cause),
-                applied: Vec::new(),
-            })
-    });
-}
-
 pub(in crate::domain_computation::primary_graph) mod application;

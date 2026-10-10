@@ -8,3 +8,5 @@ mod queue_failures;
 
 mod ordinary_read_application;
 mod ordinary_reads;
+
+mod three_members;

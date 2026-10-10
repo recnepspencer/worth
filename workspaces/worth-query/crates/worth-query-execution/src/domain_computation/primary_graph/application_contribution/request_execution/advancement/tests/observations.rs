@@ -131,3 +131,62 @@ fn admission_refusal_has_a_zero_report_and_a_panic_closes_observer_custody() {
         1
     );
 }
+
+#[test]
+fn member_host_refusals_do_not_add_thread_dependent_observations() {
+    let mut serial = None;
+    for posture in [
+        Placement::Serial,
+        Placement::Leased(NonZeroUsize::new(2).unwrap()),
+    ] {
+        let _restore = Restore(place(posture), bound(None));
+        observation::advancement_observations_on_this_thread_for_test();
+        let root = request();
+        root.run_advancement(None, None, |_| {
+            let members = (0..2)
+                .map(|_| PreparedMember {
+                    requests: vec![PreparedCompute::new(
+                        0,
+                        0,
+                        |_| {
+                            with_bootstrap_advancement(
+                                super::super::super::test_placement::test_policy(
+                                    NonZeroUsize::MIN,
+                                    1 << 20,
+                                ),
+                                |_| (),
+                            )
+                        },
+                        |_| 0,
+                    )],
+                })
+                .collect();
+            let computed = dispatch(&root, members);
+            assert_eq!(computed.len(), 2);
+            for member in computed {
+                let refusal = member
+                    .unwrap()
+                    .into_slots()
+                    .pop()
+                    .unwrap()
+                    .into_value::<Result<(), WorthQueryAdvancementDenial>>();
+                assert_eq!(refusal, Err(WorthQueryAdvancementDenial::NestedOpening));
+            }
+        })
+        .unwrap();
+        let records = observation::advancement_observations_on_this_thread_for_test();
+        let observed = records
+            .into_iter()
+            .map(|record| {
+                (
+                    record.refusal,
+                    record.report.charged_work(),
+                    record.report.charged_span(),
+                    record.applied,
+                )
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(observed.len(), 1, "only the owner reports the advancement");
+        assert_eq!(observed, *serial.get_or_insert_with(|| observed.clone()));
+    }
+}

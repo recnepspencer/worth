@@ -149,7 +149,8 @@ fn reentrant_host_open_is_typed_at_serial_and_leased_placements() {
             })
             .unwrap();
         let reports = observation::advancement_requests_on_this_thread_for_test();
-        assert_eq!(reports.len(), 3);
+        // A refused nested opening owns no advancement to report.
+        assert_eq!(reports.len(), 1);
         assert_eq!(reports.iter().filter(|report| report.is_ok()).count(), 1);
     }
     // The guard is released at the public call's end.

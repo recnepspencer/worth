@@ -18,8 +18,8 @@ pub(super) enum DependencySchedule {
     PendingConsumed,
 }
 
-pub(super) struct RequiredMember {
-    pub ready: SelectedReadyReadmission,
+pub(super) struct RequiredMember<Ready = SelectedReadyReadmission> {
+    pub ready: Ready,
     pub caller: bool,
     pub caller_successor: bool,
     pub resolved_successor: bool,
@@ -29,8 +29,8 @@ pub(super) struct RequiredMember {
     pub dependency_schedule: DependencySchedule,
 }
 
-pub(super) struct RequiredFrontier {
-    pub members: Vec<RequiredMember>,
+pub(super) struct RequiredFrontier<Ready = SelectedReadyReadmission> {
+    pub members: Vec<RequiredMember<Ready>>,
 }
 
 impl RequiredFrontier {
@@ -141,7 +141,9 @@ impl RequiredFrontier {
         }
         Ok(index)
     }
+}
 
+impl<Ready> RequiredFrontier<Ready> {
     pub fn wait_for(&mut self, member: usize, upstream: usize) -> bool {
         let mut cursor = upstream;
         for _ in 0..=self.members.len() {
@@ -175,3 +177,6 @@ impl RequiredFrontier {
         changed
     }
 }
+
+#[cfg(test)]
+mod tests;
