@@ -1,5 +1,6 @@
 //! One wave: owner preparation, owned compute dispatch, consuming ordered apply.
 use super::*;
+use super::super::super::super::required_continuations::WaveCheckpointTurn;
 use super::readiness_collection::{self, MemberStop};
 use super::super::selection::committed_ready;
 use super::super::super::super::RequiredFreshOutcome;
@@ -107,12 +108,11 @@ where
                 // before the consuming cursor can yield the next slot.
                 loop {
                     let successor = storage.last_mut();
-                    let stage = match super::successor_checkpoint::inspect(admission, |admission| {
-                        runtime
-                            .output_demands
-                            .interest_ready_readmission(successor.interest(), admission)
-                    }) {
-                        Ok(super::successor_checkpoint::CheckpointTurn::Current(ready)) => {
+                    let stage = match successor
+                        .checkpoint(admission, admission_denial)
+                        .inspect(&runtime.output_demands)
+                    {
+                        Ok(WaveCheckpointTurn::Current(ready)) => {
                             runtime
                                 .output_demands
                                 .clear_required_stop(successor.interest().key());
@@ -132,13 +132,9 @@ where
                                 stop,
                             ))
                         }
-                        Ok(super::successor_checkpoint::CheckpointTurn::Awaiting(stage)) => stage,
+                        Ok(WaveCheckpointTurn::Awaiting(stage)) => stage,
                     };
-                    match stage.advance(admission, |admission| {
-                        storage
-                            .last_mut()
-                            .advance_checkpoint(phase, runtime, request, admission)
-                    }) {
+                    match stage.advance(phase, runtime, request) {
                         Ok(true) => continue,
                         Ok(false) => {
                             member.state = MemberState::Pending;

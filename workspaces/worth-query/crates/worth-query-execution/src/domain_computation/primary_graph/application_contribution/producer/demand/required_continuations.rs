@@ -25,6 +25,7 @@ mod progress;
 mod promotion;
 mod slot_preparation;
 mod unavailable;
+mod wave_checkpoint;
 mod wave_preparation;
 use crate::domain_computation::primary_graph::{
     application_contribution::producer::registry::InstalledProducerProvider,
@@ -36,6 +37,7 @@ use crate::domain_computation::primary_graph::{
     output_lineage::invalidation::InvalidationEditAdmission,
     WorthQueryApplicationProjection, WorthQueryPrimaryGraphApplicationRuntime,
 };
+pub(super) use wave_checkpoint::WaveCheckpointTurn;
 pub(super) use wave_preparation::PreparedContinuationWave;
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,

@@ -21,7 +21,7 @@ where
         self.successor.producer_contacts()
     }
 
-    pub(in crate::domain_computation::primary_graph) fn advance_checkpoint(
+    pub(super) fn advance_checkpoint(
         &mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
 

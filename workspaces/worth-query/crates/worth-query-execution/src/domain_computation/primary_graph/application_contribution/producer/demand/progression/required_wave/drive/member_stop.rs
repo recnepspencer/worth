@@ -55,30 +55,16 @@ impl StopRecording {
 
 #[cfg(test)]
 mod tests {
-    use super::super::successor_checkpoint::{inspect, CheckpointTurn};
     use super::*;
-    use worth_relational::facade::mvcc::CompanionPreflightBudget;
 
     #[test]
     fn a_successor_checkpoint_delivery_failure_records_only_its_successor_row() {
         let (registry, predecessor, successor) =
             WorthQueryOutputDemandRegistry::checkpoint_stop_rows_for_test();
-        let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
-            maximum_work_visits: 3,
-            maximum_preparation_bytes: 0,
-        });
-        let CheckpointTurn::Awaiting(stage) = inspect::<()>(&mut admission, |_| Ok(None)).unwrap()
-        else {
-            panic!("the successor is waiting for delivery");
-        };
-        let stop = stage
-            .advance(&mut admission, |_| {
-                Err(WorthQueryOutputDemandDenial::new(
-                    WorthQueryOutputDemandDenialKind::SchedulingRejected,
-                    "delivery has no successor",
-                ))
-            })
-            .expect_err("the constructed checkpoint delivery fails");
+        let stop = WorthQueryOutputDemandDenial::new(
+            WorthQueryOutputDemandDenialKind::SchedulingRejected,
+            "delivery has no successor",
+        );
         let (_, stop, recording) =
             MemberStop::checkpoint(0, &registry, &successor, stop).into_parts();
         recording.record_if_needed(&registry, &predecessor, &stop);
