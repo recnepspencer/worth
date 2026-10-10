@@ -151,3 +151,74 @@ fn prepared_field_selection_keeps_its_root_without_reselecting_the_generation() 
         .unwrap_err();
     assert!(matches!(stopped, Stop::Admission("cancelled")));
 }
+
+#[test]
+fn request_cancellation_precedes_the_callers_exhausted_admission() {
+    let cancellation = worth_execution::CancellationSource::new();
+    let host = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(1 << 26),
+        cancellation.token(),
+        None,
+    );
+    let execution = &worth_execution::ExecutionRequest::serial(&host);
+    let runtime = runtime_with_index_field_aspects();
+    let created = create_entity_outcome(&runtime, "cancellation-order");
+    let locator = aspect_field_locator(aspect_key("name"), field_key("name"));
+    let index = runtime.index_authority().register(DerivedIndexDefinition {
+        index_id: DerivedIndexId(0),
+        name: "entity.name.cancellation-order".into(),
+        kind: DerivedIndexKind::EntityField {
+            field_locator: locator.clone(),
+        },
+        branch_scoped: true,
+    });
+    let build = runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
+            source_commit_id: created.commit.commit_id,
+            branch_id: BranchId("main".into()),
+            index_ids: vec![index.index_id],
+        },
+    );
+    assert!(build.failed_indexes.is_empty());
+    let view = runtime
+        .read_truth()
+        .project_snapshot(&created.snapshot, execution)
+        .unwrap();
+    let prepared = runtime
+        .index_access()
+        .prepare_entity_field_lookup(&view, index.index_id, KindId(1), &locator, execution)
+        .unwrap();
+    let selected = runtime
+        .index_access()
+        .execute_prepared_entity_field_lookup(
+            &prepared,
+            &string_aspect_value("cancellation-order"),
+            16,
+            BoundedIndexParityMode::Production,
+            execution,
+            || Ok::<_, &str>(()),
+        )
+        .unwrap();
+    assert_eq!(selected.candidate_entity_ids(), changed_entities(&created));
+    cancellation.cancel();
+    let mut admission_calls = 0;
+    let stopped = runtime
+        .index_access()
+        .execute_prepared_entity_field_lookup(
+            &prepared,
+            &string_aspect_value("cancellation-order"),
+            16,
+            BoundedIndexParityMode::Production,
+            execution,
+            || {
+                admission_calls += 1;
+                Err("work exhausted")
+            },
+        )
+        .unwrap_err();
+    assert!(matches!(stopped, Stop::Lookup(denial)
+        if denial.kind() == BoundedEntityFieldLookupDenialKind::Execution(
+            crate::execution::RelationalExecutionDenialCause::Cancelled)));
+    assert_eq!(admission_calls, 0);
+}
