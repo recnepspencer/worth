@@ -118,3 +118,44 @@ fn a_refused_registration_cannot_publish_a_chain_member_twice_in_one_advance() {
     )
     .require_hit("post-effect consumer registration refusal");
 }
+
+/// This public settlement reaches the production publication handoff, not a
+/// direct call to the record. A no-op there must leave the seal count behind.
+#[test]
+fn a_producer_publication_records_its_member_before_checkpointing() {
+    let _guard = checkpoint_recovery_test_guard();
+    let (application, _) = limited_application(4 * 1024 * 1024, 128 * 1024 * 1024, WINDOW);
+    let (scope, principal) = authenticate(&application);
+    let request = application.request(&principal, &scope);
+    let root = request
+        .query(PlanarRead {
+            body_key: CHAIN[0].to_owned(),
+        })
+        .execute()
+        .unwrap()
+        .observed_sources()[0]
+        .root_entity_for_test();
+    let before = application.producer_publications_at_root_on_this_thread_for_test(root);
+    let recorded_before =
+        application.producer_recorded_publications_at_root_on_this_thread_for_test(root);
+    let mut demand = request
+        .demand(PlanarOutputDemand::new(CHAIN[0]))
+        .start_in_program::<program::ChainProgram, program::ChainRoot>(&application)
+        .unwrap();
+    assert!(matches!(
+        demand.settle(&request).unwrap(),
+        WorthQueryApplicationOutputDemandProgress::Settled(_)
+    ));
+    let publications =
+        application.producer_publications_at_root_on_this_thread_for_test(root) - before;
+    assert!(
+        publications > 0,
+        "the production handoff must have published"
+    );
+    assert_eq!(
+        application.producer_recorded_publications_at_root_on_this_thread_for_test(root)
+            - recorded_before,
+        publications,
+        "every production publication must seal its actual member before checkpointing"
+    );
+}
