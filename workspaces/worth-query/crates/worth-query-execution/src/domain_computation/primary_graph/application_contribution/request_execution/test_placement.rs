@@ -9,6 +9,7 @@
 //! authority's, so tests running at once never meet on its memory.
 
 use super::test_authority::test_execution_authority;
+#[cfg(feature = "test-query-execution-observer")]
 pub use super::test_authority::test_execution_workers;
 use std::cell::Cell;
 use std::num::NonZeroUsize;
