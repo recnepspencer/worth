@@ -23,7 +23,94 @@ pub(super) fn attempt_placed_observing<Tested, Owned>(
     prior: Option<ComputationPrior>,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     placement: RuntimeWorldExecutionPlacement<'_>,
+    before_computation: impl FnMut(&QueryRequestExecution<'_>),
+) -> Attempt
+where
+    Tested: ApplicationManagedComputation<Schema, Feature, Input = Input>,
+    Owned: TestOwner<Tested>,
+{
+    with_admitted_attempt_placed(
+        world,
+        installed,
+        prior,
+        request,
+        placement,
+        before_computation,
+        |phase| admit(world, request, phase),
+    )
+}
+
+type Admission = crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
+    Schema,
+    TouchAccountOperation,
+    crate::domain_computation::primary_graph::tests::fixture::TouchAccountInput,
+    Account,
+>;
+
+/// Admission is fixture setup; the constrained host call pays the computation.
+pub(super) fn attempt_admitted_placed_observing<Tested, Owned>(
+    world: &AuthorizationWorld,
+    installed: &WorthQueryInstalledPartitionedComputation<Schema, Feature, Tested, Owned>,
+    prior: Option<ComputationPrior>,
+    request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+    placement: RuntimeWorldExecutionPlacement<'_>,
+    before_computation: impl FnMut(&QueryRequestExecution<'_>),
+) -> Attempt
+where
+    Tested: ApplicationManagedComputation<Schema, Feature, Input = Input>,
+    Owned: TestOwner<Tested>,
+{
+    let admission = world
+        .application
+        .with_application_advancement(request, |phase| admit(world, request, &phase))
+        .expect("fixture admission host call opens");
+    with_admitted_attempt_placed(
+        world,
+        installed,
+        prior,
+        request,
+        placement,
+        before_computation,
+        |_| admission,
+    )
+}
+
+fn admit(
+    world: &AuthorizationWorld,
+    request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+    phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+) -> Admission {
+    let phase_custody = phase.test_host_request();
+    let principal = authenticated_principal(&(phase_custody).test_host_request(), world, request);
+    let account = resolved_account(&(phase_custody).test_host_request(), world, "open", request);
+    let operation = world
+        .application
+        .installed_schema()
+        .installed_operation(TouchAccountOperation::reference())
+        .unwrap();
+    world
+        .selected_product(&(phase_custody).test_host_request())
+        .authorize_operation(
+            &phase_custody.phase_for_application(&world.application),
+            &principal,
+            &account,
+            &operation,
+            Default::default(),
+            request,
+        )
+        .unwrap()
+}
+
+fn with_admitted_attempt_placed<Tested, Owned>(
+    world: &AuthorizationWorld,
+    installed: &WorthQueryInstalledPartitionedComputation<Schema, Feature, Tested, Owned>,
+    prior: Option<ComputationPrior>,
+    request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+    placement: RuntimeWorldExecutionPlacement<'_>,
     mut before_computation: impl FnMut(&QueryRequestExecution<'_>),
+    admit: impl FnOnce(
+        &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    ) -> Admission,
 ) -> Attempt
 where
     Tested: ApplicationManagedComputation<Schema, Feature, Input = Input>,
@@ -36,26 +123,7 @@ where
         .application
         .with_application_advancement(request, |phase| {
             let phase_custody = phase.test_host_request();
-            let principal =
-                authenticated_principal(&(phase_custody).test_host_request(), world, request);
-            let account =
-                resolved_account(&(phase_custody).test_host_request(), world, "open", request);
-            let operation = world
-                .application
-                .installed_schema()
-                .installed_operation(TouchAccountOperation::reference())
-                .unwrap();
-            let admission = world
-                .selected_product(&(phase_custody).test_host_request())
-                .authorize_operation(
-                    &phase_custody.phase_for_application(&world.application),
-                    &principal,
-                    &account,
-                    &operation,
-                    Default::default(),
-                    request,
-                )
-                .unwrap();
+            let admission = admit(&phase);
             installed.owner.gathered().lock().unwrap().clear();
             runs();
             tree_runs();

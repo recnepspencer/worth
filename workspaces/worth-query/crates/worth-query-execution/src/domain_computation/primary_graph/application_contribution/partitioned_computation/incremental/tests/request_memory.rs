@@ -48,7 +48,7 @@ fn under(memory: u64) -> [Attempt; 2] {
         // bytes, as in tree_admission. Run the same fixture with ample room first.
         let unconstrained = 1 << 30;
         let mut held = None;
-        let baseline = projected_attempt::attempt_placed_observing(
+        let baseline = projected_attempt::attempt_admitted_placed_observing(
             &world,
             &installed,
             None,
@@ -69,12 +69,13 @@ fn under(memory: u64) -> [Attempt; 2] {
         assert!(baseline.outcome.is_ok(), "unconstrained fixture completes");
         let held = held.expect("observed before the first computation charge");
         eprintln!("projection holds {held} request bytes before computation (serial={serial})");
-        attempt_placed(
+        projected_attempt::attempt_admitted_placed_observing(
             &world,
             &installed,
             None,
             &live_scope(),
             placement(held + memory),
+            |_| {},
         )
     })
 }
