@@ -5,6 +5,7 @@ mod contracts;
 mod execution_denial;
 mod partitioned_computation;
 mod producer;
+pub(in crate::domain_computation::primary_graph) use producer::OwnerPlan;
 mod request_execution;
 mod setup;
 

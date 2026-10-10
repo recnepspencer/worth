@@ -7,6 +7,14 @@ type Report<Schema, Binding> = WorthQueryMutationHandlerExecutionReport<
     WorthQueryCompletedMutationCandidate<Schema, Binding>,
     <Binding as ApplicationMutationBinding<Schema>>::Denial,
 >;
+type Projection<Schema, Binding> = crate::domain_computation::primary_graph::WorthQueryApplicationOperationInvariantProjectionSnapshot<Schema, <Binding as ApplicationMutationBinding<Schema>>::Operation>;
+
+type PreparedHandlerParts<'authority, Schema, Binding> = (
+    Vec<crate::domain_computation::primary_graph::application_contribution::computation::prepared_request::PreparedCompute>,
+    MutationCompletion<'authority, Schema, Binding>,
+    crate::domain_computation::primary_graph::application_output_demand::PreparedRequiredInputs,
+);
+
 type Completion<'authority, Schema, Binding> = Box<
     dyn FnOnce(
             &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -15,6 +23,7 @@ type Completion<'authority, Schema, Binding> = Box<
                 <Binding as ApplicationMutationBinding<Schema>>::Decision,
                 <Binding as ApplicationMutationBinding<Schema>>::Denial,
             >,
+            Projection<Schema, Binding>,
         ) -> Report<Schema, Binding>
         + 'authority,
 >;
@@ -31,6 +40,7 @@ pub(in crate::domain_computation::primary_graph) struct PreparedMutationHandler<
     plan: WorthQueryDecisionPlan<Binding::Decision, Binding::Denial>,
     execution: &'advance QueryRequestExecution<'advance>,
     complete: Completion<'authority, Schema, Binding>,
+    projection: Projection<Schema, Binding>,
 }
 impl<'advance, 'authority, Schema, Binding>
     PreparedMutationHandler<'advance, 'authority, Schema, Binding>
@@ -41,10 +51,12 @@ where
     pub(super) fn new(
         plan: WorthQueryDecisionPlan<Binding::Decision, Binding::Denial>,
         execution: &'advance QueryRequestExecution<'advance>,
+        projection: Projection<Schema, Binding>,
         complete: impl FnOnce(
                 &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
                 &ApplicationMutationIdentities<'_, Schema, Binding>,
                 HandlerResult<Binding::Decision, Binding::Denial>,
+                Projection<Schema, Binding>,
             ) -> Report<Schema, Binding>
             + 'authority,
     ) -> Self {
@@ -52,6 +64,7 @@ where
             plan,
             execution,
             complete: Box::new(complete),
+            projection,
         }
     }
 
@@ -61,20 +74,35 @@ where
         identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
     ) -> Report<Schema, Binding> {
         let decision = self.plan.run_serial(self.execution);
-        (self.complete)(runtime, identities, decision)
+        (self.complete)(runtime, identities, decision, self.projection)
     }
 
-    pub(in crate::domain_computation::primary_graph) fn into_parts(self) -> (
-        Vec<crate::domain_computation::primary_graph::application_contribution::computation::prepared_request::PreparedCompute>,
-        MutationCompletion<'authority, Schema, Binding>,
-    ){
+    pub(in crate::domain_computation::primary_graph) fn into_parts(
+        self,
+        registry: &crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandRegistry,
+        admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
+    ) -> Result<
+        PreparedHandlerParts<'authority, Schema, Binding>,
+        crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial,
+    > {
+        let inputs =
+            registry.admit_prepared_inputs(self.projection.prepared_current_inputs(), admission)?;
         let Self {
             plan,
             execution: _,
             complete,
+            projection,
         } = self;
         let (requests, decision) = plan.into_parts();
-        (requests, MutationCompletion { decision, complete })
+        Ok((
+            requests,
+            MutationCompletion {
+                decision,
+                complete,
+                projection,
+            },
+            inputs,
+        ))
     }
 }
 
@@ -88,6 +116,7 @@ pub(in crate::domain_computation::primary_graph) struct MutationCompletion<
 {
     decision: super::super::decision_plan::DecisionCompletion<Binding::Decision, Binding::Denial>,
     complete: Completion<'authority, Schema, Binding>,
+    projection: Projection<Schema, Binding>,
 }
 
 impl<Schema, Binding> MutationCompletion<'_, Schema, Binding>
@@ -101,6 +130,11 @@ where
         identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
         slots: Vec<crate::domain_computation::primary_graph::application_contribution::computation::prepared_request::ComputedSlot>,
     ) -> Report<Schema, Binding> {
-        (self.complete)(runtime, identities, self.decision.finish(slots))
+        (self.complete)(
+            runtime,
+            identities,
+            self.decision.finish(slots),
+            self.projection,
+        )
     }
 }

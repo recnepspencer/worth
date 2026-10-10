@@ -116,7 +116,7 @@ where
         use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandAdvanceAdmission as Admission;
         let waiting = || CallerPass::Answer(WorthQueryOutputDemandAdvance::Pending);
         let wave_authority = commit_authority.clone();
-        let checkpoint_progress = match self.advance_validated_output_demand_with_schedule(
+        let checkpoint_progress = match self.advance_ordinary_validated_output_demand(
             phase,
             demand,
             principal,
@@ -125,7 +125,6 @@ where
             disclosure,
             entry,
             commit_authority,
-            ScheduleProgression::Ordinary,
             request_admission,
         )? {
             OwnStages::Answer(advance) => return Ok(CallerPass::Answer(advance)),

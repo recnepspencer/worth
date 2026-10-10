@@ -37,7 +37,7 @@ mod input_reuse;
 mod installed;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) mod outcome;
 mod post_authorization;
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) mod prepared_plan;
+pub(in crate::domain_computation::primary_graph) mod prepared_plan;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use prepared_plan::canonical_apply;
 mod readiness;
 mod required_cue;

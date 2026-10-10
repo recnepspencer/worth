@@ -17,6 +17,7 @@ pub use demand::{
     WorthQuerySelectedApplicationProducer,
 };
 mod execution;
+pub(in crate::domain_computation::primary_graph) use execution::prepared_plan::OwnerPlan;
 use execution::{InstalledProducerExecutor, TypedInstalledProducer};
 mod input_reuse_contract;
 pub use input_reuse_contract::{

@@ -175,6 +175,9 @@ pub(in crate::domain_computation::primary_graph) use required_work::SelectedRead
 pub(in crate::domain_computation::primary_graph) use required_work::SelectedRequiredRefreshClaim;
 pub(in crate::domain_computation::primary_graph) use required_work::SelectedRequiredWork;
 pub(in crate::domain_computation::primary_graph) use required_work::SelectedRequiredWorkKind;
+pub(in crate::domain_computation::primary_graph) use required_work::{
+    AdmittedRequiredWave, PreparedRequiredInputs,
+};
 mod restoration;
 pub(in crate::domain_computation::primary_graph) use restoration::WorthQueryRestoredAcceptedOutput;
 mod consumer_custody;

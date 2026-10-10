@@ -18,7 +18,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema + 'static,
 {
-    fn advance_validated_output_demand_with_schedule<Family>(
+    fn advance_ordinary_validated_output_demand<Family>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
 
@@ -32,7 +32,6 @@ where
         >,
         entry: &InstalledProducerProvider<Schema>,
         commit_authority: WorthQueryProducerCommitAuthority,
-        schedule_progression: ScheduleProgression<'_, '_, '_, Schema>,
         request_admission: &mut InvalidationEditAdmission,
     ) -> Result<
         OwnStages<FamilySourceQuery<Schema, Family>, FamilySourceValue<Schema, Family>>,
@@ -52,33 +51,15 @@ where
             disclosure,
             entry,
             commit_authority,
-            schedule_progression,
+            ScheduleProgression::Ordinary,
             request_admission,
         )?;
         match prepared {
             ExecutionPreparation::Reached(stages) => Ok(stages),
-            ExecutionPreparation::Planned(plan) => {
-                use crate::domain_computation::primary_graph::application_contribution::producer::execution::canonical_apply::CanonicalApplyCursor;
-                let execution = phase
-                    .execution_for(&self.product_runtime)
-                    .map_err(|_| denial(WorthQueryOutputDemandDenialKind::ForeignSettlement, ""))?;
-                let keys = worth_proof::CanonicalUniqueVec::try_from_sorted_unique(vec![()])
-                    .unwrap_or_else(|_| unreachable!("one selected row is canonical"));
-                let cursor = CanonicalApplyCursor::compute_serial(keys, vec![plan], execution);
-                let mut progress = None;
-                match cursor.apply(request_admission, |(), completed, _| {
-                    progress = Some(completed);
-                    Ok(())
-                }) {
-                    Ok(()) => Ok(OwnStages::Checkpoint(
-                        progress.expect("the selected row applied once"),
-                    )),
-                    Err(refusal) => {
-                        demand.unpublished_selected_checkpoint = refusal.checkpoint;
-                        Err(refusal.denial)
-                    }
-                }
-            }
+            ExecutionPreparation::Planned(_) => Err(denial(
+                WorthQueryOutputDemandDenialKind::ForeignSettlement,
+                "ordinary progression cannot dispatch a required compute plan",
+            )),
         }
     }
 }

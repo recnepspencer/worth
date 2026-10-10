@@ -13,12 +13,11 @@ type OwnerCallback<'owner, Value, Stop> = Box<
     dyn FnOnce(Vec<ComputedSlot>, &mut InvalidationEditAdmission) -> Result<Value, Stop> + 'owner,
 >;
 
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct OwnerPlan<
-    'owner,
-    Value,
-    Stop,
-> {
+pub(in crate::domain_computation::primary_graph) struct OwnerPlan<'owner, Value, Stop> {
     requests: Vec<PreparedCompute>,
+    inputs: Option<
+        crate::domain_computation::primary_graph::application_output_demand::PreparedRequiredInputs,
+    >,
     complete: OwnerCallback<'owner, Value, Stop>,
 }
 
@@ -65,15 +64,31 @@ impl<'owner, Value: 'owner, Stop: 'owner> OwnerPlan<'owner, Value, Stop> {
             outcome
         })
     }
-    pub(super) fn new(
+    pub(in crate::domain_computation::primary_graph) fn new(
         requests: Vec<PreparedCompute>,
         complete: impl FnOnce(Vec<ComputedSlot>, &mut InvalidationEditAdmission) -> Result<Value, Stop>
             + 'owner,
     ) -> Self {
         Self {
             requests,
+            inputs: None,
             complete: Box::new(complete),
         }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn prepared_inputs(&self) -> Option<&crate::domain_computation::primary_graph::application_output_demand::PreparedRequiredInputs>{
+        self.inputs.as_ref()
+    }
+    pub(in crate::domain_computation::primary_graph) fn has_compute(&self) -> bool {
+        !self.requests.is_empty()
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn with_inputs(
+        mut self,
+        inputs: crate::domain_computation::primary_graph::application_output_demand::PreparedRequiredInputs,
+    ) -> Self {
+        self.inputs = Some(inputs);
+        self
     }
 
     /// Align owner completion with its successor custody until canonical apply.
@@ -91,15 +106,21 @@ impl<'owner, Value: 'owner, Stop: 'owner> OwnerPlan<'owner, Value, Stop> {
             ) -> Result<Next, NextStop>
             + 'owner,
     ) -> OwnerPlan<'owner, Next, NextStop> {
-        let Self { requests, complete } = self;
+        let Self {
+            requests,
+            inputs,
+            complete,
+        } = self;
         let completion = OwnerCompletion {
             slots: Vec::new(),
             complete: Some(complete),
             custody,
         };
-        OwnerPlan::new(requests, move |slots, admission| {
+        let mut plan = OwnerPlan::new(requests, move |slots, admission| {
             apply(completion.with_slots(slots), admission)
-        })
+        });
+        plan.inputs = inputs;
+        plan
     }
 
     pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn map_result<
@@ -110,10 +131,16 @@ impl<'owner, Value: 'owner, Stop: 'owner> OwnerPlan<'owner, Value, Stop> {
         finish: impl FnOnce(Result<Value, Stop>, &mut InvalidationEditAdmission) -> Result<Next, NextStop>
             + 'owner,
     ) -> OwnerPlan<'owner, Next, NextStop> {
-        let Self { requests, complete } = self;
-        OwnerPlan::new(requests, move |slots, admission| {
+        let Self {
+            requests,
+            inputs,
+            complete,
+        } = self;
+        let mut plan = OwnerPlan::new(requests, move |slots, admission| {
             finish(complete(slots, admission), admission)
-        })
+        });
+        plan.inputs = inputs;
+        plan
     }
 }
 

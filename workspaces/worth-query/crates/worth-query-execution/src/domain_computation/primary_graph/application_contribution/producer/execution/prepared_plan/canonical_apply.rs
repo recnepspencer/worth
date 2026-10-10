@@ -12,12 +12,23 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     Value,
     Stop,
 > {
+    basis: Option<&'owner worth_relational::facade::runtime::PositionedRelationalSnapshot>,
     keys: CanonicalUniqueVec<Key>,
     slots: Vec<(OwnerPlan<'owner, Value, Stop>, Vec<ComputedSlot>)>,
 }
 
 impl<'owner, Key, Value, Stop> CanonicalApplyCursor<'owner, Key, Value, Stop> {
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn compute_serial(
+    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn compute_admitted(
+        wave: crate::domain_computation::primary_graph::application_output_demand::AdmittedRequiredWave<'owner, Key, OwnerPlan<'owner, Value, Stop>>,
+        execution: &QueryRequestExecution<'_>,
+    ) -> Self {
+        let (basis, keys, plans) = wave.into_parts();
+        let mut cursor = Self::compute_serial(keys, plans, execution);
+        cursor.basis = Some(basis);
+        cursor
+    }
+
+    fn compute_serial(
         keys: CanonicalUniqueVec<Key>,
         plans: Vec<OwnerPlan<'owner, Value, Stop>>,
         execution: &QueryRequestExecution<'_>,
@@ -37,7 +48,11 @@ impl<'owner, Key, Value, Stop> CanonicalApplyCursor<'owner, Key, Value, Stop> {
                 (plan, computed)
             })
             .collect();
-        Self { keys, slots }
+        Self {
+            basis: None,
+            keys,
+            slots,
+        }
     }
 
     /// Consumes all slots. A failure drops the suffix, whose values have no
@@ -47,7 +62,11 @@ impl<'owner, Key, Value, Stop> CanonicalApplyCursor<'owner, Key, Value, Stop> {
         admission: &mut InvalidationEditAdmission,
         mut published: impl FnMut(Key, Value, &mut InvalidationEditAdmission) -> Result<(), Stop>,
     ) -> Result<(), Stop> {
-        let Self { keys, slots } = self;
+        let Self {
+            basis: _basis,
+            keys,
+            slots,
+        } = self;
         for (key, (plan, computed)) in keys.into_keys().into_iter().zip(slots) {
             let outcome = (plan.complete)(computed, admission)?;
             published(key, outcome, admission)?;

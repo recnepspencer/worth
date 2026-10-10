@@ -197,8 +197,8 @@ where
         },
         crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
     );
-    let (requests, completion) = match prepared {
-        Ok(prepared) => prepared.into_parts(),
+    let (requests, completion, inputs) = match prepared {
+        Ok(prepared) => prepared.into_parts(&runtime.output_demands, request_admission)?,
         Err(report) => {
             return Ok(super::super::prepared_plan::ProducerExecutionPlan::new(
                 Vec::new(),
@@ -295,5 +295,5 @@ where
                 .map(ProducerExecutionOutcome::Committed)
                 .map_err(ProducerExecutionStop::ExecutionStopped)
         },
-    ))
+    ).with_inputs(inputs))
 }

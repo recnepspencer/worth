@@ -113,7 +113,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Ok(PreparedMutationHandler::new(
             plan,
             execution,
-            move |runtime, identities, decision| {
+            projection,
+            move |runtime, identities, decision, projection| {
                 let outcome = (|| {
                     let decision = match decision {
                         HandlerResult::Completed(decision) => decision,

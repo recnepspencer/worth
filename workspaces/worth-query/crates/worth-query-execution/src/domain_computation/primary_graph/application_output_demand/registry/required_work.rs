@@ -1,5 +1,9 @@
 //! Exact required-work hints shared by the demand record and native marks.
 
+mod wave_admission;
+pub(in crate::domain_computation::primary_graph) use wave_admission::{
+    AdmittedRequiredWave, PreparedRequiredInputs,
+};
 mod branch_selection;
 mod discontinuity;
 mod interest_readmission;

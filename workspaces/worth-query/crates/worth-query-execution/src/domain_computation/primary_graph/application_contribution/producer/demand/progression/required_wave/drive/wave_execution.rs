@@ -55,12 +55,21 @@ where
         });
     }
     let (keys, plans): (Vec<_>, Vec<_>) = prepared.members.into_iter().unzip();
+    for pair in keys.windows(2) {
+        admission
+            .charge_external_work(pair[0].comparison_work(&pair[1])?)
+            .map_err(|_| work_denial())?;
+    }
     let keys = worth_proof::CanonicalUniqueVec::try_from_sorted_unique(keys)
         .map_err(|_| foreign_denial())?;
     let execution = phase
         .execution_for(&runtime.product_runtime)
         .map_err(|_| foreign_denial())?;
-    let cursor = CanonicalApplyCursor::compute_serial(keys, plans, execution);
+    let admitted =
+        runtime
+            .output_demands
+            .admit_prepared_wave(&wave.positioned, keys, plans, admission)?;
+    let cursor = CanonicalApplyCursor::compute_admitted(admitted, execution);
     let mut moved = false;
     let result = cursor.apply(admission, |key, mut progress, admission| {
         let index = key.index;

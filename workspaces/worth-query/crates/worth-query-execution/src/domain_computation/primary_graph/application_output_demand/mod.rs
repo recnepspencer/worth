@@ -4,6 +4,9 @@ mod currentness;
 mod readiness_delivery;
 mod recovered_outputs;
 mod registry;
+pub(in crate::domain_computation::primary_graph) use registry::{
+    AdmittedRequiredWave, PreparedRequiredInputs,
+};
 mod settlement;
 
 pub use readiness_delivery::WorthQueryOutputReadinessDeliveryEvidence;
