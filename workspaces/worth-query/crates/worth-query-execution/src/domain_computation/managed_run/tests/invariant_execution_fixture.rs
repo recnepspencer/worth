@@ -125,8 +125,17 @@ pub(super) fn execute_invariant(
     requirements: Vec<WorthQueryInstalledInvariantExecutionRequirement>,
     slot: &str,
     locators: impl IntoIterator<Item = WorthQueryInvariantStateLocator>,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> InvariantExecutionObservation {
-    execute_invariant_with_request(execution, state, requirements, slot, locators, None)
+    execute_invariant_with_request(
+        execution,
+        state,
+        requirements,
+        slot,
+        locators,
+        None,
+        resource_request,
+    )
 }
 
 pub(super) fn execute_invariant_with_request(
@@ -138,8 +147,9 @@ pub(super) fn execute_invariant_with_request(
     request: Option<
         &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     >,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> InvariantExecutionObservation {
-    let (mut running, graph) = invariant_run(state, requirements);
+    let (mut running, graph) = invariant_run(state, requirements, resource_request);
     let (staged, fresh) = staged_with_fresh_read_set(execution, &mut running, &graph);
     let program = staged
         .effect_authority()
@@ -177,11 +187,12 @@ pub(super) fn admit_progression(
     state: Arc<Mutex<ProvisionalProviderState>>,
     requirements: Vec<WorthQueryInstalledInvariantExecutionRequirement>,
     slots: impl IntoIterator<Item = &'static str>,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<
     crate::domain_computation::WorthQueryInvariantProgressionAuthority,
     WorthQueryInvariantExecutionFailure,
 > {
-    let (mut running, graph) = invariant_run(state, requirements);
+    let (mut running, graph) = invariant_run(state, requirements, resource_request);
     let (staged, fresh) = staged_with_fresh_read_set(execution, &mut running, &graph);
     let program = staged
         .effect_authority()
@@ -219,6 +230,7 @@ pub(super) fn admit_progression(
 pub(super) fn invariant_run(
     state: Arc<Mutex<ProvisionalProviderState>>,
     invariants: Vec<WorthQueryInstalledInvariantExecutionRequirement>,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     WorthQueryRunningDirectRun,
     WorthQueryInstalledGraphParticipationAuthority,
@@ -233,6 +245,7 @@ pub(super) fn invariant_run(
         .with_exact_fact_count(9)
         .unwrap()],
         invariants,
+        resource_request,
     )
 }
 

@@ -190,15 +190,16 @@ pub mod conditional {
     pub use crate::domain_installation::{
         WorthQueryArtifactPosture, WorthQueryArtifactReuseEquivalence, WorthQueryComparatorFamily,
         WorthQueryComparatorRequirement, WorthQueryConditionalEvaluationCondition,
-        WorthQueryConditionalGraphReadRole, WorthQueryConditionalNodeRole,
-        WorthQueryConditionalOutcomeClass, WorthQueryConditionalProvenance,
-        WorthQueryConditionalTrigger, WorthQueryDeltaComparisonDomain, WorthQueryDeltaThreshold,
-        WorthQueryDomainConditionFamily, WorthQueryMaintenancePosture,
-        WorthQueryOnDemandTriggerFamily, WorthQueryOperationProjectionRole,
-        WorthQueryOutputEquivalenceRequirement, WorthQueryOutputRelationship,
-        WorthQueryPortableConditionParameter, WorthQueryPortableConditionalNodeDeclaration,
-        WorthQueryQuantityUnit, WorthQueryQuantityValueFamily, WorthQuerySemanticLocality,
-        WorthQueryTemporalCondition, WorthQueryTemporalWake,
+        WorthQueryConditionalExecutionDenialKind, WorthQueryConditionalGraphReadRole,
+        WorthQueryConditionalNodeRole, WorthQueryConditionalOutcomeClass,
+        WorthQueryConditionalProvenance, WorthQueryConditionalTrigger,
+        WorthQueryDeltaComparisonDomain, WorthQueryDeltaThreshold, WorthQueryDomainConditionFamily,
+        WorthQueryMaintenancePosture, WorthQueryOnDemandTriggerFamily,
+        WorthQueryOperationProjectionRole, WorthQueryOutputEquivalenceRequirement,
+        WorthQueryOutputRelationship, WorthQueryPortableConditionParameter,
+        WorthQueryPortableConditionalNodeDeclaration, WorthQueryQuantityUnit,
+        WorthQueryQuantityValueFamily, WorthQuerySemanticLocality, WorthQueryTemporalCondition,
+        WorthQueryTemporalWake,
     };
 }
 

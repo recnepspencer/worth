@@ -246,11 +246,12 @@ impl BridgeSourceAdapter for WorthQueryApplicationBridgeSource {
     fn open_snapshot(
         &self,
         identity: &TruthSnapshotIdentity,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
         Box<dyn TruthSnapshotReader>,
         worth_runtime_bridge::facade::RelationalBridgeSourceError,
     > {
-        SnapshotReadSource::open_snapshot(&self.source, identity)
+        SnapshotReadSource::open_snapshot(&self.source, identity, execution)
     }
 }
 
@@ -261,6 +262,7 @@ impl InvalidationSink for WorthQueryApplicationGranularOnlySink {
         _lease: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeDeliveryReceipt, SignalBridgeSinkError> {
         Err(SignalBridgeSinkError::new(
+            worth_runtime_bridge::facade::SignalBridgeSinkErrorKind::WorldPublicationRequired,
             "the primary Query runtime accepts only installed granular correspondence delivery",
         ))
     }

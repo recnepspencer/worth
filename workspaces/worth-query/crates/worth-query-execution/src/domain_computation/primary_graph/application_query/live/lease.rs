@@ -360,3 +360,7 @@ mod reservation_race_tests;
 #[cfg(test)]
 #[path = "lease/sibling_delivery_tests.rs"]
 mod sibling_delivery_tests;
+
+#[cfg(test)]
+#[path = "lease/foreign_phase_tests.rs"]
+mod foreign_phase_tests;

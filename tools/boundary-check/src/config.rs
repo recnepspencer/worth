@@ -34,6 +34,22 @@ pub(crate) struct Road1Config {
     pub(crate) truth_type_denials: Vec<TruthTypeDenialConfig>,
     #[serde(default)]
     pub(crate) threading_sites: Vec<ThreadingSiteConfig>,
+    #[serde(default)]
+    pub(crate) request_constructor_denials: Vec<RequestConstructorDenialConfig>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct RequestConstructorDenialConfig {
+    pub(crate) crate_root: String,
+    pub(crate) host_entry: Option<String>,
+    #[serde(default)]
+    pub(crate) wrapper_callers: Vec<String>,
+    #[serde(default)]
+    pub(crate) carried_signal_only: bool,
+    #[serde(default)]
+    pub(crate) signal_doors_only: bool,
+    pub(crate) guidance: String,
 }
 
 /// An observed production thread or parallel-computation site. A legacy lane

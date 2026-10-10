@@ -99,3 +99,6 @@ fn wake_pump_refuses_before_clock_truth_reads_or_operation_reentry() {
 
 #[path = "advancement_custody/conditional_delivery.rs"]
 mod conditional_delivery;
+
+#[path = "advancement_custody/width_differential.rs"]
+mod width_differential;

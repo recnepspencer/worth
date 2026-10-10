@@ -126,7 +126,10 @@ where
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::Closed
-                | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::DuplicatePerformedSource => WorthQueryApplicationOutputDemandDenial::Demand(denial),
+                | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::DuplicatePerformedSource
+                | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::BridgeConditional(_)
+                | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::ProductDelivery(_)
+                | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::CorrespondenceDelivery(_) => WorthQueryApplicationOutputDemandDenial::Demand(denial),
         })?;
         match progress {
             WorthQueryOutputDemandAdvance::Pending => {

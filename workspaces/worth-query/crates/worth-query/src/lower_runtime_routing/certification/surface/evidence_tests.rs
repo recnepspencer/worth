@@ -3,7 +3,10 @@ use crate::lower_runtime_routing::WorthQueryLowerRuntimeSeamKey;
 
 #[test]
 fn representative_surface_covers_every_crossing_row_once() {
-    let surface = worth_query_lower_runtime_representative_surface();
+    let host_request = crate::bridge_host_request::serial_request();
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let surface = worth_query_lower_runtime_representative_surface(resource_request);
     let crossing_count =
         crate::lower_runtime_routing::worth_query_lower_runtime_crossing_inventory()
             .rows()
@@ -18,7 +21,10 @@ fn representative_surface_covers_every_crossing_row_once() {
 
 #[test]
 fn representative_surface_uses_runtime_backed_fixtures_for_named_phase_six_seams() {
-    let surface = worth_query_lower_runtime_representative_surface();
+    let host_request = crate::bridge_host_request::serial_request();
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let surface = worth_query_lower_runtime_representative_surface(resource_request);
 
     for seam_key in [
         WorthQueryLowerRuntimeSeamKey::ComposeRead,

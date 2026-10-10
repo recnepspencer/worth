@@ -125,7 +125,11 @@ mod tests {
                         Some(&mut budget),
                     )
                     .unwrap();
-                let mut admission = ResourceAdmission::new(&budget, lease).unwrap();
+                let mut admission = ResourceAdmission::new(
+                    &budget,
+                    worth_execution::ExecutionRequest::leased(lease),
+                )
+                .unwrap();
                 let comparator = DefaultComparatorPolicyResolver::default();
                 assert!(admission
                     .consider(
@@ -194,7 +198,7 @@ mod tests {
                         result
                     })
                 },
-                &setup,
+                worth_execution::ExecutionRequest::leased(&setup),
             )
             .unwrap();
         drop(setup);

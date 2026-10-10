@@ -40,9 +40,9 @@ pub(crate) use slot_allocation::SharedCorrespondenceAllocationRegistry;
 pub use admission::CorrespondenceAdmissionOutcome;
 pub use admission_identity::BridgeCorrespondenceAdmissionIdentity;
 pub use admission_outcome::{
-    BridgeCorrespondenceAdmissionFailure, BridgeCorrespondenceDeferred, BridgeCorrespondenceDenial,
-    BridgeCorrespondenceDenialKind, BridgeCorrespondenceRebindRequired, BridgeCorrespondenceStale,
-    CorrespondenceAdmissionCounters,
+    BridgeCorrespondenceAdmissionFailure, BridgeCorrespondenceDeferred,
+    BridgeCorrespondenceDeliveryStop, BridgeCorrespondenceDenial, BridgeCorrespondenceDenialKind,
+    BridgeCorrespondenceRebindRequired, BridgeCorrespondenceStale, CorrespondenceAdmissionCounters,
 };
 pub use admitted_truth_identity::{
     BridgeAdmittedTruthCommitIdentity, BridgeAdmittedTruthRecordIdentity,
@@ -83,3 +83,6 @@ pub use signal_execution::BridgePreparedScopedSignalInvalidation;
 pub use signal_graph_binding::BridgeSignalGraphBinding;
 pub use signal_target_declaration::BridgeSignalAspectTargetDeclaration;
 pub(crate) use signal_target_declaration::BridgeSignalSlotRequest;
+
+mod signal_failure;
+pub use signal_failure::BridgeCorrespondenceSignalFailure;

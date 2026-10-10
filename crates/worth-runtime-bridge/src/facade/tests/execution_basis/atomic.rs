@@ -3,12 +3,17 @@ use crate::facade::{BridgeExecutionPosture, BridgeExecutionSafePointFailureKind}
 
 #[test]
 fn atomic_basis_fulfills_exact_lifecycle_without_managed_capabilities() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
     let basis = runtime
         .admit_atomic_execution_basis(
             managed_intent("atomic-completion"),
             truth_basis("snapshot-a"),
-            planned_truth_view(&runtime),
+            planned_truth_view(&runtime, execution),
+            execution,
         )
         .expect("matching atomic intent and truth should admit");
     let handle = basis.request().request_handle();
@@ -47,13 +52,18 @@ fn atomic_basis_fulfills_exact_lifecycle_without_managed_capabilities() {
 
 #[test]
 fn atomic_basis_refuses_managed_actions_and_drop_cancels_exact_attempt() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
     let intent = managed_intent("atomic-drop");
     let mut basis = runtime
         .admit_atomic_execution_basis(
             intent.clone(),
             truth_basis("snapshot-a"),
-            planned_truth_view(&runtime),
+            planned_truth_view(&runtime, execution),
+            execution,
         )
         .unwrap();
     let handle = basis.request().request_handle();
@@ -62,7 +72,8 @@ fn atomic_basis_refuses_managed_actions_and_drop_cancels_exact_attempt() {
         .admit_atomic_execution_basis(
             intent.clone(),
             truth_basis("snapshot-a"),
-            planned_truth_view(&runtime),
+            planned_truth_view(&runtime, execution),
+            execution,
         )
         .expect_err("a second live basis cannot reserve the same intent");
     assert_eq!(
@@ -115,7 +126,8 @@ fn atomic_basis_refuses_managed_actions_and_drop_cancels_exact_attempt() {
         .admit_atomic_execution_basis(
             intent,
             truth_basis("snapshot-a"),
-            planned_truth_view(&runtime),
+            planned_truth_view(&runtime, execution),
+            execution,
         )
         .unwrap()
         .finalize(BridgeExecutionBasisTerminalDisposition::Cancelled)

@@ -32,11 +32,16 @@ fn binding_for<'a>(
 }
 #[test]
 fn causal_envelope_maps_retained_preview_records_into_bridge_owned_bindings() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::default());
     let routed = runtime
-        .route(crate::truth_identity_fixtures::truth_commit_fixture(
-            "commit-causal-preview-mapping",
-        ))
+        .route(
+            crate::truth_identity_fixtures::truth_commit_fixture("commit-causal-preview-mapping"),
+            execution,
+        )
         .expect("route should succeed");
     let discard_admitted = runtime
         .admit_preview_session(
@@ -191,11 +196,16 @@ fn causal_envelope_maps_retained_preview_records_into_bridge_owned_bindings() {
 
 #[test]
 fn causal_envelope_denies_missing_preview_mapping_after_required_route_evidence() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::default());
     let routed = runtime
-        .route(crate::truth_identity_fixtures::truth_commit_fixture(
-            "commit-causal-missing-preview",
-        ))
+        .route(
+            crate::truth_identity_fixtures::truth_commit_fixture("commit-causal-missing-preview"),
+            execution,
+        )
         .expect("route should succeed");
     let request = BridgeCausalEnvelopeAssemblyRequest::from_query_admission(
         crate::facade::BridgeCausalInspectionAdmissionSummary::admitted(

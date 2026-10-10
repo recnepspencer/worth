@@ -2,6 +2,10 @@ use super::*;
 
 #[test]
 fn bridge_bulk_delivery_keeps_preplanned_snapshots_after_newer_truth_arrives() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         commit_a(),
@@ -23,10 +27,13 @@ fn bridge_bulk_delivery_keeps_preplanned_snapshots_after_newer_truth_arrives() {
     let runtime = build_runtime(source.clone(), sink.clone(), vec![registration()]);
 
     let plan = runtime
-        .plan_bulk_workload(BridgeBulkWorkloadRequest::new(vec![
-            BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_a())),
-            BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_b())),
-        ]))
+        .plan_bulk_workload(
+            BridgeBulkWorkloadRequest::new(vec![
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_a())),
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_b())),
+            ]),
+            execution,
+        )
         .expect("bridge should plan the bulk workload");
 
     source.insert_committed_patch(committed_patch(
@@ -39,7 +46,7 @@ fn bridge_bulk_delivery_keeps_preplanned_snapshots_after_newer_truth_arrives() {
     source.insert_snapshot(snapshot(snapshot_c(), "charlie"));
 
     let result = runtime
-        .deliver_bulk_workload_plan(plan)
+        .deliver_bulk_workload_plan(plan, execution)
         .expect("bridge should deliver the preplanned bulk workload");
 
     assert_eq!(
@@ -90,6 +97,10 @@ fn bridge_bulk_delivery_keeps_preplanned_snapshots_after_newer_truth_arrives() {
 
 #[test]
 fn bridge_bulk_delivery_accepts_replayed_canonical_bulk_plan() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         commit_a(),
@@ -111,18 +122,21 @@ fn bridge_bulk_delivery_accepts_replayed_canonical_bulk_plan() {
     let runtime = build_runtime(source, sink.clone(), vec![registration()]);
 
     let planned = runtime
-        .plan_bulk_workload(BridgeBulkWorkloadRequest::new(vec![
-            BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_a())),
-            BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_b())),
-        ]))
+        .plan_bulk_workload(
+            BridgeBulkWorkloadRequest::new(vec![
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_a())),
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_b())),
+            ]),
+            execution,
+        )
         .expect("bridge should plan the bulk workload before replay-backed delivery");
     let canonical = runtime.canonicalize_bulk_workload_plan(&planned);
     let replayed = runtime
-        .replay_canonical_bulk_plan_record(&canonical)
+        .replay_canonical_bulk_plan_record(&canonical, execution)
         .expect("bridge should replay the canonical bulk plan before delivery");
 
     let result = runtime
-        .deliver_bulk_workload_plan(replayed)
+        .deliver_bulk_workload_plan(replayed, execution)
         .expect("bridge should deliver a replayed canonical bulk plan");
 
     assert_eq!(
@@ -148,6 +162,10 @@ fn bridge_bulk_delivery_accepts_replayed_canonical_bulk_plan() {
 
 #[test]
 fn bridge_bulk_delivery_is_stable_across_input_order() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let left_source = InMemoryRelationalBridgeSource::default();
     left_source.insert_committed_patch(committed_patch(
         commit_a(),
@@ -189,23 +207,29 @@ fn bridge_bulk_delivery_is_stable_across_input_order() {
     let right_runtime = build_runtime(right_source, right_sink.clone(), vec![registration()]);
 
     let left_plan = left_runtime
-        .plan_bulk_workload(BridgeBulkWorkloadRequest::new(vec![
-            BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_a())),
-            BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_b())),
-        ]))
+        .plan_bulk_workload(
+            BridgeBulkWorkloadRequest::new(vec![
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_a())),
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_b())),
+            ]),
+            execution,
+        )
         .expect("left bulk workload should plan");
     let right_plan = right_runtime
-        .plan_bulk_workload(BridgeBulkWorkloadRequest::new(vec![
-            BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_b())),
-            BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_a())),
-        ]))
+        .plan_bulk_workload(
+            BridgeBulkWorkloadRequest::new(vec![
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_b())),
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_a())),
+            ]),
+            execution,
+        )
         .expect("right bulk workload should plan");
 
     let left_result = left_runtime
-        .deliver_bulk_workload_plan(left_plan)
+        .deliver_bulk_workload_plan(left_plan, execution)
         .expect("left bulk workload should deliver");
     let right_result = right_runtime
-        .deliver_bulk_workload_plan(right_plan)
+        .deliver_bulk_workload_plan(right_plan, execution)
         .expect("right bulk workload should deliver");
 
     assert_eq!(left_result.summary(), right_result.summary());
@@ -237,6 +261,10 @@ fn bridge_bulk_delivery_is_stable_across_input_order() {
 
 #[test]
 fn bridge_bulk_delivery_replay_matches_original_serial_reduction_path() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         commit_a(),
@@ -258,23 +286,26 @@ fn bridge_bulk_delivery_replay_matches_original_serial_reduction_path() {
         build_runtime(source.clone(), original_sink.clone(), vec![registration()]);
 
     let original_plan = original_runtime
-        .plan_bulk_workload(BridgeBulkWorkloadRequest::new(vec![
-            BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_a())),
-            BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_b())),
-        ]))
+        .plan_bulk_workload(
+            BridgeBulkWorkloadRequest::new(vec![
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_a())),
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_b())),
+            ]),
+            execution,
+        )
         .expect("original serial-reduction bulk workload should plan");
     let canonical = original_runtime.canonicalize_bulk_workload_plan(&original_plan);
     let original_result = original_runtime
-        .deliver_bulk_workload_plan(original_plan)
+        .deliver_bulk_workload_plan(original_plan, execution)
         .expect("original serial-reduction bulk workload should deliver");
 
     let replay_sink = RecordingSignalBridgeSink::default();
     let replay_runtime = build_runtime(source, replay_sink.clone(), vec![registration()]);
     let replayed_plan = replay_runtime
-        .replay_canonical_bulk_plan_record(&canonical)
+        .replay_canonical_bulk_plan_record(&canonical, execution)
         .expect("replayed serial-reduction bulk workload should reconstruct");
     let replayed_result = replay_runtime
-        .deliver_bulk_workload_plan(replayed_plan)
+        .deliver_bulk_workload_plan(replayed_plan, execution)
         .expect("replayed serial-reduction bulk workload should deliver");
 
     assert_eq!(original_result.summary(), replayed_result.summary());
@@ -310,6 +341,10 @@ fn bridge_bulk_delivery_replay_matches_original_serial_reduction_path() {
 
 #[test]
 fn bridge_bulk_delivery_rejects_invalid_parallel_upgrade_for_rejected_plan() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         commit_a(),
@@ -326,10 +361,13 @@ fn bridge_bulk_delivery_rejects_invalid_parallel_upgrade_for_rejected_plan() {
     );
 
     let rejected_plan = runtime
-        .plan_bulk_workload(BridgeBulkWorkloadRequest::new(vec![
-            BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_a())),
-            BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_a())),
-        ]))
+        .plan_bulk_workload(
+            BridgeBulkWorkloadRequest::new(vec![
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_a())),
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_a())),
+            ]),
+            execution,
+        )
         .expect("shared-truth-view workload should plan before rejection certification");
 
     let error = crate::delivery::validate_bulk_delivery_mode(

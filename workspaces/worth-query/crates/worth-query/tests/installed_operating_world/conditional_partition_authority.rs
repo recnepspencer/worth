@@ -9,6 +9,9 @@ use super::installed_operation_fixture::{
 
 #[test]
 fn partition_dependency_crosses_the_real_relational_source_and_signal_delivery_path() {
+    let host_request = crate::bridge_host_request::serial_request();
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let partition = worth_foundational::facade::TruthPartitionRole::new("model-main").unwrap();
     let workspace = conditional_workspace(
         "partition-correspondence",
@@ -81,9 +84,11 @@ fn partition_dependency_crosses_the_real_relational_source_and_signal_delivery_p
                 .partition_widened_matches(),
             1
         );
-        let TransitionOutcome::Success(counters) =
-            correspondence.deliver_authoritative_change(&mut graph_binding, request)
-        else {
+        let TransitionOutcome::Success(counters) = correspondence.deliver_authoritative_change(
+            &mut graph_binding,
+            request,
+            resource_request,
+        ) else {
             panic!("partition-scoped Relational publication delivers")
         };
         assert_eq!(counters.truth_targets_admitted(), 1);

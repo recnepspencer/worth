@@ -17,6 +17,10 @@ use super::support::{runtime_bridge_for_envelope, runtime_with_test_schema};
 
 #[test]
 fn runtime_bridge_lineage_source_resolves_real_relational_history() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime_with_test_schema();
     let created = create_entity_outcome(&runtime, "source");
     let entity = changed_entities(&created)[0];
@@ -55,7 +59,7 @@ fn runtime_bridge_lineage_source_resolves_real_relational_history() {
         TruthCommitIdentity::from_relational_commit_id(latest_bundle.commit.commit_id.0),
     );
     let envelope = source
-        .load_committed_patch(latest_commit_identity.clone())
+        .load_committed_patch(latest_commit_identity.clone(), execution)
         .expect("runtime bridge committed patch");
     let bridge = runtime_bridge_for_envelope(source.clone(), &envelope);
     let lineage_context = BridgeMappingContext::default().with_lineage_context(
@@ -68,6 +72,7 @@ fn runtime_bridge_lineage_source_resolves_real_relational_history() {
         .plan_committed_patch_with_mapping_context(
             BridgeRouteRequest::for_commit(latest_commit_identity.commit_identity().clone()),
             lineage_context,
+            execution,
         )
         .expect("lineage-context route should plan");
     let continuity_requests = bridge
@@ -98,13 +103,18 @@ fn runtime_bridge_lineage_source_resolves_real_relational_history() {
 
 #[test]
 fn retained_lineage_observation_excludes_later_same_branch_replacement() {
-    let fixture = retained_lineage_fixture();
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let fixture = retained_lineage_fixture(resource_request);
     let before = lineage_authority_with_events(
         &plan_lineage_packet(
             &fixture.bridge,
             fixture.commit_identity.clone(),
             TruthBranchIdentity::from_relational_branch_id("main"),
             fixture.snapshot.clone(),
+            resource_request,
         )
         .expect("retained lineage basis should resolve before branch movement"),
     );
@@ -122,6 +132,7 @@ fn retained_lineage_observation_excludes_later_same_branch_replacement() {
             fixture.commit_identity,
             TruthBranchIdentity::from_relational_branch_id("main"),
             fixture.snapshot,
+            resource_request,
         )
         .expect("retained lineage basis should remain readable after branch movement"),
     );
@@ -130,12 +141,17 @@ fn retained_lineage_observation_excludes_later_same_branch_replacement() {
 
 #[test]
 fn continuity_lineage_denies_mixed_branch_and_snapshot_axes() {
-    let fixture = retained_lineage_fixture();
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let fixture = retained_lineage_fixture(resource_request);
     let denial = plan_lineage_packet(
         &fixture.bridge,
         fixture.commit_identity,
         TruthBranchIdentity::from_relational_branch_id("feature"),
         fixture.snapshot,
+        resource_request,
     )
     .expect_err("a branch identity from outside the retained observation must deny");
     assert!(
@@ -153,7 +169,9 @@ struct RetainedLineageFixture {
     _lease: super::super::RelationalBridgeObservationLease,
 }
 
-fn retained_lineage_fixture() -> RetainedLineageFixture {
+fn retained_lineage_fixture(
+    execution: worth_execution::ExecutionRequest<'_, '_>,
+) -> RetainedLineageFixture {
     let runtime = runtime_with_test_schema();
     let created = create_entity_outcome(&runtime, "source");
     let entity = changed_entities(&created)[0];
@@ -181,9 +199,10 @@ fn retained_lineage_fixture() -> RetainedLineageFixture {
     let snapshot = lease.snapshot_identity().clone();
     let commit_identity = TruthCommitIdentity::from_relational_commit_id(bundle.commit.commit_id.0);
     let envelope = source
-        .load_committed_patch(RelationalCommittedPatchRequest::new(
-            commit_identity.clone(),
-        ))
+        .load_committed_patch(
+            RelationalCommittedPatchRequest::new(commit_identity.clone()),
+            execution,
+        )
         .expect("retained lineage committed patch");
     let bridge = runtime_bridge_for_envelope(source, &envelope);
     RetainedLineageFixture {
@@ -201,6 +220,7 @@ fn plan_lineage_packet(
     commit_identity: TruthCommitIdentity,
     branch: TruthBranchIdentity,
     snapshot: TruthSnapshotIdentity,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<BridgeHistoricalLineagePacket, String> {
     let lineage_context = BridgeMappingContext::default().with_lineage_context(
         BridgeLineageContext::new(BridgeContinuityAuthorityBasis::new(branch, snapshot)),
@@ -209,6 +229,7 @@ fn plan_lineage_packet(
         .plan_committed_patch_with_mapping_context(
             BridgeRouteRequest::for_commit(commit_identity),
             lineage_context,
+            execution,
         )
         .map_err(|error| error.to_string())?;
     let continuity_requests = bridge

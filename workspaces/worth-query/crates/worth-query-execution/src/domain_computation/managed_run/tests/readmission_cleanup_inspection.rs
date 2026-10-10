@@ -22,12 +22,16 @@ fn completed_readmission_cleanup_receipts_are_exact_inspection_newtypes() {
 #[test]
 fn workflow_cleanup_pending_peers_keep_exact_yielded_association_through_rightful_retry() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
         let (first, second, bridge, runtime) = shared_yielded_workflow_peers_with_provider(
             execution,
             YieldProvider::checkpoint_restore_panic(5),
+            resource_request,
         );
         let first_yielded = first.inspection().clone();
         let second_yielded = second.inspection().clone();
@@ -54,6 +58,9 @@ fn workflow_cleanup_pending_peers_keep_exact_yielded_association_through_rightfu
 #[test]
 fn retained_artifact_is_the_only_pending_axis_and_retry_observes_its_release() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -61,6 +68,7 @@ fn retained_artifact_is_the_only_pending_axis_and_retry_observes_its_release() {
             yielded_workflow_with_retained_artifact(
                 execution,
                 YieldProvider::checkpoint_restore_panic(7),
+                resource_request,
             );
         let yielded_inspection = yielded.inspection().clone();
         let borrowed = artifact

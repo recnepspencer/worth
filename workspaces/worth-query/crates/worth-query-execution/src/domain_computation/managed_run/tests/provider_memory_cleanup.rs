@@ -112,6 +112,9 @@ impl WorthQueryGraphParticipationProvider<ManagedGraph> for EscapingStartProvide
 #[test]
 fn multiple_provider_calls_retain_every_live_arena_until_cleanup() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -121,6 +124,7 @@ fn multiple_provider_calls_retain_every_live_arena_until_cleanup() {
             EscapingMemoryProvider {
                 retained: Arc::clone(&retained),
             },
+            resource_request,
         );
         let running = complete_call(execution, running, &graph, "first-memory-call");
         let running = complete_call(execution, running, &graph, "second-memory-call");
@@ -174,6 +178,9 @@ fn multiple_provider_calls_retain_every_live_arena_until_cleanup() {
 #[test]
 fn provider_start_failure_preserves_escaped_arena_recovery() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -183,6 +190,7 @@ fn provider_start_failure_preserves_escaped_arena_recovery() {
             EscapingStartProvider {
                 retained: Arc::clone(&retained),
             },
+            resource_request,
         );
         let failure = match running.begin_graph_execution(
             execution,
@@ -232,6 +240,9 @@ fn provider_start_failure_preserves_escaped_arena_recovery() {
 #[test]
 fn workflow_cleanup_retries_each_live_provider_arena_before_completion() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -273,8 +284,12 @@ fn workflow_cleanup_retries_each_live_provider_arena_before_completion() {
             &graph,
             WorthQueryOperationGraphAccess::Observe,
         );
-        let running =
-            super::workflow_provider_steps::admitted_workflow(&runtime, &operation, resources);
+        let running = super::workflow_provider_steps::admitted_workflow(
+            &runtime,
+            &operation,
+            resources,
+            resource_request,
+        );
         let running =
             complete_workflow_memory_call(execution, running, &graph, "first-workflow-memory");
         let running =

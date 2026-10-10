@@ -224,6 +224,8 @@ fn a_real_peer_plan_and_session_cannot_substitute_for_the_captured_attempt() {
         .expect("fixture owner admits its advancement");
 }
 
+#[path = "affinity_tests/foreign_phase.rs"]
+mod foreign_phase;
 #[path = "affinity_tests/selected_product.rs"]
 mod selected_product;
 

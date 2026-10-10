@@ -12,6 +12,10 @@ use crate::speculation::BridgePreviewSessionIdentity;
 
 #[test]
 fn causal_envelope_preview_mapping_cost_ignores_unrelated_preview_records() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut envelope_identities = Vec::new();
 
     for unrelated_previews in [0, 3, 9] {
@@ -44,9 +48,10 @@ fn causal_envelope_preview_mapping_cost_ignores_unrelated_preview_records() {
             runtime.activate_preview_session(admitted, 1, 0, 0);
         }
         let routed = runtime
-            .route(crate::truth_identity_fixtures::truth_commit_fixture(
-                "commit-causal-preview-scale",
-            ))
+            .route(
+                crate::truth_identity_fixtures::truth_commit_fixture("commit-causal-preview-scale"),
+                execution,
+            )
             .expect("route should succeed");
         let admitted = runtime
             .admit_preview_session(

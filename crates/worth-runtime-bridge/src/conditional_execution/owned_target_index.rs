@@ -116,7 +116,7 @@ impl BridgeOwnedConditionalTargetIndex {
                 })?;
                 references.checked_add(1).ok_or_else(|| {
                     BridgeConditionalDenial::new(
-                        BridgeConditionalDenialKind::ConditionalEvaluationAdmissionCapacity,
+                        BridgeConditionalDenialKind::ConditionalTargetReferenceExhausted,
                         "owned conditional target reference count is exhausted",
                     )
                 })?;

@@ -3,6 +3,9 @@ use super::yield_fixture::YieldProvider;
 #[test]
 fn checkpoint_release_panic_reports_exact_non_retryable_physical_posture() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
         let active_request = execution;
@@ -10,6 +13,7 @@ fn checkpoint_release_panic_reports_exact_non_retryable_physical_posture() {
         let (yielded, bridge, runtime) = super::readmission_direct::yielded_direct_with_provider(
             execution,
             YieldProvider::checkpoint_drop_panic(),
+            resource_request,
         );
         let checkpoint = yielded.inspection().checkpoint().identity().to_owned();
         let recovery = match yielded.readmit_same_runtime(active_request, &runtime, &bridge) {
@@ -69,6 +73,9 @@ fn checkpoint_release_panic_reports_exact_non_retryable_physical_posture() {
 #[test]
 fn checkpoint_and_restored_execution_drop_panics_preserve_both_physical_dispositions() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
         let active_request = execution;
@@ -76,6 +83,7 @@ fn checkpoint_and_restored_execution_drop_panics_preserve_both_physical_disposit
         let (yielded, bridge, runtime) = super::readmission_direct::yielded_direct_with_provider(
             execution,
             YieldProvider::checkpoint_and_restored_execution_drop_panic(7),
+            resource_request,
         );
         let recovery = match yielded.readmit_same_runtime(active_request, &runtime, &bridge) {
             crate::domain_computation::WorthQueryDirectReadmissionOutcome::RecoveryRequired(

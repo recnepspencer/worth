@@ -7,6 +7,10 @@ use crate::harness::fixtures::{InMemoryRelationalBridgeSource, RecordingSignalBr
 
 #[test]
 fn bridge_snapshot_reader_pool_is_used_when_configured() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         commit_a(),
@@ -28,8 +32,9 @@ fn bridge_snapshot_reader_pool_is_used_when_configured() {
     runtime
         .deliver_invalidation(
             runtime
-                .plan_committed_patch(BridgeRouteRequest::for_commit(commit_a()))
+                .plan_committed_patch(BridgeRouteRequest::for_commit(commit_a()), execution)
                 .expect("bridge should plan the route"),
+            execution,
         )
         .expect("bridge delivery should succeed");
 

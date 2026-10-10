@@ -17,6 +17,7 @@ pub(in crate::harness::adapter::adapter_impl::writeback::feedback_loop_certifica
 pub(in crate::harness::adapter::adapter_impl::writeback::feedback_loop_certification) fn establish_feedback_origin_proof(
     runtime_bridge: &crate::facade::RuntimeBridge,
     fixture: &BridgeHarnessFixture,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<FeedbackOriginProof, BridgeHarnessError> {
     let lowered_policy_bundle = lowered_policy(runtime_bridge)?;
     let declaration = crate::facade::BridgeWritebackDeclaration::writeback_capable(
@@ -44,7 +45,8 @@ pub(in crate::harness::adapter::adapter_impl::writeback::feedback_loop_certifica
         .ok_or_else(|| {
             BridgeHarnessError::new("writeback feedback fixture requires one committed patch")
         })?;
-    let initial_route_digest = route_digest_for_first_patch(runtime_bridge, fixture)?;
+    let initial_route_digest =
+        route_digest_for_first_patch(runtime_bridge, fixture, resource_request)?;
     let original_causality = writeback_causality_basis(
         "harness:writeback-feedback-causality",
         original_commit.commit_identity().as_str(),

@@ -77,7 +77,9 @@ fn equivalent_retry_recovers_original_receipt_while_intent_drift_is_denied() {
     let commit = performed.product_commit().clone();
     let failed = crate::domain_computation::execution_runtime::product_world::preserve_delivery_authority(
         worth_proof::TransitionOutcome::Failed(
-            worth_runtime_bridge::facade::BridgeCorrespondenceAdmissionFailure::SourceLoadFailed,
+            worth_runtime_bridge::facade::BridgeCorrespondenceAdmissionFailure::SourceLoadFailed(worth_runtime_bridge::facade::RelationalBridgeSourceError::new(
+                worth_runtime_bridge::facade::RelationalBridgeSourceErrorTag::ExternalSourceFailure, "source unavailable",
+            )),
         ),
         performed,
     );

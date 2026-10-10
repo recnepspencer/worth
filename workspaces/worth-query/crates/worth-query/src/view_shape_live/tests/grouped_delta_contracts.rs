@@ -16,12 +16,15 @@ use super::view_plan_world::{collection_canonical, planned_view, runtime_basis};
 
 #[test]
 fn grouped_delta_is_explicit_and_deterministic() {
+    let host_request = crate::bridge_host_request::serial_request();
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let planned = planned_view(
         &collection_canonical(),
         ViewShapeDescriptor::kanban_grouped(aspect_key("status")),
     );
     let basis = runtime_basis(planned.validated().query().schema_basis().clone());
-    let truth_view = grouped_truth_view(&planned);
+    let truth_view = grouped_truth_view(&planned, resource_request);
     let grouped_execution =
         materialize_grouped_execution_surface_from_truth_view(&planned, basis.clone(), &truth_view)
             .unwrap();
@@ -54,6 +57,7 @@ fn grouped_delta_is_explicit_and_deterministic() {
         ],
         "identity.id",
         None,
+        resource_request,
     );
     let next_grouped_execution = materialize_grouped_execution_surface_from_truth_view(
         &planned,
@@ -91,12 +95,15 @@ fn grouped_delta_is_explicit_and_deterministic() {
 
 #[test]
 fn grouped_churn_overrun_stays_on_grouped_membership_delta() {
+    let host_request = crate::bridge_host_request::serial_request();
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let planned = planned_view(
         &collection_canonical(),
         ViewShapeDescriptor::kanban_grouped(aspect_key("status")),
     );
     let basis = runtime_basis(planned.validated().query().schema_basis().clone());
-    let truth_view = grouped_truth_view(&planned);
+    let truth_view = grouped_truth_view(&planned, resource_request);
     let grouped_execution =
         materialize_grouped_execution_surface_from_truth_view(&planned, basis.clone(), &truth_view)
             .unwrap();
@@ -115,6 +122,7 @@ fn grouped_churn_overrun_stays_on_grouped_membership_delta() {
         ],
         "identity.id",
         None,
+        resource_request,
     );
     let next_grouped_execution = materialize_grouped_execution_surface_from_truth_view(
         &planned,
@@ -182,12 +190,15 @@ fn grouped_churn_overrun_stays_on_grouped_membership_delta() {
 
 #[test]
 fn grouped_core_refresh_still_emits_grouped_semantics() {
+    let host_request = crate::bridge_host_request::serial_request();
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let planned = planned_view(
         &collection_canonical(),
         ViewShapeDescriptor::kanban_grouped(aspect_key("status")),
     );
     let basis = runtime_basis(planned.validated().query().schema_basis().clone());
-    let truth_view = grouped_truth_view(&planned);
+    let truth_view = grouped_truth_view(&planned, resource_request);
     let grouped_execution =
         materialize_grouped_execution_surface_from_truth_view(&planned, basis.clone(), &truth_view)
             .unwrap();
@@ -195,7 +206,7 @@ fn grouped_core_refresh_still_emits_grouped_semantics() {
         materialize_authoritative_grouped_baseline(&planned, basis.clone(), &grouped_execution)
             .unwrap();
     let live = lower_view_shape_plan_to_live(&planned, basis, Some(baseline), None).unwrap();
-    let next_truth_view = grouped_truth_view(&planned);
+    let next_truth_view = grouped_truth_view(&planned, resource_request);
     let next_grouped_execution = materialize_grouped_execution_surface_from_truth_view(
         &planned,
         live.basis().clone(),
@@ -235,12 +246,15 @@ fn grouped_core_refresh_still_emits_grouped_semantics() {
 
 #[test]
 fn grouped_delta_mixed_member_churn_stays_incremental() {
+    let host_request = crate::bridge_host_request::serial_request();
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let planned = planned_view(
         &collection_canonical(),
         ViewShapeDescriptor::kanban_grouped(aspect_key("status")),
     );
     let basis = runtime_basis(planned.validated().query().schema_basis().clone());
-    let truth_view = grouped_truth_view(&planned);
+    let truth_view = grouped_truth_view(&planned, resource_request);
     let grouped_execution =
         materialize_grouped_execution_surface_from_truth_view(&planned, basis.clone(), &truth_view)
             .unwrap();
@@ -256,6 +270,7 @@ fn grouped_delta_mixed_member_churn_stays_incremental() {
         ],
         "identity.id",
         None,
+        resource_request,
     );
     let next_grouped_execution = materialize_grouped_execution_surface_from_truth_view(
         &planned,

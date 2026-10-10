@@ -15,6 +15,10 @@ use super::support::{linear_ancestry_work, runtime_bridge_for_envelope, runtime_
 
 #[test]
 fn advanced_fork_selects_inherited_ancestor_but_not_post_fork_source_sibling() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = Arc::new(Mutex::new(runtime_with_test_schema()));
     let inherited = create_entity_outcome(&runtime.lock().unwrap(), "fork-ancestor");
     let feature = BranchId("feature".to_owned());
@@ -48,10 +52,10 @@ fn advanced_fork_selects_inherited_ancestor_but_not_post_fork_source_sibling() {
         linear_ancestry_work(&runtime.lock().unwrap(), feature_head.commit.commit_id);
 
     let inherited_envelope = source
-        .load_committed_patch(RelationalCommittedPatchRequest::at_snapshot(
-            ancestor_commit.clone(),
-            snapshot.clone(),
-        ))
+        .load_committed_patch(
+            RelationalCommittedPatchRequest::at_snapshot(ancestor_commit.clone(), snapshot.clone()),
+            execution,
+        )
         .expect("an advanced fork must retain its source-branch ancestor");
     assert_eq!(source.selection_work_totals(), (1, ancestry_work));
     assert_eq!(
@@ -66,19 +70,22 @@ fn advanced_fork_selects_inherited_ancestor_but_not_post_fork_source_sibling() {
     assert!(source_basis.contains("selected-branch=feature"));
     assert!(source_basis.contains("authoring-branch=main"));
     runtime_bridge_for_envelope(source.clone(), &inherited_envelope)
-        .evaluate(BridgeTruthViewEvaluationRequest::for_historical_commit(
-            branch,
-            ancestor_commit,
-        ))
+        .evaluate(
+            BridgeTruthViewEvaluationRequest::for_historical_commit(branch, ancestor_commit),
+            execution,
+        )
         .expect("historical evaluation must retain the advanced fork's ancestor");
 
     let after_evaluation = source.selection_work_totals();
     assert_eq!(after_evaluation, (2, 2 * ancestry_work));
     let denial = source
-        .load_committed_patch(RelationalCommittedPatchRequest::at_snapshot(
-            TruthCommitIdentity::from_relational_commit_id(source_sibling.commit.commit_id.0),
-            snapshot,
-        ))
+        .load_committed_patch(
+            RelationalCommittedPatchRequest::at_snapshot(
+                TruthCommitIdentity::from_relational_commit_id(source_sibling.commit.commit_id.0),
+                snapshot,
+            ),
+            execution,
+        )
         .expect_err("a post-fork source sibling is not beneath the feature head");
     assert!(denial.to_string().contains("cannot see requested commit"));
     // The sibling costs one more selection and exactly the same full walk as

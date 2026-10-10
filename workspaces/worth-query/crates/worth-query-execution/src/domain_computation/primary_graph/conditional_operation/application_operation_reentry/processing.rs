@@ -180,9 +180,7 @@ where
             worth_query_installation::facade::WorthQueryCanonicalWorkEvidence::zero();
         let decision = std::mem::replace(
             &mut wake.decision,
-            WorthQueryRetainedConditionalDecision::Failed(
-                "temporal operation re-entry was interrupted".to_string(),
-            ),
+            WorthQueryRetainedConditionalDecision::InterruptedDuringReentry,
         );
         let evidence = match decision {
             WorthQueryRetainedConditionalDecision::OperationSettlementDeferred(
@@ -290,7 +288,8 @@ where
             | WorthQueryRetainedConditionalDecision::OperationProductUnpublished(_, _)
             | WorthQueryRetainedConditionalDecision::OperationCommitted(_)
             | WorthQueryRetainedConditionalDecision::OperationAlreadyCommitted(_)
-            | WorthQueryRetainedConditionalDecision::Failed(_)) => {
+            | WorthQueryRetainedConditionalDecision::Failed(_)
+            | WorthQueryRetainedConditionalDecision::InterruptedDuringReentry) => {
                 wake.decision = other;
                 continue;
             }

@@ -2,11 +2,15 @@ use super::*;
 
 pub(crate) fn preview_active_detail_subscription(
     suffix: &str,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     crate::facade::RuntimeBridge,
     crate::facade::BridgePreviewActiveSubscription,
 ) {
-    preview_active_subscription_from_ready(activation_ready_detail_subscription(), suffix)
+    preview_active_subscription_from_ready(
+        activation_ready_detail_subscription(resource_request),
+        suffix,
+    )
 }
 
 pub(crate) fn admitted_preview_basis_for_truth(
@@ -36,13 +40,14 @@ pub(crate) fn admitted_preview_basis_for_truth(
 
 pub(crate) fn preview_promotion_detail_subscription(
     suffix: &str,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     crate::facade::RuntimeBridge,
     crate::facade::BridgePreviewActiveSubscription,
     crate::facade::BridgePreviewPromotionRecord,
     crate::facade::BridgeSubscriptionActivationReady,
 ) {
-    let (runtime, ready) = activation_ready_detail_subscription();
+    let (runtime, ready) = activation_ready_detail_subscription(resource_request);
     let admitted_preview = runtime
         .admit_preview_session(
             crate::speculation::BridgePreviewSessionIdentity::admit_bridge_owned(format!(
@@ -75,7 +80,8 @@ pub(crate) fn preview_promotion_detail_subscription(
     let (_promoted_session, promotion_record) = runtime
         .promote_preview_session(active_preview_session, &execution_record, &proof)
         .expect("speculation promotion should succeed");
-    let promoted_ready = activation_ready_detail_subscription_in_runtime(&runtime);
+    let promoted_ready =
+        activation_ready_detail_subscription_in_runtime(&runtime, resource_request);
 
     (runtime, preview_active, promotion_record, promoted_ready)
 }
@@ -100,11 +106,15 @@ pub(crate) fn preview_work_trace(
 
 pub(crate) fn preview_active_collection_subscription(
     suffix: &str,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     crate::facade::RuntimeBridge,
     crate::facade::BridgePreviewActiveSubscription,
 ) {
-    preview_active_subscription_from_ready(activation_ready_collection_subscription(), suffix)
+    preview_active_subscription_from_ready(
+        activation_ready_collection_subscription(resource_request),
+        suffix,
+    )
 }
 
 pub(crate) fn preview_active_subscription_from_ready(

@@ -4,7 +4,8 @@ use super::*;
 pub(super) fn measured_workflow_target(unrelated_width: usize) -> stats_alloc::Stats {
     let (paused, unrelated) =
         crate::domain_computation::primary_graph::with_test_advancement(|execution| {
-            prepared_workflow_target(&execution, unrelated_width)
+            let bootstrap = execution.bootstrap_for_test();
+            prepared_workflow_target(&execution, unrelated_width, bootstrap.execution_request())
         });
     let region = stats_alloc::Region::new(&stats_alloc::INSTRUMENTED_SYSTEM);
     let yielded = match paused.yield_run() {
@@ -28,7 +29,8 @@ pub(super) fn measured_workflow_target(unrelated_width: usize) -> stats_alloc::S
 pub(super) fn measured_target(unrelated_width: usize) -> stats_alloc::Stats {
     let (paused, unrelated, _, _) =
         crate::domain_computation::primary_graph::with_test_advancement(|execution| {
-            prepared_target(&execution, unrelated_width)
+            let bootstrap = execution.bootstrap_for_test();
+            prepared_target(&execution, unrelated_width, bootstrap.execution_request())
         });
     let region = stats_alloc::Region::new(&stats_alloc::INSTRUMENTED_SYSTEM);
     let yielded = yield_target(paused);

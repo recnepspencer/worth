@@ -8,6 +8,10 @@ use crate::facade::{
 
 #[test]
 fn runtime_projects_route_planning_policy_and_stamps_planned_route() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::default());
     let (contract, lowered, provenance, replay_bundle) = admitted_bundle(
         &runtime,
@@ -29,6 +33,7 @@ fn runtime_projects_route_planning_policy_and_stamps_planned_route() {
                 "commit-a",
             )),
             &route_policy,
+            execution,
         )
         .expect("route planning under lowered policy should succeed");
 
@@ -71,6 +76,10 @@ fn runtime_rejects_divergent_route_planning_policy_from_more_permissive_runtime(
 
 #[test]
 fn bulk_route_planning_policy_is_carried_by_every_planned_route() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::default());
     let (_, lowered, _, _) = admitted_bundle(
         &runtime,
@@ -96,7 +105,7 @@ fn bulk_route_planning_policy_is_carried_by_every_planned_route() {
     ]);
 
     let plan = runtime
-        .plan_bulk_workload_with_route_policy(workload, &route_policy)
+        .plan_bulk_workload_with_route_policy(workload, &route_policy, execution)
         .expect("bulk planning under route policy should succeed");
 
     assert_eq!(plan.planned_routes().len(), 2);
@@ -110,6 +119,10 @@ fn bulk_route_planning_policy_is_carried_by_every_planned_route() {
 
 #[test]
 fn policy_scoped_route_round_trips_through_canonical_replay() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::default());
     let (_, lowered, _, _) = admitted_bundle(
         &runtime,
@@ -133,8 +146,10 @@ fn policy_scoped_route_round_trips_through_canonical_replay() {
                         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
                     ),
                     &route_policy,
+                    execution,
                 )
                 .expect("policy scoped route should plan"),
+            execution,
         )
         .expect("policy scoped route should deliver");
     let canonical_record = runtime
@@ -143,7 +158,7 @@ fn policy_scoped_route_round_trips_through_canonical_replay() {
         .expect("canonical route record should be retained");
 
     let replay = runtime
-        .replay_canonical_record(&canonical_record)
+        .replay_canonical_record(&canonical_record, execution)
         .expect("policy scoped canonical route should replay");
 
     assert_eq!(
@@ -169,6 +184,10 @@ fn policy_scoped_route_round_trips_through_canonical_replay() {
 
 #[test]
 fn policy_scoped_route_without_route_artifacts_does_not_retain_canonical_record() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::default());
     let (_, lowered, _, _) = admitted_bundle(
         &runtime,
@@ -193,8 +212,10 @@ fn policy_scoped_route_without_route_artifacts_does_not_retain_canonical_record(
                         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
                     ),
                     &route_policy,
+                    execution,
                 )
                 .expect("policy scoped route should plan"),
+            execution,
         )
         .expect("policy scoped route should deliver");
 

@@ -6,6 +6,7 @@ use crate::facade::{
     TruthCommitIdentity, TruthPatchIdentity, TruthSnapshotIdentity,
 };
 use worth_foundational::facade::{AspectLocator, LocatorAuthority};
+#[cfg(test)]
 use worth_proof::TransitionOutcome;
 use worth_relational::facade::history::{BranchId, CommitId};
 use worth_relational::facade::publication::{
@@ -15,7 +16,9 @@ use worth_relational::facade::publication::{
 
 use super::identities::record_ref_identity;
 use super::lowering_precision::gate_lowering_precision;
+use super::patch_lowering_denial::PatchLoweringDenial;
 use super::RelationalBridgePublicationDenial;
+use worth_execution::ExecutionRequest;
 
 /// Lower a decoded publication the way a receipt is lowered: Relational's
 /// consistency rules first, then the Bridge's own gates.
@@ -30,16 +33,26 @@ pub(crate) fn publication_patch_to_bridge_envelope(
     if let Err(denial) = patch.check_change_consistency() {
         return TransitionOutcome::Denied(super::lowering_precision::consistency_denial(&denial));
     }
-    lower_canonical_patch(RelationalBridgePatchPublicationRequest {
-        commit_id,
-        branch_id,
-        snapshot_identity,
-        patch: &patch,
-        admitted_widening: None,
-        producer_metadata: BridgeProducerMetadata::bridge_harness_fixture(),
-        source_record_patches_examined: patch.authoritative_record_patches.len() as u64,
-        source_record_patches_filtered_out: 0,
-    })
+    crate::host_execution::with_declared_request(
+        crate::policy::BridgeExecutionPolicyBaseline::operational(),
+        |execution| match lower_canonical_patch(
+            RelationalBridgePatchPublicationRequest {
+                commit_id,
+                branch_id,
+                snapshot_identity,
+                patch: &patch,
+                admitted_widening: None,
+                producer_metadata: BridgeProducerMetadata::bridge_harness_fixture(),
+                source_record_patches_examined: patch.authoritative_record_patches.len() as u64,
+                source_record_patches_filtered_out: 0,
+            },
+            execution,
+        ) {
+            Ok(envelope) => TransitionOutcome::Success(envelope),
+            Err(PatchLoweringDenial::Publication(denial)) => TransitionOutcome::Denied(denial),
+            Err(PatchLoweringDenial::Execution(denial)) => panic!("test host refused: {denial:?}"),
+        },
+    )
 }
 
 pub(super) struct RelationalBridgePatchPublicationRequest<'a> {
@@ -57,7 +70,8 @@ pub(super) struct RelationalBridgePatchPublicationRequest<'a> {
 /// admitted widening.
 pub(super) fn lower_canonical_patch(
     request: RelationalBridgePatchPublicationRequest<'_>,
-) -> TransitionOutcome<BridgeCommittedPatchEnvelope, RelationalBridgePublicationDenial> {
+    execution: ExecutionRequest<'_, '_>,
+) -> Result<BridgeCommittedPatchEnvelope, PatchLoweringDenial> {
     let RelationalBridgePatchPublicationRequest {
         commit_id,
         branch_id,
@@ -75,48 +89,42 @@ pub(super) fn lower_canonical_patch(
         snapshot_identity,
         TruthBranchIdentity::from_relational_branch_id(branch_id.0.clone()),
     );
-    let mut counters = match gate_lowering_precision(patch, admitted_widening) {
-        Ok(counters) => counters,
-        Err(denial) => return TransitionOutcome::Denied(denial),
-    };
+    let mut counters = gate_lowering_precision(patch, admitted_widening, execution)?;
     counters.source_record_patches_examined = source_record_patches_examined;
     counters.source_record_patches_filtered_out = source_record_patches_filtered_out;
-    let record_changes = match bridge_record_changes(&patch.authoritative_record_patches) {
-        Ok(record_changes) => record_changes,
-        Err(error) => {
-            return TransitionOutcome::Denied(RelationalBridgePublicationDenial::new(
-                error, counters,
-            ))
-        }
-    };
-    let items = bridge_patch_items(&patch.authoritative_record_patches, admitted_widening);
+    let record_changes =
+        bridge_record_changes(&patch.authoritative_record_patches, execution, counters)?;
+    let items = bridge_patch_items(
+        &patch.authoritative_record_patches,
+        admitted_widening,
+        execution,
+    )?;
     match BridgeCommittedPatchEnvelope::new_with_authoritative_lowering(
         identity,
         items,
         record_changes,
         counters,
     ) {
-        Ok(envelope) => TransitionOutcome::Success(envelope),
-        Err(error) => {
-            TransitionOutcome::Denied(RelationalBridgePublicationDenial::new(error, counters))
-        }
+        Ok(envelope) => Ok(envelope),
+        Err(error) => Err(RelationalBridgePublicationDenial::new(error, counters).into()),
     }
 }
 
 fn bridge_patch_items(
     records: &[PublishedAuthoritativeRecordPatch],
     admitted_widening: Option<BridgeAspectChangeWideningCause>,
-) -> Vec<BridgeCommittedPatchItem> {
-    records
-        .iter()
-        .flat_map(|record| {
-            let record_identity = record_ref_identity(&record.target);
-            record
-                .semantic_changes
-                .iter()
-                .map(move |change| bridge_patch_item(record_identity, change, admitted_widening))
-        })
-        .collect()
+    execution: ExecutionRequest<'_, '_>,
+) -> Result<Vec<BridgeCommittedPatchItem>, PatchLoweringDenial> {
+    let mut items = Vec::new();
+    for record in records {
+        execution.consult()?;
+        let identity = record_ref_identity(&record.target);
+        for change in &record.semantic_changes {
+            execution.consult()?;
+            items.push(bridge_patch_item(identity, change, admitted_widening));
+        }
+    }
+    Ok(items)
 }
 
 fn bridge_patch_item(
@@ -194,10 +202,13 @@ fn bridge_semantic_change(
 /// changes the Bridge does not know yet; such a patch is denied, not guessed.
 fn bridge_record_changes(
     records: &[PublishedAuthoritativeRecordPatch],
-) -> Result<Vec<BridgeCommittedRecordChange>, BridgeRouteError> {
+    execution: ExecutionRequest<'_, '_>,
+    counters: crate::facade::BridgeAuthoritativePatchLoweringCounters,
+) -> Result<Vec<BridgeCommittedRecordChange>, PatchLoweringDenial> {
     records
         .iter()
         .map(|record| {
+            execution.consult()?;
             let kind = match record.structural_change {
                 RecordStructuralChange::Created => BridgeCommittedRecordChangeKind::Created,
                 RecordStructuralChange::Updated => BridgeCommittedRecordChangeKind::Updated,
@@ -213,10 +224,14 @@ fn bridge_record_changes(
                 }
                 // `RecordStructuralChange` is non-exhaustive outside Relational.
                 unknown => {
-                    return Err(BridgeRouteError::new(
-                        BridgeRouteErrorKind::InvalidLoweringContract,
-                        format!("record structural change {unknown:?} has no Bridge lowering"),
-                    ))
+                    return Err(RelationalBridgePublicationDenial::new(
+                        BridgeRouteError::new(
+                            BridgeRouteErrorKind::InvalidLoweringContract,
+                            format!("record structural change {unknown:?} has no Bridge lowering"),
+                        ),
+                        counters,
+                    )
+                    .into())
                 }
             };
             Ok(BridgeCommittedRecordChange::from_relational_publication(

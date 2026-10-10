@@ -2,6 +2,10 @@ use super::*;
 
 #[test]
 fn runtime_branch_comparison_ignores_read_result_order_when_structure_is_equal() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     #[derive(Clone)]
     struct ReorderedSource;
 
@@ -80,6 +84,7 @@ fn runtime_branch_comparison_ignores_read_result_order_when_structure_is_equal()
         fn load_committed_patch(
             &self,
             request: crate::adapter::RelationalCommittedPatchRequest,
+            _execution: worth_execution::ExecutionRequest<'_, '_>,
         ) -> Result<
             crate::input::envelope::BridgeCommittedPatchEnvelope,
             crate::adapter::RelationalBridgeSourceError,
@@ -108,7 +113,12 @@ fn runtime_branch_comparison_ignores_read_result_order_when_structure_is_equal()
                     ),
                 ],
             )
-            .map_err(|error| crate::adapter::RelationalBridgeSourceError::new(error.to_string()))
+            .map_err(|error| {
+                crate::adapter::RelationalBridgeSourceError::new(
+                    crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                    error.to_string(),
+                )
+            })
         }
     }
 
@@ -116,6 +126,7 @@ fn runtime_branch_comparison_ignores_read_result_order_when_structure_is_equal()
         fn open_snapshot(
             &self,
             identity: &TruthSnapshotIdentity,
+            _execution: worth_execution::ExecutionRequest<'_, '_>,
         ) -> Result<
             Box<dyn crate::snapshot::TruthSnapshotReader>,
             crate::adapter::RelationalBridgeSourceError,
@@ -131,10 +142,10 @@ fn runtime_branch_comparison_ignores_read_result_order_when_structure_is_equal()
             ) {
                 Ok(Box::new(ReverseReader))
             } else {
-                Err(crate::adapter::RelationalBridgeSourceError::new(format!(
-                    "unknown snapshot `{}`",
-                    identity.as_str()
-                )))
+                Err(crate::adapter::RelationalBridgeSourceError::new(
+                    crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                    format!("unknown snapshot `{}`", identity.as_str()),
+                ))
             }
         }
     }
@@ -143,6 +154,7 @@ fn runtime_branch_comparison_ignores_read_result_order_when_structure_is_equal()
         fn load_branch_head_patch(
             &self,
             branch_identity: &TruthBranchIdentity,
+            _execution: worth_execution::ExecutionRequest<'_, '_>,
         ) -> Result<
             crate::input::envelope::BridgeCommittedPatchEnvelope,
             crate::adapter::RelationalBridgeSourceError,
@@ -180,7 +192,12 @@ fn runtime_branch_comparison_ignores_read_result_order_when_structure_is_equal()
                     ),
                 ],
             )
-            .map_err(|error| crate::adapter::RelationalBridgeSourceError::new(error.to_string()))
+            .map_err(|error| {
+                crate::adapter::RelationalBridgeSourceError::new(
+                    crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                    error.to_string(),
+                )
+            })
         }
     }
 
@@ -269,6 +286,7 @@ fn runtime_branch_comparison_ignores_read_result_order_when_structure_is_equal()
                     ),
                 ),
             ]),
+            resource_request,
         )
         .expect("branch comparison should plan from reordered equal reads");
     let reduced = runtime

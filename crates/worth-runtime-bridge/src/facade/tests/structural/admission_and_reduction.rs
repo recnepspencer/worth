@@ -269,6 +269,10 @@ fn runtime_reduces_lineage_structural_divergence_to_typed_rejection() {
 
 #[test]
 fn runtime_canonicalizes_and_replays_structural_remap_record() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::default());
     let declaration = registered_structural(
         "structural:analysis-snapshot",
@@ -302,6 +306,7 @@ fn runtime_canonicalizes_and_replays_structural_remap_record() {
                     ),
                 ),
             ])],
+            execution,
         )
         .expect("structural candidates should plan");
     let reduced = runtime
@@ -314,7 +319,7 @@ fn runtime_canonicalizes_and_replays_structural_remap_record() {
         runtime.canonicalize_structural_remap_record(&contract, &planned, &reduced, &artifact);
 
     let replay = runtime
-        .replay_canonical_structural_remap_record(&record)
+        .replay_canonical_structural_remap_record(&record, execution)
         .expect("structural remap replay should succeed");
     let explanation = runtime
         .diagnostics()

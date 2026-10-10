@@ -11,6 +11,10 @@ use crate::subscription::BridgeSubscriptionDeclarationFamilyKind;
 #[test]
 fn bridge_harness_subscription_suite_28_declaration_equivalence_is_canonical_and_policy_invariant()
 {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let development = runtime(BridgeRuntimePolicy::development());
     let forensic = runtime(BridgeRuntimePolicy::forensic());
 
@@ -85,6 +89,7 @@ fn bridge_harness_subscription_suite_28_declaration_equivalence_is_canonical_and
             BridgeSubscriptionBasisRequest::snapshot(
                 crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
             ),
+            execution,
         )
         .expect("left admission should succeed");
     let right_admitted = forensic
@@ -93,6 +98,7 @@ fn bridge_harness_subscription_suite_28_declaration_equivalence_is_canonical_and
             BridgeSubscriptionBasisRequest::snapshot(
                 crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
             ),
+            execution,
         )
         .expect("right admission should succeed");
 
@@ -112,6 +118,10 @@ fn bridge_harness_subscription_suite_28_declaration_equivalence_is_canonical_and
 
 #[test]
 fn bridge_harness_subscription_suite_29_basis_binding_is_explicit_and_fail_closed() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let baseline = runtime(BridgeRuntimePolicy::development());
     let declaration = detail_subscription(&baseline);
 
@@ -121,6 +131,7 @@ fn bridge_harness_subscription_suite_29_basis_binding_is_explicit_and_fail_close
             BridgeSubscriptionBasisRequest::snapshot(
                 crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
             ),
+            execution,
         )
         .expect("snapshot admission should succeed");
     let branch_admitted = baseline
@@ -129,6 +140,7 @@ fn bridge_harness_subscription_suite_29_basis_binding_is_explicit_and_fail_close
             BridgeSubscriptionBasisRequest::branch_head(
                 crate::truth_identity_fixtures::truth_branch_fixture("analysis"),
             ),
+            execution,
         )
         .expect("branch-head admission should succeed");
 
@@ -165,6 +177,7 @@ fn bridge_harness_subscription_suite_29_basis_binding_is_explicit_and_fail_close
             BridgeSubscriptionBasisRequest::snapshot(
                 crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-missing"),
             ),
+            execution,
         )
         .expect_err("missing snapshot should reject");
     assert_eq!(
@@ -185,6 +198,7 @@ fn bridge_harness_subscription_suite_29_basis_binding_is_explicit_and_fail_close
             BridgeSubscriptionBasisRequest::snapshot(
                 crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
             ),
+            execution,
         )
         .expect_err("snapshot identity mismatch should reject");
     assert_eq!(
@@ -201,6 +215,7 @@ fn bridge_harness_subscription_suite_29_basis_binding_is_explicit_and_fail_close
             BridgeSubscriptionBasisRequest::branch_head(
                 crate::truth_identity_fixtures::truth_branch_fixture("analysis"),
             ),
+            execution,
         )
         .expect_err("branch mismatch should reject");
     assert_eq!(
@@ -218,6 +233,10 @@ fn bridge_harness_subscription_suite_29_basis_binding_is_explicit_and_fail_close
 
 #[test]
 fn bridge_harness_subscription_suite_30_lifecycle_replay_parity_is_canonical() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let development = runtime(BridgeRuntimePolicy::development());
     let forensic = runtime(BridgeRuntimePolicy::forensic());
 
@@ -230,6 +249,7 @@ fn bridge_harness_subscription_suite_30_lifecycle_replay_parity_is_canonical() {
             BridgeSubscriptionBasisRequest::snapshot(
                 crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
             ),
+            execution,
         )
         .expect("development admission should succeed");
     let forensic_admitted = forensic
@@ -238,6 +258,7 @@ fn bridge_harness_subscription_suite_30_lifecycle_replay_parity_is_canonical() {
             BridgeSubscriptionBasisRequest::snapshot(
                 crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
             ),
+            execution,
         )
         .expect("forensic admission should succeed");
 

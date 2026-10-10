@@ -32,7 +32,9 @@ pub(super) fn kind(error: &SignalError) -> Kind {
             return match stop.reason() {
                 Stop::WorkExhausted { .. } => Kind::ExecutionDenied(Execution::WorkCeiling),
                 Stop::Admission(cause) => kind(&SignalError::ExecutionAdmissionDenied(*cause)),
-                Stop::PreparationMemoryExhausted { .. } => Kind::SignalExecution,
+                Stop::PreparationMemoryExhausted { .. } => {
+                    Kind::SignalExecution(super::BridgeSignalDenial::Error(error.clone()))
+                }
                 Stop::Failure { cause, .. } => match cause {
                     Failure::Domain(error) => kind(error),
                     Failure::Cancelled => Kind::ExecutionDenied(Execution::Cancelled),
@@ -43,7 +45,9 @@ pub(super) fn kind(error: &SignalError) -> Kind {
                     Failure::WorkCeiling => Kind::ExecutionDenied(Execution::WorkCeiling),
                     Failure::NestedStopped => Kind::ExecutionDenied(Execution::NestedStopped),
                     Failure::Panic => Kind::ExecutionDenied(Execution::Panicked),
-                    Failure::ResultCapacityExceeded => Kind::SignalExecution,
+                    Failure::ResultCapacityExceeded => {
+                        Kind::SignalExecution(super::BridgeSignalDenial::Error(error.clone()))
+                    }
                 },
             };
         }
@@ -71,7 +75,9 @@ pub(super) fn kind(error: &SignalError) -> Kind {
         | SignalError::BranchMergeFailed { .. }
         | SignalError::ManagedQueueBranchTransferDenied { .. }
         | SignalError::InvalidInput { .. }
-        | SignalError::Internal { .. } => return Kind::SignalExecution,
+        | SignalError::Internal { .. } => {
+            return Kind::SignalExecution(super::BridgeSignalDenial::Error(error.clone()))
+        }
     };
     Kind::ExecutionDenied(execution)
 }

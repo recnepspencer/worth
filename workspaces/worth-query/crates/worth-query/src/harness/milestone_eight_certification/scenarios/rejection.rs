@@ -35,6 +35,7 @@ pub(in crate::harness::milestone_eight_certification) fn durable_saved_query_def
 }
 
 pub(in crate::harness::milestone_eight_certification) fn grouped_hidden_refresh_forbidden_rejection_bundle(
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> MilestoneEightRejectionBundle {
     let canonical = direct_collection_canonical();
     let plan = view_plan(
@@ -43,7 +44,7 @@ pub(in crate::harness::milestone_eight_certification) fn grouped_hidden_refresh_
         ViewShapeDescriptor::kanban_grouped(aspect_key("status")),
     );
     let basis = runtime_basis(plan.validated().query().schema_basis().clone());
-    let truth_view = grouped_truth_view_for_plan(&plan);
+    let truth_view = grouped_truth_view_for_plan(&plan, resource_request);
     let grouped_execution =
         materialize_grouped_execution_surface_from_truth_view(&plan, basis.clone(), &truth_view)
             .unwrap();

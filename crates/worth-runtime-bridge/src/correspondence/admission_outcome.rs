@@ -207,8 +207,10 @@ pub enum BridgeCorrespondenceStale {
     BridgeRuntimeBasis,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum BridgeCorrespondenceRebindRequired {
+    /// The Signal owner service retained its exact basis/definition/target denial.
+    ConditionalService(worth_signal::facade::branch::SignalCommittedPatchDeliveryDenial),
     SignalGraphGeneration,
     SignalGraphLoweringOwner,
     AllocationSourceSet,
@@ -218,9 +220,19 @@ pub enum BridgeCorrespondenceRebindRequired {
     ConditionalTarget,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum BridgeCorrespondenceAdmissionFailure {
     LockPoisoned,
-    SourceLoadFailed,
-    SignalMutationFailed,
+    SourceLoadFailed(crate::adapter::RelationalBridgeSourceError),
+    SignalMutationFailed(super::BridgeCorrespondenceSignalFailure),
+}
+
+/// A correspondence delivery's native non-success posture.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum BridgeCorrespondenceDeliveryStop {
+    Denied(super::BridgeCorrespondenceDeliveryDenial),
+    Failed(BridgeCorrespondenceAdmissionFailure),
+    Deferred(BridgeCorrespondenceDeferred),
+    Stale(BridgeCorrespondenceStale),
+    RebindRequired(BridgeCorrespondenceRebindRequired),
 }

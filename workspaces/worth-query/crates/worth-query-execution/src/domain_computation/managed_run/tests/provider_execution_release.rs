@@ -109,6 +109,9 @@ impl WorthQueryGraphParticipationProvider<ManagedGraph> for PhysicalReleaseProvi
 #[test]
 fn physical_release_failure_terminalizes_with_exact_recovery_evidence() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -134,8 +137,11 @@ fn physical_release_failure_terminalizes_with_exact_recovery_evidence() {
         ] {
             let (provider, disposal_attempts, destructor_attempts) =
                 provider(AdvanceBehavior::Complete, disposal, destructor_panics);
-            let (running, graph) =
-                managed_graph_run_with_provider(WorthQueryOperationGraphAccess::Observe, provider);
+            let (running, graph) = managed_graph_run_with_provider(
+                WorthQueryOperationGraphAccess::Observe,
+                provider,
+                resource_request,
+            );
             let active = running
                 .begin_graph_execution(
                     execution,
@@ -204,6 +210,9 @@ fn physical_release_failure_terminalizes_with_exact_recovery_evidence() {
 #[test]
 fn workflow_disposal_rejection_terminalizes_before_returning_running_authority() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -241,8 +250,12 @@ fn workflow_disposal_rejection_terminalizes_before_returning_running_authority()
             &graph,
             WorthQueryOperationGraphAccess::Observe,
         );
-        let running =
-            super::workflow_provider_steps::admitted_workflow(&runtime, &operation, resources);
+        let running = super::workflow_provider_steps::admitted_workflow(
+            &runtime,
+            &operation,
+            resources,
+            resource_request,
+        );
         let active = running
             .begin_stage_graph_execution(
                 execution,
@@ -298,6 +311,9 @@ fn workflow_disposal_rejection_terminalizes_before_returning_running_authority()
 #[test]
 fn invocation_panic_and_destructor_panic_are_independently_evidenced() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -307,8 +323,11 @@ fn invocation_panic_and_destructor_panic_are_independently_evidenced() {
                 DisposalBehavior::Complete,
                 destructor_panics,
             );
-            let (running, graph) =
-                managed_graph_run_with_provider(WorthQueryOperationGraphAccess::Project, provider);
+            let (running, graph) = managed_graph_run_with_provider(
+                WorthQueryOperationGraphAccess::Project,
+                provider,
+                resource_request,
+            );
             let active = running
                 .begin_graph_execution(
                     execution,

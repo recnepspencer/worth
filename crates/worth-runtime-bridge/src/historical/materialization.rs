@@ -19,6 +19,7 @@ impl RuntimeBridge {
     pub fn materialize_truth_view_observation(
         &self,
         planned: PlannedTruthViewPacket,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<MaterializedTruthViewObservation, BridgeDeliveryError> {
         let snapshot_identity: TruthSnapshotIdentity = match planned
             .authority_basis()
@@ -51,18 +52,22 @@ impl RuntimeBridge {
             }
         };
 
-        let admitted = match crate::delivery::open_planned_snapshot(self, &snapshot_identity) {
-            Ok(admitted) => admitted,
-            Err(error) => {
-                self.record_historical_evaluation_failure(
-                    planned.declaration(),
-                    historical_failure_class_for_delivery_error(&error),
-                    error.to_string(),
-                    historical_failure_counters_for_delivery_error(planned.declaration(), &error),
-                );
-                return Err(error);
-            }
-        };
+        let admitted =
+            match crate::delivery::open_planned_snapshot(self, &snapshot_identity, execution) {
+                Ok(admitted) => admitted,
+                Err(error) => {
+                    self.record_historical_evaluation_failure(
+                        planned.declaration(),
+                        historical_failure_class_for_delivery_error(&error),
+                        error.to_string(),
+                        historical_failure_counters_for_delivery_error(
+                            planned.declaration(),
+                            &error,
+                        ),
+                    );
+                    return Err(error);
+                }
+            };
         let snapshot_token = crate::snapshot::BridgeSnapshotToken::issued(
             snapshot_identity.clone(),
             format!(
@@ -79,7 +84,6 @@ impl RuntimeBridge {
             snapshot_token,
             materialization_path,
             admitted,
-            self.policy().execution(),
         ))
     }
 

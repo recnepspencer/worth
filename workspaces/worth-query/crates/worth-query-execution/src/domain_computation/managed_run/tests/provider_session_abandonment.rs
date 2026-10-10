@@ -7,12 +7,19 @@ use super::provider_session_protocol::{
 #[test]
 fn dropping_a_readmitted_session_aborts_once() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
         let calls = Arc::new(SessionCallCounts::default());
-        let (mut running, graph) =
-            session_run(SessionFailurePoint::None, Arc::clone(&calls), false);
+        let (mut running, graph) = session_run(
+            SessionFailurePoint::None,
+            Arc::clone(&calls),
+            false,
+            resource_request,
+        );
         drop(
             running
                 .admit_provider_execution_plan(&graph)
@@ -35,12 +42,19 @@ fn dropping_a_readmitted_session_aborts_once() {
 #[test]
 fn dropping_a_prepared_session_aborts_once() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
         let calls = Arc::new(SessionCallCounts::default());
-        let (mut running, graph) =
-            session_run(SessionFailurePoint::None, Arc::clone(&calls), false);
+        let (mut running, graph) = session_run(
+            SessionFailurePoint::None,
+            Arc::clone(&calls),
+            false,
+            resource_request,
+        );
         drop(
             running
                 .admit_provider_execution_plan(&graph)
@@ -66,12 +80,19 @@ fn dropping_a_prepared_session_aborts_once() {
 #[test]
 fn dropping_a_staged_session_aborts_once() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
         let calls = Arc::new(SessionCallCounts::default());
-        let (mut running, graph) =
-            session_run(SessionFailurePoint::None, Arc::clone(&calls), false);
+        let (mut running, graph) = session_run(
+            SessionFailurePoint::None,
+            Arc::clone(&calls),
+            false,
+            resource_request,
+        );
         drop(
             running
                 .admit_provider_execution_plan(&graph)
@@ -98,12 +119,19 @@ fn dropping_a_staged_session_aborts_once() {
 #[test]
 fn dropping_a_commit_prepared_session_aborts_once() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
         let calls = Arc::new(SessionCallCounts::default());
-        let (mut running, graph) =
-            session_run(SessionFailurePoint::None, Arc::clone(&calls), false);
+        let (mut running, graph) = session_run(
+            SessionFailurePoint::None,
+            Arc::clone(&calls),
+            false,
+            resource_request,
+        );
         drop(
             running
                 .admit_provider_execution_plan(&graph)
@@ -133,6 +161,9 @@ fn dropping_a_commit_prepared_session_aborts_once() {
 #[test]
 fn failed_preparation_aborts_once() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -141,6 +172,7 @@ fn failed_preparation_aborts_once() {
             SessionFailurePoint::PreparationPanic,
             Arc::clone(&calls),
             false,
+            resource_request,
         );
         let _ = running
             .admit_provider_execution_plan(&graph)

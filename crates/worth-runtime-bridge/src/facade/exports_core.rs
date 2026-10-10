@@ -1,9 +1,10 @@
 pub use crate::adapter::{
     BridgeHistoricalLineageAuthority, BridgeHistoricalLineageRequest,
     BridgeHistoricalLineageTopology, BridgeHistoricalResolvedLineageIdentity,
-    BridgeHistoricalResolvedRecordIdentity, BridgeSourceAdapter, CommittedPatchSource,
-    ContinuityLineageSource, InvalidationSink, RelationalBridgeSource, RelationalBridgeSourceError,
-    RelationalCommittedPatchRequest, SignalBridgeSink, SignalBridgeSinkError, SnapshotReadSource,
+    BridgeHistoricalResolvedRecordIdentity, BridgeSourceAdapter, BridgeSourceBindingDenial,
+    CommittedPatchSource, ContinuityLineageSource, InvalidationSink, RelationalBridgeSource,
+    RelationalBridgeSourceError, RelationalBridgeSourceErrorTag, RelationalCommittedPatchRequest,
+    SignalBridgeSink, SignalBridgeSinkError, SignalBridgeSinkErrorKind, SnapshotReadSource,
     SnapshotReaderPool, TruthBranchHeadSource, TruthWritebackAuthority,
     TruthWritebackAuthorityError, TruthWritebackReceipt, TruthWritebackRequest,
 };
@@ -47,7 +48,7 @@ pub use crate::conditional_execution::{
     BridgeOwnedAsyncRevalidationAdmission, BridgeOwnedAsyncSupersessionAdmission,
     BridgeOwnedAsyncTimeoutAdmission, BridgeOwnedConditionalInstallationRequest,
     BridgeOwnedSignalRuntime, BridgePreparedConditionalInstallationExtension,
-    BridgeRetainedConditionalDecisionSeed, BridgeSealedRuntimeAssembly,
+    BridgeRetainedConditionalDecisionSeed, BridgeSealedRuntimeAssembly, BridgeSignalDenial,
 };
 pub use crate::continuity::{
     BridgeContinuityArtifact, BridgeContinuityAuthorityBasis, BridgeContinuityAuthorityKind,
@@ -63,8 +64,8 @@ pub use crate::correspondence::{
     BridgeAdmittedTruthCommitIdentity, BridgeAdmittedTruthRecordIdentity,
     BridgeAdmittedTruthSnapshotIdentity, BridgeCorrespondenceAdmissionFailure,
     BridgeCorrespondenceBasis, BridgeCorrespondenceDeferred, BridgeCorrespondenceDeliveryDenial,
-    BridgeCorrespondenceDeliveryReceipt, BridgeCorrespondenceDenial,
-    BridgeCorrespondenceDenialKind, BridgeCorrespondencePrecision,
+    BridgeCorrespondenceDeliveryReceipt, BridgeCorrespondenceDeliveryStop,
+    BridgeCorrespondenceDenial, BridgeCorrespondenceDenialKind, BridgeCorrespondencePrecision,
     BridgeCorrespondenceRebindRequired, BridgeCorrespondenceRebuildReport,
     BridgeCorrespondenceStale, BridgeDeliveredCorrespondenceChange,
     BridgeDeliveredCorrespondenceChangeSet, BridgeDeliveredTruthChange,
@@ -369,3 +370,5 @@ pub use crate::temporal::{
 pub use crate::conditional_execution::BridgePreparedConditionalReconstitution;
 
 pub use crate::policy::BridgeConditionalRetentionBudget;
+
+pub use crate::correspondence::BridgeCorrespondenceSignalFailure;

@@ -28,6 +28,12 @@ impl BridgeOwnedSignalRuntime {
                     "owner-published conditional change requires an exact retained source record",
                 )
             })?;
+        crate::execution_contact::admit(execution).map_err(|cause| {
+            BridgeConditionalDenial::new(
+                BridgeConditionalDenialKind::ExecutionDenied(cause),
+                cause.label(),
+            )
+        })?;
         let envelope = self.reserve_owned_change_envelope(correspondence, record)?;
         let targets = self
             .owned_conditional_targets
@@ -89,16 +95,24 @@ impl BridgeOwnedSignalRuntime {
             .iter()
             .find(|item| item.dependency().dependency_ordinal() == dependency_ordinal)
             .ok_or_else(dependency_ordinal_denial)?;
+        crate::execution_contact::admit(execution).map_err(|cause| {
+            BridgeConditionalDenial::new(
+                BridgeConditionalDenialKind::ExecutionDenied(cause),
+                cause.label(),
+            )
+        })?;
         let requested_commit = request.commit_identity().clone();
         let envelope =
             match self
                 .bridge
                 .committed_patch_source
-                .load_committed_patch(request)
+                .load_committed_patch(request, execution)
             {
                 Ok(envelope) => envelope,
-                Err(_) => return Ok(TransitionOutcome::Failed(
-                    crate::correspondence::BridgeCorrespondenceAdmissionFailure::SourceLoadFailed,
+                Err(cause) => return Ok(TransitionOutcome::Failed(
+                    crate::correspondence::BridgeCorrespondenceAdmissionFailure::SourceLoadFailed(
+                        cause,
+                    ),
                 )),
             };
         let mut counters = crate::correspondence::CorrespondenceDeliveryCounters::zero();
@@ -226,21 +240,14 @@ fn map_signal_delivery_denial(
 ) -> crate::correspondence::CorrespondenceDeliveryOutcome {
     use worth_signal::facade::branch::SignalCommittedPatchDeliveryDenial as Denial;
     match denial {
-        Denial::StaleBasisAdmission => TransitionOutcome::RebindRequired(
-            crate::correspondence::BridgeCorrespondenceRebindRequired::ConditionalBasis,
+        native @ (Denial::StaleBasisAdmission
+        | Denial::DefinitionReadmissionRequired
+        | Denial::DefinitionMismatch
+        | Denial::ForeignGraph
+        | Denial::MissingOrStaleTarget) => TransitionOutcome::RebindRequired(
+            crate::correspondence::BridgeCorrespondenceRebindRequired::ConditionalService(native),
         ),
-        Denial::DefinitionReadmissionRequired => TransitionOutcome::RebindRequired(
-            crate::correspondence::BridgeCorrespondenceRebindRequired::ConditionalDefinitionReadmission,
-        ),
-        Denial::DefinitionMismatch => TransitionOutcome::RebindRequired(
-            crate::correspondence::BridgeCorrespondenceRebindRequired::ConditionalDefinitionMismatch,
-        ),
-        Denial::ForeignGraph | Denial::MissingOrStaleTarget => {
-            TransitionOutcome::RebindRequired(
-                crate::correspondence::BridgeCorrespondenceRebindRequired::ConditionalTarget,
-            )
-        }
-        Denial::OwnerUnavailable(_)
+        native @ (Denial::OwnerUnavailable(_)
         | Denial::OwnerAdmission(_)
         | Denial::EmptyChangeSet
         | Denial::ForeignContractTarget
@@ -248,8 +255,10 @@ fn map_signal_delivery_denial(
         | Denial::SuccessorCaptureCapacityExhausted
         | Denial::SuccessorCaptureWorkExhausted { .. }
         | Denial::SuccessorCaptureUnavailable
-        | Denial::SignalMutation(_) => TransitionOutcome::Failed(
-            crate::correspondence::BridgeCorrespondenceAdmissionFailure::SignalMutationFailed,
+        | Denial::SignalMutation(_)) => TransitionOutcome::Failed(
+            crate::correspondence::BridgeCorrespondenceAdmissionFailure::SignalMutationFailed(
+                crate::correspondence::BridgeCorrespondenceSignalFailure::CommittedPatch(native),
+            ),
         ),
     }
 }

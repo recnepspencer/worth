@@ -35,6 +35,7 @@ impl CommittedPatchSource for RepresentativeBridgeSource {
     fn load_committed_patch(
         &self,
         _request: RelationalCommittedPatchRequest,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeCommittedPatchEnvelope, RelationalBridgeSourceError> {
         unreachable!("representative signal authority fixture does not load committed patches")
     }
@@ -44,6 +45,7 @@ impl SnapshotReadSource for RepresentativeBridgeSource {
     fn open_snapshot(
         &self,
         _identity: &TruthSnapshotIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError> {
         unreachable!("representative signal authority fixture does not open snapshots")
     }
@@ -53,6 +55,7 @@ impl TruthBranchHeadSource for RepresentativeBridgeSource {
     fn load_branch_head_patch(
         &self,
         _branch_identity: &TruthBranchIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeCommittedPatchEnvelope, RelationalBridgeSourceError> {
         unreachable!("representative signal authority fixture does not load branch heads")
     }

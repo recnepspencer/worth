@@ -150,6 +150,7 @@ impl AdmittedBridgeSubscription {
         runtime: &RuntimeBridge,
         declaration: &BridgeSubscriptionDeclaration,
         basis_request: BridgeSubscriptionBasisRequest,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Self, BridgeSubscriptionAdmissionRejection> {
         let requested_basis_kind = basis_request.basis_kind();
         if !family_supports_basis_kind(declaration.requested_family_kind(), requested_basis_kind) {
@@ -159,16 +160,19 @@ impl AdmittedBridgeSubscription {
             ));
         }
 
-        let basis_binding =
-            ValidatedSubscriptionBasisBinding::bind(runtime, declaration, &basis_request).map_err(
-                |failure| {
-                    BridgeSubscriptionAdmissionRejection::basis_resolution_failure(
-                        declaration,
-                        requested_basis_kind,
-                        failure.kind(),
-                    )
-                },
-            )?;
+        let basis_binding = ValidatedSubscriptionBasisBinding::bind(
+            runtime,
+            declaration,
+            &basis_request,
+            execution,
+        )
+        .map_err(|failure| {
+            BridgeSubscriptionAdmissionRejection::basis_resolution_failure(
+                declaration,
+                requested_basis_kind,
+                failure.kind(),
+            )
+        })?;
         let signal_strategy = BridgeSignalStrategyDescriptor::lower(declaration, &basis_binding);
 
         let canonical_basis = Arc::<str>::from(format!(

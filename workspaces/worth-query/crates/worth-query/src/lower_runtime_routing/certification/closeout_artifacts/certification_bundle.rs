@@ -21,9 +21,11 @@ use crate::lower_runtime_routing::certification::surface::{
     worth_query_lower_runtime_synthetic_tail_report, WorthQueryLowerRuntimeAcceptanceLane,
 };
 
-pub fn certify_lower_runtime_routing() -> WorthQueryLowerRuntimeCertificationBundle {
-    let surface = worth_query_lower_runtime_representative_surface();
-    let acceptance = worth_query_lower_runtime_acceptance_suite();
+pub fn certify_lower_runtime_routing(
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryLowerRuntimeCertificationBundle {
+    let surface = worth_query_lower_runtime_representative_surface(resource_request);
+    let acceptance = worth_query_lower_runtime_acceptance_suite(resource_request);
     let non_bypass = certify_lower_runtime_non_bypass()
         .expect("current workspace should satisfy the lower-runtime non-bypass audit");
     let crossings = worth_query_lower_runtime_crossing_inventory();
@@ -32,7 +34,7 @@ pub fn certify_lower_runtime_routing() -> WorthQueryLowerRuntimeCertificationBun
     let slopes = certify_lower_runtime_performance_slopes(&surface);
     let proof_shape = worth_query_lower_runtime_proof_shape_audit();
     let boundary_reconciliation = worth_query_lower_runtime_boundary_reconciliation_report();
-    let synthetic_tail = worth_query_lower_runtime_synthetic_tail_report();
+    let synthetic_tail = worth_query_lower_runtime_synthetic_tail_report(resource_request);
     let rows = vec![
         certification_row(
             WorthQueryLowerRuntimeCertificationLane::CrossingsSurface,
@@ -178,8 +180,14 @@ pub fn certify_lower_runtime_routing() -> WorthQueryLowerRuntimeCertificationBun
             None,
         ),
     ];
-    let output_digests =
-        certification_output_digests(&surface, &acceptance, &non_bypass, &slopes, &rows);
+    let output_digests = certification_output_digests(
+        &surface,
+        &acceptance,
+        &non_bypass,
+        &slopes,
+        &rows,
+        resource_request,
+    );
 
     WorthQueryLowerRuntimeCertificationBundle::new(rows, output_digests)
 }

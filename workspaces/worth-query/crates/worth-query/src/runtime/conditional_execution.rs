@@ -32,7 +32,7 @@ impl WorthQueryRuntime {
     ) -> Result<
         super::WorthQueryExecutedConditional,
         (
-            worth_runtime_bridge::facade::BridgeConditionalDenialKind,
+            crate::domain_installation::WorthQueryConditionalExecutionDenialKind,
             String,
             worth_signal::facade::SignalConditionalDecisionCounters,
             usize,

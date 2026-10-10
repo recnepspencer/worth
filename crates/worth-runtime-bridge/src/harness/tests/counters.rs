@@ -38,6 +38,10 @@ fn preview_session_basis(
 
 #[test]
 fn bridge_counters_expose_digest_input_bytes() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
@@ -60,10 +64,14 @@ fn bridge_counters_expose_digest_input_bytes() {
     let result = runtime
         .deliver_invalidation(
             runtime
-                .plan_committed_patch(BridgeRouteRequest::for_commit(
-                    crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-                ))
+                .plan_committed_patch(
+                    BridgeRouteRequest::for_commit(
+                        crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
+                    ),
+                    execution,
+                )
                 .expect("route should plan before digest budget capture"),
+            execution,
         )
         .expect("delivery should succeed before digest budget capture");
 
@@ -73,6 +81,10 @@ fn bridge_counters_expose_digest_input_bytes() {
 
 #[test]
 fn historical_evaluation_counters_capture_selector_branch_and_materialization_width() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
@@ -104,8 +116,9 @@ fn historical_evaluation_counters_capture_selector_branch_and_materialization_wi
     let observation = runtime
         .materialize_truth_view_observation(
             runtime
-                .plan_truth_view_packet(declaration, SnapshotReadPacket::new(vec![]))
+                .plan_truth_view_packet(declaration, SnapshotReadPacket::new(vec![]), execution)
                 .expect("historical declaration should plan"),
+            execution,
         )
         .expect("historical declaration should materialize");
     let record = runtime.canonicalize_historical_evaluation_record(&observation);

@@ -2,6 +2,10 @@ use super::*;
 
 #[test]
 fn bridge_continuity_replay_matches_original_canonical_artifact() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
@@ -34,10 +38,11 @@ fn bridge_continuity_replay_matches_original_canonical_artifact() {
                     crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
                 )),
             ),
+            execution,
         )
         .expect("route should plan");
     let result = runtime
-        .deliver_invalidation(route)
+        .deliver_invalidation(route, execution)
         .expect("delivery should succeed");
     let route_record = runtime
         .diagnostics()
@@ -69,6 +74,10 @@ fn bridge_continuity_replay_matches_original_canonical_artifact() {
 
 #[test]
 fn bridge_continuity_replay_rejects_artifact_drift() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let original_source = InMemoryRelationalBridgeSource::default();
     original_source.insert_committed_patch(committed_patch(
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
@@ -101,10 +110,11 @@ fn bridge_continuity_replay_rejects_artifact_drift() {
                     crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
                 )),
             ),
+            execution,
         )
         .expect("route should plan");
     let result = original_runtime
-        .deliver_invalidation(route)
+        .deliver_invalidation(route, execution)
         .expect("delivery should succeed");
     let route_record = original_runtime
         .diagnostics()

@@ -4,13 +4,20 @@ use super::super::{WorthQueryWorkflowGraphStepOutcome, WorthQueryWorkflowRunClea
 #[test]
 fn workflow_checkpoint_failure_and_generation_disruption_become_cleanup_only_authority() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
         let active_request = execution;
 
         let (provider, registry_slot) = YieldProvider::artifact_generation_rollback_failure(7);
         let (yielded, bridge, runtime, _producer) =
-            super::super::tests::readmission_workflow::yielded_workflow(execution, provider);
+            super::super::tests::readmission_workflow::yielded_workflow(
+                execution,
+                provider,
+                resource_request,
+            );
         let generation = yielded
             .inspection()
             .artifact_evidence()
@@ -81,6 +88,9 @@ fn workflow_checkpoint_failure_and_generation_disruption_become_cleanup_only_aut
 #[test]
 fn workflow_generation_mismatch_denies_before_fresh_authority_and_rolls_back_cleanly() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
         let active_request = execution;
@@ -89,6 +99,7 @@ fn workflow_generation_mismatch_denies_before_fresh_authority_and_rolls_back_cle
             super::super::tests::readmission_workflow::yielded_workflow(
                 execution,
                 YieldProvider::installed(7),
+                resource_request,
             );
         let generation = yielded
             .inspection()

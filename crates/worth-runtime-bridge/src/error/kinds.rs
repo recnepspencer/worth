@@ -47,24 +47,25 @@ pub enum BridgeRouteErrorKind {
 
 pub type BridgeRouteError = BridgeTypedError<BridgeRouteErrorKind>;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum BridgeDeliveryErrorKind {
     ExecutionDenied(super::BridgeExecutionDenial),
     SourceContractMismatch,
     InvalidWideningAdmission,
     BulkDeliveryRejected,
     HistoricalPolicyRejected,
-    HistoricalTruthViewUnavailable,
+    HistoricalTruthViewUnavailable(crate::adapter::RelationalBridgeSourceError),
+    MissingBranchHeadSource,
     HistoricalBranchMismatch,
     HistoricalCommitMismatch,
     HistoricalSelectorMissingCommit,
-    SnapshotAcquisitionFailure,
-    SnapshotReadFailure,
-    SnapshotReadContractViolation,
+    SnapshotAcquisitionFailure(crate::adapter::RelationalBridgeSourceError),
+    SnapshotReadFailure(crate::snapshot::BridgeSnapshotReadError),
+    SnapshotReadContractViolation(crate::snapshot::BridgeSnapshotReadError),
     SnapshotIdentityMismatch,
     StructuralContractMismatch,
     StructuralPlanRejected,
-    SignalSinkRejection,
+    SignalSinkRejection(crate::adapter::SignalBridgeSinkErrorKind),
 }
 
 pub type BridgeDeliveryError = BridgeTypedError<BridgeDeliveryErrorKind>;

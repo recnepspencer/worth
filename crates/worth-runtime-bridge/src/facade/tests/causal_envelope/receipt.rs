@@ -6,11 +6,16 @@ use crate::facade::{
 
 #[test]
 fn causal_envelope_identity_and_receipt_bind_the_sealed_bridge_result() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::default());
     let routed = runtime
-        .route(crate::truth_identity_fixtures::truth_commit_fixture(
-            "commit-causal-receipt",
-        ))
+        .route(
+            crate::truth_identity_fixtures::truth_commit_fixture("commit-causal-receipt"),
+            execution,
+        )
         .expect("route should succeed");
     let request = BridgeCausalEnvelopeAssemblyRequest::from_query_admission(
         crate::facade::BridgeCausalInspectionAdmissionSummary::admitted(
@@ -100,6 +105,10 @@ fn causal_envelope_identity_and_receipt_bind_the_sealed_bridge_result() {
 
 #[test]
 fn causal_envelope_identity_is_stable_across_unrelated_retained_routes() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut identities = Vec::new();
     let mut receipts = Vec::new();
 
@@ -107,15 +116,21 @@ fn causal_envelope_identity_is_stable_across_unrelated_retained_routes() {
         let runtime = runtime(BridgeRuntimePolicy::default());
         for index in 0..unrelated_routes {
             runtime
-                .route(crate::truth_identity_fixtures::truth_commit_fixture(
-                    format!("unrelated-causal-receipt-{index}"),
-                ))
+                .route(
+                    crate::truth_identity_fixtures::truth_commit_fixture(format!(
+                        "unrelated-causal-receipt-{index}"
+                    )),
+                    execution,
+                )
                 .expect("unrelated route should succeed");
         }
         let routed = runtime
-            .route(crate::truth_identity_fixtures::truth_commit_fixture(
-                "commit-causal-receipt-stable",
-            ))
+            .route(
+                crate::truth_identity_fixtures::truth_commit_fixture(
+                    "commit-causal-receipt-stable",
+                ),
+                execution,
+            )
             .expect("target route should succeed");
         let request = BridgeCausalEnvelopeAssemblyRequest::from_query_admission(
             crate::facade::BridgeCausalInspectionAdmissionSummary::admitted(

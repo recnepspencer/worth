@@ -158,18 +158,24 @@ fn truth_basis_drift_revalidation_maps_to_truth_basis_class() {
 
 #[test]
 fn preview_basis_drift_revalidation_outranks_generic_subscription_drift() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime();
     let prior_preview = preview_active_subscription_with_basis(
         &runtime,
         "prior",
         crate::truth_identity_fixtures::truth_branch_fixture("truth-preview"),
         crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-preview-a"),
+        resource_request,
     );
     let current_preview = preview_active_subscription_with_basis(
         &runtime,
         "current",
         crate::truth_identity_fixtures::truth_branch_fixture("truth-preview"),
         crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-preview-b"),
+        resource_request,
     );
     let lineage = request_response_revalidation_lineage(
         &runtime,
@@ -190,16 +196,22 @@ fn preview_basis_drift_revalidation_outranks_generic_subscription_drift() {
 
 #[test]
 fn subscription_instance_drift_revalidation_stays_distinct() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime();
     let prior_subscription =
         BridgeAsyncRequestSubscriptionInstance::authoritative(&activation_ready_for_snapshot(
             &runtime,
             crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
+            resource_request,
         ));
     let current_subscription =
         BridgeAsyncRequestSubscriptionInstance::authoritative(&activation_ready_for_branch_head(
             &runtime,
             crate::truth_identity_fixtures::truth_branch_fixture("truth-main"),
+            resource_request,
         ));
     let truth_basis = BridgeAsyncRequestTruthViewBasis::authoritative(
         crate::truth_identity_fixtures::truth_branch_fixture("truth-main"),

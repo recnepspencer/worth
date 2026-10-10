@@ -17,7 +17,7 @@ pub struct WorthQueryApplicationCommitDeferred {
 }
 
 /// The limit that deferred a commit attempt.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationCommitDeferredKind {
     /// A required native publication companion deferred the attempt.
     RelationalDeferred(worth_relational::facade::mvcc::RelationalPublicationDeferred),
@@ -86,8 +86,8 @@ impl WorthQueryApplicationCommitDeferred {
         self.prerequisite_denial
     }
 
-    pub const fn kind(&self) -> WorthQueryApplicationCommitDeferredKind {
-        self.kind
+    pub fn kind(&self) -> WorthQueryApplicationCommitDeferredKind {
+        self.kind.clone()
     }
 
     pub const fn stage(

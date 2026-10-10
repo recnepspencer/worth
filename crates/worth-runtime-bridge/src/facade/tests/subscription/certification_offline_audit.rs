@@ -95,8 +95,14 @@ fn source_artifact(
 
 #[test]
 fn offline_audit_diagnoses_from_canonicalized_sealed_bundles_and_reports() {
-    let (runtime, _active) =
-        active_detail_subscription(BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery);
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, _active) = active_detail_subscription(
+        BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
+        resource_request,
+    );
     let left = sealed_certification_bundle(
         &runtime,
         active_source_inputs(SourceArtifactRole::Stable, SourceArtifactRole::Stable),
@@ -173,8 +179,14 @@ fn offline_audit_diagnoses_from_canonicalized_sealed_bundles_and_reports() {
 
 #[test]
 fn offline_audit_rejects_host_log_and_live_state_dependencies() {
-    let (runtime, _active) =
-        active_detail_subscription(BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery);
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, _active) = active_detail_subscription(
+        BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
+        resource_request,
+    );
     let left = sealed_certification_bundle(
         &runtime,
         active_source_inputs(SourceArtifactRole::Stable, SourceArtifactRole::Stable),
@@ -222,8 +234,14 @@ fn offline_audit_rejects_host_log_and_live_state_dependencies() {
 
 #[test]
 fn offline_audit_requires_bundles_and_comparison_reports() {
-    let (runtime, _active) =
-        active_detail_subscription(BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery);
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, _active) = active_detail_subscription(
+        BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
+        resource_request,
+    );
     let left = sealed_certification_bundle(
         &runtime,
         active_source_inputs(SourceArtifactRole::Stable, SourceArtifactRole::Stable),

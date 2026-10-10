@@ -16,11 +16,14 @@ use crate::domain_computation::{
 #[test]
 fn same_runtime_yield_and_readmission_preserve_the_semantic_convergence_result() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
         let active_request = execution;
 
-        let ordinary = converged_terminal(execution);
+        let ordinary = converged_terminal(execution, resource_request);
         let DirectAdmissionFixture {
             runtime,
             operation,
@@ -29,7 +32,7 @@ fn same_runtime_yield_and_readmission_preserve_the_semantic_convergence_result()
             managed,
             graph,
             bridge,
-        } = direct_admission_fixture(FixtureDisposition::YieldThenConverged);
+        } = direct_admission_fixture(FixtureDisposition::YieldThenConverged, resource_request);
         let epoch =
             match runtime.admit_direct_convergence_epoch(&operation, contract, managed, graph) {
                 Ok(epoch) => epoch.start(),
@@ -106,11 +109,14 @@ fn same_runtime_yield_and_readmission_preserve_the_semantic_convergence_result()
 #[test]
 fn workflow_yield_and_readmission_preserve_the_semantic_convergence_result() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
         let active_request = execution;
 
-        let ordinary = workflow_converged_terminal(execution);
+        let ordinary = workflow_converged_terminal(execution, resource_request);
         let WorkflowAdmissionFixture {
             runtime,
             operation,
@@ -118,7 +124,7 @@ fn workflow_yield_and_readmission_preserve_the_semantic_convergence_result() {
             managed,
             graph,
             bridge,
-        } = workflow_admission_fixture(FixtureDisposition::YieldThenConverged);
+        } = workflow_admission_fixture(FixtureDisposition::YieldThenConverged, resource_request);
         let admitted =
             match runtime.admit_workflow_convergence_epoch(&operation, contract, managed, graph) {
                 Ok(epoch) => epoch,
@@ -200,12 +206,15 @@ fn workflow_yield_and_readmission_preserve_the_semantic_convergence_result() {
 #[test]
 fn admitted_chunk_schedule_preserves_the_semantic_convergence_result() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let ordinary = workflow_converged_terminal(execution);
+        let ordinary = workflow_converged_terminal(execution, resource_request);
         for width in [1, 8] {
-            let chunked = chunked_converged_terminal(execution, width);
+            let chunked = chunked_converged_terminal(execution, width, resource_request);
             assert_eq!(ordinary.kind(), chunked.kind());
             assert_eq!(
                 ordinary.latest_report().unwrap().decision(),
@@ -236,8 +245,12 @@ fn chunked_converged_terminal(
     execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
 
     width: usize,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorthQueryWorkflowConvergenceTerminal<WorthQueryConverged> {
-    let epoch = workflow_epoch_fixture(FixtureDisposition::ChunkedConverged(width));
+    let epoch = workflow_epoch_fixture(
+        FixtureDisposition::ChunkedConverged(width),
+        resource_request,
+    );
     let started = match epoch.begin_stage_iteration(
         execution,
         WORKFLOW_STAGE,

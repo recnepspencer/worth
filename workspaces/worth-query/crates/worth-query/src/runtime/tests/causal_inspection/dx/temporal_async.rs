@@ -2,11 +2,15 @@ use super::*;
 
 #[test]
 fn temporal_async_reason_helpers_materialize_bridge_backed_explanations() {
+    let host_request = crate::bridge_host_request::serial_request();
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = bridge_runtime();
     let routed = runtime
-        .route(super::super::causal_truth_commit_identity(
-            "commit-causal-dx-temporal-async",
-        ))
+        .route(
+            super::super::causal_truth_commit_identity("commit-causal-dx-temporal-async"),
+            resource_request,
+        )
         .unwrap();
     let temporal_artifact =
         CausalInspection::for_test_observation(QueryObservationReceipt::fixture(

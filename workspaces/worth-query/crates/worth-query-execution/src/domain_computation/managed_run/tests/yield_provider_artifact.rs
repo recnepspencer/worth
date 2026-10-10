@@ -134,6 +134,9 @@ impl WorthQueryArtifactProviderResource for CheckpointArtifactResource {
 #[test]
 fn yielded_cleanup_releases_artifacts_owned_by_the_provider_checkpoint() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -179,8 +182,12 @@ fn yielded_cleanup_releases_artifacts_owned_by_the_provider_checkpoint() {
             WorthQueryOperationGraphAccess::Observe,
             output,
         );
-        let running =
-            super::workflow_provider_steps::admitted_workflow(&runtime, &operation, resources);
+        let running = super::workflow_provider_steps::admitted_workflow(
+            &runtime,
+            &operation,
+            resources,
+            resource_request,
+        );
         let active = running
             .begin_stage_graph_execution(
                 execution,

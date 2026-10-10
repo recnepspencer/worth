@@ -39,8 +39,9 @@ use super::resource_contract::resource_contract;
 
 pub(crate) fn workflow_epoch_fixture(
     disposition: FixtureDisposition,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorthQueryIteratingWorkflowConvergenceEpoch {
-    workflow_admission_fixture(disposition).admit()
+    workflow_admission_fixture(disposition, resource_request).admit()
 }
 
 pub(crate) struct WorkflowAdmissionFixture {
@@ -72,22 +73,30 @@ impl WorkflowAdmissionFixture {
 
 pub(crate) fn workflow_admission_fixture(
     disposition: FixtureDisposition,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorkflowAdmissionFixture {
-    workflow_admission_fixture_with_provider(disposition, ConvergentProvider::new(disposition))
+    workflow_admission_fixture_with_provider(
+        disposition,
+        ConvergentProvider::new(disposition),
+        resource_request,
+    )
 }
 
 pub(crate) fn workflow_admission_fixture_with_report_history_probe(
     disposition: FixtureDisposition,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (WorkflowAdmissionFixture, FixtureReportHistoryProbe) {
     let probe = FixtureReportHistoryProbe::default();
     let provider = ConvergentProvider::new(disposition).with_report_history_probe(probe.clone());
     (
-        workflow_admission_fixture_with_provider(disposition, provider),
+        workflow_admission_fixture_with_provider(disposition, provider, resource_request),
         probe,
     )
 }
 
-pub(crate) fn workflow_yield_pending_admission_fixture() -> (
+pub(crate) fn workflow_yield_pending_admission_fixture(
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
+) -> (
     WorkflowAdmissionFixture,
     Receiver<WorthQueryMoveOnlyArtifactHandle>,
 ) {
@@ -95,35 +104,38 @@ pub(crate) fn workflow_yield_pending_admission_fixture() -> (
     let disposition = FixtureDisposition::YieldThenConverged;
     let provider = ConvergentProvider::new(disposition).with_cleanup_artifact_handle_sender(sender);
     (
-        workflow_admission_fixture_with_provider(disposition, provider),
+        workflow_admission_fixture_with_provider(disposition, provider, resource_request),
         receiver,
     )
 }
 
 pub(crate) fn workflow_yield_recovery_admission_fixture(
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (WorkflowAdmissionFixture, FixtureYieldRecoveryProbe) {
     let disposition = FixtureDisposition::YieldThenSuspensionFailure;
     let probe = FixtureYieldRecoveryProbe::default();
     let provider = ConvergentProvider::new(disposition).with_yield_recovery_probe(probe.clone());
     (
-        workflow_admission_fixture_with_provider(disposition, provider),
+        workflow_admission_fixture_with_provider(disposition, provider, resource_request),
         probe,
     )
 }
 
 pub(crate) fn workflow_yield_denial_admission_fixture(
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (WorkflowAdmissionFixture, FixtureYieldRecoveryProbe) {
     let disposition = FixtureDisposition::YieldThenCheckpointUnavailable;
     let probe = FixtureYieldRecoveryProbe::default();
     let provider = ConvergentProvider::new(disposition).with_yield_recovery_probe(probe.clone());
     (
-        workflow_admission_fixture_with_provider(disposition, provider),
+        workflow_admission_fixture_with_provider(disposition, provider, resource_request),
         probe,
     )
 }
 
 pub(crate) fn workflow_yield_recovery_artifact_admission_fixture(
     behavior: FixtureYieldRecoveryArtifact,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     WorkflowAdmissionFixture,
     Receiver<WorthQueryMoveOnlyArtifactHandle>,
@@ -138,7 +150,7 @@ pub(crate) fn workflow_yield_recovery_artifact_admission_fixture(
         probe.clone(),
     );
     (
-        workflow_admission_fixture_with_provider(disposition, provider),
+        workflow_admission_fixture_with_provider(disposition, provider, resource_request),
         receiver,
         probe,
     )
@@ -147,6 +159,7 @@ pub(crate) fn workflow_yield_recovery_artifact_admission_fixture(
 fn workflow_admission_fixture_with_provider(
     disposition: FixtureDisposition,
     provider: ConvergentProvider,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorkflowAdmissionFixture {
     let installer = WorthQueryExecutionRuntimeInstaller::new();
     let anchor = Arc::new(WorthQueryGraphProviderAnchor::install_convergent::<
@@ -302,7 +315,7 @@ fn workflow_admission_fixture_with_provider(
     let lower = causal_fixture::managed_admission_context();
     let managed = runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
-        .admit_workflow(&bound, attempt, lower.read_request())
+        .admit_workflow(&bound, attempt, lower.read_request(), resource_request)
         .expect("fixture workflow run must admit through Bridge and Relational authorities");
     WorkflowAdmissionFixture {
         runtime,

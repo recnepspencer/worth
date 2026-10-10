@@ -18,6 +18,7 @@ use super::PolicyHarnessExecution;
 pub(super) fn execute_provenance_certification(
     runtime_bridge: &crate::facade::RuntimeBridge,
     fixture: &BridgeHarnessFixture,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<PolicyHarnessExecution, BridgeHarnessError> {
     let deterministic = admitted_policy_bundle(
         runtime_bridge,
@@ -48,8 +49,12 @@ pub(super) fn execute_provenance_certification(
     let policy_digest = provenance_policy_equivalence_digest(&deterministic, &optimized);
     let replay_digest = provenance_replay_digest(&deterministic, &optimized);
     let diagnostics_digest = provenance_diagnostics_digest(&deterministic, &optimized);
-    let routing_digest =
-        first_commit_routing_digest(runtime_bridge, fixture, &deterministic.route_policy)?;
+    let routing_digest = first_commit_routing_digest(
+        runtime_bridge,
+        fixture,
+        &deterministic.route_policy,
+        resource_request,
+    )?;
     let policy_matrix = PolicyCertificationMatrix::from_admitted_rows(vec![
         admitted_policy_row("deterministic_authoritative", &deterministic),
         admitted_policy_row("optimized_preview", &optimized),

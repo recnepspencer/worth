@@ -10,6 +10,10 @@ use crate::harness::fixtures::{InMemoryRelationalBridgeSource, RecordingSignalBr
 
 #[test]
 fn registered_partition_widening_routes_deterministically() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let left_source = InMemoryRelationalBridgeSource::default();
     left_source.insert_committed_patch(committed_partition_patch(
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
@@ -69,14 +73,20 @@ fn registered_partition_widening_routes_deterministically() {
     );
 
     let left_route = left_runtime
-        .plan_committed_patch(BridgeRouteRequest::for_commit(
-            crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-        ))
+        .plan_committed_patch(
+            BridgeRouteRequest::for_commit(crate::truth_identity_fixtures::truth_commit_fixture(
+                "commit-a",
+            )),
+            execution,
+        )
         .expect("partition widening route should plan");
     let right_route = right_runtime
-        .plan_committed_patch(BridgeRouteRequest::for_commit(
-            crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-        ))
+        .plan_committed_patch(
+            BridgeRouteRequest::for_commit(crate::truth_identity_fixtures::truth_commit_fixture(
+                "commit-a",
+            )),
+            execution,
+        )
         .expect("partition widening route should plan deterministically");
 
     assert_eq!(left_route.subscription_slices().len(), 1);

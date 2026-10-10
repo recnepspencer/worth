@@ -13,12 +13,17 @@ use crate::facade::{
 
 #[test]
 fn causal_envelope_maps_historical_failure_and_stream_checkpoint_by_exact_identity() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime =
         runtime_with_source_adapter(BridgeRuntimePolicy::default(), RejectingSourceAdapter);
     let routed = runtime
-        .route(crate::truth_identity_fixtures::truth_commit_fixture(
-            "commit-causal-history-stream",
-        ))
+        .route(
+            crate::truth_identity_fixtures::truth_commit_fixture("commit-causal-history-stream"),
+            execution,
+        )
         .expect("route should succeed");
     let contract = runtime
         .admit_source(registered_source(
@@ -37,7 +42,7 @@ fn causal_envelope_maps_historical_failure_and_stream_checkpoint_by_exact_identi
         .expect("source should admit");
     assert!(
         runtime
-            .materialize_source_packet(&contract, SnapshotReadPacket::new(vec![]))
+            .materialize_source_packet(&contract, SnapshotReadPacket::new(vec![]), execution)
             .is_err(),
         "rejecting source adapter should record historical failure"
     );
@@ -102,11 +107,18 @@ fn causal_envelope_maps_historical_failure_and_stream_checkpoint_by_exact_identi
 
 #[test]
 fn causal_envelope_denies_missing_stream_checkpoint_without_unindexed_scan() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::default());
     let routed = runtime
-        .route(crate::truth_identity_fixtures::truth_commit_fixture(
-            "commit-causal-missing-stream-checkpoint",
-        ))
+        .route(
+            crate::truth_identity_fixtures::truth_commit_fixture(
+                "commit-causal-missing-stream-checkpoint",
+            ),
+            execution,
+        )
         .expect("route should succeed");
     let request = BridgeCausalEnvelopeAssemblyRequest::from_query_admission(
         crate::facade::BridgeCausalInspectionAdmissionSummary::admitted(
@@ -157,6 +169,10 @@ fn causal_envelope_denies_missing_stream_checkpoint_without_unindexed_scan() {
 
 #[test]
 fn causal_envelope_stream_checkpoint_lookup_cost_ignores_unrelated_records() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut envelope_identities = Vec::new();
 
     for unrelated_records in [0, 3, 8] {
@@ -165,9 +181,12 @@ fn causal_envelope_stream_checkpoint_lookup_cost_ignores_unrelated_records() {
             retain_stream_checkpoint(&runtime, &format!("noise-{index}"));
         }
         let routed = runtime
-            .route(crate::truth_identity_fixtures::truth_commit_fixture(
-                "commit-causal-stream-checkpoint-scale",
-            ))
+            .route(
+                crate::truth_identity_fixtures::truth_commit_fixture(
+                    "commit-causal-stream-checkpoint-scale",
+                ),
+                execution,
+            )
             .expect("route should succeed");
         let target_checkpoint = retain_stream_checkpoint(&runtime, "target");
         let request = BridgeCausalEnvelopeAssemblyRequest::from_query_admission(

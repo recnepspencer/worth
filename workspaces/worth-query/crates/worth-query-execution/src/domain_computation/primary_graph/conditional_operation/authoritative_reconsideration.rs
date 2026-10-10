@@ -1,5 +1,4 @@
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
-use worth_proof::TransitionOutcome;
 use worth_relational::facade::publication::PatchStreamPosition;
 use worth_runtime_bridge::facade::{
     BridgeConditionalSignalBasisBinding, BridgeSealedRuntimeAssembly,
@@ -65,7 +64,10 @@ pub(super) fn deliver_authoritative_commits(
     query_capability_identity: u64,
     truth: &WorthQueryConditionalTruthBasis,
     pending: &mut super::lifecycle::WorthQueryPendingGranularInvalidations,
-) -> Result<WorthQueryDeliveredAuthoritativeCommits, String> {
+) -> Result<
+    WorthQueryDeliveredAuthoritativeCommits,
+    super::WorthQueryConditionalAuthoritativeDeliveryFailure,
+> {
     let TouchedCommits {
         commits,
         next_cursor,
@@ -75,7 +77,7 @@ pub(super) fn deliver_authoritative_commits(
     for touched in &commits {
         // Bridge deliveries only feed Signal-hosted nodes. Which wakes are
         // reconsidered is decided by the owner's retained touches.
-        let delivered = deliver_commit_dependencies(
+        let delivered = match deliver_commit_dependencies(
             phase
                 .request_for_owner(truth.owner_identity())
                 .expect("private conditional progression uses its admitted runtime"),
@@ -84,7 +86,16 @@ pub(super) fn deliver_authoritative_commits(
             touched.commit,
             truth,
             pending.direct(),
-        )?;
+        ) {
+            Ok(delivered) => delivered,
+            Err(failure) => {
+                pending.owe(promote_performed_signal_deliveries(
+                    failure.delivered,
+                    wakes,
+                ));
+                return Err(failure.cause);
+            }
+        };
         for wake in wakes.iter_mut().filter(|wake| {
             touched.touches(&super::lifecycle::source_entity(
                 wake.due.source_record_identity(),
@@ -208,8 +219,13 @@ fn retained_decision_evidence_mut(
         Decision::OperationCommitRetryable(evidence, _)
         | Decision::OperationExecutionControlRetryable(evidence, _) => Some(evidence),
         Decision::OperationSettlementExecutionDenied(evidence, _, _) => Some(evidence),
-        Decision::Failed(_) => None,
+        Decision::Failed(_) | Decision::InterruptedDuringReentry => None,
     }
+}
+
+struct CommitDeliveryFailure {
+    cause: super::WorthQueryConditionalAuthoritativeDeliveryFailure,
+    delivered: Vec<worth_runtime_bridge::facade::BridgeGranularInvalidationDelivery>,
 }
 
 fn deliver_commit_dependencies(
@@ -220,7 +236,10 @@ fn deliver_commit_dependencies(
     commit: worth_relational::facade::history::CommitId,
     truth: &WorthQueryConditionalTruthBasis,
     preperformed_deliveries: &[worth_runtime_bridge::facade::BridgeGranularInvalidationDelivery],
-) -> Result<Vec<worth_runtime_bridge::facade::BridgeGranularInvalidationDelivery>, String> {
+) -> Result<
+    Vec<worth_runtime_bridge::facade::BridgeGranularInvalidationDelivery>,
+    CommitDeliveryFailure,
+> {
     let mut granular_invalidations = Vec::new();
     let lowering = signal_basis.installed_lowering_ref();
     let commit_identity = TruthCommitIdentity::from_relational_commit_id(commit.0);
@@ -232,7 +251,7 @@ fn deliver_commit_dependencies(
         }) {
             continue;
         }
-        let outcome = bridge
+        let receipt = bridge
             .deliver_authoritative_change(
                 execution,
                 signal_basis,
@@ -242,29 +261,15 @@ fn deliver_commit_dependencies(
                     truth.snapshot().clone(),
                 ),
             )
-            .map_err(|denial| denial.detail().to_string())?;
-        let receipt = match outcome {
-            TransitionOutcome::Success(receipt) => receipt,
-            TransitionOutcome::Denied(denial) => {
-                return Err(format!(
-                    "Bridge denied conditional authoritative change: {denial:?}"
-                ))
-            }
-            TransitionOutcome::Failed(failure) => {
-                return Err(format!(
-                    "Bridge failed conditional authoritative change: {failure:?}"
-                ))
-            }
-            TransitionOutcome::Deferred(_) => {
-                return Err("Bridge deferred conditional authoritative change".to_string())
-            }
-            TransitionOutcome::Stale(_) => {
-                return Err("Bridge found stale conditional authoritative change".to_string())
-            }
-            TransitionOutcome::RebindRequired(posture) => {
-                return Err(format!(
-                    "Bridge requires conditional correspondence rebinding: {posture:?}"
-                ))
+            .map_err(super::WorthQueryConditionalAuthoritativeDeliveryFailure::Admission)
+            .and_then(super::authoritative_delivery_failure::delivered_receipt);
+        let receipt = match receipt {
+            Ok(receipt) => receipt,
+            Err(cause) => {
+                return Err(CommitDeliveryFailure {
+                    cause,
+                    delivered: granular_invalidations,
+                })
             }
         };
         if !receipt.change_set().changes().is_empty() {

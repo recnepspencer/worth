@@ -80,11 +80,13 @@ pub(crate) fn admit_subscription_backed_completion(
     node: NodeId,
     truth_basis: BridgeAsyncRequestTruthViewBasis,
     payload_byte_len: u64,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<BridgeAsyncCompletionAdmissionReport, BridgeAsyncCompletionRejection> {
     let subscription_instance =
         BridgeAsyncRequestSubscriptionInstance::authoritative(&activation_ready_for_snapshot(
             runtime,
             crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
+            resource_request,
         ));
     let request_identity = super::admit_subscription_backed_identity(
         runtime,
@@ -374,12 +376,13 @@ pub(crate) fn denied_preview_subscription_backed_completion_after_discard(
     runtime: &RuntimeBridge,
     node: NodeId,
     suffix: &str,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     crate::facade::BridgeAsyncDeniedCompletion,
     BridgeAsyncRequestTruthViewBasis,
     BridgeAsyncRequestSubscriptionInstance,
 ) {
-    let preview_active = preview_active_subscription(runtime, suffix);
+    let preview_active = preview_active_subscription(runtime, suffix, resource_request);
     let preview_truth_basis = BridgeAsyncRequestTruthViewBasis::preview(&preview_active);
     let preview_subscription_instance =
         BridgeAsyncRequestSubscriptionInstance::preview(&preview_active);

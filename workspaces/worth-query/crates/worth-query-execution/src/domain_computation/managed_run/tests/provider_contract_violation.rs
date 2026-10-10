@@ -94,6 +94,9 @@ impl WorthQueryGraphParticipationProvider<ManagedGraph> for HostileProvider {
 #[test]
 fn ignored_governed_denials_and_zero_progress_completion_cannot_advance() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -138,7 +141,8 @@ fn ignored_governed_denials_and_zero_progress_completion_cannot_advance() {
                     WorthQueryGraphProviderCallKind::Observe,
                 )
             };
-            let (running, graph) = managed_graph_run_with_provider(access, HostileProvider(port));
+            let (running, graph) =
+                managed_graph_run_with_provider(access, HostileProvider(port), resource_request);
             let active = running
                 .begin_graph_execution(
                     execution,
@@ -186,12 +190,16 @@ impl WorthQueryArtifactProviderResource for HostileArtifact {
 #[test]
 fn failed_provider_output_is_released_without_queue_publication() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
         let (running, graph) = managed_graph_run_with_provider(
             WorthQueryOperationGraphAccess::Project,
             HostileProvider(HostilePort::OutputThenFailure),
+            resource_request,
         );
         let active = running
             .begin_graph_execution(

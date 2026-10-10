@@ -329,7 +329,7 @@ where
     {
         let (external, request) = self
             .fresh_admission()
-            .map_err(|failure| format!("{:?}: {}", failure.kind(), failure.detail()))?
+            .map_err(super::WorthQueryConditionalReentryFailure::Principal)?
             .into_parts();
         let principal = product
             .resolve_authenticated_principal(

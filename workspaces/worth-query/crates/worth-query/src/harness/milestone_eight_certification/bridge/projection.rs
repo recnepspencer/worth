@@ -90,6 +90,7 @@ pub(in crate::harness::milestone_eight_certification) fn grouped_registered_sour
 
 pub(in crate::harness::milestone_eight_certification) fn grouped_truth_view_for_plan(
     plan: &crate::view_shape::ViewShapePlanArtifact,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> BridgeGroupedTruthViewArtifact {
     grouped_truth_view_for_plan_with_rows(
         plan,
@@ -97,12 +98,14 @@ pub(in crate::harness::milestone_eight_certification) fn grouped_truth_view_for_
             grouped_row("task-1", "Ada", "todo"),
             grouped_row("task-2", "Bea", "doing"),
         ],
+        resource_request,
     )
 }
 
 pub(in crate::harness::milestone_eight_certification) fn grouped_truth_view_for_plan_with_rows(
     plan: &crate::view_shape::ViewShapePlanArtifact,
     rows: &[GroupedRowFixture],
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> BridgeGroupedTruthViewArtifact {
     let runtime = grouped_runtime(rows);
     let contract = runtime
@@ -110,9 +113,9 @@ pub(in crate::harness::milestone_eight_certification) fn grouped_truth_view_for_
         .expect("registered source should admit");
     let packet = grouped_rows_packet(rows);
     let observation = runtime
-        .materialize_source_packet(&contract, packet.clone())
+        .materialize_source_packet(&contract, packet.clone(), resource_request)
         .expect("grouped source packet should materialize");
-    let row_set = materialize_bridge_row_set(&observation).expect("row set");
+    let row_set = materialize_bridge_row_set(&observation, resource_request).expect("row set");
     let relational_result = grouped_rows_result(rows, &packet);
     let relational_row_set =
         materialize_relational_authoritative_row_set(&packet, &relational_result)

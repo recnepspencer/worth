@@ -39,6 +39,7 @@ mod nested_two_causes;
 mod nesting;
 mod owned_map;
 mod prepared_map;
+mod request_consultation;
 
 pub(crate) fn authority() -> &'static ExecutionAuthority {
     AUTHORITY.get_or_init(|| {

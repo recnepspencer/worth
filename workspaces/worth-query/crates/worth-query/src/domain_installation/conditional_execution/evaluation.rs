@@ -9,7 +9,7 @@ use super::{
 pub(crate) enum WorthQueryConditionalEvaluationStop {
     Deferred(Vec<WorthQueryConditionalProvenance>),
     Failed {
-        kind: worth_runtime_bridge::facade::BridgeConditionalDenialKind,
+        kind: crate::domain_installation::WorthQueryConditionalExecutionDenialKind,
         detail: String,
     },
     Reentry(super::WorthQueryConditionalAdmissionDenial),

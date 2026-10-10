@@ -70,6 +70,9 @@ fn sibling_commit_wakes_only_its_exact_product_partition() {
         .certification_query(LiveAccountActivityQuery::reference())
         .unwrap();
     let mut source_live = world
+        .application
+        .with_application_advancement(&request, |phase| {
+            world
         .selected_product()
         .open_application_query_live::<
             LiveAccountActivityQuery,
@@ -81,12 +84,15 @@ fn sibling_commit_wakes_only_its_exact_product_partition() {
             Activity,
             LiveAccountActivityCause,
         >(
+ &phase,
             source_query,
             &principal,
             source_account,
             live_account_parameters("account-1"),
             WorthQueryApplicationLiveControls::bounded(request.clone(), 4, 16, 2_048).unwrap(),
         )
+        .unwrap()
+        })
         .unwrap();
 
     let sibling_account = world
@@ -107,6 +113,9 @@ fn sibling_commit_wakes_only_its_exact_product_partition() {
         .unwrap();
     let mut sibling_live = world
         .application
+        .with_application_advancement(&request, |phase| {
+            world
+        .application
         .select_product_branch(&sibling)
         .unwrap()
         .open_application_query_live::<
@@ -119,12 +128,15 @@ fn sibling_commit_wakes_only_its_exact_product_partition() {
             Activity,
             LiveAccountActivityCause,
         >(
+ &phase,
             sibling_query,
             &principal,
             sibling_account,
             live_account_parameters("account-1"),
             WorthQueryApplicationLiveControls::bounded(request.clone(), 4, 16, 2_048).unwrap(),
         )
+        .unwrap()
+        })
         .unwrap();
 
     let committed =

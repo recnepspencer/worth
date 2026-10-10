@@ -77,8 +77,9 @@ pub(crate) fn historical_failure_class_for_delivery_error(
         | BridgeDeliveryErrorKind::StructuralPlanRejected => {
             BridgeHistoricalEvaluationFailureClass::RejectedHistoricalResolutionFailure
         }
-        BridgeDeliveryErrorKind::HistoricalTruthViewUnavailable
-        | BridgeDeliveryErrorKind::SnapshotAcquisitionFailure => {
+        BridgeDeliveryErrorKind::HistoricalTruthViewUnavailable(_)
+        | BridgeDeliveryErrorKind::MissingBranchHeadSource
+        | BridgeDeliveryErrorKind::SnapshotAcquisitionFailure(_) => {
             BridgeHistoricalEvaluationFailureClass::TruthViewUnavailable
         }
         BridgeDeliveryErrorKind::HistoricalBranchMismatch => {
@@ -92,9 +93,9 @@ pub(crate) fn historical_failure_class_for_delivery_error(
         | BridgeDeliveryErrorKind::HistoricalCommitMismatch
         | BridgeDeliveryErrorKind::HistoricalSelectorMissingCommit
         | BridgeDeliveryErrorKind::InvalidWideningAdmission
-        | BridgeDeliveryErrorKind::SnapshotReadFailure
-        | BridgeDeliveryErrorKind::SnapshotReadContractViolation
-        | BridgeDeliveryErrorKind::SignalSinkRejection => {
+        | BridgeDeliveryErrorKind::SnapshotReadFailure(_)
+        | BridgeDeliveryErrorKind::SnapshotReadContractViolation(_)
+        | BridgeDeliveryErrorKind::SignalSinkRejection(_) => {
             BridgeHistoricalEvaluationFailureClass::RejectedHistoricalResolutionFailure
         }
     }
@@ -127,8 +128,9 @@ pub(crate) fn historical_failure_counters_for_delivery_error(
         BridgeDeliveryErrorKind::SourceContractMismatch => counters,
         BridgeDeliveryErrorKind::StructuralContractMismatch
         | BridgeDeliveryErrorKind::StructuralPlanRejected => counters,
-        BridgeDeliveryErrorKind::HistoricalTruthViewUnavailable
-        | BridgeDeliveryErrorKind::SnapshotAcquisitionFailure => {
+        BridgeDeliveryErrorKind::HistoricalTruthViewUnavailable(_)
+        | BridgeDeliveryErrorKind::MissingBranchHeadSource
+        | BridgeDeliveryErrorKind::SnapshotAcquisitionFailure(_) => {
             counters.with_unavailable_truth_view()
         }
         BridgeDeliveryErrorKind::HistoricalBranchMismatch => counters.with_branch_mismatch(),

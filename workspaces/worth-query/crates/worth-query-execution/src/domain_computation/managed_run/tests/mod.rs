@@ -1,3 +1,5 @@
+mod graph_material;
+use graph_material::{graph_material, graph_material_rows};
 mod artifact_release_failure;
 mod authority_substitution;
 pub(crate) mod causal_fixture;
@@ -154,6 +156,7 @@ struct ManagedGraph;
 fn managed_graph_run_with_provider<P>(
     access: WorthQueryOperationGraphAccess,
     provider: P,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     WorthQueryRunningDirectRun,
     WorthQueryInstalledGraphParticipationAuthority,
@@ -161,13 +164,15 @@ fn managed_graph_run_with_provider<P>(
 where
     P: WorthQueryGraphParticipationProvider<ManagedGraph>,
 {
-    let (running, graph, _bridge) = managed_graph_run_with_provider_and_bridge(access, provider);
+    let (running, graph, _bridge) =
+        managed_graph_run_with_provider_and_bridge(access, provider, resource_request);
     (running, graph)
 }
 
 fn managed_graph_run_with_provider_and_bridge<P>(
     access: WorthQueryOperationGraphAccess,
     provider: P,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     WorthQueryRunningDirectRun,
     WorthQueryInstalledGraphParticipationAuthority,
@@ -184,6 +189,7 @@ where
             binding_identity: "managed-graph-binding",
         },
         |support| support.clone(),
+        resource_request,
     );
     (running, graph, bridge)
 }
@@ -191,6 +197,7 @@ where
 fn managed_graph_run_with_provider_and_runtime<P>(
     access: WorthQueryOperationGraphAccess,
     provider: P,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     WorthQueryRunningDirectRun,
     WorthQueryInstalledGraphParticipationAuthority,
@@ -200,13 +207,19 @@ fn managed_graph_run_with_provider_and_runtime<P>(
 where
     P: WorthQueryGraphParticipationProvider<ManagedGraph>,
 {
-    managed_graph_run_with_provider_and_runtime_binding(access, provider, "managed-graph-binding")
+    managed_graph_run_with_provider_and_runtime_binding(
+        access,
+        provider,
+        "managed-graph-binding",
+        resource_request,
+    )
 }
 
 fn managed_graph_run_with_provider_and_runtime_binding<P>(
     access: WorthQueryOperationGraphAccess,
     provider: P,
     binding_identity: &str,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     WorthQueryRunningDirectRun,
     WorthQueryInstalledGraphParticipationAuthority,
@@ -224,11 +237,13 @@ where
             binding_identity,
         },
         |support| support.clone(),
+        resource_request,
     )
 }
 
 fn managed_graph_effect_run_with_provider<P>(
     provider: P,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     WorthQueryRunningDirectRun,
     WorthQueryInstalledGraphParticipationAuthority,
@@ -244,6 +259,7 @@ where
             binding_identity: "managed-graph-binding",
         },
         |support| support.clone(),
+        resource_request,
     );
     (running, graph)
 }
@@ -260,6 +276,7 @@ fn managed_graph_run_with_provider_and_admitted_support<P>(
     admitted_support: impl FnOnce(
         &worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceSupport,
     ) -> worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceSupport,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     WorthQueryRunningDirectRun,
     WorthQueryInstalledGraphParticipationAuthority,
@@ -309,7 +326,7 @@ where
     let lower = causal_fixture::managed_admission_context();
     let running = runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
-        .admit_direct(&operation, attempt, lower.read_request())
+        .admit_direct(&operation, attempt, lower.read_request(), resource_request)
         .expect("managed graph run should admit through lower owners")
         .start();
     (running, graph, lower.bridge, runtime)
@@ -319,6 +336,7 @@ fn managed_session_graph_run_with_provider<P>(
     access: WorthQueryOperationGraphAccess,
     provider: P,
     touch: bool,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     WorthQueryRunningDirectRun,
     WorthQueryInstalledGraphParticipationAuthority,
@@ -367,30 +385,10 @@ where
     let lower = causal_fixture::managed_admission_context();
     let running = runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
-        .admit_direct(&operation, attempt, lower.read_request())
+        .admit_direct(&operation, attempt, lower.read_request(), resource_request)
         .expect("session-capable managed run should admit")
         .start();
     (running, graph)
-}
-
-fn graph_material() -> WorthQueryGraphReadMaterial {
-    graph_material_rows(1)
-}
-
-fn graph_material_rows(row_count: usize) -> WorthQueryGraphReadMaterial {
-    let path = CanonicalFieldPath::single(FieldKey::new("id").expect("valid field key"));
-    WorthQueryGraphReadMaterial::new((0..row_count).map(|index| {
-        WorthQueryGraphReadRow::from_native_fields(
-            format!("managed-entity-{index}"),
-            [(
-                path.clone(),
-                AspectValue::String(InternedString::from(format!("entity-{index}"))),
-            )]
-            .into_iter()
-            .collect(),
-        )
-        .expect("managed graph row should construct")
-    }))
 }
 
 #[cfg(feature = "test-query-execution-observer")]

@@ -4,12 +4,16 @@ use super::*;
 #[test]
 fn direct_yield_exposes_one_cross_owner_authority_chain() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
         let (running, graph) = managed_graph_run_with_provider(
             WorthQueryOperationGraphAccess::Observe,
             YieldProvider::installed(5),
+            resource_request,
         );
         let active = running
             .begin_graph_execution(

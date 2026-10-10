@@ -22,6 +22,7 @@ pub(crate) use meter::enter_retained_memory;
 pub(crate) use meter::has_active_kernel;
 pub(crate) use meter::MemoryActivityGuard;
 pub use meter::NestedComputationStop;
+pub(crate) use meter::RunLimits;
 pub use meter::{KernelContext, KernelFailure, KernelStop};
 pub(crate) use ordered::{run_ordered, run_ordered_until, OrderedOutcome, OrderedStep};
 pub use port::BatchStop;
@@ -33,6 +34,7 @@ pub(crate) use prepared::{prepare_batch_resources, PreparedBatchResources};
 pub(crate) use scope::{run_scope, run_scope_holding, run_scope_within, ScopeHold, ScopeStop};
 
 pub(crate) use meter::active_serial_memory;
+pub(crate) use meter::active_stop;
 
 mod task_result;
 

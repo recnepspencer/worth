@@ -103,7 +103,7 @@ impl SignalGraph {
         packets: Vec<PreparedParallelApplyCommitPacket>,
         semantic_seeds: Vec<EpochSemanticSeed>,
         comparator: &mut impl ComparatorPolicyResolver,
-        candidates: crate::data::graph::PreparedCandidateEpoch<'_>,
+        candidates: crate::data::graph::PreparedCandidateEpoch<'_, '_>,
         request_work: &mut MapKernelContext<'_, '_>,
         mut preparation: Option<&mut SignalPreparationBudget>,
     ) -> Result<PreparedEpochPublication, SignalError> {

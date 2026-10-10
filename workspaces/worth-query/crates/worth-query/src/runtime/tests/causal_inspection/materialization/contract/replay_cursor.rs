@@ -2,11 +2,15 @@ use super::*;
 
 #[test]
 fn admitted_replay_materialization_accepts_signal_owned_replay_cursor_posture() {
+    let host_request = crate::bridge_host_request::serial_request();
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = bridge_runtime();
     let routed = runtime
-        .route(super::super::super::causal_truth_commit_identity(
-            "commit-query-replay-posture-bound",
-        ))
+        .route(
+            super::super::super::causal_truth_commit_identity("commit-query-replay-posture-bound"),
+            resource_request,
+        )
         .unwrap();
     let signal_replay_cursor = "signal-replay-cursor:bound-posture";
     let flow = admitted_replay_flow_requesting_signal_cursor(

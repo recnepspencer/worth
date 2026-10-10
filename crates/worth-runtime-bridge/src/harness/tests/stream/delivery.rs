@@ -37,6 +37,10 @@ fn assert_stream_target_exports_are_host_parity_safe(
 
 #[test]
 fn illegal_coalescing_boundary_fails_explicitly() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
@@ -88,14 +92,20 @@ fn illegal_coalescing_boundary_fails_explicitly() {
             &contract,
             vec![
                 runtime
-                    .ingest_committed_patch(crate::facade::BridgeRouteRequest::for_commit(
-                        crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-                    ))
+                    .ingest_committed_patch(
+                        crate::facade::BridgeRouteRequest::for_commit(
+                            crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
+                        ),
+                        execution,
+                    )
                     .expect("first envelope should ingest"),
                 runtime
-                    .ingest_committed_patch(crate::facade::BridgeRouteRequest::for_commit(
-                        crate::truth_identity_fixtures::truth_commit_fixture("commit-b"),
-                    ))
+                    .ingest_committed_patch(
+                        crate::facade::BridgeRouteRequest::for_commit(
+                            crate::truth_identity_fixtures::truth_commit_fixture("commit-b"),
+                        ),
+                        execution,
+                    )
                     .expect("second envelope should ingest"),
             ],
         )

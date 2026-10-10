@@ -62,6 +62,10 @@ fn runtime_rejects_required_replay_when_runtime_policy_disallows_replay_artifact
 
 #[test]
 fn runtime_plans_truth_view_packet_from_admitted_policy() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::default());
     let declaration = HistoricalEvaluationDeclaration::new(
         BridgeTruthViewSelector::branch_snapshot(truth_branch("analysis"), truth_snapshot(1, 1)),
@@ -71,7 +75,11 @@ fn runtime_plans_truth_view_packet_from_admitted_policy() {
     );
 
     let planned = runtime
-        .plan_truth_view_packet(declaration.clone(), SnapshotReadPacket::new(vec![]))
+        .plan_truth_view_packet(
+            declaration.clone(),
+            SnapshotReadPacket::new(vec![]),
+            execution,
+        )
         .expect("snapshot-bound declaration should plan");
 
     assert_eq!(
@@ -118,6 +126,10 @@ fn runtime_admits_commit_bound_truth_view_policy() {
 
 #[test]
 fn runtime_materializes_commit_bound_truth_view_observation() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::default());
     let declaration = HistoricalEvaluationDeclaration::new(
         BridgeTruthViewSelector::historical_commit(truth_branch("analysis"), truth_commit(1)),
@@ -126,11 +138,11 @@ fn runtime_materializes_commit_bound_truth_view_observation() {
         BridgeDeliveryIntent::PrepareSignalEvaluation,
     );
     let planned = runtime
-        .plan_truth_view_packet(declaration, SnapshotReadPacket::new(vec![]))
+        .plan_truth_view_packet(declaration, SnapshotReadPacket::new(vec![]), execution)
         .expect("commit-bound declaration should plan");
 
     let observation = runtime
-        .materialize_truth_view_observation(planned)
+        .materialize_truth_view_observation(planned, execution)
         .expect("commit-bound declaration should materialize");
 
     assert_eq!(
@@ -150,6 +162,10 @@ fn runtime_materializes_commit_bound_truth_view_observation() {
 
 #[test]
 fn runtime_materializes_branch_head_truth_view_observation() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::default());
     let declaration = HistoricalEvaluationDeclaration::new(
         BridgeTruthViewSelector::branch_head(truth_branch("analysis")),
@@ -158,11 +174,11 @@ fn runtime_materializes_branch_head_truth_view_observation() {
         BridgeDeliveryIntent::PrepareSignalEvaluation,
     );
     let planned = runtime
-        .plan_truth_view_packet(declaration, SnapshotReadPacket::new(vec![]))
+        .plan_truth_view_packet(declaration, SnapshotReadPacket::new(vec![]), execution)
         .expect("branch-head declaration should plan");
 
     let observation = runtime
-        .materialize_truth_view_observation(planned)
+        .materialize_truth_view_observation(planned, execution)
         .expect("branch-head declaration should materialize");
 
     assert_eq!(
@@ -182,6 +198,10 @@ fn runtime_materializes_branch_head_truth_view_observation() {
 
 #[test]
 fn runtime_materializes_snapshot_bound_truth_view_observation() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::default());
     let declaration = HistoricalEvaluationDeclaration::new(
         BridgeTruthViewSelector::branch_snapshot(truth_branch("analysis"), truth_snapshot(1, 1)),
@@ -190,11 +210,11 @@ fn runtime_materializes_snapshot_bound_truth_view_observation() {
         BridgeDeliveryIntent::PrepareSignalEvaluation,
     );
     let planned = runtime
-        .plan_truth_view_packet(declaration, SnapshotReadPacket::new(vec![]))
+        .plan_truth_view_packet(declaration, SnapshotReadPacket::new(vec![]), execution)
         .expect("snapshot-bound declaration should plan");
 
     let observation = runtime
-        .materialize_truth_view_observation(planned)
+        .materialize_truth_view_observation(planned, execution)
         .expect("snapshot-bound declaration should materialize");
     let validated_reads = observation
         .read_planned_packet(worth_execution::ExecutionRequest::serial(
@@ -229,6 +249,10 @@ fn runtime_materializes_snapshot_bound_truth_view_observation() {
 
 #[test]
 fn runtime_canonicalizes_historical_evaluation_record() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::default());
     let declaration = HistoricalEvaluationDeclaration::new(
         BridgeTruthViewSelector::historical_commit(truth_branch("analysis"), truth_commit(1)),
@@ -237,10 +261,10 @@ fn runtime_canonicalizes_historical_evaluation_record() {
         BridgeDeliveryIntent::PrepareSignalEvaluation,
     );
     let planned = runtime
-        .plan_truth_view_packet(declaration, SnapshotReadPacket::new(vec![]))
+        .plan_truth_view_packet(declaration, SnapshotReadPacket::new(vec![]), execution)
         .expect("historical declaration should plan");
     let observation = runtime
-        .materialize_truth_view_observation(planned)
+        .materialize_truth_view_observation(planned, execution)
         .expect("historical declaration should materialize");
 
     let record = runtime.canonicalize_historical_evaluation_record(&observation);
@@ -270,6 +294,10 @@ fn runtime_canonicalizes_historical_evaluation_record() {
 
 #[test]
 fn runtime_lowers_identical_historical_requests_to_identical_artifacts() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::default());
     let declaration = HistoricalEvaluationDeclaration::new(
         BridgeTruthViewSelector::historical_commit(truth_branch("analysis"), truth_commit(1)),
@@ -280,15 +308,21 @@ fn runtime_lowers_identical_historical_requests_to_identical_artifacts() {
     let left_observation = runtime
         .materialize_truth_view_observation(
             runtime
-                .plan_truth_view_packet(declaration.clone(), SnapshotReadPacket::new(vec![]))
+                .plan_truth_view_packet(
+                    declaration.clone(),
+                    SnapshotReadPacket::new(vec![]),
+                    execution,
+                )
                 .expect("left historical declaration should plan"),
+            execution,
         )
         .expect("left historical declaration should materialize");
     let right_observation = runtime
         .materialize_truth_view_observation(
             runtime
-                .plan_truth_view_packet(declaration, SnapshotReadPacket::new(vec![]))
+                .plan_truth_view_packet(declaration, SnapshotReadPacket::new(vec![]), execution)
                 .expect("right historical declaration should plan"),
+            execution,
         )
         .expect("right historical declaration should materialize");
 

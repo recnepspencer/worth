@@ -59,11 +59,4 @@ impl BridgeExecutionPolicyBaseline {
     pub const fn request_policy(self) -> worth_foundational::ExecutionRequestPolicy {
         self.request
     }
-    pub fn serial_request(
-        self,
-        cancellation: worth_execution::CancellationToken,
-        deadline: Option<std::time::Instant>,
-    ) -> worth_execution::SerialRequest {
-        worth_execution::SerialRequest::from_policy(&self.request, cancellation, deadline)
-    }
 }

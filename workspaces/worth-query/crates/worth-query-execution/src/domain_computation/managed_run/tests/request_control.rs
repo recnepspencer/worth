@@ -16,6 +16,9 @@ fn cancelled_invariant_request_stops_before_provider_state_load() {
     let request =
         WorthQueryRequestScope::new(Instant::now() + Duration::from_secs(60), source.token());
     let passed = crate::domain_computation::primary_graph::with_test_advancement(|phase| {
+        let bootstrap = phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         execute_invariant_with_request(
             &phase,
             state(),
@@ -23,6 +26,7 @@ fn cancelled_invariant_request_stops_before_provider_state_load() {
             "closed-loop",
             [locator("base")],
             Some(&request),
+            resource_request,
         )
     })
     .result
@@ -37,6 +41,9 @@ fn cancelled_invariant_request_stops_before_provider_state_load() {
     // A second host call: the cancelled request opens its own advancement.
     let stopped = state();
     let refusal = crate::domain_computation::primary_graph::with_test_advancement(|phase| {
+        let bootstrap = phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         execute_invariant_with_request(
             &phase,
             stopped.clone(),
@@ -44,6 +51,7 @@ fn cancelled_invariant_request_stops_before_provider_state_load() {
             "closed-loop",
             [locator("base")],
             Some(&request),
+            resource_request,
         )
     })
     .result

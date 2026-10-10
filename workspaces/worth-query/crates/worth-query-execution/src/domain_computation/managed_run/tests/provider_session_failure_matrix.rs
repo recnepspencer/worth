@@ -11,6 +11,9 @@ use crate::domain_computation::{
 #[test]
 fn readmission_and_preparation_failures_stop_at_the_exact_callback() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -20,6 +23,7 @@ fn readmission_and_preparation_failures_stop_at_the_exact_callback() {
             WorthQueryProviderSessionProtocolStage::PlanReadmission,
             WorthQueryProviderSessionRecoveryPosture::Closed,
             calls(1, 0, 0, 0, 0),
+            resource_request,
         );
         assert_early_failure(
             execution,
@@ -27,6 +31,7 @@ fn readmission_and_preparation_failures_stop_at_the_exact_callback() {
             WorthQueryProviderSessionProtocolStage::PlanReadmission,
             WorthQueryProviderSessionRecoveryPosture::RecoveryRequired,
             calls(1, 0, 0, 0, 0),
+            resource_request,
         );
         assert_early_failure(
             execution,
@@ -34,6 +39,7 @@ fn readmission_and_preparation_failures_stop_at_the_exact_callback() {
             WorthQueryProviderSessionProtocolStage::SessionPreparation,
             WorthQueryProviderSessionRecoveryPosture::Closed,
             calls(1, 1, 0, 0, 1),
+            resource_request,
         );
         assert_early_failure(
             execution,
@@ -41,6 +47,7 @@ fn readmission_and_preparation_failures_stop_at_the_exact_callback() {
             WorthQueryProviderSessionProtocolStage::SessionPreparation,
             WorthQueryProviderSessionRecoveryPosture::Closed,
             calls(1, 1, 0, 0, 1),
+            resource_request,
         );
     });
 }
@@ -48,6 +55,9 @@ fn readmission_and_preparation_failures_stop_at_the_exact_callback() {
 #[test]
 fn staged_preparation_failures_abort_without_reaching_commit() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -55,16 +65,20 @@ fn staged_preparation_failures_abort_without_reaching_commit() {
             SessionFailurePoint::StagedPreparationRejection,
             SessionFailurePoint::StagedPreparationPanic,
         ] {
-            let observed = with_session(point, |running, graph| {
-                let failure = staged_session(execution, running, graph)
-                    .prepare_for_commit()
-                    .expect_err("staged preparation failure must not mint a prepare outcome");
-                assert_failure(
-                    &failure,
-                    WorthQueryProviderSessionProtocolStage::StagedPreparation,
-                    WorthQueryProviderSessionRecoveryPosture::Closed,
-                );
-            });
+            let observed = with_session(
+                point,
+                |running, graph| {
+                    let failure = staged_session(execution, running, graph)
+                        .prepare_for_commit()
+                        .expect_err("staged preparation failure must not mint a prepare outcome");
+                    assert_failure(
+                        &failure,
+                        WorthQueryProviderSessionProtocolStage::StagedPreparation,
+                        WorthQueryProviderSessionRecoveryPosture::Closed,
+                    );
+                },
+                resource_request,
+            );
             assert_eq!(observed, calls(1, 1, 1, 0, 1));
         }
     });
@@ -73,6 +87,9 @@ fn staged_preparation_failures_abort_without_reaching_commit() {
 #[test]
 fn commit_failures_leave_recovery_required_and_drop_aborts_once() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -80,18 +97,23 @@ fn commit_failures_leave_recovery_required_and_drop_aborts_once() {
             SessionFailurePoint::CommitRejection,
             SessionFailurePoint::CommitPanic,
         ] {
-            let observed = with_session(point, |running, graph| {
-                let prepared = staged_session(execution, running, graph)
-                    .prepare_for_commit()
-                    .expect("staged preparation should succeed");
-                let outcome = prepared
-                    .commit(crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation);
-                assert_failure(
-                    outcome.failure().expect("commit should fail"),
-                    WorthQueryProviderSessionProtocolStage::Commit,
-                    WorthQueryProviderSessionRecoveryPosture::RecoveryRequired,
-                );
-            });
+            let observed = with_session(
+                point,
+                |running, graph| {
+                    let prepared = staged_session(execution, running, graph)
+                        .prepare_for_commit()
+                        .expect("staged preparation should succeed");
+                    let outcome = prepared.commit(
+                        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                    );
+                    assert_failure(
+                        outcome.failure().expect("commit should fail"),
+                        WorthQueryProviderSessionProtocolStage::Commit,
+                        WorthQueryProviderSessionRecoveryPosture::RecoveryRequired,
+                    );
+                },
+                resource_request,
+            );
             assert_eq!(observed, calls(1, 1, 1, 1, 1));
         }
     });
@@ -100,6 +122,9 @@ fn commit_failures_leave_recovery_required_and_drop_aborts_once() {
 #[test]
 fn abort_failures_are_retried_once_by_the_live_session_guard() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -107,14 +132,18 @@ fn abort_failures_are_retried_once_by_the_live_session_guard() {
             SessionFailurePoint::AbortRejection,
             SessionFailurePoint::AbortPanic,
         ] {
-            let observed = with_session(point, |running, graph| {
-                let outcome = staged_session(execution, running, graph).abort();
-                assert_failure(
-                    outcome.failure().expect("abort should fail"),
-                    WorthQueryProviderSessionProtocolStage::Abort,
-                    WorthQueryProviderSessionRecoveryPosture::RecoveryRequired,
-                );
-            });
+            let observed = with_session(
+                point,
+                |running, graph| {
+                    let outcome = staged_session(execution, running, graph).abort();
+                    assert_failure(
+                        outcome.failure().expect("abort should fail"),
+                        WorthQueryProviderSessionProtocolStage::Abort,
+                        WorthQueryProviderSessionRecoveryPosture::RecoveryRequired,
+                    );
+                },
+                resource_request,
+            );
             assert_eq!(observed, calls(1, 1, 0, 0, 2));
         }
     });
@@ -127,26 +156,31 @@ fn assert_early_failure(
     stage: WorthQueryProviderSessionProtocolStage,
     posture: WorthQueryProviderSessionRecoveryPosture,
     expected_calls: SessionCallObservation,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) {
-    let observed = with_session(point, |running, graph| {
-        let plan = running
-            .admit_provider_execution_plan(graph)
-            .expect("failure fixture plan should admit");
-        let failure = match point {
-            SessionFailurePoint::ReadmissionRejection | SessionFailurePoint::ReadmissionPanic => {
-                plan.readmit(execution)
-                    .expect_err("readmission should fail")
-            }
-            SessionFailurePoint::PreparationRejection | SessionFailurePoint::PreparationPanic => {
-                plan.readmit(execution)
+    let observed = with_session(
+        point,
+        |running, graph| {
+            let plan = running
+                .admit_provider_execution_plan(graph)
+                .expect("failure fixture plan should admit");
+            let failure = match point {
+                SessionFailurePoint::ReadmissionRejection
+                | SessionFailurePoint::ReadmissionPanic => plan
+                    .readmit(execution)
+                    .expect_err("readmission should fail"),
+                SessionFailurePoint::PreparationRejection
+                | SessionFailurePoint::PreparationPanic => plan
+                    .readmit(execution)
                     .expect("readmission should succeed")
                     .prepare()
-                    .expect_err("preparation should fail")
-            }
-            _ => unreachable!("early failure helper received a later phase"),
-        };
-        assert_failure(&failure, stage, posture);
-    });
+                    .expect_err("preparation should fail"),
+                _ => unreachable!("early failure helper received a later phase"),
+            };
+            assert_failure(&failure, stage, posture);
+        },
+        resource_request,
+    );
     assert_eq!(observed, expected_calls);
 }
 
@@ -156,9 +190,10 @@ fn with_session(
         &mut crate::domain_computation::WorthQueryRunningDirectRun,
         &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
     ),
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> SessionCallObservation {
     let counts = Arc::new(SessionCallCounts::default());
-    let (mut running, graph) = session_run(point, Arc::clone(&counts), false);
+    let (mut running, graph) = session_run(point, Arc::clone(&counts), false, resource_request);
     assertion(&mut running, &graph);
     cleanup(running);
     counts.observe()
