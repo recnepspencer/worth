@@ -23,87 +23,182 @@ use super::retired_index_checkpoint::{
 
 #[test]
 fn a_raw_commit_first_after_restore_refreshes_every_installed_index() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
-        let host_request = crate::test_request_policy::serial_request();
-        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-        raw_commits_first_after_restore(&host_custody, execution, false);
-    })
+    {
+        raw_commits_first_after_restore(false);
+    }
 }
 
 #[test]
 fn a_raw_commit_first_after_restore_refreshes_beside_a_retired_index() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
-        let host_request = crate::test_request_policy::serial_request();
-        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-        raw_commits_first_after_restore(&host_custody, execution, true);
-    })
+    {
+        raw_commits_first_after_restore(true);
+    }
 }
 
 #[test]
 fn a_world_publication_then_raw_commit_after_restore_refreshes_every_installed_index() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
-        world_publication_first_after_restore(
-            &host_custody,
-            &host_custody.borrowed_request_for_test(),
-            false,
-        );
-    })
+    {
+        world_publication_first_after_restore(false);
+    }
 }
 
 #[test]
 fn a_world_publication_then_raw_commit_after_restore_refreshes_beside_a_retired_index() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
-        world_publication_first_after_restore(
-            &host_custody,
-            &host_custody.borrowed_request_for_test(),
-            true,
-        );
-    })
+    {
+        world_publication_first_after_restore(true);
+    }
 }
 
 /// Two raw commits in a row: the first resumes the patch stream at the
 /// restored ledger position, the second after the first.
-fn raw_commits_first_after_restore(
-    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    with_retired_index: bool,
-) {
-    let (restored, retired) = captured_and_restored(phase_custody, execution, with_retired_index);
-    let first = raw_commit(execution, &restored);
-    assert_every_installed_index_current(execution, &restored, &first, retired);
-    let second = raw_commit(execution, &restored);
-    assert_every_installed_index_current(execution, &restored, &second, retired);
+fn raw_commits_first_after_restore(with_retired_index: bool) {
+    let (restored, retired) = captured_and_restored(with_retired_index);
+    let first = restored
+        .application
+        .with_host_advancement(|phase| {
+            let borrowed_execution = phase
+                .execution_request_for(&restored.application.product_runtime)
+                .expect("fixture borrows its runtime request");
+            let execution = &borrowed_execution;
+
+            raw_commit(execution, &restored)
+        })
+        .expect("the fixture read owns its installed host call");
+    restored
+        .application
+        .with_host_advancement(|phase| {
+            let borrowed_execution = phase
+                .execution_request_for(&restored.application.product_runtime)
+                .expect("fixture borrows its runtime request");
+            let execution = &borrowed_execution;
+
+            assert_every_installed_index_current(execution, &restored, &first, retired)
+        })
+        .expect("the fixture read owns its installed host call");
+    let second = restored
+        .application
+        .with_host_advancement(|phase| {
+            let borrowed_execution = phase
+                .execution_request_for(&restored.application.product_runtime)
+                .expect("fixture borrows its runtime request");
+            let execution = &borrowed_execution;
+
+            raw_commit(execution, &restored)
+        })
+        .expect("the fixture read owns its installed host call");
+    restored
+        .application
+        .with_host_advancement(|phase| {
+            let borrowed_execution = phase
+                .execution_request_for(&restored.application.product_runtime)
+                .expect("fixture borrows its runtime request");
+            let execution = &borrowed_execution;
+
+            assert_every_installed_index_current(execution, &restored, &second, retired)
+        })
+        .expect("the fixture read owns its installed host call");
 }
 
 /// A World publication first, then a raw commit. A raw commit advances main
 /// outside the selected Product World, so it is the last step here.
-fn world_publication_first_after_restore(
-    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    with_retired_index: bool,
-) {
-    let (restored, retired) = captured_and_restored(phase_custody, execution, with_retired_index);
-    let principal = resolve_alice(phase_custody, &restored, 2);
-    set_principal_identity(execution, &restored, principal, 3);
-    resolve_alice(phase_custody, &restored, 3);
-    let raw = raw_commit(execution, &restored);
-    assert_every_installed_index_current(execution, &restored, &raw, retired);
+fn world_publication_first_after_restore(with_retired_index: bool) {
+    let (restored, retired) = captured_and_restored(with_retired_index);
+    let principal = restored
+        .application
+        .with_host_advancement(|phase| {
+            let phase_custody = &phase.test_host_request();
+
+            resolve_alice(phase_custody, &restored, 2)
+        })
+        .expect("the fixture read owns its installed host call");
+    restored
+        .application
+        .with_host_advancement(|phase| {
+            let borrowed_execution = phase
+                .execution_request_for(&restored.application.product_runtime)
+                .expect("fixture borrows its runtime request");
+            let execution = &borrowed_execution;
+
+            set_principal_identity(execution, &restored, principal, 3)
+        })
+        .expect("the fixture read owns its installed host call");
+    restored
+        .application
+        .with_host_advancement(|phase| {
+            let phase_custody = &phase.test_host_request();
+
+            resolve_alice(phase_custody, &restored, 3)
+        })
+        .expect("the fixture read owns its installed host call");
+    let raw = restored
+        .application
+        .with_host_advancement(|phase| {
+            let borrowed_execution = phase
+                .execution_request_for(&restored.application.product_runtime)
+                .expect("fixture borrows its runtime request");
+            let execution = &borrowed_execution;
+
+            raw_commit(execution, &restored)
+        })
+        .expect("the fixture read owns its installed host call");
+    restored
+        .application
+        .with_host_advancement(|phase| {
+            let borrowed_execution = phase
+                .execution_request_for(&restored.application.product_runtime)
+                .expect("fixture borrows its runtime request");
+            let execution = &borrowed_execution;
+
+            assert_every_installed_index_current(execution, &restored, &raw, retired)
+        })
+        .expect("the fixture read owns its installed host call");
 }
 
 /// Builds a world with World-published history, optionally persists a retired
 /// index definition, captures the world, and restores the capture.
-fn captured_and_restored(
-    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    with_retired_index: bool,
-) -> (IdentityWorld, Option<DerivedIndexId>) {
+fn captured_and_restored(with_retired_index: bool) -> (IdentityWorld, Option<DerivedIndexId>) {
     let world = installed_world(&[("alice", WorthQueryPrincipalMappingStatus::Enabled)]);
-    let principal = resolve_alice(phase_custody, &world, 1);
-    set_principal_identity(execution, &world, principal, 2);
-    let retired = with_retired_index.then(|| persist_as_the_retired_code_did(execution, &world));
-    let captured = with_runtime(execution, &world, ledger_position);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let phase_custody = &phase.test_host_request();
+
+            resolve_alice(phase_custody, &world, 1)
+        })
+        .expect("the fixture read owns its installed host call");
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let borrowed_execution = phase
+                .execution_request_for(&world.application.product_runtime)
+                .expect("fixture borrows its runtime request");
+            let execution = &borrowed_execution;
+
+            set_principal_identity(execution, &world, principal, 2)
+        })
+        .expect("the fixture read owns its installed host call");
+    let retired = world
+        .application
+        .with_host_advancement(|phase| {
+            let borrowed_execution = phase
+                .execution_request_for(&world.application.product_runtime)
+                .expect("fixture borrows its runtime request");
+            let execution = &borrowed_execution;
+
+            with_retired_index.then(|| persist_as_the_retired_code_did(execution, &world))
+        })
+        .expect("the fixture read owns its installed host call");
+    let captured = world
+        .application
+        .with_host_advancement(|phase| {
+            let borrowed_execution = phase
+                .execution_request_for(&world.application.product_runtime)
+                .expect("fixture borrows its runtime request");
+            let execution = &borrowed_execution;
+
+            with_runtime(execution, &world, ledger_position)
+        })
+        .expect("the fixture read owns its installed host call");
     assert!(captured.is_some(), "the captured ledger has commits");
     let checkpoint = world
         .application
@@ -117,13 +212,33 @@ fn captured_and_restored(
     drop(world);
 
     let restored = restored_world(checkpoint).expect("the captured world restores");
-    assert_eq!(
-        with_runtime(execution, &restored, ledger_position),
-        captured,
-        "a restore answers the ledger position the capture held"
-    );
+    restored
+        .application
+        .with_host_advancement(|phase| {
+            let borrowed_execution = phase
+                .execution_request_for(&restored.application.product_runtime)
+                .expect("fixture borrows its runtime request");
+            let execution = &borrowed_execution;
+
+            assert_eq!(
+                with_runtime(execution, &restored, ledger_position),
+                captured,
+                "a restore answers the ledger position the capture held"
+            )
+        })
+        .expect("the fixture read owns its installed host call");
     if let Some(retired) = retired {
-        assert_retired_index_is_inert(execution, &restored, retired);
+        restored
+            .application
+            .with_host_advancement(|phase| {
+                let borrowed_execution = phase
+                    .execution_request_for(&restored.application.product_runtime)
+                    .expect("fixture borrows its runtime request");
+                let execution = &borrowed_execution;
+
+                assert_retired_index_is_inert(execution, &restored, retired)
+            })
+            .expect("the fixture read owns its installed host call");
     }
     (restored, retired)
 }

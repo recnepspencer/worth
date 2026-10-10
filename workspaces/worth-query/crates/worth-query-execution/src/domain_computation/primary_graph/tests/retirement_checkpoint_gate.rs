@@ -18,51 +18,72 @@ use worth_relational::facade::{
 
 #[test]
 fn fresh_native_retirement_descriptions_do_not_issue_original_output_authority() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
-        let borrowed_execution = host_custody.borrowed_request_for_test();
-        let execution = &borrowed_execution;
-
+    {
         let source = installed_authorization_world(true);
-        let selected = source.selected_product(&host_custody);
-        let resolve = |key: &str| {
-            selected
-                .resolve_entity(
-                    &host_custody.phase_for_application(&source.application),
-                    AccountIdentity::reference(),
-                    key.to_owned(),
-                    &live_scope(),
-                    WorthQueryPrincipalResolutionMode::Ordinary,
-                )
-                .unwrap()
-                .entity_id()
-        };
-        let original = resolve("account-2");
-        let unrelated = resolve("account-1");
-        drop(selected);
+        let (original, unrelated) = source
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+                let selected = source.selected_product(&host_custody);
+                let resolve = |key: &str| {
+                    selected
+                        .resolve_entity(
+                            &host_custody.phase_for_application(&source.application),
+                            AccountIdentity::reference(),
+                            key.to_owned(),
+                            &live_scope(),
+                            WorthQueryPrincipalResolutionMode::Ordinary,
+                        )
+                        .unwrap()
+                        .entity_id()
+                };
+                let original = resolve("account-2");
+                let unrelated = resolve("account-1");
+                drop(selected);
+
+                (original, unrelated)
+            })
+            .expect("source read owns its host call");
         for entity in [original, unrelated] {
-            publish_relational_mutation(
-                &host_custody.borrowed_request_for_test(),
-                &source,
-                WorkerIntentBatch::new("checkpoint-retirement-gate").push(MutationIntent::Entity(
-                    EntityMutationIntent::Delete(DeleteEntityIntent { entity_id: entity }),
-                )),
-            );
+            source
+                .application
+                .with_host_advancement(|phase| {
+                    let host_custody = phase.test_host_request();
+
+                    publish_relational_mutation(
+                        &host_custody.borrowed_request_for_test(),
+                        &source,
+                        WorkerIntentBatch::new("checkpoint-retirement-gate").push(
+                            MutationIntent::Entity(EntityMutationIntent::Delete(
+                                DeleteEntityIntent { entity_id: entity },
+                            )),
+                        ),
+                    )
+                })
+                .expect("the fixture read owns its installed host call");
         }
         let bytes = source
             .application
-            .capture_application_checkpoint(
-                &host_custody.phase_for_application(&source.application),
-                CapturePolicy::SystemAllocation,
-            )
-            .unwrap()
-            .bytes()
-            .to_vec();
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+
+                source
+                    .application
+                    .capture_application_checkpoint(
+                        &host_custody.phase_for_application(&source.application),
+                        CapturePolicy::SystemAllocation,
+                    )
+                    .unwrap()
+                    .bytes()
+                    .to_vec()
+            })
+            .expect("the fixture read owns its installed host call");
         drop(source);
         let fresh = restored_world(
             super::super::WorthQueryApplicationCheckpoint::from_untrusted_bytes(bytes),
         )
         .expect("actual opaque native checkpoint freshly installs");
-        let selected = fresh.selected_product(&host_custody);
+        fresh.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); let borrowed_execution = phase.borrowed_request_for_test(); let execution = &borrowed_execution;        let selected = fresh.selected_product(&host_custody);
         let graph = fresh.application.runtime.primary_graph().unwrap();
         let handle = graph.integration_handle();
         let owner = &handle.source_owner.invalidation_owner;
@@ -89,8 +110,8 @@ fn fresh_native_retirement_descriptions_do_not_issue_original_output_authority()
             eprintln!("fresh installed retirement candidate entity={entity:?}, original={}, current={current}", entity == original);
             assert!(candidate.is_none() && !current, "native tombstone descriptions do not bind the original producer retirement");
         }
-    });
-    })
+    });}).expect("restored read owns its host call");
+    }
 }
 fn correspondence(entity: EntityId) -> WorthQueryApplicationOutputCorrespondence {
     WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(

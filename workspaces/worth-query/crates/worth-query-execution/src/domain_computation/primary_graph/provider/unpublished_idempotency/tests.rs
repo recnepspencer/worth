@@ -2,11 +2,11 @@ use super::*;
 
 #[test]
 fn exact_cleanup_restores_bounded_capacity_for_another_world_issued_reservation() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+    {
         let (first_product, first_binding, first_handle) =
-        crate::domain_computation::primary_graph::tests::application_attempt::world_issued_unpublished_material(&host_custody, 0xE1);
+        crate::domain_computation::primary_graph::tests::application_attempt::world_issued_unpublished_material(0xE1);
         let (second_product, second_binding, second_handle) =
-        crate::domain_computation::primary_graph::tests::application_attempt::world_issued_unpublished_material(&host_custody, 0xE2);
+        crate::domain_computation::primary_graph::tests::application_attempt::world_issued_unpublished_material(0xE2);
         let first_affinity = WorthQueryProductIdempotencyAffinity::from_observation(&first_product);
         let second_affinity =
             WorthQueryProductIdempotencyAffinity::from_observation(&second_product);
@@ -32,5 +32,5 @@ fn exact_cleanup_restores_bounded_capacity_for_another_world_issued_reservation(
             .reserve(second_affinity, second_binding, second_handle)
             .expect("exact cleanup restores the one available slot");
         assert_eq!(store.retained_count(), 1);
-    })
+    }
 }

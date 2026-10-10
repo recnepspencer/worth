@@ -10,14 +10,12 @@ fn declaration_derived_program_requirement_denies_the_raw_commit_entry() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
@@ -29,7 +27,6 @@ fn declaration_derived_program_requirement_denies_the_raw_commit_entry() {
     let admission = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
         .selected_product(&(phase).test_host_request(), )
         .authorize_operation(&phase,
@@ -45,7 +42,6 @@ fn declaration_derived_program_requirement_denies_the_raw_commit_entry() {
     let (_, projection, _) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .invariant
                 .project_admitted_operation(
@@ -65,7 +61,6 @@ fn declaration_derived_program_requirement_denies_the_raw_commit_entry() {
     let reads = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .begin_projected_application_read_attempt(
@@ -80,7 +75,6 @@ fn declaration_derived_program_requirement_denies_the_raw_commit_entry() {
     let mut effects = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             reads
                 .complete_projected_dependencies(
                     &phase,
@@ -102,7 +96,6 @@ fn declaration_derived_program_requirement_denies_the_raw_commit_entry() {
     let predecessor = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .product()
@@ -136,7 +129,6 @@ fn declaration_derived_program_requirement_denies_the_raw_commit_entry() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             assert_eq!(
                 world
                     .selected_product(&(phase).test_host_request(),)
@@ -162,21 +154,18 @@ fn installed_program_denies_raw_commit_for_an_unlisted_operation() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let predecessor = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .product()
@@ -187,7 +176,6 @@ fn installed_program_denies_raw_commit_for_an_unlisted_operation() {
     let program = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program(
                 &phase,
                 &world,
@@ -223,7 +211,6 @@ fn installed_program_denies_raw_commit_for_an_unlisted_operation() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             assert_eq!(
                 world
                     .selected_product(&(phase).test_host_request(),)
@@ -237,44 +224,71 @@ fn installed_program_denies_raw_commit_for_an_unlisted_operation() {
 
 #[test]
 fn program_output_producer_names_an_operation_not_installed_as_conditional() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
-        let borrowed_execution = host_custody.borrowed_request_for_test();
-        let execution = &borrowed_execution;
-
+    {
         let mut world = installed_authorization_world(true);
         world.application.program_support = Some(installed_program_support(
             &world.application.installed_schema,
         ));
         let request = live_scope();
-        let principal = authenticated_principal(
-            &(host_custody.phase_for_application(&world.application)).test_host_request(),
-            &world,
-            &request,
-        );
-        let account = resolved_account(
-            &(host_custody.phase_for_application(&world.application)).test_host_request(),
-            &world,
-            "open",
-            &request,
-        );
+        let principal = world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+
+                authenticated_principal(
+                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &world,
+                    &request,
+                )
+            })
+            .expect("the fixture read owns its installed host call");
+        let account = world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+
+                resolved_account(
+                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &world,
+                    "open",
+                    &request,
+                )
+            })
+            .expect("the fixture read owns its installed host call");
         let predecessor = world
-            .selected_product(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
-            )
-            .product()
-            .selected_commit()
-            .clone();
-        let program = admitted_program_required_program(
-            &host_custody.phase_for_application(&world.application),
-            &world,
-            &principal,
-            &account,
-            &request,
-            "program-owned",
-        );
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+
+                world
+                    .selected_product(
+                        &(host_custody.phase_for_application(&world.application))
+                            .test_host_request(),
+                    )
+                    .product()
+                    .selected_commit()
+                    .clone()
+            })
+            .expect("the fixture read owns its installed host call");
+        let program = world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+
+                admitted_program_required_program(
+                    &host_custody.phase_for_application(&world.application),
+                    &world,
+                    &principal,
+                    &account,
+                    &request,
+                    "program-owned",
+                )
+            })
+            .expect("the fixture read owns its installed host call");
         let outcome = world
             .application
             .with_application_advancement(&request, |phase| {
+                let execution = &phase.borrowed_request_for_test();
                 world
                     .application
                     .compare_and_commit_application_for_program_output_producer(
@@ -302,14 +316,22 @@ fn program_output_producer_names_an_operation_not_installed_as_conditional() {
             std::any::type_name::<ProgramRequiredOperation>()
         );
         assert_eq!(denial.detail(), Some(expected.as_str()));
-        assert_eq!(
-            world
-                .selected_product(
-                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+        world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+
+                assert_eq!(
+                    world
+                        .selected_product(
+                            &(host_custody.phase_for_application(&world.application))
+                                .test_host_request(),
+                        )
+                        .product()
+                        .selected_commit(),
+                    &predecessor
                 )
-                .product()
-                .selected_commit(),
-            &predecessor
-        );
-    })
+            })
+            .expect("the fixture read owns its installed host call");
+    }
 }

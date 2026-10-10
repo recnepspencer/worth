@@ -12,43 +12,33 @@ use std::sync::Arc;
 
 #[test]
 fn registration_recovery_does_not_certify_an_output_computed_before_its_own_write() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
-        let host_request = crate::test_request_policy::serial_request();
-        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-        check_own_write_recovery(&host_custody, execution, false);
-    })
+    {
+        check_own_write_recovery(false);
+    }
 }
 
 #[test]
 fn accepted_current_cannot_bypass_own_write_evidence_after_index_loss() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
-        let host_request = crate::test_request_policy::serial_request();
-        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-        check_own_write_recovery(&host_custody, execution, true);
-    })
+    {
+        check_own_write_recovery(true);
+    }
 }
 
-fn check_own_write_recovery(
-    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    index_loss: bool,
-) {
+fn check_own_write_recovery(index_loss: bool) {
     crate::domain_computation::primary_graph::output_lineage::own_write_fixture::with_committed_own_write(|world, receipt, cell, resources| {
     let graph = world.application.runtime.primary_graph().unwrap();
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
-    let retained_product = world.selected_product(phase_custody, );
-    let retained_snapshot = handle.with_runtime(execution, |runtime| {
+    let retained_product = world.application.with_host_advancement(|phase| { let phase_custody = &phase.test_host_request();    world.selected_product(phase_custody, ) }).expect("the fixture read owns its installed host call");
+    let retained_snapshot = world.application.with_host_advancement(|phase| {   let borrowed_execution = phase.execution_request_for(&world.application.product_runtime).expect("fixture borrows its runtime request"); let execution = &borrowed_execution; handle.with_runtime(execution, |runtime| {
         let basis = runtime.admit_branch_basis(&runtime.main_branch_identity()).unwrap();
         runtime.snapshots().snapshot_for_observation(&basis.observation()).unwrap()
-    });
+    }) }).expect("the fixture read owns its installed host call");
     let maximum = resources.installation().maximum_retained_bytes;
     let completed = world.application.primary_provider.observe_completed_application(receipt.commit_reference()).unwrap();
     let recorded = cell.get().unwrap();
     if index_loss {
-        crate::domain_computation::primary_graph::output_lineage::own_write_fixture::evict_index_with_unrelated_write(&phase_custody.phase_for_application(&world.application), world, &resources);
+        world.application.with_host_advancement(|phase| { let phase_custody = &phase.test_host_request();    crate::domain_computation::primary_graph::output_lineage::own_write_fixture::evict_index_with_unrelated_write(&phase_custody.phase_for_application(&world.application), world, &resources) }).expect("the fixture read owns its installed host call");
     } else {
     // Release only the derived row, preserving the actual performed lineage.
     // Re-registering under an exhausted ledger now follows the genuine stop
@@ -63,7 +53,7 @@ fn check_own_write_recovery(
     let held = resources
         .reserve_retained_capacity(maximum - resources.retained_capacity_bytes())
         .unwrap();
-    handle.with_runtime(execution, |runtime| {
+    world.application.with_host_advancement(|phase| {   let borrowed_execution = phase.execution_request_for(&world.application.product_runtime).expect("fixture borrows its runtime request"); let execution = &borrowed_execution; handle.with_runtime(execution, |runtime| {
         let basis = runtime.admit_branch_basis(&runtime.main_branch_identity()).unwrap();
         let snapshot = runtime.snapshots().snapshot_for_observation(&basis.observation()).unwrap();
         let reason = crate::domain_computation::primary_graph::output_lineage::invalidation::register_completed(execution,
@@ -72,7 +62,7 @@ fn check_own_write_recovery(
         assert_eq!(reason, FullVerificationReason::RegistrationIncomplete);
         recorded.require_verification(reason);
         runtime.snapshots().release_snapshot(&snapshot).unwrap();
-    });
+    }) }).expect("the fixture read owns its installed host call");
     drop(held);
     }
     assert!(recorded.observed_source_facts().unwrap().for_comparison().is_none(),
@@ -85,7 +75,7 @@ fn check_own_write_recovery(
     });
     let candidate = AcceptedCurrentCandidate { selected, ready };
     let (_, product, _) = retained_product.into_parts();
-    handle.with_runtime(execution, |runtime| {
+    world.application.with_host_advancement(|phase| {   let borrowed_execution = phase.execution_request_for(&world.application.product_runtime).expect("fixture borrows its runtime request"); let execution = &borrowed_execution; handle.with_runtime(execution, |runtime| {
         let snapshot = retained_snapshot;
         let selected = runtime.read_truth().positioned_snapshot(&snapshot).unwrap();
         assert!(candidate
@@ -108,8 +98,8 @@ fn check_own_write_recovery(
         );
         drop(answer);
         runtime.snapshots().release_snapshot(&snapshot).unwrap();
-    });
-    resolved_account(&(phase_custody).test_host_request(), world, "2", &live_scope());
+    }) }).expect("the fixture read owns its installed host call");
+    world.application.with_host_advancement(|phase| { let phase_custody = &phase.test_host_request();    resolved_account(&(phase_custody).test_host_request(), world, "2", &live_scope()) }).expect("the fixture read owns its installed host call");
     });
 }
 

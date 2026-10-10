@@ -102,28 +102,24 @@ fn concurrent_equivalent_attempts_publish_one_transaction() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let first = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program(&phase, &world, &principal, &account, &request, "once")
         })
         .expect("the fixture read owns its installed host call");
     let second = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program(&phase, &world, &principal, &account, &request, "once")
         })
         .expect("the fixture read owns its installed host call");
@@ -171,14 +167,12 @@ fn preparation_commit_recovery_and_retry_perform_no_execution_digest_derivation(
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
@@ -186,7 +180,6 @@ fn preparation_commit_recovery_and_retry_perform_no_execution_digest_derivation(
     let first = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program(
                 &phase,
                 &world,
@@ -200,7 +193,6 @@ fn preparation_commit_recovery_and_retry_perform_no_execution_digest_derivation(
     let retry = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program(
                 &phase,
                 &world,
@@ -252,7 +244,6 @@ pub(in crate::domain_computation::primary_graph) fn idempotency(
 }
 
 pub(in crate::domain_computation::primary_graph) fn world_issued_unpublished_material(
-    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     seed: u8,
 ) -> (
     worth_runtime_world::facade::ProductBranchObservation,
@@ -261,25 +252,34 @@ pub(in crate::domain_computation::primary_graph) fn world_issued_unpublished_mat
 ) {
     let world = installed_authorization_world(true);
     let request = live_scope();
-    let principal = authenticated_principal(&(phase_custody).test_host_request(), &world, &request);
-    let account = resolved_account(
-        &(phase_custody).test_host_request(),
-        &world,
-        "open",
-        &request,
-    );
     let binding = idempotency(seed, seed);
-    let program = admitted_program(
-        &phase_custody.phase_for_application(&world.application),
-        &world,
-        &principal,
-        &account,
-        &request,
-        "bounded-unpublished-material",
-    );
-    world
+    let program = world
         .application
-        .fail_next_durable_append_for_test(&phase_custody.borrowed_request_for_test());
+        .with_host_advancement(|phase| {
+            let phase_custody = &phase.test_host_request();
+            let principal =
+                authenticated_principal(&(phase_custody).test_host_request(), &world, &request);
+            let account = resolved_account(
+                &(phase_custody).test_host_request(),
+                &world,
+                "open",
+                &request,
+            );
+            let program = admitted_program(
+                &phase_custody.phase_for_application(&world.application),
+                &world,
+                &principal,
+                &account,
+                &request,
+                "bounded-unpublished-material",
+            );
+            world
+                .application
+                .fail_next_durable_append_for_test(&phase_custody.borrowed_request_for_test());
+
+            program
+        })
+        .expect("fixture preparation owns its host call");
     let outcome = world.application.compare_and_commit_application(
         program,
         binding,

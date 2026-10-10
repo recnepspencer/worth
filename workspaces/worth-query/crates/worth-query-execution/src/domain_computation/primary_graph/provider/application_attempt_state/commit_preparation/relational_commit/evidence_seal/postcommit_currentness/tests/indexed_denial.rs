@@ -18,35 +18,45 @@ use crate::domain_computation::primary_graph::{
 };
 use worth_relational::facade::mvcc::{CompanionPreflightBudget, CompanionPreflightStop};
 
-fn committed_indexed_facts(
-    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
-    world: &AuthorizationWorld,
-) -> Vec<WorthQueryApplicationObservedFact> {
+fn committed_indexed_facts(world: &AuthorizationWorld) -> Vec<WorthQueryApplicationObservedFact> {
     let request = live_scope();
-    let principal = crate::domain_computation::primary_graph::tests::application_attempt::authenticated_principal(&(phase_custody).test_host_request(), world, &request);
-    let account =
-        crate::domain_computation::primary_graph::tests::application_attempt::resolved_account(
-            &(phase_custody).test_host_request(),
-            world,
-            "open",
-            &request,
-        );
+    let principal = world.application.with_host_advancement(|phase| { let phase_custody = &phase;    crate::domain_computation::primary_graph::tests::application_attempt::authenticated_principal(&(phase_custody).test_host_request(), world, &request) }).expect("the fixture read owns its installed host call");
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            let phase_custody = &phase;
+
+            crate::domain_computation::primary_graph::tests::application_attempt::resolved_account(
+                &(phase_custody).test_host_request(),
+                world,
+                "open",
+                &request,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
     let operation = world
         .application
         .installed_schema()
         .installed_operation(OptionalOutputOperation::reference())
         .unwrap();
     let admission = world
-        .selected_product(&(phase_custody).test_host_request())
-        .authorize_operation(
-            phase_custody,
-            &principal,
-            &account,
-            &operation,
-            TypedMutationPreconditions::new(),
-            &request,
-        )
-        .unwrap();
+        .application
+        .with_host_advancement(|phase| {
+            let phase_custody = &phase;
+
+            world
+                .selected_product(&(phase_custody).test_host_request())
+                .authorize_operation(
+                    phase_custody,
+                    &principal,
+                    &account,
+                    &operation,
+                    TypedMutationPreconditions::new(),
+                    &request,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let input = OptionalOutputInput {
         status: "open".to_owned(),
         plan: OptionalOutputPlan::RequiredAfterIndexedAbsence,
@@ -103,75 +113,68 @@ fn committed_indexed_facts(
 #[test]
 fn indexed_postcommit_rebase_preserves_the_native_denial_and_fact_ordinal() {
     let world = installed_authorization_world(true);
-    world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-
-            let mut facts = committed_indexed_facts(
-                &host_custody.phase_for_application(&world.application),
-                &world,
-            );
-            let mut ordinal = facts
-                .iter()
-                .position(|fact| {
-                    matches!(
-                        fact,
-                        WorthQueryApplicationObservedFact::IndexedEntitySelection { .. }
-                    )
-                })
-                .expect("the real handler must retain its indexed fact");
-            // Repeat the actual retained observation so successful reobservation
-            // precedes the faulted observation at a nonzero fact ordinal.
-            let unchanged = facts[ordinal].clone();
-            facts.insert(ordinal, unchanged);
-            ordinal += 1;
-            assert!(
-                ordinal > 0,
-                "the real indexed fact occupies a nonzero test ordinal"
-            );
-            let WorthQueryApplicationObservedFact::IndexedEntitySelection { index_id, .. } =
-                &mut facts[ordinal]
-            else {
-                unreachable!();
-            };
-            *index_id = DerivedIndexId(u64::MAX);
-            let outcome = rebase_result_at_current(
-                &host_custody.phase_for_application(&world.application),
-                &host_custody.borrowed_request_for_test(),
-                &world,
-                facts,
-            );
-            assert!(
+    {
+        let mut facts = committed_indexed_facts(&world);
+        let mut ordinal = facts
+            .iter()
+            .position(|fact| {
                 matches!(
-                    &outcome,
-                    RebasedSourceFacts::VerificationRequired {
-                        reason: RebaseVerificationReason::IndexedSelectionFactDenied(
-                            actual_ordinal,
-                            IndexedSelectionReobserveDenial::Lookup(
-                                BoundedEntityFieldLookupDenialKind::IndexNotInstalled
-                            )
-                        ),
-                        ..
-                    } if *actual_ordinal == ordinal
-                ),
-                "the native denial and its actual nonzero ordinal must survive rebase: {outcome:?}"
-            );
-        })
-        .expect("the fixture block owns its installed host call")
+                    fact,
+                    WorthQueryApplicationObservedFact::IndexedEntitySelection { .. }
+                )
+            })
+            .expect("the real handler must retain its indexed fact");
+        // Repeat the actual retained observation so successful reobservation
+        // precedes the faulted observation at a nonzero fact ordinal.
+        let unchanged = facts[ordinal].clone();
+        facts.insert(ordinal, unchanged);
+        ordinal += 1;
+        assert!(
+            ordinal > 0,
+            "the real indexed fact occupies a nonzero test ordinal"
+        );
+        let WorthQueryApplicationObservedFact::IndexedEntitySelection { index_id, .. } =
+            &mut facts[ordinal]
+        else {
+            unreachable!();
+        };
+        *index_id = DerivedIndexId(u64::MAX);
+        let outcome = world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+
+                rebase_result_at_current(
+                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.borrowed_request_for_test(),
+                    &world,
+                    facts,
+                )
+            })
+            .expect("the fixture read owns its installed host call");
+        assert!(
+            matches!(
+                &outcome,
+                RebasedSourceFacts::VerificationRequired {
+                    reason: RebaseVerificationReason::IndexedSelectionFactDenied(
+                        actual_ordinal,
+                        IndexedSelectionReobserveDenial::Lookup(
+                            BoundedEntityFieldLookupDenialKind::IndexNotInstalled
+                        )
+                    ),
+                    ..
+                } if *actual_ordinal == ordinal
+            ),
+            "the native denial and its actual nonzero ordinal must survive rebase: {outcome:?}"
+        );
+    }
 }
 
 #[test]
 fn sparse_indexed_rebase_spends_examined_rows_and_keeps_complete_dependencies() {
     let world = installed_authorization_world(true);
-    world.application.with_host_advancement(|phase| {
-let host_custody = phase.test_host_request();
-let borrowed_execution = host_custody.borrowed_request_for_test();
-let execution = &borrowed_execution;
-let committed = committed_indexed_facts(
-            &host_custody.phase_for_application(&world.application),
-            &world,
-        );
+    {
+        let committed = committed_indexed_facts(&world);
         let selected_value =
             StringApplicationValueBinding::encode(&"pending-membership".to_owned()).unwrap();
         let retained = committed
@@ -194,11 +197,18 @@ let committed = committed_indexed_facts(
         else {
             unreachable!()
         };
-        let selected = world.selected_product(
-            &(host_custody.phase_for_application(&world.application)).test_host_request(),
-        );
+        let selected = world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+
+                world.selected_product(
+                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                )
+            })
+            .expect("the fixture read owns its installed host call");
         let graph = world.application.runtime.primary_graph().unwrap();
-        let observed = graph.integration_handle().with_runtime(&phase.borrowed_request_for_test(), |runtime| {
+        let observed = world.application.with_host_advancement(|phase| {   let borrowed_execution = phase.execution_request_for(&world.application.product_runtime).expect("fixture borrows its runtime request"); let execution = &borrowed_execution; graph.integration_handle().with_runtime(&phase.borrowed_request_for_test(), |runtime| {
         let snapshot = selected.application_basis().snapshot_handle();
         let observed = crate::domain_computation::primary_graph::application_attempt::observe_indexed_entity_selection(
             runtime,execution,  snapshot, *index_id, *entity_kind, locator.clone(), value.clone(), 100_001,
@@ -247,23 +257,44 @@ let committed = committed_indexed_facts(
             own_effect: OwnEffectOnReads::NONE_ASKED,
         }, "width exhaustion keeps no partially rebased facts");
         observed
-    });
-        let (second_account, _) = account_note(
-            &host_custody.phase_for_application(&world.application),
-            &world,
-            "account-2",
-        );
-        set_note(
-            &host_custody.borrowed_request_for_test(),
-            &world,
-            second_account,
-            locator.clone(),
-            "pending-membership",
-        );
-        let selected = world.selected_product(
-            &(host_custody.phase_for_application(&world.application)).test_host_request(),
-        );
-        graph.integration_handle().with_runtime(execution, |runtime| {
+    }) }).expect("the fixture read owns its installed host call");
+        let (second_account, _) = world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+
+                account_note(
+                    &host_custody.phase_for_application(&world.application),
+                    &world,
+                    "account-2",
+                )
+            })
+            .expect("the fixture read owns its installed host call");
+        world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+
+                set_note(
+                    &host_custody.borrowed_request_for_test(),
+                    &world,
+                    second_account,
+                    locator.clone(),
+                    "pending-membership",
+                )
+            })
+            .expect("the fixture read owns its installed host call");
+        let selected = world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+
+                world.selected_product(
+                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                )
+            })
+            .expect("the fixture read owns its installed host call");
+        world.application.with_host_advancement(|phase| {   let borrowed_execution = phase.execution_request_for(&world.application.product_runtime).expect("fixture borrows its runtime request"); let execution = &borrowed_execution; graph.integration_handle().with_runtime(execution, |runtime| {
         let snapshot = selected.application_basis().snapshot_handle();
         assert_eq!(
             observed.source_currentness_within(runtime,execution,  snapshot, 2),
@@ -309,9 +340,8 @@ let committed = committed_indexed_facts(
             },
             "a narrowed overflowing probe must not certify a partial posting"
         );
-    });
-
-}).expect("the fixture block owns its installed host call")
+    }) }).expect("the fixture read owns its installed host call");
+    }
 }
 
 fn request_admission() -> InvalidationEditAdmission {

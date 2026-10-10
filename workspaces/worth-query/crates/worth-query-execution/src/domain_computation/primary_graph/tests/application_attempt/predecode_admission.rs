@@ -29,7 +29,6 @@ fn installed_handler_reader_admits_actual_raw_scalar_and_uses_declared_decoder()
     let completed = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             projection::with_reader(&phase, &world, &request, |reader| {
                 let scope = reader.scope().clone();
                 reader.field_with_predecode_admission(
@@ -61,7 +60,6 @@ fn actual_admission_denial_is_preserved_without_a_decoded_value() {
     let result = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             projection::with_reader(&phase, &world, &request, |reader| {
                 let scope = reader.scope().clone();
                 reader.field_with_predecode_admission(
@@ -85,21 +83,18 @@ fn large_carrier_denial_allocates_only_projection_metadata_before_decoder() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let admission = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_operation(&phase, &world, &principal, &account, &request)
         })
         .expect("the fixture read owns its installed host call");
@@ -107,7 +102,6 @@ fn large_carrier_denial_allocates_only_projection_metadata_before_decoder() {
     let completed = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .invariant
                 .project_admitted_operation(
@@ -168,75 +162,78 @@ fn ordinary_decision_field_decodes_without_a_carrier_copy() {
 
 #[test]
 fn isolated_ordinary_field_decode() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+    {
         if std::env::var_os("WORTH_QUERY_BORROWED_FIELD_DECODE_PROBE").is_none() {
             return;
         }
         let small = installed_authorization_world_with_label("small");
-        let (_, fixed_allocation) = ordinary_field_allocation(&host_custody, &small);
+        let (_, fixed_allocation) = ordinary_field_allocation(&small);
         let payload = "q".repeat(128 * 1024);
         let large = installed_authorization_world_with_label(&payload);
-        let (actual, allocated) = ordinary_field_allocation(&host_custody, &large);
+        let (actual, allocated) = ordinary_field_allocation(&large);
         assert_eq!(actual, payload);
         assert!(
             allocated <= fixed_allocation + payload.len(),
             "only the owned decoded String grows with the carrier: \
          allocated {allocated}, fixed allocation {fixed_allocation}"
         );
-    })
+    }
 }
 
-fn ordinary_field_allocation(
-    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
-    world: &super::super::fixture::AuthorizationWorld,
-) -> (String, usize) {
-    let request = live_scope();
-    let principal = authenticated_principal(phase_custody, world, &request);
-    let account = resolved_account(phase_custody, world, "open", &request);
-    let admission = admitted_operation(
-        &phase_custody.phase_for_application(&world.application),
-        world,
-        &principal,
-        &account,
-        &request,
-    );
-    let mut allocated = 0;
-    let completed = world
-        .invariant
-        .project_admitted_operation(
-            &phase_custody.phase_for_application(&world.application),
-            &admission,
-            |reader, scope| {
-                // Measure only this ordinary field call, not installation, authorization,
-                // completion or retained read-set capture. This is not a peak-byte proof.
-                let region = stats_alloc::Region::new(&stats_alloc::INSTRUMENTED_SYSTEM);
-                let actual = reader
-                    .decision_field(scope, AccountLabel::reference())
-                    .unwrap()
-                    .unwrap();
-                allocated = region.change().bytes_allocated;
-                actual
-            },
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    assert_eq!(completed.work().field_reads(), 1);
-    let (actual, projection, _) = completed.into_parts();
-    let _reads = world
+fn ordinary_field_allocation(world: &super::super::fixture::AuthorizationWorld) -> (String, usize) {
+    world
         .application
-        .begin_projected_application_read_attempt(
-            &phase_custody.phase_for_application(&world.application),
-            admission,
-            projection,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
-        .complete_projected_dependencies(
-            &phase_custody.phase_for_application(&world.application),
-            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    (actual, allocated)
+        .with_host_advancement(|phase| {
+            let phase_custody = &phase.test_host_request();
+            let request = live_scope();
+            let principal = authenticated_principal(phase_custody, world, &request);
+            let account = resolved_account(phase_custody, world, "open", &request);
+            let admission = admitted_operation(
+                &phase_custody.phase_for_application(&world.application),
+                world,
+                &principal,
+                &account,
+                &request,
+            );
+            let mut allocated = 0;
+            let completed = world
+                .invariant
+                .project_admitted_operation(
+                    &phase_custody.phase_for_application(&world.application),
+                    &admission,
+                    |reader, scope| {
+                        // Measure only this ordinary field call, not installation, authorization,
+                        // completion or retained read-set capture. This is not a peak-byte proof.
+                        let region = stats_alloc::Region::new(&stats_alloc::INSTRUMENTED_SYSTEM);
+                        let actual = reader
+                            .decision_field(scope, AccountLabel::reference())
+                            .unwrap()
+                            .unwrap();
+                        allocated = region.change().bytes_allocated;
+                        actual
+                    },
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap();
+            assert_eq!(completed.work().field_reads(), 1);
+            let (actual, projection, _) = completed.into_parts();
+            let _reads = world
+                .application
+                .begin_projected_application_read_attempt(
+                    &phase_custody.phase_for_application(&world.application),
+                    admission,
+                    projection,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap()
+                .complete_projected_dependencies(
+                    &phase_custody.phase_for_application(&world.application),
+                    crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap();
+            (actual, allocated)
+        })
+        .expect("the fixture read owns its installed host call")
 }
 
 #[test]
@@ -244,10 +241,9 @@ fn undeclared_and_foreign_reads_deny_before_raw_callback() {
     let world = installed_authorization_world(true);
     let other = installed_authorization_world(true);
     let request = live_scope();
-    let foreign = world
+    let foreign = other
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             other
                 .invariant
                 .project(
@@ -268,7 +264,6 @@ fn undeclared_and_foreign_reads_deny_before_raw_callback() {
     let result = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             projection::with_reader(&phase, &world, &request, |reader| {
                 reader.field_with_predecode_admission(
                     &foreign,
@@ -294,7 +289,6 @@ fn undeclared_and_foreign_reads_deny_before_raw_callback() {
     let result = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             projection::with_reader(&phase, &world, &request, |reader| {
                 let scope = reader.scope().clone();
                 // ProgramRequiredOperation declares only AccountStatus, not AccountLabel.

@@ -49,10 +49,11 @@ fn restoring_existing_unverified_facts_drops_state_as_restored() {
     let host_request = crate::test_request_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
+    let sealed = sealed_run_for_lineage_test();
     staged(request_execution, |mut stage| {
         let facts: Arc<[Fact]> = Arc::from([source_entity(1)]);
         let computation = stage.lineage.retain_computation(
-            sealed_run_for_lineage_test(),
+            sealed,
             None,
             None,
             stage.lineage.prepay_computation_fork_scan_for_test(),

@@ -50,28 +50,24 @@ fn later_commit_recovery_selects_exact_evidence_and_rejects_foreign_reference_ax
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let first_account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let later_account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "unrelated", &request)
         })
         .expect("the fixture read owns its installed host call");
     let first = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             retained_status_program(
                 &(phase).test_host_request(),
                 &world,
@@ -99,7 +95,6 @@ fn later_commit_recovery_selects_exact_evidence_and_rejects_foreign_reference_ax
     let later = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             retained_status_program(
                 &(phase).test_host_request(),
                 &world,
@@ -114,7 +109,6 @@ fn later_commit_recovery_selects_exact_evidence_and_rejects_foreign_reference_ax
     let retry = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             retained_status_program(
                 &(phase).test_host_request(),
                 &world,
@@ -169,13 +163,9 @@ fn later_commit_recovery_selects_exact_evidence_and_rejects_foreign_reference_ax
 
 #[test]
 fn demanded_work_tracks_real_multi_intent_and_target_breadth() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
-        let narrow = demanded_mutation_work(&host_custody, RetentionMutationBreadth::Narrow, 91);
-        let wide = demanded_mutation_work(
-            &host_custody,
-            RetentionMutationBreadth::CrossRecordLabel,
-            92,
-        );
+    {
+        let narrow = demanded_mutation_work(RetentionMutationBreadth::Narrow, 91);
+        let wide = demanded_mutation_work(RetentionMutationBreadth::CrossRecordLabel, 92);
 
         assert_eq!(narrow.preimage_demanded_loci_examined(), 1);
         assert_eq!(wide.preimage_demanded_loci_examined(), 1);
@@ -187,32 +177,52 @@ fn demanded_work_tracks_real_multi_intent_and_target_breadth() {
         assert_eq!(wide.preimage_candidates_materialized(), 2);
         assert_eq!(narrow.preimage_validated_intents_examined(), 3);
         assert_eq!(wide.preimage_validated_intents_examined(), 4);
-    })
+    }
 }
 
 fn demanded_mutation_work(
-    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     breadth: RetentionMutationBreadth,
     key: u8,
 ) -> crate::domain_computation::primary_graph::provider::WorthQueryPrimaryMutationWorkEvidence {
     let world = installed_authorization_world(true);
     let request = live_scope();
-    let principal = authenticated_principal(&(phase_custody).test_host_request(), &world, &request);
-    let account = resolved_account(
-        &(phase_custody).test_host_request(),
-        &world,
-        "open",
-        &request,
-    );
-    let program = retained_status_program(
-        phase_custody,
-        &world,
-        &principal,
-        &account,
-        &request,
-        "frozen",
-        breadth,
-    );
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let phase_custody = &phase.test_host_request();
+
+            authenticated_principal(&(phase_custody).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            let phase_custody = &phase.test_host_request();
+
+            resolved_account(
+                &(phase_custody).test_host_request(),
+                &world,
+                "open",
+                &request,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    let program = world
+        .application
+        .with_host_advancement(|phase| {
+            let phase_custody = &phase.test_host_request();
+
+            retained_status_program(
+                phase_custody,
+                &world,
+                &principal,
+                &account,
+                &request,
+                "frozen",
+                breadth,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
     let outcome = world.application.compare_and_commit_application(
         program,
         idempotency(key, key),
