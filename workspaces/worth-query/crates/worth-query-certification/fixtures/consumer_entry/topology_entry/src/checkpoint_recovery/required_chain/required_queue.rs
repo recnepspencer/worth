@@ -386,6 +386,7 @@ fn dependents_of_a_failed_required_refresh_never_stay_pending() {
 mod custody_model;
 mod custody_stops;
 mod exhausted_index;
+mod pending_queue;
 mod recovery_isolation;
 mod reopened_dependent;
 #[cfg(feature = "test-output-delivery-faults")]

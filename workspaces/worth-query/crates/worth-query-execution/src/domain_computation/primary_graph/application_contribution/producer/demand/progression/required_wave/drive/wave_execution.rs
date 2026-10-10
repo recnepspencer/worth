@@ -133,7 +133,8 @@ where
                         Ok(true) => continue,
                         Ok(false) => {
                             member.state = MemberState::Pending;
-                            moved = true;
+                            // A deferred delivery leaves the selection on its old head.
+                            // Only a committed Ready can move the selected basis.
                             break;
                         }
                         Err(stop) => return Err(MemberStop { index, stop }),

@@ -32,12 +32,12 @@ impl QueuedRequiredRoots {
         }
     }
 
-    /// Whether the caller's own Current proof has decided its outcome.
+    /// Whether the caller's outcome is decided, Settled or Pending.
     pub(super) const fn draining(&self) -> bool {
         self.caller.is_some()
     }
 
-    /// The caller is certified; queue failures retain their own scheduling custody.
+    /// The caller is decided; queue failures retain their own scheduling custody.
     pub(super) fn finish_caller(&mut self, outcome: WorthQueryOutputDemandAdvance) {
         self.caller_current = matches!(&outcome, WorthQueryOutputDemandAdvance::Settled(_));
         self.caller = Some(outcome);
