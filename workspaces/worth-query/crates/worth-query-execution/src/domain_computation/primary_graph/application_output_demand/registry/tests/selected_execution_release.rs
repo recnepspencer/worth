@@ -20,6 +20,7 @@ fn selected_release_refuses_before_running_then_releases_without_new_allowance()
                     &mut record_admission(),
                 )
                 .expect("the registry creates and joins actual retained membership")
+                .0
         };
         let denied = admit();
         let peer = admit();
@@ -122,7 +123,7 @@ fn selected_execution_failure_fails_the_row_only_for_an_intrinsic_stop() {
                     None,
                     &mut record_admission(),
                 )
-                .expect("the registry creates and joins actual retained membership")
+                .expect("the registry creates and joins actual retained membership").0
             };
             let running = admit();
             let peer = admit();
@@ -192,7 +193,7 @@ fn unauthorized_caller_leaves_the_row_for_an_authorized_peer_to_ready() {
                 None,
                 &mut record_admission(),
             )
-            .expect("the registry creates and joins actual retained membership")
+            .expect("the registry creates and joins actual retained membership").0
     };
     let unauthorized = admit();
     let authorized = admit();

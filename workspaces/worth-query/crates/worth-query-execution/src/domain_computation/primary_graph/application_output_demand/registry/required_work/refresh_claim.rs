@@ -160,7 +160,6 @@ impl WorthQueryOutputDemandRegistry {
         record.interests += 1;
         record.required_interests += 1;
         let interest = super::super::WorthQueryOutputDemandInterest {
-            join_pause: None,
             key: interest_key,
             requires_output: true,
             notifications: super::super::WorthQueryOutputDemandNotifications {

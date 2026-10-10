@@ -27,7 +27,8 @@ fn unchanged_source_after_unrelated_world_work_joins_the_active_demand() {
             None,
             &mut record_admission(),
         )
-        .expect("an unchanged semantic source joins its active demand");
+        .expect("an unchanged semantic source joins its active demand")
+        .0;
 
     let state = registry.state.lock().unwrap();
     assert_eq!(state.records.len(), 1);
@@ -67,7 +68,8 @@ fn semantic_join_deterministically_selects_the_latest_active_generation() {
             None,
             &mut record_admission(),
         )
-        .expect("semantic join chooses one active owner deterministically");
+        .expect("semantic join chooses one active owner deterministically")
+        .0;
 
     assert_eq!(joined.key, latest);
     assert_eq!(registry.state.lock().unwrap().records[&latest].interests, 2);
@@ -101,7 +103,8 @@ fn changed_source_can_return_after_its_prior_cycle_was_superseded() {
             None,
             &mut record_admission(),
         )
-        .expect("the changed source supersedes its predecessor");
+        .expect("the changed source supersedes its predecessor")
+        .0;
     let returned_interest = registry
         .admit(
             returned_a.clone(),
@@ -113,7 +116,8 @@ fn changed_source_can_return_after_its_prior_cycle_was_superseded() {
             None,
             &mut record_admission(),
         )
-        .expect("a later return is a new source cycle, not the stopped old record");
+        .expect("a later return is a new source cycle, not the stopped old record")
+        .0;
 
     let state = registry.state.lock().unwrap();
     assert!(matches!(
@@ -235,7 +239,8 @@ fn recovery_rejoins_the_older_key_that_retains_newer_semantic_custody() {
             None,
             &mut record_admission(),
         )
-        .expect("recovery finds the semantic record that owns retained custody");
+        .expect("recovery finds the semantic record that owns retained custody")
+        .0;
 
     let state = registry.state.lock().unwrap();
     assert_eq!(recovered.key, older);

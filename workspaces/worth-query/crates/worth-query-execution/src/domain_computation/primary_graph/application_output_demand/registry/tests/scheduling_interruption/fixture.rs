@@ -40,6 +40,7 @@ impl Fixture {
                     &mut record_admission(),
                 )
                 .unwrap()
+                .0
         };
         let mut interest = admit("interrupted-scheduling", 1, None);
         let upstream = admit("retained-upstream", 2, None);
@@ -150,5 +151,6 @@ impl Fixture {
                 &mut record_admission(),
             )
             .unwrap()
+            .0
     }
 }

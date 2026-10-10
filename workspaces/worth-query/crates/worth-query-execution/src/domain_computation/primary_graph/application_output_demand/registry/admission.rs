@@ -28,7 +28,13 @@ impl WorthQueryOutputDemandRegistry {
         expected_source_commit: Option<&worth_runtime_world::facade::CompositeCommitIdentity>,
         successor_of: Option<OutputRefreshPredecessor<'_>>,
         admission: &mut InvalidationEditAdmission,
-    ) -> Result<WorthQueryOutputDemandInterest, WorthQueryOutputDemandDenial> {
+    ) -> Result<
+        (
+            WorthQueryOutputDemandInterest,
+            Option<super::join_observation::JoinLatch>,
+        ),
+        WorthQueryOutputDemandDenial,
+    > {
         let mut state = self
             .state
             .lock()
@@ -324,15 +330,18 @@ impl WorthQueryOutputDemandRegistry {
         }
         record.interests = record.interests.saturating_add(1);
         record.required_interests += usize::from(admission_kind.is_required());
-        let mut interest = interest(self, key, record, admission_kind.is_required());
-        if joined_stable {
-            interest.join_pause = super::join_observation::take_pause(
+        let interest = interest(self, key, record, admission_kind.is_required());
+        // Law 3: a control changes no charge; the latch travels beside the funded interest.
+        let pause = if joined_stable {
+            super::join_observation::take_pause(
                 &mut state,
                 interest.key.source.root_entity_for_test(),
-            );
-        }
+            )
+        } else {
+            None
+        };
         state.install_required_member(required_member);
-        Ok(interest)
+        Ok((interest, pause))
     }
 }
 
@@ -381,7 +390,6 @@ pub(super) fn interest(
     requires_output: bool,
 ) -> WorthQueryOutputDemandInterest {
     WorthQueryOutputDemandInterest {
-        join_pause: None,
         key,
         requires_output,
         notifications: WorthQueryOutputDemandNotifications {

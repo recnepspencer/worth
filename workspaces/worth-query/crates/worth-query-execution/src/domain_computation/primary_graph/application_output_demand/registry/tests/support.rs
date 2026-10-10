@@ -132,7 +132,6 @@ fn interest_with_requirement(
     requires_output: bool,
 ) -> WorthQueryOutputDemandInterest {
     WorthQueryOutputDemandInterest {
-        join_pause: None,
         key,
         requires_output,
         notifications: WorthQueryOutputDemandNotifications {

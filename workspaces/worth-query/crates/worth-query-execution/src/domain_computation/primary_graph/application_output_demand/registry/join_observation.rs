@@ -9,7 +9,7 @@ thread_local! {
     static READS: std::cell::RefCell<Vec<(Root,Commit,Commit)>>=const { std::cell::RefCell::new(Vec::new()) };
 }
 #[derive(Default)]
-pub(super) struct PauseState {
+pub(in crate::domain_computation::primary_graph) struct PauseState {
     reached: bool,
     released: bool,
 }
@@ -19,9 +19,10 @@ pub struct StableJoinPause {
     latch: Arc<(Mutex<PauseState>, Condvar)>,
     receiver: Weak<Mutex<DemandRegistryState>>,
 }
-// Law 2, scope: pending control is stored in the registry it pauses. Admission
-// carries the selected latch on its existing interest until registry locks end.
-pub(super) type JoinLatch = Arc<(Mutex<PauseState>, Condvar)>;
+// Law 2, scope: pending control is stored in the registry it pauses.
+// Law 3: admission returns its latch beside the charged interest; the caller
+// honors it after installation and registry locks end, without growing the record.
+pub(in crate::domain_computation::primary_graph) type JoinLatch = Arc<(Mutex<PauseState>, Condvar)>;
 pub(super) fn take_pause(state: &mut DemandRegistryState, root: Root) -> Option<JoinLatch> {
     if state
         .join_pause
@@ -98,12 +99,12 @@ pub(in crate::domain_computation::primary_graph) fn joined(root: Root) {
     }
 }
 pub(in crate::domain_computation::primary_graph) fn observe_stable_join_admission(
-    interest: &WorthQueryOutputDemandInterest,
+    pause: Option<JoinLatch>,
 ) {
-    let Some(latch) = &interest.join_pause else {
+    let Some(latch) = pause else {
         return;
     };
-    let (lock, cv) = &**latch;
+    let (lock, cv) = &*latch;
     let mut state = lock
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);

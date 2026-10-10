@@ -335,7 +335,6 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryOutputDemandRe
 }
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryOutputDemandInterest {
-    join_pause: Option<join_observation::JoinLatch>,
     key: WorthQueryOutputDemandKey,
     requires_output: bool,
     notifications: WorthQueryOutputDemandNotifications,
