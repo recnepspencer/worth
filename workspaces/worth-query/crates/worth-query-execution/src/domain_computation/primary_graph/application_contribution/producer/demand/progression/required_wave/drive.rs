@@ -95,7 +95,13 @@ where
                 member.dependency_schedule = DependencySchedule::OwnSelection;
             }
         }
-        if let Some((index, mut stop)) = result.stopped {
+        for (index, mut stop) in result.queued_stops.into_iter().chain(result.stopped) {
+            if matches!(
+                stop.kind(),
+                WorthQueryOutputDemandDenialKind::ExecutionRequest(_)
+            ) {
+                return Err(stop);
+            }
             let member = &frontier.members[index];
             let custody = if member.caller {
                 &mut demand.required_continuations

@@ -41,7 +41,6 @@ fn run(
 }
 fn charged(rank: u64, units: u64, fails: bool) -> PreparedMember {
     PreparedMember {
-        preparation_failed: false,
         requests: vec![PreparedCompute::new(
             0,
             0,
@@ -51,12 +50,11 @@ fn charged(rank: u64, units: u64, fails: bool) -> PreparedMember {
                 (rank, fails)
             },
             |_| 0,
-            |result| result.1,
         )],
     }
 }
 #[test]
-fn canonical_failure_settles_only_its_declared_compute_prefix_at_every_width() {
+fn member_denials_travel_as_data_and_charge_the_whole_wave_at_every_width() {
     const CHARGES: [u64; 4] = [3, 1, 4, 2];
     for failure in 0..4 {
         for width in [None, Some(1), Some(2), Some(4)] {
@@ -70,8 +68,8 @@ fn canonical_failure_settles_only_its_declared_compute_prefix_at_every_width() {
             );
             assert_eq!(
                 settled.len(),
-                failure + 1,
-                "a suffix has no result accessor"
+                CHARGES.len(),
+                "a member denial leaves every outcome for owner completion"
             );
             let actual: Vec<_> = settled
                 .into_iter()
@@ -83,14 +81,11 @@ fn canonical_failure_settles_only_its_declared_compute_prefix_at_every_width() {
                 .collect();
             assert_eq!(
                 actual,
-                (0..=failure)
+                (0..CHARGES.len())
                     .map(|rank| (rank as u64, rank == failure))
                     .collect::<Vec<_>>()
             );
-            assert_eq!(
-                report.charged_work(),
-                CHARGES[..=failure].iter().sum::<u64>()
-            );
+            assert_eq!(report.charged_work(), CHARGES.iter().sum::<u64>());
         }
     }
 }
@@ -117,13 +112,11 @@ fn a_panicking_compute_drops_its_suffix_and_clears_worker_custody() {
     let after = Arc::new(Mutex::new(false));
     let probe = after.clone();
     let panics = PreparedMember {
-        preparation_failed: false,
         requests: vec![PreparedCompute::new::<()>(
             0,
             0,
             |_| panic!("declared failure"),
             |_| 0,
-            |_| false,
         )],
     };
     let (settled, _) = run(
@@ -138,7 +131,6 @@ fn a_panicking_compute_drops_its_suffix_and_clears_worker_custody() {
     let (settled, _) = run(
         Some(2),
         vec![PreparedMember {
-            preparation_failed: false,
             requests: vec![PreparedCompute::new(
                 0,
                 0,
@@ -146,7 +138,6 @@ fn a_panicking_compute_drops_its_suffix_and_clears_worker_custody() {
                     *probe.lock().unwrap() = true;
                 },
                 |_| 0,
-                |_| false,
             )],
         }],
     );
@@ -165,7 +156,6 @@ fn a_later_member_finishes_first_even_when_a_canonical_member_fails() {
                 .map(|rank| {
                     let schedule = schedule.clone();
                     PreparedMember {
-                        preparation_failed: false,
                         requests: vec![PreparedCompute::new(
                             0,
                             0,
@@ -190,7 +180,6 @@ fn a_later_member_finishes_first_even_when_a_canonical_member_fails() {
                                 (rank, failure == Some(rank))
                             },
                             |_| 0,
-                            |result| result.1,
                         )],
                     }
                 })
@@ -206,7 +195,7 @@ fn a_later_member_finishes_first_even_when_a_canonical_member_fails() {
                     < finished.iter().position(|rank| *rank == 0).unwrap(),
                 "the constructed schedule must happen"
             );
-            let boundary = failure.map_or(4, |rank| rank + 1);
+            let boundary = 4;
             assert_eq!(settled.len(), boundary);
             let values: Vec<_> = settled
                 .into_iter()

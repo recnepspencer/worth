@@ -15,16 +15,13 @@ impl PreparedCompute {
         result_heap_capacity: u64,
         run: impl for<'a> FnOnce(WorthQueryMemberExecution<'a>) -> T + Send + 'static,
         result_heap: fn(&T) -> u64,
-        failed: fn(&T) -> bool,
     ) -> Self {
         let callback = move |member: WorthQueryMemberExecution<'_>| {
             let value = run(member);
             let bytes = (size_of::<T>() as u64).saturating_add(result_heap(&value));
-            let failed = failed(&value);
             ComputedSlot {
                 value: Box::new(value),
                 bytes,
-                failed,
             }
         };
         let input_heap = (size_of_val(&callback) as u64).saturating_add(owned_heap);
@@ -83,12 +80,8 @@ impl ChargedBytes for PreparedCompute {
 pub(in crate::domain_computation::primary_graph) struct ComputedSlot {
     value: Box<dyn Any + Send>,
     bytes: u64,
-    failed: bool,
 }
 impl ComputedSlot {
-    pub(in crate::domain_computation::primary_graph) fn failed(&self) -> bool {
-        self.failed
-    }
     pub(in crate::domain_computation::primary_graph) fn into_value<T: Any + Send>(self) -> T {
         *self
             .value
@@ -98,11 +91,7 @@ impl ComputedSlot {
 }
 impl ChargedBytes for ComputedSlot {
     fn additional_charged_bytes(&self) -> u64 {
-        let Self {
-            value: _,
-            bytes,
-            failed: _,
-        } = self;
+        let Self { value: _, bytes } = self;
         *bytes
     }
 }
@@ -123,7 +112,6 @@ impl PreparedCompute {
                 (rank, fails)
             },
             |_| 0,
-            |result| result.1,
         )
     }
 }

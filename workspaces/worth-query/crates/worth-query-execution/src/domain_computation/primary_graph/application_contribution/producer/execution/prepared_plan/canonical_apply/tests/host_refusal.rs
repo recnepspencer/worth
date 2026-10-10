@@ -31,7 +31,7 @@ fn a_refused_author_host_call_completes_on_the_owner_and_applies_only_its_prefix
                             application.with_host_advancement(|_| rank)
                         }
                     } else { Ok(rank) }
-                }, |_| 0, |_| false)], |mut slots, _| {
+                }, |_| 0)], |mut slots, _| {
                     assert!(!crate::domain_computation::primary_graph::application_contribution::computation::worker_custody::active(), "completion stays on the owner");
                     slots.pop().unwrap().into_value::<Result<usize, WorthQueryAdvancementDenial>>()
                 })
@@ -53,6 +53,7 @@ fn a_refused_author_host_call_completes_on_the_owner_and_applies_only_its_prefix
                     cursor.apply(
                         &mut admission,
                         |key, value, _| {
+                            let value = value?;
                             assert_eq!(key, value);
                             applied.push(key);
                             Ok(())

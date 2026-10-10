@@ -1,10 +1,10 @@
-//! Owner failure takes precedence over a later settled compute failure.
+//! Owner failure takes precedence over a later request stop without refund.
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::request_execution::test_execution_authority as test_authority;
 use worth_runtime_world::facade::RuntimeWorldExecutionPlacement;
 
 #[test]
-fn earlier_completion_failure_does_not_refund_the_later_compute_boundary() {
+fn earlier_completion_failure_does_not_refund_the_later_request_boundary() {
     const CHARGES: [u64; 3] = [3, 1, 4];
     for width in [None, Some(1), Some(2), Some(4)] {
         let cancel = WorthQueryCancellationSource::new();
@@ -46,12 +46,16 @@ fn earlier_completion_failure_does_not_refund_the_later_compute_boundary() {
         let ((result, ()), report) = execution
             .execution_request()
             .unwrap()
-            .run(worth_execution::ExecutionWorkCeiling::new(u64::MAX), |_| {
+            .run(worth_execution::ExecutionWorkCeiling::new(CHARGES[..2].iter().sum()), |_| {
                 let cursor = CanonicalApplyCursor::compute(
                     CanonicalUniqueVec::try_from_sorted_unique(vec![0, 1, 2]).unwrap(),
                     plans,
                     &execution,
                 );
+                assert!(matches!(cursor.slots[2].1,
+                    Err(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(
+                        crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::WorkExhausted
+                    ))), "the later root stops on the request's refused charge");
                 let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
                     maximum_work_visits: 0,
                     maximum_preparation_bytes: 0,
@@ -59,7 +63,8 @@ fn earlier_completion_failure_does_not_refund_the_later_compute_boundary() {
                 (
                     cursor.apply(
                         &mut admission,
-                        |key, _, _| {
+                        |key, result, _| {
+                            result?;
                             completed.push(key);
                             Ok(())
                         },
@@ -73,7 +78,7 @@ fn earlier_completion_failure_does_not_refund_the_later_compute_boundary() {
         assert!(completed.is_empty(), "no failed member or suffix publishes");
         assert_eq!(
             report.charged_work(),
-            CHARGES.iter().sum::<u64>(),
+            CHARGES[..2].iter().sum::<u64>(),
             "settled compute is never refunded"
         );
     }

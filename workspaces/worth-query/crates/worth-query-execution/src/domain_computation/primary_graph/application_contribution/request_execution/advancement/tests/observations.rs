@@ -19,7 +19,6 @@ fn members(costs: &[u64], failure: Option<usize>) -> Vec<PreparedMember> {
                 units,
                 failure == Some(rank),
             )],
-            preparation_failed: false,
         })
         .collect()
 }
@@ -40,7 +39,7 @@ fn aggregate_reports_add_stages_and_waves_and_keep_failed_advancements() {
                 .run_advancement(None, None, |_| {
                     charged_request(root.execution_request().unwrap(), PREPARE);
                     let slots = dispatch(&root, members(&COSTS, failure));
-                    assert_eq!(slots.len(), failure.map_or(COSTS.len(), |rank| rank + 1));
+                    assert_eq!(slots.len(), COSTS.len());
                     drop(slots);
                     charged_request(root.execution_request().unwrap(), COMPLETE);
                     // An owner completion's semantic failure cannot erase compute already settled.
@@ -52,14 +51,14 @@ fn aggregate_reports_add_stages_and_waves_and_keep_failed_advancements() {
             let [observed] = observations.as_slice() else {
                 panic!("one report: {observations:?}")
             };
-            let prefix = &COSTS[..failure.map_or(COSTS.len(), |rank| rank + 1)];
+            let dispatched = &COSTS;
             assert_eq!(
                 observed.report.charged_work(),
-                PREPARE + prefix.iter().sum::<u64>() + COMPLETE
+                PREPARE + dispatched.iter().sum::<u64>() + COMPLETE
             );
             assert_eq!(
                 observed.report.charged_span(),
-                PREPARE + prefix.iter().max().unwrap() + COMPLETE
+                PREPARE + dispatched.iter().max().unwrap() + COMPLETE
             );
             assert!(observed.refusal.is_none());
             assert!(

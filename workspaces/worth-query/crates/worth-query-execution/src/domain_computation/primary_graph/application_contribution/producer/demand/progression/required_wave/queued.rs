@@ -62,7 +62,15 @@ impl QueuedRequiredRoots {
         result: Result<Option<WorthQueryOutputDemandAdvance>, WorthQueryOutputDemandDenial>,
     ) -> Result<Option<WorthQueryOutputDemandAdvance>, WorthQueryOutputDemandDenial> {
         match result {
-            Err(_) if self.draining() => Ok(self.take_caller()),
+            Err(stop)
+                if self.draining()
+                    && !matches!(
+                        stop.kind(),
+                        WorthQueryOutputDemandDenialKind::ExecutionRequest(_)
+                    ) =>
+            {
+                Ok(self.take_caller())
+            }
             result => result,
         }
     }

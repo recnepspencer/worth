@@ -22,7 +22,6 @@ fn request_exhaustion_reports_the_declared_prefix_at_every_width() {
                 .into_iter()
                 .enumerate()
                 .map(|(rank, units)| PreparedMember {
-                    preparation_failed: false,
                     requests: vec![PreparedCompute::new(
                         0,
                         0,
@@ -31,7 +30,6 @@ fn request_exhaustion_reports_the_declared_prefix_at_every_width() {
                             charge.as_mut().unwrap()(units).map(|()| rank)
                         },
                         |_| 0,
-                        Result::is_err,
                     )],
                 })
                 .collect();

@@ -1,4 +1,4 @@
-//! One owned map settles the compute prefix; only the owner receives that prefix.
+//! One request settles the wave; member outcomes travel to owner completion.
 use super::super::execution_denial::{checkpoint_denial, lease_denial};
 use super::super::{QueryRequestExecution, WorthQueryAdvancementDenial};
 use super::prepared_request::{ComputedSlot, PreparedCompute};
@@ -8,16 +8,20 @@ use worth_execution::{
 };
 use worth_foundational::PartitionIdentity;
 
+// A member outcome cannot stop the map; only its request can.
+enum NoMemberFailure {}
+impl ChargedBytes for NoMemberFailure {
+    fn additional_charged_bytes(&self) -> u64 {
+        match *self {}
+    }
+}
+
 pub(in crate::domain_computation::primary_graph) struct PreparedMember {
     pub requests: Vec<PreparedCompute>,
-    pub preparation_failed: bool,
 }
 impl ChargedBytes for PreparedMember {
     fn additional_charged_bytes(&self) -> u64 {
-        let Self {
-            requests,
-            preparation_failed: _,
-        } = self;
+        let Self { requests } = self;
         requests.additional_charged_bytes()
     }
 }
@@ -83,26 +87,24 @@ pub(in crate::domain_computation::primary_graph) fn dispatch(
         Err(denial) => return vec![Err(WorthQueryAdvancementDenial::Resource(denial))],
     };
     let outcome = request.in_scope(|lease| {
-        let outcome = map.run_owned(lease, |input: PreparedMember, context| {
-            let member = wave.member();
-            let mut slots = Vec::with_capacity(input.requests.len());
-            let mut failed = input.preparation_failed;
-            for request in input.requests {
-                let mut charge = |units| context.checkpoint(units);
-                let slot = request.run(WorthQueryMemberExecution::for_kernel(&member, &mut charge));
-                failed |= slot.failed();
-                slots.push(slot);
-            }
-            let result = ComputedMember {
-                slots,
-                custody: None,
-            };
-            if failed {
-                Err(MapKernelFailure::Domain(result))
-            } else {
+        let outcome = map.run_owned(
+            lease,
+            |input: PreparedMember, context| -> Result<_, MapKernelFailure<NoMemberFailure>> {
+                let member = wave.member();
+                let mut slots = Vec::with_capacity(input.requests.len());
+                for request in input.requests {
+                    let mut charge = |units| context.checkpoint(units);
+                    let slot =
+                        request.run(WorthQueryMemberExecution::for_kernel(&member, &mut charge));
+                    slots.push(slot);
+                }
+                let result = ComputedMember {
+                    slots,
+                    custody: None,
+                };
                 Ok(result)
-            }
-        });
+            },
+        );
         retain_outcome(execution, outcome)
     });
     match outcome {
@@ -115,7 +117,7 @@ pub(in crate::domain_computation::primary_graph) fn dispatch(
 
 fn retain_outcome(
     execution: &QueryRequestExecution<'_>,
-    outcome: MapOutcome<ComputedMember, ComputedMember>,
+    outcome: MapOutcome<ComputedMember, NoMemberFailure>,
 ) -> Vec<Result<ComputedMember, WorthQueryAdvancementDenial>> {
     match outcome {
         MapOutcome::Complete { values, report: _ } => {
@@ -129,7 +131,7 @@ fn retain_outcome(
         } => {
             let mut settled: Vec<_> = completed_prefix.into_iter().map(Ok).collect();
             let failed = match reason {
-                MapStop::Failure { identity: _, cause: MapKernelFailure::Domain(member) } => Ok(member),
+                MapStop::Failure { identity: _, cause: MapKernelFailure::Domain(impossible) } => match impossible {},
                 MapStop::Failure { identity: _, cause: MapKernelFailure::Stop(stop) } => Err(from_checkpoint(stop)),
                 MapStop::Failure { identity: _, cause: MapKernelFailure::Panic } => Err(WorthQueryAdvancementDenial::Panicked),
                 MapStop::Failure { identity: _, cause: MapKernelFailure::ResultCapacityExceeded } => Err(

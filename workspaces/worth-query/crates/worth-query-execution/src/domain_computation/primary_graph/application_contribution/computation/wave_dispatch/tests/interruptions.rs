@@ -38,7 +38,6 @@ fn interruptions_during_compute_have_a_witness_and_a_safe_canonical_prefix() {
                         let schedule = schedule.clone();
                         let cancellation = cancellation.clone();
                         PreparedMember {
-                            preparation_failed: false,
                             requests: vec![PreparedCompute::new(
                                 0,
                                 0,
@@ -88,7 +87,6 @@ fn interruptions_during_compute_have_a_witness_and_a_safe_canonical_prefix() {
                                     result
                                 },
                                 |_| 0,
-                                Result::is_err,
                             )],
                         }
                     })

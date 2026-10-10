@@ -47,7 +47,6 @@ impl<'owner, Key, Value, Stop> CanonicalApplyCursor<'owner, Key, Value, Stop> {
             .map(
                 |plan| super::super::super::super::computation::wave_dispatch::PreparedMember {
                     requests: std::mem::take(&mut plan.requests),
-                    preparation_failed: plan.preparation_failed,
                 },
             )
             .collect();
@@ -61,12 +60,16 @@ impl<'owner, Key, Value, Stop> CanonicalApplyCursor<'owner, Key, Value, Stop> {
         }
     }
 
-    /// Consumes all slots. A failure drops the suffix, whose values have no
-    /// accessor and whose completion callbacks can no longer apply anything.
+    /// The owner classifies each completion: holding a queued failure continues
+    /// the cursor. A caller failure or request stop drops the inaccessible suffix.
     pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn apply(
         self,
         admission: &mut InvalidationEditAdmission,
-        mut published: impl FnMut(Key, Value, &mut InvalidationEditAdmission) -> Result<(), Stop>,
+        mut published: impl FnMut(
+            Key,
+            Result<Value, Stop>,
+            &mut InvalidationEditAdmission,
+        ) -> Result<(), Stop>,
         refused: impl FnOnce(
             Key,
             crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
@@ -82,7 +85,7 @@ impl<'owner, Key, Value, Stop> CanonicalApplyCursor<'owner, Key, Value, Stop> {
                 Ok(computed) => computed,
                 Err(denial) => return Err(refused(key, denial)),
             };
-            let outcome = computed.finish(|slots| (plan.complete)(slots, admission))?;
+            let outcome = computed.finish(|slots| (plan.complete)(slots, admission));
             published(key, outcome, admission)?;
         }
         Ok(())
@@ -101,7 +104,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     cursor.apply(
         admission,
         |(), applied, _| {
-            outcome = Some(applied);
+            outcome = Some(applied?);
             Ok(())
         },
         |(), denial| {

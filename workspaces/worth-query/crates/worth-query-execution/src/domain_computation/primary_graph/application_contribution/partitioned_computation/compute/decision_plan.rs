@@ -34,7 +34,6 @@ where
                     Ok(completed) => completed.transport_bytes(),
                     Err(denial) => denial.additional_charged_bytes(),
                 },
-                Result::is_err,
             ),
             complete,
         )

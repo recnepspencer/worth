@@ -51,7 +51,6 @@ where
                         | WorthQueryManagedComputationDenial::NestedPatternStopped,
                     ) => 0,
                 },
-                Result::is_err,
             ),
             complete,
         )

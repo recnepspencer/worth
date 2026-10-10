@@ -12,30 +12,58 @@ pub(super) enum Failure {
 }
 #[derive(Default)]
 pub(super) struct State {
-    pub entered: [bool; 2],
-    pub runs: [usize; 2],
-    pub finished: [bool; 2],
+    pub entered: Vec<bool>,
+    pub runs: Vec<usize>,
+    pub finished: Vec<bool>,
+    pub computed: Vec<usize>,
     pub completed: Vec<usize>,
     pub watchdog: bool,
 }
 pub(super) struct Schedule {
-    pub roots: [String; 2],
+    pub roots: Vec<String>,
+    pub costs: Vec<usize>,
     pub failure: Option<(usize, Failure)>,
     pub overlap: bool,
+    pub catches_denial: bool,
     pub state: Mutex<State>,
     ready: Condvar,
 }
 impl Schedule {
     pub fn new(roots: [String; 2], failure: Option<(usize, Failure)>, overlap: bool) -> Arc<Self> {
+        Self::declared(roots.into(), COSTS.into(), failure, overlap)
+    }
+    pub fn declared(
+        roots: Vec<String>,
+        costs: Vec<usize>,
+        failure: Option<(usize, Failure)>,
+        overlap: bool,
+    ) -> Arc<Self> {
+        assert_eq!(roots.len(), costs.len());
+        let count = roots.len();
         Arc::new(Self {
             roots,
+            costs,
             failure,
             overlap,
-            state: Mutex::new(State::default()),
+            catches_denial: false,
+            state: Mutex::new(State {
+                entered: vec![false; count],
+                runs: vec![0; count],
+                finished: vec![false; count],
+                ..State::default()
+            }),
             ready: Condvar::new(),
         })
     }
 }
+pub(super) fn catches_denial() -> bool {
+    ARMED
+        .lock()
+        .unwrap()
+        .as_ref()
+        .is_some_and(|schedule| schedule.catches_denial)
+}
+
 static ARMED: Mutex<Option<Arc<Schedule>>> = Mutex::new(None);
 pub(super) fn arm(schedule: Option<Arc<Schedule>>) {
     *ARMED.lock().unwrap() = schedule;
@@ -115,24 +143,27 @@ impl WorthQueryManagedComputationOwner<CheckpointSchema, PlanarOutputFeature, Co
                 // Failure watchdog only: a passing run wakes on the later member.
                 let (next, guard) = schedule
                     .ready
-                    .wait_timeout_while(state, Duration::from_secs(60), |s| !s.finished[1])
+                    .wait_timeout_while(state, Duration::from_secs(60), |s| {
+                        !s.finished[1..].iter().all(|finished| *finished)
+                    })
                     .unwrap();
                 state = next;
                 state.watchdog |= guard.timed_out();
             }
         }
         checkpoint
-            .advance(COSTS[rank])
+            .advance(schedule.costs[rank])
             .map_err(WorthQueryManagedComputationDenial::from)?;
         {
             let mut state = schedule.state.lock().unwrap();
             state.finished[rank] = true;
+            state.computed.push(rank);
             schedule.ready.notify_all();
         }
         if schedule.failure == Some((rank, Failure::Compute)) {
             Err(WorthQueryManagedComputationDenial::Owner(()))
         } else {
-            Ok(COSTS[rank] as u64)
+            Ok(schedule.costs[rank] as u64)
         }
     }
     fn complete(&self, prepared: Prepared, computed: u64) -> Result<CostValue, ()> {

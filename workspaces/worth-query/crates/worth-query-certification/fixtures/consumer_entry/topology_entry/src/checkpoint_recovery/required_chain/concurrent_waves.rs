@@ -3,3 +3,5 @@ use super::*;
 mod application;
 mod computation;
 mod history;
+
+mod queue_failures;

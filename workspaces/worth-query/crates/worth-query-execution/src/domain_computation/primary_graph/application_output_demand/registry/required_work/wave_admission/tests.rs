@@ -34,7 +34,7 @@ fn selected() -> std::sync::Arc<PositionedRelationalSnapshot> {
 }
 fn compute_plan() -> OwnerPlan<'static, (), ()> {
     OwnerPlan::new(
-        vec![PreparedCompute::new(0, 0, |_| (), |_| 0, |_| false)],
+        vec![PreparedCompute::new(0, 0, |_| (), |_| 0)],
         |slots, _| {
             assert_eq!(slots.len(), 1);
             Ok(())

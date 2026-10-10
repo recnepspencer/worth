@@ -56,7 +56,6 @@ fn every_compute_precedes_owner_completion_and_failure_destroys_the_suffix() {
                         }
                     },
                     |_| 0,
-                    |_| false,
                 )],
                 move |mut slots, _| {
                     assert_eq!(slots.len(), 1);
@@ -83,6 +82,7 @@ fn every_compute_precedes_owner_completion_and_failure_destroys_the_suffix() {
             cursor.apply(
                 &mut admission,
                 |key, value, _| {
+                    let value = value?;
                     assert_eq!(key, value, "canonical slots retain their semantic keys");
                     applied.push(value);
                     Ok(())
@@ -106,3 +106,5 @@ fn every_compute_precedes_owner_completion_and_failure_destroys_the_suffix() {
 mod phase_failure;
 
 mod host_refusal;
+
+mod queue_outcomes;

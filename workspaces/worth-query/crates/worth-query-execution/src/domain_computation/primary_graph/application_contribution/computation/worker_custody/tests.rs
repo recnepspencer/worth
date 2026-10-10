@@ -36,7 +36,6 @@ fn author_held_application_and_product_handles_receive_nested_opening() {
             .map(|_| {
                 let application = application.clone();
                 PreparedMember {
-                    preparation_failed: false,
                     requests: vec![PreparedCompute::new(
                         0,
                         0,
@@ -56,7 +55,6 @@ fn author_held_application_and_product_handles_receive_nested_opening() {
                             }
                         },
                         |_| 0,
-                        |_| false,
                     )],
                 }
             })

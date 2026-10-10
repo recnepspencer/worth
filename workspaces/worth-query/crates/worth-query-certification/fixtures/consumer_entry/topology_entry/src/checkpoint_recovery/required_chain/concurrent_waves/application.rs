@@ -57,6 +57,7 @@ impl OperationHandler<CheckpointSchema, PlanarMutationBinding<CheckpointSchema>>
                         let _declared_units = value.units;
                         HandlerResult::Completed(())
                     }
+                    Err(_) if computation::catches_denial() => HandlerResult::Completed(()),
                     Err(_) => HandlerResult::DomainDenied(PlanarMutationDenial::MissingCoordinate),
                 }
             }),
