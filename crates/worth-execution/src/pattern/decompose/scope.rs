@@ -3,7 +3,7 @@ use std::{cell::Cell, mem::size_of};
 use worth_foundational::{ExecutionPhysicalReport, ExecutionPosture};
 
 use super::*;
-use crate::backend::{run_scope_with_charge, BackendKind};
+use crate::backend::{run_admitting_scope, BackendKind, ScopeKernelFailure};
 
 impl<I, C, S, B, O, F> ExecutionDecompose<I, C, S, B, O, F>
 where
@@ -139,7 +139,7 @@ where
         };
         let stage = Cell::new(DecomposeStage::Interior);
         let fallback = Cell::new(None);
-        let scope = run_scope_with_charge(
+        let scope = run_admitting_scope(
             lease,
             retained_bytes,
             max_result_bytes,
@@ -158,7 +158,7 @@ where
                         &stage,
                         &fallback,
                     )
-                    .map_err(MapKernelFailure::Domain)?;
+                    .map_err(|cause| ScopeKernelFailure::Kernel(MapKernelFailure::Domain(cause)))?;
                 if let Some(handoff) = retained_handoff.as_mut() {
                     let bytes = staged
                         .additional_charged_bytes()
@@ -169,12 +169,12 @@ where
                             )
                         })
                         .ok_or({
-                            MapKernelFailure::Domain(DecomposeFailure::ScopeAdmission(
+                            ScopeKernelFailure::Refused(DecomposeFailure::ScopeAdmission(
                                 LeaseDenial::ChargedBytesOverflow,
                             ))
                         })?;
                     handoff(bytes).map_err(|denial| {
-                        MapKernelFailure::Domain(DecomposeFailure::ScopeAdmission(denial))
+                        ScopeKernelFailure::Refused(DecomposeFailure::ScopeAdmission(denial))
                     })?;
                 }
                 Ok(staged)
@@ -225,3 +225,6 @@ pub(super) fn empty_report() -> ExecutionReport {
         ExecutionPhysicalReport::default(),
     )
 }
+
+#[cfg(test)]
+mod tests;

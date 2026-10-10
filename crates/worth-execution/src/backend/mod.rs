@@ -30,12 +30,13 @@ pub(crate) use port::{
     run_checked_batch_with_charge, run_owned_batch_taking, BackendKind, BatchOutcome,
 };
 pub(crate) use prepared::{prepare_batch_resources, PreparedBatchResources};
-pub(crate) use scope::{
-    run_scope, run_scope_holding, run_scope_with_charge, run_scope_within, ScopeHold, ScopeStop,
-};
+pub(crate) use scope::{run_scope, run_scope_holding, run_scope_within, ScopeHold, ScopeStop};
 
 pub(crate) use meter::active_serial_memory;
 
 mod task_result;
 
 pub(crate) use meter::{record_nested, NestedStopOwner};
+
+mod scope_refusal;
+pub(crate) use scope_refusal::{run_admitting_scope, ScopeKernelFailure};

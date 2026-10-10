@@ -1,4 +1,6 @@
 mod canonical_bits;
+mod comparison_stop;
+use comparison_stop::ComparisonStop;
 
 use std::panic::{catch_unwind, AssertUnwindSafe};
 
@@ -8,8 +10,9 @@ pub use canonical_bits::CanonicalBits;
 use crate::{
     authority::ExecutionResourceLease,
     backend::{
-        enter_retained_memory, run_checked_batch, run_checked_batch_with_charge, run_scope,
-        AdmittedBatch, BackendKind, BatchOutcome, KernelContext, KernelFailure,
+        enter_retained_memory, run_admitting_scope, run_checked_batch,
+        run_checked_batch_with_charge, AdmittedBatch, BackendKind, BatchOutcome, KernelContext,
+        KernelFailure,
     },
     report::ChargedBytes,
 };
@@ -43,20 +46,22 @@ where
 {
     let retained_bytes = batch
         .retained_result_bytes::<R>()
-        .ok_or(OracleMismatch::Stop)?;
+        .ok_or(ComparisonStop::Refused)
+        .map_err(ComparisonStop::finish)?;
     let expected_retained = lease
         .reserve_retained_memory(retained_bytes)
-        .map_err(|_| OracleMismatch::Stop)?;
+        .map_err(|_| ComparisonStop::Refused.finish())?;
     let _expected_physical = enter_retained_memory(retained_bytes);
     let expected =
         run_checked_batch_with_charge(Some(lease), batch, BackendKind::Serial, kernel, false);
     let actual_retained = lease
         .reserve_retained_memory(retained_bytes)
-        .map_err(|_| OracleMismatch::Stop)?;
+        .map_err(|_| ComparisonStop::Refused.finish())?;
     let _actual_physical = enter_retained_memory(retained_bytes);
     let actual = run_checked_batch(Some(lease), batch, selected, kernel);
     catch_unwind(AssertUnwindSafe(|| compare(lease, &expected, &actual)))
-        .unwrap_or(Err(OracleMismatch::Stop))?;
+        .unwrap_or(Err(ComparisonStop::Encoding(OracleMismatch::Stop)))
+        .map_err(ComparisonStop::finish)?;
     drop((expected_retained, actual_retained));
     Ok(actual)
 }
@@ -65,25 +70,25 @@ fn compare<R: CanonicalBits, E: CanonicalBits>(
     lease: &ExecutionResourceLease<'_>,
     expected: &BatchOutcome<R, E>,
     actual: &BatchOutcome<R, E>,
-) -> Result<(), OracleMismatch> {
+) -> Result<(), ComparisonStop> {
     if expected.values.len() != actual.values.len() {
-        return Err(OracleMismatch::Values);
+        return Err(OracleMismatch::Values.into());
     }
     for (left, right) in expected.values.iter().zip(&actual.values) {
         if !same_bits(lease, left, right)? {
-            return Err(OracleMismatch::Values);
+            return Err(OracleMismatch::Values.into());
         }
     }
     if !same_stop(lease, &expected.stop, &actual.stop)?
         || expected.prefix_boundary != actual.prefix_boundary
     {
-        return Err(OracleMismatch::Stop);
+        return Err(OracleMismatch::Stop.into());
     }
     if expected.report.charged_work() != actual.report.charged_work() {
-        return Err(OracleMismatch::ChargedWork);
+        return Err(OracleMismatch::ChargedWork.into());
     }
     if expected.report.charged_span() != actual.report.charged_span() {
-        return Err(OracleMismatch::ChargedSpan);
+        return Err(OracleMismatch::ChargedSpan.into());
     }
     Ok(())
 }
@@ -94,7 +99,7 @@ fn same_bits<T: CanonicalBits + ?Sized>(
     lease: &ExecutionResourceLease<'_>,
     expected: &T,
     actual: &T,
-) -> Result<bool, OracleMismatch> {
+) -> Result<bool, ComparisonStop> {
     same_bits_with_contract(lease, expected, actual)
 }
 
@@ -102,44 +107,44 @@ fn same_bits_with_contract<T: CanonicalBits + ?Sized>(
     lease: &ExecutionResourceLease<'_>,
     expected: &T,
     actual: &T,
-) -> Result<bool, OracleMismatch> {
+) -> Result<bool, ComparisonStop> {
     let length = expected.canonical_len().ok_or(OracleMismatch::Stop)?;
-    let bytes = u64::try_from(length).map_err(|_| OracleMismatch::Stop)?;
+    let bytes = u64::try_from(length).map_err(|_| ComparisonStop::Refused)?;
     let _reservation = lease
         .reserve_retained_memory(bytes)
-        .map_err(|_| OracleMismatch::Stop)?;
+        .map_err(|_| ComparisonStop::Refused)?;
     let _physical = enter_retained_memory(bytes);
     let mut reference = Vec::new();
     reference
         .try_reserve_exact(length)
-        .map_err(|_| OracleMismatch::Stop)?;
+        .map_err(|_| ComparisonStop::Refused)?;
     if !visit_exact(expected, &mut |chunk| {
         reference.extend_from_slice(chunk);
         true
     }) {
-        return Err(OracleMismatch::Stop);
+        return Err(OracleMismatch::Stop.into());
     }
     if let Some(predicate) = lease.equivalence_predicate() {
         let candidate_len = actual.canonical_len().ok_or(OracleMismatch::Stop)?;
-        let candidate_bytes = u64::try_from(candidate_len).map_err(|_| OracleMismatch::Stop)?;
+        let candidate_bytes = u64::try_from(candidate_len).map_err(|_| ComparisonStop::Refused)?;
         let _candidate_reservation = lease
             .reserve_retained_memory(candidate_bytes)
-            .map_err(|_| OracleMismatch::Stop)?;
+            .map_err(|_| ComparisonStop::Refused)?;
         let _candidate_physical = enter_retained_memory(candidate_bytes);
         let mut candidate = Vec::new();
         candidate
             .try_reserve_exact(candidate_len)
-            .map_err(|_| OracleMismatch::Stop)?;
+            .map_err(|_| ComparisonStop::Refused)?;
         if !visit_exact(actual, &mut |chunk| {
             candidate.extend_from_slice(chunk);
             true
         }) {
-            return Err(OracleMismatch::Stop);
+            return Err(OracleMismatch::Stop.into());
         }
         return catch_unwind(AssertUnwindSafe(|| {
             predicate.equivalent(&reference, &candidate)
         }))
-        .map_err(|_| OracleMismatch::Stop);
+        .map_err(|_| ComparisonStop::Encoding(OracleMismatch::Stop));
     }
     if actual.canonical_len() != Some(length) {
         return Ok(false);
@@ -165,9 +170,9 @@ pub fn compare_canonical_values<T: CanonicalBits + ?Sized>(
     expected: &T,
     actual: &T,
 ) -> Result<bool, OracleMismatch> {
-    let outcome = run_scope(Some(lease), 0, 0, |context| {
+    let outcome = run_admitting_scope(Some(lease), 0, 0, true, |context| {
         context.checkpoint(0)?;
-        same_bits(lease, expected, actual).map_err(KernelFailure::Domain)
+        same_bits(lease, expected, actual).map_err(ComparisonStop::into_scope)
     });
     outcome.result.map_err(|_| OracleMismatch::Stop)
 }
@@ -176,7 +181,7 @@ fn same_stop<E: CanonicalBits>(
     lease: &ExecutionResourceLease<'_>,
     expected: &Option<crate::backend::BatchStop<E>>,
     actual: &Option<crate::backend::BatchStop<E>>,
-) -> Result<bool, OracleMismatch> {
+) -> Result<bool, ComparisonStop> {
     use crate::backend::{BatchStop, KernelFailure};
 
     match (expected, actual) {

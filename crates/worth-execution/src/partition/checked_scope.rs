@@ -2,7 +2,10 @@ use std::{cell::Cell, mem::size_of};
 
 use crate::{
     authority::{ExecutionResourceLease, LeaseDenial, ResourceReservation},
-    backend::{run_scope, KernelContext, KernelFailure, MemoryActivityGuard, ScopeStop},
+    backend::{
+        run_admitting_scope, KernelContext, KernelFailure, MemoryActivityGuard, ScopeKernelFailure,
+        ScopeStop,
+    },
     report::ChargedBytes,
 };
 
@@ -100,9 +103,9 @@ pub(super) fn checked_edit(
             LeaseDenial::UnrelatedNestedLease,
         ));
     }
-    let scope = run_scope(Some(lease), 0, 0, |child| {
+    let scope = run_admitting_scope(Some(lease), 0, 0, true, |child| {
         let _structural_edit = StructuralEditGuard::enter();
-        edit(child).map_err(KernelFailure::Domain)
+        edit(child).map_err(ScopeKernelFailure::from)
     });
     match scope.result {
         Ok(work) => Ok(work),
@@ -127,5 +130,21 @@ impl ChargedBytes for PartitionWork {
 impl ChargedBytes for PartitionUpdateDenial {
     fn additional_charged_bytes(&self) -> u64 {
         0
+    }
+}
+
+impl From<PartitionUpdateDenial> for ScopeKernelFailure<PartitionUpdateDenial> {
+    fn from(denial: PartitionUpdateDenial) -> Self {
+        match denial {
+            PartitionUpdateDenial::Admission(_) => Self::Refused(denial),
+            PartitionUpdateDenial::Stop(stop) => Self::Kernel(KernelFailure::Stop(stop)),
+            PartitionUpdateDenial::KernelPanic => Self::Kernel(KernelFailure::Panic),
+            PartitionUpdateDenial::ResultCapacityExceeded => {
+                Self::Kernel(KernelFailure::ResultCapacityExceeded)
+            }
+            PartitionUpdateDenial::Components(_) | PartitionUpdateDenial::Bisection(_) => {
+                Self::Kernel(KernelFailure::Domain(denial))
+            }
+        }
     }
 }

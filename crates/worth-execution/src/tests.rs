@@ -25,18 +25,19 @@ use crate::{
 };
 
 static AUTHORITY: OnceLock<ExecutionAuthority> = OnceLock::new();
-static TEST_LOCK: Mutex<()> = Mutex::new(());
+pub(crate) static TEST_LOCK: Mutex<()> = Mutex::new(());
 
 mod adversarial;
 mod controlled_child;
 mod map_dispatch;
 mod memory_level;
+mod nested_scope_ownership;
 mod nested_stop_ownership;
 mod nesting;
 mod owned_map;
 mod prepared_map;
 
-fn authority() -> &'static ExecutionAuthority {
+pub(crate) fn authority() -> &'static ExecutionAuthority {
     AUTHORITY.get_or_init(|| {
         ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
             max_workers: NonZeroUsize::new(4).unwrap(),
@@ -46,7 +47,7 @@ fn authority() -> &'static ExecutionAuthority {
     })
 }
 
-fn request(workers: usize, memory: u64, work: u64) -> LeaseRequest {
+pub(crate) fn request(workers: usize, memory: u64, work: u64) -> LeaseRequest {
     LeaseRequest {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Automatic,
@@ -58,7 +59,7 @@ fn request(workers: usize, memory: u64, work: u64) -> LeaseRequest {
     }
 }
 
-fn batch(values: &[u64], memory_each: u64) -> AdmittedBatch<u64> {
+pub(crate) fn batch(values: &[u64], memory_each: u64) -> AdmittedBatch<u64> {
     let entries = values
         .iter()
         .enumerate()
