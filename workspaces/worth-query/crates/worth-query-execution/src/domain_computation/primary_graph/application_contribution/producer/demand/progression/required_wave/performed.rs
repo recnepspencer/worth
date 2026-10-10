@@ -40,7 +40,6 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
 
 enum FreshDecisionInput {
     Changed,
-    VerificationWithheld,
 }
 impl FreshReadiness {
     fn for_input(member: usize, evidence: FreshDecisionInput) -> Self {
@@ -125,12 +124,7 @@ impl PerformedMembers {
                     CapturedDecisionInput::Accepted(input) => runtime
                         .changed(input, admission)?
                         .then_some(FreshDecisionInput::Changed),
-                    // Withheld verification cannot establish unchanged input.
-                    // Fresh must run the existing full verification instead.
-                    CapturedDecisionInput::Withheld => {
-                        Some(FreshDecisionInput::VerificationWithheld)
-                    }
-                    CapturedDecisionInput::Uncaptured => None,
+                    CapturedDecisionInput::Withheld | CapturedDecisionInput::Uncaptured => None,
                 }
             };
             let Some(evidence) = evidence else {

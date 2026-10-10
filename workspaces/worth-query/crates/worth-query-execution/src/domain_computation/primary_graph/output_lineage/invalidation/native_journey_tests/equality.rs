@@ -18,6 +18,9 @@ use crate::domain_computation::primary_graph::{
 
 struct OtherUpstream;
 
+#[path = "equality/pending_resolution.rs"]
+mod pending_resolution;
+
 #[test]
 fn certified_alias_chain_discharge_is_exact_and_later_native_change_repends() {
     let world = installed_authorization_world(true);

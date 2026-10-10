@@ -155,18 +155,21 @@ fn a_ready_and_its_successor_share_one_performed_member() {
                 positioned: &positioned,
                 runtime,
             };
-            let source = WorthQueryObservedSourceEpoch::new(
-                [1; 32],
-                [2; 32],
-                EntityId::new(PartitionId::main(), 1, 1),
-                shared
-                    .selected()
-                    .product()
-                    .observation()
-                    .lifecycle_incarnation(),
-                0,
-                [3; 32],
-            );
+            let source_with_identity = |identity| {
+                WorthQueryObservedSourceEpoch::new(
+                    [1; 32],
+                    [2; 32],
+                    EntityId::new(PartitionId::main(), 1, 1),
+                    shared
+                        .selected()
+                        .product()
+                        .observation()
+                        .lifecycle_incarnation(),
+                    0,
+                    identity,
+                )
+            };
+            let source = source_with_identity([3; 32]);
             let key = |producer: &str, lifecycle| {
                 WorthQueryOutputDemandKey::new(
                     TypeId::of::<()>(),
@@ -228,7 +231,6 @@ fn a_ready_and_its_successor_share_one_performed_member() {
                 .is_some());
             assert_eq!(performed.entries.len(), 2);
 
-            // A withheld accepted input is not a proof of unchanged input.
             // Capture uses the successor key, just as the Ready rejoin does.
             performed
                 .capture(
@@ -237,14 +239,33 @@ fn a_ready_and_its_successor_share_one_performed_member() {
                     &mut admission,
                 )
                 .unwrap();
+            for lookup in [&successor, &selected] {
+                assert!(
+                    performed
+                        .fresh(
+                            lookup,
+                            source.clone(),
+                            &DecisionInput::Selected(&input),
+                            &mut admission,
+                        )
+                        .unwrap_or_else(|_| panic!("withheld comparison admitted"))
+                        .is_none(),
+                    "a published member with withheld comparison is refused through either key"
+                );
+            }
+            let mut changed_identity = source.runtime_idempotency_identity();
+            changed_identity[0] ^= 1;
+            let changed_source = source_with_identity(changed_identity);
+            assert!(source.same_occurrence(&changed_source));
+            assert!(!source.same_semantic_source(&changed_source));
             assert!(performed
                 .fresh(
                     &successor,
-                    source.clone(),
+                    changed_source,
                     &DecisionInput::Selected(&input),
                     &mut admission,
                 )
-                .unwrap_or_else(|_| panic!("full verification admitted"))
+                .unwrap_or_else(|_| panic!("changed semantic source admitted"))
                 .is_some());
         });
     }
