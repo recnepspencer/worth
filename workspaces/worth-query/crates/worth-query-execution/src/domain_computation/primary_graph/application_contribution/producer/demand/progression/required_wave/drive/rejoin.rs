@@ -3,7 +3,7 @@ macro_rules! rejoin_successor {
     ($label:lifetime; $phase:ident; $runtime:ident, $principal:ident, $request_scope:ident;
      $wave:ident, $resolved_on_wave:ident, $queue:ident, $frame_custody:ident;
      $demand:ident, $admission:ident; $current:ident, $current_contacts:ident, $current_role:ident, $successor_role:ident;
-     $performed:ident; $hold_queue_frame:ident, $finish_caller:ident, $stopped:ident) => {{
+     $hold_queue_frame:ident, $finish_caller:ident, $stopped:ident) => {{
                 loop {
                     // Rejoin the actual successor after each real
                     // Published/Delivered stage. A deferred stage leaves its
@@ -38,9 +38,6 @@ macro_rules! rejoin_successor {
                             $wave = reselect_required_wave($runtime, $wave, $admission)?;
                             $resolved_on_wave.clear();
                             $queue.wave_moved();
-                        }
-                        if let Err(stop) = $performed.performed(&ready) {
-                            $stopped!($label, ready.key(), stop);
                         }
                         $current = Some(ready);
                         $current_role = $successor_role;

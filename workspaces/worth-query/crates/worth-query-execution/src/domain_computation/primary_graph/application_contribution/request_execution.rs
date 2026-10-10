@@ -20,15 +20,17 @@ use super::execution_denial::{interruption_stop, lease_denial, memory_denial};
 use super::{WorthQueryManagedComputationInterruption, WorthQueryManagedComputationResourceDenial};
 
 mod test_placement;
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use test_authority::test_execution_authority as test_authority;
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use test_placement::test_policy;
 pub use test_placement::{
     bound_advancement_requests_on_this_thread_for_test,
     place_managed_computations_on_this_thread_for_test, test_execution_workers,
     WorthQueryExecutionPlacementForTest,
 };
-#[cfg(test)]
-pub(in crate::domain_computation::primary_graph) use test_placement::{
-    test_authority, test_policy,
-};
+mod test_authority;
+pub use test_authority::test_execution_authority;
 
 type Resource = WorthQueryManagedComputationResourceDenial;
 

@@ -36,41 +36,12 @@ impl WorthQueryExecutionRuntime {
 }
 
 impl WorthQueryManagedRunAdmission<'_> {
+    /// Select the lower entry from the attempt's already admitted boundary.
     pub fn admit_direct(
         &self,
         operation: &WorthQueryExecutionBoundOperationAuthority,
         resource_attempt: WorthQueryDirectExecutionResourceAttempt,
         request: WorthQueryManagedTruthReadRequest,
-    ) -> Result<WorthQueryAdmittedDirectRun, WorthQueryManagedDirectRunAdmissionFailure> {
-        self.admit_direct_for_boundary(
-            operation,
-            resource_attempt,
-            request,
-            WorthQueryExecutionBoundary::BoundedStep,
-        )
-    }
-
-    /// Admit one synchronous Atomic run without managed step or queue authority.
-    pub fn admit_atomic_direct(
-        &self,
-        operation: &WorthQueryExecutionBoundOperationAuthority,
-        resource_attempt: WorthQueryDirectExecutionResourceAttempt,
-        request: WorthQueryManagedTruthReadRequest,
-    ) -> Result<WorthQueryAdmittedDirectRun, WorthQueryManagedDirectRunAdmissionFailure> {
-        self.admit_direct_for_boundary(
-            operation,
-            resource_attempt,
-            request,
-            WorthQueryExecutionBoundary::Atomic,
-        )
-    }
-
-    fn admit_direct_for_boundary(
-        &self,
-        operation: &WorthQueryExecutionBoundOperationAuthority,
-        resource_attempt: WorthQueryDirectExecutionResourceAttempt,
-        request: WorthQueryManagedTruthReadRequest,
-        boundary: WorthQueryExecutionBoundary,
     ) -> Result<WorthQueryAdmittedDirectRun, WorthQueryManagedDirectRunAdmissionFailure> {
         let counters = match validate_direct_run_head(self.query, operation, &resource_attempt) {
             Ok(counters) => counters,
@@ -89,7 +60,7 @@ impl WorthQueryManagedRunAdmission<'_> {
                 resource_attempt,
             ));
         }
-        let admit_lower = match boundary {
+        let admit_lower = match resource_attempt.resources().envelope().boundary() {
             WorthQueryExecutionBoundary::Atomic => admit_atomic_lower_execution_basis,
             WorthQueryExecutionBoundary::BoundedStep => admit_managed_lower_execution_basis,
         };

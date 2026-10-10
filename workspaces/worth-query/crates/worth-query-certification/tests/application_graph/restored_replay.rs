@@ -127,8 +127,11 @@ fn assert_the_key_resolves_by_its_durable_record(
     assert!(
         matches!(
             &refused,
-            Err(WorthQueryApplicationRequestMutationDenial::PrincipalResolution(denial))
-                if denial.kind() == worth_query_host::facade::primary_graph::WorthQueryPrincipalResolutionDenialKind::Cancelled
+            Err(WorthQueryApplicationRequestMutationDenial::ExecutionRequest(
+                worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial::Interrupted(
+                    worth_query_host::facade::application_contribution::WorthQueryManagedComputationInterruption::Cancelled
+                )
+            ))
         ),
         "a cancelled fresh admission cannot disclose historical commitment: {refused:?}"
     );

@@ -164,7 +164,7 @@ where
                 format!("selected-program output {identity:?} revision {revision} is not active"),
             ));
         }
-        self.advance_as_caller(demand, |demand, admission| {
+        self.advance_as_caller(demand, |demand, admission, performed| {
             self.advance_output_demand_with_prepared_source(
                 phase,
                 demand,
@@ -174,6 +174,7 @@ where
                 disclosure,
                 WorthQueryProducerCommitAuthority::SelectedProgram { identity, revision },
                 admission,
+                performed,
             )
         })
     }

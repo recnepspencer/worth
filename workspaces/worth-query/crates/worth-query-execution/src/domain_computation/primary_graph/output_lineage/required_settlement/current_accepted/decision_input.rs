@@ -10,6 +10,15 @@ impl AcceptedCurrentCandidate {
         selected: &PositionedRelationalSnapshot,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, CurrentAcceptedStop> {
+        let origin = self.selected.recorded().computation_source;
+        // Native publication can prove that its own effect replaced an input.
+        // Its postconditions deliberately cannot compare that old computation.
+        // Missing checkpoint evidence carries no such proof.
+        if origin != super::super::super::ComputationSourceEvidence::unavailable()
+            && origin.certify_current().is_none()
+        {
+            return Ok(true);
+        }
         if !self
             .own_evidence_is_current(runtime, snapshot, admission)
             .map_err(CurrentAcceptedStop::Closure)?

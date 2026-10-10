@@ -51,18 +51,21 @@ fn committed_indexed_facts(world: &AuthorizationWorld) -> Vec<WorthQueryApplicat
     >::encode(&request_id, &input)
     .unwrap();
     // Candidate preparation and publication are separate host calls.
-    let completed = world.application.with_application_advancement(&request, |phase| {
-    world
+    let completed = world
         .application
-        .execute_mutation_handler::<OptionalOutputMutationBinding>(
-            &phase,
-            &identities,
-            principal.principal_identity(),
-            admission,
-            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
-    }).unwrap();
+        .with_application_advancement(&request, |phase| {
+            world
+                .application
+                .execute_mutation_handler::<OptionalOutputMutationBinding>(
+                    &phase,
+                    &identities,
+                    principal.principal_identity(),
+                    admission,
+                    crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap()
+        })
+        .unwrap();
     let HandlerResult::Completed(completed) = completed else {
         panic!("the installed handler must read the indexed absence");
     };

@@ -5,7 +5,7 @@ use std::error::Error;
 #[test]
 fn allocation_cause_keeps_its_error_source_type() {
     let owner =
-        crate::domain_computation::primary_graph::application_contribution::test_authority();
+        crate::domain_computation::primary_graph::application_contribution::test_execution_authority();
     let lease = owner
         .request_lease(worth_execution::LeaseRequest {
             policy: worth_foundational::ExecutionRequestPolicy::new(

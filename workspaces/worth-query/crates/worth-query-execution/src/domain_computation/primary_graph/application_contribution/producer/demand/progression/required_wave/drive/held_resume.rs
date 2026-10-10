@@ -6,7 +6,7 @@ macro_rules! resume_held {
      $phase:ident;
      $runtime:ident, $principal:ident, $request_scope:ident;
      $wave:ident, $resolved_on_wave:ident, $queue:ident, $frame_custody:ident;
-     $demand:ident, $admission:ident;
+     $demand:ident, $admission:ident, $performed:ident;
      $hold_queue_frame:ident, $finish_caller:ident, $stopped:ident) => {{
         let head = $head;
         let custody = if $queue.active() || $wave.target == RequiredWaveTarget::Requested {
@@ -24,6 +24,7 @@ macro_rules! resume_held {
             custody,
             &head,
             $admission,
+            $performed,
         ) {
             Ok(HeldUpstream::Ready(ready)) => {
                 $runtime.output_demands.clear_required_stop(&head);

@@ -5,6 +5,8 @@ use std::cell::RefCell;
 thread_local! {
     static EXHAUST_OWNER: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
     static INTERLEAVING_OWNER: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
+    static PUBLICATIONS: RefCell<std::collections::BTreeMap<(u64, worth_relational::facade::identity::EntityId), u64>> = const { RefCell::new(std::collections::BTreeMap::new()) };
+    static PUBLICATION_RECORDS: RefCell<std::collections::BTreeMap<(u64, worth_relational::facade::identity::EntityId), u64>> = const { RefCell::new(std::collections::BTreeMap::new()) };
     static EXHAUST_AFTER_COMMIT: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
     static READ_DEBITS: RefCell<Vec<(u64, u64)>> = const { RefCell::new(Vec::new()) };
     static REQUEST_NAVIGATION: RefCell<Vec<(u64,u64)>> = const { RefCell::new(Vec::new()) };
@@ -27,7 +29,32 @@ pub(super) fn observe_request_work(admission: &InvalidationEditAdmission) {
     });
     REQUEST_WORK.with(|requests| requests.borrow_mut().push(work));
 }
-pub(super) fn exhaust_after_commit(admission: &mut InvalidationEditAdmission) {
+pub(super) fn exhaust_after_commit(
+    admission: &mut InvalidationEditAdmission,
+    published: bool,
+    recorded: bool,
+    runtime: u64,
+    root: worth_relational::facade::identity::EntityId,
+) {
+    // Read-only recording is inert without the owned observer.
+    if crate::domain_computation::execution_observation::is_installed() {
+        if CLEANUP_REGISTERED.with(|registered| !registered.replace(true)) {
+            crate::domain_computation::execution_observation::register_cleanup(clear_observations);
+        }
+        if published {
+            PUBLICATIONS.with(|publications| {
+                *publications
+                    .borrow_mut()
+                    .entry((runtime, root))
+                    .or_default() += 1;
+            });
+        }
+        if published && recorded {
+            PUBLICATION_RECORDS.with(|records| {
+                *records.borrow_mut().entry((runtime, root)).or_default() += 1;
+            });
+        }
+    }
     if EXHAUST_AFTER_COMMIT.with(|armed| armed.replace(false)) {
         admission
             .charge_external_work(admission.remaining_work() as u64)
@@ -53,6 +80,34 @@ pub(super) fn run_interleaving() {
 impl<Schema>
     crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
 {
+    /// Counts new authoritative commits, independently of readiness marks.
+    #[doc(hidden)]
+    pub fn producer_publications_at_root_on_this_thread_for_test(
+        &self,
+        root: worth_relational::facade::identity::EntityId,
+    ) -> u64 {
+        PUBLICATIONS.with(|publications| {
+            publications
+                .borrow()
+                .get(&(self.runtime.authority_identity().as_u64(), root))
+                .copied()
+                .unwrap_or(0)
+        })
+    }
+    /// Counts publication handoffs whose member is sealed in the advance's record.
+    #[doc(hidden)]
+    pub fn producer_recorded_publications_at_root_on_this_thread_for_test(
+        &self,
+        root: worth_relational::facade::identity::EntityId,
+    ) -> u64 {
+        PUBLICATION_RECORDS.with(|records| {
+            records
+                .borrow()
+                .get(&(self.runtime.authority_identity().as_u64(), root))
+                .copied()
+                .unwrap_or(0)
+        })
+    }
     #[doc(hidden)]
     pub fn exhaust_request_at_performed_commit_for_test(&self) {
         // Law 2, scope: guard cleanup clears an unreached arm, including panic.
@@ -124,6 +179,8 @@ impl<Schema>
 thread_local! { static CLEANUP_REGISTERED: std::cell::Cell<bool> = const { std::cell::Cell::new(false) }; }
 fn clear_observations() {
     CLEANUP_REGISTERED.with(|registered| registered.set(false));
+    PUBLICATIONS.with(|records| *records.borrow_mut() = Default::default());
+    PUBLICATION_RECORDS.with(|records| *records.borrow_mut() = Default::default());
     READ_DEBITS.with(|records| *records.borrow_mut() = Default::default());
     REQUEST_NAVIGATION.with(|records| *records.borrow_mut() = Default::default());
     ADMISSION_WORK.with(|records| *records.borrow_mut() = Default::default());

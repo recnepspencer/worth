@@ -2,7 +2,8 @@ use std::sync::Arc;
 
 use im::OrdSet;
 use worth_relational::facade::{
-    mvcc::CompanionPreflightStop, runtime::PositionedRelationalSnapshot,
+    mvcc::{CompanionBranchImage, CompanionPreflightStop},
+    runtime::PositionedRelationalSnapshot,
 };
 
 use crate::domain_computation::primary_graph::application_output_demand::RequiredWorkMembership;
@@ -17,7 +18,7 @@ use super::mark_state::{
     FactPosting, FullVerificationReason, MarkState, OutputFactCoverage, SettlementMarks,
 };
 use super::output_facts::RegisteredOutputFacts;
-use super::source_alignment::BranchMarkRoot;
+use super::source_alignment::{BranchMarkRoot, EqualOutputCurrentness, SnapshotAlignedMarkState};
 use super::InvalidationEditAdmission;
 
 mod posting_removal;
@@ -53,7 +54,7 @@ pub(super) struct AdmittedSettlementRegistration {
 pub(super) fn insert(
     state: &mut MarkState,
     registration: AdmittedSettlementRegistration,
-    root: &BranchMarkRoot,
+    image: &CompanionBranchImage<BranchMarkRoot>,
     alignment: SettlementReadAlignment,
     output_coverage: OutputFactCoverage,
     admission: &mut InvalidationEditAdmission,
@@ -129,11 +130,12 @@ pub(super) fn insert(
         superseded: false,
     };
     let replayed_stale = matches!(alignment, SettlementReadAlignment::Retained)
-        && replay(&mut row, root, admission)?;
+        && replay(&mut row, image.payload(), admission)?;
     state.settlement_key_payload_bytes = state
         .settlement_key_payload_bytes
         .checked_add(posting_payload_bytes)
         .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
+    let aligned = SnapshotAlignedMarkState::observe_registration_image(image, &row.read_basis);
     for upstream in &row.consumed_upstream {
         admission.work(1)?;
         admission.ordered_read(state.downstream.len())?;
@@ -150,12 +152,21 @@ pub(super) fn insert(
                 .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
         }
         admission.ordered_read(state.settlements.len())?;
-        if state.settlements.get(upstream).is_none_or(|upstream| {
+        let unresolved = state.settlements.get(upstream).is_none_or(|upstream| {
             upstream.delivery_epoch != state.delivery_epoch
                 || upstream.verification_requirement.is_some()
                 || !upstream.dirty_ordinals.is_empty()
                 || !upstream.pending_upstream.is_empty()
-        }) {
+        });
+        // Certification has already discharged this exact predecessor.
+        // A late registrant consumes that consequence instead of making
+        // the dirty old row pending again; no output comparison occurs here.
+        let resolved_by_successor = unresolved
+            && matches!(
+                aligned.equal_output_currentness(upstream, admission)?,
+                EqualOutputCurrentness::CanonicallyEqualClean(_)
+            );
+        if unresolved && !resolved_by_successor {
             admission
                 .index_edit::<Arc<RecordedSettlementIdentity>, ()>(row.pending_upstream.len())?;
             row.pending_upstream.insert(Arc::clone(upstream));

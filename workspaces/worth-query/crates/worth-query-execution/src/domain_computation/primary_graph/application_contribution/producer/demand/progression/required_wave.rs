@@ -256,17 +256,15 @@ where
         );
     // A reason withholds the candidate: the selected Ready is verified in
     // full.
-    let candidate = candidate
-        .map_err(required_settlement_denial)?
-        .ok()
-        .flatten();
+    let candidate = candidate.map_err(required_settlement_denial)?;
     admission
         .charge_external_work(1)
         .map_err(admission_denial)?;
     // Only the caller's exact Interest→Ready join may reuse the installed
     // entry retained when that same demand was admitted. Other cues still
     // resolve their own producer through the installed table.
-    performed.capture(selected, candidate.as_ref(), admission)?;
+    performed.capture(selected.key(), &candidate, admission)?;
+    let candidate = candidate.ok().flatten();
     let installed = match caller_installed {
         Some(entry) => entry,
         None => installed_for_selected_cue(runtime, selected.producer_identity(), admission)?,

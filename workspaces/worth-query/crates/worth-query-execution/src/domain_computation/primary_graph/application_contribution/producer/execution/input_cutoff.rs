@@ -317,6 +317,10 @@ fn cutoff_denial(stop: InputCutoffVerificationStop) -> WorthQueryOutputDemandDen
         InputCutoffVerificationStop::Admission(stop) => cutoff_admission_denial(stop),
         InputCutoffVerificationStop::CapacityExhausted => denial(WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded, String::new()),
         InputCutoffVerificationStop::WorkExhausted => denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, String::new()),
+        InputCutoffVerificationStop::PendingOutput(identity) => denial(
+            WorthQueryOutputDemandDenialKind::SchedulingDeferred,
+            format!("producer input cutoff awaits upstream output {identity:?}"),
+        ).with_recovery_posture(crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable),
         InputCutoffVerificationStop::PendingUpstream => denial(WorthQueryOutputDemandDenialKind::SchedulingDeferred, "producer input cutoff awaits upstream outputs")
             .with_recovery_posture(crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable),
         _ => denial(WorthQueryOutputDemandDenialKind::PublicationStale, "producer input cutoff source moved"),

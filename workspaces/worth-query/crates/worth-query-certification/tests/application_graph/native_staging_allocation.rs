@@ -16,7 +16,7 @@ use worth_query_host::facade::{
     },
     runtime::{
         CancellationToken, ExecutionAllocationDenialKind, ExecutionAllocationPolicy as Policy,
-        ExecutionAuthority, ExecutionAuthorityConfig, LeaseDenial, LeaseRequest,
+        LeaseDenial, LeaseRequest,
     },
 };
 use worth_relational::facade::mvcc::RelationalTransactionStagingDenial as NativeDenial;
@@ -65,11 +65,7 @@ fn ordinary_mutation_read_set_fits_before_native_staging_refuses_the_same_lease(
     }
     // The fixture World has no execution authority. This caller supplies its
     // real process authority; no World identity gate or allocation fallback.
-    let authority = ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
-        max_workers: NonZeroUsize::new(1).unwrap(),
-        charged_memory_bytes: None,
-    })
-    .unwrap();
+    let authority = worth_query_host::facade::primary_graph::test_execution_authority();
     let zero = authority.request_lease(request(0)).unwrap();
     let host = publish_on_first_program();
     let runtime = host.runtime();

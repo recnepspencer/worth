@@ -63,6 +63,7 @@ pub(in crate::domain_computation::primary_graph) enum InputCutoffVerificationSto
     WorkExhausted,
     CapacityExhausted,
     PendingUpstream,
+    PendingOutput(std::sync::Arc<super::super::RecordedSettlementIdentity>),
     CurrentnessRaced,
     SelectedSourceUnavailable,
     SelectedSourceMismatch,
@@ -232,17 +233,27 @@ impl RetainedInputCutoffCandidate {
                         return Err(InputCutoffVerificationStop::PendingUpstream)
                     }
                 }
-                if let Some(matched) = &matched_predecessors {
-                    if matched_roots::names_every_edge(&edges, matched, admission)? {
-                        // The new consumed evidence is current, but an upstream
-                        // mark names no subset of the handler prefix. Check it all.
-                        verify_full_prefix = true;
-                    } else {
-                        return Err(InputCutoffVerificationStop::PendingUpstream);
+                let resolved_here = match &matched_predecessors {
+                    Some(matched) => matched_roots::names_every_edge(&edges, matched, admission)?,
+                    None => false,
+                };
+                if !resolved_here {
+                    match pending_upstream::resolve(&edges, selected, owner, admission)? {
+                        pending_upstream::Resolution::Resolved(_) => {}
+                        pending_upstream::Resolution::Awaiting(identity) => {
+                            admission
+                                .charge_external_work(std::mem::size_of::<
+                                    std::sync::Arc<super::super::RecordedSettlementIdentity>,
+                                >() as u64)?;
+                            return Err(InputCutoffVerificationStop::PendingOutput(
+                                std::sync::Arc::clone(identity),
+                            ));
+                        }
                     }
-                } else {
-                    return Err(InputCutoffVerificationStop::PendingUpstream);
                 }
+                // A resolved pending mark identifies no subset of the handler
+                // prefix. Equality still needs every handler and native proof.
+                verify_full_prefix = true;
             }
             SourceSettlementCurrentness::FullVerificationRequired(_) => verify_full_prefix = true,
             // `cutoff_declines` declined it above.
@@ -367,5 +378,6 @@ fn fact_is_current(
 }
 
 mod matched_roots;
+mod pending_upstream;
 #[cfg(test)]
 mod tests;

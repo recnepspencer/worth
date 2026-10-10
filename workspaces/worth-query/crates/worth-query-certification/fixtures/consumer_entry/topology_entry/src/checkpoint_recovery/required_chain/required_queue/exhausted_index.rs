@@ -8,6 +8,8 @@ use worth_query_host::facade::application_entry::WorthQueryApplicationOutputDema
 /// Commits the retained window holds.
 const WINDOW: usize = 8;
 
+const CHAIN: [&str; 4] = ["anchor-a", "anchor-b", "anchor-c", "anchor-source-b"];
+
 /// A demand stop: its kind, and what it tells the caller about asking again.
 type Stop = (WorthQueryOutputDemandDenialKind, Posture);
 
@@ -33,6 +35,7 @@ struct AdvanceObservation {
     published: bool,
     producer_attempts: u64,
     member_attempts: Vec<u64>,
+    member_publications: Vec<u64>,
 }
 macro_rules! advance_recording {
     ($stops:expr, $demand:expr, $request:expr, $observations:expr, $application:expr, $roots:expr) => {{
@@ -40,9 +43,15 @@ macro_rules! advance_recording {
             .iter()
             .map(|root| $application.producer_contacts_at_root_on_this_thread_for_test(*root))
             .collect();
+        let before_publications: Vec<_> = $roots
+            .iter()
+            .map(|root| $application.producer_publications_at_root_on_this_thread_for_test(*root))
+            .collect();
         let before_attempts = $application.producer_contacts_on_this_thread_for_test();
         let before_decisions = binding::decisions_snapshot().len();
-        let before = $request.retain_read().unwrap().selected_commit().clone();
+        // Only the observing journey performs these extra observations.
+        let before =
+            (!$roots.is_empty()).then(|| $request.retain_read().unwrap().selected_commit().clone());
         let advanced = $demand.advance(&$request);
         bounded!();
         match advanced {
@@ -62,6 +71,15 @@ macro_rules! advance_recording {
                                 - before
                         })
                         .collect(),
+                    member_publications: $roots
+                        .iter()
+                        .zip(before_publications)
+                        .map(|(root, before)| {
+                            $application
+                                .producer_publications_at_root_on_this_thread_for_test(*root)
+                                - before
+                        })
+                        .collect(),
                     producer_attempts: $application.producer_contacts_on_this_thread_for_test()
                         - before_attempts,
                     decisions: binding::decisions_snapshot()
@@ -69,7 +87,9 @@ macro_rules! advance_recording {
                         .skip(before_decisions)
                         .map(|(scope, _)| scope)
                         .collect(),
-                    published: $request.retain_read().unwrap().selected_commit() != &before,
+                    published: before.as_ref().is_some_and(|before| {
+                        $request.retain_read().unwrap().selected_commit() != before
+                    }),
                 });
                 $stops.push((denial.kind(), denial.recovery_posture()));
                 None
@@ -95,7 +115,7 @@ fn observed_chain_journey(invalidation_bytes: u64, observe: bool) -> Result<Jour
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let roots = if observe {
-        ["anchor-a", "anchor-b", "anchor-c", "anchor-source-b"]
+        CHAIN
             .map(|body_key| {
                 request
                     .query(PlanarRead {
