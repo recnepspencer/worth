@@ -6,6 +6,10 @@ use worth_harness::runtime::{HarnessAdapter, ReplayHarnessAdapter};
 
 #[test]
 fn bridge_replay_capture_exposes_last_route_record() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let adapter = BridgeHarnessAdapter;
     let fixture = ScenarioPlan::new(
         "bridge-replay",
@@ -66,7 +70,7 @@ fn bridge_replay_capture_exposes_last_route_record() {
         .runtime
         .as_ref()
         .expect("bridge runtime")
-        .replay_canonical_record(&canonical_record)
+        .replay_canonical_record(&canonical_record, resource_request)
         .expect("typed route replay should succeed from retained route record");
 
     assert_eq!(

@@ -63,9 +63,10 @@ impl RuntimeBridge {
     ///     bridge: &RuntimeBridge,
     ///     contract: &AdmittedSourceContract,
     ///     packets: Vec<SnapshotReadPacket>,
+    ///     execution: worth_execution::ExecutionRequest<'_, '_>,
     /// ) -> Result<(), Box<dyn std::error::Error>> {
-    ///     let planned = bridge.plan_source_packet_batch(contract, packets)?;
-    ///     let materialized = bridge.materialize_source(&planned)?;
+    ///     let planned = bridge.plan_source_packet_batch(contract, packets, execution)?;
+    ///     let materialized = bridge.materialize_source(&planned, execution)?;
     ///     let _record = bridge.canonicalize_source_materialization_packet_set_record(&materialized)?;
     ///     Ok(())
     /// }

@@ -2760,7 +2760,7 @@ The next phase may trust that partition-granular reuse is exact.
     commit. Relational offers one sealed pinned read capability, taken
     under the source's lock and read without it; 7.4's workers hold it
     in place of the owner's port, so their reads run concurrently.
-  - Bridge's, Signal's and World's seams take it.
+  - Bridge's, Signal's and World's seams take it. *Completed.*
 - **7.7** Run the `compute` steps of each dependency-ready wave concurrently
   under the request lease, with nested partition work.
   - A wave is admitted by the required-set owner against a basis: every

@@ -2,6 +2,10 @@ use super::*;
 
 #[test]
 fn bridge_deliver_continuity_returns_delivered_result_and_canonical_record() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
@@ -35,10 +39,11 @@ fn bridge_deliver_continuity_returns_delivered_result_and_canonical_record() {
                     crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
                 ),
             )),
+            execution,
         )
         .expect("route should plan");
     let result = runtime
-        .deliver_invalidation(route)
+        .deliver_invalidation(route, execution)
         .expect("delivery should succeed");
     let route_record = runtime
         .diagnostics()
@@ -67,6 +72,10 @@ fn bridge_deliver_continuity_returns_delivered_result_and_canonical_record() {
 
 #[test]
 fn bridge_continuity_truth_is_invariant_across_diagnostics_tiers() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let standard_source = InMemoryRelationalBridgeSource::default();
     standard_source.insert_committed_patch(committed_patch(
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
@@ -111,6 +120,7 @@ fn bridge_continuity_truth_is_invariant_across_diagnostics_tiers() {
                     crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
                 ),
             )),
+            execution,
         )
         .expect("standard route should plan");
     let forensic_route = forensic_runtime
@@ -124,14 +134,15 @@ fn bridge_continuity_truth_is_invariant_across_diagnostics_tiers() {
                     crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
                 ),
             )),
+            execution,
         )
         .expect("forensic route should plan");
 
     let standard_result = standard_runtime
-        .deliver_invalidation(standard_route)
+        .deliver_invalidation(standard_route, execution)
         .expect("standard delivery should succeed");
     let forensic_result = forensic_runtime
-        .deliver_invalidation(forensic_route)
+        .deliver_invalidation(forensic_route, execution)
         .expect("forensic delivery should succeed");
 
     let standard_route_record = standard_runtime

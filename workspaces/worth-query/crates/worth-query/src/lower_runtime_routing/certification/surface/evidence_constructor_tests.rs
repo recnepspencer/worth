@@ -22,6 +22,9 @@ use crate::lower_runtime_routing::WorthQueryLowerRuntimeSeamKey;
 
 #[test]
 fn representative_surface_runtime_backed_seams_match_real_boundary_artifact_constructors() {
+    let host_request = crate::bridge_host_request::serial_request();
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -37,11 +40,13 @@ fn representative_surface_runtime_backed_seams_match_real_boundary_artifact_cons
     let public_live_row = representative_public_live_view_declaration_row();
     let orchestration_row = representative_runtime_live_installation_orchestration_row();
     let activation_row = representative_subscription_activation_row();
-    let continuity_row = representative_subscription_continuity_row();
+    let continuity_row = representative_subscription_continuity_row(resource_request);
     let preview_row = representative_preview_basis_row();
-    let truth_view_readmission_row = representative_basis_truth_view_readmission_row();
-    let subscription_readmission_row = representative_basis_subscription_readmission_row();
-    let historical_row = representative_historical_bridge_lowering_row();
+    let truth_view_readmission_row =
+        representative_basis_truth_view_readmission_row(resource_request);
+    let subscription_readmission_row =
+        representative_basis_subscription_readmission_row(resource_request);
+    let historical_row = representative_historical_bridge_lowering_row(resource_request);
     let mutation_row = representative_effect_relational_mutation_row(request_execution);
     let merge_row = representative_effect_relational_merge_row(request_execution);
     let writeback_row = representative_effect_bridge_writeback_row(request_execution);
@@ -53,7 +58,7 @@ fn representative_surface_runtime_backed_seams_match_real_boundary_artifact_cons
         representative_intent_runtime_execution_row(request_execution);
     let query_receipt_row = representative_projection_query_receipts_row(request_execution);
     let relational_row = representative_projection_relational_row();
-    let bridge_row = representative_projection_bridge_row();
+    let bridge_row = representative_projection_bridge_row(resource_request);
     let causal_row = representative_causal_bridge_materialization_row(request_execution);
     let frontier_row = representative_frontier_evidence_row();
 

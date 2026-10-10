@@ -2,6 +2,7 @@ use super::*;
 
 pub(in crate::harness::milestone_eight_certification) fn grouped_truth_view_bundle(
     rows: &[GroupedRowFixture],
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> MilestoneEightCertificationBundle {
     let canonical = direct_collection_canonical();
     let plan = view_plan(
@@ -9,7 +10,7 @@ pub(in crate::harness::milestone_eight_certification) fn grouped_truth_view_bund
         collection_schema_view(),
         ViewShapeDescriptor::kanban_grouped(aspect_key("status")),
     );
-    let truth_view = grouped_truth_view_for_plan_with_rows(&plan, rows);
+    let truth_view = grouped_truth_view_for_plan_with_rows(&plan, rows, resource_request);
 
     bundle_from_view_execution(
         canonical.query().digest().as_str().to_string(),
@@ -28,6 +29,7 @@ pub(in crate::harness::milestone_eight_certification) fn grouped_truth_view_bund
 
 pub(in crate::harness::milestone_eight_certification) fn grouped_execution_surface_bundle(
     rows: &[GroupedRowFixture],
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> MilestoneEightCertificationBundle {
     let canonical = direct_collection_canonical();
     let plan = view_plan(
@@ -36,7 +38,7 @@ pub(in crate::harness::milestone_eight_certification) fn grouped_execution_surfa
         ViewShapeDescriptor::kanban_grouped(aspect_key("status")),
     );
     let basis = runtime_basis(plan.validated().query().schema_basis().clone());
-    let truth_view = grouped_truth_view_for_plan_with_rows(&plan, rows);
+    let truth_view = grouped_truth_view_for_plan_with_rows(&plan, rows, resource_request);
     let grouped_execution =
         materialize_grouped_execution_surface_from_truth_view(&plan, basis, &truth_view).unwrap();
 
@@ -59,6 +61,7 @@ pub(in crate::harness::milestone_eight_certification) fn grouped_execution_surfa
 
 pub(in crate::harness::milestone_eight_certification) fn grouped_payload_rediscovery_free_bundle(
     rows: &[GroupedRowFixture],
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> MilestoneEightCertificationBundle {
     let canonical = direct_collection_canonical();
     let plan = view_plan(
@@ -67,7 +70,7 @@ pub(in crate::harness::milestone_eight_certification) fn grouped_payload_redisco
         ViewShapeDescriptor::kanban_grouped(aspect_key("status")),
     );
     let basis = runtime_basis(plan.validated().query().schema_basis().clone());
-    let truth_view = grouped_truth_view_for_plan_with_rows(&plan, rows);
+    let truth_view = grouped_truth_view_for_plan_with_rows(&plan, rows, resource_request);
     let grouped_execution =
         materialize_grouped_execution_surface_from_truth_view(&plan, basis.clone(), &truth_view)
             .unwrap();

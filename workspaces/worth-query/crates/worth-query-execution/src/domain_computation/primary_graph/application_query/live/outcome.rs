@@ -29,6 +29,8 @@ pub enum WorthQueryApplicationLiveOpenDenialKind {
     BasisReleaseFailed,
     /// The provider's current version could not be read.
     ProviderVersionUnavailable,
+    /// The phase belongs to another installed application; no read was admitted.
+    ForeignAdvancementPhase,
     /// The Runtime Bridge rejected the live execution basis.
     BridgeBasisRejected,
 }

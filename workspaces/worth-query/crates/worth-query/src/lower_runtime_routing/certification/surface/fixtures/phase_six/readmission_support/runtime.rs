@@ -35,6 +35,7 @@ pub(in crate::lower_runtime_routing::certification::surface::fixtures::phase_six
 
 pub(in crate::lower_runtime_routing::certification::surface::fixtures::phase_six) fn detail_subscription(
     runtime: &RuntimeBridge,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> AdmittedBridgeSubscription {
     let declaration = runtime
         .declare_subscription(
@@ -55,12 +56,14 @@ pub(in crate::lower_runtime_routing::certification::surface::fixtures::phase_six
             worth_runtime_bridge::facade::BridgeSubscriptionBasisRequest::branch_head(
                 fixture_branch_identity(PHASE_SIX_MAIN_BRANCH),
             ),
+            resource_request,
         )
         .expect("branch-head subscription basis should admit")
 }
 
 pub(in crate::lower_runtime_routing::certification::surface::fixtures::phase_six) fn delivered_continuity(
     runtime: &RuntimeBridge,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> BridgeDeliveredContinuityResult {
     let route = runtime
         .plan_committed_patch_with_mapping_context(
@@ -73,10 +76,11 @@ pub(in crate::lower_runtime_routing::certification::surface::fixtures::phase_six
                     fixture_snapshot_identity(SNAPSHOT_A),
                 )),
             ),
+            resource_request,
         )
         .expect("continuity route should plan");
     runtime
-        .deliver_invalidation(route)
+        .deliver_invalidation(route, resource_request)
         .expect("continuity route should deliver");
     let route_record = runtime
         .diagnostics()

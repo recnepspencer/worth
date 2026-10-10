@@ -12,6 +12,9 @@ use worth_query_installation::facade::WorthQueryInvariantEnforcement;
 #[test]
 fn interleaved_sessions_load_their_own_provisional_overlays() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -21,8 +24,10 @@ fn interleaved_sessions_load_their_own_provisional_overlays() {
             WorthQueryInvariantEnforcement::Blocking,
             4,
         )];
-        let (mut first_run, first_graph) = invariant_run(Arc::clone(&state), requirements.clone());
-        let (mut second_run, second_graph) = invariant_run(Arc::clone(&state), requirements);
+        let (mut first_run, first_graph) =
+            invariant_run(Arc::clone(&state), requirements.clone(), resource_request);
+        let (mut second_run, second_graph) =
+            invariant_run(Arc::clone(&state), requirements, resource_request);
 
         let (first, first_token) = proposed_inspection(execution, &mut first_run, &first_graph);
         let (second, second_token) = proposed_inspection(execution, &mut second_run, &second_graph);

@@ -3,18 +3,20 @@ use super::*;
 
 pub(super) fn yielded_direct(
     execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     crate::domain_computation::WorthQueryYieldedDirectRun,
     RuntimeBridge,
     WorthQueryExecutionRuntime,
 ) {
-    yielded_direct_for_binding(execution, "managed-graph-binding")
+    yielded_direct_for_binding(execution, "managed-graph-binding", resource_request)
 }
 
 pub(super) fn yielded_direct_for_binding(
     execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     binding_identity: &str,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     crate::domain_computation::WorthQueryYieldedDirectRun,
     RuntimeBridge,
@@ -24,6 +26,7 @@ pub(super) fn yielded_direct_for_binding(
         WorthQueryOperationGraphAccess::Observe,
         YieldProvider::installed(5),
         binding_identity,
+        resource_request,
     );
     let active = {
         let installed_fixture_phase = running.fixture_phase(execution);
@@ -60,6 +63,7 @@ pub(super) fn yielded_direct_with_plan_observation<T>(
     observe_plan: impl FnOnce(
         &worth_query_admission::facade::resource_admission::WorthQueryAdmittedExecutionResourcePlan,
     ) -> T,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     crate::domain_computation::WorthQueryYieldedDirectRun,
     RuntimeBridge,
@@ -109,7 +113,7 @@ pub(super) fn yielded_direct_with_plan_observation<T>(
     let lower = causal_fixture::managed_admission_context();
     let running = runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
-        .admit_direct(&operation, attempt, lower.read_request())
+        .admit_direct(&operation, attempt, lower.read_request(), resource_request)
         .expect("managed graph run should admit through lower owners")
         .start();
     let installed_running_phase = execution.phase_for_direct(&running);
@@ -140,6 +144,7 @@ pub(in crate::domain_computation::managed_run) fn yielded_direct_with_provider(
     execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     provider: YieldProvider,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     crate::domain_computation::WorthQueryYieldedDirectRun,
     RuntimeBridge,
@@ -148,6 +153,7 @@ pub(in crate::domain_computation::managed_run) fn yielded_direct_with_provider(
     let (running, graph, bridge, runtime) = managed_graph_run_with_provider_and_runtime(
         WorthQueryOperationGraphAccess::Observe,
         provider,
+        resource_request,
     );
     let installed_running_phase = execution.phase_for_direct(&running);
 
@@ -175,11 +181,14 @@ pub(in crate::domain_computation::managed_run) fn yielded_direct_with_provider(
 #[test]
 fn direct_readmission_mints_fresh_attempts_and_transfers_capacity() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
         let active_request = execution;
 
-        let (yielded, bridge, runtime) = yielded_direct(execution);
+        let (yielded, bridge, runtime) = yielded_direct(execution, resource_request);
         let logical = yielded.inspection().logical_run_identity().to_owned();
         let managed_attempt = yielded.inspection().yielded_attempt_identity().to_owned();
         let resource_attempt = yielded.inspection().yielded_attempt_identity().to_owned();
@@ -245,11 +254,14 @@ fn direct_readmission_mints_fresh_attempts_and_transfers_capacity() {
 #[test]
 fn query_preflight_denial_returns_the_exact_yielded_capability_without_fresh_work() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
         let active_request = execution;
 
-        let (yielded, bridge, runtime) = yielded_direct(execution);
+        let (yielded, bridge, runtime) = yielded_direct(execution, resource_request);
         let checkpoint = yielded.inspection().checkpoint().identity().to_owned();
         let resource_attempt = yielded.inspection().yielded_attempt_identity().to_owned();
         let foreign_runtime = query_runtime();
@@ -316,12 +328,18 @@ fn query_preflight_denial_returns_the_exact_yielded_capability_without_fresh_wor
 #[test]
 fn provider_restore_denial_preserves_the_exact_checkpoint_and_capacity_package() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
         let active_request = execution;
 
-        let (yielded, bridge, runtime) =
-            yielded_direct_with_provider(execution, YieldProvider::checkpoint_restore_failure(7));
+        let (yielded, bridge, runtime) = yielded_direct_with_provider(
+            execution,
+            YieldProvider::checkpoint_restore_failure(7),
+            resource_request,
+        );
         let checkpoint = yielded.inspection().checkpoint().identity().to_owned();
         let resource_attempt = yielded.inspection().yielded_attempt_identity().to_owned();
         let reservations = yielded.inspection().retained_capacity_reservation_count();

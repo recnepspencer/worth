@@ -9,11 +9,15 @@ use crate::domain_computation::{
 #[test]
 fn successful_direct_readmission_carries_exact_query_and_bridge_work() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
         let active_request = execution;
 
-        let (yielded, bridge, runtime) = super::readmission_direct::yielded_direct(execution);
+        let (yielded, bridge, runtime) =
+            super::readmission_direct::yielded_direct(execution, resource_request);
         let readmitted = {
             let fixture_phase_result = {
                 let installed_fixture_phase = yielded.fixture_phase(active_request);
@@ -39,12 +43,19 @@ fn successful_direct_readmission_carries_exact_query_and_bridge_work() {
 #[test]
 fn successful_workflow_readmission_carries_exact_query_and_bridge_work() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
         let active_request = execution;
 
         let (yielded, bridge, runtime, old_producer) =
-            super::readmission_workflow::yielded_workflow(execution, YieldProvider::installed(7));
+            super::readmission_workflow::yielded_workflow(
+                execution,
+                YieldProvider::installed(7),
+                resource_request,
+            );
         let readmitted = {
             let fixture_phase_result = {
                 let installed_fixture_phase = yielded.fixture_phase(active_request);

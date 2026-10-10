@@ -31,18 +31,18 @@ impl<'a> PreparedSelectedSchedulingFinish<'a> {
         mut performed_source: Option<WorthQueryPerformedOutputDemandSource>,
         result: &mut Result<WorthQueryOutputSchedulingResult, WorthQueryOutputDemandDenial>,
     ) {
-        let rescheduled = match result {
+        let interrupted = match result {
             Ok(WorthQueryOutputSchedulingResult::NoEffect(denial)) | Err(denial) => {
-                execution_failure_reschedules(denial)
+                !required_stop::fails_row(denial)
             }
-            _ => false,
+            Ok(_) => false,
         };
         let terminal_kind = match result {
             Ok(WorthQueryOutputSchedulingResult::NoEffect(denial)) | Err(denial) => {
                 use crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture;
                 // An interrupted scheduling attempt leaves the row for a later claim,
                 // with the same caller posture as interrupted execution.
-                denial.recovery_posture = if rescheduled && execution_failure_is_retryable(denial) {
+                denial.recovery_posture = if interrupted && execution_failure_is_retryable(denial) {
                     WorthQueryOutputDemandRecoveryPosture::Retryable
                 } else {
                     WorthQueryOutputDemandRecoveryPosture::Terminal
@@ -68,7 +68,8 @@ impl<'a> PreparedSelectedSchedulingFinish<'a> {
         {
             return;
         }
-        let (released_bytes, obligations) = if rescheduled {
+        let terminal_cleanup = terminal_kind.is_some() && !interrupted;
+        let (released_bytes, obligations) = if interrupted {
             // Interruption before execution leaves the exact reopened Ready
             // with its owners, including its claims and retained custody.
             record.performed_source = performed_source.take();
@@ -98,7 +99,7 @@ impl<'a> PreparedSelectedSchedulingFinish<'a> {
         state.obligation_reserved_bytes = state
             .obligation_reserved_bytes
             .saturating_sub(released_bytes);
-        if terminal_kind.is_some() && !rescheduled {
+        if terminal_cleanup {
             state.defer_terminal_cleanup(self.member.key_arc(), 0);
         }
         drop(state);

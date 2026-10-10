@@ -144,6 +144,7 @@ impl From<WorthQueryForeignAdvancementPhase> for super::WorthQueryAdvancementDen
 ///     });
 /// }
 /// ```
+#[doc = include_str!("phase_request_contracts.md")]
 pub struct WorthQueryAdvancementPhase<'scope> {
     pub(super) active: &'scope ActiveAdvancement<'scope>,
     pub(super) source: AdvancementSource,

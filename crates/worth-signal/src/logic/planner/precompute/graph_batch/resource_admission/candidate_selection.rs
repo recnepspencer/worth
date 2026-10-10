@@ -140,8 +140,8 @@ pub(super) fn choose_grant(
     copies: u64,
     width: usize,
     declared_result_minimum: u64,
-    lease: &ExecutionResourceLease<'_>,
-    candidate_lease: &ExecutionResourceLease<'_>,
+    lease: worth_execution::ExecutionRequest<'_, '_>,
+    candidate_lease: Option<&ExecutionResourceLease<'_>>,
     bases: &[ApplyMemberBasis],
     basis: &ApplyMemberBasis,
     candidate_bases: &[CandidateEpochBasis],
@@ -162,7 +162,7 @@ pub(super) fn choose_grant(
         candidate_lease,
     )
     .ok_or_else(overflow)?;
-    let lease_bytes = lease.policy().budget().charged_memory_bytes();
+    let lease_bytes = lease.memory_limit();
     if minimum > lease_bytes {
         return Ok(Err(CapacityDenial {
             required: minimum,
@@ -257,8 +257,8 @@ fn combined_map_requirement(
     precompute_bases: &[PrecomputeMapBasis],
     precompute_basis: &PrecomputeMapBasis,
     grant: u64,
-    request_lease: &ExecutionResourceLease<'_>,
-    child_lease: &ExecutionResourceLease<'_>,
+    request_lease: worth_execution::ExecutionRequest<'_, '_>,
+    child_lease: Option<&ExecutionResourceLease<'_>>,
 ) -> Option<u64> {
     let apply =
         apply_capacity::map_memory_requirement(apply_bases, apply_basis, grant, child_lease)?;
@@ -269,7 +269,7 @@ fn combined_map_requirement(
     // The enclosing Signal scan holds both declared memory allowances while
     // these two prepared tickets coexist. Its generic framework context is
     // checked again by the authoritative pre-callback prepare_run calls.
-    let request_memory = request_lease.policy().budget().charged_memory_bytes();
+    let request_memory = request_lease.memory_limit();
     let held_request = request_memory / 8 + request_memory / 8;
     held_request
         .checked_add(apply)?

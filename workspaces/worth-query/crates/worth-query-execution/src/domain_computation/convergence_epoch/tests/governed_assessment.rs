@@ -15,6 +15,9 @@ use crate::domain_computation::{
 #[test]
 fn query_counts_each_governed_domain_port_and_contains_rejection_or_panic() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -59,7 +62,7 @@ fn query_counts_each_governed_domain_port_and_contains_rejection_or_panic() {
 
         for (disposition, expected_phase, expected_kind, expected_work) in cases {
             let (terminal, provider_probe) =
-                indeterminate_terminal_with_probe(execution, disposition);
+                indeterminate_terminal_with_probe(execution, disposition, resource_request);
             assert_eq!(provider_probe.entries(), expected_work);
             assert_domain_invocation_cause(
                 terminal.indeterminate_cause(),
@@ -95,13 +98,15 @@ fn indeterminate_terminal_with_probe(
     execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     disposition: FixtureDisposition,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     crate::domain_computation::WorthQueryDirectConvergenceTerminal<
         crate::domain_computation::WorthQueryIndeterminate,
     >,
     FixtureDomainPortProbe,
 ) {
-    let (fixture, probe) = direct_admission_fixture_with_domain_port_probe(disposition);
+    let (fixture, probe) =
+        direct_admission_fixture_with_domain_port_probe(disposition, resource_request);
     let epoch = fixture.admit();
     let started = {
         let installed_fixture_phase = epoch.fixture_phase(execution);
@@ -134,11 +139,17 @@ fn indeterminate_terminal_with_probe(
 #[test]
 fn workflow_cleanup_preserves_a_typed_governed_domain_panic() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let terminal =
-            workflow_indeterminate_terminal(execution, FixtureDisposition::ProgressPanic);
+        let terminal = workflow_indeterminate_terminal(
+            execution,
+            FixtureDisposition::ProgressPanic,
+            resource_request,
+        );
         assert_domain_invocation_cause(
             terminal.indeterminate_cause(),
             Phase::ProgressMeasure,
@@ -161,7 +172,11 @@ fn workflow_cleanup_preserves_a_typed_governed_domain_panic() {
 
 #[test]
 fn provider_family_inspection_panic_denies_and_returns_every_admission_authority() {
-    let fixture = direct_admission_fixture(FixtureDisposition::FamilyInspectionPanic);
+    let host_request = crate::bridge_host_request::serial_request();
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let fixture =
+        direct_admission_fixture(FixtureDisposition::FamilyInspectionPanic, resource_request);
     let rejection = match fixture.runtime.admit_direct_convergence_epoch(
         &fixture.operation,
         fixture.contract,

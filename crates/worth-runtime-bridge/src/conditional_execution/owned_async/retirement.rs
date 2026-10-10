@@ -28,7 +28,9 @@ impl BridgeOwnedSignalRuntime {
             .active_node_count()
             .map_err(|denial| {
                 BridgeConditionalDenial::new(
-                    BridgeConditionalDenialKind::SignalExecution,
+                    BridgeConditionalDenialKind::SignalExecution(
+                        super::super::BridgeSignalDenial::ConditionalExecution(denial.clone()),
+                    ),
                     format!("Signal topology inspection failed: {denial:?}"),
                 )
             })

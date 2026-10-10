@@ -105,6 +105,10 @@ fn runtime_rejects_unregistered_source_declaration() {
 
 #[test]
 fn runtime_materializes_registered_source_packet() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::default());
     let contract = runtime
         .admit_source(registered_source(
@@ -123,7 +127,7 @@ fn runtime_materializes_registered_source_packet() {
         .expect("registered historical source should be admitted");
 
     let observation = runtime
-        .materialize_source_packet(&contract, SnapshotReadPacket::new(vec![]))
+        .materialize_source_packet(&contract, SnapshotReadPacket::new(vec![]), execution)
         .expect("registered historical source should materialize");
 
     assert!(
@@ -144,6 +148,10 @@ fn runtime_materializes_registered_source_packet() {
 
 #[test]
 fn runtime_records_source_materialization_rejection_when_adapter_cannot_open_snapshot() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime =
         runtime_with_source_adapter(BridgeRuntimePolicy::default(), RejectingSourceAdapter);
     let contract = runtime
@@ -162,15 +170,17 @@ fn runtime_records_source_materialization_rejection_when_adapter_cannot_open_sna
         ))
         .expect("registered historical source should be admitted");
 
-    let error = match runtime.materialize_source_packet(&contract, SnapshotReadPacket::new(vec![]))
-    {
+    let error = match runtime.materialize_source_packet(
+        &contract,
+        SnapshotReadPacket::new(vec![]),
+        execution,
+    ) {
         Ok(_) => panic!("rejecting source adapter should fail materialization"),
         Err(error) => error,
     };
 
-    assert_eq!(
-        error.kind(),
-        crate::error::BridgeDeliveryErrorKind::SnapshotAcquisitionFailure
+    assert!(
+        matches!(error.kind(), crate::error::BridgeDeliveryErrorKind::SnapshotAcquisitionFailure(ref cause) if cause.kind() == crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure)
     );
     let failure = runtime
         .diagnostics()
@@ -180,14 +190,17 @@ fn runtime_records_source_materialization_rejection_when_adapter_cannot_open_sna
         failure.failure_class(),
         crate::source::SourceFailureClass::SourceMaterializationRejected
     );
-    assert_eq!(
-        failure.delivery_error_kind(),
-        crate::error::BridgeDeliveryErrorKind::SnapshotAcquisitionFailure
+    assert!(
+        matches!(failure.delivery_error_kind(), crate::error::BridgeDeliveryErrorKind::SnapshotAcquisitionFailure(ref cause) if cause.kind() == crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure)
     );
 }
 
 #[test]
 fn runtime_records_adapter_capability_drift_when_adapter_binds_wrong_snapshot() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime_with_source_adapter(BridgeRuntimePolicy::default(), DriftSourceAdapter);
     let contract = runtime
         .admit_source(registered_source(
@@ -205,8 +218,11 @@ fn runtime_records_adapter_capability_drift_when_adapter_binds_wrong_snapshot() 
         ))
         .expect("registered historical source should be admitted");
 
-    let error = match runtime.materialize_source_packet(&contract, SnapshotReadPacket::new(vec![]))
-    {
+    let error = match runtime.materialize_source_packet(
+        &contract,
+        SnapshotReadPacket::new(vec![]),
+        execution,
+    ) {
         Ok(_) => panic!("drift source adapter should fail materialization"),
         Err(error) => error,
     };
@@ -231,6 +247,10 @@ fn runtime_records_adapter_capability_drift_when_adapter_binds_wrong_snapshot() 
 
 #[test]
 fn runtime_rejects_source_packet_set_reordering_from_adapter() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime =
         runtime_with_source_adapter(BridgeRuntimePolicy::default(), ReorderingSourceAdapter);
     let contract = runtime
@@ -269,6 +289,7 @@ fn runtime_rejects_source_packet_set_reordering_from_adapter() {
                 ),
             )]),
         ],
+        execution,
     ) {
         Ok(_) => panic!("reordered source packet set should be rejected"),
         Err(error) => error,

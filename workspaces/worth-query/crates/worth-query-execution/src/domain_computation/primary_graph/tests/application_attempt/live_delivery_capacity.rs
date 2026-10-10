@@ -11,19 +11,21 @@ use crate::domain_computation::primary_graph::{
 
 #[test]
 fn one_missing_batch_slot_denies_before_world_or_bridge_movement() {
-    {
-        assert_live_reservation_denial(0, u64::MAX, "slot-short", 211);
-    }
+    let host_request = crate::bridge_host_request::serial_request();
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    assert_live_reservation_denial(0, u64::MAX, "slot-short", 211, resource_request);
 }
 
 #[test]
 fn one_missing_payload_byte_denies_before_world_or_bridge_movement() {
-    {
-        let payload = "byte-short".to_owned();
-        let required = AccountActivityBinding::retained_bytes(&payload);
-        assert!(required > 0);
-        assert_live_reservation_denial(1, required - 1, &payload, 212);
-    }
+    let host_request = crate::bridge_host_request::serial_request();
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let payload = "byte-short".to_owned();
+    let required = AccountActivityBinding::retained_bytes(&payload);
+    assert!(required > 0);
+    assert_live_reservation_denial(1, required - 1, &payload, 212, resource_request);
 }
 
 fn assert_live_reservation_denial(
@@ -31,45 +33,55 @@ fn assert_live_reservation_denial(
     byte_capacity: u64,
     payload: &str,
     identity: u8,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) {
     let world = installed_authorization_world(true);
     let request = live_scope();
-    let (program, branch, product_before, bridge_before, _live) = world
+    let principal = world
         .application
-        .with_host_advancement(|phase| {
-            let custody = phase.test_host_request();
-            let phase_custody = &custody;
-            let principal = authenticated_principal(phase_custody, &world, &request);
-            let account = resolved_account(phase_custody, &world, "open", &request);
-            let branch = world.application.current_world();
-            let selected = world
-                .application
-                .on_branch(branch)
-                .select(&phase_custody.phase_for_application(&world.application))
-                .unwrap();
-            let product_before = selected.product().selected_commit().clone();
-            let bridge_before = bridge_head_commit(&world);
-            let _live = world
-                .application
-                .primary_provider
-                .observe_application_commit_causality(selected.product());
-            world
-                .application
-                .primary_provider
-                .set_application_commit_causality_limits(batch_capacity, byte_capacity);
-            let program = admitted_program_with_emit(
-                &phase_custody.phase_for_application(&world.application),
+        .with_application_advancement(&request, |phase| {
+            authenticated_principal(&phase.test_host_request(), &world, &request)
+        })
+        .unwrap();
+    let account = world
+        .application
+        .with_application_advancement(&request, |phase| {
+            resolved_account(&phase.test_host_request(), &world, "open", &request)
+        })
+        .unwrap();
+    let branch = world.application.current_world();
+    let selected = world
+        .application
+        .with_application_advancement(&request, |phase| {
+            world.application.on_branch(branch).select(&phase)
+        })
+        .unwrap()
+        .unwrap();
+    let product_before = selected.product().selected_commit().clone();
+    let bridge_before = bridge_head_commit(&world, resource_request);
+    let _live = world
+        .application
+        .primary_provider
+        .observe_application_commit_causality(selected.product());
+    world
+        .application
+        .primary_provider
+        .set_application_commit_causality_limits(batch_capacity, byte_capacity);
+    let program = world
+        .application
+        .with_application_advancement(&request, |phase| {
+            admitted_program_with_emit(
+                &phase,
                 &world,
                 &principal,
                 &account,
                 &request,
                 "must-not-move",
                 Some(payload),
-            );
-
-            (program, branch, product_before, bridge_before, _live)
+            )
         })
-        .expect("the fixture decision owns its host call");
+        .unwrap();
+
     let outcome = world
         .application
         .on_branch(branch)
@@ -89,18 +101,13 @@ fn assert_live_reservation_denial(
     ));
     let product_after = world
         .application
-        .with_host_advancement(|phase| {
-            let custody = phase.test_host_request();
-            let phase_custody = &custody;
-            world
-                .application
-                .on_branch(branch)
-                .select(&phase_custody.phase_for_application(&world.application))
-                .unwrap()
+        .with_application_advancement(&request, |phase| {
+            world.application.on_branch(branch).select(&phase)
         })
-        .expect("the fixture aftermath read owns its host call");
+        .unwrap()
+        .unwrap();
     assert_eq!(product_after.product().selected_commit(), &product_before);
-    assert_eq!(bridge_head_commit(&world), bridge_before);
+    assert_eq!(bridge_head_commit(&world, resource_request), bridge_before);
     assert_eq!(
         world
             .application
@@ -110,14 +117,15 @@ fn assert_live_reservation_denial(
     );
     world
         .application
-        .with_host_advancement(|phase| {
-            resolved_account(&phase.test_host_request(), &world, "open", &request);
+        .with_application_advancement(&request, |phase| {
+            resolved_account(&phase.test_host_request(), &world, "open", &request)
         })
-        .expect("the fixture entity read owns its host call");
+        .unwrap();
 }
 
 fn bridge_head_commit(
     world: &crate::domain_computation::primary_graph::tests::fixture::AuthorizationWorld,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> worth_runtime_bridge::facade::TruthCommitIdentity {
     world
         .application
@@ -126,6 +134,7 @@ fn bridge_head_commit(
         .relational_bridge_source()
         .load_branch_head_patch(
             &crate::domain_computation::primary_graph::primary_truth_branch_identity(),
+            resource_request,
         )
         .expect("the bridge truth head remains available")
         .commit_identity()

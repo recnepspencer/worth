@@ -104,13 +104,18 @@ impl RelationalBridgeObservationBindings {
             crate::relational_source::identities::parse_bridge_snapshot_identity(identity)?;
         let entries = self.lock_entries();
         let binding = entries.by_snapshot.get(&snapshot_id).ok_or_else(|| {
-            RelationalBridgeSourceError::new(format!(
-                "relational bridge snapshot `{}` has no retained owner-admitted observation",
-                snapshot_id.0
-            ))
+            RelationalBridgeSourceError::new(
+                crate::adapter::RelationalBridgeSourceErrorTag::Binding(
+                    crate::adapter::BridgeSourceBindingDenial::SnapshotNotBound,
+                ),
+                format!(
+                    "relational bridge snapshot `{}` has no retained owner-admitted observation",
+                    snapshot_id.0
+                ),
+            )
         })?;
         if binding.version_id != expected_version_id {
-            return Err(RelationalBridgeSourceError::new(format!(
+            return Err(RelationalBridgeSourceError::new(crate::adapter::RelationalBridgeSourceErrorTag::Binding(crate::adapter::BridgeSourceBindingDenial::SnapshotVersionMismatch), format!(
                 "relational bridge observation `{}` expected version `{}` but retained basis selects version `{}`",
                 snapshot_id.0, expected_version_id.0, binding.version_id.0
             )));
@@ -127,13 +132,18 @@ impl RelationalBridgeObservationBindings {
     ) -> Result<TruthSnapshotIdentity, RelationalBridgeSourceError> {
         let entries = self.lock_entries();
         let snapshot_ids = entries.by_commit.get(&commit_id).ok_or_else(|| {
-            RelationalBridgeSourceError::new(format!(
-                "relational commit `{}` has no retained owner-admitted Bridge observation",
-                commit_id.0
-            ))
+            RelationalBridgeSourceError::new(
+                crate::adapter::RelationalBridgeSourceErrorTag::Binding(
+                    crate::adapter::BridgeSourceBindingDenial::CommitNotBound,
+                ),
+                format!(
+                    "relational commit `{}` has no retained owner-admitted Bridge observation",
+                    commit_id.0
+                ),
+            )
         })?;
         if snapshot_ids.len() != 1 {
-            return Err(RelationalBridgeSourceError::new(format!(
+            return Err(RelationalBridgeSourceError::new(crate::adapter::RelationalBridgeSourceErrorTag::Binding(crate::adapter::BridgeSourceBindingDenial::AmbiguousCommitObservation), format!(
                 "relational commit `{}` has multiple admitted Bridge observations; an exact branch-head binding is required",
                 commit_id.0
             )));
@@ -207,6 +217,9 @@ impl RelationalBridgeObservationLease {
             .is_some_and(|issuer| Arc::ptr_eq(issuer, bindings))
         {
             return Err(RelationalBridgeSourceError::new(
+                crate::adapter::RelationalBridgeSourceErrorTag::Binding(
+                    crate::adapter::BridgeSourceBindingDenial::ForeignRegistrationOwner,
+                ),
                 "retained Bridge observation belongs to another source registration owner",
             ));
         }

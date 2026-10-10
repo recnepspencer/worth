@@ -51,8 +51,9 @@ impl CommittedPatchSource for RetainedRelationalSource {
     fn load_committed_patch(
         &self,
         request: RelationalCommittedPatchRequest,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeCommittedPatchEnvelope, RelationalBridgeSourceError> {
-        self.source.load_committed_patch(request)
+        self.source.load_committed_patch(request, _execution)
     }
 }
 
@@ -60,7 +61,8 @@ impl SnapshotReadSource for RetainedRelationalSource {
     fn open_snapshot(
         &self,
         identity: &TruthSnapshotIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError> {
-        self.source.open_snapshot(identity)
+        self.source.open_snapshot(identity, _execution)
     }
 }

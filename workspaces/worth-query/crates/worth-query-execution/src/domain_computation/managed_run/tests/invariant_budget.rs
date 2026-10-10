@@ -11,6 +11,9 @@ use worth_query_installation::facade::{
 #[test]
 fn state_load_and_validator_share_one_installed_work_budget() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -32,6 +35,7 @@ fn state_load_and_validator_share_one_installed_work_budget() {
             vec![requirement],
             "closed-loop",
             [locator("base")],
+            resource_request,
         )
         .err()
         .expect("one load unit plus one execution unit must exceed a one-unit total budget");

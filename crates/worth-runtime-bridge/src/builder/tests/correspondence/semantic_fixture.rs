@@ -72,6 +72,7 @@ impl crate::facade::CommittedPatchSource for CorrespondenceEnvelopeSource {
     fn load_committed_patch(
         &self,
         _request: crate::facade::RelationalCommittedPatchRequest,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeCommittedPatchEnvelope, crate::facade::RelationalBridgeSourceError> {
         Ok(self.0.clone())
     }

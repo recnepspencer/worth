@@ -38,6 +38,7 @@ impl crate::adapter::CommittedPatchSource for StaticSource {
     fn load_committed_patch(
         &self,
         request: crate::adapter::RelationalCommittedPatchRequest,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
         crate::input::envelope::BridgeCommittedPatchEnvelope,
         crate::adapter::RelationalBridgeSourceError,
@@ -54,7 +55,12 @@ impl crate::adapter::CommittedPatchSource for StaticSource {
                 profile_name_patch_target(),
             )],
         )
-        .map_err(|error| crate::adapter::RelationalBridgeSourceError::new(error.to_string()))
+        .map_err(|error| {
+            crate::adapter::RelationalBridgeSourceError::new(
+                crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                error.to_string(),
+            )
+        })
     }
 }
 
@@ -62,14 +68,15 @@ impl crate::adapter::SnapshotReadSource for StaticSource {
     fn open_snapshot(
         &self,
         identity: &TruthSnapshotIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, crate::adapter::RelationalBridgeSourceError> {
         if crate::truth_identity_fixtures::truth_snapshot_fixture_matches(identity, "snapshot-a") {
             Ok(Box::new(StaticSnapshotReader))
         } else {
-            Err(crate::adapter::RelationalBridgeSourceError::new(format!(
-                "unknown snapshot `{}`",
-                identity.as_str()
-            )))
+            Err(crate::adapter::RelationalBridgeSourceError::new(
+                crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                format!("unknown snapshot `{}`", identity.as_str()),
+            ))
         }
     }
 }
@@ -78,6 +85,7 @@ impl crate::adapter::TruthBranchHeadSource for StaticSource {
     fn load_branch_head_patch(
         &self,
         branch_identity: &TruthBranchIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
         crate::input::envelope::BridgeCommittedPatchEnvelope,
         crate::adapter::RelationalBridgeSourceError,
@@ -94,7 +102,12 @@ impl crate::adapter::TruthBranchHeadSource for StaticSource {
                 profile_name_patch_target(),
             )],
         )
-        .map_err(|error| crate::adapter::RelationalBridgeSourceError::new(error.to_string()))
+        .map_err(|error| {
+            crate::adapter::RelationalBridgeSourceError::new(
+                crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                error.to_string(),
+            )
+        })
     }
 }
 
@@ -149,11 +162,12 @@ impl crate::adapter::CommittedPatchSource for MisbindingSource {
     fn load_committed_patch(
         &self,
         request: crate::adapter::RelationalCommittedPatchRequest,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
         crate::input::envelope::BridgeCommittedPatchEnvelope,
         crate::adapter::RelationalBridgeSourceError,
     > {
-        StaticSource.load_committed_patch(request)
+        StaticSource.load_committed_patch(request, execution)
     }
 }
 
@@ -161,14 +175,15 @@ impl crate::adapter::SnapshotReadSource for MisbindingSource {
     fn open_snapshot(
         &self,
         identity: &TruthSnapshotIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, crate::adapter::RelationalBridgeSourceError> {
         if crate::truth_identity_fixtures::truth_snapshot_fixture_matches(identity, "snapshot-a") {
             Ok(Box::new(MisbindingSnapshotReader))
         } else {
-            Err(crate::adapter::RelationalBridgeSourceError::new(format!(
-                "unknown snapshot `{}`",
-                identity.as_str()
-            )))
+            Err(crate::adapter::RelationalBridgeSourceError::new(
+                crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                format!("unknown snapshot `{}`", identity.as_str()),
+            ))
         }
     }
 }
@@ -177,11 +192,12 @@ impl crate::adapter::TruthBranchHeadSource for MisbindingSource {
     fn load_branch_head_patch(
         &self,
         branch_identity: &TruthBranchIdentity,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
         crate::input::envelope::BridgeCommittedPatchEnvelope,
         crate::adapter::RelationalBridgeSourceError,
     > {
-        StaticSource.load_branch_head_patch(branch_identity)
+        StaticSource.load_branch_head_patch(branch_identity, execution)
     }
 }
 
@@ -192,11 +208,12 @@ impl crate::adapter::CommittedPatchSource for WrongBranchHeadSource {
     fn load_committed_patch(
         &self,
         request: crate::adapter::RelationalCommittedPatchRequest,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
         crate::input::envelope::BridgeCommittedPatchEnvelope,
         crate::adapter::RelationalBridgeSourceError,
     > {
-        StaticSource.load_committed_patch(request)
+        StaticSource.load_committed_patch(request, execution)
     }
 }
 
@@ -204,8 +221,9 @@ impl crate::adapter::SnapshotReadSource for WrongBranchHeadSource {
     fn open_snapshot(
         &self,
         identity: &TruthSnapshotIdentity,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, crate::adapter::RelationalBridgeSourceError> {
-        StaticSource.open_snapshot(identity)
+        StaticSource.open_snapshot(identity, execution)
     }
 }
 
@@ -213,6 +231,7 @@ impl crate::adapter::TruthBranchHeadSource for WrongBranchHeadSource {
     fn load_branch_head_patch(
         &self,
         _branch_identity: &TruthBranchIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
         crate::input::envelope::BridgeCommittedPatchEnvelope,
         crate::adapter::RelationalBridgeSourceError,
@@ -229,7 +248,12 @@ impl crate::adapter::TruthBranchHeadSource for WrongBranchHeadSource {
                 profile_name_patch_target(),
             )],
         )
-        .map_err(|error| crate::adapter::RelationalBridgeSourceError::new(error.to_string()))
+        .map_err(|error| {
+            crate::adapter::RelationalBridgeSourceError::new(
+                crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                error.to_string(),
+            )
+        })
     }
 }
 

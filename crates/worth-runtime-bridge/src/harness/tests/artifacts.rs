@@ -7,6 +7,10 @@ use crate::harness::fixtures::{InMemoryRelationalBridgeSource, RecordingSignalBr
 
 #[test]
 fn bridge_artifact_identities_are_bounded_and_stable_for_identical_patchsets() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let left_source = InMemoryRelationalBridgeSource::default();
     left_source.insert_committed_patch(committed_patch_items(
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
@@ -114,21 +118,27 @@ fn bridge_artifact_identities_are_bounded_and_stable_for_identical_patchsets() {
     );
 
     let left_route = left_runtime
-        .plan_committed_patch(BridgeRouteRequest::for_commit(
-            crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-        ))
+        .plan_committed_patch(
+            BridgeRouteRequest::for_commit(crate::truth_identity_fixtures::truth_commit_fixture(
+                "commit-a",
+            )),
+            execution,
+        )
         .expect("bridge should plan canonical route identity");
     let right_route = right_runtime
-        .plan_committed_patch(BridgeRouteRequest::for_commit(
-            crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-        ))
+        .plan_committed_patch(
+            BridgeRouteRequest::for_commit(crate::truth_identity_fixtures::truth_commit_fixture(
+                "commit-a",
+            )),
+            execution,
+        )
         .expect("bridge should plan canonical route identity");
 
     let left_result = left_runtime
-        .deliver_invalidation(left_route)
+        .deliver_invalidation(left_route, execution)
         .expect("bridge should lower and deliver canonical invalidation artifact");
     let right_result = right_runtime
-        .deliver_invalidation(right_route)
+        .deliver_invalidation(right_route, execution)
         .expect("bridge should lower and deliver canonical invalidation artifact");
 
     assert_eq!(

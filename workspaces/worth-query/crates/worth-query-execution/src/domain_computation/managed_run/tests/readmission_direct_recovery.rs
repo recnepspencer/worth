@@ -4,23 +4,27 @@ use super::yield_fixture::YieldProvider;
 #[test]
 fn provider_restore_panic_remains_typed_recovery_with_retained_authority() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
         let active_request = execution;
 
-        let (yielded, bridge, runtime) =
-            yielded_direct_with_provider(execution, YieldProvider::checkpoint_restore_panic(7));
-        let recovery = {
-            let fixture_phase_result = {
-                let installed_fixture_phase = yielded.fixture_phase(active_request);
-                yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
-            };
-            match fixture_phase_result {
-                crate::domain_computation::WorthQueryDirectReadmissionOutcome::RecoveryRequired(
-                    recovery,
-                ) => recovery,
-                _ => panic!("provider restore panic must not become ordinary denial"),
-            }
+        let (yielded, bridge, runtime) = yielded_direct_with_provider(
+            execution,
+            YieldProvider::checkpoint_restore_panic(7),
+            resource_request,
+        );
+        let recovery = match {
+            let fixture_target = yielded;
+            let installed_fixture_phase = fixture_target.fixture_phase(active_request);
+            fixture_target.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+        } {
+            crate::domain_computation::WorthQueryDirectReadmissionOutcome::RecoveryRequired(
+                recovery,
+            ) => recovery,
+            _ => panic!("provider restore panic must not become ordinary denial"),
         };
         assert_eq!(
         recovery.kind(),
@@ -57,6 +61,9 @@ fn provider_restore_panic_remains_typed_recovery_with_retained_authority() {
 #[test]
 fn provider_restore_rejection_after_admission_carries_exact_release_evidence() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
         let active_request = execution;
@@ -64,18 +71,17 @@ fn provider_restore_rejection_after_admission_carries_exact_release_evidence() {
         let (yielded, bridge, runtime) = yielded_direct_with_provider(
             execution,
             YieldProvider::checkpoint_restore_reject_after_admission(7),
+            resource_request,
         );
-        let recovery = {
-            let fixture_phase_result = {
-                let installed_fixture_phase = yielded.fixture_phase(active_request);
-                yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
-            };
-            match fixture_phase_result {
-                crate::domain_computation::WorthQueryDirectReadmissionOutcome::RecoveryRequired(
-                    recovery,
-                ) => recovery,
-                _ => panic!("post-admission restore rejection became ordinary retryable denial"),
-            }
+        let recovery = match {
+            let fixture_target = yielded;
+            let installed_fixture_phase = fixture_target.fixture_phase(active_request);
+            fixture_target.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+        } {
+            crate::domain_computation::WorthQueryDirectReadmissionOutcome::RecoveryRequired(
+                recovery,
+            ) => recovery,
+            _ => panic!("post-admission restore rejection became ordinary retryable denial"),
         };
         assert_eq!(
         recovery.kind(),
@@ -126,6 +132,9 @@ fn provider_restore_rejection_after_admission_carries_exact_release_evidence() {
 #[test]
 fn restore_panic_and_replacement_destructor_panic_flow_into_terminal_cleanup() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
         let active_request = execution;
@@ -133,18 +142,17 @@ fn restore_panic_and_replacement_destructor_panic_flow_into_terminal_cleanup() {
         let (yielded, bridge, runtime) = yielded_direct_with_provider(
             execution,
             YieldProvider::checkpoint_restore_panic_after_admission(7),
+            resource_request,
         );
-        let recovery = {
-            let fixture_phase_result = {
-                let installed_fixture_phase = yielded.fixture_phase(active_request);
-                yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
-            };
-            match fixture_phase_result {
-                crate::domain_computation::WorthQueryDirectReadmissionOutcome::RecoveryRequired(
-                    recovery,
-                ) => recovery,
-                _ => panic!("double restore failure escaped typed recovery"),
-            }
+        let recovery = match {
+            let fixture_target = yielded;
+            let installed_fixture_phase = fixture_target.fixture_phase(active_request);
+            fixture_target.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+        } {
+            crate::domain_computation::WorthQueryDirectReadmissionOutcome::RecoveryRequired(
+                recovery,
+            ) => recovery,
+            _ => panic!("double restore failure escaped typed recovery"),
         };
         assert_eq!(
         recovery.kind(),

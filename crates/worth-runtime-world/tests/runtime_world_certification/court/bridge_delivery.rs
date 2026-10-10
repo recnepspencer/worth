@@ -50,7 +50,7 @@ fn committed_patch_delivery_changes_the_installed_graph_before_world_sealing() {
         let delivery = bridge
             .bind_signal_graph(&mut graph)
             .unwrap()
-            .deliver_installed_correspondence(&installed, request);
+            .deliver_installed_correspondence(&installed, request, *request_execution);
         let TransitionOutcome::Success(receipt) = delivery else {
             panic!("installed Bridge delivery: {delivery:?}")
         };

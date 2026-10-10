@@ -2,8 +2,14 @@ use super::support::*;
 
 #[test]
 fn acknowledgement_frontier_binds_member_identity_digest_and_prefix() {
-    let (runtime, active) =
-        active_detail_subscription(BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery);
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, active) = active_detail_subscription(
+        BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
+        resource_request,
+    );
     let sealed = sealed_window_with_members(
         &runtime,
         &active,
@@ -30,8 +36,14 @@ fn acknowledgement_frontier_binds_member_identity_digest_and_prefix() {
 
 #[test]
 fn acknowledgement_frontier_rejects_member_from_another_window() {
-    let (runtime, active) =
-        active_detail_subscription(BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery);
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, active) = active_detail_subscription(
+        BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
+        resource_request,
+    );
     let sealed = sealed_window(
         &runtime,
         &active,
@@ -63,8 +75,14 @@ fn acknowledgement_frontier_rejects_member_from_another_window() {
 
 #[test]
 fn checkpoint_publication_binds_active_cost_consumer_and_duplicate_policy() {
-    let (runtime, active) =
-        active_detail_subscription(BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery);
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, active) = active_detail_subscription(
+        BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
+        resource_request,
+    );
     let sealed = sealed_window_with_members(
         &runtime,
         &active,
@@ -106,8 +124,14 @@ fn checkpoint_publication_binds_active_cost_consumer_and_duplicate_policy() {
 
 #[test]
 fn descriptor_only_family_cannot_publish_canonical_checkpoint_frontier() {
-    let (runtime, active) =
-        active_detail_subscription(BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery);
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, active) = active_detail_subscription(
+        BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
+        resource_request,
+    );
     let sealed = sealed_window(
         &runtime,
         &active,

@@ -2,13 +2,19 @@ use super::support::*;
 
 #[test]
 fn pricing_shock_reference_matrix_preserves_semantic_truth_across_diagnostics_profiles() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let baseline = capture_pricing_certification_matrix(
         BridgeRuntimePolicy::development(),
         BridgePreviewSessionIdentity::admit_bridge_owned("pricing:preview-baseline"),
+        resource_request,
     );
     let forensic = capture_pricing_certification_matrix(
         BridgeRuntimePolicy::forensic(),
         BridgePreviewSessionIdentity::admit_bridge_owned("pricing:preview-forensic"),
+        resource_request,
     );
 
     assert_eq!(baseline.reference, forensic.reference);
@@ -17,9 +23,14 @@ fn pricing_shock_reference_matrix_preserves_semantic_truth_across_diagnostics_pr
 
 #[test]
 fn pricing_shock_route_replay_preserves_canonical_main_branch_truth() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let replay = capture_pricing_certification_matrix(
         BridgeRuntimePolicy::development(),
         BridgePreviewSessionIdentity::admit_bridge_owned("pricing:preview-replay-control"),
+        resource_request,
     )
     .replay;
 
@@ -37,15 +48,20 @@ fn pricing_shock_route_replay_preserves_canonical_main_branch_truth() {
 
 #[test]
 fn pricing_shock_duplicate_commit_identity_with_conflicting_route_meaning_is_detectable() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = build_pricing_runtime(
         pricing_reference_source_with_conflicting_commit_identity_for_route(),
         RecordingSignalBridgeSink::default(),
     );
 
     let route = runtime
-        .route(crate::truth_identity_fixtures::truth_commit_fixture(
-            "commit:steel-main",
-        ))
+        .route(
+            crate::truth_identity_fixtures::truth_commit_fixture("commit:steel-main"),
+            execution,
+        )
         .expect("conflicting duplicate commit identity should still route as retained truth");
 
     assert_eq!(
@@ -65,6 +81,10 @@ fn pricing_shock_duplicate_commit_identity_with_conflicting_route_meaning_is_det
 
 #[test]
 fn pricing_shock_duplicate_conflicting_commit_identity_permutation_sweep_is_detectable() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     for (label, source, commit, expected_snapshot, expected_targets) in [
         (
             "steel-commit-rewritten-to-rubber",
@@ -157,7 +177,10 @@ fn pricing_shock_duplicate_conflicting_commit_identity_permutation_sweep_is_dete
     ] {
         let runtime = build_pricing_runtime(source, RecordingSignalBridgeSink::default());
         let route = runtime
-            .route(crate::truth_identity_fixtures::truth_commit_fixture(commit))
+            .route(
+                crate::truth_identity_fixtures::truth_commit_fixture(commit),
+                execution,
+            )
             .unwrap_or_else(|_| panic!("{label} should still route as retained truth"));
 
         assert_eq!(
@@ -199,14 +222,19 @@ fn pricing_shock_duplicate_conflicting_commit_identity_permutation_sweep_is_dete
 
 #[test]
 fn pricing_shock_non_commuting_route_history_attack_fails_closed_on_replay() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let original_runtime = build_pricing_runtime(
         pricing_reference_source(),
         RecordingSignalBridgeSink::default(),
     );
     original_runtime
-        .route(crate::truth_identity_fixtures::truth_commit_fixture(
-            "commit:steel-main",
-        ))
+        .route(
+            crate::truth_identity_fixtures::truth_commit_fixture("commit:steel-main"),
+            execution,
+        )
         .expect("original steel route should succeed before replay attack");
     let canonical_record = original_runtime
         .diagnostics()
@@ -218,7 +246,7 @@ fn pricing_shock_non_commuting_route_history_attack_fails_closed_on_replay() {
         RecordingSignalBridgeSink::default(),
     );
     let error = restarted_runtime
-        .replay_canonical_record(&canonical_record)
+        .replay_canonical_record(&canonical_record, execution)
         .expect_err("replay should reject non-commuting route history drift");
 
     assert!(!error.to_string().is_empty());
@@ -231,6 +259,10 @@ fn pricing_shock_non_commuting_route_history_attack_fails_closed_on_replay() {
 
 #[test]
 fn pricing_shock_non_commuting_route_history_permutation_sweep_fails_closed() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     for (label, clean_commit, mutated_source) in [
         (
             "steel-route-replayed-against-rubber-meaning",
@@ -320,9 +352,10 @@ fn pricing_shock_non_commuting_route_history_permutation_sweep_fails_closed() {
             RecordingSignalBridgeSink::default(),
         );
         original_runtime
-            .route(crate::truth_identity_fixtures::truth_commit_fixture(
-                clean_commit,
-            ))
+            .route(
+                crate::truth_identity_fixtures::truth_commit_fixture(clean_commit),
+                execution,
+            )
             .unwrap_or_else(|_| panic!("{label} should route canonically before replay attack"));
         let canonical_record = original_runtime
             .diagnostics()
@@ -332,7 +365,7 @@ fn pricing_shock_non_commuting_route_history_permutation_sweep_fails_closed() {
         let restarted_runtime =
             build_pricing_runtime(mutated_source, RecordingSignalBridgeSink::default());
         let error = restarted_runtime
-            .replay_canonical_record(&canonical_record)
+            .replay_canonical_record(&canonical_record, execution)
             .err()
             .unwrap_or_else(|| panic!("{label} should fail closed under non-commuting replay"));
 

@@ -4,6 +4,7 @@ use crate::branch::{ProductBranchObservation, ProductBranchReferenceSnapshot};
 /// product reference moved.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NoEffectCause {
+    ExecutionRequest(worth_execution::WorkCeilingDenial),
     StaleExpectedProductHead,
     CancelledBeforeEffect,
     DeadlineBeforeEffect,

@@ -6,24 +6,29 @@ pub(super) fn representative_matrix(
     changed: &QueryCausalInspectionArtifact,
     redacted: &QueryCausalInspectionArtifact,
     denied: &QueryCausalInspectionArtifact,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> CausalInspectionRepresentativeMatrix {
     let suppressed = admitted_artifact_for(
         super::super::causal_truth_commit_identity("commit-query-cert-suppressed"),
         CausalObservationOutcome::Suppressed,
         CausalInspectionReason::SuppressedResult,
+        resource_request,
     );
     let branch_preview = admitted_artifact_for(
         super::super::causal_truth_commit_identity("commit-query-cert-branch-preview"),
         CausalObservationOutcome::BranchPreview,
         CausalInspectionReason::BranchPreviewResult,
+        resource_request,
     );
     let replay = admitted_artifact_for(
         super::super::causal_truth_commit_identity("commit-query-cert-replay"),
         CausalObservationOutcome::Replayed,
         CausalInspectionReason::HistoricalReplayResult,
+        resource_request,
     );
     let lower_runtime_slots = artifact_with_lower_runtime_slot_evidence(
         super::super::causal_truth_commit_identity("commit-query-cert-lower-runtime-slots"),
+        resource_request,
     );
     let missing_signal_invalidation =
         missing_evidence_digest(CausalEvidenceFamily::SignalInvalidation);

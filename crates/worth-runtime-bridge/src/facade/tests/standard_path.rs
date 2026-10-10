@@ -78,15 +78,20 @@ fn standard_builder_aliases_build_runtime() {
 
 #[test]
 fn standard_route_flows_from_commit_string_to_evaluation_target() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::default());
 
     let routed = runtime
-        .route(crate::truth_identity_fixtures::truth_commit_fixture(
-            "commit-std",
-        ))
+        .route(
+            crate::truth_identity_fixtures::truth_commit_fixture("commit-std"),
+            execution,
+        )
         .expect("standard route should succeed");
     let evaluation = runtime
-        .evaluate_current(routed.target())
+        .evaluate_current(routed.target(), execution)
         .expect("evaluation target should prepare current evaluation");
 
     assert!(
@@ -118,6 +123,10 @@ fn standard_route_flows_from_commit_string_to_evaluation_target() {
 
 #[test]
 fn standard_truth_view_evaluation_flows_from_branch_head_request() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::default());
 
     let evaluation = runtime
@@ -125,6 +134,7 @@ fn standard_truth_view_evaluation_flows_from_branch_head_request() {
             crate::facade::BridgeTruthViewEvaluationRequest::for_branch_head(
                 crate::truth_identity_fixtures::truth_branch_fixture("analysis"),
             ),
+            execution,
         )
         .expect("branch-head evaluation should succeed");
 

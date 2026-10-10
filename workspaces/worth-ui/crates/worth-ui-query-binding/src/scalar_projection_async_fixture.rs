@@ -24,6 +24,7 @@ impl CommittedPatchSource for UncontactedTruthSource {
     fn load_committed_patch(
         &self,
         _request: RelationalCommittedPatchRequest,
+        _execution: worth_runtime_bridge::facade::ExecutionRequest<'_, '_>,
     ) -> Result<
         worth_runtime_bridge::facade::BridgeCommittedPatchEnvelope,
         RelationalBridgeSourceError,
@@ -36,6 +37,7 @@ impl SnapshotReadSource for UncontactedTruthSource {
     fn open_snapshot(
         &self,
         _identity: &TruthSnapshotIdentity,
+        _execution: worth_runtime_bridge::facade::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError> {
         panic!("the async lifecycle fixture must not contact snapshot IO")
     }
@@ -83,7 +85,7 @@ pub(crate) fn scalar_async_view(
     request: &AdmittedBridgeAsyncRequestIdentity,
 ) -> runtime::WorthQueryLiveView<runtime::WorthQueryUnrefinedLiveShape> {
     workspace
-        .with_execution_request_mut(|execution, mut workspace| {
+        .with_execution_request_mut(|execution, workspace| {
             workspace
                 .declare_bridge_async_live_view(
                     execution,

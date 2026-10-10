@@ -2,6 +2,10 @@ use super::*;
 
 #[test]
 fn bridge_prepared_delivery_is_equivalent_to_one_shot_delivery() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let left_source = InMemoryRelationalBridgeSource::default();
     left_source.insert_committed_patch(committed_patch(
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
@@ -41,21 +45,28 @@ fn bridge_prepared_delivery_is_equivalent_to_one_shot_delivery() {
     let one_shot = left_runtime
         .deliver_invalidation(
             left_runtime
-                .plan_committed_patch(BridgeRouteRequest::for_commit(
-                    crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-                ))
+                .plan_committed_patch(
+                    BridgeRouteRequest::for_commit(
+                        crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
+                    ),
+                    execution,
+                )
                 .expect("one-shot route should plan"),
+            execution,
         )
         .expect("one-shot delivery should succeed");
     let prepared = right_runtime.prepare_delivery(
         right_runtime
-            .plan_committed_patch(BridgeRouteRequest::for_commit(
-                crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-            ))
+            .plan_committed_patch(
+                BridgeRouteRequest::for_commit(
+                    crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
+                ),
+                execution,
+            )
             .expect("prepared route should plan"),
     );
     let staged = right_runtime
-        .deliver_prepared(prepared)
+        .deliver_prepared(prepared, execution)
         .expect("prepared delivery should succeed");
 
     assert_eq!(
@@ -75,6 +86,10 @@ fn bridge_prepared_delivery_is_equivalent_to_one_shot_delivery() {
 
 #[test]
 fn bridge_empty_mapping_context_is_equivalent_to_default_planning_path() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let left_source = InMemoryRelationalBridgeSource::default();
     left_source.insert_committed_patch(committed_patch(
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
@@ -112,9 +127,12 @@ fn bridge_empty_mapping_context_is_equivalent_to_default_planning_path() {
     );
 
     let default_route = left_runtime
-        .plan_committed_patch(BridgeRouteRequest::for_commit(
-            crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-        ))
+        .plan_committed_patch(
+            BridgeRouteRequest::for_commit(crate::truth_identity_fixtures::truth_commit_fixture(
+                "commit-a",
+            )),
+            execution,
+        )
         .expect("default planning should succeed");
     let explicit_route = right_runtime
         .plan_committed_patch_with_mapping_context(
@@ -122,6 +140,7 @@ fn bridge_empty_mapping_context_is_equivalent_to_default_planning_path() {
                 "commit-a",
             )),
             BridgeMappingContext::empty(),
+            execution,
         )
         .expect("explicit empty mapping context planning should succeed");
 
@@ -147,6 +166,10 @@ fn bridge_empty_mapping_context_is_equivalent_to_default_planning_path() {
 
 #[test]
 fn bridge_route_identity_is_stable_across_equivalent_native_field_constructors() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let left_source = InMemoryRelationalBridgeSource::default();
     left_source.insert_committed_patch(committed_patch(
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
@@ -188,14 +211,20 @@ fn bridge_route_identity_is_stable_across_equivalent_native_field_constructors()
     );
 
     let left_route = left_runtime
-        .plan_committed_patch(BridgeRouteRequest::for_commit(
-            crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-        ))
+        .plan_committed_patch(
+            BridgeRouteRequest::for_commit(crate::truth_identity_fixtures::truth_commit_fixture(
+                "commit-a",
+            )),
+            execution,
+        )
         .expect("unprefixed field route should plan");
     let right_route = right_runtime
-        .plan_committed_patch(BridgeRouteRequest::for_commit(
-            crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-        ))
+        .plan_committed_patch(
+            BridgeRouteRequest::for_commit(crate::truth_identity_fixtures::truth_commit_fixture(
+                "commit-a",
+            )),
+            execution,
+        )
         .expect("explicit native field route should plan");
 
     assert_eq!(left_route.route_identity(), right_route.route_identity());

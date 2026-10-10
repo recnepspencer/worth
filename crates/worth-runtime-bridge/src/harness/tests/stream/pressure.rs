@@ -5,6 +5,10 @@ use super::super::support::{build_runtime, committed_patch, registration, snapsh
 
 #[test]
 fn bridge_stream_checkpoint_fracture_equivalence_fails_explicitly_for_stale_anchor() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
@@ -57,9 +61,12 @@ fn bridge_stream_checkpoint_fracture_equivalence_fails_explicitly_for_stale_anch
         .plan_change_stream_window(
             &contract,
             vec![runtime
-                .ingest_committed_patch(crate::facade::BridgeRouteRequest::for_commit(
-                    crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-                ))
+                .ingest_committed_patch(
+                    crate::facade::BridgeRouteRequest::for_commit(
+                        crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
+                    ),
+                    execution,
+                )
                 .expect("first envelope should ingest")],
         )
         .expect("first window should plan");
@@ -72,9 +79,12 @@ fn bridge_stream_checkpoint_fracture_equivalence_fails_explicitly_for_stale_anch
         .plan_change_stream_window(
             &contract,
             vec![runtime
-                .ingest_committed_patch(crate::facade::BridgeRouteRequest::for_commit(
-                    crate::truth_identity_fixtures::truth_commit_fixture("commit-b"),
-                ))
+                .ingest_committed_patch(
+                    crate::facade::BridgeRouteRequest::for_commit(
+                        crate::truth_identity_fixtures::truth_commit_fixture("commit-b"),
+                    ),
+                    execution,
+                )
                 .expect("second envelope should ingest")],
         )
         .expect("second window should plan");
@@ -88,9 +98,12 @@ fn bridge_stream_checkpoint_fracture_equivalence_fails_explicitly_for_stale_anch
         .resume_stream_window_from_checkpoint(
             &contract,
             vec![runtime
-                .ingest_committed_patch(crate::facade::BridgeRouteRequest::for_commit(
-                    crate::truth_identity_fixtures::truth_commit_fixture("commit-b"),
-                ))
+                .ingest_committed_patch(
+                    crate::facade::BridgeRouteRequest::for_commit(
+                        crate::truth_identity_fixtures::truth_commit_fixture("commit-b"),
+                    ),
+                    execution,
+                )
                 .expect("second envelope should ingest")],
             first_checkpoint.checkpoint_token_identity(),
         )
@@ -104,6 +117,10 @@ fn bridge_stream_checkpoint_fracture_equivalence_fails_explicitly_for_stale_anch
 
 #[test]
 fn bridge_stream_backpressure_changes_pacing_class_without_changing_member_truth() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
@@ -149,9 +166,12 @@ fn bridge_stream_backpressure_changes_pacing_class_without_changing_member_truth
         .plan_change_stream_window(
             &contract,
             vec![runtime
-                .ingest_committed_patch(crate::facade::BridgeRouteRequest::for_commit(
-                    crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-                ))
+                .ingest_committed_patch(
+                    crate::facade::BridgeRouteRequest::for_commit(
+                        crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
+                    ),
+                    execution,
+                )
                 .expect("first envelope should ingest")],
         )
         .expect("single window should plan");
@@ -160,14 +180,20 @@ fn bridge_stream_backpressure_changes_pacing_class_without_changing_member_truth
             &contract,
             vec![
                 runtime
-                    .ingest_committed_patch(crate::facade::BridgeRouteRequest::for_commit(
-                        crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-                    ))
+                    .ingest_committed_patch(
+                        crate::facade::BridgeRouteRequest::for_commit(
+                            crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
+                        ),
+                        execution,
+                    )
                     .expect("first envelope should ingest"),
                 runtime
-                    .ingest_committed_patch(crate::facade::BridgeRouteRequest::for_commit(
-                        crate::truth_identity_fixtures::truth_commit_fixture("commit-b"),
-                    ))
+                    .ingest_committed_patch(
+                        crate::facade::BridgeRouteRequest::for_commit(
+                            crate::truth_identity_fixtures::truth_commit_fixture("commit-b"),
+                        ),
+                        execution,
+                    )
                     .expect("second envelope should ingest"),
             ],
         )

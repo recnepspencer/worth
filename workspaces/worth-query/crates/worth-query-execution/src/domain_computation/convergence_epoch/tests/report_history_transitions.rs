@@ -12,6 +12,9 @@ use crate::domain_computation::{
 #[test]
 fn prepared_replace_commit_installs_one_exact_candidate() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -20,6 +23,7 @@ fn prepared_replace_commit_installs_one_exact_candidate() {
             FixtureDisposition::Converged,
             FixtureConvergenceContract::Bounded,
             1,
+            resource_request,
         );
         assert_eq!(replace.incumbents().len(), 1);
         assert_report_link(replace.incumbents(), &replace);
@@ -33,6 +37,9 @@ fn prepared_replace_commit_installs_one_exact_candidate() {
 #[test]
 fn prepared_retain_commit_keeps_the_exact_prior_incumbent() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -41,6 +48,7 @@ fn prepared_retain_commit_keeps_the_exact_prior_incumbent() {
             FixtureDisposition::HistoryRetain,
             FixtureConvergenceContract::Bounded,
             2,
+            resource_request,
         );
         let retained_before = &retain_observations[1].incumbents()[0];
         assert_eq!(retain.incumbents().len(), 1);
@@ -69,6 +77,9 @@ fn prepared_retain_commit_keeps_the_exact_prior_incumbent() {
 #[test]
 fn prepared_add_commit_preserves_prior_candidates() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -77,6 +88,7 @@ fn prepared_add_commit_preserves_prior_candidates() {
             FixtureDisposition::ParetoCollision,
             FixtureConvergenceContract::Pareto,
             2,
+            resource_request,
         );
         assert_eq!(add.incumbents().len(), 2);
         assert_report_link(add.incumbents(), &add);
@@ -88,6 +100,9 @@ fn prepared_add_commit_preserves_prior_candidates() {
 #[test]
 fn prepared_remove_and_add_commit_removes_only_the_named_candidate() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -96,6 +111,7 @@ fn prepared_remove_and_add_commit_removes_only_the_named_candidate() {
             FixtureDisposition::ParetoPartialReplacement,
             FixtureConvergenceContract::Pareto,
             3,
+            resource_request,
         );
         let before_removal = remove_observations[2].incumbents();
         assert_eq!(before_removal.len(), 2);
@@ -117,6 +133,9 @@ fn prepared_remove_and_add_commit_removes_only_the_named_candidate() {
 #[test]
 fn prepared_clear_commit_empties_incumbents_but_installs_the_report() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -125,6 +144,7 @@ fn prepared_clear_commit_empties_incumbents_but_installs_the_report() {
             FixtureDisposition::HistoryClear,
             FixtureConvergenceContract::Bounded,
             2,
+            resource_request,
         );
         assert_eq!(clear_observations[1].incumbents().len(), 1);
         assert!(clear.incumbents().is_empty());
@@ -141,12 +161,16 @@ fn run_history(
     disposition: FixtureDisposition,
     contract: FixtureConvergenceContract,
     iteration_count: usize,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     WorthQueryDirectConvergenceTerminal<WorthQueryConverged>,
     Vec<FixtureReportHistoryObservation>,
 ) {
-    let (fixture, probe) =
-        direct_admission_fixture_with_contract_and_report_history_probe(disposition, contract);
+    let (fixture, probe) = direct_admission_fixture_with_contract_and_report_history_probe(
+        disposition,
+        contract,
+        resource_request,
+    );
     let mut epoch = fixture.admit();
     for ordinal in 1..=iteration_count {
         let outcome = advance(execution, epoch, &format!("report-history-{ordinal}"));

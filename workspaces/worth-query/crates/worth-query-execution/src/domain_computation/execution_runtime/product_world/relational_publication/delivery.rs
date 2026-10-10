@@ -80,7 +80,7 @@ impl WorthQueryProductSharedRoot {
             Some(bridge) => bridge,
             None => {
                 return Err(Denial::new(
-                    Kind::Bridge,
+                    Kind::BridgeRuntimeClosed,
                     "the sealed Bridge runtime is no longer live",
                     change,
                 ));
@@ -92,7 +92,13 @@ impl WorthQueryProductSharedRoot {
         let signal_basis =
             match bridge.admit_conditional_signal_basis(lowering, change.signal_basis()) {
                 Ok(signal_basis) => signal_basis,
-                Err(denial) => return Err(Denial::new(Kind::Bridge, denial.detail(), change)),
+                Err(denial) => {
+                    return Err(Denial::new(
+                        Kind::Bridge(denial.kind()),
+                        denial.detail(),
+                        change,
+                    ))
+                }
             };
         let patch = change.patch();
         let outcome = match bridge.deliver_authoritative_change(
@@ -103,7 +109,11 @@ impl WorthQueryProductSharedRoot {
         ) {
             Ok(outcome) => outcome,
             Err(denial) => {
-                return Err(Denial::new(Kind::Bridge, denial.detail(), change));
+                return Err(Denial::new(
+                    Kind::Bridge(denial.kind()),
+                    denial.detail(),
+                    change,
+                ));
             }
         };
         Ok(preserve_delivery_authority(outcome, change))

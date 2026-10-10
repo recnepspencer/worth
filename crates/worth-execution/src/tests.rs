@@ -34,6 +34,7 @@ mod memory_level;
 mod nesting;
 mod owned_map;
 mod prepared_map;
+mod request_consultation;
 
 fn authority() -> &'static ExecutionAuthority {
     AUTHORITY.get_or_init(|| {

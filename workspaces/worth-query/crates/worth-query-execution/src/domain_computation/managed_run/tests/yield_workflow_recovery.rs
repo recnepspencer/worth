@@ -4,6 +4,9 @@ use super::*;
 #[test]
 fn failed_workflow_yield_reports_pending_artifacts_and_preserves_retry_authority() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -11,6 +14,7 @@ fn failed_workflow_yield_reports_pending_artifacts_and_preserves_retry_authority
         let world = terminalized_recovery_world(
             "workflow-yield-recovery-artifact-graph",
             RecoveryArtifactResource(Arc::clone(&disposals)),
+            resource_request,
         );
         let TerminalizedRecoveryWorld {
             running,
@@ -86,6 +90,9 @@ fn failed_workflow_yield_reports_pending_artifacts_and_preserves_retry_authority
 #[test]
 fn terminalized_workflow_yield_types_double_artifact_release_panic_as_recovery() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -97,6 +104,7 @@ fn terminalized_workflow_yield_types_double_artifact_release_panic_as_recovery()
                 disposal_attempts: Arc::clone(&disposal_attempts),
                 destructor_attempts: Arc::clone(&destructor_attempts),
             },
+            resource_request,
         );
         let TerminalizedRecoveryWorld {
             running,
@@ -158,7 +166,11 @@ struct TerminalizedRecoveryWorld {
     handle: crate::domain_computation::WorthQueryMoveOnlyArtifactHandle,
 }
 
-fn terminalized_recovery_world<R>(label: &str, resource: R) -> TerminalizedRecoveryWorld
+fn terminalized_recovery_world<R>(
+    label: &str,
+    resource: R,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
+) -> TerminalizedRecoveryWorld
 where
     R: WorthQueryArtifactProviderResource,
 {
@@ -198,8 +210,12 @@ where
         WorthQueryOperationGraphAccess::Observe,
         output,
     );
-    let running =
-        super::workflow_provider_steps::admitted_workflow(&runtime, &operation, resources);
+    let running = super::workflow_provider_steps::admitted_workflow(
+        &runtime,
+        &operation,
+        resources,
+        resource_request,
+    );
     let production = running
         .artifacts()
         .production_authority("producer")

@@ -29,6 +29,7 @@ pub(super) fn cleanup(running: WorthQueryRunningDirectRun) {
 pub(super) fn managed_decision_graph_run_with_provider<P>(
     provider: P,
     families: Vec<worth_query_installation::facade::WorthQueryDecisionFactFamily>,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     WorthQueryRunningDirectRun,
     WorthQueryInstalledGraphParticipationAuthority,
@@ -80,7 +81,7 @@ where
     let lower = causal_fixture::managed_admission_context();
     let running = runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
-        .admit_direct(&operation, attempt, lower.read_request())
+        .admit_direct(&operation, attempt, lower.read_request(), resource_request)
         .expect("decision-capable managed run should admit")
         .start();
     (running, graph)
@@ -89,6 +90,7 @@ where
 pub(super) fn managed_provisional_graph_run_with_provider<P>(
     provider: P,
     families: Vec<worth_query_installation::facade::WorthQueryDecisionFactFamily>,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     WorthQueryRunningDirectRun,
     WorthQueryInstalledGraphParticipationAuthority,
@@ -136,7 +138,7 @@ where
     let lower = causal_fixture::managed_admission_context();
     let running = runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
-        .admit_direct(&operation, attempt, lower.read_request())
+        .admit_direct(&operation, attempt, lower.read_request(), resource_request)
         .expect("provisional-capable managed run should admit")
         .start();
     (running, graph)
@@ -148,6 +150,7 @@ pub(super) fn managed_invariant_graph_run_with_provider<P>(
     invariants: Vec<
         worth_query_installation::facade::WorthQueryInstalledInvariantExecutionRequirement,
     >,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     WorthQueryRunningDirectRun,
     WorthQueryInstalledGraphParticipationAuthority,
@@ -197,7 +200,7 @@ where
     let lower = causal_fixture::managed_admission_context();
     let running = runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
-        .admit_direct(&operation, attempt, lower.read_request())
+        .admit_direct(&operation, attempt, lower.read_request(), resource_request)
         .expect("invariant-capable managed run should admit")
         .start();
     (running, graph)

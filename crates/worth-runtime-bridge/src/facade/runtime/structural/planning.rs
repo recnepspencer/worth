@@ -26,12 +26,17 @@ impl RuntimeBridge {
         contract: &AdmittedStructuralComparisonContract,
         target_read_packet: SnapshotReadPacket,
         candidate_read_packets: Vec<SnapshotReadPacket>,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<PlannedStructuralMatchPacketSet, BridgeDeliveryError> {
-        let target = self.materialize_structural_fingerprint(contract, target_read_packet)?;
+        let target =
+            self.materialize_structural_fingerprint(contract, target_read_packet, execution)?;
         let mut candidate_fingerprints = Vec::with_capacity(candidate_read_packets.len());
         for read_packet in candidate_read_packets {
-            candidate_fingerprints
-                .push(self.materialize_structural_fingerprint(contract, read_packet)?);
+            candidate_fingerprints.push(self.materialize_structural_fingerprint(
+                contract,
+                read_packet,
+                execution,
+            )?);
         }
 
         self.plan_structural_match_packet_set(
@@ -60,8 +65,9 @@ impl RuntimeBridge {
     ///     bridge: &RuntimeBridge,
     ///     contract: &AdmittedStructuralComparisonContract,
     ///     packet: SnapshotReadPacket,
+    ///     execution: worth_execution::ExecutionRequest<'_, '_>,
     /// ) -> Result<(), Box<dyn std::error::Error>> {
-    ///     let planned = bridge.plan_structural_branch_comparison_from_read_packet(contract, packet)?;
+    ///     let planned = bridge.plan_structural_branch_comparison_from_read_packet(contract, packet, execution)?;
     ///     let reduced = bridge.reduce_structural_match_set(&planned)?;
     ///     let _artifact = bridge.publish_branch_comparison_artifact(&reduced)?;
     ///     Ok(())
@@ -71,9 +77,10 @@ impl RuntimeBridge {
         &self,
         contract: &AdmittedStructuralComparisonContract,
         read_packet: SnapshotReadPacket,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<PlannedStructuralMatchPacketSet, BridgeDeliveryError> {
         let (left, right) =
-            self.materialize_structural_branch_fingerprints(contract, read_packet)?;
+            self.materialize_structural_branch_fingerprints(contract, read_packet, execution)?;
         self.plan_structural_match_packet_set(contract, classify_branch_comparison(&left, &right))
             .map(|planned| {
                 PlannedStructuralMatchPacketSet::new(

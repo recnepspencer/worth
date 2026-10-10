@@ -3,8 +3,14 @@ use crate::facade::BridgeSubscriptionSourceArtifactRole as SourceArtifactRole;
 
 #[test]
 fn certification_comparison_reports_unexpected_rejection_boundary() {
-    let (runtime, _active) =
-        active_detail_subscription(BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery);
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, _active) = active_detail_subscription(
+        BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
+        resource_request,
+    );
     let mut left_inputs =
         active_source_inputs(SourceArtifactRole::Stable, SourceArtifactRole::Stable);
     left_inputs.push(source_artifact(
@@ -44,8 +50,14 @@ fn certification_comparison_reports_unexpected_rejection_boundary() {
 
 #[test]
 fn certification_comparison_detects_counter_contract_drift() {
-    let (runtime, _active) =
-        active_detail_subscription(BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery);
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, _active) = active_detail_subscription(
+        BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
+        resource_request,
+    );
     let inputs = active_source_inputs(SourceArtifactRole::Stable, SourceArtifactRole::Stable);
     let mut duplicate_scan_inputs = inputs.clone();
     duplicate_scan_inputs.push(source_artifact(

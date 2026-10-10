@@ -15,13 +15,18 @@ use worth_signal::facade::{ResourceCancellationReason, ResourceInFlightStatus};
 
 #[test]
 fn bridge_mints_and_fulfills_fresh_signal_attempt_for_exact_managed_intent() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
     let basis = runtime
         .admit_managed_execution_basis(
             managed_intent("attempt-a"),
             step_contract(),
             truth_basis("snapshot-a"),
-            planned_truth_view(&runtime),
+            planned_truth_view(&runtime, execution),
+            execution,
         )
         .expect("matching managed intent and truth should admit");
     let handle = basis.request().request_handle();
@@ -54,6 +59,10 @@ fn bridge_mints_and_fulfills_fresh_signal_attempt_for_exact_managed_intent() {
 
 #[test]
 fn one_phase_five_attempt_cannot_own_two_live_bridge_attempts() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
     let intent = managed_intent("attempt-a");
     let first = runtime
@@ -61,7 +70,8 @@ fn one_phase_five_attempt_cannot_own_two_live_bridge_attempts() {
             intent.clone(),
             step_contract(),
             truth_basis("snapshot-a"),
-            planned_truth_view(&runtime),
+            planned_truth_view(&runtime, execution),
+            execution,
         )
         .expect("first managed execution basis should reserve the intent");
     let first_handle = first.request().request_handle();
@@ -71,7 +81,8 @@ fn one_phase_five_attempt_cannot_own_two_live_bridge_attempts() {
             intent.clone(),
             step_contract(),
             truth_basis("snapshot-a"),
-            planned_truth_view(&runtime),
+            planned_truth_view(&runtime, execution),
+            execution,
         )
         .expect_err("second Signal attempt shared one Phase 5 intent");
     assert_eq!(
@@ -91,7 +102,8 @@ fn one_phase_five_attempt_cannot_own_two_live_bridge_attempts() {
             intent,
             step_contract(),
             truth_basis("snapshot-a"),
-            planned_truth_view(&runtime),
+            planned_truth_view(&runtime, execution),
+            execution,
         )
         .expect("dropping the first authority should cancel Signal and release intent");
     replacement
@@ -101,13 +113,18 @@ fn one_phase_five_attempt_cannot_own_two_live_bridge_attempts() {
 
 #[test]
 fn independently_valid_phase_five_intents_receive_distinct_signal_attempts() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
     let first = runtime
         .admit_managed_execution_basis(
             managed_intent("attempt-a"),
             step_contract(),
             truth_basis("snapshot-a"),
-            planned_truth_view(&runtime),
+            planned_truth_view(&runtime, execution),
+            execution,
         )
         .expect("first intent should admit");
     let second = runtime
@@ -115,7 +132,8 @@ fn independently_valid_phase_five_intents_receive_distinct_signal_attempts() {
             managed_intent("attempt-b"),
             step_contract(),
             truth_basis("snapshot-a"),
-            planned_truth_view(&runtime),
+            planned_truth_view(&runtime, execution),
+            execution,
         )
         .expect("different intent should admit independently");
 
@@ -148,13 +166,18 @@ fn independently_valid_phase_five_intents_receive_distinct_signal_attempts() {
 
 #[test]
 fn mismatched_truth_denies_before_materialization_or_signal_admission() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
     let denial = runtime
         .admit_managed_execution_basis(
             managed_intent("attempt-a"),
             step_contract(),
             truth_basis("snapshot-b"),
-            planned_truth_view(&runtime),
+            planned_truth_view(&runtime, execution),
+            execution,
         )
         .expect_err("mismatched truth basis admitted");
 
@@ -171,6 +194,10 @@ fn mismatched_truth_denies_before_materialization_or_signal_admission() {
 
 #[test]
 fn explicit_cancellation_terminalizes_signal_and_releases_intent() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
     let intent = managed_intent("attempt-a");
     let basis = runtime
@@ -178,7 +205,8 @@ fn explicit_cancellation_terminalizes_signal_and_releases_intent() {
             intent.clone(),
             step_contract(),
             truth_basis("snapshot-a"),
-            planned_truth_view(&runtime),
+            planned_truth_view(&runtime, execution),
+            execution,
         )
         .expect("managed execution should admit");
     let handle = basis.request().request_handle();
@@ -200,7 +228,8 @@ fn explicit_cancellation_terminalizes_signal_and_releases_intent() {
             intent,
             step_contract(),
             truth_basis("snapshot-a"),
-            planned_truth_view(&runtime),
+            planned_truth_view(&runtime, execution),
+            execution,
         )
         .expect("finalization should release the exact intent reservation");
     drop(replacement);
@@ -208,13 +237,18 @@ fn explicit_cancellation_terminalizes_signal_and_releases_intent() {
 
 #[test]
 fn thread_affinity_failure_returns_the_basis_for_recovery() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
     let basis = runtime
         .admit_managed_execution_basis(
             managed_intent("attempt-a"),
             step_contract(),
             truth_basis("snapshot-a"),
-            planned_truth_view(&runtime),
+            planned_truth_view(&runtime, execution),
+            execution,
         )
         .expect("managed execution should admit on the owner thread");
 
@@ -269,7 +303,10 @@ fn signal_status(
     .expect("test runtime should stay on one thread")
 }
 
-fn planned_truth_view(runtime: &RuntimeBridge) -> PlannedTruthViewPacket {
+fn planned_truth_view(
+    runtime: &RuntimeBridge,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
+) -> PlannedTruthViewPacket {
     let declaration = HistoricalEvaluationDeclaration::new(
         BridgeTruthViewSelector::branch_snapshot(
             truth_branch_fixture("analysis"),
@@ -280,7 +317,7 @@ fn planned_truth_view(runtime: &RuntimeBridge) -> PlannedTruthViewPacket {
         BridgeDeliveryIntent::PrepareSignalEvaluation,
     );
     runtime
-        .plan_truth_view_packet(declaration, SnapshotReadPacket::new(vec![]))
+        .plan_truth_view_packet(declaration, SnapshotReadPacket::new(vec![]), execution)
         .expect("registered truth view should plan")
 }
 

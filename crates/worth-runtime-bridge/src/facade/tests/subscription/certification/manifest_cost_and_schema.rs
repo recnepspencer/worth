@@ -94,8 +94,14 @@ fn reference_workload_manifest_rejects_empty_declared_workload_ids() {
 
 #[test]
 fn certification_source_index_is_canonical_and_scan_bounded() {
-    let (runtime, _active) =
-        active_detail_subscription(BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery);
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, _active) = active_detail_subscription(
+        BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
+        resource_request,
+    );
     let inputs = vec![
         source_artifact(
             crate::facade::BridgeSubscriptionSourceArtifactKind::ActiveDelivery,

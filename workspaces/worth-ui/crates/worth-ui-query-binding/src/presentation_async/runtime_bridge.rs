@@ -84,7 +84,7 @@ impl WorthUiPresentationRuntimeAdmission {
         };
         let effects_indeterminate_issuer = request_admission.effects_indeterminate_issuer();
         let view = match workspace
-            .with_execution_request_mut(|execution, mut workspace| {
+            .with_execution_request_mut(|execution, workspace| {
                 workspace.declare_bridge_async_live_view_with_typed_identity(
                     execution,
                     presentation_view_name(&declaration),

@@ -106,15 +106,21 @@ fn truth_basis_drift_changes_request_response_identity() {
 
 #[test]
 fn equivalent_subscription_backed_requests_require_and_preserve_subscription_instance_identity() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let first_runtime = runtime(BridgeRuntimePolicy::development());
     let second_runtime = runtime(BridgeRuntimePolicy::development());
     let first_ready = activation_ready_for_snapshot(
         &first_runtime,
         crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
+        resource_request,
     );
     let second_ready = activation_ready_for_snapshot(
         &second_runtime,
         crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
+        resource_request,
     );
     let first = admit_subscription_backed_identity(
         &first_runtime,
@@ -156,14 +162,20 @@ fn equivalent_subscription_backed_requests_require_and_preserve_subscription_ins
 
 #[test]
 fn subscription_instance_drift_changes_subscription_backed_identity() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
     let first_ready = activation_ready_for_snapshot(
         &runtime,
         crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
+        resource_request,
     );
     let second_ready = activation_ready_for_branch_head(
         &runtime,
         crate::truth_identity_fixtures::truth_branch_fixture("main"),
+        resource_request,
     );
     let first = admit_subscription_backed_identity(
         &runtime,
@@ -203,11 +215,16 @@ fn subscription_instance_drift_changes_subscription_backed_identity() {
 
 #[test]
 fn preview_truth_basis_must_match_preview_subscription_instance() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
-    let preview_active = preview_active_subscription(&runtime, "phase6-preview");
+    let preview_active = preview_active_subscription(&runtime, "phase6-preview", resource_request);
     let authoritative_ready = activation_ready_for_snapshot(
         &runtime,
         crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
+        resource_request,
     );
     let rejection = admit_subscription_backed_identity(
         &runtime,

@@ -59,7 +59,7 @@ fn declared_checked_result_heap_is_enforced_before_publication() {
                 calls.fetch_add(1, Ordering::SeqCst);
                 Ok(result())
             },
-            &lease,
+            worth_execution::ExecutionRequest::leased(&lease),
         );
         assert_eq!(calls.load(Ordering::SeqCst), 1);
         if maximum == 0 {

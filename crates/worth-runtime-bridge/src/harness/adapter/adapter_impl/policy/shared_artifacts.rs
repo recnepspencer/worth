@@ -173,6 +173,7 @@ pub(super) fn first_commit_routing_digest(
     runtime_bridge: &crate::facade::RuntimeBridge,
     fixture: &BridgeHarnessFixture,
     route_policy: &crate::facade::BridgeRoutePlanningPolicy,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<Option<String>, BridgeHarnessError> {
     fixture
         .committed_patches()
@@ -186,12 +187,14 @@ pub(super) fn first_commit_routing_digest(
                                 patch.commit_identity().clone(),
                             ),
                             route_policy,
+                            execution,
                         )
                         .map_err(|error| {
                             BridgeHarnessError::new(format!(
                                 "policy certification route planning failed: {error}"
                             ))
                         })?,
+                    execution,
                 )
                 .map_err(|error| {
                     BridgeHarnessError::new(format!(

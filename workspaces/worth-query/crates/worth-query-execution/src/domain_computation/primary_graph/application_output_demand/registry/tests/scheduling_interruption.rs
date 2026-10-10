@@ -1,4 +1,5 @@
 //! Scheduling interruption preserves registry custody, not output currentness.
+mod bridge_deferral;
 use super::super::{
     DemandAdmissionKind, OutputRefreshPredecessor, PreparedReadyBacking,
     WorthQueryAcceptedOutputAuthority, WorthQueryCompletedOutputDemand,
@@ -89,7 +90,7 @@ fn both_scheduling_finishes_preserve_claims_and_custody_on_interruption() {
                 let fixture = Fixture::new(reopened);
                 let before = fixture.custody();
                 assert!(before.0 > 0 && before.1 > 0 && before.2 > 0 && before.3 > 0);
-                let denial = finish.stop(&fixture, kind);
+                let denial = finish.stop(&fixture, kind.clone());
                 assert_eq!(denial.kind(), kind);
                 assert_eq!(
                     denial.recovery_posture(),
@@ -259,7 +260,7 @@ fn a_new_key_stays_claimable_after_a_caller_resource_stop() {
         let kind = WorthQueryOutputDemandDenialKind::ExecutionRequest(Advance::Resource(
             Resource::WorkExhausted,
         ));
-        let denial = finish.stop(&fixture, kind);
+        let denial = finish.stop(&fixture, kind.clone());
         assert_eq!(denial.kind(), kind);
         assert_eq!(denial.recovery_posture(), Posture::Retryable);
         assert_eq!(fixture.custody(), before);

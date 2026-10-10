@@ -1,5 +1,9 @@
 #[test]
 fn bridge_bulk_packet_set_tracks_continuity_remap_packets() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
@@ -30,20 +34,23 @@ fn bridge_bulk_packet_set_tracks_continuity_remap_packets() {
     ));
 
     let planned = runtime
-        .plan_bulk_workload(BridgeBulkWorkloadRequest::new(vec![
-            BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(
-                crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-            ))
-            .with_mapping_context(
-                BridgeMappingContext::default().with_lineage_context(lineage_context.clone()),
-            ),
-            BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(
-                crate::truth_identity_fixtures::truth_commit_fixture("commit-b"),
-            ))
-            .with_mapping_context(
-                BridgeMappingContext::default().with_lineage_context(lineage_context),
-            ),
-        ]))
+        .plan_bulk_workload(
+            BridgeBulkWorkloadRequest::new(vec![
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(
+                    crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
+                ))
+                .with_mapping_context(
+                    BridgeMappingContext::default().with_lineage_context(lineage_context.clone()),
+                ),
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(
+                    crate::truth_identity_fixtures::truth_commit_fixture("commit-b"),
+                ))
+                .with_mapping_context(
+                    BridgeMappingContext::default().with_lineage_context(lineage_context),
+                ),
+            ]),
+            execution,
+        )
         .expect("continuity-bearing bulk workload should plan");
 
     assert_eq!(planned.packet_set().continuity_packets().len(), 2);
@@ -98,6 +105,10 @@ fn bridge_bulk_packet_set_tracks_continuity_remap_packets() {
 
 #[test]
 fn bridge_bulk_reduction_artifact_carries_continuity_remaps() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let left_source = InMemoryRelationalBridgeSource::default();
     left_source.insert_committed_patch(committed_patch(
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
@@ -145,10 +156,10 @@ fn bridge_bulk_reduction_artifact_carries_continuity_remaps() {
     .with_mapping_context(BridgeMappingContext::default().with_lineage_context(lineage_context))]);
 
     let left = left_runtime
-        .plan_bulk_workload(request.clone())
+        .plan_bulk_workload(request.clone(), execution)
         .expect("left continuity-bearing workload should plan");
     let right = right_runtime
-        .plan_bulk_workload(request)
+        .plan_bulk_workload(request, execution)
         .expect("right continuity-bearing workload should plan");
 
     assert_eq!(

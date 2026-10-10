@@ -128,6 +128,7 @@ pub enum BankApplicationLiveOpenDenialKind {
     ScopeIdentityUnavailable,
     BasisReleaseFailed,
     ProviderVersionUnavailable,
+    ForeignAdvancementPhase,
     BridgeBasisRejected,
 }
 
@@ -245,6 +246,7 @@ pub(super) const fn live(kind: QueryLive) -> BankApplicationLiveOpenDenialKind {
         QueryLive::ScopeIdentityUnavailable => Bank::ScopeIdentityUnavailable,
         QueryLive::BasisReleaseFailed => Bank::BasisReleaseFailed,
         QueryLive::ProviderVersionUnavailable => Bank::ProviderVersionUnavailable,
+        QueryLive::ForeignAdvancementPhase => Bank::ForeignAdvancementPhase,
         QueryLive::BridgeBasisRejected => Bank::BridgeBasisRejected,
     }
 }

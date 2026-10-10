@@ -21,6 +21,10 @@ use super::super::RuntimeBridgeRelationalSource;
 
 #[test]
 fn a_retained_observation_reads_its_own_root_after_the_branch_moves_on() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     let entity = create_entity(&runtime, "before");
     let storm = BranchId("storm".to_owned());
@@ -38,11 +42,16 @@ fn a_retained_observation_reads_its_own_root_after_the_branch_moves_on() {
     let after = source.retain_branch_basis_for_bridge(&after_basis).unwrap();
 
     assert_eq!(
-        read_name(&source, before.snapshot_identity(), entity),
+        read_name(
+            &source,
+            before.snapshot_identity(),
+            entity,
+            resource_request
+        ),
         "before"
     );
     assert_eq!(
-        read_name(&source, after.snapshot_identity(), entity),
+        read_name(&source, after.snapshot_identity(), entity, resource_request),
         "after"
     );
 }
@@ -81,8 +90,9 @@ fn read_name(
     source: &RuntimeBridgeRelationalSource,
     snapshot: &crate::facade::TruthSnapshotIdentity,
     entity: EntityId,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> String {
-    let reader = source.open_snapshot(snapshot).unwrap();
+    let reader = source.open_snapshot(snapshot, execution).unwrap();
     let packet = SnapshotReadPacket::new(vec![SnapshotReadRequest::for_relational_record(
         RelationalBridgeRecordIdentityParts::entity(
             entity.partition_id.0,

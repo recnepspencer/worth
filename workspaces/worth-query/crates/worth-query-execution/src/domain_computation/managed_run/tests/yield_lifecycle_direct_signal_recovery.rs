@@ -7,12 +7,16 @@ use worth_runtime_bridge::facade::{
 #[test]
 fn signal_terminalized_after_safe_point_cannot_be_relabelled_as_yielded() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
         let (running, graph) = managed_graph_run_with_provider(
             WorthQueryOperationGraphAccess::Observe,
             YieldProvider::installed(5),
+            resource_request,
         );
         let installed_running_phase = execution.phase_for_direct(&running);
 
@@ -73,11 +77,14 @@ fn signal_terminalized_after_safe_point_cannot_be_relabelled_as_yielded() {
 #[test]
 fn timeout_and_rejection_after_safe_point_cannot_mint_yielded_authority() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
         let (timed_out, timeout_bridge) =
-            paused_direct_yield_target(execution, "direct-yield-timeout-race");
+            paused_direct_yield_target(execution, "direct-yield-timeout-race", resource_request);
         timeout_bridge
             .advance_managed_execution_clock(1)
             .expect("host clock should advance");
@@ -90,7 +97,8 @@ fn timeout_and_rejection_after_safe_point_cannot_mint_yielded_authority() {
             BridgeExecutionBasisSignalTerminal::TimedOut,
         );
 
-        let (rejected, _) = paused_direct_yield_target(execution, "direct-yield-rejection-race");
+        let (rejected, _) =
+            paused_direct_yield_target(execution, "direct-yield-rejection-race", resource_request);
         rejected
         .active
         .reject_execution(
@@ -108,6 +116,7 @@ fn paused_direct_yield_target(
     execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     scope: &str,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     crate::domain_computation::WorthQueryPausedDirectGraphExecution,
     RuntimeBridge,
@@ -115,6 +124,7 @@ fn paused_direct_yield_target(
     let (running, graph, bridge) = managed_graph_run_with_provider_and_bridge(
         WorthQueryOperationGraphAccess::Observe,
         YieldProvider::installed(5),
+        resource_request,
     );
     let installed_running_phase = execution.phase_for_direct(&running);
 

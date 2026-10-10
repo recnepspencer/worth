@@ -63,7 +63,9 @@ pub(super) fn publish_and_deliver(
         .expect_err("an undeclared dependency ordinal must fail before retention");
     assert_eq!(
         failed.kind(),
-        runtime::WorthQueryPerformedRelationalProductChangeDeliveryDenialKind::Bridge
+        runtime::WorthQueryPerformedRelationalProductChangeDeliveryDenialKind::Bridge(
+            worth_query_execution::facade::primary_graph::BridgeConditionalDenialKind::DependencyOrdinalMismatch,
+        )
     );
     assert_eq!(
         world

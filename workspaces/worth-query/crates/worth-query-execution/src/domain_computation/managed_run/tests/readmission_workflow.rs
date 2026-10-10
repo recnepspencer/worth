@@ -1,5 +1,7 @@
+mod yielded_run;
 use std::collections::BTreeMap;
 use std::sync::Arc;
+use yielded_run::yielded_workflow_fixture;
 
 use super::yield_fixture::YieldProvider;
 use super::*;
@@ -11,19 +13,21 @@ pub(in crate::domain_computation::managed_run) fn yielded_workflow(
     execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     provider: YieldProvider,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     crate::domain_computation::WorthQueryYieldedWorkflowRun,
     RuntimeBridge,
     WorthQueryExecutionRuntime,
     Arc<crate::domain_computation::WorthQueryArtifactProductionAuthority>,
 ) {
-    yielded_workflow_for_stage(execution, provider, "producer")
+    yielded_workflow_for_stage(execution, provider, "producer", resource_request)
 }
 
 pub(super) fn yielded_workflow_with_retained_artifact(
     execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     provider: YieldProvider,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     crate::domain_computation::WorthQueryYieldedWorkflowRun,
     RuntimeBridge,
@@ -32,7 +36,7 @@ pub(super) fn yielded_workflow_with_retained_artifact(
     crate::domain_computation::WorthQueryMoveOnlyArtifactHandle,
 ) {
     let (yielded, bridge, runtime, producer, artifact) =
-        yielded_workflow_fixture(execution, provider, "producer", true);
+        yielded_workflow_fixture(execution, provider, "producer", true, resource_request);
     (
         yielded,
         bridge,
@@ -47,6 +51,7 @@ pub(super) fn yielded_workflow_for_stage(
 
     provider: YieldProvider,
     stage_identity: &str,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     crate::domain_computation::WorthQueryYieldedWorkflowRun,
     RuntimeBridge,
@@ -54,133 +59,23 @@ pub(super) fn yielded_workflow_for_stage(
     Arc<crate::domain_computation::WorthQueryArtifactProductionAuthority>,
 ) {
     let (yielded, bridge, runtime, producer, artifact) =
-        yielded_workflow_fixture(execution, provider, stage_identity, false);
+        yielded_workflow_fixture(execution, provider, stage_identity, false, resource_request);
     debug_assert!(artifact.is_none());
     (yielded, bridge, runtime, producer)
-}
-
-fn yielded_workflow_fixture(
-    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
-
-    provider: YieldProvider,
-    stage_identity: &str,
-    retain_artifact: bool,
-) -> (
-    crate::domain_computation::WorthQueryYieldedWorkflowRun,
-    RuntimeBridge,
-    WorthQueryExecutionRuntime,
-    Arc<crate::domain_computation::WorthQueryArtifactProductionAuthority>,
-    Option<crate::domain_computation::WorthQueryMoveOnlyArtifactHandle>,
-) {
-    let installer = WorthQueryExecutionRuntimeInstaller::new();
-    let provider_anchor = Arc::new(
-        crate::domain_computation::provider_session::graph_provider::bounded_step::provider_anchor::WorthQueryGraphProviderAnchor::install::<ManagedGraph, _>(
-            provider,
-        ),
-    );
-    let provider_support = provider_anchor.resource_support().clone();
-    let graph = super::workflow_provider_steps::installed_graph(
-        &installer,
-        "workflow-readmission-graph",
-        provider_anchor,
-    );
-    let runtime =
-        super::workflow_provider_steps::installed_runtime(installer, "workflow readmission");
-    let operation_resources =
-        crate::domain_computation::provider_session::admitted_yield_plan("workflow-readmission", 8);
-    let stage_resource_identity = format!("workflow-readmission:{stage_identity}");
-    let stage_resources = admitted_plan_with_graph_support(
-        &stage_resource_identity,
-        8,
-        graph.role(),
-        provider_support,
-    );
-    let resources = WorthQueryAdmittedWorkflowResourcePlan::assemble(
-        operation_resources,
-        BTreeMap::from([(stage_identity.to_owned(), stage_resources)]),
-    );
-    let output =
-        crate::domain_computation::artifact_owner::installed_artifact_contract_for_managed_run();
-    let operation = workflow_authority_with_stage_graph_and_output_artifact(
-        &runtime,
-        &resources,
-        stage_identity,
-        &graph,
-        WorthQueryOperationGraphAccess::Observe,
-        output,
-    );
-    let attempt = runtime
-        .start_workflow_resource_attempt(&operation, resources)
-        .expect("workflow resources should reserve");
-    let lower = causal_fixture::managed_admission_context();
-    let running = runtime
-        .managed_run_admission(&lower.bridge, &lower.relational)
-        .admit_workflow(&operation, attempt, lower.read_request())
-        .expect("workflow should admit")
-        .start()
-        .expect("workflow should start");
-    let old_producer = running
-        .artifacts()
-        .production_authority(stage_identity)
-        .expect("producer stage should validate")
-        .expect("producer stage should own output authority");
-    let retained_artifact = retain_artifact.then(|| {
-        let admission = crate::domain_computation::WorthQueryArtifactProductionAuthority::admit(
-            &old_producer,
-            WorthQueryArtifactProductionEvidence::new("readmission-cleanup", "retained-artifact"),
-        );
-        crate::domain_computation::WorthQueryArtifactProductionAuthority::register_exact(
-            &old_producer,
-            admission,
-            ReadmissionArtifact,
-        )
-        .expect("retained workflow artifact must register before production freezes")
-    });
-    let active = {
-        let installed_fixture_phase = running.fixture_phase(execution);
-        running.begin_stage_graph_execution(
-            &installed_fixture_phase,
-            stage_identity,
-            &graph,
-            WorthQueryManagedGraphCallRequest::new(
-                WorthQueryGraphProviderCallKind::Observe,
-                "workflow-readmission",
-            ),
-        )
-    }
-    .expect("workflow provider should begin");
-    let paused = {
-        let fixture_phase_result = {
-            let installed_fixture_phase = active.fixture_phase(execution);
-            active.advance(&installed_fixture_phase)
-        };
-        match fixture_phase_result {
-            WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused,
-            _ => panic!("workflow provider did not pause"),
-        }
-    };
-    let yielded = match paused.yield_run() {
-        crate::domain_computation::WorthQueryWorkflowYieldOutcome::Yielded(yielded) => yielded,
-        _ => panic!("eligible workflow did not yield"),
-    };
-    (
-        yielded,
-        lower.bridge,
-        runtime,
-        old_producer,
-        retained_artifact,
-    )
 }
 
 #[test]
 fn workflow_readmission_rolls_generation_and_preserves_occurrence_state() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
         let active_request = execution;
 
         let (yielded, bridge, runtime, old_producer) =
-            yielded_workflow(execution, YieldProvider::installed(7));
+            yielded_workflow(execution, YieldProvider::installed(7), resource_request);
         let logical = yielded.inspection().logical_run_identity().to_owned();
         let old_managed_attempt = yielded.inspection().yielded_attempt_identity().to_owned();
         let old_resource_attempt = yielded.inspection().yielded_attempt_identity().to_owned();
@@ -288,12 +183,18 @@ fn workflow_readmission_rolls_generation_and_preserves_occurrence_state() {
 #[test]
 fn workflow_provider_restore_denial_keeps_frozen_generation_retryable() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
         let active_request = execution;
 
-        let (yielded, bridge, runtime, _producer) =
-            yielded_workflow(execution, YieldProvider::checkpoint_restore_failure(7));
+        let (yielded, bridge, runtime, _producer) = yielded_workflow(
+            execution,
+            YieldProvider::checkpoint_restore_failure(7),
+            resource_request,
+        );
         let checkpoint = yielded.inspection().checkpoint().identity().to_owned();
         let generation = yielded
             .inspection()
@@ -336,12 +237,18 @@ fn workflow_provider_restore_denial_keeps_frozen_generation_retryable() {
 #[test]
 fn workflow_restore_panic_can_recover_only_through_terminal_cleanup() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
         let active_request = execution;
 
-        let (yielded, bridge, runtime, _producer) =
-            yielded_workflow(execution, YieldProvider::checkpoint_restore_panic(7));
+        let (yielded, bridge, runtime, _producer) = yielded_workflow(
+            execution,
+            YieldProvider::checkpoint_restore_panic(7),
+            resource_request,
+        );
         let checkpoint = yielded.inspection().checkpoint().identity().to_owned();
         let generation = yielded
             .inspection()

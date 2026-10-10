@@ -12,6 +12,9 @@ use crate::domain_computation::{
 #[test]
 fn installed_repeated_state_policies_reject_contradictory_domain_reports() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -19,6 +22,7 @@ fn installed_repeated_state_policies_reject_contradictory_domain_reports() {
             execution,
             FixtureDisposition::OscillatingSelected,
             FixtureConvergenceContract::OscillationImpossible,
+            resource_request,
         );
         assert_indeterminate_policy_denial(impossible);
 
@@ -26,6 +30,7 @@ fn installed_repeated_state_policies_reject_contradictory_domain_reports() {
             execution,
             FixtureDisposition::RepeatedContinue,
             FixtureConvergenceContract::Bounded,
+            resource_request,
         );
         assert_indeterminate_policy_denial(continued_repetition);
     });
@@ -34,6 +39,9 @@ fn installed_repeated_state_policies_reject_contradictory_domain_reports() {
 #[test]
 fn installed_oscillation_postures_govern_incumbent_selection() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -41,6 +49,7 @@ fn installed_oscillation_postures_govern_incumbent_selection() {
             execution,
             FixtureDisposition::Oscillating,
             FixtureConvergenceContract::Bounded,
+            resource_request,
         );
         assert_eq!(
             denied.kind(),
@@ -57,6 +66,7 @@ fn installed_oscillation_postures_govern_incumbent_selection() {
             execution,
             FixtureDisposition::OscillatingSelected,
             FixtureConvergenceContract::OscillationSelectIncumbent,
+            resource_request,
         );
         assert_eq!(
             selected.kind(),
@@ -73,6 +83,7 @@ fn installed_oscillation_postures_govern_incumbent_selection() {
             execution,
             FixtureDisposition::DomainClassifiedOscillation,
             FixtureConvergenceContract::OscillationDomainClassified,
+            resource_request,
         );
         assert_eq!(
             classified.kind(),
@@ -111,8 +122,9 @@ fn indeterminate_terminal(
 
     disposition: FixtureDisposition,
     contract: FixtureConvergenceContract,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorthQueryDirectConvergenceTerminal<WorthQueryIndeterminate> {
-    match terminal_outcome(execution, disposition, contract) {
+    match terminal_outcome(execution, disposition, contract, resource_request) {
         WorthQueryDirectConvergenceIterationOutcome::Indeterminate(terminal) => terminal,
         _ => panic!("oscillation policy fixture must be indeterminate"),
     }
@@ -123,8 +135,9 @@ fn oscillating_terminal(
 
     disposition: FixtureDisposition,
     contract: FixtureConvergenceContract,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorthQueryDirectConvergenceTerminal<WorthQueryOscillating> {
-    match terminal_outcome(execution, disposition, contract) {
+    match terminal_outcome(execution, disposition, contract, resource_request) {
         WorthQueryDirectConvergenceIterationOutcome::Oscillating(terminal) => terminal,
         _ => panic!("oscillation policy fixture must be oscillating"),
     }
@@ -135,22 +148,29 @@ fn terminal_outcome(
 
     disposition: FixtureDisposition,
     contract: FixtureConvergenceContract,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorthQueryDirectConvergenceIterationOutcome {
-    let epoch = direct_admission_fixture_with_contract(disposition, contract).admit();
-
-    let installed_fixture_phase = epoch.fixture_phase(execution);
-    let execution = &installed_fixture_phase;
-    let started = match epoch.begin_iteration(
-        execution,
-        WorthQueryManagedGraphCallRequest::new(
-            WorthQueryGraphProviderCallKind::Observe,
-            "oscillation-policy",
-        ),
-    ) {
+    let epoch =
+        direct_admission_fixture_with_contract(disposition, contract, resource_request).admit();
+    let started = match {
+        let fixture_target = epoch;
+        let installed_fixture_phase = fixture_target.fixture_phase(execution);
+        fixture_target.begin_iteration(
+            &installed_fixture_phase,
+            WorthQueryManagedGraphCallRequest::new(
+                WorthQueryGraphProviderCallKind::Observe,
+                "oscillation-policy",
+            ),
+        )
+    } {
         Ok(started) => started,
         Err(_) => panic!("oscillation policy fixture iteration must start"),
     };
-    let outcome = match started.advance(execution) {
+    let outcome = match {
+        let fixture_target = started;
+        let installed_fixture_phase = fixture_target.fixture_phase(execution);
+        fixture_target.advance(&installed_fixture_phase)
+    } {
         WorthQueryDirectConvergenceStepOutcome::Completed(outcome) => outcome,
         _ => panic!("oscillation policy fixture provider must complete and rejoin its epoch"),
     };

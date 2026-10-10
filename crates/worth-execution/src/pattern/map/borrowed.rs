@@ -11,6 +11,16 @@ use super::{
 };
 
 impl<T: Sync + ChargedBytes, K> ExecutionMap<T, K> {
+    /// Exact memory held by a serial dispatch in the caller's active scope.
+    /// This is arithmetic only; admission still belongs to the reservation.
+    pub fn serial_memory_requirement<R, E>(&self) -> Option<u64> {
+        self.batch.execution_memory_bytes::<R, E>()?.checked_add(
+            crate::backend::RunLimits::framework_context_bytes_for_serial_scope(
+                self.partition_count(),
+            )?,
+        )
+    }
+
     /// Consume the checked map and retain its exact live memory admission
     /// before domain evaluators run. Dispatch later reserves only a worker.
     pub fn prepare_run<'authority, R, E>(

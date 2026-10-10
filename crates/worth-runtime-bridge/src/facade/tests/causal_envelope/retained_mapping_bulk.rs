@@ -11,13 +11,18 @@ use crate::facade::{
 
 #[test]
 fn causal_envelope_maps_bulk_planning_by_exact_workload_identity() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::default());
     let routed = runtime
-        .route(crate::truth_identity_fixtures::truth_commit_fixture(
-            "commit-causal-bulk-route",
-        ))
+        .route(
+            crate::truth_identity_fixtures::truth_commit_fixture("commit-causal-bulk-route"),
+            execution,
+        )
         .expect("route should succeed");
-    let bulk_record = retain_bulk_record(&runtime, "target");
+    let bulk_record = retain_bulk_record(&runtime, "target", execution);
     assert_eq!(bulk_record.planning_failure_count(), 1);
     assert!(bulk_record
         .planning_failures()
@@ -69,11 +74,16 @@ fn causal_envelope_maps_bulk_planning_by_exact_workload_identity() {
 
 #[test]
 fn causal_envelope_denies_missing_bulk_planning_without_unindexed_scan() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::default());
     let routed = runtime
-        .route(crate::truth_identity_fixtures::truth_commit_fixture(
-            "commit-causal-missing-bulk",
-        ))
+        .route(
+            crate::truth_identity_fixtures::truth_commit_fixture("commit-causal-missing-bulk"),
+            execution,
+        )
         .expect("route should succeed");
     let request = BridgeCausalEnvelopeAssemblyRequest::from_query_admission(
         crate::facade::BridgeCausalInspectionAdmissionSummary::admitted(
@@ -124,18 +134,23 @@ fn causal_envelope_denies_missing_bulk_planning_without_unindexed_scan() {
 
 #[test]
 fn causal_envelope_bulk_planning_lookup_cost_ignores_unrelated_records() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut envelope_identities = Vec::new();
 
     for unrelated_records in [0, 3, 8] {
         let runtime = runtime(BridgeRuntimePolicy::default());
         for index in 0..unrelated_records {
-            retain_bulk_record(&runtime, &format!("noise-{index}"));
+            retain_bulk_record(&runtime, &format!("noise-{index}"), execution);
         }
-        let target_record = retain_bulk_record(&runtime, "target");
+        let target_record = retain_bulk_record(&runtime, "target", execution);
         let routed = runtime
-            .route(crate::truth_identity_fixtures::truth_commit_fixture(
-                "commit-causal-bulk-scale",
-            ))
+            .route(
+                crate::truth_identity_fixtures::truth_commit_fixture("commit-causal-bulk-scale"),
+                execution,
+            )
             .expect("route should succeed");
         let request = BridgeCausalEnvelopeAssemblyRequest::from_query_admission(
             crate::facade::BridgeCausalInspectionAdmissionSummary::admitted(
@@ -189,6 +204,7 @@ fn causal_envelope_bulk_planning_lookup_cost_ignores_unrelated_records() {
 fn retain_bulk_record(
     runtime: &crate::facade::RuntimeBridge,
     suffix: &str,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> BridgeCanonicalBulkPlanRecord {
     let workload = BridgeBulkWorkloadRequest::new(vec![
         BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(
@@ -199,7 +215,7 @@ fn retain_bulk_record(
         )),
     ]);
     let plan = runtime
-        .plan_bulk_workload(workload)
+        .plan_bulk_workload(workload, execution)
         .expect("bulk workload should plan");
     runtime.canonicalize_bulk_workload_plan(&plan)
 }

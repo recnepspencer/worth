@@ -57,7 +57,7 @@ fn checkpoint_finishes_keep_caller_stops_off_the_shared_row() {
                 };
                 (None, claim, checkpoint)
             };
-            let denial = WorthQueryOutputDemandDenial::new(kind, "caller stopped delivery");
+            let denial = WorthQueryOutputDemandDenial::new(kind.clone(), "caller stopped delivery");
             if let Some(prepared) = prepared {
                 assert!(prepared.finish(claim, checkpoint, Some(&denial)).is_ok());
             } else {

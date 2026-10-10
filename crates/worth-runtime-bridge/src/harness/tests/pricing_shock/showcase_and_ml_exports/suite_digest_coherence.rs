@@ -2,9 +2,14 @@ use super::super::support::*;
 
 #[test]
 fn pricing_shock_suite_artifacts_and_showcase_digests_are_semantically_coherent() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let bundle = capture_pricing_workload_certification_bundle(
         BridgeRuntimePolicy::development(),
         BridgePreviewSessionIdentity::admit_bridge_owned("pricing:preview-suite-coherence"),
+        resource_request,
     );
     let artifact = bundle.showcase_artifact_json();
     let export = bundle.ml_pipeline_export_json();

@@ -25,10 +25,14 @@ mod lower_runtime_slot_references;
 
 pub(super) fn artifact_with_lower_runtime_slot_evidence(
     commit_identity: TruthCommitIdentity,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> QueryCausalInspectionArtifact {
     let runtime = bridge_runtime();
-    let routed = runtime.route(commit_identity.clone()).unwrap();
-    let retained_evidence = retain_lower_runtime_slot_evidence(&runtime, &commit_identity);
+    let routed = runtime
+        .route(commit_identity.clone(), resource_request)
+        .unwrap();
+    let retained_evidence =
+        retain_lower_runtime_slot_evidence(&runtime, &commit_identity, resource_request);
     let reference_set = changed_reference_set(routed.route_identity());
     let flow = admit_causal_inspection(request_for(
         reference_set,
@@ -75,6 +79,7 @@ struct RetainedLowerRuntimeSlotEvidence {
 fn retain_lower_runtime_slot_evidence(
     runtime: &RuntimeBridge,
     commit_identity: &TruthCommitIdentity,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> RetainedLowerRuntimeSlotEvidence {
     let (preview_execution_record_identity, preview_discard_record_identity) =
         retain_preview_record_identities(runtime, commit_identity);
@@ -82,16 +87,22 @@ fn retain_lower_runtime_slot_evidence(
     RetainedLowerRuntimeSlotEvidence {
         historical_evaluation_record_identity: retain_historical_evaluation_record_identity(
             runtime,
+            resource_request,
         ),
         preview_execution_record_identity,
         preview_discard_record_identity,
         source_materialization_record_identity: retain_source_materialization_record_identity(
             runtime,
+            resource_request,
         ),
-        structural_remap_record_identity: retain_structural_remap_record_identity(runtime),
+        structural_remap_record_identity: retain_structural_remap_record_identity(
+            runtime,
+            resource_request,
+        ),
         stream_replay_record_identity: retain_stream_replay_record_identity(
             runtime,
             commit_identity,
+            resource_request,
         ),
         writeback_admission_record_identity: writeback.admission_record_identity,
         writeback_mapper_envelope_identity: writeback.mapper_envelope_identity,
@@ -102,11 +113,17 @@ fn retain_lower_runtime_slot_evidence(
     }
 }
 
-fn retain_historical_evaluation_record_identity(runtime: &RuntimeBridge) -> String {
+fn retain_historical_evaluation_record_identity(
+    runtime: &RuntimeBridge,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
+) -> String {
     runtime
-        .evaluate(BridgeTruthViewEvaluationRequest::for_branch_head(
-            causal_materialization_branch_identity(),
-        ))
+        .evaluate(
+            BridgeTruthViewEvaluationRequest::for_branch_head(
+                causal_materialization_branch_identity(),
+            ),
+            resource_request,
+        )
         .expect("historical evaluation should retain evidence")
         .record()
         .record_identity()
@@ -153,7 +170,10 @@ fn retain_preview_record_identities(
     )
 }
 
-fn retain_source_materialization_record_identity(runtime: &RuntimeBridge) -> String {
+fn retain_source_materialization_record_identity(
+    runtime: &RuntimeBridge,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
+) -> String {
     let source_contract = runtime
         .admit_source(registered_source(
             "source:causal-materialization-history",
@@ -170,7 +190,11 @@ fn retain_source_materialization_record_identity(runtime: &RuntimeBridge) -> Str
         ))
         .expect("source declaration should admit");
     let source_observation = runtime
-        .materialize_source_packet(&source_contract, SnapshotReadPacket::new(vec![]))
+        .materialize_source_packet(
+            &source_contract,
+            SnapshotReadPacket::new(vec![]),
+            resource_request,
+        )
         .expect("source packet should materialize");
     runtime
         .canonicalize_source_materialization_record(&source_contract, &source_observation)
@@ -181,7 +205,10 @@ fn retain_source_materialization_record_identity(runtime: &RuntimeBridge) -> Str
         .to_string()
 }
 
-fn retain_structural_remap_record_identity(runtime: &RuntimeBridge) -> String {
+fn retain_structural_remap_record_identity(
+    runtime: &RuntimeBridge,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
+) -> String {
     let structural_contract = runtime
         .admit_structural_comparison(registered_structural(
             "structural:causal-materialization-snapshot",
@@ -205,6 +232,7 @@ fn retain_structural_remap_record_identity(runtime: &RuntimeBridge) -> String {
             &structural_contract,
             structural_read.clone(),
             vec![structural_read],
+            resource_request,
         )
         .expect("structural packets should plan");
     let structural_reduced = runtime
@@ -229,6 +257,7 @@ fn retain_structural_remap_record_identity(runtime: &RuntimeBridge) -> String {
 fn retain_stream_replay_record_identity(
     runtime: &RuntimeBridge,
     commit_identity: &TruthCommitIdentity,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> String {
     let stream_protocol = runtime
         .validate_change_stream_declaration(ChangeStreamDeclaration::new(
@@ -245,9 +274,10 @@ fn retain_stream_replay_record_identity(
         .resolve_change_stream_consumer_contract(&stream_protocol)
         .expect("stream contract should resolve");
     let stream_envelope = runtime
-        .ingest_committed_patch(BridgeRouteRequest::for_commit(
-            stream_replay_commit_identity(commit_identity),
-        ))
+        .ingest_committed_patch(
+            BridgeRouteRequest::for_commit(stream_replay_commit_identity(commit_identity)),
+            resource_request,
+        )
         .expect("stream commit should ingest");
     let stream_window = runtime
         .plan_change_stream_window(&stream_contract, vec![stream_envelope])

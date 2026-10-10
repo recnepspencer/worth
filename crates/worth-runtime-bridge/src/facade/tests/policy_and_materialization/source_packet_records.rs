@@ -2,6 +2,10 @@ use super::*;
 
 #[test]
 fn runtime_plans_registered_source_packet_set() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::default());
     let contract = runtime
         .admit_source(registered_source(
@@ -20,7 +24,7 @@ fn runtime_plans_registered_source_packet_set() {
         .expect("registered historical source should be admitted");
 
     let planned = runtime
-        .plan_source_packet_set(&contract, SnapshotReadPacket::new(vec![]))
+        .plan_source_packet_set(&contract, SnapshotReadPacket::new(vec![]), execution)
         .expect("registered source packet set should plan");
 
     assert_eq!(planned.contract(), &contract);
@@ -37,6 +41,10 @@ fn runtime_plans_registered_source_packet_set() {
 
 #[test]
 fn runtime_materializes_registered_source_packet_set() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::default());
     let contract = runtime
         .admit_source(registered_source(
@@ -54,11 +62,11 @@ fn runtime_materializes_registered_source_packet_set() {
         ))
         .expect("registered historical source should be admitted");
     let planned = runtime
-        .plan_source_packet_set(&contract, SnapshotReadPacket::new(vec![]))
+        .plan_source_packet_set(&contract, SnapshotReadPacket::new(vec![]), execution)
         .expect("registered source packet set should plan");
 
     let materialized = runtime
-        .materialize_source(&planned)
+        .materialize_source(&planned, execution)
         .expect("registered source packet set should materialize");
 
     assert_eq!(materialized.planned_packet_set().digest(), planned.digest());
@@ -76,6 +84,10 @@ fn runtime_materializes_registered_source_packet_set() {
 
 #[test]
 fn runtime_canonicalizes_registered_source_materialization_record() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::default());
     let contract = runtime
         .admit_source(registered_source(
@@ -94,7 +106,7 @@ fn runtime_canonicalizes_registered_source_materialization_record() {
         .expect("registered historical source should be admitted");
 
     let observation = runtime
-        .materialize_source_packet(&contract, SnapshotReadPacket::new(vec![]))
+        .materialize_source_packet(&contract, SnapshotReadPacket::new(vec![]), execution)
         .expect("registered historical source should materialize");
     let record = runtime
         .canonicalize_source_materialization_record(&contract, &observation)
@@ -120,7 +132,7 @@ fn runtime_canonicalizes_registered_source_materialization_record() {
     assert_eq!(
         record.planned_packet_set_digest(),
         runtime
-            .plan_source_packet_set(&contract, SnapshotReadPacket::new(vec![]))
+            .plan_source_packet_set(&contract, SnapshotReadPacket::new(vec![]), execution)
             .expect("source packet set should plan")
             .digest()
     );
@@ -128,6 +140,10 @@ fn runtime_canonicalizes_registered_source_materialization_record() {
 
 #[test]
 fn runtime_canonicalizes_registered_source_packet_set_record() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::default());
     let contract = runtime
         .admit_source(registered_source(
@@ -145,10 +161,10 @@ fn runtime_canonicalizes_registered_source_packet_set_record() {
         ))
         .expect("registered historical source should be admitted");
     let planned = runtime
-        .plan_source_packet_set(&contract, SnapshotReadPacket::new(vec![]))
+        .plan_source_packet_set(&contract, SnapshotReadPacket::new(vec![]), execution)
         .expect("registered source packet set should plan");
     let materialized = runtime
-        .materialize_source(&planned)
+        .materialize_source(&planned, execution)
         .expect("registered source packet set should materialize");
 
     let record = runtime
@@ -176,6 +192,10 @@ fn runtime_canonicalizes_registered_source_packet_set_record() {
 
 #[test]
 fn runtime_replays_multi_packet_source_materialization_record() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::default());
     let contract = runtime
         .admit_source(registered_source(
@@ -214,6 +234,7 @@ fn runtime_replays_multi_packet_source_materialization_record() {
                     ),
                 )]),
             ],
+            execution,
         )
         .expect("multi-packet source set should plan");
     let materialized = runtime
@@ -224,6 +245,7 @@ fn runtime_replays_multi_packet_source_materialization_record() {
                 .iter()
                 .map(|packet| packet.read_packet().clone())
                 .collect(),
+            execution,
         )
         .expect("multi-packet source set should materialize");
     let record = runtime
@@ -236,7 +258,7 @@ fn runtime_replays_multi_packet_source_materialization_record() {
     assert_eq!(record.truth_view_digest(), materialized.digest());
 
     let replayed = runtime
-        .replay_source_materialization_record(&record)
+        .replay_source_materialization_record(&record, execution)
         .expect("multi-packet source materialization should replay");
 
     assert_eq!(replayed, record);
@@ -244,6 +266,10 @@ fn runtime_replays_multi_packet_source_materialization_record() {
 
 #[test]
 fn runtime_lowers_identical_registered_source_requests_to_identical_records() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::default());
     let contract = runtime
         .admit_source(registered_source(
@@ -265,7 +291,7 @@ fn runtime_lowers_identical_registered_source_requests_to_identical_records() {
         .canonicalize_source_materialization_record(
             &contract,
             &runtime
-                .materialize_source_packet(&contract, SnapshotReadPacket::new(vec![]))
+                .materialize_source_packet(&contract, SnapshotReadPacket::new(vec![]), execution)
                 .expect("left source packet should materialize"),
         )
         .expect("left source record should canonicalize");
@@ -273,7 +299,7 @@ fn runtime_lowers_identical_registered_source_requests_to_identical_records() {
         .canonicalize_source_materialization_record(
             &contract,
             &runtime
-                .materialize_source_packet(&contract, SnapshotReadPacket::new(vec![]))
+                .materialize_source_packet(&contract, SnapshotReadPacket::new(vec![]), execution)
                 .expect("right source packet should materialize"),
         )
         .expect("right source record should canonicalize");
@@ -284,6 +310,10 @@ fn runtime_lowers_identical_registered_source_requests_to_identical_records() {
 
 #[test]
 fn runtime_retains_source_materialization_record_in_diagnostics() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::default());
     let contract = runtime
         .admit_source(registered_source(
@@ -302,7 +332,7 @@ fn runtime_retains_source_materialization_record_in_diagnostics() {
         .expect("registered historical source should be admitted");
 
     let observation = runtime
-        .materialize_source_packet(&contract, SnapshotReadPacket::new(vec![]))
+        .materialize_source_packet(&contract, SnapshotReadPacket::new(vec![]), execution)
         .expect("registered historical source should materialize");
     let record = runtime
         .canonicalize_source_materialization_record(&contract, &observation)
@@ -325,6 +355,10 @@ fn runtime_retains_source_materialization_record_in_diagnostics() {
 
 #[test]
 fn runtime_replays_registered_source_materialization_record() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::default());
     let contract = runtime
         .admit_source(registered_source(
@@ -343,14 +377,14 @@ fn runtime_replays_registered_source_materialization_record() {
         .expect("registered historical source should be admitted");
 
     let observation = runtime
-        .materialize_source_packet(&contract, SnapshotReadPacket::new(vec![]))
+        .materialize_source_packet(&contract, SnapshotReadPacket::new(vec![]), execution)
         .expect("registered historical source should materialize");
     let record = runtime
         .canonicalize_source_materialization_record(&contract, &observation)
         .expect("registered source materialization should canonicalize");
 
     let replayed = runtime
-        .replay_source_materialization_record(&record)
+        .replay_source_materialization_record(&record, execution)
         .expect("registered source materialization should replay");
 
     assert_eq!(replayed, record);

@@ -17,7 +17,10 @@ use crate::harness::fixtures::{BridgeHarnessFixture, SnapshotFixture};
 
 use super::*;
 
-fn certified_execution(target: WritebackHarnessTarget) -> WritebackHarnessExecution {
+fn certified_execution(
+    target: WritebackHarnessTarget,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
+) -> WritebackHarnessExecution {
     let adapter = BridgeHarnessAdapter;
     let fixture = writeback_fixture("typed-writeback-certification");
     let mut runtime = adapter
@@ -33,8 +36,14 @@ fn certified_execution(target: WritebackHarnessTarget) -> WritebackHarnessExecut
         .runtime
         .as_ref()
         .expect("writeback typed certification bridge");
-    execute_writeback_request(&runtime, runtime_bridge, &fixture.fixture, target)
-        .expect("writeback typed certification execution")
+    execute_writeback_request(
+        &runtime,
+        runtime_bridge,
+        &fixture.fixture,
+        target,
+        resource_request,
+    )
+    .expect("writeback typed certification execution")
 }
 
 fn writeback_fixture(name: &str) -> worth_harness::facade::ScenarioFixture<BridgeHarnessFixture> {

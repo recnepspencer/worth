@@ -53,8 +53,12 @@ fn temporal_basis_denial_localizes_as_cross_branch_failure() {
 
 #[test]
 fn historical_temporal_previous_value_gap_localizes_as_temporal_readiness_failure() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
-    let admitted = admitted_detail_subscription_in_runtime(&runtime);
+    let admitted = admitted_detail_subscription_in_runtime(&runtime, resource_request);
     let temporal_basis = admitted_temporal_basis(BridgeTemporalTruthViewBasis::historical(
         crate::truth_identity_fixtures::truth_branch_fixture("analysis"),
         crate::truth_identity_fixtures::truth_commit_fixture("commit-historical"),
@@ -97,8 +101,12 @@ fn historical_temporal_previous_value_gap_localizes_as_temporal_readiness_failur
 
 #[test]
 fn duplicate_temporal_wake_localizes_as_duplicate_ordering_cause() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
-    let admitted = admitted_detail_subscription_in_runtime(&runtime);
+    let admitted = admitted_detail_subscription_in_runtime(&runtime, resource_request);
     let temporal_basis = admitted_temporal_basis(BridgeTemporalTruthViewBasis::authoritative(
         crate::truth_identity_fixtures::truth_branch_fixture("analysis"),
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
@@ -138,11 +146,17 @@ fn duplicate_temporal_wake_localizes_as_duplicate_ordering_cause() {
 
 #[test]
 fn preview_subscription_instance_mismatch_localizes_as_async_identity_failure() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
-    let preview_active = preview_active_subscription(&runtime, "phase15-preview-mismatch");
+    let preview_active =
+        preview_active_subscription(&runtime, "phase15-preview-mismatch", resource_request);
     let authoritative_ready = activation_ready_for_snapshot(
         &runtime,
         crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
+        resource_request,
     );
     let rejection = admit_subscription_backed_identity(
         &runtime,

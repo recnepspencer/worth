@@ -133,7 +133,7 @@ mod tests {
                 EvaluationRequestMode::Default,
                 &(),
                 &|_| Ok(AspectVersion::zero()),
-                &lease,
+                worth_execution::ExecutionRequest::leased(&lease),
             )
             .unwrap();
         assert_eq!(report.stages.len(), 1);

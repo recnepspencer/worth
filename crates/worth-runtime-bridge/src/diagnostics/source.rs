@@ -45,7 +45,7 @@ impl BridgeSourceFailureExplanation {
     }
 
     pub fn delivery_error_kind(&self) -> crate::error::BridgeDeliveryErrorKind {
-        self.delivery_error_kind
+        self.delivery_error_kind.clone()
     }
 }
 

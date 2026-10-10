@@ -245,11 +245,12 @@ impl crate::adapter::BridgeSourceAdapter for FixtureSourceAdapter {
     fn open_snapshot(
         &self,
         identity: &crate::facade::TruthSnapshotIdentity,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
         Box<dyn crate::facade::TruthSnapshotReader>,
         crate::adapter::RelationalBridgeSourceError,
     > {
-        crate::adapter::SnapshotReadSource::open_snapshot(&self.source, identity)
+        crate::adapter::SnapshotReadSource::open_snapshot(&self.source, identity, execution)
     }
 }
 
@@ -276,20 +277,24 @@ impl crate::adapter::BridgeSourceAdapter for SessionSourceAdapter {
     fn open_snapshot(
         &self,
         identity: &crate::facade::TruthSnapshotIdentity,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
         Box<dyn crate::facade::TruthSnapshotReader>,
         crate::adapter::RelationalBridgeSourceError,
     > {
         match self.runtime.source_adapter_behavior {
-            SourceAdapterBehavior::Honest => self.inner.open_snapshot(identity),
+            SourceAdapterBehavior::Honest => self.inner.open_snapshot(identity, execution),
             SourceAdapterBehavior::RejectOpenSnapshot => {
-                Err(crate::adapter::RelationalBridgeSourceError::new(format!(
-                    "session source adapter refused snapshot `{}`",
-                    identity.as_str()
-                )))
+                Err(crate::adapter::RelationalBridgeSourceError::new(
+                    crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                    format!(
+                        "session source adapter refused snapshot `{}`",
+                        identity.as_str()
+                    ),
+                ))
             }
             SourceAdapterBehavior::DriftSnapshotIdentity => {
-                let reader = self.inner.open_snapshot(identity)?;
+                let reader = self.inner.open_snapshot(identity, execution)?;
                 Ok(Box::new(DriftFixtureSnapshotReader { inner: reader }))
             }
         }
@@ -304,10 +309,11 @@ impl crate::adapter::BridgeSourceAdapter for WrappedFixtureSourceAdapter {
     fn open_snapshot(
         &self,
         identity: &crate::facade::TruthSnapshotIdentity,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
         Box<dyn crate::facade::TruthSnapshotReader>,
         crate::adapter::RelationalBridgeSourceError,
     > {
-        self.inner.open_snapshot(identity)
+        self.inner.open_snapshot(identity, execution)
     }
 }

@@ -2,16 +2,24 @@ use super::*;
 
 #[test]
 fn causal_envelope_binds_exact_bridge_records_and_external_authority_references() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::default());
     let routed = runtime
-        .route(crate::truth_identity_fixtures::truth_commit_fixture(
-            "commit-causal",
-        ))
+        .route(
+            crate::truth_identity_fixtures::truth_commit_fixture("commit-causal"),
+            execution,
+        )
         .expect("route should succeed");
     let evaluation = runtime
-        .evaluate(BridgeTruthViewEvaluationRequest::for_branch_head(
-            crate::truth_identity_fixtures::truth_branch_fixture("analysis"),
-        ))
+        .evaluate(
+            BridgeTruthViewEvaluationRequest::for_branch_head(
+                crate::truth_identity_fixtures::truth_branch_fixture("analysis"),
+            ),
+            execution,
+        )
         .expect("evaluation should succeed");
     let route_record = runtime
         .diagnostics()

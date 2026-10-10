@@ -37,7 +37,7 @@ fn checked_candidate_preparation_rejects_a_destroyed_reverse_index() {
                     std::iter::once(producer),
                     0,
                     ExecutionPosture::Serial,
-                    &lease,
+                    worth_execution::ExecutionRequest::leased(&lease),
                     work,
                     &mut budget,
                 )

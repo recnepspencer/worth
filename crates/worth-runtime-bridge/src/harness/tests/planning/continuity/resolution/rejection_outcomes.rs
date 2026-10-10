@@ -2,6 +2,10 @@ use super::*;
 
 #[test]
 fn bridge_resolved_lineage_continuity_rejects_ambiguous_successor_sets() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
@@ -35,10 +39,11 @@ fn bridge_resolved_lineage_continuity_rejects_ambiguous_successor_sets() {
                     crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
                 ),
             )),
+            execution,
         )
         .expect("route should plan");
     let result = runtime
-        .deliver_invalidation(route)
+        .deliver_invalidation(route, execution)
         .expect("delivery should succeed");
     let route_record = runtime
         .diagnostics()
@@ -65,6 +70,10 @@ fn bridge_resolved_lineage_continuity_rejects_ambiguous_successor_sets() {
 
 #[test]
 fn bridge_resolved_lineage_continuity_rejects_no_authoritative_successor() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
@@ -98,10 +107,11 @@ fn bridge_resolved_lineage_continuity_rejects_no_authoritative_successor() {
                     crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
                 ),
             )),
+            execution,
         )
         .expect("route should plan");
     let result = runtime
-        .deliver_invalidation(route)
+        .deliver_invalidation(route, execution)
         .expect("delivery should succeed");
     let route_record = runtime
         .diagnostics()

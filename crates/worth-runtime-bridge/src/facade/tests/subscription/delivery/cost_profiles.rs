@@ -93,9 +93,14 @@ fn runtime_rejects_zero_fanout_width_cost_profile_before_activation() {
 
 #[test]
 fn delivery_window_rejects_member_count_over_cost_profile_before_projection() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let (runtime, active) = active_detail_subscription_with_fanout(
         BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
         1,
+        resource_request,
     );
     let open = runtime.open_subscription_delivery_window(
         &active,

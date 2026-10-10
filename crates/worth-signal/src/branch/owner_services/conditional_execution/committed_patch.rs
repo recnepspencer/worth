@@ -67,7 +67,7 @@ impl SignalCommittedPatchDeliveryRequest {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SignalCommittedPatchDeliveryDenial {
     OwnerUnavailable(SignalOwnerUnavailable),
     OwnerAdmission(SignalBranchBasisObservationDenial),

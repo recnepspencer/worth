@@ -3,6 +3,9 @@ use super::*;
 
 #[test]
 fn preview_promotion_closeout_records_rebinding_for_temporal_async_and_mixed_handles() {
+    let host_request = crate::bridge_host_request::serial_request();
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -44,6 +47,7 @@ fn preview_promotion_closeout_records_rebinding_for_temporal_async_and_mixed_han
         &temporal_view,
         &async_view,
         &mixed_view,
+        resource_request,
     );
 
     let outcome = {

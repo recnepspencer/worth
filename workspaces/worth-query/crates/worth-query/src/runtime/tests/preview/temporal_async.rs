@@ -12,6 +12,7 @@ fn install_temporal_async_and_mixed_residue(
     temporal_view: &WorthQueryLiveView<WorthQueryUnrefinedLiveShape>,
     async_view: &WorthQueryLiveView<WorthQueryUnrefinedLiveShape>,
     mixed_view: &WorthQueryLiveView<WorthQueryUnrefinedLiveShape>,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) {
     runtime
         .emit_time_only_delivery(
@@ -39,7 +40,8 @@ fn install_temporal_async_and_mixed_residue(
 
     let bridge = test_bridge();
     let truth_patch = canonical_truth_patch("truth-main", "snapshot-a", "commit-a", "patch-a");
-    let truth_plus_time = authoritative_truth_plus_time_cause(&bridge, &truth_patch);
+    let truth_plus_time =
+        authoritative_truth_plus_time_cause(&bridge, &truth_patch, resource_request);
     let async_completion = admitted_async_completion(
         &bridge,
         worth_signal::facade::NodeId::new(310, 0),
@@ -71,6 +73,9 @@ fn install_temporal_async_and_mixed_residue(
 
 #[test]
 fn preview_discard_closeout_tracks_temporal_async_and_mixed_residue_parity() {
+    let host_request = crate::bridge_host_request::serial_request();
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -104,6 +109,7 @@ fn preview_discard_closeout_tracks_temporal_async_and_mixed_residue_parity() {
         &temporal_view,
         &async_view,
         &mixed_view,
+        resource_request,
     );
 
     let outcome = {
@@ -151,6 +157,9 @@ mod preview_promotion_closeout_records_rebinding_for_temporal_async;
 
 #[test]
 fn preview_discard_retains_crossed_preview_completion_residue_typed() {
+    let host_request = crate::bridge_host_request::serial_request();
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -165,7 +174,8 @@ fn preview_discard_retains_crossed_preview_completion_residue_typed() {
         .expect("live view should declare");
     let bridge = test_bridge();
     let truth_patch = canonical_truth_patch("truth-main", "snapshot-a", "commit-a", "patch-a");
-    let preview_cause = preview_time_only_cause(&bridge, "preview-crossed-completion");
+    let preview_cause =
+        preview_time_only_cause(&bridge, "preview-crossed-completion", resource_request);
     let ordering = bridge.order_mixed_causes(&BridgeMixedCauseOrderingRequest::new(
         BridgeMixedCauseOrderingLaneKind::Authoritative,
         vec![

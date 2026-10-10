@@ -35,19 +35,20 @@ pub(super) fn preview_declaration(
 pub(super) fn authoritative_routing_digest(
     runtime_bridge: &crate::facade::RuntimeBridge,
     commit_identity: crate::facade::TruthCommitIdentity,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<String, super::BridgeHarnessError> {
     let result = runtime_bridge
         .deliver_invalidation(
             runtime_bridge
                 .plan_committed_patch(crate::facade::BridgeRouteRequest::for_commit(
                     commit_identity.clone(),
-                ))
+                ), execution)
                 .map_err(|error| {
                     super::BridgeHarnessError::new(format!(
                         "authoritative route planning failed during speculation certification: {error}"
                     ))
                 })?,
-        )
+         execution)
         .map_err(|error| {
             super::BridgeHarnessError::new(format!(
                 "authoritative route delivery failed during speculation certification: {error}"
@@ -63,12 +64,15 @@ pub(super) fn authoritative_routing_digest(
 pub(super) fn first_commit_routing_digest(
     runtime_bridge: &crate::facade::RuntimeBridge,
     fixture: &BridgeHarnessFixture,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<Option<String>, super::BridgeHarnessError> {
     fixture
         .committed_patches()
         .first()
         .map(|patch| patch.commit_identity().clone())
-        .map(|commit_identity| authoritative_routing_digest(runtime_bridge, commit_identity))
+        .map(|commit_identity| {
+            authoritative_routing_digest(runtime_bridge, commit_identity, resource_request)
+        })
         .transpose()
 }
 

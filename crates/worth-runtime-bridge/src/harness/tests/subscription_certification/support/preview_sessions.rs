@@ -48,8 +48,9 @@ pub(crate) fn preview_active_subscription_for(
     preview_session_identity: BridgePreviewSessionIdentity,
     identities: SubscriptionPreviewSessionIdentities,
     declaration: &crate::facade::BridgeSubscriptionDeclaration,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> crate::facade::BridgePreviewActiveSubscription {
-    let ready = activation_ready_for(runtime, declaration);
+    let ready = activation_ready_for(runtime, declaration, resource_request);
     let admitted_preview = runtime
         .admit_preview_session(preview_session_identity, preview_declaration(&identities))
         .expect("preview session should admit");

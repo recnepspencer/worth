@@ -10,12 +10,16 @@ use crate::domain_computation::{
 #[test]
 fn pareto_remove_and_add_commits_only_after_the_installed_transition_validates() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
         let epoch = direct_admission_fixture_with_contract(
             FixtureDisposition::ParetoReplacement,
             FixtureConvergenceContract::Pareto,
+            resource_request,
         )
         .admit();
         let epoch = match advance(execution, epoch, "pareto-add") {
@@ -56,12 +60,16 @@ fn pareto_remove_and_add_commits_only_after_the_installed_transition_validates()
 #[test]
 fn repeated_semantic_candidate_key_mints_a_distinct_pareto_occurrence() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
         let epoch = direct_admission_fixture_with_contract(
             FixtureDisposition::ParetoCollision,
             FixtureConvergenceContract::Pareto,
+            resource_request,
         )
         .admit();
         let epoch = match advance(execution, epoch, "pareto-first") {

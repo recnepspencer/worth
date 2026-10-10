@@ -75,7 +75,7 @@ fn assert_interrupted_epoch(panic_kernel: bool) {
                     }
                     Ok(AspectVersion::zero().with(VALUE, 37))
                 },
-                &lease,
+                worth_execution::ExecutionRequest::leased(&lease),
             )
             .unwrap_err();
         let SignalError::ExecutionStopped(stop) = error else {
@@ -137,7 +137,7 @@ fn assert_interrupted_epoch(panic_kernel: bool) {
                 EvaluationRequestMode::Default,
                 &(),
                 &|_| Ok(AspectVersion::zero().with(VALUE, 41)),
-                &recovery,
+                worth_execution::ExecutionRequest::leased(&recovery),
             )
             .unwrap();
         assert_eq!(report.tasks_executed, 2);

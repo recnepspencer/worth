@@ -98,6 +98,7 @@ fn installed_operation_and_exact_graph_participation_mint_the_candidate() {
 fn bound_query_facade_installs_correspondence_with_operation_authority() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+    let resource_request = *request_execution;
 
     let workspace = conditional_workspace(
         request_execution,
@@ -169,8 +170,12 @@ fn bound_query_facade_installs_correspondence_with_operation_authority() {
         assert_eq!(installed.installation_generation(), 1);
         assert_eq!(installed.target_count(), 1);
         assert!(!installed.graph_participation_identity().is_empty());
-        let worth_proof::TransitionOutcome::Success(counters) =
-            installed.deliver_authoritative_change(&mut graph_binding, publication_request)
+        let worth_proof::TransitionOutcome::Success(counters) = installed
+            .deliver_authoritative_change(
+                &mut graph_binding,
+                publication_request,
+                resource_request,
+            )
         else {
             panic!("the real Relational publication should drive Signal invalidation")
         };

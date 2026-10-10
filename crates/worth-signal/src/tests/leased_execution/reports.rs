@@ -23,7 +23,7 @@ fn stopped_prepared_plan_replaces_the_previous_successful_execution_report() {
             EvaluationRequestMode::Default,
             &(),
             &|_| Ok(AspectVersion::zero().with(VALUE, 1)),
-            &lease,
+            worth_execution::ExecutionRequest::leased(&lease),
         )
         .unwrap();
     assert_eq!(
@@ -45,7 +45,7 @@ fn stopped_prepared_plan_replaces_the_previous_successful_execution_report() {
             &|_| -> Result<AspectVersion, crate::facade::SignalError> {
                 panic!("an exhausted request must stop before evaluation");
             },
-            &exhausted,
+            worth_execution::ExecutionRequest::leased(&exhausted),
         )
         .unwrap_err();
     let crate::facade::SignalError::ExecutionStopped(stop) = error else {
@@ -73,7 +73,7 @@ fn empty_request_returns_its_enclosing_authority_report_without_evaluation() {
             &|_| -> Result<AspectVersion, crate::facade::SignalError> {
                 panic!("empty request has no evaluator work");
             },
-            &lease,
+            worth_execution::ExecutionRequest::leased(&lease),
         )
         .unwrap();
     assert_eq!(report.tasks_executed, 0);
@@ -125,7 +125,7 @@ fn two_epochs_retain_a_slot_for_the_enclosing_physical_report() {
                 };
                 Ok(AspectVersion::zero().with(VALUE, value))
             },
-            &lease,
+            worth_execution::ExecutionRequest::leased(&lease),
         )
         .unwrap();
     assert_eq!(report.stages.len(), 2);
@@ -164,7 +164,7 @@ fn serial_execution_replaces_the_previous_leased_report_without_extra_telemetry(
             EvaluationRequestMode::Default,
             &(),
             &|_| Ok(AspectVersion::zero().with(VALUE, 1)),
-            &lease,
+            worth_execution::ExecutionRequest::leased(&lease),
         )
         .unwrap();
     assert!(success.execution.last().is_some());

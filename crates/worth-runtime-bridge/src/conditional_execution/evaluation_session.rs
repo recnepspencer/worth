@@ -73,8 +73,9 @@ impl BridgeOwnedSignalRuntime {
     pub fn admit_conditional_evaluation(
         &self,
         request: BridgeConditionalEvaluationAdmissionRequest<'_>,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeConditionalEvaluationSession, BridgeConditionalDenial> {
-        self.admit_conditional_evaluation_with_record(request, None)
+        self.admit_conditional_evaluation_with_record(request, None, execution)
     }
 
     pub(super) fn admit_conditional_evaluation_with_record(
@@ -83,6 +84,7 @@ impl BridgeOwnedSignalRuntime {
         managed_source_record: Option<
             crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts,
         >,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeConditionalEvaluationSession, BridgeConditionalDenial> {
         let bridge_snapshot_identity = match request.source {
             BridgeConditionalEvaluationSource::Relational(identity) => Some(identity),
@@ -110,16 +112,41 @@ impl BridgeOwnedSignalRuntime {
         }
         let observation_baselines =
             super::observation_retention::BridgeObservationBaselines::new(&self.retention)?;
-        let source_snapshot = bridge_snapshot_identity
-            .map(|identity| crate::delivery::open_planned_snapshot(&self.bridge, identity))
-            .transpose()
-            .map_err(|error| {
-                BridgeConditionalDenial::new(
-                    BridgeConditionalDenialKind::SnapshotAdmission,
-                    format!("conditional snapshot admission failed: {error:?}"),
+        let source_snapshot =
+            bridge_snapshot_identity
+                .map(|identity| {
+                    crate::delivery::open_planned_snapshot(&self.bridge, identity, execution)
+                })
+                .transpose()
+                .map_err(|error| {
+                    BridgeConditionalDenial::new(
+                    match error.kind() {
+                        crate::error::BridgeDeliveryErrorKind::ExecutionDenied(cause) => {
+                            BridgeConditionalDenialKind::ExecutionDenied(cause)
+                        }
+                        crate::error::BridgeDeliveryErrorKind::SourceContractMismatch
+                        | crate::error::BridgeDeliveryErrorKind::InvalidWideningAdmission
+                        | crate::error::BridgeDeliveryErrorKind::BulkDeliveryRejected
+                        | crate::error::BridgeDeliveryErrorKind::HistoricalPolicyRejected
+                        | crate::error::BridgeDeliveryErrorKind::HistoricalTruthViewUnavailable(_)
+                        | crate::error::BridgeDeliveryErrorKind::MissingBranchHeadSource
+                        | crate::error::BridgeDeliveryErrorKind::HistoricalBranchMismatch
+                        | crate::error::BridgeDeliveryErrorKind::HistoricalCommitMismatch
+                        | crate::error::BridgeDeliveryErrorKind::HistoricalSelectorMissingCommit
+                        | crate::error::BridgeDeliveryErrorKind::SnapshotAcquisitionFailure(_)
+                        | crate::error::BridgeDeliveryErrorKind::SnapshotReadFailure(_)
+                        | crate::error::BridgeDeliveryErrorKind::SnapshotReadContractViolation(_)
+                        | crate::error::BridgeDeliveryErrorKind::SnapshotIdentityMismatch
+                        | crate::error::BridgeDeliveryErrorKind::StructuralContractMismatch
+                        | crate::error::BridgeDeliveryErrorKind::StructuralPlanRejected
+                        | crate::error::BridgeDeliveryErrorKind::SignalSinkRejection(_) => {
+                            BridgeConditionalDenialKind::Delivery(error)
+                        }
+                    },
+                    "conditional snapshot admission failed",
                 )
-            })?
-            .map(Arc::new);
+                })?
+                .map(Arc::new);
         let services = self.signal_services()?;
         let signal_port = request.signal_basis.signal_port.clone();
         let signal = signal_port
@@ -127,7 +154,7 @@ impl BridgeOwnedSignalRuntime {
                 request.lowering.signal_contract(),
                 services.evaluation_source(source_snapshot.as_deref()),
             )
-            .map_err(super::execution::signal_service_denial)?;
+            .map_err(super::signal_service_denial::signal_service_denial)?;
         Ok(BridgeConditionalEvaluationSession {
             bridge_runtime_key: self.bridge.signal_runtime_key,
             lowering: Arc::clone(request.lowering),

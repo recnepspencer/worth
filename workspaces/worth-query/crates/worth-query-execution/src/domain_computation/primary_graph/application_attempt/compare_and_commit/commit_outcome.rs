@@ -4,6 +4,7 @@ use super::WorthQueryApplicationCommitDeferred;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationNoEffectCause {
+    ExecutionRequest(worth_execution::WorkCeilingDenial),
     OwnerDeniedBeforeEffect,
     CorrespondenceRebindRequired,
     ReferenceGenerationExhausted,
@@ -38,6 +39,9 @@ impl WorthQueryApplicationNoEffect {
     pub fn cause(&self) -> WorthQueryApplicationNoEffectCause {
         use worth_runtime_world::facade::NoEffectCause as Cause;
         match self.terminal.cause() {
+            Cause::ExecutionRequest(cause) => {
+                WorthQueryApplicationNoEffectCause::ExecutionRequest(cause)
+            }
             Cause::OwnerDeniedBeforeEffect => {
                 WorthQueryApplicationNoEffectCause::OwnerDeniedBeforeEffect
             }

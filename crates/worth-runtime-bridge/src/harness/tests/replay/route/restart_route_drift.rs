@@ -8,6 +8,10 @@ use worth_harness::runtime::HarnessAdapter;
 
 #[test]
 fn bridge_replay_detects_route_drift_after_restart_shaped_truth_change() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let adapter = BridgeHarnessAdapter;
     let fixture = ScenarioPlan::new(
         "bridge-replay-restart-drift",
@@ -110,7 +114,7 @@ fn bridge_replay_detects_route_drift_after_restart_shaped_truth_change() {
         .runtime
         .as_ref()
         .expect("bridge runtime")
-        .replay_canonical_record(&original_record)
+        .replay_canonical_record(&original_record, resource_request)
         .expect_err("bridge replay should reject route drift after restart");
     let original_route_record = original_record
         .decode()

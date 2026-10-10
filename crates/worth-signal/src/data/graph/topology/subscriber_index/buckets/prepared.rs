@@ -2,10 +2,9 @@
 //! Canonical deltas later select which of its finite aspect slots do work.
 
 use worth_execution::{
-    ChargedBytes, ExecutionMap, ExecutionResourceLease, LeaseRequest, MapKernelContext,
-    MapKernelFailure, MapOutcome, MapPartition, PreparedExecutionMap,
+    ChargedBytes, ExecutionMap, MapKernelContext, MapKernelFailure, MapOutcome, MapPartition,
 };
-use worth_foundational::{ExecutionPosture, ExecutionRequestPolicy, PartitionIdentity};
+use worth_foundational::{ExecutionPosture, PartitionIdentity};
 
 use crate::data::aspect::{Aspect, AspectMask, MAX_ASPECTS};
 use crate::data::error::{SignalError, SignalExecutionStop, SignalPublicationDisposition};
@@ -37,11 +36,17 @@ impl ChargedBytes for ReverseSubscriptionQuery {
     }
 }
 
-type CandidateMap<'authority> =
-    PreparedExecutionMap<'authority, CandidateTask, u8, ReverseSubscriptionQuery, SignalError>;
+type CandidateMap<'request, 'authority> = crate::data::prepared_request_map::PreparedRequestMap<
+    'request,
+    'authority,
+    CandidateTask,
+    u8,
+    ReverseSubscriptionQuery,
+    SignalError,
+>;
 
-pub(crate) struct PreparedCandidateEpoch<'authority> {
-    map: CandidateMap<'authority>,
+pub(crate) struct PreparedCandidateEpoch<'request, 'authority> {
+    map: CandidateMap<'request, 'authority>,
     keys: Vec<(NodeId, Aspect)>,
     used: Vec<bool>,
 }
@@ -53,15 +58,15 @@ pub(crate) struct PreparedCandidateQueries {
 }
 
 impl SignalGraph {
-    pub(crate) fn prepare_candidate_epoch<'authority>(
+    pub(crate) fn prepare_candidate_epoch<'request, 'authority>(
         &self,
         producers: impl ExactSizeIterator<Item = NodeId> + Clone,
         output_heap_grant: u64,
         posture: ExecutionPosture,
-        lease: &ExecutionResourceLease<'authority>,
+        request: worth_execution::ExecutionRequest<'request, 'authority>,
         work: &mut MapKernelContext<'_, '_>,
         preparation: &mut SignalPreparationBudget,
-    ) -> Result<PreparedCandidateEpoch<'authority>, SignalError> {
+    ) -> Result<PreparedCandidateEpoch<'request, 'authority>, SignalError> {
         if !self.topology.reverse_subscriptions.is_valid() {
             return Err(SignalError::internal(
                 "reverse subscription index requires authority rebuild",
@@ -136,20 +141,8 @@ impl SignalGraph {
             .collect();
         let map = ExecutionMap::try_from_declared_partitions(identities, partitions)
             .map_err(|_| SignalError::invalid_input("candidate epoch map declaration denied"))?;
-        let child = lease
-            .child(LeaseRequest {
-                policy: ExecutionRequestPolicy::new(
-                    posture,
-                    lease.policy().determinism(),
-                    lease.policy().budget(),
-                ),
-                deadline: None,
-                cancellation: worth_execution::CancellationToken::new(),
-            })
-            .map_err(SignalError::execution_admission_denied)?;
-        let map = map
-            .prepare_run(child)
-            .map_err(SignalError::execution_admission_denied)?;
+        let map =
+            crate::data::prepared_request_map::PreparedRequestMap::prepare(map, request, posture)?;
         Ok(PreparedCandidateEpoch {
             map,
             used: vec![false; keys.len()],
@@ -158,7 +151,7 @@ impl SignalGraph {
     }
 }
 
-impl PreparedCandidateEpoch<'_> {
+impl PreparedCandidateEpoch<'_, '_> {
     pub(crate) fn run(
         self,
         graph: &SignalGraph,

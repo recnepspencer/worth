@@ -1,6 +1,7 @@
 use super::*;
 
 pub(in crate::harness::milestone_eight_certification) fn rejection_rows(
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Vec<MilestoneEightRejectionRow> {
     let control_lane = detail_live_bundle(&direct_detail_canonical("Alice"));
     let saved_control = saved_query_bundle(false);
@@ -127,9 +128,9 @@ pub(in crate::harness::milestone_eight_certification) fn rejection_rows(
         MilestoneEightRejectionRow {
             row_name: "grouped-hidden-refresh-forbidden",
             perturbation_class: MilestoneEightPerturbationClass::GroupedHiddenRefreshForbidden,
-            control_lane: grouped_live_bundle(true),
-            hostile_lane: grouped_hidden_refresh_forbidden_rejection_bundle(),
-            parity_lane: grouped_live_bundle(true),
+            control_lane: grouped_live_bundle(true, resource_request),
+            hostile_lane: grouped_hidden_refresh_forbidden_rejection_bundle(resource_request),
+            parity_lane: grouped_live_bundle(true, resource_request),
         },
     ]
 }

@@ -63,7 +63,7 @@ impl SignalConditionalEvaluationReadmissionCounters {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SignalConditionalEvaluationReadmissionDenial {
     OwnerUnavailable(SignalOwnerUnavailable),
     OwnerAdmission(SignalBranchBasisObservationDenial),

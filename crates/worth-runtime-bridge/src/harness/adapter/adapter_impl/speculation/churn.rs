@@ -11,12 +11,13 @@ use crate::harness::fixtures::BridgeHarnessFixture;
 pub(super) fn execute_churn_certification(
     runtime_bridge: &crate::facade::RuntimeBridge,
     fixture: &BridgeHarnessFixture,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<SpeculationHarnessExecution, BridgeHarnessError> {
     let baseline_authoritative_route_digest =
-        shared::first_commit_routing_digest(runtime_bridge, fixture)?;
-    let branch_executions = execute_churn_branches(runtime_bridge, fixture)?;
+        shared::first_commit_routing_digest(runtime_bridge, fixture, resource_request)?;
+    let branch_executions = execute_churn_branches(runtime_bridge, fixture, resource_request)?;
     let final_authoritative_route_digest =
-        shared::first_commit_routing_digest(runtime_bridge, fixture)?;
+        shared::first_commit_routing_digest(runtime_bridge, fixture, resource_request)?;
 
     let resource_bound_report =
         build_churn_resource_bound_report(runtime_bridge, branch_executions.as_slice());
@@ -56,9 +57,10 @@ struct SpeculationChurnBranchExecution {
 fn execute_churn_branches(
     runtime_bridge: &crate::facade::RuntimeBridge,
     fixture: &BridgeHarnessFixture,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<Vec<SpeculationChurnBranchExecution>, BridgeHarnessError> {
     (0..3)
-        .map(|index| execute_one_churn_branch(runtime_bridge, fixture, index))
+        .map(|index| execute_one_churn_branch(runtime_bridge, fixture, index, resource_request))
         .collect()
 }
 
@@ -66,6 +68,7 @@ fn execute_one_churn_branch(
     runtime_bridge: &crate::facade::RuntimeBridge,
     fixture: &BridgeHarnessFixture,
     index: usize,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<SpeculationChurnBranchExecution, BridgeHarnessError> {
     let session_id = format!("harness:speculation-churn:{index}");
     let preview_session_identity =
@@ -118,7 +121,7 @@ fn execute_one_churn_branch(
             BridgeHarnessError::new(format!("speculation churn replay failed: {error}"))
         })?;
     let authoritative_route_digest_after_discard =
-        shared::first_commit_routing_digest(runtime_bridge, fixture)?;
+        shared::first_commit_routing_digest(runtime_bridge, fixture, resource_request)?;
 
     Ok(SpeculationChurnBranchExecution {
         replay_bundle: replay_bundle.clone(),

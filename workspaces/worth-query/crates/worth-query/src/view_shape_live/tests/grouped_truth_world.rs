@@ -56,6 +56,7 @@ impl CommittedPatchSource for StaticSource {
     fn load_committed_patch(
         &self,
         request: RelationalCommittedPatchRequest,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeCommittedPatchEnvelope, RelationalBridgeSourceError> {
         Ok(native_grouped_patch_envelope(
             request.commit_identity().clone(),
@@ -112,18 +113,22 @@ impl SnapshotReadSource for StaticSource {
     fn open_snapshot(
         &self,
         identity: &TruthSnapshotIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError> {
         if identity == &grouped_snapshot_identity() {
             Ok(Box::new(StaticSnapshotReader {
                 rows: self.rows.clone(),
             }))
         } else {
-            Err(RelationalBridgeSourceError::new(format!(
-                "unknown snapshot `{}`",
-                identity
-                    .bridge_admission_evidence()
-                    .terminal_projection_for_reporting()
-            )))
+            Err(RelationalBridgeSourceError::new(
+                worth_runtime_bridge::facade::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                format!(
+                    "unknown snapshot `{}`",
+                    identity
+                        .bridge_admission_evidence()
+                        .terminal_projection_for_reporting()
+                ),
+            ))
         }
     }
 }
@@ -132,6 +137,7 @@ impl TruthBranchHeadSource for StaticSource {
     fn load_branch_head_patch(
         &self,
         branch_identity: &TruthBranchIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeCommittedPatchEnvelope, RelationalBridgeSourceError> {
         Ok(native_grouped_patch_envelope(
             TruthCommitIdentity::from_relational_commit_id(100),
@@ -158,18 +164,22 @@ impl BridgeSourceAdapter for StaticSourceAdapter {
     fn open_snapshot(
         &self,
         identity: &TruthSnapshotIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError> {
         if identity == &grouped_snapshot_identity() {
             Ok(Box::new(StaticSnapshotReader {
                 rows: self.rows.clone(),
             }))
         } else {
-            Err(RelationalBridgeSourceError::new(format!(
-                "unknown snapshot `{}`",
-                identity
-                    .bridge_admission_evidence()
-                    .terminal_projection_for_reporting()
-            )))
+            Err(RelationalBridgeSourceError::new(
+                worth_runtime_bridge::facade::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                format!(
+                    "unknown snapshot `{}`",
+                    identity
+                        .bridge_admission_evidence()
+                        .terminal_projection_for_reporting()
+                ),
+            ))
         }
     }
 }

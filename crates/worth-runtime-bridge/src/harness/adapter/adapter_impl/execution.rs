@@ -45,14 +45,15 @@ pub(super) enum HarnessExecution {
 pub(super) fn execute_historical_request(
     runtime_bridge: &crate::facade::RuntimeBridge,
     declaration: HistoricalEvaluationDeclaration,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<HarnessExecution, BridgeHarnessError> {
     let planned = runtime_bridge
-        .plan_truth_view_packet(declaration, SnapshotReadPacket::new(vec![]))
+        .plan_truth_view_packet(declaration, SnapshotReadPacket::new(vec![]), execution)
         .map_err(|error| {
             BridgeHarnessError::new(format!("bridge historical planning failed: {error}"))
         })?;
     let observation = runtime_bridge
-        .materialize_truth_view_observation(planned)
+        .materialize_truth_view_observation(planned, execution)
         .map_err(|error| {
             BridgeHarnessError::new(format!("bridge historical materialization failed: {error}"))
         })?;

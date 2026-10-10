@@ -116,7 +116,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         LifecycleValue: Clone,
     {
         let identity_value = IdentityField::Binding::decode(record_identity)
-            .map_err(|_| "temporal intent record identity changed scalar meaning".to_string())?;
+            .map_err(super::super::WorthQueryConditionalReentryFailure::IntentIdentityDecode)?;
         let entity = product
             .resolve_entity_with_request(execution,
                 self.identity_field,
@@ -126,7 +126,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
             )
             .map_err(WorthQueryTemporalReentryDenial::from_entity)?;
         let expected_revision = RevisionField::Binding::from_revision(revision)
-            .ok_or_else(|| "temporal intent revision cannot be represented".to_string())?;
+            .ok_or(super::super::WorthQueryConditionalReentryFailure::IntentRevisionUnrepresentable)?;
         let current = self
             .invariant
             .project_operation_on_product::<Operation, _>(execution, product.product(), |reader| {

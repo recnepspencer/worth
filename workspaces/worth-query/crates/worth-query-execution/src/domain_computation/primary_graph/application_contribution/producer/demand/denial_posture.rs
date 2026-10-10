@@ -3,9 +3,28 @@
 use super::{WorthQueryOutputDemandDenialKind, WorthQueryOutputDemandRecoveryPosture};
 
 impl WorthQueryOutputDemandDenialKind {
-    pub(super) const fn default_recovery_posture(self) -> WorthQueryOutputDemandRecoveryPosture {
+    pub(super) fn default_recovery_posture(&self) -> WorthQueryOutputDemandRecoveryPosture {
         use WorthQueryOutputDemandRecoveryPosture::{Retryable, Terminal};
         match self {
+            Self::ProductDelivery(_) => Terminal,
+            Self::CorrespondenceDelivery(cause) => match cause.as_ref() {
+                worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryStop::Denied(_)
+                | worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryStop::Failed(_) => {
+                    Terminal
+                }
+                worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryStop::Deferred(_)
+                | worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryStop::Stale(_)
+                | worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryStop::RebindRequired(
+                    _,
+                ) => Retryable,
+            },
+            Self::BridgeConditional(cause) => {
+                if super::bridge_denial::is_temporarily_deferred(cause) {
+                    Retryable
+                } else {
+                    Terminal
+                }
+            }
             Self::ExecutionRequest(cause) => {
                 if cause.is_transient() {
                     Retryable

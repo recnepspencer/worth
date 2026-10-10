@@ -3,6 +3,10 @@ use crate::policy::BridgeRuntimePolicy;
 
 #[test]
 fn runtime_delivers_routing_stream_window_through_admitted_contract() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
     let declaration = crate::stream::ChangeStreamDeclaration::new(
         crate::stream::StreamConsumerShape::RoutingConsumer,
@@ -40,7 +44,7 @@ fn runtime_delivers_routing_stream_window_through_admitted_contract() {
         .expect("window should plan");
 
     let result = runtime
-        .deliver_change_stream_window(&contract, &window)
+        .deliver_change_stream_window(&contract, &window, execution)
         .expect("routing-consumer windows should deliver");
 
     assert!(window.lowered_change_set().is_some());
@@ -62,6 +66,10 @@ fn runtime_delivers_routing_stream_window_through_admitted_contract() {
 
 #[test]
 fn runtime_rejects_delivery_for_non_routing_consumer_shape() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
     let declaration = crate::stream::ChangeStreamDeclaration::new(
         crate::stream::StreamConsumerShape::ReplayAuditConsumer,
@@ -93,7 +101,7 @@ fn runtime_rejects_delivery_for_non_routing_consumer_shape() {
         .expect("window should plan");
 
     let error = runtime
-        .deliver_change_stream_window(&contract, &window)
+        .deliver_change_stream_window(&contract, &window, execution)
         .expect_err("non-routing consumer delivery should be rejected explicitly");
 
     assert_eq!(

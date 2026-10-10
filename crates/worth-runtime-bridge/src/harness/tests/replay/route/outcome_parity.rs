@@ -7,6 +7,10 @@ use crate::harness::fixtures::{InMemoryRelationalBridgeSource, RecordingSignalBr
 
 #[test]
 fn bridge_replay_preserves_canonical_route_outcome_for_delivered_patch() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
@@ -29,10 +33,14 @@ fn bridge_replay_preserves_canonical_route_outcome_for_delivered_patch() {
     let result = runtime
         .deliver_invalidation(
             runtime
-                .plan_committed_patch(BridgeRouteRequest::for_commit(
-                    crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-                ))
+                .plan_committed_patch(
+                    BridgeRouteRequest::for_commit(
+                        crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
+                    ),
+                    execution,
+                )
                 .expect("route should plan before replay parity certification"),
+            execution,
         )
         .expect("route should deliver before replay parity certification");
     let canonical_record = runtime
@@ -41,7 +49,7 @@ fn bridge_replay_preserves_canonical_route_outcome_for_delivered_patch() {
         .expect("bridge should retain a canonical route record for replay parity certification");
 
     let replay = runtime
-        .replay_canonical_record(&canonical_record)
+        .replay_canonical_record(&canonical_record, execution)
         .expect("bridge replay should preserve the canonical route outcome");
 
     assert_eq!(

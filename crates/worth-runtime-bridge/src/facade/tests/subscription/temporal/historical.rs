@@ -4,8 +4,12 @@ use super::super::support::*;
 
 #[test]
 fn runtime_prepares_historical_temporal_readiness_from_pinned_truth_and_retained_values() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
-    let admitted = admitted_detail_subscription_in_runtime(&runtime);
+    let admitted = admitted_detail_subscription_in_runtime(&runtime, resource_request);
     let temporal_basis = admitted_temporal_basis(BridgeTemporalTruthViewBasis::historical(
         crate::truth_identity_fixtures::truth_branch_fixture("analysis"),
         crate::truth_identity_fixtures::truth_commit_fixture("commit-historical"),
@@ -55,8 +59,12 @@ fn runtime_prepares_historical_temporal_readiness_from_pinned_truth_and_retained
 
 #[test]
 fn runtime_rejects_historical_replay_without_retained_previous_values() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
-    let admitted = admitted_detail_subscription_in_runtime(&runtime);
+    let admitted = admitted_detail_subscription_in_runtime(&runtime, resource_request);
     let temporal_basis = admitted_temporal_basis(BridgeTemporalTruthViewBasis::historical(
         crate::truth_identity_fixtures::truth_branch_fixture("analysis"),
         crate::truth_identity_fixtures::truth_commit_fixture("commit-historical"),
@@ -96,8 +104,12 @@ fn runtime_rejects_historical_replay_without_retained_previous_values() {
 
 #[test]
 fn runtime_rejects_historical_replay_when_previous_values_cross_branches() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
-    let admitted = admitted_detail_subscription_in_runtime(&runtime);
+    let admitted = admitted_detail_subscription_in_runtime(&runtime, resource_request);
     let temporal_basis = admitted_temporal_basis(BridgeTemporalTruthViewBasis::historical(
         crate::truth_identity_fixtures::truth_branch_fixture("analysis"),
         crate::truth_identity_fixtures::truth_commit_fixture("commit-historical"),
@@ -155,8 +167,12 @@ fn runtime_rejects_nonhistorical_truth_basis_for_historical_replay() {
 
 #[test]
 fn runtime_historical_temporal_readiness_digest_ignores_unrelated_current_truth_churn() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
-    let admitted = admitted_detail_subscription_in_runtime(&runtime);
+    let admitted = admitted_detail_subscription_in_runtime(&runtime, resource_request);
     let temporal_basis = admitted_temporal_basis(BridgeTemporalTruthViewBasis::historical(
         crate::truth_identity_fixtures::truth_branch_fixture("analysis"),
         crate::truth_identity_fixtures::truth_commit_fixture("commit-historical"),
@@ -214,8 +230,12 @@ fn runtime_historical_temporal_readiness_digest_ignores_unrelated_current_truth_
 
 #[test]
 fn runtime_rejects_historical_replay_when_historical_truth_snapshot_drifts() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
-    let admitted = admitted_detail_subscription_in_runtime(&runtime);
+    let admitted = admitted_detail_subscription_in_runtime(&runtime, resource_request);
     let temporal_basis = admitted_temporal_basis(BridgeTemporalTruthViewBasis::historical(
         crate::truth_identity_fixtures::truth_branch_fixture("analysis"),
         crate::truth_identity_fixtures::truth_commit_fixture("commit-historical"),
@@ -259,8 +279,12 @@ fn runtime_rejects_historical_replay_when_historical_truth_snapshot_drifts() {
 
 #[test]
 fn runtime_rejects_historical_replay_when_historical_truth_branch_drifts() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
-    let admitted = admitted_detail_subscription_in_runtime(&runtime);
+    let admitted = admitted_detail_subscription_in_runtime(&runtime, resource_request);
     let temporal_basis = admitted_temporal_basis(BridgeTemporalTruthViewBasis::historical(
         crate::truth_identity_fixtures::truth_branch_fixture("analysis"),
         crate::truth_identity_fixtures::truth_commit_fixture("commit-historical"),

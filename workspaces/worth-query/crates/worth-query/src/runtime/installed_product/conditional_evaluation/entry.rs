@@ -56,8 +56,10 @@ impl WorthQueryConditionalEvaluationEntry {
     pub(super) fn admit_session(
         &self,
         installed: &WorthQueryInstalledProduct,
+        resource_request: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Arc<BridgeConditionalEvaluationSession>, BridgeConditionalDenial> {
-        self.session.get_or_try_init(|| self.admit(installed))
+        self.session
+            .get_or_try_init(|| self.admit(installed, resource_request))
     }
 
     pub(super) fn matches(
@@ -71,6 +73,7 @@ impl WorthQueryConditionalEvaluationEntry {
     fn admit(
         &self,
         installed: &WorthQueryInstalledProduct,
+        resource_request: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeConditionalEvaluationSession, BridgeConditionalDenial> {
         let signal_basis = self
             .product
@@ -83,7 +86,9 @@ impl WorthQueryConditionalEvaluationEntry {
                 self.product.bridge_snapshot_identity(),
             )
         };
-        installed.conditional.admit_conditional_evaluation(request)
+        installed
+            .conditional
+            .admit_conditional_evaluation(request, resource_request)
     }
 }
 

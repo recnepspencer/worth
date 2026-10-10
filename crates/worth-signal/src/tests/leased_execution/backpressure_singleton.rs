@@ -51,7 +51,7 @@ fn fixture(existing_reads_source: bool) -> Fixture {
             EvaluationRequestMode::Default,
             &(),
             &|_| Ok(AspectVersion::zero().with(VALUE, 1)),
-            &source_lease,
+            worth_execution::ExecutionRequest::leased(&source_lease),
         )
         .expect("source settles before existing consumers");
     drop(source_lease);
@@ -85,7 +85,7 @@ fn fixture(existing_reads_source: bool) -> Fixture {
                     };
                     Ok(AspectVersion::zero().with(VALUE, value))
                 },
-                &setup_lease,
+                worth_execution::ExecutionRequest::leased(&setup_lease),
             )
             .expect("existing consumer facts settle before the target request");
     }
@@ -133,7 +133,7 @@ fn execute(
             calls.fetch_add(1, Ordering::SeqCst);
             Ok(AspectVersion::zero().with(VALUE, ctx.read(source, VALUE)? + 2))
         },
-        &lease,
+        worth_execution::ExecutionRequest::leased(&lease),
     )
 }
 

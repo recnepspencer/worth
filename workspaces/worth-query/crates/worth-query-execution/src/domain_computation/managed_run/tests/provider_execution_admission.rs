@@ -1,3 +1,5 @@
+mod post_admission_failure;
+use post_admission_failure::post_admission_failure;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
@@ -177,6 +179,9 @@ impl WorthQueryGraphParticipationProvider<ManagedGraph> for MultipleAdmissionPro
 #[test]
 fn admission_from_a_prior_start_cannot_enter_a_fresh_provider_start() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -186,6 +191,7 @@ fn admission_from_a_prior_start_cannot_enter_a_fresh_provider_start() {
             ForeignAdmissionProvider {
                 retained: Arc::clone(&retained),
             },
+            resource_request,
         );
         let installed_running_phase = execution.phase_for_direct(&running);
 
@@ -227,12 +233,16 @@ fn admission_from_a_prior_start_cannot_enter_a_fresh_provider_start() {
 #[test]
 fn ignored_second_execution_admission_denies_the_provider_start() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
         let (running, graph) = managed_graph_run_with_provider(
             WorthQueryOperationGraphAccess::Observe,
             MultipleAdmissionProvider,
+            resource_request,
         );
         let installed_running_phase = execution.phase_for_direct(&running);
 
@@ -262,6 +272,9 @@ fn ignored_second_execution_admission_denies_the_provider_start() {
 #[test]
 fn rejection_after_admission_releases_the_runtime_owned_execution_explicitly() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -273,6 +286,7 @@ fn rejection_after_admission_releases_the_runtime_owned_execution_explicitly() {
             false,
             Arc::clone(&disposal_attempts),
             Arc::clone(&destructor_attempts),
+            resource_request,
         );
         assert_eq!(
         failure.kind(),
@@ -302,6 +316,9 @@ fn rejection_after_admission_releases_the_runtime_owned_execution_explicitly() {
 #[test]
 fn panic_after_admission_contains_an_independent_destructor_panic() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -313,6 +330,7 @@ fn panic_after_admission_contains_an_independent_destructor_panic() {
             true,
             Arc::clone(&disposal_attempts),
             Arc::clone(&destructor_attempts),
+            resource_request,
         );
         assert_eq!(
         failure.kind(),
@@ -342,38 +360,6 @@ fn panic_after_admission_contains_an_independent_destructor_panic() {
             WorthQueryManagedRunCleanupDisposition::RecoveryRequired
         );
     });
-}
-
-fn post_admission_failure(
-    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
-
-    behavior: PostAdmissionBehavior,
-    destructor_panics: bool,
-    disposal_attempts: Arc<AtomicUsize>,
-    destructor_attempts: Arc<AtomicUsize>,
-) -> crate::domain_computation::WorthQueryDirectGraphExecutionStartFailure {
-    let (running, graph) = managed_graph_run_with_provider(
-        WorthQueryOperationGraphAccess::Observe,
-        PostAdmissionProvider {
-            behavior,
-            disposal_attempts,
-            destructor_attempts,
-            destructor_panics,
-        },
-    );
-    let installed_running_phase = execution.phase_for_direct(&running);
-
-    match running.begin_graph_execution(
-        &installed_running_phase,
-        &graph,
-        WorthQueryManagedGraphCallRequest::new(
-            WorthQueryGraphProviderCallKind::Observe,
-            "post-admission-failure",
-        ),
-    ) {
-        Ok(_) => panic!("post-admission provider failure returned active execution authority"),
-        Err(failure) => failure,
-    }
 }
 
 fn step_failure(

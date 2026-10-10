@@ -20,6 +20,7 @@ impl CommittedPatchSource for StaticSource {
     fn load_committed_patch(
         &self,
         request: RelationalCommittedPatchRequest,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeCommittedPatchEnvelope, RelationalBridgeSourceError> {
         BridgeCommittedPatchEnvelope::new(
             BridgeCommittedPatchEnvelopeIdentity::new(
@@ -32,7 +33,12 @@ impl CommittedPatchSource for StaticSource {
             ),
             vec![native_profile_name_patch_item()],
         )
-        .map_err(|error| RelationalBridgeSourceError::new(error.to_string()))
+        .map_err(|error| {
+            RelationalBridgeSourceError::new(
+                crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                error.to_string(),
+            )
+        })
     }
 }
 
@@ -40,6 +46,7 @@ impl SnapshotReadSource for StaticSource {
     fn open_snapshot(
         &self,
         identity: &TruthSnapshotIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError> {
         open_static_snapshot(identity)
     }
@@ -49,6 +56,7 @@ impl TruthBranchHeadSource for StaticSource {
     fn load_branch_head_patch(
         &self,
         branch_identity: &TruthBranchIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeCommittedPatchEnvelope, RelationalBridgeSourceError> {
         BridgeCommittedPatchEnvelope::new(
             BridgeCommittedPatchEnvelopeIdentity::new(
@@ -61,7 +69,12 @@ impl TruthBranchHeadSource for StaticSource {
             ),
             vec![native_profile_name_patch_item()],
         )
-        .map_err(|error| RelationalBridgeSourceError::new(error.to_string()))
+        .map_err(|error| {
+            RelationalBridgeSourceError::new(
+                crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                error.to_string(),
+            )
+        })
     }
 }
 
@@ -85,6 +98,7 @@ impl BridgeSourceAdapter for StaticSourceAdapter {
     fn open_snapshot(
         &self,
         identity: &TruthSnapshotIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError> {
         open_static_snapshot(identity)
     }
@@ -98,11 +112,12 @@ impl BridgeSourceAdapter for RejectingSourceAdapter {
     fn open_snapshot(
         &self,
         identity: &TruthSnapshotIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError> {
-        Err(RelationalBridgeSourceError::new(format!(
-            "refused snapshot `{}`",
-            identity.as_str()
-        )))
+        Err(RelationalBridgeSourceError::new(
+            crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+            format!("refused snapshot `{}`", identity.as_str()),
+        ))
     }
 }
 
@@ -114,6 +129,7 @@ impl BridgeSourceAdapter for DriftSourceAdapter {
     fn open_snapshot(
         &self,
         identity: &TruthSnapshotIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError> {
         if is_primary_snapshot(identity) {
             Ok(Box::new(DriftSnapshotReader))
@@ -131,6 +147,7 @@ impl BridgeSourceAdapter for ReorderingSourceAdapter {
     fn open_snapshot(
         &self,
         identity: &TruthSnapshotIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError> {
         open_static_snapshot(identity)
     }
@@ -138,7 +155,7 @@ impl BridgeSourceAdapter for ReorderingSourceAdapter {
     fn materialize_packets(
         &self,
         planned_packet_set: &PlannedSourceReadPacketSet,
-        execution_policy: crate::policy::BridgeExecutionPolicyBaseline,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<MaterializedTruthViewPacketSet, crate::error::BridgeDeliveryError> {
         let observations = planned_packet_set
             .packets()
@@ -149,7 +166,7 @@ impl BridgeSourceAdapter for ReorderingSourceAdapter {
                 <StaticSourceAdapter as BridgeSourceAdapter>::materialize_packet(
                     &StaticSourceAdapter,
                     planned,
-                    execution_policy,
+                    execution,
                 )
             })
             .collect::<Result<Vec<_>, _>>()?;
@@ -186,5 +203,8 @@ fn is_primary_snapshot(identity: &TruthSnapshotIdentity) -> bool {
 }
 
 fn unknown_snapshot_error(identity: &TruthSnapshotIdentity) -> RelationalBridgeSourceError {
-    RelationalBridgeSourceError::new(format!("unknown snapshot `{}`", identity.as_str()))
+    RelationalBridgeSourceError::new(
+        crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+        format!("unknown snapshot `{}`", identity.as_str()),
+    )
 }

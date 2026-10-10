@@ -2,7 +2,7 @@ use crate::data::comparator::ComparatorPolicyResolver;
 use crate::data::error::{SignalError, SignalPublicationProgress};
 use crate::data::graph::SignalGraph;
 use crate::data::handle::NodeId;
-use worth_execution::{ExecutionResourceLease, MapKernelContext};
+use worth_execution::MapKernelContext;
 
 use super::super::precompute::callback::SignalPrecompute;
 use super::super::types::{
@@ -35,14 +35,14 @@ impl<'tasks> EpochMetadata<'tasks> {
     }
 }
 
-pub(crate) struct CheckedAdmittedEpoch<'tasks, 'lease, 'authority> {
+pub(crate) struct CheckedAdmittedEpoch<'tasks, 'request, 'authority> {
     stage_index: u32,
     selection: crate::logic::planner::precompute::graph_batch::CheckedEpochAdmission<'tasks>,
-    lease: &'lease ExecutionResourceLease<'authority>,
+    request: worth_execution::ExecutionRequest<'request, 'authority>,
     readiness_epoch: crate::data::proof::invalidation::progression::InvalidationReadinessEpoch,
 }
 
-impl<'tasks, 'lease, 'authority> CheckedAdmittedEpoch<'tasks, 'lease, 'authority> {
+impl<'tasks, 'request, 'authority> CheckedAdmittedEpoch<'tasks, 'request, 'authority> {
     pub(crate) fn tasks(&self) -> &[EligibleTask] {
         self.selection.tasks()
     }
@@ -61,15 +61,15 @@ impl<'tasks, 'lease, 'authority> CheckedAdmittedEpoch<'tasks, 'lease, 'authority
         self.selection.apply_capacity()
     }
 
-    pub(crate) fn lease(&self) -> &'lease ExecutionResourceLease<'authority> {
-        self.lease
+    pub(crate) fn request(&self) -> worth_execution::ExecutionRequest<'request, 'authority> {
+        self.request
     }
 
     pub(crate) fn into_prepared_parts(
         self,
     ) -> (
         EpochMetadata<'tasks>,
-        &'lease ExecutionResourceLease<'authority>,
+        worth_execution::ExecutionRequest<'request, 'authority>,
         crate::logic::planner::precompute::graph_batch::CheckedApplyCapacity,
     ) {
         let (tasks, apply) = self.selection.into_parts();
@@ -78,7 +78,7 @@ impl<'tasks, 'lease, 'authority> CheckedAdmittedEpoch<'tasks, 'lease, 'authority
                 stage_index: self.stage_index,
                 tasks,
             },
-            self.lease,
+            self.request,
             apply,
         )
     }
@@ -106,8 +106,8 @@ impl<'tasks> LegacySerialEpoch<'tasks> {
     }
 }
 
-pub(crate) enum AdmittedEpoch<'tasks, 'lease, 'authority> {
-    Checked(CheckedAdmittedEpoch<'tasks, 'lease, 'authority>),
+pub(crate) enum AdmittedEpoch<'tasks, 'request, 'authority> {
+    Checked(CheckedAdmittedEpoch<'tasks, 'request, 'authority>),
     LegacySerial(LegacySerialEpoch<'tasks>),
 }
 
@@ -155,7 +155,7 @@ pub(crate) fn run_stage_slices<'a, P: SignalPrecompute>(
     first_target: Option<NodeId>,
     comparator_resolver: &mut impl ComparatorPolicyResolver,
     temporal_lowering: TemporalLoweringContext,
-    lease: worth_execution::ExecutionRequest<'_, '_>,
+    request: worth_execution::ExecutionRequest<'_, '_>,
     policy: ResolvedSignalPlannerPolicy,
     request_work: &mut MapKernelContext<'_, '_>,
     preparation: &mut SignalPreparationBudget,
@@ -171,7 +171,7 @@ pub(crate) fn run_stage_slices<'a, P: SignalPrecompute>(
         precompute,
         comparator_resolver,
         temporal_lowering,
-        lease,
+        request,
         policy,
         request_work,
         preparation,
@@ -184,14 +184,14 @@ pub(crate) fn run_stage_slices<'a, P: SignalPrecompute>(
             // the next admission. Keep the request's planning and report storage.
             let frame = context.preparation.checkpoint();
             let width = context
-                .lease
-                .in_scope(|scoped_lease| {
+                .request
+                .in_scope(|_scoped_lease| {
                     let admission = super::super::precompute::graph_batch::epoch_width(
                         context.graph,
                         &stage.tasks[offset..],
                         stage.task_offset + offset,
                         precompute.allows_bounded_inputs(),
-                        scoped_lease,
+                        context.request,
                         context.comparator_resolver,
                         Some(&mut *context.preparation),
                         Some(&mut *context.request_work),
@@ -204,12 +204,11 @@ pub(crate) fn run_stage_slices<'a, P: SignalPrecompute>(
                         super::super::precompute::graph_batch::EpochAdmission::Checked(
                             selection,
                         ) => {
-                            let lease =
-                                scoped_lease.expect("checked epoch selection requires its lease");
+                            let request = context.request;
                             AdmittedEpoch::Checked(CheckedAdmittedEpoch {
                                 stage_index: stage.index,
                                 selection,
-                                lease,
+                                request,
                                 readiness_epoch,
                             })
                         }

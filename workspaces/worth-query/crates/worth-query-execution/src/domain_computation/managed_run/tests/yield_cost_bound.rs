@@ -1,3 +1,5 @@
+mod expected_counters;
+use expected_counters::{expected_direct_yield_counters, expected_workflow_yield_counters};
 #[cfg(feature = "allocation-probes")]
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -120,11 +122,14 @@ struct YieldCostEvidence {
 #[test]
 fn yield_transition_work_is_invariant_to_unrelated_live_authority_width() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let baseline = execute_target(execution, 0);
-        let wide = execute_target(execution, UNRELATED_WIDTH);
+        let baseline = execute_target(execution, 0, resource_request);
+        let wide = execute_target(execution, UNRELATED_WIDTH, resource_request);
         assert_eq!(baseline, wide);
         assert_eq!(
             baseline,
@@ -189,9 +194,10 @@ fn workflow_yield_transition_allocation_is_unrelated_authority_invariant() {
 fn execute_target(
     execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     unrelated_width: usize,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> YieldCostEvidence {
     let (paused, unrelated, suspension_count, retained_probe_count) =
-        prepared_target(execution, unrelated_width);
+        prepared_target(execution, unrelated_width, resource_request);
     let yielded = yield_target(paused);
     let work = yielded.inspection().provider_work();
     let evidence = YieldCostEvidence {
@@ -218,6 +224,7 @@ fn prepared_target(
     execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     unrelated_width: usize,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     crate::domain_computation::WorthQueryPausedDirectGraphExecution,
     Vec<(
@@ -229,7 +236,13 @@ fn prepared_target(
 ) {
     let disposed = Arc::new(AtomicUsize::new(0));
     let unrelated = (0..unrelated_width)
-        .map(|index| super::cost_bound::unrelated_artifact_run(index, Arc::clone(&disposed)))
+        .map(|index| {
+            super::cost_bound::unrelated_artifact_run(
+                index,
+                Arc::clone(&disposed),
+                resource_request,
+            )
+        })
         .collect();
     let suspension_count = Arc::new(AtomicUsize::new(0));
     let retained_probe_count = Arc::new(AtomicUsize::new(0));
@@ -239,6 +252,7 @@ fn prepared_target(
             suspension_count: Arc::clone(&suspension_count),
             retained_probe_count: Arc::clone(&retained_probe_count),
         },
+        resource_request,
     );
     let active = {
         let installed_fixture_phase = running.fixture_phase(execution);
@@ -269,6 +283,7 @@ fn prepared_target(
 fn prepared_workflow_target(
     execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     unrelated_width: usize,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     crate::domain_computation::WorthQueryPausedWorkflowGraphExecution,
     Vec<(
@@ -278,7 +293,13 @@ fn prepared_workflow_target(
 ) {
     let disposed = Arc::new(AtomicUsize::new(0));
     let unrelated = (0..unrelated_width)
-        .map(|index| super::cost_bound::unrelated_artifact_run(index, Arc::clone(&disposed)))
+        .map(|index| {
+            super::cost_bound::unrelated_artifact_run(
+                index,
+                Arc::clone(&disposed),
+                resource_request,
+            )
+        })
         .collect();
     let installer = WorthQueryExecutionRuntimeInstaller::new();
     let provider_anchor = Arc::new(
@@ -316,8 +337,12 @@ fn prepared_workflow_target(
         &graph,
         WorthQueryOperationGraphAccess::Observe,
     );
-    let running =
-        super::workflow_provider_steps::admitted_workflow(&runtime, &operation, resources);
+    let running = super::workflow_provider_steps::admitted_workflow(
+        &runtime,
+        &operation,
+        resources,
+        resource_request,
+    );
     let installed_fixture_phase = running.fixture_phase(execution);
     let active = running
         .begin_stage_graph_execution(
@@ -350,28 +375,6 @@ fn step_failure(
     denial: crate::domain_computation::WorthQueryGraphProviderStepDenial,
 ) -> WorthQueryGraphProviderFailure {
     WorthQueryGraphProviderFailure::new(denial.detail())
-}
-
-fn expected_direct_yield_counters() -> crate::domain_computation::WorthQueryYieldTransitionCounters
-{
-    let mut counters = crate::domain_computation::WorthQueryYieldTransitionCounters::default();
-    counters.classified_eligibility();
-    counters.attempted_bridge_finalization();
-    counters.attempted_checkpoint_suspension();
-    counters.observed_checkpoint_retained_bytes(1);
-    counters.validated_retained_resources();
-    counters.minted_yielded_capability();
-    counters
-}
-
-#[cfg(feature = "allocation-probes")]
-fn expected_workflow_yield_counters() -> crate::domain_computation::WorthQueryYieldTransitionCounters
-{
-    let mut counters = expected_direct_yield_counters();
-    counters.observed_artifact_registry();
-    counters.observed_artifact_registry();
-    counters.validated_retained_resources();
-    counters
 }
 
 #[path = "yield_cost_bound/isolated_workflow_yield_transition_allocation_slope_probe.rs"]

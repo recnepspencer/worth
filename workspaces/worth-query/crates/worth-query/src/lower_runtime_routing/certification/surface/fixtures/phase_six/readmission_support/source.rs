@@ -59,6 +59,7 @@ impl CommittedPatchSource for TestRelationalSource {
     fn load_committed_patch(
         &self,
         request: worth_runtime_bridge::facade::RelationalCommittedPatchRequest,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeCommittedPatchEnvelope, RelationalBridgeSourceError> {
         self.state
             .read()
@@ -67,7 +68,7 @@ impl CommittedPatchSource for TestRelationalSource {
             .get(request.commit_identity())
             .cloned()
             .ok_or_else(|| {
-                RelationalBridgeSourceError::new(format!(
+                RelationalBridgeSourceError::new(worth_runtime_bridge::facade::RelationalBridgeSourceErrorTag::ExternalSourceFailure, format!(
                     "no committed patch registered for `{:?}`",
                     request.commit_identity()
                 ))
@@ -79,6 +80,7 @@ impl SnapshotReadSource for TestRelationalSource {
     fn open_snapshot(
         &self,
         identity: &TruthSnapshotIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError> {
         let records = self
             .state
@@ -88,7 +90,7 @@ impl SnapshotReadSource for TestRelationalSource {
             .get(identity)
             .cloned()
             .ok_or_else(|| {
-                RelationalBridgeSourceError::new(format!(
+                RelationalBridgeSourceError::new(worth_runtime_bridge::facade::RelationalBridgeSourceErrorTag::ExternalSourceFailure, format!(
                     "no snapshot registered for `{:?}`",
                     identity
                 ))
@@ -104,23 +106,24 @@ impl TruthBranchHeadSource for TestRelationalSource {
     fn load_branch_head_patch(
         &self,
         branch_identity: &TruthBranchIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeCommittedPatchEnvelope, RelationalBridgeSourceError> {
         let state = self
             .state
             .read()
             .expect("fixture bridge source lock poisoned");
         let commit_identity = state.branch_heads.get(branch_identity).ok_or_else(|| {
-            RelationalBridgeSourceError::new(format!(
-                "no branch head registered for `{:?}`",
-                branch_identity
-            ))
+            RelationalBridgeSourceError::new(
+                worth_runtime_bridge::facade::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                format!("no branch head registered for `{:?}`", branch_identity),
+            )
         })?;
         state
             .committed_patches
             .get(commit_identity)
             .cloned()
             .ok_or_else(|| {
-                RelationalBridgeSourceError::new(format!(
+                RelationalBridgeSourceError::new(worth_runtime_bridge::facade::RelationalBridgeSourceErrorTag::ExternalSourceFailure, format!(
                     "branch head `{:?}` for `{:?}` had no patch envelope",
                     commit_identity, branch_identity
                 ))

@@ -192,7 +192,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
             .admit_exact_conditional_signal_basis(&lowering_anchor, truth.signal_basis())
             .map_err(|denial| {
                 super::super::installation::WorthQueryConditionalRuntimeInstallationDenial::new(
-                    super::super::installation::WorthQueryConditionalRuntimeInstallationDenialKind::BridgeRejected,
+                    super::super::installation::WorthQueryConditionalRuntimeInstallationDenialKind::BridgeConditional(denial.kind()),
                     format!("{:?}: {}", denial.kind(), denial.detail()),
                 )
             })?;
@@ -230,7 +230,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
             })
             .map_err(|denial| {
                 super::super::installation::WorthQueryConditionalRuntimeInstallationDenial::new(
-                    super::super::installation::WorthQueryConditionalRuntimeInstallationDenialKind::BridgeRejected,
+                    super::super::installation::WorthQueryConditionalRuntimeInstallationDenialKind::ManagedTemporal(denial.kind()),
                     denial.detail(),
                 )
             })?;

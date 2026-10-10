@@ -2,10 +2,15 @@ use super::super::support::*;
 
 #[test]
 fn pricing_shock_showcase_artifact_explains_retained_commit_without_hidden_memory() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let scenario = generated_pricing_scenario();
     let bundle = capture_pricing_workload_certification_bundle(
         BridgeRuntimePolicy::development(),
         BridgePreviewSessionIdentity::admit_bridge_owned("pricing:preview-showcase-artifact"),
+        resource_request,
     );
     let artifact = bundle.showcase_artifact_json();
     let shock_commit = bundle
@@ -119,9 +124,14 @@ fn pricing_shock_showcase_artifact_explains_retained_commit_without_hidden_memor
 
 #[test]
 fn pricing_shock_showcase_timeline_is_lineage_coherent() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let bundle = capture_pricing_workload_certification_bundle(
         BridgeRuntimePolicy::development(),
         BridgePreviewSessionIdentity::admit_bridge_owned("pricing:preview-showcase-timeline"),
+        resource_request,
     );
     let artifact = bundle.showcase_artifact_json();
     let timeline = artifact["timeline"]
@@ -193,9 +203,14 @@ fn pricing_shock_showcase_timeline_is_lineage_coherent() {
 
 #[test]
 fn pricing_shock_showcase_trust_attack_matrix_is_bundle_derived() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let bundle = capture_pricing_workload_certification_bundle(
         BridgeRuntimePolicy::development(),
         BridgePreviewSessionIdentity::admit_bridge_owned("pricing:preview-showcase-trust-derived"),
+        resource_request,
     );
     let artifact = bundle.showcase_artifact_json();
     let trust_attacks = artifact["trust_attack_matrix"]
@@ -219,9 +234,8 @@ fn pricing_shock_showcase_trust_attack_matrix_is_bundle_derived() {
                 .as_str()
                 .is_some_and(|value| !value.is_empty())
     }));
-    assert_eq!(
-        bundle.hostile_failure.failure_class,
-        BridgeFailureClass::Delivery(BridgeDeliveryErrorKind::SnapshotAcquisitionFailure)
+    assert!(
+        matches!(bundle.hostile_failure.failure_class, BridgeFailureClass::Delivery(BridgeDeliveryErrorKind::SnapshotAcquisitionFailure(ref cause)) if cause.kind() == crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure)
     );
     assert_eq!(
         bundle.restart_failure.error_kind,

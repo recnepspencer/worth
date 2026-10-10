@@ -18,12 +18,15 @@ use crate::domain_computation::{
 #[test]
 fn direct_running_recovery_resumes_the_exact_epoch_on_the_rightful_thread() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
         let (epoch_identity, paused) = direct_paused(
             execution,
-            direct_admission_fixture(FixtureDisposition::YieldThenConverged),
+            direct_admission_fixture(FixtureDisposition::YieldThenConverged, resource_request),
             "direct-running-yield-recovery",
         );
         let running = foreign_direct_running_recovery(paused);
@@ -50,12 +53,15 @@ fn direct_running_recovery_resumes_the_exact_epoch_on_the_rightful_thread() {
 #[test]
 fn workflow_running_recovery_resumes_the_exact_stage_on_the_rightful_thread() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
         let (epoch_identity, paused) = workflow_paused(
             execution,
-            workflow_admission_fixture(FixtureDisposition::YieldThenConverged),
+            workflow_admission_fixture(FixtureDisposition::YieldThenConverged, resource_request),
             "workflow-running-yield-recovery",
         );
         let running = foreign_workflow_running_recovery(paused);
@@ -82,10 +88,13 @@ fn workflow_running_recovery_resumes_the_exact_stage_on_the_rightful_thread() {
 #[test]
 fn direct_terminal_recovery_closes_resources_once() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let (fixture, probe) = direct_yield_recovery_admission_fixture();
+        let (fixture, probe) = direct_yield_recovery_admission_fixture(resource_request);
         let (epoch_identity, paused) =
             direct_paused(execution, fixture, "direct-terminal-yield-recovery");
         let cleanup = match paused.yield_iteration() {
@@ -111,10 +120,13 @@ fn direct_terminal_recovery_closes_resources_once() {
 #[test]
 fn workflow_terminal_recovery_closes_without_artifacts() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let (fixture, probe) = workflow_yield_recovery_admission_fixture();
+        let (fixture, probe) = workflow_yield_recovery_admission_fixture(resource_request);
         let (epoch_identity, paused) =
             workflow_paused(execution, fixture, "workflow-terminal-yield-recovery");
         let cleanup = workflow_terminal_cleanup(paused);
@@ -133,11 +145,15 @@ fn workflow_terminal_recovery_closes_without_artifacts() {
 #[test]
 fn workflow_terminal_recovery_pending_retry_preserves_authority() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
         let (fixture, receiver, probe) = workflow_yield_recovery_artifact_admission_fixture(
             FixtureYieldRecoveryArtifact::Cooperative,
+            resource_request,
         );
         let (epoch_identity, paused) =
             workflow_paused(execution, fixture, "workflow-yield-recovery-pending");
@@ -177,11 +193,15 @@ fn workflow_terminal_recovery_pending_retry_preserves_authority() {
 #[test]
 fn workflow_terminal_recovery_types_double_artifact_panic_as_closed_recovery() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
         let (fixture, receiver, probe) = workflow_yield_recovery_artifact_admission_fixture(
             FixtureYieldRecoveryArtifact::DoublePanicking,
+            resource_request,
         );
         let (epoch_identity, paused) =
             workflow_paused(execution, fixture, "workflow-yield-recovery-double-panic");

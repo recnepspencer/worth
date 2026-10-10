@@ -18,6 +18,7 @@ impl WorthQueryWorkspace {
         operation: &worth_query_execution::facade::runtime::WorthQueryExecutionBoundOperationAuthority,
         product: &worth_query_execution::facade::primary_graph::WorthQueryProductBranchLease,
         attempt: worth_query_execution::facade::provider_session::WorthQueryDirectExecutionResourceAttempt,
+        resource_request: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
         worth_query_execution::facade::runtime::WorthQueryAdmittedDirectRun,
         worth_query_execution::facade::runtime::WorthQueryManagedDirectRunAdmissionFailure,
@@ -30,7 +31,7 @@ impl WorthQueryWorkspace {
         self.runtime
             .installed_product
             .managed_run_admission(&self.runtime.execution_runtime)
-            .admit_direct(operation, attempt, request)
+            .admit_direct(operation, attempt, request, resource_request)
     }
 
     pub(crate) fn admit_managed_workflow_run(
@@ -38,6 +39,7 @@ impl WorthQueryWorkspace {
         operation: &worth_query_execution::facade::runtime::WorthQueryExecutionBoundOperationAuthority,
         product: &worth_query_execution::facade::primary_graph::WorthQueryProductBranchLease,
         attempt: worth_query_execution::facade::provider_session::WorthQueryWorkflowExecutionResourceAttempt,
+        resource_request: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
         worth_query_execution::facade::runtime::WorthQueryAdmittedWorkflowRun,
         worth_query_execution::facade::runtime::WorthQueryManagedWorkflowRunAdmissionFailure,
@@ -50,7 +52,7 @@ impl WorthQueryWorkspace {
         self.runtime
             .installed_product
             .managed_run_admission(&self.runtime.execution_runtime)
-            .admit_workflow(operation, attempt, request)
+            .admit_workflow(operation, attempt, request, resource_request)
     }
 
     pub fn observe_operating_world(

@@ -32,6 +32,7 @@ impl SnapshotReadSource for PacketSource {
     fn open_snapshot(
         &self,
         _: &TruthSnapshotIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError> {
         Ok(Box::new(self.clone()))
     }

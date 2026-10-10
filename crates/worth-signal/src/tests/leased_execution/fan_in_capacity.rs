@@ -57,7 +57,7 @@ fn fixture() -> Fixture {
             EvaluationRequestMode::Default,
             &(),
             &|_| Ok(AspectVersion::zero().with(VALUE, 1)),
-            &lease,
+            worth_execution::ExecutionRequest::leased(&lease),
         )
         .expect("producer facts settle before the shared consumer reads them");
     drop(lease);
@@ -84,7 +84,7 @@ fn fixture() -> Fixture {
                 })?;
                 Ok(AspectVersion::zero().with(VALUE, sum))
             },
-            &lease,
+            worth_execution::ExecutionRequest::leased(&lease),
         )
         .expect("the shared consumer installs real unscoped dependencies");
     drop(lease);
@@ -115,7 +115,7 @@ fn completes(fixture: &Fixture, memory: u64) -> bool {
             calls.fetch_add(1, Ordering::SeqCst);
             Ok(AspectVersion::zero().with(VALUE, 2))
         },
-        &lease,
+        worth_execution::ExecutionRequest::leased(&lease),
     );
     let (completed, success) = match outcome {
         Ok(report) => {

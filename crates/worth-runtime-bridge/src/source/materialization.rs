@@ -201,7 +201,6 @@ mod tests {
             ),
             BridgeHistoricalMaterializationPath::CommitEnvelopeSnapshot,
             admitted,
-            crate::policy::BridgeExecutionPolicyBaseline::development(),
         );
 
         let left = MaterializedTruthViewPacketSet::new(planned.clone(), vec![observation]);
@@ -220,7 +219,6 @@ mod tests {
             ),
             BridgeHistoricalMaterializationPath::CommitEnvelopeSnapshot,
             admitted,
-            crate::policy::BridgeExecutionPolicyBaseline::development(),
         );
         let right = MaterializedTruthViewPacketSet::new(planned, vec![observation]);
 

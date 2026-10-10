@@ -19,12 +19,13 @@ pub(super) fn last_historical_record(
 pub(super) fn replay_historical_record(
     session: &BridgeHarnessSession,
     record: &BridgeCanonicalHistoricalEvaluationRecord,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> BridgeHistoricalEvaluationReplaySummary {
     session
         .runtime
         .as_ref()
         .expect("bridge runtime")
-        .replay_canonical_historical_evaluation_record(record)
+        .replay_canonical_historical_evaluation_record(record, execution)
         .expect("historical replay should reconstruct the canonical record")
 }
 

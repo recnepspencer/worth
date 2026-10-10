@@ -14,7 +14,7 @@ worth_proof::authority_marker!(pub(in crate::branch::owner_services) SignalCondi
 pub(in crate::branch::owner_services) type SignalConditionalServiceAuthority =
     AuthorityWitness<SignalConditionalServiceAuthorityMarker>;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SignalConditionalServiceIssuanceDenial {
     OwnerUnavailable(SignalOwnerUnavailable),
     OwnerAdmission(SignalBranchBasisObservationDenial),

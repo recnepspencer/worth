@@ -2,9 +2,14 @@ use super::super::support::*;
 
 #[test]
 fn pricing_shock_ml_pipeline_export_contains_full_traceable_simulation_artifacts() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let bundle = capture_pricing_workload_certification_bundle(
         BridgeRuntimePolicy::development(),
         BridgePreviewSessionIdentity::admit_bridge_owned("pricing:preview-ml-export"),
+        resource_request,
     );
     let export = bundle.ml_pipeline_export_json();
     let reference_comparison = bundle.reference_workload_comparison_evidence();
@@ -107,9 +112,14 @@ fn pricing_shock_ml_pipeline_export_contains_full_traceable_simulation_artifacts
 
 #[test]
 fn pricing_shock_ml_pipeline_export_lineage_graph_is_well_formed() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let bundle = capture_pricing_workload_certification_bundle(
         BridgeRuntimePolicy::development(),
         BridgePreviewSessionIdentity::admit_bridge_owned("pricing:preview-ml-graph"),
+        resource_request,
     );
     let export = bundle.ml_pipeline_export_json();
     let edges = export["lineage_provenance_edges"]
@@ -209,11 +219,16 @@ fn pricing_shock_ml_pipeline_export_lineage_graph_is_well_formed() {
 
 #[test]
 fn pricing_shock_ml_pipeline_export_simulation_summaries_match_iteration_traces() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let bundle = capture_pricing_workload_certification_bundle(
         BridgeRuntimePolicy::development(),
         BridgePreviewSessionIdentity::admit_bridge_owned(
             "pricing:preview-ml-simulation-consistency",
         ),
+        resource_request,
     );
     let export = bundle.ml_pipeline_export_json();
     assert_eq!(

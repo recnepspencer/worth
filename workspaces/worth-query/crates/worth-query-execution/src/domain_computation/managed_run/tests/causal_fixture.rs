@@ -1,3 +1,4 @@
+mod snapshot_adapter;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 use worth_execution::ExecutionAllocationPolicy as NativeAllocationPolicy;
@@ -116,22 +117,26 @@ pub(super) fn source_profile_substitution_context() -> SourceProfileSubstitution
 pub(super) fn causal_lower_execution_basis(
     operation_binding_identity: &str,
     resource_attempt_identity: &str,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> CausalLowerExecutionBasis {
     causal_lower_execution_basis_with_snapshot_match(
         operation_binding_identity,
         resource_attempt_identity,
         true,
+        resource_request,
     )
 }
 
 pub(super) fn mismatched_snapshot_lower_execution_basis(
     operation_binding_identity: &str,
     resource_attempt_identity: &str,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> CausalLowerExecutionBasis {
     causal_lower_execution_basis_with_snapshot_match(
         operation_binding_identity,
         resource_attempt_identity,
         false,
+        resource_request,
     )
 }
 
@@ -139,6 +144,7 @@ fn causal_lower_execution_basis_with_snapshot_match(
     operation_binding_identity: &str,
     resource_attempt_identity: &str,
     matching_snapshot: bool,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> CausalLowerExecutionBasis {
     let (source, bridge_relational, substitute, branch, snapshot) =
         relational_source_and_lease(matching_snapshot);
@@ -152,6 +158,7 @@ fn causal_lower_execution_basis_with_snapshot_match(
                 BridgeDeliveryIntent::PrepareSignalEvaluation,
             ),
             SnapshotReadPacket::new(vec![]),
+            resource_request,
         )
         .expect("active Relational snapshot should plan");
     let bridge = bridge
@@ -168,6 +175,7 @@ fn causal_lower_execution_basis_with_snapshot_match(
             .expect("managed test step contract should be bounded"),
             BridgeAsyncRequestTruthViewBasis::branch_head(branch, snapshot),
             planned,
+            resource_request,
         )
         .expect("Bridge should mint Signal authority for the exact managed intent");
     let relational = substitute.unwrap_or(bridge_relational);
@@ -285,8 +293,9 @@ impl CommittedPatchSource for ForeignProfileRelationalSource {
     fn load_committed_patch(
         &self,
         request: RelationalCommittedPatchRequest,
+        resource_request: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeCommittedPatchEnvelope, RelationalBridgeSourceError> {
-        CommittedPatchSource::load_committed_patch(&self.source, request)
+        CommittedPatchSource::load_committed_patch(&self.source, request, resource_request)
     }
 }
 
@@ -294,24 +303,9 @@ impl SnapshotReadSource for ForeignProfileRelationalSource {
     fn open_snapshot(
         &self,
         identity: &TruthSnapshotIdentity,
+        resource_request: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError> {
-        SnapshotReadSource::open_snapshot(&self.source, identity)
-    }
-}
-
-impl BridgeSourceAdapter for SameRuntimeSourceAdapter {
-    fn declared_capabilities(&self) -> BridgeSourceCapabilitySet {
-        BridgeSourceCapabilitySet::new(vec![
-            BridgeSourceCapability::SnapshotRead,
-            BridgeSourceCapability::BranchRead,
-        ])
-    }
-
-    fn open_snapshot(
-        &self,
-        identity: &TruthSnapshotIdentity,
-    ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError> {
-        SnapshotReadSource::open_snapshot(&self.source, identity)
+        SnapshotReadSource::open_snapshot(&self.source, identity, resource_request)
     }
 }
 

@@ -90,20 +90,28 @@ impl WorthQueryGraphParticipationProvider<ManagedGraph> for EffectProvider {
 #[test]
 fn touch_effect_cannot_cross_an_effect_free_step_contract() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
         let applied_effects = Arc::new(AtomicUsize::new(0));
-        let (running, graph) = managed_graph_effect_run_with_provider(EffectProvider {
-            partial_effects_may_remain: false,
-            applied_effects: Arc::clone(&applied_effects),
-            reject_effect: false,
-            panic_after_effect: false,
-        });
-        let installed_running_phase = execution.phase_for_direct(&running);
-
+        let (running, graph) = managed_graph_effect_run_with_provider(
+            EffectProvider {
+                partial_effects_may_remain: false,
+                applied_effects: Arc::clone(&applied_effects),
+                reject_effect: false,
+                panic_after_effect: false,
+            },
+            resource_request,
+        );
         let active = start_effect(execution, running, &graph, "effect-free");
-        let terminal = match active.advance(&installed_running_phase) {
+        let terminal = match {
+            let fixture_target = active;
+            let installed_fixture_phase = fixture_target.fixture_phase(execution);
+            fixture_target.advance(&installed_fixture_phase)
+        } {
             WorthQueryDirectGraphStepOutcome::Failed(terminal) => terminal,
             _ => panic!("effect-free bounded step admitted an applied effect"),
         };
@@ -120,21 +128,27 @@ fn touch_effect_cannot_cross_an_effect_free_step_contract() {
 #[test]
 fn declared_partial_effect_posture_carries_exact_applied_effect_evidence() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
         let applied_effects = Arc::new(AtomicUsize::new(0));
-        let (running, graph) = managed_graph_effect_run_with_provider(EffectProvider {
-            partial_effects_may_remain: true,
-            applied_effects: Arc::clone(&applied_effects),
-            reject_effect: false,
-            panic_after_effect: false,
-        });
-        let installed_running_phase = execution.phase_for_direct(&running);
-
-        let completion = match start_effect(execution, running, &graph, "partial-effect")
-            .advance(&installed_running_phase)
-        {
+        let (running, graph) = managed_graph_effect_run_with_provider(
+            EffectProvider {
+                partial_effects_may_remain: true,
+                applied_effects: Arc::clone(&applied_effects),
+                reject_effect: false,
+                panic_after_effect: false,
+            },
+            resource_request,
+        );
+        let completion = match {
+            let fixture_target = start_effect(execution, running, &graph, "partial-effect");
+            let installed_fixture_phase = fixture_target.fixture_phase(execution);
+            fixture_target.advance(&installed_fixture_phase)
+        } {
             WorthQueryDirectGraphStepOutcome::Completed(completion) => completion,
             _ => panic!("declared partial-effect posture did not admit the governed effect"),
         };
@@ -152,21 +166,27 @@ fn declared_partial_effect_posture_carries_exact_applied_effect_evidence() {
 #[test]
 fn rejected_effect_closure_cannot_claim_an_applied_effect() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
         let applied_effects = Arc::new(AtomicUsize::new(0));
-        let (running, graph) = managed_graph_effect_run_with_provider(EffectProvider {
-            partial_effects_may_remain: true,
-            applied_effects: Arc::clone(&applied_effects),
-            reject_effect: true,
-            panic_after_effect: false,
-        });
-        let installed_running_phase = execution.phase_for_direct(&running);
-
-        let terminal = match start_effect(execution, running, &graph, "rejected-effect")
-            .advance(&installed_running_phase)
-        {
+        let (running, graph) = managed_graph_effect_run_with_provider(
+            EffectProvider {
+                partial_effects_may_remain: true,
+                applied_effects: Arc::clone(&applied_effects),
+                reject_effect: true,
+                panic_after_effect: false,
+            },
+            resource_request,
+        );
+        let terminal = match {
+            let fixture_target = start_effect(execution, running, &graph, "rejected-effect");
+            let installed_fixture_phase = fixture_target.fixture_phase(execution);
+            fixture_target.advance(&installed_fixture_phase)
+        } {
             WorthQueryDirectGraphStepOutcome::Failed(terminal) => terminal,
             _ => panic!("rejected provider effect advanced the managed run"),
         };
@@ -194,21 +214,27 @@ fn rejected_effect_closure_cannot_claim_an_applied_effect() {
 #[test]
 fn panic_after_effect_attempt_preserves_effect_uncertainty() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
         let applied_effects = Arc::new(AtomicUsize::new(0));
-        let (running, graph) = managed_graph_effect_run_with_provider(EffectProvider {
-            partial_effects_may_remain: true,
-            applied_effects: Arc::clone(&applied_effects),
-            reject_effect: false,
-            panic_after_effect: true,
-        });
-        let installed_running_phase = execution.phase_for_direct(&running);
-
-        let terminal = match start_effect(execution, running, &graph, "panicked-effect")
-            .advance(&installed_running_phase)
-        {
+        let (running, graph) = managed_graph_effect_run_with_provider(
+            EffectProvider {
+                partial_effects_may_remain: true,
+                applied_effects: Arc::clone(&applied_effects),
+                reject_effect: false,
+                panic_after_effect: true,
+            },
+            resource_request,
+        );
+        let terminal = match {
+            let fixture_target = start_effect(execution, running, &graph, "panicked-effect");
+            let installed_fixture_phase = fixture_target.fixture_phase(execution);
+            fixture_target.advance(&installed_fixture_phase)
+        } {
             WorthQueryDirectGraphStepOutcome::Failed(terminal) => terminal,
             _ => panic!("panicked provider effect advanced the managed run"),
         };
@@ -238,8 +264,9 @@ fn start_effect(
     scope: &str,
 ) -> crate::domain_computation::WorthQueryActiveDirectGraphExecution {
     {
-        let installed_fixture_phase = running.fixture_phase(execution);
-        running.begin_graph_execution(
+        let fixture_target = running;
+        let installed_fixture_phase = fixture_target.fixture_phase(execution);
+        fixture_target.begin_graph_execution(
             &installed_fixture_phase,
             graph,
             WorthQueryManagedGraphCallRequest::new(

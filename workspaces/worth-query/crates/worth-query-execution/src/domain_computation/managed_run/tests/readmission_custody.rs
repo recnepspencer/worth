@@ -23,6 +23,9 @@ impl Drop for Restore {
 }
 #[test]
 fn bounded_provider_fixture_opener_refuses_before_direct_and_workflow_readmission() {
+    let host_request = crate::bridge_host_request::serial_request();
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     use std::num::NonZeroUsize;
     bound(None);
     let host = AdvancementHost::install();
@@ -30,15 +33,18 @@ fn bounded_provider_fixture_opener_refuses_before_direct_and_workflow_readmissio
         let _restore = Restore(place(placement), bound(None));
         let (yielded, bridge, runtime) = host
             .run_provider_fixture(|phase| {
-                readmission_direct::yielded_direct(&phase.test_host_request())
+                readmission_direct::yielded_direct(&phase.test_host_request(), resource_request)
             })
             .unwrap();
         let mut direct = Some(yielded);
         let (yielded, workflow_bridge, workflow_runtime, _) = host
             .run_provider_fixture(|phase| {
+                let fixture_custody = phase.test_host_request();
+                let bootstrap = fixture_custody.bootstrap_for_test();
                 readmission_workflow::yielded_workflow(
                     &phase.test_host_request(),
                     yield_fixture::YieldProvider::installed(5),
+                    bootstrap.execution_request(),
                 )
             })
             .unwrap();

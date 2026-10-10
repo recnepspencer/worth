@@ -13,6 +13,9 @@ use worth_query_installation::facade::WorthQueryInstalledGraphParticipationAutho
 #[test]
 fn foreign_workflow_run_is_denied_and_each_rightful_world_still_completes() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -23,7 +26,7 @@ fn foreign_workflow_run_is_denied_and_each_rightful_world_still_completes() {
             managed: first_managed,
             graph: first_graph,
             bridge: _,
-        } = workflow_admission_fixture(FixtureDisposition::Converged);
+        } = workflow_admission_fixture(FixtureDisposition::Converged, resource_request);
         let WorkflowAdmissionFixture {
             runtime: second_runtime,
             operation: second_operation,
@@ -31,7 +34,7 @@ fn foreign_workflow_run_is_denied_and_each_rightful_world_still_completes() {
             managed: second_managed,
             graph: second_graph,
             bridge: _,
-        } = workflow_admission_fixture(FixtureDisposition::Converged);
+        } = workflow_admission_fixture(FixtureDisposition::Converged, resource_request);
         let expected_contract = first_contract.identity().to_owned();
         let expected_managed = second_managed.identity().to_owned();
         let expected_graph = first_graph.authority_identity().to_owned();

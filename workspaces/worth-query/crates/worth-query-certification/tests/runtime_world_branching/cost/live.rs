@@ -143,9 +143,9 @@ fn with_population<Result>(
                     ApplicationQueryParameterSet::new(),
                     live_controls(&request),
                 )
-                .unwrap()
                 })
-                .expect("installed host call opens")
+                .unwrap()
+                .unwrap()
         })
         .collect::<Vec<_>>();
     let result = probe();

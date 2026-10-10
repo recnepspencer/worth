@@ -59,6 +59,9 @@ impl WorthQueryGraphParticipationProvider<ManagedGraph> for MultiChunkProvider {
 #[test]
 fn each_streamed_chunk_requires_consumption_before_the_next_provider_step() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -68,6 +71,7 @@ fn each_streamed_chunk_requires_consumption_before_the_next_provider_step() {
             MultiChunkProvider {
                 advances: Arc::clone(&advances),
             },
+            resource_request,
         );
         let first = expect_chunk({
             let installed_fixture_phase = active.fixture_phase(execution);
@@ -112,6 +116,9 @@ fn each_streamed_chunk_requires_consumption_before_the_next_provider_step() {
 #[test]
 fn stalled_consumer_cancellation_releases_the_chunk_before_terminal_cleanup() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -122,6 +129,7 @@ fn stalled_consumer_cancellation_releases_the_chunk_before_terminal_cleanup() {
                 MultiChunkProvider {
                     advances: Arc::clone(&advances),
                 },
+                resource_request,
             );
             let installed_fixture_phase = fixture_state.fixture_phase(execution);
             fixture_state.advance(&installed_fixture_phase)
@@ -149,6 +157,9 @@ fn stalled_consumer_cancellation_releases_the_chunk_before_terminal_cleanup() {
 #[test]
 fn foreign_consumer_failure_preserves_queue_occupancy_for_owner_cleanup() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -158,6 +169,7 @@ fn foreign_consumer_failure_preserves_queue_occupancy_for_owner_cleanup() {
                 MultiChunkProvider {
                     advances: Arc::new(AtomicUsize::new(0)),
                 },
+                resource_request,
             );
             let installed_fixture_phase = fixture_state.fixture_phase(execution);
             fixture_state.advance(&installed_fixture_phase)
@@ -191,6 +203,9 @@ fn foreign_consumer_failure_preserves_queue_occupancy_for_owner_cleanup() {
 #[test]
 fn exact_capacity_chunk_drains_before_completion() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -200,6 +215,7 @@ fn exact_capacity_chunk_drains_before_completion() {
             WideChunkProvider {
                 advances: Arc::clone(&advances),
             },
+            resource_request,
         );
         let installed_running_phase = execution.phase_for_direct(&running);
 
@@ -292,6 +308,9 @@ impl WorthQueryGraphParticipationProvider<ManagedGraph> for WideChunkProvider {
 #[test]
 fn pending_and_paused_abandonment_release_queue_and_output_retention() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -302,6 +321,7 @@ fn pending_and_paused_abandonment_release_queue_and_output_retention() {
                 MultiChunkProvider {
                     advances: Arc::clone(&advances),
                 },
+                resource_request,
             );
             let installed_fixture_phase = fixture_state.fixture_phase(execution);
             fixture_state.advance(&installed_fixture_phase)
@@ -321,6 +341,7 @@ fn pending_and_paused_abandonment_release_queue_and_output_retention() {
                 MultiChunkProvider {
                     advances: Arc::new(AtomicUsize::new(0)),
                 },
+                resource_request,
             );
             let installed_fixture_phase = fixture_state.fixture_phase(execution);
             fixture_state.advance(&installed_fixture_phase)
@@ -342,9 +363,13 @@ fn start_projection(
     execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     provider: MultiChunkProvider,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> crate::domain_computation::WorthQueryActiveDirectGraphExecution {
-    let (running, graph) =
-        managed_graph_run_with_provider(WorthQueryOperationGraphAccess::Project, provider);
+    let (running, graph) = managed_graph_run_with_provider(
+        WorthQueryOperationGraphAccess::Project,
+        provider,
+        resource_request,
+    );
     let installed_running_phase = execution.phase_for_direct(&running);
 
     running

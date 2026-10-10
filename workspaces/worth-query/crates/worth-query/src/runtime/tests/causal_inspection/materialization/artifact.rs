@@ -9,11 +9,15 @@ use super::support::*;
 
 #[test]
 fn admitted_query_causal_artifact_materializes_sealed_bridge_envelope() {
+    let host_request = crate::bridge_host_request::serial_request();
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = bridge_runtime();
     let routed = runtime
-        .route(super::super::causal_truth_commit_identity(
-            "commit-query-materialization",
-        ))
+        .route(
+            super::super::causal_truth_commit_identity("commit-query-materialization"),
+            resource_request,
+        )
         .unwrap();
     let reference_set = changed_reference_set(routed.route_identity());
     let flow = admit_causal_inspection(request_for(
@@ -130,11 +134,15 @@ fn admitted_query_causal_artifact_materializes_sealed_bridge_envelope() {
 
 #[test]
 fn advisory_query_causal_artifact_redacts_detail_without_changing_bridge_identity() {
+    let host_request = crate::bridge_host_request::serial_request();
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = bridge_runtime();
     let routed = runtime
-        .route(super::super::causal_truth_commit_identity(
-            "commit-query-advisory",
-        ))
+        .route(
+            super::super::causal_truth_commit_identity("commit-query-advisory"),
+            resource_request,
+        )
         .unwrap();
     let reference_set = changed_reference_set(routed.route_identity());
     let flow = admit_causal_inspection(request_for(
@@ -255,11 +263,15 @@ fn advisory_query_causal_artifact_redacts_detail_without_changing_bridge_identit
 
 #[test]
 fn admitted_materialization_rejects_wrong_bridge_summary_kind() {
+    let host_request = crate::bridge_host_request::serial_request();
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = bridge_runtime();
     let routed = runtime
-        .route(super::super::causal_truth_commit_identity(
-            "commit-query-summary-mismatch",
-        ))
+        .route(
+            super::super::causal_truth_commit_identity("commit-query-summary-mismatch"),
+            resource_request,
+        )
         .unwrap();
     let reference_set = changed_reference_set(routed.route_identity());
     let flow = admit_causal_inspection(request_for(

@@ -67,7 +67,7 @@ fn grouped_parallel_publishes_output_commits_in_global_task_order() {
                 &plan,
                 &(),
                 &|ctx| Ok(ctx.finish(version_ab(ctx.node().index() as u64 + 100, 0))),
-                &lease,
+                worth_execution::ExecutionRequest::leased(&lease),
             )
             .unwrap();
         let order = graph.published_output_commit_order_for_test();

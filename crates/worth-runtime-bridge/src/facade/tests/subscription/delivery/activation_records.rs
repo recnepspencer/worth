@@ -41,7 +41,11 @@ fn runtime_admits_consumer_contract_without_callback_identity() {
 
 #[test]
 fn runtime_activates_subscription_delivery_from_activation_ready() {
-    let (runtime, ready) = activation_ready_detail_subscription();
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, ready) = activation_ready_detail_subscription(resource_request);
     let cost_profile = runtime
         .admit_subscription_delivery_cost_profile(
             BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
@@ -73,8 +77,14 @@ fn runtime_activates_subscription_delivery_from_activation_ready() {
 
 #[test]
 fn runtime_emits_stable_canonical_subscription_delivery_records() {
-    let (runtime, active) =
-        active_detail_subscription(BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery);
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, active) = active_detail_subscription(
+        BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
+        resource_request,
+    );
 
     let left = sealed_window(
         &runtime,
@@ -105,8 +115,14 @@ fn runtime_emits_stable_canonical_subscription_delivery_records() {
 
 #[test]
 fn delivery_window_identity_changes_with_canonical_member_truth() {
-    let (runtime, active) =
-        active_detail_subscription(BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery);
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, active) = active_detail_subscription(
+        BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
+        resource_request,
+    );
     let left_open = runtime.open_subscription_delivery_window(
         &active,
         BridgeSubscriptionDeliveryFamilyKind::CanonicalMember,
@@ -157,8 +173,14 @@ fn delivery_window_identity_changes_with_canonical_member_truth() {
 
 #[test]
 fn delivery_window_identity_changes_with_occurrence_sequence() {
-    let (runtime, active) =
-        active_detail_subscription(BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery);
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, active) = active_detail_subscription(
+        BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
+        resource_request,
+    );
     let left_open = runtime.open_subscription_delivery_window(
         &active,
         BridgeSubscriptionDeliveryFamilyKind::CanonicalMember,
@@ -199,8 +221,13 @@ fn delivery_window_identity_changes_with_occurrence_sequence() {
 
 #[test]
 fn coalesced_delivery_reconstructs_the_same_canonical_member_truth() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let (runtime, active) = active_detail_subscription(
         BridgeSubscriptionDeliveryDensityPosture::BoundedCoalescedWindow,
+        resource_request,
     );
 
     let canonical = sealed_window(

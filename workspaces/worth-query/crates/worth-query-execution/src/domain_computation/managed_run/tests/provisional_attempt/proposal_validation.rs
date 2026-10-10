@@ -10,11 +10,14 @@ use crate::domain_computation::{
 #[test]
 fn proposal_dimensions_and_symbol_order_are_checked_before_provider_staging() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
         let state = state();
-        let (mut running, graph) = provisional_run(Arc::clone(&state));
+        let (mut running, graph) = provisional_run(Arc::clone(&state), resource_request);
         let (staged, fresh) = staged_with_fresh_read_set(execution, &mut running, &graph);
         let basis = proposal_parts(1);
         let effect_authority = staged.effect_authority();
@@ -90,11 +93,15 @@ fn proposal_dimensions_and_symbol_order_are_checked_before_provider_staging() {
 #[test]
 fn proposal_from_a_peer_session_cannot_be_repaired_by_equal_rendered_basis() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
         let first_state = state();
-        let (mut first_run, first_graph) = provisional_run(Arc::clone(&first_state));
+        let (mut first_run, first_graph) =
+            provisional_run(Arc::clone(&first_state), resource_request);
         let (first_staged, first_fresh) =
             staged_with_fresh_read_set(execution, &mut first_run, &first_graph);
         let proposal = first_staged
@@ -103,7 +110,8 @@ fn proposal_from_a_peer_session_cannot_be_repaired_by_equal_rendered_basis() {
             .expect("the originating session admits its proposal");
 
         let second_state = state();
-        let (mut second_run, second_graph) = provisional_run(Arc::clone(&second_state));
+        let (mut second_run, second_graph) =
+            provisional_run(Arc::clone(&second_state), resource_request);
         let (second_staged, second_fresh) =
             staged_with_fresh_read_set(execution, &mut second_run, &second_graph);
         assert_eq!(

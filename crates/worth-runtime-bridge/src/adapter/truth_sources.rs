@@ -11,6 +11,7 @@ pub trait CommittedPatchSource: Send + Sync + 'static {
     fn load_committed_patch(
         &self,
         request: RelationalCommittedPatchRequest,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<crate::input::envelope::BridgeCommittedPatchEnvelope, RelationalBridgeSourceError>;
 }
 
@@ -18,6 +19,7 @@ pub trait SnapshotReadSource: Send + Sync + 'static {
     fn open_snapshot(
         &self,
         identity: &TruthSnapshotIdentity,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError>;
 }
 
@@ -25,6 +27,7 @@ pub trait SnapshotReaderPool: Send + Sync + 'static {
     fn acquire(
         &self,
         identity: &TruthSnapshotIdentity,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError>;
 
     fn release(&self, reader: Box<dyn TruthSnapshotReader>);
@@ -34,6 +37,7 @@ pub trait TruthBranchHeadSource: Send + Sync + 'static {
     fn load_branch_head_patch(
         &self,
         branch_identity: &TruthBranchIdentity,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<crate::input::envelope::BridgeCommittedPatchEnvelope, RelationalBridgeSourceError>;
 }
 
