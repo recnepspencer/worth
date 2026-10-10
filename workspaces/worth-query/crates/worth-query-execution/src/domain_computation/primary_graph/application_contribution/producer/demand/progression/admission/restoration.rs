@@ -101,7 +101,7 @@ where
             .map_err(restoration_resource_denial)?;
         let selected_observation = selected.product().observation();
         // Both identity/header paths are inspected before measuring the
-        // variable branch names used by the full Product-read comparison.
+        // variable branch names used by the branch-occurrence comparison.
         admission
             .charge_external_work(8)
             .map_err(restoration_resource_denial)?;
@@ -128,7 +128,10 @@ where
         admission
             .charge_external_work(source_comparison)
             .map_err(restoration_resource_denial)?;
-        if !source_read.matches_observation(selected_observation) {
+        // Another output may have advanced this branch's head since discovery.
+        // The checkpoint dependency comparison below decides currentness at
+        // that head; the supplied commit is not itself a dependency.
+        if !source_read.same_branch_occurrence_observation(selected_observation) {
             return Ok(None);
         }
         let comparison = worth_runtime_world::facade::CurrentProductHead::comparison_work_bound(
