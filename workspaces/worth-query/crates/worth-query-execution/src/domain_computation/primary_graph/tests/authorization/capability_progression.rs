@@ -91,15 +91,21 @@ fn admitted_access_is_runtime_affine_at_operation_progression() {
     source.authorization_time.script([time(100)]);
     let target = installed_capability_authorization_world();
     let request = live_scope();
-    target
+    let access = source
         .application
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request();
-
             let principal = authenticated_principal(&host_custody, &source, &request);
             let access =
                 admitted_capability_access(&host_custody, &source, &principal, &request, 100)
                     .unwrap();
+            access
+        })
+        .expect("the source access read owns its host call");
+    target
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
             let target_operation = target
                 .application
                 .installed_schema()

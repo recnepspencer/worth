@@ -18,14 +18,13 @@ fn equal_version_snapshot_from_another_relational_runtime_is_rejected() {
     let first_graph = first.application.runtime.primary_graph().unwrap();
     let second_graph = second.application.runtime.primary_graph().unwrap();
     let installed = first_graph.retain_entity_resolution_context();
-    second
+    let first_version = first
         .application
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request();
             let borrowed_execution = host_custody.borrowed_request_for_test();
-            let execution = &borrowed_execution;
             let first_product = first.selected_product(
-                &(host_custody.phase_for_application(&second.application)).test_host_request(),
+                &(host_custody.phase_for_application(&first.application)).test_host_request(),
             );
             let first_version =
                 first_graph
@@ -37,6 +36,15 @@ fn equal_version_snapshot_from_another_relational_runtime_is_rejected() {
                             .version_id()
                     });
 
+            first_version
+        })
+        .expect("the source version read owns its host call");
+    second
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            let borrowed_execution = host_custody.borrowed_request_for_test();
+            let execution = &borrowed_execution;
             let second_product = second.selected_product(
                 &(host_custody.phase_for_application(&second.application)).test_host_request(),
             );

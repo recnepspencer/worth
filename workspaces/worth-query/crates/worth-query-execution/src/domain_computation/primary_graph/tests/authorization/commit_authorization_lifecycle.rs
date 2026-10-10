@@ -162,14 +162,14 @@ fn commit_basis_cannot_be_revalidated_by_a_foreign_runtime() {
         .authorization_time
         .script([time(100), time(100)]);
     let request = live_scope();
-    let principal = foreign_world
+    let principal = source_world
         .application
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request();
             authenticated_principal(&host_custody, &source_world, &request)
         })
         .expect("the fixture read owns its installed host call");
-    let mut admission = foreign_world
+    let mut admission = source_world
         .application
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request();

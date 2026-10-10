@@ -19,14 +19,14 @@ fn admission_from_an_equivalent_foreign_runtime_opens_no_application_door() {
     let source_world = installed_authorization_world(true);
     let target_world = installed_authorization_world(true);
     let request = live_scope();
-    let principal = target_world
+    let principal = source_world
         .application
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request();
             authenticated_principal(&host_custody, &source_world, &request)
         })
         .expect("the fixture read owns its installed host call");
-    let account = target_world
+    let account = source_world
         .application
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request();
