@@ -1,22 +1,21 @@
-//! One advance retains every attempted member's exact decision input.
+//! One public advance retains each published member's exact decision input.
 //!
 //! Native publication coordinates never confer another turn. A new Fresh
 //! permission exists only after a changed source meaning or changed decision
 //! facts/consumed output evidence, compared by their existing owners.
 use super::super::super::super::execution::ProducerExecutionStop;
 use super::*;
+use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandKey;
 use crate::domain_computation::primary_graph::{
     application_query::WorthQueryObservedSourceEpoch, output_lineage::AcceptedCurrentCandidate,
 };
-use std::any::TypeId;
 
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct PerformedMembers
 {
     entries: Vec<PerformedMember>,
-    selected: Option<usize>,
 }
 struct PerformedMember {
-    family: TypeId,
+    key: WorthQueryOutputDemandKey,
     source: WorthQueryObservedSourceEpoch,
     input: Option<AcceptedCurrentCandidate>,
     performed: bool,
@@ -27,17 +26,22 @@ struct PerformedMember {
 /// module impossible, including from NeedsDisclosure or a rejoined Ready.
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct FreshReadiness
 {
+    member: usize,
     _changed_input: Option<ChangedDecisionInput>,
 }
 
 struct ChangedDecisionInput(());
 impl FreshReadiness {
-    fn changed(evidence: ChangedDecisionInput) -> Self {
+    fn changed(member: usize, evidence: ChangedDecisionInput) -> Self {
         Self {
+            member,
             _changed_input: Some(evidence),
         }
     }
 }
+mod ordinary;
+mod publication;
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) use ordinary::DecisionInput;
 #[cfg(test)]
 mod tests;
 
@@ -46,7 +50,6 @@ impl PerformedMembers {
     ) -> Self {
         Self {
             entries: Vec::new(),
-            selected: None,
         }
     }
 
@@ -60,13 +63,9 @@ impl PerformedMembers {
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         for entry in &mut self.entries {
             admission
-                .charge_external_work(3)
+                .charge_external_work(entry.comparison_work()?)
                 .map_err(admission_denial)?;
-            if entry.family == ready.key().family_type()
-                && entry.source.same_occurrence(ready.key().source_epoch())
-                && entry.performed
-                && entry.input.is_none()
-            {
+            if entry.names(ready.key()) && entry.performed && entry.input.is_none() {
                 admission
                     .charge_external_work(std::mem::size_of::<AcceptedCurrentCandidate>() as u64)
                     .map_err(admission_denial)?;
@@ -76,46 +75,35 @@ impl PerformedMembers {
         Ok(())
     }
 
-    /// Seals only a Ready the just-executed Fresh successor actually published.
-    /// Pre-effect refusals remain unperformed and may resolve prerequisites.
-    pub(super) fn performed(
-        &mut self,
-        ready: &SelectedReadyReadmission,
-    ) -> Result<(), WorthQueryOutputDemandDenial> {
-        let index = self.selected.take().ok_or_else(foreign_denial)?;
-        let entry = &mut self.entries[index];
-        if entry.family != ready.key().family_type()
-            || !entry.source.same_occurrence(ready.key().source_epoch())
-        {
-            return Err(foreign_denial());
-        }
-        entry.performed = true;
-        Ok(())
+    /// The permission identifies the exact record that admitted this attempt.
+    /// Publication seals it before any checkpoint delivery or Ready rejoin.
+    fn performed(&mut self, permission: FreshReadiness) {
+        self.entries[permission.member].performed = true;
     }
 
     pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn fresh<
         Schema: ApplicationSchema + 'static,
     >(
         &mut self,
-        family: TypeId,
+        key: &WorthQueryOutputDemandKey,
         source: WorthQueryObservedSourceEpoch,
-        runtime: &SelectedDecisionInput<'_, '_, Schema>,
+        runtime: &DecisionInput<'_, '_, '_, Schema>,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<FreshReadiness>, ProducerExecutionStop> {
         for (index, entry) in self.entries.iter_mut().enumerate() {
             admission
-                .charge_external_work(3)
+                .charge_external_work(entry.comparison_work()?)
                 .map_err(admission_denial)?;
-            if entry.family != family || !entry.source.same_occurrence(&source) {
+            if !entry.names(key) {
                 continue;
             }
             if !entry.performed {
                 admission
                     .charge_external_work(4)
                     .map_err(admission_denial)?;
-                self.selected = Some(index);
                 entry.source = source;
                 return Ok(Some(FreshReadiness {
+                    member: index,
                     _changed_input: None,
                 }));
             }
@@ -130,11 +118,13 @@ impl PerformedMembers {
             admission
                 .charge_external_work(4)
                 .map_err(admission_denial)?;
-            self.selected = Some(index);
             entry.source = source;
             entry.input = None;
             entry.performed = false;
-            return Ok(Some(FreshReadiness::changed(ChangedDecisionInput(()))));
+            return Ok(Some(FreshReadiness::changed(
+                index,
+                ChangedDecisionInput(()),
+            )));
         }
         let item = std::mem::size_of::<PerformedMember>();
         admission
@@ -162,22 +152,48 @@ impl PerformedMembers {
             replacement
                 .try_reserve_exact(next)
                 .map_err(|_| capacity_denial())?;
-            if replacement.capacity() != next {
+            if replacement.capacity() < next {
                 return Err(capacity_denial().into());
             }
             replacement.append(&mut self.entries);
             self.entries = replacement;
         }
-        self.selected = Some(self.entries.len());
+        let index = self.entries.len();
+        let key_bytes = key.producer_identity().len();
+        admission
+            .charge_external_work(key_bytes as u64)
+            .map_err(admission_denial)?;
+        admission
+            .admit_read_scratch(key_bytes as u64)
+            .map_err(admission_denial)?;
         self.entries.push(PerformedMember {
-            family,
+            key: key.clone(),
             source,
             input: None,
             performed: false,
         });
         Ok(Some(FreshReadiness {
+            member: index,
             _changed_input: None,
         }))
+    }
+}
+
+impl PerformedMember {
+    fn comparison_work(&self) -> Result<u64, WorthQueryOutputDemandDenial> {
+        self.key
+            .producer_identity()
+            .len()
+            .checked_add(self.key.applicability().profile_kind().len())
+            .and_then(|bytes| bytes.checked_add(3))
+            .and_then(|work| u64::try_from(work).ok())
+            .ok_or_else(work_denial)
+    }
+    fn names(&self, key: &WorthQueryOutputDemandKey) -> bool {
+        self.key.family_type() == key.family_type()
+            && self.key.producer_identity() == key.producer_identity()
+            && self.key.applicability() == key.applicability()
+            && self.key.source_epoch().same_occurrence(key.source_epoch())
     }
 }
 

@@ -45,6 +45,7 @@ where
         delivery_branch: crate::basis::WorthQueryProductBranch,
         matched_predecessors: Option<MatchedRequiredPredecessors<'_>>,
         admission: &mut InvalidationEditAdmission,
+        performed: &mut PerformedMembers,
     ) -> Result<RequiredFreshProgress<Schema>, WorthQueryOutputDemandDenial>
     where
         Family: WorthQueryProducerOutputFamily<Schema> + 'static,
@@ -108,6 +109,7 @@ where
                                 shared,
                                 matched_predecessors,
                                 admission,
+                                performed,
                             )
                         })
                     }

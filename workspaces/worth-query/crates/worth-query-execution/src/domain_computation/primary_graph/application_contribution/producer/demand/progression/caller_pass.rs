@@ -49,7 +49,7 @@ where
     /// disclose in this call. A caller that reads its retained source again
     /// retries after source replacement or upstream completion; one that handed over its
     /// only disclosure answers `Pending` and discloses on its next advance.
-    pub(in crate::domain_computation::primary_graph) fn advance_output_demand_with_prepared_source<
+    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn advance_output_demand_with_prepared_source<
         Family,
     >(
         &self,
@@ -67,13 +67,13 @@ where
         >,
         commit_authority: WorthQueryProducerCommitAuthority,
         request_admission: &mut InvalidationEditAdmission,
+        performed: &mut PerformedMembers,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
         FamilySourceValue<Schema, Family>: 'static,
         FamilySourceQuery<Schema, Family>: 'static,
     {
-        let mut performed = required_wave::performed::PerformedMembers::start();
         let mut pass = AdvancePass::Initial;
         loop {
             let result = self.advance_caller_pass(
@@ -84,7 +84,7 @@ where
                 delivery_branch,
                 &mut disclosure,
                 pass,
-                &mut performed,
+                performed,
                 commit_authority.clone(),
                 request_admission,
             );

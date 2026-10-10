@@ -1,6 +1,6 @@
 //! Installed producer execution on the required wave's one selected Product.
 
-use super::super::demand::{PerformedMembers, SelectedDecisionInput};
+use super::super::demand::{DecisionInput, PerformedMembers, SelectedDecisionInput};
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use crate::domain_computation::primary_graph::{
@@ -219,18 +219,18 @@ where
                     admission,
                 )?;
                 let Some(readiness) = performed.fresh(
-                    selected.key().family_type(),
+                    selected.key(),
                     fresh.source().output_source_epoch().ok_or_else(|| {
                         denial(
                             WorthQueryOutputDemandDenialKind::ForeignSource,
                             Binding::IDENTITY,
                         )
                     })?,
-                    &SelectedDecisionInput {
+                    &DecisionInput::Selected(&SelectedDecisionInput {
                         shared,
                         positioned,
                         runtime,
-                    },
+                    }),
                     admission,
                 )?
                 else {
@@ -249,6 +249,7 @@ where
                         delivery_branch,
                         matched_predecessors,
                         admission,
+                        performed,
                     )
                     .map_err(ProducerExecutionStop::ExecutionStopped)?;
                 Ok(RequiredCueProgress::Fresh(progress))

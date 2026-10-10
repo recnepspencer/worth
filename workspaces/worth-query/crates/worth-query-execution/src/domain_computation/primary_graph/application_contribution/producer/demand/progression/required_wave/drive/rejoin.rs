@@ -39,9 +39,6 @@ macro_rules! rejoin_successor {
                             $resolved_on_wave.clear();
                             $queue.wave_moved();
                         }
-                        if let Err(stop) = $performed.performed(&ready) {
-                            $stopped!($label, ready.key(), stop);
-                        }
                         $current = Some(ready);
                         $current_role = $successor_role;
                         continue $label;
