@@ -1,5 +1,5 @@
 use std::any::{Any, TypeId};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::marker::PhantomData;
 use std::sync::Arc;
 
@@ -47,13 +47,13 @@ pub(in crate::domain_computation::primary_graph) struct InstalledManagedComputat
 
 pub(in crate::domain_computation::primary_graph) struct PendingMutationHandlerRegistry<Schema> {
     entries: BTreeMap<String, PendingMutationHandler>,
-    computations: BTreeMap<TypeId, InstalledManagedComputationOwner>,
+    computations: HashMap<TypeId, InstalledManagedComputationOwner>,
     _schema: PhantomData<fn() -> Schema>,
 }
 
 pub(in crate::domain_computation::primary_graph) struct InstalledMutationHandlerRegistry<Schema> {
     entries: BTreeMap<String, PendingMutationHandler>,
-    computations: BTreeMap<TypeId, InstalledManagedComputationOwner>,
+    computations: HashMap<TypeId, InstalledManagedComputationOwner>,
     _schema: PhantomData<fn() -> Schema>,
 }
 
@@ -69,7 +69,7 @@ impl<Schema> Default for PendingMutationHandlerRegistry<Schema> {
     fn default() -> Self {
         Self {
             entries: BTreeMap::new(),
-            computations: BTreeMap::new(),
+            computations: HashMap::new(),
             _schema: PhantomData,
         }
     }
@@ -267,16 +267,18 @@ impl<Schema> InstalledMutationHandlerRegistry<Schema> {
                     },
                 )
             })
-            .collect::<BTreeMap<_, _>>();
+            .collect::<HashMap<_, _>>();
         validate_managed_computation_inventory(&self.computations, &declared)
     }
 }
 
 fn validate_managed_computation_inventory(
-    installed: &BTreeMap<TypeId, InstalledManagedComputationOwner>,
-    declared: &BTreeMap<TypeId, ManagedComputationExpectation>,
+    installed: &HashMap<TypeId, InstalledManagedComputationOwner>,
+    declared: &HashMap<TypeId, ManagedComputationExpectation>,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-    for (computation_type, computation) in declared {
+    let mut computations: Vec<_> = declared.iter().collect();
+    computations.sort_unstable_by_key(|(_, computation)| computation.identity);
+    for (computation_type, computation) in computations {
         let owner = installed.get(computation_type).ok_or_else(|| {
             denial(
                 DenialKind::MissingManagedComputationOwner,

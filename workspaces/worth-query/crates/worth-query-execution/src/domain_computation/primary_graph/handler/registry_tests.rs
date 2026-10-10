@@ -16,12 +16,12 @@ fn expectation() -> ManagedComputationExpectation {
 
 #[test]
 fn declared_managed_computation_requires_its_exact_owner_inventory() {
-    let declared = BTreeMap::from([(TypeId::of::<Computation>(), expectation())]);
-    let missing = validate_managed_computation_inventory(&BTreeMap::new(), &declared)
+    let declared = HashMap::from([(TypeId::of::<Computation>(), expectation())]);
+    let missing = validate_managed_computation_inventory(&HashMap::new(), &declared)
         .expect_err("a declared computation without its owner must be denied");
     assert_eq!(missing.kind(), DenialKind::MissingManagedComputationOwner);
 
-    let mismatched = BTreeMap::from([(
+    let mismatched = HashMap::from([(
         TypeId::of::<Computation>(),
         InstalledManagedComputationOwner {
             feature_type: TypeId::of::<OtherFeature>(),
@@ -36,7 +36,7 @@ fn declared_managed_computation_requires_its_exact_owner_inventory() {
         DenialKind::ManagedComputationOwnerMeaningMismatch
     );
 
-    let exact = BTreeMap::from([(
+    let exact = HashMap::from([(
         TypeId::of::<Computation>(),
         InstalledManagedComputationOwner {
             feature_type: TypeId::of::<Feature>(),
@@ -47,7 +47,7 @@ fn declared_managed_computation_requires_its_exact_owner_inventory() {
     validate_managed_computation_inventory(&exact, &declared)
         .expect("the exact declared owner inventory validates");
 
-    let foreign = BTreeMap::from([
+    let foreign = HashMap::from([
         (
             TypeId::of::<Computation>(),
             exact[&TypeId::of::<Computation>()],
@@ -64,4 +64,31 @@ fn declared_managed_computation_requires_its_exact_owner_inventory() {
     let denial = validate_managed_computation_inventory(&foreign, &declared)
         .expect_err("an undeclared owner must be denied");
     assert_eq!(denial.kind(), DenialKind::ForeignManagedComputationOwner);
+}
+
+#[test]
+fn missing_owners_are_named_in_declared_computation_order() {
+    let a = TypeId::of::<Computation>();
+    let b = TypeId::of::<OtherFeature>();
+    let (alpha_type, zulu_type) = if a > b { (a, b) } else { (b, a) };
+    let alpha = ManagedComputationExpectation {
+        identity: "alpha-computation",
+        computation_type: alpha_type,
+        ..expectation()
+    };
+    let zulu = ManagedComputationExpectation {
+        identity: "zulu-computation",
+        computation_type: zulu_type,
+        ..expectation()
+    };
+    for reverse in [false, true] {
+        let mut entries = [(alpha_type, alpha), (zulu_type, zulu)];
+        if reverse {
+            entries.reverse();
+        }
+        let denied =
+            validate_managed_computation_inventory(&HashMap::new(), &HashMap::from(entries))
+                .unwrap_err();
+        assert_eq!(denied.subject(), "alpha-computation");
+    }
 }
