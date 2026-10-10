@@ -33,7 +33,9 @@ impl InputMode for LaterHandedOffFirst<'_> {
         assert_eq!(seed, None);
         let (handed_off, release) = mpsc::channel();
         let release = Mutex::new(release);
-        native::run_order(lease.unwrap(), &[0, 1], &|index| {
+        // The later key is offered first, so a lone worker runs it before the
+        // earlier key waits on its hand-off.
+        native::run_order(lease.unwrap(), &[1, 0], &|index| {
             if index == 0 {
                 release.lock().unwrap().recv().unwrap();
             }
