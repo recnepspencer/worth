@@ -1,6 +1,7 @@
 //! Capacity regions exercise the ordinary checkpoint lifecycle.
 use super::*;
 use support::capacity_region::{settle as setup_settle, Attempt};
+use worth_query_host::facade::application_contribution::WorthQueryApplicationProducerBinding;
 pub(super) fn run_root(budget: usize) -> Attempt {
     let profile = WorthQueryOutputDemandResourceProfile::standard()
         .with_registry_required_retained_bytes(NonZeroUsize::new(budget).unwrap());
@@ -68,10 +69,12 @@ pub(super) fn run_pair(budget: usize) -> Attempt {
     );
     assert_eq!(original.producer_contacts_in_this_demand(), 1);
     drop((first, original));
-    let mut final_initial = request
-        .demand(PlanarFinalOutputDemand::new("anchor-a"))
-        .start_dependent_in_program::<CheckpointProgram, FinalConnection>(&application)
-        .unwrap();
+    let mut final_initial = support::capacity_region::start!(
+        request
+            .demand(PlanarFinalOutputDemand::new("anchor-a"))
+            .start_dependent_in_program::<CheckpointProgram, FinalConnection>(&application),
+        "initial final consumer admission"
+    );
     let final_result = setup_settle!(final_initial, request, "initial final consumer");
     let final_entity = final_result
         .outputs_of::<FinalPlanarOutputs>()
@@ -79,22 +82,46 @@ pub(super) fn run_pair(budget: usize) -> Attempt {
         .entity::<FinalAnchorOutput<CheckpointSchema>>()
         .unwrap()
         .entity_id();
+    let final_rows: Vec<_> = application
+        .registry_row_keys_for_test()
+        .into_iter()
+        .filter(|(producer, _, _, _)| {
+            producer == PlanarFinalOutputProducer::<CheckpointSchema>::IDENTITY
+        })
+        .collect();
+    assert_eq!(
+        final_rows.len(),
+        1,
+        "the initial final consumer has one Ready row"
+    );
+    let final_row = final_rows.into_iter().next().unwrap();
     drop((final_initial, final_result));
 
-    // Two disjoint real root publications each need Ready custody. The
-    // installed profile has finite custody, so they displace closed cached
-    // output cells without deleting either native body.
+    // Hold both displacing publications: required custody cannot retire them
+    // instead of the closed final consumer. Observe that consumer's retirement
+    // before testing its locator; a particular overlap with cold admission is
+    // not part of the custody law.
+    let mut held = Vec::new();
     for key in ["anchor-isolated", "anchor-island"] {
-        let mut other = request
-            .demand(PlanarOutputDemand::new(key))
-            .start_in_program::<CheckpointProgram, CheckpointRoot>(&application)
-            .unwrap();
+        let mut other = support::capacity_region::start!(
+            request
+                .demand(PlanarOutputDemand::new(key))
+                .start_in_program::<CheckpointProgram, CheckpointRoot>(&application),
+            "displacing publication admission"
+        );
         let other_result = setup_settle!(other, request, "displacing publication");
         assert_eq!(
             other_result.posture(),
             WorthQueryOutputSettlementPosture::Performed
         );
-        drop((other, other_result));
+        held.push((other, other_result));
+    }
+    let reclaimed = !application
+        .registry_row_keys_for_test()
+        .contains(&final_row);
+    drop(held);
+    if !reclaimed {
+        return Attempt::Above("the original final Ready survived required pressure");
     }
     let prior = request
         .query(PlanarOutputRead {
@@ -119,7 +146,9 @@ pub(super) fn run_pair(budget: usize) -> Attempt {
         .unwrap();
     drop(application);
 
-    let reopened = support::install_program::<CheckpointProgram>(Some(checkpoint), profile);
+    let reopened_profile = WorthQueryOutputDemandResourceProfile::standard();
+    let reopened =
+        support::install_program::<CheckpointProgram>(Some(checkpoint), reopened_profile);
     let (scope, principal) = authenticate(&reopened);
     let request = reopened.request(&principal, &scope);
     let mut demand = request
@@ -127,9 +156,6 @@ pub(super) fn run_pair(budget: usize) -> Attempt {
         .start_dependent_in_program::<CheckpointProgram, FinalConnection>(&reopened)
         .unwrap();
     let restored = setup_settle!(demand, request, "restored final consumer");
-    if restored.outputs_of::<FinalPlanarOutputs>().is_ok() {
-        return Attempt::Above("cached Initial survives instead of prior-only Preserve");
-    }
     let preserved = restored
         .outputs_of::<FinalPlanarPreserveOutputs>()
         .expect("a prior-only locator must select Preserve rather than duplicate Initial");
@@ -162,7 +188,7 @@ pub(super) fn run_pair(budget: usize) -> Attempt {
     drop(reopened);
 
     let reopened_again =
-        support::install_program::<CheckpointProgram>(Some(preserved_checkpoint), profile);
+        support::install_program::<CheckpointProgram>(Some(preserved_checkpoint), reopened_profile);
     let (scope, principal) = authenticate(&reopened_again);
     let request = reopened_again.request(&principal, &scope);
     let mut repeated = request
