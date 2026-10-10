@@ -59,6 +59,8 @@ pub use super::application_checkpoint::{
     WorthQueryNativeCheckpointSectionBytes,
 };
 #[cfg(feature = "test-query-execution-observer")]
+pub use super::application_contribution::test_execution_authority;
+#[cfg(feature = "test-query-execution-observer")]
 pub use super::application_contribution::{
     bound_advancement_requests_on_this_thread_for_test,
     discarded_computation_retention_on_this_thread_for_test,
@@ -73,9 +75,8 @@ pub use super::application_contribution::{
     WorthQueryPublishedComputationStateForTest,
 };
 pub use super::application_contribution::{
-    test_execution_authority, WorthQueryAdmittedOutputDemand, WorthQueryAdvancementDenial,
-    WorthQueryAdvancementPhase, WorthQueryApplicationConditionalBinding,
-    WorthQueryApplicationConditionalPackageContract,
+    WorthQueryAdmittedOutputDemand, WorthQueryAdvancementDenial, WorthQueryAdvancementPhase,
+    WorthQueryApplicationConditionalBinding, WorthQueryApplicationConditionalPackageContract,
     WorthQueryApplicationConditionalProducerAccess, WorthQueryApplicationContractCatalog,
     WorthQueryApplicationContribution, WorthQueryApplicationContributionContracts,
     WorthQueryApplicationContributionSetup, WorthQueryApplicationContributionTuple,

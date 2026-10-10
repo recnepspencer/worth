@@ -73,6 +73,8 @@ pub use producer::{
     WorthQueryProducerOutputFamily, WorthQuerySelectedApplicationProducer,
     WorthQueryWorkflowAssessmentOutputFamily, WorthQueryWorkflowAssessmentPosture,
 };
+#[cfg(any(test, feature = "test-query-execution-observer"))]
+pub use request_execution::test_execution_authority;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use request_execution::test_policy;
 pub(in crate::domain_computation::primary_graph) use request_execution::QueryRequestExecution;
@@ -83,8 +85,7 @@ pub use request_execution::{
     WorthQueryExecutionPlacementForTest,
 };
 pub use request_execution::{
-    test_execution_authority, WorthQueryAdvancementDenial, WorthQueryAdvancementPhase,
-    WorthQueryForeignAdvancementPhase,
+    WorthQueryAdvancementDenial, WorthQueryAdvancementPhase, WorthQueryForeignAdvancementPhase,
 };
 pub use setup::WorthQueryApplicationContributionSetup;
 

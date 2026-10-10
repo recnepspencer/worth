@@ -32,6 +32,7 @@ pub use crate::domain_computation::primary_graph::{
     required_ready_custody_bytes_for_test, RequiredCustodyLayoutForTest,
 };
 
+#[cfg(feature = "test-query-execution-observer")]
 pub use crate::domain_computation::primary_graph::test_execution_authority;
 
 pub use worth_relational::facade::{
