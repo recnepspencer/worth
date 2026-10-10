@@ -27,10 +27,7 @@ const DECLARED: u64 = 4096;
 /// unit of work short of the combines the retained tree charges, so the tree
 /// is built again. Placed under `memory`, leased, then serial, each
 /// with the combines it ran.
-fn rebuilt_under(
-    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
-    memory: Option<u64>,
-) -> Vec<(Outcome, usize)> {
+fn rebuilt_under(memory: Option<u64>) -> Vec<(Outcome, usize)> {
     let placements: Vec<Box<dyn Fn() -> RuntimeWorldExecutionPlacement<'static>>> = match memory {
         None => vec![Box::new(|| {
             RuntimeWorldExecutionPlacement::Serial(
@@ -55,11 +52,7 @@ fn rebuilt_under(
         .iter()
         .map(|placement| {
             let installed = installed_over(4, StatusRead::Gather(1), counted_sum);
-            let first = first_run_over_four(
-                &phase_custody.phase_for_application(&world.application),
-                &world,
-                &installed,
-            );
+            let first = first_run_over_four(&world, &installed);
             // The first run charged its calls, four kernels of one unit and
             // its combines. The moved kernel takes the place of one unit and
             // all but one combine, so one combine short of the tree is left.
@@ -69,7 +62,6 @@ fn rebuilt_under(
             *installed.owner.work.lock().unwrap() = [usize::try_from(moved).unwrap(), 1];
             COMBINES.store(0, Ordering::Relaxed);
             let run = attempt_placed(
-                &(phase_custody.phase_for_application(&world.application)).test_host_request(),
                 &world,
                 &installed,
                 Some(prior_of(first, true)),
@@ -82,13 +74,8 @@ fn rebuilt_under(
         .collect()
 }
 
-fn first_run_over_four(
-    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
-    world: &AuthorizationWorld,
-    installed: &Installed,
-) -> Attempt {
+fn first_run_over_four(world: &AuthorizationWorld, installed: &Installed) -> Attempt {
     let first = attempt(
-        &(phase_custody).test_host_request(),
         world,
         installed,
         Some(ComputationPrior::new(edition(), Err(Cause::FirstRun), None)),
@@ -109,50 +96,47 @@ fn refused_by_memory(outcome: &Outcome) -> Option<u64> {
 
 #[test]
 fn a_rebuild_one_byte_short_of_its_bound_refuses_before_it_combines() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
-        let unbounded = rebuilt_under(&host_custody, None);
-        let [(outcome, reached)] = unbounded.as_slice() else {
-            panic!("one unbounded placement");
-        };
-        let reached = *reached;
-        assert_eq!(
-            *outcome,
-            Err(WorthQueryPartitionedComputationDenial::Resource(
-                Resource::WorkExhausted
-            )),
-            "the rebuild stops where a full run's build stops"
-        );
-        assert!(reached > 0, "it combined as far as its work reached");
+    let unbounded = rebuilt_under(None);
+    let [(outcome, reached)] = unbounded.as_slice() else {
+        panic!("one unbounded placement");
+    };
+    let reached = *reached;
+    assert_eq!(
+        *outcome,
+        Err(WorthQueryPartitionedComputationDenial::Resource(
+            Resource::WorkExhausted
+        )),
+        "the rebuild stops where a full run's build stops"
+    );
+    assert!(reached > 0, "it combined as far as its work reached");
 
-        let admits = |memory| {
-            rebuilt_under(&host_custody, Some(memory))
-                .iter()
-                .all(|(outcome, _)| refused_by_memory(outcome).is_none())
-        };
-        let (mut refused, mut admitted) = (0_u64, 1 << 24);
-        assert!(admits(admitted));
-        while admitted - refused > 1 {
-            let middle = refused + (admitted - refused) / 2;
-            if admits(middle) {
-                admitted = middle;
-            } else {
-                refused = middle;
-            }
+    let admits = |memory| {
+        rebuilt_under(Some(memory))
+            .iter()
+            .all(|(outcome, _)| refused_by_memory(outcome).is_none())
+    };
+    let (mut refused, mut admitted) = (0_u64, 1 << 24);
+    assert!(admits(admitted));
+    while admitted - refused > 1 {
+        let middle = refused + (admitted - refused) / 2;
+        if admits(middle) {
+            admitted = middle;
+        } else {
+            refused = middle;
         }
-        let build =
-            ReductionTree::<u64, fn(&u64, &u64) -> u64>::checked_build_memory_bound(4, DECLARED)
-                .unwrap();
-        for (outcome, combines) in rebuilt_under(&host_custody, Some(refused)) {
-            let requested =
-                refused_by_memory(&outcome).expect("one byte short is a memory refusal");
-            assert!(
-                requested > build,
-                "the refusal is the rebuild's own bound: {requested} against a build of {build}"
-            );
-            assert_eq!(combines, 0, "nothing is combined before the bound is held");
-        }
-        for (_, combines) in rebuilt_under(&host_custody, Some(admitted)) {
-            assert_eq!(combines, reached, "with its bound held the rebuild runs");
-        }
-    })
+    }
+    let build =
+        ReductionTree::<u64, fn(&u64, &u64) -> u64>::checked_build_memory_bound(4, DECLARED)
+            .unwrap();
+    for (outcome, combines) in rebuilt_under(Some(refused)) {
+        let requested = refused_by_memory(&outcome).expect("one byte short is a memory refusal");
+        assert!(
+            requested > build,
+            "the refusal is the rebuild's own bound: {requested} against a build of {build}"
+        );
+        assert_eq!(combines, 0, "nothing is combined before the bound is held");
+    }
+    for (_, combines) in rebuilt_under(Some(admitted)) {
+        assert_eq!(combines, reached, "with its bound held the rebuild runs");
+    }
 }

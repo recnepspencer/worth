@@ -24,37 +24,25 @@ fn counting_sum(left: &u64, right: &u64) -> u64 {
 fn every_placement_agrees_and_only_a_certified_one_reduces_again() {
     let world = installed_authorization_world(true);
     let installed = installed_over(4, StatusRead::Gather(1), counting_sum);
-    world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+    let placed = |placement| {
+        let before = place(placement);
+        COMBINES.store(0, Ordering::Relaxed);
+        let attempt = attempt(&world, &installed, None);
+        place(before);
+        (attempt.outcome, COMBINES.load(Ordering::Relaxed))
+    };
+    let two = NonZeroUsize::new(2).unwrap();
 
-            let placed = |placement| {
-                let before = place(placement);
-                COMBINES.store(0, Ordering::Relaxed);
-                let attempt = attempt(
-                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
-                    &world,
-                    &installed,
-                    None,
-                );
-                place(before);
-                (attempt.outcome, COMBINES.load(Ordering::Relaxed))
-            };
-            let two = NonZeroUsize::new(2).unwrap();
-
-            let serial = placed(Placement::Serial);
-            assert_eq!(serial.0.as_ref().unwrap().0, 1 + 2 + 3 + 4);
-            assert_eq!(serial.1, 8, "four nodes take two combines each");
-            assert_eq!(placed(Placement::Leased(two)), serial);
-            assert_eq!(
-                placed(Placement::Certified {
-                    workers: two,
-                    seed: 0x5eed,
-                }),
-                (serial.0, 3 * 8),
-                "the run, the oracle and the perturbed backend each reduce once"
-            );
-        })
-        .expect("the fixture block owns its installed host call")
+    let serial = placed(Placement::Serial);
+    assert_eq!(serial.0.as_ref().unwrap().0, 1 + 2 + 3 + 4);
+    assert_eq!(serial.1, 8, "four nodes take two combines each");
+    assert_eq!(placed(Placement::Leased(two)), serial);
+    assert_eq!(
+        placed(Placement::Certified {
+            workers: two,
+            seed: 0x5eed,
+        }),
+        (serial.0, 3 * 8),
+        "the run, the oracle and the perturbed backend each reduce once"
+    );
 }

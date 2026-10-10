@@ -30,27 +30,51 @@ fn declared_bytes() -> u64 {
 }
 
 /// A full run under `memory`, leased, then serial.
-fn under(
-    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
-    memory: u64,
-) -> [Attempt; 2] {
+fn under(memory: u64) -> [Attempt; 2] {
     let world = installed_authorization_world(true);
     let installed = installed(StatusRead::Gather(1), sum);
-    [
-        RuntimeWorldExecutionPlacement::Leased {
-            authority: test_execution_authority(),
-            policy: policy(memory),
-        },
-        RuntimeWorldExecutionPlacement::Serial(policy(memory)),
-    ]
-    .map(|placement| {
-        attempt_placed(
-            phase_custody,
+    [false, true].map(|serial| {
+        let placement = |memory| {
+            if serial {
+                RuntimeWorldExecutionPlacement::Serial(policy(memory))
+            } else {
+                RuntimeWorldExecutionPlacement::Leased {
+                    authority: test_execution_authority(),
+                    policy: policy(memory),
+                }
+            }
+        };
+        // The existing reservation denial observes remaining room without holding
+        // bytes, as in tree_admission. Run the same fixture with ample room first.
+        let unconstrained = 1 << 30;
+        let mut held = None;
+        let baseline = projected_attempt::attempt_placed_observing(
             &world,
             &installed,
             None,
             &live_scope(),
-            placement,
+            placement(unconstrained),
+            |execution| {
+                let Err(Resource::MemoryLimit {
+                    admitted,
+                    level: OWN_POLICY,
+                    ..
+                }) = execution.reserve(u64::MAX)
+                else {
+                    panic!("the finite request policy reports its remaining room");
+                };
+                held = Some(unconstrained - admitted);
+            },
+        );
+        assert!(baseline.outcome.is_ok(), "unconstrained fixture completes");
+        let held = held.expect("observed before the first computation charge");
+        eprintln!("projection holds {held} request bytes before computation (serial={serial})");
+        attempt_placed(
+            &world,
+            &installed,
+            None,
+            &live_scope(),
+            placement(held + memory),
         )
     })
 }
@@ -72,13 +96,11 @@ fn refused(requested: u64, admitted: u64) -> Outcome {
 /// routing is refused and nothing is gathered.
 #[test]
 fn one_byte_short_of_the_routing_refuses_before_any_gather() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
-        let routing = routing_bytes();
-        for run in under(&host_custody, routing - 1) {
-            assert_eq!(run.outcome, refused(routing, routing - 1));
-            assert!(run.gathered.is_empty());
-        }
-    })
+    let routing = routing_bytes();
+    for run in under(routing - 1) {
+        assert_eq!(run.outcome, refused(routing, routing - 1));
+        assert!(run.gathered.is_empty());
+    }
 }
 
 /// With the routing held, one byte short of a gather's declared bytes is
@@ -87,23 +109,21 @@ fn one_byte_short_of_the_routing_refuses_before_any_gather() {
 /// before the second, the same way leased and serial.
 #[test]
 fn one_byte_short_of_a_gathers_declared_bytes_refuses_before_that_gather() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
-        let routing = routing_bytes();
-        let declared = declared_bytes();
-        for run in under(&host_custody, routing + declared - 1) {
-            assert_eq!(run.outcome, refused(declared, declared - 1));
-            assert!(run.gathered.is_empty());
-        }
+    let routing = routing_bytes();
+    let declared = declared_bytes();
+    for run in under(routing + declared - 1) {
+        assert_eq!(run.outcome, refused(declared, declared - 1));
+        assert!(run.gathered.is_empty());
+    }
 
-        let [leased, serial] = under(&host_custody, routing + declared);
-        assert_eq!(leased.gathered, serial.gathered);
-        assert_eq!(leased.gathered.len(), 1, "only the first gather fits");
-        assert_eq!(leased.outcome, serial.outcome);
-        assert!(matches!(
-            leased.outcome,
-            Err(WorthQueryPartitionedComputationDenial::Resource(
-                Resource::MemoryLimit { requested, admitted, level: OWN_POLICY }
-            )) if admitted == declared && requested > declared
-        ));
-    })
+    let [leased, serial] = under(routing + declared);
+    assert_eq!(leased.gathered, serial.gathered);
+    assert_eq!(leased.gathered.len(), 1, "only the first gather fits");
+    assert_eq!(leased.outcome, serial.outcome);
+    assert!(matches!(
+        leased.outcome,
+        Err(WorthQueryPartitionedComputationDenial::Resource(
+            Resource::MemoryLimit { requested, admitted, level: OWN_POLICY }
+        )) if admitted == declared && requested > declared
+    ));
 }

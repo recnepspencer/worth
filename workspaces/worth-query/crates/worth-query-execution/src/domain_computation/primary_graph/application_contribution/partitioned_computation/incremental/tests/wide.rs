@@ -130,18 +130,11 @@ fn ten_thousand_partitions_gather_and_compute_only_the_one_whose_fact_moved() {
         WideOwner::default(),
         ComputationRetention::ProducerOperation,
     );
-    let first = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            attempt(
-                &(phase).test_host_request(),
-                &world,
-                &installed,
-                Some(ComputationPrior::new(edition(), Err(Cause::FirstRun), None)),
-            )
-        })
-        .expect("the fixture read owns its installed host call");
+    let first = attempt(
+        &world,
+        &installed,
+        Some(ComputationPrior::new(edition(), Err(Cause::FirstRun), None)),
+    );
     assert!(matches!(
         first.runs.as_slice(),
         [(Run::Full(Cause::FirstRun), Some(_))]
@@ -173,18 +166,7 @@ fn ten_thousand_partitions_gather_and_compute_only_the_one_whose_fact_moved() {
     );
     let prior = ComputationPrior::new(edition(), Ok(custodied_state_for_test(state)), None);
 
-    let next = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            attempt(
-                &(phase).test_host_request(),
-                &world,
-                &installed,
-                Some(prior),
-            )
-        })
-        .expect("the fixture read owns its installed host call");
+    let next = attempt(&world, &installed, Some(prior));
     assert!(matches!(next.runs.as_slice(), [(Run::Incremental, None)]));
     assert_eq!(next.gathered, [1]);
     assert_eq!(installed.owner.take_calls(), [0, 0, 1]);

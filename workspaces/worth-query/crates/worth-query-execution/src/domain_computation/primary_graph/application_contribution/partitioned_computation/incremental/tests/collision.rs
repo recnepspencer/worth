@@ -64,39 +64,16 @@ fn a_collision_met_routing_again_makes_the_run_in_full() {
     );
     let fresh = || Some(ComputationPrior::new(edition(), Err(Cause::FirstRun), None));
     *installed.owner.entries.lock().unwrap() = BTreeMap::from([(1, (0, 10)), (2, (1, 20))]);
-    let first = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            attempt(&(phase).test_host_request(), &world, &installed, fresh())
-                .sealed
-                .unwrap()
-                .unwrap()
-        })
-        .expect("the fixture read owns its installed host call");
+    let first = attempt(&world, &installed, fresh())
+        .sealed
+        .unwrap()
+        .unwrap();
     // Item 1 moves to key 2, where the prior holds item 2 under a foreign
     // digest; item 2 keeps its route.
     *installed.owner.entries.lock().unwrap() = BTreeMap::from([(1, (2, 10)), (2, (1, 20))]);
     let prior = colliding(first, PartitionItemId(2), &Parity(2));
-    let next = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            attempt(
-                &(phase).test_host_request(),
-                &world,
-                &installed,
-                Some(prior),
-            )
-        })
-        .expect("the fixture read owns its installed host call");
-    let full = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            attempt(&(phase).test_host_request(), &world, &installed, fresh())
-        })
-        .expect("the fixture read owns its installed host call");
+    let next = attempt(&world, &installed, Some(prior));
+    let full = attempt(&world, &installed, fresh());
     assert!(full.outcome.is_ok(), "a fresh build meets no collision");
     assert_eq!(next.outcome, full.outcome, "the run made again in full");
     assert!(matches!(
@@ -120,16 +97,10 @@ fn replacing_a_sole_member_key_with_a_prefix_collision_matches_a_fresh_run() {
     *installed.owner.key_only.lock().unwrap() = true;
     *installed.owner.entries.lock().unwrap() = BTreeMap::from([(1, (0, 10))]);
     let fresh = || Some(ComputationPrior::new(edition(), Err(Cause::FirstRun), None));
-    let mut sealed = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            attempt(&(phase).test_host_request(), &world, &installed, fresh())
-                .sealed
-                .unwrap()
-                .unwrap()
-        })
-        .expect("the fixture read owns its installed host call");
+    let mut sealed = attempt(&world, &installed, fresh())
+        .sealed
+        .unwrap()
+        .unwrap();
     let typed = std::mem::replace(&mut sealed.state.typed, Arc::new(()))
         .downcast::<RetainedPartitions<Parity, Number, u64>>()
         .unwrap();
@@ -173,25 +144,8 @@ fn replacing_a_sole_member_key_with_a_prefix_collision_matches_a_fresh_run() {
         WorthQueryApplicationObservedFact::SourceEntity { entity_id },
     );
     let prior = ComputationPrior::new(edition(), Ok(custodied_state_for_test(sealed.state)), None);
-    let next = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            attempt(
-                &(phase).test_host_request(),
-                &world,
-                &installed,
-                Some(prior),
-            )
-        })
-        .expect("the fixture read owns its installed host call");
-    let full = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            attempt(&(phase).test_host_request(), &world, &installed, fresh())
-        })
-        .expect("the fixture read owns its installed host call");
+    let next = attempt(&world, &installed, Some(prior));
+    let full = attempt(&world, &installed, fresh());
     assert_eq!(next.outcome, full.outcome, "B must not carry A's result");
     assert_eq!(next.gathered, full.gathered, "gather receives B");
     let next = next.sealed.unwrap().unwrap();

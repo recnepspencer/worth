@@ -210,7 +210,6 @@ impl TestOwner for Owner {
 }
 
 fn attempt<Tested, Owned>(
-    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     world: &AuthorizationWorld,
     installed: &WorthQueryInstalledPartitionedComputation<Schema, Feature, Tested, Owned>,
     prior: Option<ComputationPrior>,
@@ -219,18 +218,11 @@ where
     Tested: ApplicationManagedComputation<Schema, Feature, Input = Input>,
     Owned: TestOwner<Tested>,
 {
-    attempt_in(
-        &(phase_custody.phase_for_application(&world.application)).test_host_request(),
-        world,
-        installed,
-        prior,
-        &live_scope(),
-    )
+    attempt_in(world, installed, prior, &live_scope())
 }
 
 /// [`attempt`] under `request`.
 fn attempt_in<Tested, Owned>(
-    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     world: &AuthorizationWorld,
     installed: &WorthQueryInstalledPartitionedComputation<Schema, Feature, Tested, Owned>,
     prior: Option<ComputationPrior>,
@@ -240,7 +232,7 @@ where
     Tested: ApplicationManagedComputation<Schema, Feature, Input = Input>,
     Owned: TestOwner<Tested>,
 {
-    attempt_placed(&(phase_custody).test_host_request(),
+    attempt_placed(
         world,
         installed,
         prior,
@@ -287,13 +279,8 @@ fn prior_of(first: Attempt, moved: bool) -> ComputationPrior {
     ComputationPrior::new(edition(), Ok(custodied_state_for_test(state)), None)
 }
 
-fn first_run(
-    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
-    world: &AuthorizationWorld,
-    installed: &Installed,
-) -> Attempt {
+fn first_run(world: &AuthorizationWorld, installed: &Installed) -> Attempt {
     let first = attempt(
-        phase_custody,
         world,
         installed,
         Some(ComputationPrior::new(edition(), Err(Cause::FirstRun), None)),
@@ -321,17 +308,8 @@ mod wide;
 
 pub(super) fn sealed_run_for_lineage_test() -> SealedComputationRun {
     let world = installed_authorization_world(true);
-    world
-        .application
-        .with_host_advancement(|phase| {
-            first_run(
-                &(phase).test_host_request(),
-                &world,
-                &installed(StatusRead::Gather(1), sum),
-            )
-            .sealed
-            .unwrap()
-            .unwrap()
-        })
-        .expect("the installed fixture admits its computation host call")
+    first_run(&world, &installed(StatusRead::Gather(1), sum))
+        .sealed
+        .unwrap()
+        .unwrap()
 }

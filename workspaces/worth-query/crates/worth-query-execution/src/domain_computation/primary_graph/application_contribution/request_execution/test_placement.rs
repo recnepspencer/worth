@@ -188,3 +188,49 @@ pub fn bound_advancement_requests_on_this_thread_for_test(
 ) -> Option<ExecutionBudget> {
     REQUEST_BUDGET.replace(budget)
 }
+
+/// The host call uses exactly the computation fixture's declared budget.
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) struct FixturePlacement {
+    placement: WorthQueryExecutionPlacementForTest,
+    budget: Option<worth_foundational::ExecutionBudget>,
+}
+
+#[cfg(test)]
+impl FixturePlacement {
+    pub(in crate::domain_computation::primary_graph) fn enter(
+        placement: RuntimeWorldExecutionPlacement<'_>,
+    ) -> Self {
+        use self::{
+            bound_advancement_requests_on_this_thread_for_test as bound,
+            place_managed_computations_on_this_thread_for_test as place,
+            WorthQueryExecutionPlacementForTest as Placement,
+        };
+        let (chosen, policy) = match placement {
+            RuntimeWorldExecutionPlacement::Serial(policy) => (Placement::Serial, policy),
+            RuntimeWorldExecutionPlacement::Leased { policy, .. } => {
+                (Placement::Leased(policy.budget().max_workers()), policy)
+            }
+        };
+        let prior = place(chosen);
+        if prior != Placement::World {
+            place(prior);
+        }
+        Self {
+            placement: prior,
+            budget: bound(Some(policy.budget())),
+        }
+    }
+}
+
+#[cfg(test)]
+impl Drop for FixturePlacement {
+    fn drop(&mut self) {
+        use self::{
+            bound_advancement_requests_on_this_thread_for_test as bound,
+            place_managed_computations_on_this_thread_for_test as place,
+        };
+        bound(self.budget);
+        place(self.placement);
+    }
+}

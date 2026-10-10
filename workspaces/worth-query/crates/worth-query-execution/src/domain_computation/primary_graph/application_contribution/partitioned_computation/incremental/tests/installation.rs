@@ -70,13 +70,7 @@ impl TestOwner for Doubling {
 fn another_owner_with_the_same_types_runs_in_full() {
     let world = installed_authorization_world(true);
     let installed = installed(StatusRead::Gather(1), sum);
-    let first = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            first_run(&(phase).test_host_request(), &world, &installed)
-        })
-        .expect("the fixture read owns its installed host call");
+    let first = first_run(&world, &installed);
     let doubling = WorthQueryInstalledPartitionedComputation::new(
         Doubling(Owner {
             modulus: 2,
@@ -90,18 +84,7 @@ fn another_owner_with_the_same_types_runs_in_full() {
         ComputationRetention::ProducerOperation,
     );
 
-    let next = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            attempt(
-                &(phase).test_host_request(),
-                &world,
-                &doubling,
-                Some(prior_of(first, false)),
-            )
-        })
-        .expect("the fixture read owns its installed host call");
+    let next = attempt(&world, &doubling, Some(prior_of(first, false)));
     assert!(matches!(
         next.runs.as_slice(),
         [(Run::Full(Cause::OtherInstallation), Some(_))]
@@ -118,31 +101,10 @@ fn another_owner_with_the_same_types_runs_in_full() {
 #[test]
 fn a_reinstalled_owner_runs_in_full() {
     let world = installed_authorization_world(true);
-    let first = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            first_run(
-                &(phase).test_host_request(),
-                &world,
-                &installed(StatusRead::Gather(1), sum),
-            )
-        })
-        .expect("the fixture read owns its installed host call");
+    let first = first_run(&world, &installed(StatusRead::Gather(1), sum));
     let reinstalled = installed(StatusRead::Gather(1), sum);
 
-    let next = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            attempt(
-                &(phase).test_host_request(),
-                &world,
-                &reinstalled,
-                Some(prior_of(first, false)),
-            )
-        })
-        .expect("the fixture read owns its installed host call");
+    let next = attempt(&world, &reinstalled, Some(prior_of(first, false)));
     assert!(matches!(
         next.runs.as_slice(),
         [(Run::Full(Cause::OtherInstallation), Some(_))]
@@ -156,27 +118,10 @@ fn a_reinstalled_owner_runs_in_full() {
 fn a_clone_of_the_installation_reuses_its_state() {
     let world = installed_authorization_world(true);
     let installed = installed(StatusRead::Gather(1), sum);
-    let first = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            first_run(&(phase).test_host_request(), &world, &installed)
-        })
-        .expect("the fixture read owns its installed host call");
+    let first = first_run(&world, &installed);
 
     *installed.owner.calls.lock().unwrap() = [0; 4];
-    let next = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            attempt(
-                &(phase).test_host_request(),
-                &world,
-                &installed.clone(),
-                Some(prior_of(first, false)),
-            )
-        })
-        .expect("the fixture read owns its installed host call");
+    let next = attempt(&world, &installed.clone(), Some(prior_of(first, false)));
     assert!(matches!(next.runs.as_slice(), [(Run::Incremental, None)]));
     assert!(next.gathered.is_empty(), "nothing is gathered again");
     assert_eq!(*installed.owner.calls.lock().unwrap(), [0; 4]);
@@ -185,34 +130,13 @@ fn a_clone_of_the_installation_reuses_its_state() {
 #[test]
 fn a_reinstalled_reducer_runs_in_full_with_its_own_reduction() {
     let world = installed_authorization_world(true);
-    let first = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            first_run(
-                &(phase).test_host_request(),
-                &world,
-                &installed(StatusRead::Gather(1), sum),
-            )
-        })
-        .expect("the fixture read owns its installed host call");
+    let first = first_run(&world, &installed(StatusRead::Gather(1), sum));
     let expected = (0..2)
         .map(|parity| (1..=4).filter(|item| item % 2 == parity).sum::<u64>())
         .max()
         .unwrap();
     let reinstalled = installed(StatusRead::Gather(1), |left, right| (*left).max(*right));
-    let next = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            attempt(
-                &(phase).test_host_request(),
-                &world,
-                &reinstalled,
-                Some(prior_of(first, false)),
-            )
-        })
-        .expect("the fixture read owns its installed host call");
+    let next = attempt(&world, &reinstalled, Some(prior_of(first, false)));
     assert!(matches!(
         next.runs.as_slice(),
         [(Run::Full(Cause::OtherInstallation), Some(_))]

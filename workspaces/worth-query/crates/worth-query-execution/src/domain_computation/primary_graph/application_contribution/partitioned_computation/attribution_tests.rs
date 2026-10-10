@@ -26,7 +26,6 @@ use super::{
     WorthQueryInstalledPartitionedComputation, WorthQueryPartitionedComputationOwner,
 };
 use crate::domain_computation::primary_graph::application_attempt::ComputationFactReaders;
-use crate::domain_computation::primary_graph::application_contribution::QueryRequestExecution;
 use crate::domain_computation::primary_graph::tests::application_attempt::{
     authenticated_principal, resolved_account,
 };
@@ -214,144 +213,145 @@ impl WorthQueryPartitionedComputationOwner<Schema, Feature, Computation> for Own
 /// `handler_reads_status` has the handler read the status itself after the
 /// computation's `runs` runs.
 fn routed(
-    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     status: StatusReadBy,
     runs: usize,
     handler_reads_status: bool,
 ) -> (Option<Vec<ComputationFactReaders>>, Vec<PartitionIdentity>) {
     let world = installed_authorization_world(true);
     let request = live_scope();
-    let principal = authenticated_principal(phase_custody, &world, &request);
-    let account = resolved_account(phase_custody, &world, "open", &request);
-    let operation = world
+    world
         .application
-        .installed_schema()
-        .installed_operation(TouchAccountOperation::reference())
-        .unwrap();
-    let admission = world
-        .selected_product(phase_custody)
-        .authorize_operation(
-            &phase_custody.phase_for_application(&world.application),
-            &principal,
-            &account,
-            &operation,
-            Default::default(),
-            &request,
-        )
-        .unwrap();
-    let installed =
-        WorthQueryInstalledPartitionedComputation::<Schema, Feature, Computation, Owner>::new(
-            Owner {
-                status,
-                gathered: Mutex::default(),
-            },
-            super::ComputationRetention::Unretained,
-        );
-    let (_, projection, _) = world
-        .invariant
-        .project_admitted_operation(&phase_custody.phase_for_application(&world.application), &admission, |reader, root| {
-            let execution = QueryRequestExecution::open(
-            worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(
-                crate::domain_computation::primary_graph::application_contribution::request_execution::test_policy(
-                    std::num::NonZeroUsize::MIN, 1 << 30,
-                ),
-            ), &request);
-            for _ in 0..runs {
-                if installed.prepare_through(reader, &execution, root).is_err() {
-                    panic!("the owner's reads are declared reads of the operation");
-                }
-            }
-            if handler_reads_status {
-                reader
-                    .require_decision_field(root, AccountStatus::reference())
-                    .unwrap();
-            }
-        }, worth_execution::ExecutionAllocationPolicy::SystemAllocation)
-        .unwrap()
-        .into_parts();
-    let read_set = world
-        .application
-        .begin_projected_application_read_attempt(
-            &phase_custody.phase_for_application(&world.application),
-            admission,
-            projection,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
-        .complete_projected_dependencies(
-            &phase_custody.phase_for_application(&world.application),
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    let mut gathered = installed.owner.gathered.lock().unwrap().clone();
-    gathered.sort_unstable();
-    gathered.dedup();
-    (
-        read_set.computation_facts().map(|facts| {
-            facts
-                .facts()
-                .map(|(_, _, readers)| readers.clone())
-                .collect()
-        }),
-        gathered,
-    )
+        .with_application_advancement(&request, |phase| {
+            let custody = phase.test_host_request();
+            let principal = authenticated_principal(&custody, &world, &request);
+            let account = resolved_account(&custody, &world, "open", &request);
+            let operation = world
+                .application
+                .installed_schema()
+                .installed_operation(TouchAccountOperation::reference())
+                .unwrap();
+            let admission = world
+                .selected_product(&custody)
+                .authorize_operation(
+                    &phase,
+                    &principal,
+                    &account,
+                    &operation,
+                    Default::default(),
+                    &request,
+                )
+                .unwrap();
+            let installed = WorthQueryInstalledPartitionedComputation::<
+                Schema,
+                Feature,
+                Computation,
+                Owner,
+            >::new(
+                Owner {
+                    status,
+                    gathered: Mutex::default(),
+                },
+                super::ComputationRetention::Unretained,
+            );
+            let (_, projection, _) = world
+                .invariant
+                .project_admitted_operation(
+                    &phase,
+                    &admission,
+                    |reader, root| {
+                        let execution = phase
+                            .execution_for(&world.application.product_runtime)
+                            .expect("the installed fixture lends its computation execution");
+                        for _ in 0..runs {
+                            if installed.prepare_through(reader, execution, root).is_err() {
+                                panic!("the owner's reads are declared reads of the operation");
+                            }
+                        }
+                        if handler_reads_status {
+                            reader
+                                .require_decision_field(root, AccountStatus::reference())
+                                .unwrap();
+                        }
+                    },
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap()
+                .into_parts();
+            let read_set = world
+                .application
+                .begin_projected_application_read_attempt(
+                    &phase,
+                    admission,
+                    projection,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap()
+                .complete_projected_dependencies(
+                    &phase,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap();
+            let mut gathered = installed.owner.gathered.lock().unwrap().clone();
+            gathered.sort_unstable();
+            gathered.dedup();
+            (
+                read_set.computation_facts().map(|facts| {
+                    facts
+                        .facts()
+                        .map(|(_, _, readers)| readers.clone())
+                        .collect()
+                }),
+                gathered,
+            )
+        })
+        .expect("the attribution read owns its host call")
 }
 
 #[test]
 fn a_fact_two_gathers_read_is_kept_for_both_partitions() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
-        let (readers, partitions) = routed(&host_custody, StatusReadBy::ItemKeys, 1, false);
+    let (readers, partitions) = routed(StatusReadBy::ItemKeys, 1, false);
 
-        assert_eq!(partitions.len(), 2, "odd and even items are two partitions");
-        // The facts are in key order: the label, then the status.
-        assert_eq!(
-            readers.expect("one computation ran"),
-            [
-                ComputationFactReaders::read_by(false, [], partitions),
-                ComputationFactReaders::read_by(false, [1, 2, 3], []),
-            ]
-        );
-    })
+    assert_eq!(partitions.len(), 2, "odd and even items are two partitions");
+    // The facts are in key order: the label, then the status.
+    assert_eq!(
+        readers.expect("one computation ran"),
+        [
+            ComputationFactReaders::read_by(false, [], partitions),
+            ComputationFactReaders::read_by(false, [1, 2, 3], []),
+        ]
+    );
 }
 
 #[test]
 fn a_fact_the_membership_read_is_a_membership_fact() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
-        let (readers, partitions) = routed(&host_custody, StatusReadBy::Membership, 1, false);
+    let (readers, partitions) = routed(StatusReadBy::Membership, 1, false);
 
-        assert_eq!(
-            readers.expect("one computation ran"),
-            [
-                ComputationFactReaders::read_by(false, [], partitions),
-                ComputationFactReaders::read_by(true, [], []),
-            ]
-        );
-    })
+    assert_eq!(
+        readers.expect("one computation ran"),
+        [
+            ComputationFactReaders::read_by(false, [], partitions),
+            ComputationFactReaders::read_by(true, [], []),
+        ]
+    );
 }
 
 #[test]
 fn a_fact_the_handler_also_read_stays_the_item_keys() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
-        // The handler reads its own facts again on every attempt, so it is not a
-        // reader the computation keeps: the status is still the item keys' fact.
-        let (readers, partitions) = routed(&host_custody, StatusReadBy::ItemKeys, 1, true);
+    // The handler reads its own facts again on every attempt, so it is not a
+    // reader the computation keeps: the status is still the item keys' fact.
+    let (readers, partitions) = routed(StatusReadBy::ItemKeys, 1, true);
 
-        assert_eq!(
-            readers.expect("one computation ran"),
-            [
-                ComputationFactReaders::read_by(false, [], partitions),
-                ComputationFactReaders::read_by(false, [1, 2, 3], []),
-            ]
-        );
-    })
+    assert_eq!(
+        readers.expect("one computation ran"),
+        [
+            ComputationFactReaders::read_by(false, [], partitions),
+            ComputationFactReaders::read_by(false, [1, 2, 3], []),
+        ]
+    );
 }
 
 #[test]
 fn an_attempt_that_ran_two_computations_keeps_no_computation_facts() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
-        // Partition identities name the partitions of one computation only.
-        assert!(routed(&host_custody, StatusReadBy::ItemKeys, 2, false)
-            .0
-            .is_none());
-    })
+    // Partition identities name the partitions of one computation only.
+    assert!(routed(StatusReadBy::ItemKeys, 2, false).0.is_none());
 }

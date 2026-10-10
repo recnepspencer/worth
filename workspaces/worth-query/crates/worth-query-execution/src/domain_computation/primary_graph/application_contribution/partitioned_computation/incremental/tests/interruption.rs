@@ -30,7 +30,6 @@ fn cancelling_sum(left: &u64, right: &u64) -> u64 {
 /// An attempt whose request its first combine cancels, and how many
 /// combines ran.
 fn cancelled_in_reducer(
-    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     world: &AuthorizationWorld,
     installed: &Installed,
     prior: Option<ComputationPrior>,
@@ -40,13 +39,7 @@ fn cancelled_in_reducer(
         WorthQueryRequestScope::new(Instant::now() + Duration::from_secs(60), source.token());
     COMBINES.set(0);
     ARMED.set(Some(source));
-    let attempt = attempt_in(
-        &(phase_custody).test_host_request(),
-        world,
-        installed,
-        prior,
-        &request,
-    );
+    let attempt = attempt_in(world, installed, prior, &request);
     assert!(ARMED.take().is_none(), "the reducer met the armed request");
     (attempt, COMBINES.get())
 }
@@ -64,23 +57,11 @@ fn a_full_run_cancelled_inside_a_combine_stops_at_the_next_tree_node() {
     let world = installed_authorization_world(true);
     let installed = installed_over(4, StatusRead::Gather(1), cancelling_sum);
     COMBINES.set(0);
-    let whole = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            attempt(&(phase).test_host_request(), &world, &installed, None)
-        })
-        .expect("the fixture read owns its installed host call");
+    let whole = attempt(&world, &installed, None);
     assert_eq!(whole.outcome.unwrap().0, 1 + 2 + 3 + 4);
     assert_eq!(COMBINES.get(), 8, "four nodes take two combines each");
 
-    let (stopped, combines) = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            cancelled_in_reducer(&phase, &world, &installed, None)
-        })
-        .expect("the fixture read owns its installed host call");
+    let (stopped, combines) = cancelled_in_reducer(&world, &installed, None);
     assert!(
         stopped.runs.is_empty(),
         "an interrupted run never completes"
@@ -106,28 +87,15 @@ fn a_full_run_cancelled_inside_a_combine_stops_at_the_next_tree_node() {
 fn an_incremental_run_cancelled_inside_a_recombine_stops_and_does_not_rebuild() {
     let world = installed_authorization_world(true);
     let installed = installed_over(4, StatusRead::Gather(1), cancelling_sum);
-    let first = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            attempt(
-                &(phase).test_host_request(),
-                &world,
-                &installed,
-                Some(ComputationPrior::new(edition(), Err(Cause::FirstRun), None)),
-            )
-        })
-        .expect("the fixture read owns its installed host call");
+    let first = attempt(
+        &world,
+        &installed,
+        Some(ComputationPrior::new(edition(), Err(Cause::FirstRun), None)),
+    );
     assert_eq!(first.gathered, [0, 1, 2, 3]);
     *installed.owner.bump.lock().unwrap() = 10;
 
-    let (stopped, combines) = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            cancelled_in_reducer(&phase, &world, &installed, Some(prior_of(first, true)))
-        })
-        .expect("the fixture read owns its installed host call");
+    let (stopped, combines) = cancelled_in_reducer(&world, &installed, Some(prior_of(first, true)));
     assert!(
         stopped.runs.is_empty(),
         "an interrupted run never completes"
