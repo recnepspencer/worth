@@ -120,6 +120,7 @@ fn a_demand_at_an_older_observation_ignores_later_commits() {
     let mut current = Open {
         body: rings[0].key("a"),
         demand: older_root!(court, &retained, rings[0].key("a")).unwrap(),
+        producer_contacts: 0,
     };
     let cost = settled!(court, current, at);
     assert!(

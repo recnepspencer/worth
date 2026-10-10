@@ -254,3 +254,50 @@ fn nonallocation_session_evidence_preserves_the_mapped_detail_and_read_set_stage
     assert_eq!(read.stage(), Stage::ProviderCommit);
     assert_eq!(read.kind(), Application::SnapshotIdentityExhausted);
 }
+
+#[test]
+fn native_cause_context_and_commit_log_survive_application_kind_mapping() {
+    use worth_relational::facade::{
+        errors::{ErrorContext, ErrorOperation, RelationalSubsystem},
+        mvcc::TransactionCommitError,
+        transactions::{CommitExecutionDenial, CommitExecutionDenialKind, CommitLog, CommitPhase},
+    };
+    let mut log = CommitLog::new();
+    log.begin_phase(CommitPhase::AuthoritativeMutation);
+    let error = TransactionCommitError::Execution {
+        denial: CommitExecutionDenial {
+            kind: CommitExecutionDenialKind::Cause(worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted),
+            partition_identity: Some(23),
+        },
+        context: ErrorContext::new(
+            RelationalSubsystem::Transaction,
+            ErrorOperation::ApplyMutation,
+        ),
+        commit_log: log,
+    };
+    let failure = crate::domain_computation::WorthQueryProviderSessionFailure::new(
+        crate::domain_computation::WorthQueryProviderSessionDenialKind::ProviderRejected,
+        crate::domain_computation::WorthQueryProviderSessionProtocolStage::Commit,
+        error.detail(),
+        crate::domain_computation::WorthQueryProviderSessionProtocolCounters::default(),
+    )
+    .with_native_preparation_error(error.clone());
+    let Progression::Denied(denial) = provider_compare_denied(
+        crate::domain_computation::WorthQueryProviderCompareAndCommitDenial::ProviderSession(
+            failure,
+        ),
+    ) else {
+        panic!("preparation refusal must stay a denial");
+    };
+    assert_eq!(
+        denial.kind(),
+        Application::ExecutionResource {
+            denial: Resource::WorkExhausted,
+            partition_identity: Some(23),
+            policy_ancestor: None,
+        }
+    );
+    assert_eq!(denial.stage(), Stage::ProviderCommit);
+    assert_eq!(denial.detail(), Some(error.detail().as_str()));
+    assert_eq!(denial.native_preparation_error(), Some(&error));
+}

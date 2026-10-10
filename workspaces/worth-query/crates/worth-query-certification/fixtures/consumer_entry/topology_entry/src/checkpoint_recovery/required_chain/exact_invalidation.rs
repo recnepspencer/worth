@@ -185,6 +185,7 @@ fn offers_retry(stop: &WorthQueryApplicationOutputDemandDenial) -> bool {
 struct Open<Demand> {
     body: String,
     demand: Demand,
+    producer_contacts: usize,
 }
 
 /// One advance settles `$demand`, whether it starts its row or has settled
@@ -203,10 +204,16 @@ macro_rules! settled {
                 answer.map(|_| "Pending")
             ),
         };
+        // The settlement reports the caller's lifetime count;
+        // this courtroom measures only contacts since its preceding advance.
+        let contacts = settlement.producer_contacts_in_this_demand();
         let cost = Cost {
-            producer_contacts: settlement.producer_contacts_in_this_demand(),
+            producer_contacts: contacts
+                .checked_sub($demand.producer_contacts)
+                .expect("a caller's lifetime contact count never decreases"),
             source_queries: query_entries() - before,
         };
+        $demand.producer_contacts = contacts;
         $court.judge_settlement(&$demand.body, settlement.observation(), &$at);
         cost
     }};
@@ -222,7 +229,11 @@ macro_rules! root {
             .unwrap_or_else(|denial| {
                 panic!("{}: the root demand of {body} starts: {denial:?}", $at)
             });
-        Open { body, demand }
+        Open {
+            body,
+            demand,
+            producer_contacts: 0,
+        }
     }};
 }
 
@@ -236,7 +247,11 @@ macro_rules! consumer {
                 $court.application,
             )
             .unwrap_or_else(|denial| panic!("{}: the demand of {body} starts: {denial:?}", $at));
-        Open { body, demand }
+        Open {
+            body,
+            demand,
+            producer_contacts: 0,
+        }
     }};
 }
 
