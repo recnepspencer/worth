@@ -4,30 +4,15 @@ use application_installation::{
     WorthQueryCheckpointCaptureDenial as CaptureDenial,
     WorthQueryInMemoryApplicationDenial as InstallationDenial,
 };
-use std::{
-    num::NonZeroUsize,
-    sync::{Mutex, OnceLock},
-};
+use std::{num::NonZeroUsize, sync::Mutex};
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
 };
 use worth_query_host::facade::runtime::{
-    CancellationToken, ExecutionAllocationDenialKind as AllocationKind, ExecutionAuthority,
-    ExecutionAuthorityConfig, LeaseDenial, LeaseRequest,
+    CancellationToken, ExecutionAllocationDenialKind as AllocationKind, LeaseDenial, LeaseRequest,
 };
 
-static AUTHORITY: OnceLock<ExecutionAuthority> = OnceLock::new();
 static SERIAL: Mutex<()> = Mutex::new(());
-
-fn authority() -> &'static ExecutionAuthority {
-    AUTHORITY.get_or_init(|| {
-        ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
-            max_workers: NonZeroUsize::new(1).unwrap(),
-            charged_memory_bytes: None,
-        })
-        .unwrap()
-    })
-}
 
 fn request(bytes: u64, cancellation: CancellationToken) -> LeaseRequest {
     LeaseRequest {
@@ -89,7 +74,7 @@ fn assert_target_record(
 fn checkpoint_transition_admission_refusal_retains_acknowledged_effects_for_explicit_repair() {
     let _serial = SERIAL.lock().unwrap();
     let (source, predecessor) = source();
-    let lease = authority()
+    let lease = primary_graph::test_execution_authority()
         .request_lease(request(0, CancellationToken::new()))
         .unwrap();
     let mut calls = 0;
@@ -135,7 +120,7 @@ fn checkpoint_transition_admission_refusal_retains_acknowledged_effects_for_expl
         calls, 1,
         "capture refusal follows actual authoring and acknowledgment"
     );
-    let native_only = authority()
+    let native_only = primary_graph::test_execution_authority()
         .request_lease(request(native_quote, CancellationToken::new()))
         .unwrap();
     let pending = pending
@@ -161,7 +146,7 @@ fn checkpoint_transition_admission_refusal_retains_acknowledged_effects_for_expl
     let released = native_only.reserve_memory(native_quote).unwrap();
     drop(released);
     drop(native_only);
-    let repair = authority()
+    let repair = primary_graph::test_execution_authority()
         .request_lease(request(
             native_quote.checked_add(frame_quote).unwrap(),
             CancellationToken::new(),
@@ -203,7 +188,7 @@ fn checkpoint_transition_cancelled_repair_preserves_deferred_phase_and_clears_st
     // the actual next native append fault, which is exercised below.
     pending.fail_next_durable_append_for_test();
     let cancellation = worth_query_host::facade::runtime::CancellationSource::new();
-    let lease = authority()
+    let lease = primary_graph::test_execution_authority()
         .request_lease(request(0, cancellation.token()))
         .unwrap();
     cancellation.cancel();

@@ -73,8 +73,9 @@ pub use super::application_contribution::{
     WorthQueryPublishedComputationStateForTest,
 };
 pub use super::application_contribution::{
-    WorthQueryAdmittedOutputDemand, WorthQueryAdvancementDenial, WorthQueryAdvancementPhase,
-    WorthQueryApplicationConditionalBinding, WorthQueryApplicationConditionalPackageContract,
+    test_execution_authority, WorthQueryAdmittedOutputDemand, WorthQueryAdvancementDenial,
+    WorthQueryAdvancementPhase, WorthQueryApplicationConditionalBinding,
+    WorthQueryApplicationConditionalPackageContract,
     WorthQueryApplicationConditionalProducerAccess, WorthQueryApplicationContractCatalog,
     WorthQueryApplicationContribution, WorthQueryApplicationContributionContracts,
     WorthQueryApplicationContributionSetup, WorthQueryApplicationContributionTuple,

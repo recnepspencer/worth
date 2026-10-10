@@ -7,7 +7,7 @@ use worth_execution::{ExecutionMap, KeylessPartition, MapKernelFailure, ReduceIn
 
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::request_execution::{
-    test_authority, test_policy,
+    test_execution_authority, test_policy,
 };
 use crate::domain_computation::primary_graph::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;
 
@@ -37,7 +37,7 @@ fn scope_admission_reports_shape_work_only_when_construction_ran() {
         let request = live_scope();
         let execution = QueryRequestExecution::open(
             RuntimeWorldExecutionPlacement::Leased {
-                authority: test_authority(),
+                authority: test_execution_authority(),
                 policy: test_policy(NonZeroUsize::MIN, MEMORY),
             },
             &request,
