@@ -4,10 +4,7 @@ use super::super::member_key::RequiredMemberKey;
 use crate::domain_computation::primary_graph::application_contribution::producer::execution::prepared_plan::OwnerPlan;
 use super::super::super::super::required_continuations::PreparedContinuationWave;
 
-pub(super) struct MemberStop {
-    pub index: usize,
-    pub stop: WorthQueryOutputDemandDenial,
-}
+pub(super) use super::member_stop::MemberStop;
 pub(super) struct PreparedRequiredWave<'owner, Schema: ApplicationSchema> {
     pub members: Vec<(
         RequiredMemberKey,
@@ -318,7 +315,7 @@ where
                     plans.push((
                         key,
                         plan.map_result(move |result, _| {
-                            result.map_err(|stop| MemberStop { index, stop })
+                            result.map_err(|stop| MemberStop::member(index, stop))
                         }),
                     ));
                     frontier.members[index].state = MemberState::Prepared;

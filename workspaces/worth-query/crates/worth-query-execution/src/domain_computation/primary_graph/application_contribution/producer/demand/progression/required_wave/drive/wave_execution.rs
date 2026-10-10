@@ -8,8 +8,8 @@ use crate::domain_computation::primary_graph::application_contribution::producer
 pub(super) struct WaveProgress {
     pub moved: bool,
     pub prepared: bool,
-    pub stopped: Option<(usize, WorthQueryOutputDemandDenial)>,
-    pub queued_stops: Vec<(usize, WorthQueryOutputDemandDenial)>,
+    pub stopped: Option<MemberStop>,
+    pub queued_stops: Vec<MemberStop>,
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -98,7 +98,9 @@ where
                 let outcome = storage.install_next(progress);
                 installed = true;
                 match outcome {
-                    RequiredFreshOutcome::Refused(stop) => return Err(MemberStop { index, stop }),
+                    RequiredFreshOutcome::Refused(stop) => {
+                        return Err(MemberStop::member(index, stop))
+                    }
                     RequiredFreshOutcome::Advanced => {}
                 }
                 // Each slot commits, publishes and advances its actual checkpoint
@@ -115,14 +117,21 @@ where
                                 .output_demands
                                 .clear_required_stop(successor.interest().key());
                             moved |= committed_ready(&ready, admission)
-                                .map_err(|stop| MemberStop { index, stop })?;
+                                .map_err(|stop| MemberStop::member(index, stop))?;
                             member.ready.rebind(ready);
                             member.resolved_successor = true;
                             member.caller_successor |= index == 0;
                             member.state = MemberState::Inspect;
                             break;
                         }
-                        Err(stop) => return Err(MemberStop { index, stop }),
+                        Err(stop) => {
+                            return Err(MemberStop::checkpoint(
+                                index,
+                                &runtime.output_demands,
+                                successor.interest().key(),
+                                stop,
+                            ))
+                        }
                         Ok(super::successor_checkpoint::CheckpointTurn::Awaiting(stage)) => stage,
                     };
                     match stage.advance(admission, |admission| {
@@ -137,7 +146,14 @@ where
                             // Only a committed Ready can move the selected basis.
                             break;
                         }
-                        Err(stop) => return Err(MemberStop { index, stop }),
+                        Err(stop) => {
+                            return Err(MemberStop::checkpoint(
+                                index,
+                                &runtime.output_demands,
+                                storage.last_mut().interest().key(),
+                                stop,
+                            ))
+                        }
                     }
                 }
                 Ok(())
@@ -167,10 +183,7 @@ where
                             key.inspection,
                             admission,
                         )
-                        .map_err(|stop| MemberStop {
-                            index: failure.index,
-                            stop,
-                        })?;
+                        .map_err(|stop| MemberStop::member(failure.index, stop))?;
                     if credit.is_some() {
                         if let Some(slot) = frontier.members[failure.index].queued {
                             queue.discard_selection(slot);
@@ -183,24 +196,26 @@ where
                     {
                         moved = true;
                     } else {
-                        queued_stops.push((failure.index, failure.stop));
+                        queued_stops.push(failure);
                     }
                     Ok(())
                 }
                 Err(failure) if !frontier.members[failure.index].caller => {
                     frontier.members[failure.index].state = MemberState::Pending;
-                    queued_stops.push((failure.index, failure.stop));
+                    queued_stops.push(failure);
                     Ok(())
                 }
                 result => result,
             }
         },
-        |key, denial| MemberStop {
-            index: key.index,
-            stop: WorthQueryOutputDemandDenial::new(
-                WorthQueryOutputDemandDenialKind::ExecutionRequest(denial),
-                format!("required member compute refused: {denial}"),
-            ),
+        |key, denial| {
+            MemberStop::member(
+                key.index,
+                WorthQueryOutputDemandDenial::new(
+                    WorthQueryOutputDemandDenialKind::ExecutionRequest(denial),
+                    format!("required member compute refused: {denial}"),
+                ),
+            )
         },
     );
     // The unvisited suffix's owner closures and computed values have already
@@ -210,7 +225,7 @@ where
             member.state = MemberState::Inspect;
         }
     }
-    let stopped = result.err().map(|failure| (failure.index, failure.stop));
+    let stopped = result.err();
     Ok(WaveProgress {
         moved,
         prepared: true,

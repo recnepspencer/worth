@@ -12,6 +12,7 @@ use super::queued::QueuedRequiredRoots;
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::producer::WorthQueryProducerCommitAuthority;
 mod canonical_apply;
+mod member_stop;
 mod readiness_collection;
 mod requested_refusal;
 mod successor_checkpoint;
@@ -102,7 +103,8 @@ where
                 member.dependency_schedule = DependencySchedule::OwnSelection;
             }
         }
-        for (index, mut stop) in result.queued_stops.into_iter().chain(result.stopped) {
+        for failure in result.queued_stops.into_iter().chain(result.stopped) {
+            let (index, mut stop, recording) = failure.into_parts();
             if matches!(
                 stop.kind(),
                 WorthQueryOutputDemandDenialKind::ExecutionRequest(_)
@@ -145,9 +147,7 @@ where
                     frontier.members[index].state = MemberState::Pending;
                 }
                 requested_refusal::RequestedRefusal::Unavailable => {
-                    runtime
-                        .output_demands
-                        .record_required_stop(member.key(), &stop);
+                    recording.record_if_needed(&runtime.output_demands, member.key(), &stop);
                     if member.caller {
                         return Err(stop);
                     }
