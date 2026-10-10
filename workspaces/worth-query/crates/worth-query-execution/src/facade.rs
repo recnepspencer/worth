@@ -205,7 +205,6 @@ pub mod integration {
         )
     }
     #[doc(hidden)]
-    #[cfg(feature = "test-primary-graph-faults")]
     pub fn product_world_resources_for_test(
         retained_composite_commits: u64,
     ) -> WorthQueryProductWorldResources {
@@ -214,7 +213,6 @@ pub mod integration {
         )
     }
     #[doc(hidden)]
-    #[cfg(feature = "test-primary-graph-faults")]
     pub fn prepare_primary_graph_with_active_snapshot_limit_for_test<Schema>(
         phase: &crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase<'_>,
         authority: &WorthQueryExecutionInstallationAuthority,

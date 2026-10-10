@@ -7,6 +7,8 @@ use crate::domain_computation::primary_graph::application_contribution::{
 
 #[test]
 fn overflow_is_unmeasured_and_a_real_ledger_refusal_is_evicted() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let mut run = sealed_run_for_lineage_test();
     run.state.overflow_bytes_for_test();
     let lineage = WorthQueryApplicationOutputLineage::default();

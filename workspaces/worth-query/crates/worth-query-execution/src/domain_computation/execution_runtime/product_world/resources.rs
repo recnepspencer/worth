@@ -109,7 +109,6 @@ pub(in crate::domain_computation) fn test_product_world_resources(
     test_product_world_resources_with_history_limit(1_024)
 }
 
-#[cfg(any(test, feature = "test-primary-graph-faults"))]
 pub(crate) fn test_product_world_resources_with_history_limit(
     retained_composite_commits: u64,
 ) -> WorthQueryProductWorldResources {

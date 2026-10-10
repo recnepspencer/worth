@@ -87,7 +87,6 @@ impl Drop for NativeHint {
     }
 }
 
-#[cfg(feature = "test-query-execution-observer")]
 impl<Schema>
     crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
 {
@@ -104,7 +103,6 @@ impl<Schema>
     }
 }
 
-#[cfg(feature = "test-query-execution-observer")]
 fn native_ticket_bytes() -> Option<u64> {
     let (layout, _) = std::alloc::Layout::new::<[usize; 2]>()
         .extend(std::alloc::Layout::new::<RetainedInvalidationCapacity>())

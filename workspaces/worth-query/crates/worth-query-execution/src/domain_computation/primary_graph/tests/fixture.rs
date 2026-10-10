@@ -387,9 +387,7 @@ worth_query_application_schema! {
     }
 }
 
-#[cfg(feature = "test-query-execution-observer")]
 mod advancement_host;
-#[cfg(feature = "test-query-execution-observer")]
 pub(crate) use advancement_host::AdvancementHost;
 mod reconstruction_execution;
 pub(in crate::domain_computation::primary_graph) use reconstruction_execution::isolated_request_owner;

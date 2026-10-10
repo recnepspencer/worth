@@ -10,6 +10,8 @@ use crate::domain_computation::primary_graph::application_contribution::WorthQue
 
 #[test]
 fn edit_capacity_overflow_rebuilds_and_matches_reuse_off() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let source = template();
     let keys: Vec<_> = (0..32).map(Id::new).collect();
     let retained = retained(&source, &keys);
@@ -108,6 +110,8 @@ type ValueTree = ReductionTree<Value, fn(&Value, &Value) -> Value>;
 
 #[test]
 fn edit_encoding_and_result_capacity_denials_rebuild_and_match_reuse_off() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let source = template();
     let keys: Vec<_> = (0..8).map(Id::new).collect();
     let prior = retained(&source, &keys);
@@ -194,6 +198,8 @@ fn edit_encoding_and_result_capacity_denials_rebuild_and_match_reuse_off() {
 
 #[test]
 fn supplied_native_counter_failure_is_normalized_and_its_metrics_are_carried() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     // Supply a typed native failure to exercise production normalization and metric carriage.
     use super::super::super::tree_attempt::TreeAttempt;
     let native =

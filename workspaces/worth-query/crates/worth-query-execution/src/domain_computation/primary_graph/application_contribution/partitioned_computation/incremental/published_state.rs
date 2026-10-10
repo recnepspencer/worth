@@ -27,15 +27,24 @@ thread_local! {
 }
 
 pub(in crate::domain_computation::primary_graph) fn observe_published(
-    state: Option<Arc<CustodiedComputation>>,
+    state: Option<&Arc<CustodiedComputation>>,
     absence: Option<Cause>,
 ) {
+    if !crate::domain_computation::execution_observation::is_installed() {
+        return;
+    }
+    if CLEANUP_REGISTERED.with(|registered| !registered.replace(true)) {
+        crate::domain_computation::execution_observation::register_cleanup(clear_observations);
+    }
     // Decisions that ran nothing do not publish computation state.
     if absence != Some(Cause::NotProduced) {
         PUBLISHED.with(|published| {
             published
                 .borrow_mut()
-                .push(WorthQueryPublishedComputationStateForTest { state, absence })
+                .push(WorthQueryPublishedComputationStateForTest {
+                    state: state.map(Arc::clone),
+                    absence,
+                })
         });
     }
 }
@@ -53,6 +62,12 @@ pub fn discarded_computation_retention_on_this_thread_for_test() -> Vec<Option<C
 pub(in crate::domain_computation) fn observe_discarded(
     computation: &super::SealedComputationRetention,
 ) {
+    if !crate::domain_computation::execution_observation::is_installed() {
+        return;
+    }
+    if CLEANUP_REGISTERED.with(|registered| !registered.replace(true)) {
+        crate::domain_computation::execution_observation::register_cleanup(clear_observations);
+    }
     let cause = match computation {
         super::SealedComputationRetention::Produced(_) => None,
         super::SealedComputationRetention::Absent(reason) => Some(reason.full_cause()),
@@ -195,4 +210,11 @@ fn bits(value: &impl CanonicalBits) -> Vec<u8> {
         true
     }));
     bytes
+}
+
+thread_local! { static CLEANUP_REGISTERED: std::cell::Cell<bool> = const { std::cell::Cell::new(false) }; }
+fn clear_observations() {
+    CLEANUP_REGISTERED.with(|registered| registered.set(false));
+    PUBLISHED.with(|records| *records.borrow_mut() = Default::default());
+    DISCARDED.with(|records| *records.borrow_mut() = Default::default());
 }

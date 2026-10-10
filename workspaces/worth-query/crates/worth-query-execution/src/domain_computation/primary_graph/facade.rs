@@ -58,7 +58,6 @@ pub use super::application_checkpoint::{
     WorthQueryCheckpointCaptureDenial, WorthQueryCheckpointCapturePolicy,
     WorthQueryNativeCheckpointSectionBytes,
 };
-#[cfg(feature = "test-query-execution-observer")]
 pub use super::application_contribution::{
     bound_advancement_requests_on_this_thread_for_test,
     discarded_computation_retention_on_this_thread_for_test,
@@ -110,7 +109,6 @@ pub use super::application_entry::mutation::{
     WorthQueryMutationHandlerExecutionReport, WorthQueryMutationHandlerProjectionWork,
     WorthQueryMutationHandlerWork,
 };
-#[cfg(feature = "test-query-execution-observer")]
 pub use super::application_output_demand::{
     required_custody_layout_for_test, required_handoff_custody_bytes_for_test,
     required_ready_custody_bytes_for_test, RequiredCustodyLayoutForTest,
@@ -125,7 +123,6 @@ pub use super::application_program::{
     WorthQueryApplicationRequiredOutputSource, WorthQueryPreparedRequiredOutputSource,
     WorthQueryRequiredOutputConnectionDenial, WorthQueryRequiredOutputSourcePreparationFailure,
 };
-#[cfg(feature = "test-query-execution-observer")]
 pub use super::application_query::{
     query_read_kernel_entries_by_root_on_this_thread_for_test,
     query_read_kernel_entries_on_this_thread_for_test,
@@ -257,7 +254,6 @@ pub use super::ordinary_read::{
     WorthQueryOrdinaryReadBatch, WorthQueryOrdinaryReadMetadata, WorthQueryOrdinaryReadProjection,
     WorthQueryOrdinaryReadVersion,
 };
-#[cfg(feature = "test-query-execution-observer")]
 pub use super::output_lineage::invalidation::inexact_native_deliveries_on_this_thread_for_test;
 pub use super::output_lineage::{WorthQueryPriorOutputDenial, WorthQueryPriorOutputDenialKind};
 pub use super::principal_key::{
@@ -364,12 +360,10 @@ pub use crate::domain_computation::{
 /// Exhaustive translation of a Relational execution refusal.
 pub use super::provider::relational_execution_denial::relational_execution_kind;
 
-#[cfg(feature = "test-query-execution-observer")]
 pub use super::application_contribution::{
     advancement_requests_on_this_thread_for_test, caller_pass_reports_on_this_thread_for_test,
 };
 pub use crate::domain_computation::primary_graph::application_query::WorthQueryDerivedPairReadPlans;
 pub use worth_execution::ExecutionRequest;
 
-#[cfg(feature = "test-query-execution-observer")]
 pub use super::output_lineage::invalidation::carried_read_basis_custody_for_test;

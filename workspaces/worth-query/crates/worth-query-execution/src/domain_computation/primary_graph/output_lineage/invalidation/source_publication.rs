@@ -19,7 +19,6 @@ impl RelationalPublicationCompanion for SourceInvalidationOwner {
             return Err(CompanionPreflightStop::ForeignCell);
         }
         let cell = self.selected_cell(context)?;
-        #[cfg(feature = "test-query-execution-observer")]
         let _held = super::delivery_observation::exhaust_delivery_capacity(&self.resources);
         match self.prepare_delivery(&cell, context) {
             Ok(effect) => Ok(effect),
@@ -35,7 +34,6 @@ impl RelationalPublicationCompanion for SourceInvalidationOwner {
                         .expect("minted cell has its empty image"),
                 );
                 let reserved = cell.reserve_preflight(context)?;
-                #[cfg(feature = "test-query-execution-observer")]
                 super::delivery_observation::record_delivery(&super::logical_marking::NativeMarkingReport {
                     commit: context.canonical_commit().commit.commit_id,
                     precision: super::logical_marking::NativeMarkingPrecision::RetainedCapacityExhausted(Default::default()),
@@ -72,7 +70,6 @@ impl SourceInvalidationOwner {
             (budget, &self.resources),
             context,
         )?;
-        #[cfg(feature = "test-query-execution-observer")]
         super::delivery_observation::record_delivery(&report);
         let delivery_bytes = index_capacity::arc_bytes::<RetainedTouchDelivery>()
             .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
@@ -145,7 +142,6 @@ impl SourceInvalidationOwner {
                 CompanionPublicationCompletionObserver::retained_bytes(),
                 context,
             )?;
-            #[cfg(feature = "test-query-execution-observer")]
             retained.observe_native(crate::domain_computation::execution_runtime::source_invalidation::NativeRetainedKind::Completion);
             let observer = effect.attach_completion_observer(context, retained)?;
             // Each hint's preparation was admitted with the marking that
@@ -178,7 +174,6 @@ impl SourceInvalidationOwner {
                     retained_branch_bytes,
                     &mut hint_allowance,
                 )?;
-                #[cfg(feature = "test-query-execution-observer")]
                 {
                     use crate::domain_computation::execution_runtime::source_invalidation::NativeRetainedKind;
                     hint_capacity.observe_native(NativeRetainedKind::Hint);

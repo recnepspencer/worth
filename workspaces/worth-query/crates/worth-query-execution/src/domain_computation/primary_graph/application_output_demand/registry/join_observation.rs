@@ -40,17 +40,29 @@ impl Drop for StableJoinPause {
     }
 }
 static PAUSE: Mutex<Option<(Root, StableJoinPause)>> = Mutex::new(None);
+static PAUSE_ARMED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 pub(in crate::domain_computation::primary_graph) fn joined(root: Root) {
-    JOINED.with(|rows| rows.borrow_mut().push(root));
-    LAST_JOIN.with(|last| last.set(Some(root)));
+    if crate::domain_computation::execution_observation::is_installed() {
+        if CLEANUP_REGISTERED.with(|registered| !registered.replace(true)) {
+            crate::domain_computation::execution_observation::register_cleanup(clear_observations);
+        }
+        JOINED.with(|rows| rows.borrow_mut().push(root));
+    }
+    if PAUSE_ARMED.load(std::sync::atomic::Ordering::Acquire) {
+        LAST_JOIN.with(|last| last.set(Some(root)));
+    }
 }
 pub(in crate::domain_computation::primary_graph) fn observe_stable_join_admission() {
+    if !PAUSE_ARMED.load(std::sync::atomic::Ordering::Acquire) {
+        return;
+    }
     let Some(root) = LAST_JOIN.with(|last| last.take()) else {
         return;
     };
     let pause = {
         let mut armed = PAUSE.lock().unwrap();
         if armed.as_ref().is_some_and(|(wanted, _)| *wanted == root) {
+            PAUSE_ARMED.store(false, std::sync::atomic::Ordering::Release);
             armed.take().map(|(_, pause)| pause)
         } else {
             None
@@ -71,6 +83,12 @@ pub(in crate::domain_computation::primary_graph) fn observe_retained_source_sele
     recorded: Commit,
     selected: Commit,
 ) {
+    if !crate::domain_computation::execution_observation::is_installed() {
+        return;
+    }
+    if CLEANUP_REGISTERED.with(|registered| !registered.replace(true)) {
+        crate::domain_computation::execution_observation::register_cleanup(clear_observations);
+    }
     READS.with(|reads| reads.borrow_mut().push((root, recorded, selected)));
 }
 impl<Schema>
@@ -90,7 +108,9 @@ impl<Schema>
             Mutex::new(PauseState::default()),
             Condvar::new(),
         )));
-        *PAUSE.lock().unwrap() = Some((root, pause.clone()));
+        let mut pending = PAUSE.lock().unwrap();
+        *pending = Some((root, pause.clone()));
+        PAUSE_ARMED.store(true, std::sync::atomic::Ordering::Release);
         pause
     }
     #[doc(hidden)]
@@ -159,6 +179,12 @@ pub(in crate::domain_computation::primary_graph) fn observe_required_refresh_sto
     root: Root,
     kind: crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind,
 ) {
+    if !crate::domain_computation::execution_observation::is_installed() {
+        return;
+    }
+    if CLEANUP_REGISTERED.with(|registered| !registered.replace(true)) {
+        crate::domain_computation::execution_observation::register_cleanup(clear_observations);
+    }
     REFRESH_STOPS.with(|stops| stops.borrow_mut().push((root, kind)));
 }
 impl<Schema>
@@ -173,4 +199,12 @@ impl<Schema>
     )> {
         REFRESH_STOPS.with(|stops| std::mem::take(&mut *stops.borrow_mut()))
     }
+}
+
+thread_local! { static CLEANUP_REGISTERED: std::cell::Cell<bool> = const { std::cell::Cell::new(false) }; }
+fn clear_observations() {
+    CLEANUP_REGISTERED.with(|registered| registered.set(false));
+    JOINED.with(|records| *records.borrow_mut() = Default::default());
+    REFRESH_STOPS.with(|records| *records.borrow_mut() = Default::default());
+    READS.with(|records| *records.borrow_mut() = Default::default());
 }

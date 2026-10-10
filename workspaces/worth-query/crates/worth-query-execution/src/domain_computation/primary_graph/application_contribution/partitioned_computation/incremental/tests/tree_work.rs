@@ -139,6 +139,8 @@ fn reconcile(report: TreeRun) {
 
 #[test]
 fn every_edit_obeys_its_pre_edit_shape_bound_and_reconciles() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let template = template();
     let keys: Vec<_> = (0..128).map(|n| Id::new(n * 17 + 3)).collect();
     let retained = retained(&template, &keys);
@@ -198,6 +200,8 @@ fn every_edit_obeys_its_pre_edit_shape_bound_and_reconciles() {
 
 #[test]
 fn public_incremental_observation_reports_actual_work_apart_from_charge() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let world = installed_authorization_world(true);
     let installed = installed(StatusRead::Gather(1), counted);
     let first = first_run(&world, &installed);

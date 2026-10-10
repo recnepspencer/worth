@@ -1,4 +1,3 @@
-#[cfg(feature = "allocation-probes")]
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -143,7 +142,6 @@ fn yield_transition_work_is_invariant_to_unrelated_live_authority_width() {
 }
 
 #[test]
-#[cfg(feature = "allocation-probes")]
 fn yield_transition_allocation_count_is_width_invariant() {
     let output = std::process::Command::new(std::env::current_exe().unwrap())
         .arg("isolated_yield_transition_allocation_slope_probe")
@@ -159,7 +157,6 @@ fn yield_transition_allocation_count_is_width_invariant() {
 }
 
 #[test]
-#[cfg(feature = "allocation-probes")]
 fn isolated_yield_transition_allocation_slope_probe() {
     if std::env::var_os("WORTH_QUERY_YIELD_ALLOCATION_PROBE").is_none() {
         return;
@@ -171,7 +168,6 @@ fn isolated_yield_transition_allocation_slope_probe() {
 }
 
 #[test]
-#[cfg(feature = "allocation-probes")]
 fn workflow_yield_transition_allocation_is_unrelated_authority_invariant() {
     let output = std::process::Command::new(std::env::current_exe().unwrap())
         .arg("isolated_workflow_yield_transition_allocation_slope_probe")
@@ -209,9 +205,7 @@ fn execute_target(
     evidence
 }
 
-#[cfg(feature = "allocation-probes")]
 mod allocation_measurement;
-#[cfg(feature = "allocation-probes")]
 use allocation_measurement::{measured_target, measured_workflow_target};
 
 fn prepared_target(
@@ -257,7 +251,6 @@ fn prepared_target(
     (paused, unrelated, suspension_count, retained_probe_count)
 }
 
-#[cfg(feature = "allocation-probes")]
 fn prepared_workflow_target(
     execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     unrelated_width: usize,
@@ -355,7 +348,6 @@ fn expected_direct_yield_counters() -> crate::domain_computation::WorthQueryYiel
     counters
 }
 
-#[cfg(feature = "allocation-probes")]
 fn expected_workflow_yield_counters() -> crate::domain_computation::WorthQueryYieldTransitionCounters
 {
     let mut counters = expected_direct_yield_counters();

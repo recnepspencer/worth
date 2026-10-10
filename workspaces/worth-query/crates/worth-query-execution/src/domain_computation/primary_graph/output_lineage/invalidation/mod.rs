@@ -3,12 +3,9 @@
 mod admission;
 mod commit_touches;
 mod consumed_capacity;
-#[cfg(feature = "test-query-execution-observer")]
 mod consumed_capacity_observation;
 mod delivery;
-#[cfg(feature = "test-query-execution-observer")]
 mod delivery_observation;
-#[cfg(feature = "test-query-execution-observer")]
 pub use delivery_observation::inexact_native_deliveries_on_this_thread_for_test;
 mod derived;
 mod edit_admission;
@@ -18,9 +15,7 @@ pub(in crate::domain_computation::primary_graph) use equality_recovery::Equality
 mod fact_key;
 mod fact_keys;
 mod fact_retention;
-#[cfg(feature = "certification-invalidation-equivalence")]
 mod full_verification;
-#[cfg(feature = "certification-invalidation-equivalence")]
 pub(in crate::domain_computation::primary_graph) use full_verification::{
     FullVerificationDecision, FullVerificationImage, FullVerificationStop,
 };
@@ -80,5 +75,4 @@ pub(in crate::domain_computation::primary_graph) use verification::{
 };
 pub(in crate::domain_computation::primary_graph) use verified_current::VerifiedCurrentCleanup;
 
-#[cfg(feature = "test-query-execution-observer")]
 pub use read_basis_carry::carried_read_basis_custody_for_test;

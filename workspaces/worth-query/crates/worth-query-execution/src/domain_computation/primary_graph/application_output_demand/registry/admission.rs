@@ -293,7 +293,6 @@ impl WorthQueryOutputDemandRegistry {
                     })
             );
             if existing_record && reopens_exact_ready {
-                #[cfg(feature = "test-query-execution-observer")]
                 if stable_refresh {
                     super::join_observation::joined(key.source.root_entity_for_test());
                 }

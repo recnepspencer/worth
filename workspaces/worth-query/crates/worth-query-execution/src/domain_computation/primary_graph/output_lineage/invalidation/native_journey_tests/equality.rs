@@ -3,7 +3,6 @@
 
 use super::*;
 use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerification;
-#[cfg(feature = "certification-invalidation-equivalence")]
 use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop;
 use crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts;
 use crate::domain_computation::primary_graph::{
@@ -267,7 +266,8 @@ fn assert_source_only_alias_verification(
     old_identity: &Arc<RecordedSettlementIdentity>,
     old_fact: &WorthQueryApplicationObservedFact,
 ) {
-    let verified = ConsumedOutputEvidence::verify_candidate_with_admission(
+    let verify = || {
+        ConsumedOutputEvidence::verify_candidate_with_admission(
         old_identity,
         &crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::for_test(
             false,
@@ -283,12 +283,13 @@ fn assert_source_only_alias_verification(
         handle,
         selected,
         &mut owner.edit_admission(),
-    );
-    #[cfg(not(feature = "certification-invalidation-equivalence"))]
-    assert_eq!(verified, Ok(ConsumedOutputVerification::Current));
-    #[cfg(feature = "certification-invalidation-equivalence")]
+    )
+    };
+    assert_eq!(verify(), Ok(ConsumedOutputVerification::Current));
+    let _oracle =
+        crate::facade::primary_graph::WorthQueryInvalidationEquivalence::arm_on_this_thread();
     assert_eq!(
-        verified,
+        verify(),
         Err(ConsumedOutputVerificationStop::Unavailable),
         "actor-only aliases cannot supply the missing performed output projection",
     );

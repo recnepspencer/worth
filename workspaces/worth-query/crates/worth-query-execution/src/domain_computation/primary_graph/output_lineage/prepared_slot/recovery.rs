@@ -109,6 +109,8 @@ mod tests {
 
     #[test]
     fn world_recovery_metadata_carries_the_original_computation_and_absence() {
+        let _observation =
+            crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
         let world = installed_authorization_world(true);
         let product = world
             .application

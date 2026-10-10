@@ -4,6 +4,7 @@ use super::*;
 
 #[test]
 fn workflow_reexecution_opens_before_its_reader() {
+    let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     verify(
         "workflow reexecute",
         || {
@@ -30,6 +31,7 @@ fn workflow_reexecution_opens_before_its_reader() {
 
 #[test]
 fn workflow_stage_attempt_opens_before_its_reader() {
+    let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     verify(
         "workflow stage attempt execute",
         || {

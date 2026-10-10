@@ -32,6 +32,7 @@ impl Drop for Restore {
 }
 #[test]
 fn adoption_preparation_and_publication_own_separate_requests() {
+    let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
         let host = publish_on_first_program();
         let initial = host.current_world();

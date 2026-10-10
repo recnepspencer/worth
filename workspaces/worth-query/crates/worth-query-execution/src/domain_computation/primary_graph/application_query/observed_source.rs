@@ -172,7 +172,6 @@ impl<Query> Clone for WorthQueryObservedSource<Query> {
 }
 
 impl<Query> WorthQueryObservedSource<Query> {
-    #[cfg(feature = "test-query-execution-observer")]
     #[doc(hidden)]
     pub fn root_entity_for_test(&self) -> EntityId {
         self.model_root

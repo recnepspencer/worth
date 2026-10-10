@@ -54,6 +54,8 @@ fn cancelled() -> Outcome {
 /// inside the first combine, the run stops before the second.
 #[test]
 fn a_full_run_cancelled_inside_a_combine_stops_at_the_next_tree_node() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let world = installed_authorization_world(true);
     let installed = installed_over(4, StatusRead::Gather(1), cancelling_sum);
     COMBINES.set(0);
@@ -85,6 +87,8 @@ fn a_full_run_cancelled_inside_a_combine_stops_at_the_next_tree_node() {
 /// the tree.
 #[test]
 fn an_incremental_run_cancelled_inside_a_recombine_stops_and_does_not_rebuild() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let world = installed_authorization_world(true);
     let installed = installed_over(4, StatusRead::Gather(1), cancelling_sum);
     let first = attempt(

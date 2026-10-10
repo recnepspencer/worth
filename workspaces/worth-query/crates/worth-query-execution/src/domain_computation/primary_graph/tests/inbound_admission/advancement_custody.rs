@@ -56,6 +56,8 @@ impl Drop for Restore {
 
 #[test]
 fn inbound_receive_refuses_before_authentication_or_correlation_reads() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let verifier = std::sync::Arc::new(CountedVerifier(AtomicUsize::new(0)));
     let request = super::super::fixture::live_scope();
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {

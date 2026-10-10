@@ -9,6 +9,9 @@ thread_local! {
 }
 
 pub(super) fn record_delivery(report: &NativeMarkingReport) {
+    if !crate::domain_computation::execution_observation::is_installed() {
+        return;
+    }
     if matches!(report.precision, NativeMarkingPrecision::Exact(_)) {
         return;
     }

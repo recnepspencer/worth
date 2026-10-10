@@ -96,6 +96,8 @@ fn refused_by_memory(outcome: &Outcome) -> Option<u64> {
 
 #[test]
 fn a_rebuild_one_byte_short_of_its_bound_refuses_before_it_combines() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let unbounded = rebuilt_under(None);
     let [(outcome, reached)] = unbounded.as_slice() else {
         panic!("one unbounded placement");

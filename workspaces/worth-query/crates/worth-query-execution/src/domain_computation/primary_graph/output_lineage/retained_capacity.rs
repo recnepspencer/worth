@@ -70,7 +70,6 @@ impl LineageRetentionLedger {
     }
 }
 
-#[cfg(feature = "test-query-execution-observer")]
 impl LineageRetentionLedger {
     /// Hold real ledger custody while leaving a declared amount available.
     /// The maximum stays unchanged and the returned ticket refunds on Drop.
@@ -95,7 +94,6 @@ impl LineageRetentionLedger {
     }
 }
 
-#[cfg(any(test, feature = "test-query-execution-observer"))]
 impl LineageRetentionLedger {
     pub(super) fn retained_bytes(&self) -> u64 {
         self.state

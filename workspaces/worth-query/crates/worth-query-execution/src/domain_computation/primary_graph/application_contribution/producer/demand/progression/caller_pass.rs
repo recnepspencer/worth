@@ -86,7 +86,6 @@ where
                 commit_authority.clone(),
                 request_admission,
             );
-            #[cfg(feature = "test-query-execution-observer")]
             super::super::super::super::request_execution::record_caller_pass(&result);
             match result {
                 Ok(AdvancePassProgress::Answer(answer)) => {
@@ -135,7 +134,6 @@ where
             AdvancePass::Initial | AdvancePass::Refreshed(_) | AdvancePass::RetryDisclosure => None,
         };
         if let Some(publication) = publication {
-            #[cfg(feature = "test-query-execution-observer")]
             super::caller_pass_observation::run_interleaving();
             let selected = self.on_branch(delivery_branch).select().map_err(|stop| {
                 WorthQueryOutputDemandDenial::product_selection(

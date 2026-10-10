@@ -1,4 +1,3 @@
-#[cfg(any(test, feature = "certification-query-lookup"))]
 use worth_query_declaration::facade::application_query::ApplicationQueryReference;
 use worth_query_declaration::facade::{
     application_query::{
@@ -155,7 +154,6 @@ impl WorthQueryCompiledApplicationQuery {
         )
     }
 
-    #[cfg(any(test, feature = "certification-query-lookup"))]
     pub(crate) fn matches_reference<Schema, Query, Parameters, QueryResult, Scope>(
         &self,
         reference: ApplicationQueryReference<Schema, Query, Parameters, QueryResult, Scope>,

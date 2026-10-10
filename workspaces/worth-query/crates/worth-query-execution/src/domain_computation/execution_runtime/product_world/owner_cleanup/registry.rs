@@ -83,7 +83,6 @@ impl WorthQueryProductBranchOwnerCleanupRegistry {
         })
     }
 
-    #[cfg(feature = "test-world-operation-control")]
     pub(crate) fn available_capacity_for_test(&self) -> usize {
         let state = lock(&self.state);
         state

@@ -117,7 +117,6 @@ where
     } else {
         None
     };
-    #[cfg(feature = "test-query-execution-observer")]
     let contact_root = observed_source.model_root;
     let prepared_source = runtime
         .prepare_application_source_expectation::<Operation<Schema, Binding>, _>(
@@ -190,7 +189,6 @@ where
                 admission,
                 || {
                     *producer_contacts += 1;
-                    #[cfg(feature = "test-query-execution-observer")]
                     super::contact_observation::record(
                         runtime.runtime.authority_identity().as_u64(),
                         contact_root,

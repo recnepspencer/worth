@@ -9,6 +9,12 @@ thread_local! {
     static REQUEST_WORK: RefCell<Vec<u64>> = const { RefCell::new(Vec::new()) };
 }
 pub(super) fn observe_request_work(admission: &InvalidationEditAdmission) {
+    if !crate::domain_computation::execution_observation::is_installed() {
+        return;
+    }
+    if CLEANUP_REGISTERED.with(|registered| !registered.replace(true)) {
+        crate::domain_computation::execution_observation::register_cleanup(clear_observations);
+    }
     let work = admission.charged_work();
     REQUEST_NAVIGATION.with(|requests| {
         requests.borrow_mut().push((
@@ -26,6 +32,12 @@ pub(super) fn exhaust_after_commit(admission: &mut InvalidationEditAdmission) {
     }
 }
 pub(super) fn observe_read_debit(executed: u64, debited: u64) {
+    if !crate::domain_computation::execution_observation::is_installed() {
+        return;
+    }
+    if CLEANUP_REGISTERED.with(|registered| !registered.replace(true)) {
+        crate::domain_computation::execution_observation::register_cleanup(clear_observations);
+    }
     READ_DEBITS.with(|reads| reads.borrow_mut().push((executed, debited)));
 }
 thread_local! { static INTERLEAVING: RefCell<Option<Box<dyn FnOnce()>>> = const { RefCell::new(None) }; }
@@ -61,6 +73,12 @@ impl<Schema>
 }
 
 pub(super) fn observe_admission_work(admission: &InvalidationEditAdmission) {
+    if !crate::domain_computation::execution_observation::is_installed() {
+        return;
+    }
+    if CLEANUP_REGISTERED.with(|registered| !registered.replace(true)) {
+        crate::domain_computation::execution_observation::register_cleanup(clear_observations);
+    }
     ADMISSION_WORK.with(|work| work.borrow_mut().push(admission.charged_work()));
 }
 impl<Schema>
@@ -79,4 +97,13 @@ impl<Schema>
     pub const fn maximum_ordered_descent_work_for_test() -> u64 {
         worth_relational::facade::indexes::SelectedIndexReadWork::MAXIMUM_ORDERED_DESCENT_WORK
     }
+}
+
+thread_local! { static CLEANUP_REGISTERED: std::cell::Cell<bool> = const { std::cell::Cell::new(false) }; }
+fn clear_observations() {
+    CLEANUP_REGISTERED.with(|registered| registered.set(false));
+    READ_DEBITS.with(|records| *records.borrow_mut() = Default::default());
+    REQUEST_NAVIGATION.with(|records| *records.borrow_mut() = Default::default());
+    ADMISSION_WORK.with(|records| *records.borrow_mut() = Default::default());
+    REQUEST_WORK.with(|records| *records.borrow_mut() = Default::default());
 }

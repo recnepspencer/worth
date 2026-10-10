@@ -37,6 +37,8 @@ fn moments(max: usize) -> (Vec<f64>, Vec<f64>) {
 
 #[test]
 fn mean_reported_update_nodes_obey_the_random_treap_depth_law() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let (means, variances) = moments(*SIZES.last().unwrap());
     let mut union_risk = 0.0;
     for n in SIZES {

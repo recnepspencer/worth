@@ -10,6 +10,9 @@ fn tickets() -> &'static Mutex<Tickets> {
     TICKETS.get_or_init(Default::default)
 }
 pub(super) fn observe(runtime: u64, ticket: &Arc<RetainedInvalidationCapacity>) {
+    if !crate::domain_computation::execution_runtime::source_invalidation::native_observation_is_installed() {
+        return;
+    }
     if let Some(tickets) = tickets().lock().unwrap().get_mut(&runtime) {
         tickets.push(Arc::downgrade(ticket));
     }

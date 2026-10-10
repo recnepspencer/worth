@@ -30,6 +30,8 @@ fn fill_room(execution: &QueryRequestExecution<'_>) -> crate::domain_computation
 
 #[test]
 fn scope_admission_reports_shape_work_only_when_construction_ran() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let keys: Vec<_> = (0..PARTITIONS).map(|n| Id::new(n as u64)).collect();
     let shape = shape::Shape::from_sorted(&keys);
     let visits = shape::Shape::shape_work(&shape, PARTITIONS);

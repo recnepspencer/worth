@@ -255,5 +255,4 @@ fn redispatch_names_fresh_authority_and_current_admission_failures_apart() {
     );
 }
 
-#[cfg(feature = "test-query-execution-observer")]
 mod advancement_custody;

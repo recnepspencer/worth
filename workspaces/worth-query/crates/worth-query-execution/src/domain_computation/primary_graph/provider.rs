@@ -58,7 +58,7 @@ mod session_commit;
 mod session_lifecycle;
 mod terminal_dispatch_release;
 mod unpublished_idempotency;
-#[cfg(all(test, feature = "test-world-operation-control"))]
+#[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use unpublished_idempotency::unwind_recovery_inspection_count;
 pub(in crate::domain_computation) use unpublished_idempotency::WorthQueryUnpublishedIdempotencyDisposition;
 pub(in crate::domain_computation::primary_graph) use unpublished_idempotency::WorthQueryUnpublishedIdempotencyReservation;
@@ -98,7 +98,6 @@ pub(crate) struct WorthQueryPrimaryGraphProvider {
         branch_commit_coordination::WorthQueryApplicationBranchCommitCoordinator,
     pub(super) live_delivery: super::live_delivery::WorthQueryLiveDeliverySource,
     attempts: Arc<Mutex<application_attempt_state::WorthQueryPrimaryGraphApplicationAttemptStore>>,
-    #[cfg(feature = "test-world-operation-control")]
     pub(super) application_attempt_operation_control:
         super::application_runtime::WorthQueryApplicationAttemptOperationControl,
     application_attempt_work: application_attempt_work::WorthQueryApplicationAttemptWorkLedger,
@@ -137,13 +136,11 @@ impl WorthQueryPrimaryGraphProvider {
             })
     }
 
-    #[cfg(feature = "test-world-operation-control")]
     pub(super) fn after_application_attempt_registration_for_test(&self) {
         self.application_attempt_operation_control
             .after_registration();
     }
 
-    #[cfg(feature = "test-world-operation-control")]
     pub(super) fn after_application_candidate_preparation_for_test(&self) {
         self.application_attempt_operation_control
             .after_candidate_preparation();
@@ -262,7 +259,6 @@ impl WorthQueryPrimaryGraphProvider {
             .resource_count()
     }
 
-    #[cfg(feature = "test-world-operation-control")]
     pub(super) fn active_application_attempt_count_for_test(&self) -> usize {
         self.attempts
             .lock()
@@ -270,7 +266,6 @@ impl WorthQueryPrimaryGraphProvider {
             .active_attempt_count()
     }
 
-    #[cfg(feature = "test-world-operation-control")]
     pub(super) fn active_live_consumer_count_for_test(&self) -> usize {
         self.live_delivery.active_subscriber_count()
     }

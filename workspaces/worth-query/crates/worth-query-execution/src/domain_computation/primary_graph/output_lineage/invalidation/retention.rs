@@ -23,7 +23,7 @@ use super::InvalidationEditAdmission;
 
 type Capacity = Option<Arc<RetainedInvalidationCapacity>>;
 
-#[cfg_attr(any(test, feature = "test-query-execution-observer"), track_caller)]
+#[track_caller]
 pub(super) fn reserve(
     resources: &WorthQueryInvalidationResources,
     bytes: u64,
@@ -50,7 +50,6 @@ pub(super) fn reserve(
             _ => unreachable!("installed resources have positive capacities"),
         })?;
     let capacity = Arc::new(capacity);
-    #[cfg(any(test, feature = "test-query-execution-observer"))]
     capacity.observe_custody(std::panic::Location::caller());
     Ok(capacity)
 }

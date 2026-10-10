@@ -37,21 +37,18 @@ pub(in crate::domain_computation::primary_graph) struct PreparedReadyBacking {
 pub(in crate::domain_computation::primary_graph) struct ReadyCompletion(Arc<ReadyCell>);
 
 /// The required custody one Ready row declares.
-#[cfg(feature = "test-query-execution-observer")]
 #[doc(hidden)]
 pub fn required_ready_custody_bytes_for_test() -> usize {
     PreparedReadyBacking::retained_bytes()
 }
 
 /// A wave may keep the posted Ready beside its successor through one handoff.
-#[cfg(feature = "test-query-execution-observer")]
 #[doc(hidden)]
 pub fn required_handoff_custody_bytes_for_test(producer: &str) -> usize {
     super::consumer_custody::ConsumerHandoff::retained_bytes(producer)
         .expect("installed producer identity fits custody")
 }
 
-#[cfg(feature = "test-query-execution-observer")]
 impl<Schema>
     crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
 {

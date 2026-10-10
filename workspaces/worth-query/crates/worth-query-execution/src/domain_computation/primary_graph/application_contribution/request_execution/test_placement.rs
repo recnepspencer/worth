@@ -96,6 +96,10 @@ pub(in crate::domain_computation::primary_graph) fn test_policy(
 pub(super) fn placed(
     world: RuntimeWorldExecutionPlacement<'_>,
 ) -> RuntimeWorldExecutionPlacement<'_> {
+    let placement = match PLACEMENT.get() {
+        WorthQueryExecutionPlacementForTest::World => return world,
+        chosen => chosen,
+    };
     let policy = match world {
         RuntimeWorldExecutionPlacement::Serial(policy)
         | RuntimeWorldExecutionPlacement::Leased { policy, .. } => policy,
@@ -111,25 +115,6 @@ pub(super) fn placed(
                 budget.work_ceiling(),
             ),
         )
-    };
-    // A whole host integration binary can certify its declared policy on a
-    // lease, including worker threads; explicit per-thread placement wins.
-    let placement = match PLACEMENT.get() {
-        WorthQueryExecutionPlacementForTest::World => {
-            std::env::var("WORTH_QUERY_TEST_REQUEST_WORKERS")
-                .ok()
-                .map(|value| {
-                    WorthQueryExecutionPlacementForTest::Leased(
-                        value
-                            .parse::<usize>()
-                            .ok()
-                            .and_then(NonZeroUsize::new)
-                            .expect("test request workers is a positive width"),
-                    )
-                })
-                .unwrap_or(WorthQueryExecutionPlacementForTest::World)
-        }
-        chosen => chosen,
     };
     match placement {
         WorthQueryExecutionPlacementForTest::World => world,

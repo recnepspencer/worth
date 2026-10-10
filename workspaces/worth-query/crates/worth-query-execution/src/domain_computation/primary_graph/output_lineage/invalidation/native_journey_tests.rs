@@ -17,7 +17,6 @@ mod equality;
 mod equality_expiration;
 #[path = "native_journey_tests/full_ledger.rs"]
 mod full_ledger;
-#[cfg(feature = "certification-invalidation-equivalence")]
 #[path = "native_journey_tests/full_verification.rs"]
 mod full_verification;
 #[path = "native_journey_tests/local_requirement.rs"]
@@ -32,10 +31,8 @@ mod reestablishment;
 mod scope_hierarchy;
 // Fixture evidence carries no performed output projection, so the
 // equivalence oracle correctly refuses it; this proof is about metering.
-#[cfg(not(feature = "certification-invalidation-equivalence"))]
 #[path = "native_journey_tests/pending_own_evidence.rs"]
 mod pending_own_evidence;
-#[cfg(not(feature = "certification-invalidation-equivalence"))]
 #[path = "native_journey_tests/precommit_chain.rs"]
 mod precommit_chain;
 #[path = "native_journey_tests/replay_propagation.rs"]
@@ -345,6 +342,5 @@ fn ordinary_native_writer_marks_only_matched_fields_and_actual_downstream_edges(
     });
 }
 
-#[cfg(feature = "certification-invalidation-equivalence")]
 #[path = "native_journey_tests/retired_image.rs"]
 mod retired_image;

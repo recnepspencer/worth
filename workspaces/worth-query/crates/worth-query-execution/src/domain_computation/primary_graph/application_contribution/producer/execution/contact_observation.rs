@@ -3,6 +3,9 @@ use std::{cell::RefCell, collections::BTreeMap};
 use worth_relational::facade::identity::EntityId;
 thread_local! { static ENTRIES: RefCell<BTreeMap<(u64, EntityId), u64>> = const { RefCell::new(BTreeMap::new()) }; }
 pub(super) fn record(runtime: u64, root: EntityId) {
+    if !crate::domain_computation::execution_observation::is_installed() {
+        return;
+    }
     ENTRIES.with(|entries| {
         let mut entries = entries.borrow_mut();
         *entries.entry((runtime, root)).or_default() += 1;

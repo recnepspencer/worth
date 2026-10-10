@@ -20,7 +20,6 @@ pub(in crate::domain_computation::primary_graph) use registry::SelectedRequiredR
 pub(in crate::domain_computation::primary_graph) use registry::SelectedRequiredWork;
 pub(in crate::domain_computation::primary_graph) use registry::SelectedRequiredWorkKind;
 pub use registry::WorthQueryOutputDemandNotifications;
-#[cfg(feature = "test-query-execution-observer")]
 pub use registry::{
     required_custody_layout_for_test, required_handoff_custody_bytes_for_test,
     required_ready_custody_bytes_for_test, RequiredCustodyLayoutForTest,
@@ -43,7 +42,6 @@ pub(in crate::domain_computation) use registry::{
 };
 pub use settlement::{WorthQueryOutputDemandSettlement, WorthQueryOutputSettlementPosture};
 
-#[cfg(feature = "test-query-execution-observer")]
 pub(in crate::domain_computation::primary_graph) use registry::join_observation::{
     observe_required_refresh_stop, observe_retained_source_selection, observe_stable_join_admission,
 };

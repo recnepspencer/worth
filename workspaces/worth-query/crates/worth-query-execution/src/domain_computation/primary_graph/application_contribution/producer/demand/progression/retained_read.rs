@@ -91,7 +91,6 @@ where
             ),
             SelectedQueryBasisRetentionStop::Admission(stop) => resource_denial(stop),
         })?;
-    #[cfg(feature = "test-query-execution-observer")]
     let read_commit = product.selected_commit().clone();
     let controls = WorthQueryApplicationQueryControls::selected_read_one_shot(
         product,
@@ -115,7 +114,6 @@ where
                 let plan = runtime
                     .finish_prepared_application_query_permission(permission, admission)
                     .map_err(query_admission_denial)?;
-                #[cfg(feature = "test-query-execution-observer")]
                 let before = admission.charged_work();
                 let read = runtime
                     .execute_application_query_one_shot_admitted(plan, admission)
@@ -128,11 +126,9 @@ where
                             | Stop::WorkAccountingMismatch => work_denial(),
                         }
                     })?;
-                #[cfg(feature = "test-query-execution-observer")]
                 super::caller_pass_observation::observe_read_debit(
                     read.receipt().work().total_work_units() as u64, admission.charged_work() - before,
                 );
-                #[cfg(feature="test-query-execution-observer")]
                 crate::domain_computation::primary_graph::application_output_demand::observe_retained_source_selection(
                     retained.source_root(), retained.selected_product_commit().expect("retained Product source").clone(),
                     read_commit.clone());

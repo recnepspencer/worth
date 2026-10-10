@@ -6,6 +6,7 @@ use super::*;
 
 #[test]
 fn moved_artifact_advancement_opens_before_its_reader() {
+    let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     verify(
         "artifact move advance",
         || {
@@ -38,6 +39,7 @@ fn moved_artifact_advancement_opens_before_its_reader() {
 
 #[test]
 fn leased_artifact_advancement_opens_before_its_reader() {
+    let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     verify(
         "artifact lease advance",
         || {

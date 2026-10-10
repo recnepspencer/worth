@@ -82,7 +82,6 @@ where
     Schema: ApplicationSchema + 'static,
 {
     // A Ready the wave answers is read at this selection.
-    #[cfg(feature = "test-primary-graph-faults")]
     let _held_world_observations = runtime
         .primary_provider
         .take_ready_read_snapshot_pressure()

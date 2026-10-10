@@ -5,6 +5,8 @@ use super::*;
 
 #[test]
 fn full_verification_uses_native_facts_and_retains_the_exact_captured_image() {
+    let _oracle =
+        crate::facade::primary_graph::WorthQueryInvalidationEquivalence::arm_on_this_thread();
     let world = installed_authorization_world(true);
     let selected = world.selected_product();
     let entity = selected

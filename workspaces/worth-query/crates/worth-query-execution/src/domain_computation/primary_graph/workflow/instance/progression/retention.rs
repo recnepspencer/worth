@@ -306,7 +306,6 @@ impl WorkflowInstanceProgressRetention {
         Some(retained.replays.clone())
     }
 
-    #[cfg(feature = "test-primary-graph-faults")]
     pub(in crate::domain_computation::primary_graph) fn release_all(&mut self) {
         self.counters.releases = self.counters.releases.saturating_add(self.entries.len());
         self.entries.clear();

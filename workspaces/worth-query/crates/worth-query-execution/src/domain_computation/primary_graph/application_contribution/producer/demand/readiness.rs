@@ -110,7 +110,6 @@ where
             receipt,
             admitted.as_mut().map(|(_, admission)| &mut **admission),
         )?;
-        #[cfg(feature = "test-primary-graph-faults")]
         let _held_world_observations = if self.primary_provider.take_readiness_snapshot_pressure() {
             Some(self.hold_world_snapshot_pressure_for_test(receipt.product_branch()))
         } else {

@@ -1,4 +1,3 @@
-#[cfg(feature = "allocation-probes")]
 use stats_alloc::{Region, StatsAlloc, INSTRUMENTED_SYSTEM};
 use worth_foundational::facade::{
     AspectContract, AspectContractRevision, AspectIdentity, AspectKey, AspectValue,
@@ -8,7 +7,6 @@ use worth_query_installation::facade::WorthQueryArtifactNativeAlignment;
 
 use super::WorthQueryArtifactProjectionSink;
 
-#[cfg(feature = "allocation-probes")]
 #[global_allocator]
 static TEST_ALLOCATOR: &StatsAlloc<std::alloc::System> = &INSTRUMENTED_SYSTEM;
 
@@ -47,7 +45,6 @@ fn allocated_capacity_includes_nested_variable_width_buffers() {
 }
 
 #[test]
-#[cfg(feature = "allocation-probes")]
 fn chunk_width_changes_independently_measured_live_allocation_peak() {
     let output = std::process::Command::new(std::env::current_exe().unwrap())
         .arg("isolated_resident_allocation_probe")
@@ -63,7 +60,6 @@ fn chunk_width_changes_independently_measured_live_allocation_peak() {
 }
 
 #[test]
-#[cfg(feature = "allocation-probes")]
 fn isolated_resident_allocation_probe() {
     if std::env::var_os("WORTH_QUERY_RUN_ALLOCATION_PROBE").is_none() {
         return;
@@ -77,7 +73,6 @@ fn isolated_resident_allocation_probe() {
     );
 }
 
-#[cfg(feature = "allocation-probes")]
 fn measured_sink_peak(max_rows: usize) -> usize {
     let fields = vec![AspectContract::scalar(
         AspectKey::new("resident-field").unwrap(),

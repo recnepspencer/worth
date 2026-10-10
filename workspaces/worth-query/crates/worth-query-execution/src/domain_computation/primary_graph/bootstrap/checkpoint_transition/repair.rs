@@ -52,7 +52,6 @@ impl WorthQueryCheckpointTransitionRecovery {
         }
     }
 
-    #[cfg(feature = "test-durability-faults")]
     #[doc(hidden)]
     pub fn fail_next_durable_append_for_test(&self) {
         self.graph

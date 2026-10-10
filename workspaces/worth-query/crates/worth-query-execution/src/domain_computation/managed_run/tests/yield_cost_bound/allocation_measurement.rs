@@ -1,6 +1,5 @@
 use super::*;
 
-#[cfg(feature = "allocation-probes")]
 pub(super) fn measured_workflow_target(unrelated_width: usize) -> stats_alloc::Stats {
     let (paused, unrelated) =
         crate::domain_computation::primary_graph::with_test_advancement(|execution| {
@@ -24,7 +23,6 @@ pub(super) fn measured_workflow_target(unrelated_width: usize) -> stats_alloc::S
     stats
 }
 
-#[cfg(feature = "allocation-probes")]
 pub(super) fn measured_target(unrelated_width: usize) -> stats_alloc::Stats {
     let (paused, unrelated, _, _) =
         crate::domain_computation::primary_graph::with_test_advancement(|execution| {

@@ -317,7 +317,6 @@ where
             }
         };
         let publication = OwnPublication(receipt.0.committed_product_publication().clone());
-        #[cfg(feature = "test-query-execution-observer")]
         super::caller_pass_observation::exhaust_after_commit(request_admission);
         let delivery = receipt.0
             .take_performed_relational_product_change()

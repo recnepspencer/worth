@@ -55,7 +55,6 @@ pub(in crate::domain_computation) struct RetainedInvalidationCapacity {
 }
 
 impl RetainedInvalidationCapacity {
-    #[cfg(any(test, feature = "test-query-execution-observer"))]
     pub(in crate::domain_computation) fn observe_custody(
         &self,
         site: &'static std::panic::Location<'static>,
@@ -67,7 +66,6 @@ impl RetainedInvalidationCapacity {
             site,
         );
     }
-    #[cfg(feature = "test-query-execution-observer")]
     pub(in crate::domain_computation) fn observe_native(&self, kind: super::NativeRetainedKind) {
         super::native_reservation_observation::retain(
             self as *const Self as usize,
@@ -83,7 +81,6 @@ impl RetainedInvalidationCapacity {
 
 impl Drop for RetainedInvalidationCapacity {
     fn drop(&mut self) {
-        #[cfg(any(test, feature = "test-query-execution-observer"))]
         super::native_reservation_observation::release(self as *const Self as usize);
         self.ledger
             .retained_bytes

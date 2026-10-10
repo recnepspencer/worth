@@ -235,7 +235,6 @@ impl WorthQueryProductPublicationReceipt {
             .take()
     }
 
-    #[cfg(feature = "test-primary-graph-faults")]
     pub(crate) fn has_output_demand_observation_for_test(&self) -> bool {
         self.custody
             .output_demand_observation

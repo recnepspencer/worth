@@ -7,6 +7,8 @@ use worth_runtime_world::facade::{
 
 #[test]
 fn nested_forks_select_the_captured_generation_and_stop_at_local_absence() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let world =
         crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
             true,

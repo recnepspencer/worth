@@ -20,9 +20,7 @@ use super::{
 
 #[derive(Default)]
 pub(crate) struct WorthQueryInstalledApplicationQueryCatalog {
-    #[cfg(any(test, feature = "certification-query-lookup"))]
     queries: BTreeMap<ApplicationQueryBindingKey, Arc<WorthQueryCompiledApplicationQuery>>,
-    #[cfg(any(test, feature = "certification-query-lookup"))]
     queries_by_name: BTreeMap<String, Arc<WorthQueryCompiledApplicationQuery>>,
     bindings: BTreeMap<String, Arc<WorthQueryCompiledApplicationQueryBinding>>,
 }
@@ -49,7 +47,6 @@ impl WorthQueryInstalledApplicationQueryCatalog {
             .map(|binding| binding.query_identity())
     }
 
-    #[cfg(any(test, feature = "certification-query-lookup"))]
     pub(crate) fn get_query(
         &self,
         key: &ApplicationQueryBindingKey,
@@ -57,7 +54,6 @@ impl WorthQueryInstalledApplicationQueryCatalog {
         self.queries.get(key).map(Arc::clone)
     }
 
-    #[cfg(any(test, feature = "certification-query-lookup"))]
     pub(crate) fn get_query_by_name(
         &self,
         name: &str,
@@ -130,9 +126,7 @@ where
         }
     }
     Ok(WorthQueryInstalledApplicationQueryCatalog {
-        #[cfg(any(test, feature = "certification-query-lookup"))]
         queries,
-        #[cfg(any(test, feature = "certification-query-lookup"))]
         queries_by_name,
         bindings,
     })

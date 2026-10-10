@@ -3,11 +3,15 @@ use super::*;
 
 #[test]
 fn a_retired_row_absent_in_both_images_does_not_change_the_image() {
+    let _oracle =
+        crate::facade::primary_graph::WorthQueryInvalidationEquivalence::arm_on_this_thread();
     retirement_image(true);
 }
 
 #[test]
 fn a_row_disappearing_after_capture_changes_the_image() {
+    let _oracle =
+        crate::facade::primary_graph::WorthQueryInvalidationEquivalence::arm_on_this_thread();
     retirement_image(false);
 }
 
@@ -86,6 +90,8 @@ fn retirement_image(retired_before_capture: bool) {
 
 #[test]
 fn shared_empty_images_still_fence_a_changed_native_position() {
+    let _oracle =
+        crate::facade::primary_graph::WorthQueryInvalidationEquivalence::arm_on_this_thread();
     use worth_foundational::facade::{AspectValue, InternedString};
     use worth_relational::facade::{
         mvcc::{RelationalPublicationOutcome, RelationalTransactionIntent},

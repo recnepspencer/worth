@@ -76,7 +76,6 @@ impl WorthQueryApplicationCheckpoint {
         self.bytes.charged_payload_bytes()
     }
 
-    #[cfg(feature = "test-durability-faults")]
     #[doc(hidden)]
     pub fn rewrite_authenticated_body_for_durability_test(
         &self,

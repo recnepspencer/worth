@@ -372,6 +372,5 @@ fn provider_replacement_requires_fresh_runtime_publication() {
     courtroom::provider_replacement_requires_fresh_runtime_publication();
 }
 
-#[cfg(feature = "test-query-execution-observer")]
 #[path = "temporal_conditional_operation/advancement_custody.rs"]
 mod advancement_custody;

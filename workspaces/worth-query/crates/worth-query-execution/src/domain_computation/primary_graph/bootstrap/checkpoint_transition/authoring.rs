@@ -20,7 +20,6 @@ pub struct WorthQueryCheckpointMigrationWriter<'installation, Schema> {
 impl<'installation, Schema: ApplicationSchema>
     WorthQueryCheckpointMigrationWriter<'installation, Schema>
 {
-    #[cfg(feature = "test-durability-faults")]
     #[doc(hidden)]
     pub fn fail_next_durable_append_for_test(&self) {
         self.graph

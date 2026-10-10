@@ -9,9 +9,6 @@ repository = "https://github.com/recnepspencer/WORTH"
 keywords = ["query", "canonicalization", "facade", "typed"]
 categories = ["data-structures", "science"]
 
-[features]
-test-query-execution-observer = ["worth-query-execution/test-query-execution-observer"]
-
 [dependencies]
 arc-swap = "1"
 worth-query-declaration = { path = "../worth-query-declaration" }
@@ -51,4 +48,4 @@ workspace = true
 [dev-dependencies]
 worth-runtime-bridge = { path = "../../../../crates/worth-runtime-bridge" }
 worth-relational = { path = "../../../../crates/worth-relational" }
-worth-query-installation = { path = "../worth-query-installation", features = ["certification-query-lookup"] }
+worth-query-installation = { path = "../worth-query-installation" }

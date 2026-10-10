@@ -7,13 +7,13 @@ type Map = BTreeMap<WorthQueryOutputDemandKey, DemandRecord>;
 pub(super) struct DemandRecords(Map, BTreeMap<
     crate::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceCoordinate,
     std::collections::BTreeSet<WorthQueryOutputDemandKey>>);
-#[cfg(feature = "test-query-execution-observer")]
 thread_local! { static WHOLE_ROWS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) }; }
 fn observe_row() {
-    #[cfg(feature = "test-query-execution-observer")]
+    if !crate::domain_computation::execution_observation::is_installed() {
+        return;
+    }
     WHOLE_ROWS.with(|count| count.set(count.get().checked_add(1).expect("row visit counter")));
 }
-#[cfg(feature = "test-query-execution-observer")]
 pub(super) fn whole_rows() -> u64 {
     WHOLE_ROWS.with(std::cell::Cell::get)
 }
@@ -154,7 +154,6 @@ impl From<Map> for DemandRecords {
         records
     }
 }
-#[cfg(feature = "test-query-execution-observer")]
 impl<Schema>
     crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
 {

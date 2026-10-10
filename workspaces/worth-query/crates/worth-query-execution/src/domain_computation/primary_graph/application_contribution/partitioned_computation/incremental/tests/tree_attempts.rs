@@ -4,6 +4,8 @@ use super::*;
 
 #[test]
 fn successful_edits_failed_attempt_and_rebuild_are_all_reported() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let template = template();
     let keys: Vec<_> = (0..32).map(Id::new).collect();
     let retained = retained(&template, &keys);
@@ -37,6 +39,8 @@ fn successful_edits_failed_attempt_and_rebuild_are_all_reported() {
 
 #[test]
 fn edit_memory_refusal_keeps_prior_work_and_releases_transient_hold_before_rebuild() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     use crate::domain_computation::primary_graph::application_contribution::request_execution::test_policy;
     use std::num::NonZeroUsize;
     let template = template();
@@ -90,6 +94,8 @@ fn edit_memory_refusal_keeps_prior_work_and_releases_transient_hold_before_rebui
 
 #[test]
 fn a_failed_edit_followed_by_a_stopped_rebuild_preserves_both_attempts() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let template = template();
     let keys: Vec<_> = (0..32).map(Id::new).collect();
     let retained = retained(&template, &keys);
@@ -152,6 +158,8 @@ fn phase_panicking(left: &u64, right: &u64) -> u64 {
 
 #[test]
 fn a_work_stopped_rebuild_reports_the_work_it_entered() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let template = template();
     let keys: Vec<_> = (0..32).map(Id::new).collect();
     let retained = retained(&template, &keys);

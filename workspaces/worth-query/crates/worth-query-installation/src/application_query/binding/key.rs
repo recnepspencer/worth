@@ -1,4 +1,3 @@
-#[cfg(any(test, feature = "certification-query-lookup"))]
 use worth_query_declaration::facade::application_query::ApplicationQueryReference;
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryBindingDescriptor, ErasedApplicationQueryDefinition,
@@ -25,7 +24,6 @@ impl ApplicationQueryBindingKey {
         }
     }
 
-    #[cfg(any(test, feature = "certification-query-lookup"))]
     pub(crate) fn from_reference<Schema, Query, Parameters, QueryResult, Scope>(
         reference: &ApplicationQueryReference<Schema, Query, Parameters, QueryResult, Scope>,
     ) -> Self {

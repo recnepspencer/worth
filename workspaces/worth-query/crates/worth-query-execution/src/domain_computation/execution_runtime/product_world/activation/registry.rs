@@ -174,7 +174,6 @@ impl WorthQueryProductActivationRegistry {
             .find(|occurrence| !state.live_occurrences.contains(occurrence)))
     }
 
-    #[cfg(feature = "test-world-operation-control")]
     pub(crate) fn installed_branch_count(&self) -> usize {
         self.state
             .lock()
