@@ -141,14 +141,20 @@ where
             flight,
             new_slot,
         } = reservation;
-        {
+        let retained_order = {
             let mut state = self.lock();
             state.costs.owner_acquisition_contacts =
                 state.costs.owner_acquisition_contacts.saturating_add(1);
             state.costs.record_component_contact(request.component());
-        }
+            state
+                .entries
+                .get(&key)
+                .map(|entry| entry.basis_order.clone())
+        };
         let result = catch_unwind(AssertUnwindSafe(|| {
-            let basis_order = super::super::ComponentBasisOrder::from_admitted(request.component());
+            let basis_order = retained_order.unwrap_or_else(|| {
+                super::super::ComponentBasisOrder::from_admitted(request.component())
+            });
             self.retain_component(request.component())
                 .map(|lease| (lease, basis_order))
         }))

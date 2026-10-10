@@ -102,7 +102,7 @@ where
         dependency: ComponentBasisDependencyClass,
         control: Arc<dyn RetentionControlSurface>,
     ) -> Result<ComponentBasisPinClaim, RetentionObligationDenial> {
-        let (flight, identity, new_slot) = loop {
+        let (flight, identity, new_slot, retained_order) = loop {
             let mut state = self.lock();
             if let Some(flight) = state.flights.get(&key).cloned() {
                 state.costs.single_flight_joins = state.costs.single_flight_joins.saturating_add(1);
@@ -182,7 +182,11 @@ where
             state.active_obligations += 1;
             state.costs.flights_started = state.costs.flights_started.saturating_add(1);
             state.flights.insert(key.clone(), Arc::clone(&flight));
-            break (flight, identity, new_slot);
+            let retained_order = state
+                .entries
+                .get(&key)
+                .map(|entry| entry.basis_order.clone());
+            break (flight, identity, new_slot, retained_order);
         };
         {
             let mut state = self.lock();
@@ -191,7 +195,8 @@ where
             state.costs.record_component_contact(request.component());
         }
         let result = catch_unwind(AssertUnwindSafe(|| {
-            let basis_order = super::ComponentBasisOrder::from_admitted(request.component());
+            let basis_order = retained_order
+                .unwrap_or_else(|| super::ComponentBasisOrder::from_admitted(request.component()));
             self.retain_component(request.component())
                 .map(|lease| (lease, basis_order))
         }))

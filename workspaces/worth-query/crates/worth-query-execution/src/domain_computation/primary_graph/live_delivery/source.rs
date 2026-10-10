@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, VecDeque};
+use std::collections::{HashMap, VecDeque};
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
 
@@ -53,8 +53,9 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryLiveDeliverySo
 
 #[derive(Default)]
 struct WorthQueryLiveDeliverySourceState {
-    partitions: BTreeMap<WorthQueryLiveProductKey, WorthQueryLiveProductPartition>,
+    partitions: HashMap<WorthQueryLiveProductKey, WorthQueryLiveProductPartition>,
     published_commit_count: usize,
+    subscriber_count: usize,
     closed: bool,
 }
 
@@ -139,10 +140,15 @@ impl WorthQueryLiveDeliverySource {
             .subscriber_count
             .checked_add(1)
             .expect("live subscriber count is bounded by process memory");
+        let cursor = partition.next_sequence;
+        state.subscriber_count = state
+            .subscriber_count
+            .checked_add(1)
+            .expect("live subscriber count is bounded by process memory");
         WorthQueryLiveSubscription {
             state: Arc::clone(&self.state),
             key,
-            cursor: partition.next_sequence,
+            cursor,
         }
     }
 
@@ -368,11 +374,7 @@ impl WorthQueryLiveDeliverySource {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         state.closed = true;
-        state
-            .partitions
-            .values()
-            .map(|partition| partition.subscriber_count)
-            .sum()
+        state.subscriber_count
     }
 
     #[cfg(feature = "test-world-operation-control")]
@@ -380,9 +382,6 @@ impl WorthQueryLiveDeliverySource {
         self.state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .partitions
-            .values()
-            .map(|partition| partition.subscriber_count)
-            .sum()
+            .subscriber_count
     }
 }

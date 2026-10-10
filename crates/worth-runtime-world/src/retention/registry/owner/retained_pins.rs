@@ -41,6 +41,27 @@ impl RetainedComponentPins {
         Some(entry)
     }
 
+    #[cfg(test)]
+    pub(super) fn copied_encoding_bytes(&self, key: &ExactComponentBasisKey) -> usize {
+        let entry = self.exact.get(key).unwrap();
+        let indexed = self
+            .order
+            .iter()
+            .find(|(_, exact)| *exact == key)
+            .unwrap()
+            .0;
+        let encoding = |order: &ComponentBasisOrder| match order {
+            ComponentBasisOrder::Relational { reference, .. }
+            | ComponentBasisOrder::Signal { reference } => (reference.as_ptr(), reference.len()),
+        };
+        let (pointer, bytes) = encoding(&entry.basis_order);
+        if pointer == encoding(&indexed.0).0 {
+            0
+        } else {
+            bytes
+        }
+    }
+
     pub(super) fn by_declared_basis(
         &self,
     ) -> impl Iterator<Item = (&ExactComponentBasisKey, &PinEntry)> {
