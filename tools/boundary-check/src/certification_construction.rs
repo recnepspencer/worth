@@ -13,7 +13,7 @@ const CALLERS: &str = include_str!("../config/certification-construction-callers
 
 fn failure(path: &str, message: impl Into<String>) -> Diagnostic {
     Diagnostic::new(
-        DiagnosticCode::Bc7008CertificationConstructionSeal,
+        DiagnosticCode::Bc7010CertificationConstructionSeal,
         path,
         message,
     )
