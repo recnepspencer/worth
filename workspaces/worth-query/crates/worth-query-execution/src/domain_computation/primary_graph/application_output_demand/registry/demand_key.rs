@@ -87,7 +87,7 @@ impl WorthQueryOutputDemandKey {
             }));
         }
         // Another binding may succeed this row only through the declared
-        // Initialâ†’Preserve transition of the same profile, never text order.
+        // Initial-to-Preserve transition of the same profile, never text order.
         if self.applicability.profile_kind() != other.applicability.profile_kind()
             || self.applicability.lifecycle() == other.applicability.lifecycle()
         {

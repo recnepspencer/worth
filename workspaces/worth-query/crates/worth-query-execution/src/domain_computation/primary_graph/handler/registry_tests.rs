@@ -7,11 +7,50 @@ struct OtherFeature;
 
 fn expectation() -> ManagedComputationExpectation {
     ManagedComputationExpectation {
+        composition_instance: "instance",
         feature_identity: "feature",
         identity: "worth.query.tests.required-computation.v1",
         feature_type: TypeId::of::<Feature>(),
         computation_type: TypeId::of::<Computation>(),
         output_artifact_type: TypeId::of::<Artifact>(),
+    }
+}
+
+#[test]
+fn equal_feature_names_are_denied_in_declared_instance_order() {
+    let alpha = ManagedComputationExpectation {
+        composition_instance: "alpha-instance",
+        ..expectation()
+    };
+    let zulu = ManagedComputationExpectation {
+        composition_instance: "zulu-instance",
+        computation_type: TypeId::of::<OtherFeature>(),
+        ..expectation()
+    };
+    let mismatched_alpha = HashMap::from([(
+        alpha.computation_type,
+        InstalledManagedComputationOwner {
+            feature_type: TypeId::of::<OtherFeature>(),
+            computation_type: alpha.computation_type,
+            output_artifact_type: alpha.output_artifact_type,
+        },
+    )]);
+    for entries in [
+        [
+            (alpha.computation_type, alpha),
+            (zulu.computation_type, zulu),
+        ],
+        [
+            (zulu.computation_type, zulu),
+            (alpha.computation_type, alpha),
+        ],
+    ] {
+        let denied =
+            validate_managed_computation_inventory(&mismatched_alpha, &entries).unwrap_err();
+        assert_eq!(
+            denied.kind(),
+            DenialKind::ManagedComputationOwnerMeaningMismatch
+        );
     }
 }
 

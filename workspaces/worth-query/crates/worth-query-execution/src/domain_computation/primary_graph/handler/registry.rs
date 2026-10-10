@@ -59,6 +59,7 @@ pub(in crate::domain_computation::primary_graph) struct InstalledMutationHandler
 
 #[derive(Clone, Copy)]
 struct ManagedComputationExpectation {
+    composition_instance: &'static str,
     feature_identity: &'static str,
     identity: &'static str,
     feature_type: TypeId,
@@ -265,6 +266,7 @@ impl<Schema> InstalledMutationHandlerRegistry<Schema> {
             let entry = (
                 computation.computation_type(),
                 ManagedComputationExpectation {
+                    composition_instance: feature.composition_instance(),
                     feature_identity: feature.identity(),
                     identity: computation.identity(),
                     feature_type: computation.feature_type(),
@@ -288,8 +290,13 @@ fn validate_managed_computation_inventory(
     declared: &[(TypeId, ManagedComputationExpectation)],
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
     let mut computations: Vec<_> = declared.iter().collect();
-    computations
-        .sort_by_key(|(_, computation)| (computation.feature_identity, computation.identity));
+    computations.sort_by_key(|(_, computation)| {
+        (
+            computation.composition_instance,
+            computation.feature_identity,
+            computation.identity,
+        )
+    });
     for (computation_type, computation) in computations {
         let owner = installed.get(computation_type).ok_or_else(|| {
             denial(

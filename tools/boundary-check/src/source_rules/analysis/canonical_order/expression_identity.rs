@@ -18,6 +18,21 @@ pub(super) fn names_type_identity<'a>(
         found: bool,
     }
     impl<'ast> Visit<'ast> for Names<'_> {
+        fn visit_expr_method_call(&mut self, call: &'ast syn::ExprMethodCall) {
+            if call.method == "identity"
+                && call.args.len() == 1
+                && matches!(call.receiver.as_ref(), syn::Expr::Path(_))
+            {
+                // A named declaration lookup consumes equality identity and
+                // supplies the sort key. Its input is not the deciding value.
+                self.visit_expr(&call.receiver);
+                if let Some(arguments) = &call.turbofish {
+                    self.visit_angle_bracketed_generic_arguments(arguments);
+                }
+                return;
+            }
+            visit::visit_expr_method_call(self, call);
+        }
         fn visit_ident(&mut self, ident: &'ast syn::Ident) {
             let name = ident.to_string();
             self.found |=

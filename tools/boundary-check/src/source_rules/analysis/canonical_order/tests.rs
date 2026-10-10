@@ -107,13 +107,32 @@ fn expression_fixture_refuses_each_deciding_call() {
     let found = rejects(include_str!(
         "../../../../tests/fixtures/canonical_order_rules/expression_order.rs"
     ));
-    assert!(
-        found.len() >= 4,
+    assert_eq!(
+        found.len(),
+        5,
         "all deciding expressions must be refused: {found:?}"
     );
     assert!(found
         .into_iter()
         .all(|reason| reason == "ordering expression names TypeId"));
+}
+
+#[test]
+fn binary_search_and_partial_cmp_refuse_type_identity() {
+    for source in [
+        include_str!("../../../../tests/fixtures/canonical_order_rules/binary_search.rs"),
+        include_str!("../../../../tests/fixtures/canonical_order_rules/partial_cmp.rs"),
+    ] {
+        assert_eq!(rejects(source), ["ordering expression names TypeId"]);
+    }
+}
+
+#[test]
+fn named_identity_lookup_orders_the_declaration() {
+    assert!(rejects(include_str!(
+        "../../../../tests/fixtures/canonical_order_rules/named_identity.rs"
+    ))
+    .is_empty());
 }
 
 #[test]

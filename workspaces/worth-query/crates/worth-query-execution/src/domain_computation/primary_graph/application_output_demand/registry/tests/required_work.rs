@@ -186,16 +186,19 @@ fn discontinuity_selects_the_first_declared_family_member() {
     let registry = super::WorthQueryOutputDemandRegistry::default();
     let occurrence = super::occurrence();
     let seed = key("same-producer", 1, 1);
-    let outputs = families.map(|(_, identity)| {
-        super::WorthQueryOutputDemandKey::new(
-            identity,
-            seed.producer_identity().to_owned(),
-            seed.applicability(),
-            seed.source_epoch().clone(),
+    let outputs = families.map(|(type_id, identity)| {
+        (
+            type_id,
+            super::WorthQueryOutputDemandKey::new(
+                identity,
+                seed.producer_identity().to_owned(),
+                seed.applicability(),
+                seed.source_epoch().clone(),
+            ),
         )
     });
     let mut interests = Vec::new();
-    for output in outputs.iter().rev() {
+    for (_, output) in outputs.iter().rev() {
         interests.push(
             registry
                 .fixture_work_membership_at(occurrence, super::root(1), output.clone())
@@ -224,5 +227,7 @@ fn discontinuity_selects_the_first_declared_family_member() {
         )
         .unwrap();
     let first = selected(&queue);
-    assert_eq!(first.key().family_identity(), "alpha-output");
+    let selected = outputs.iter().find(|(_, key)| key == first.key()).unwrap();
+    assert_eq!(selected, &outputs[0]);
+    assert!(selected.0 > outputs[1].0);
 }

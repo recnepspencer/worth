@@ -314,7 +314,3 @@ impl Drop for WorthQueryProductBranchOwnerCleanupReservation {
 fn lock<T>(mutex: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
     mutex.lock().unwrap_or_else(|error| error.into_inner())
 }
-
-#[cfg(test)]
-#[path = "registry/canonical_retirement.rs"]
-mod canonical_retirement;

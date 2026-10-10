@@ -30,15 +30,19 @@ fn family_key_order_follows_declared_identity() {
     assert!(families[0].0 > families[1].0);
     assert!(families[0].1 < families[1].1);
     let source = support::key("same-producer", 7, 1);
-    let keys = families.map(|(_, identity)| {
-        WorthQueryOutputDemandKey::new(
-            identity,
-            source.producer_identity().to_owned(),
-            source.applicability(),
-            source.source_epoch().clone(),
+    let keys = families.map(|(type_id, identity)| {
+        (
+            type_id,
+            WorthQueryOutputDemandKey::new(
+                identity,
+                source.producer_identity().to_owned(),
+                source.applicability(),
+                source.source_epoch().clone(),
+            ),
         )
     });
-    assert_eq!(keys[0].cmp(&keys[1]), Ordering::Less);
+    assert_eq!(keys[0].0.cmp(&keys[1].0), Ordering::Greater);
+    assert_eq!(keys[0].1.cmp(&keys[1].1), Ordering::Less);
 }
 
 fn initial() -> WorthQueryOutputDemandKey {
