@@ -1,5 +1,6 @@
 //! The member's bounded execution, without any owner or graph access.
 use super::super::{request_execution::MemberRequestExecution, QueryRequestExecution};
+use super::nested_failure::NestedFailureTransport;
 use super::{WorthQueryManagedComputationExecution, WorthQueryManagedComputationInterruption};
 
 /// Execution lent only for one prepared member's compute.
@@ -38,13 +39,14 @@ impl<'member> WorthQueryMemberExecution<'member> {
         }
     }
 
-    /// Only a transported denial acknowledges the child's computational stop.
-    /// Request-owned stops remain latched regardless of the returned data.
+    /// An ordinary returned error acknowledges nothing. Only a nested call's
+    /// transported failure consumes its own computational cause.
     pub(in crate::domain_computation::primary_graph) fn compute<T, E>(
         self,
         run: impl FnOnce(
             WorthQueryManagedComputationExecution<'member>,
             Option<&'member mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>>,
+            &mut NestedFailureTransport<'member>,
         ) -> Result<T, E>,
     ) -> Result<T, E> {
         let Self {
@@ -52,16 +54,11 @@ impl<'member> WorthQueryMemberExecution<'member> {
             charge,
             take,
         } = self;
-        let result = run(
+        run(
             WorthQueryManagedComputationExecution::new(execution),
             charge,
-        );
-        if result.is_err() {
-            // The returned denial carries the actual cause and child identity.
-            // This typed acknowledgement changes neither work nor span.
-            let _transported_cause = take();
-        }
-        result
+            &mut NestedFailureTransport::new(take),
+        )
     }
 
     #[cfg(test)]
@@ -79,12 +76,5 @@ impl<'member> WorthQueryMemberExecution<'member> {
 
     pub fn interruption(&self) -> Option<WorthQueryManagedComputationInterruption> {
         self.execution.interruption()
-    }
-
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn managed(
-        &self,
-    ) -> WorthQueryManagedComputationExecution<'_> {
-        WorthQueryManagedComputationExecution::new(self.execution)
     }
 }

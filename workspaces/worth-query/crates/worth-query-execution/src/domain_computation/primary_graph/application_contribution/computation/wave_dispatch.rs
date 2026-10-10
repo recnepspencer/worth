@@ -93,6 +93,9 @@ pub(in crate::domain_computation::primary_graph) fn dispatch(
                 let member = wave.member();
                 let mut slots = Vec::with_capacity(input.requests.len());
                 for request in input.requests {
+                    // A prior request's untaken cause cannot reach a later
+                    // request, even when that request returns its own error.
+                    context.checkpoint(0)?;
                     let context = std::cell::RefCell::new(&mut *context);
                     let mut charge = |units| context.borrow_mut().checkpoint(units);
                     let mut take = || context.borrow_mut().take_nested_computation_stop();

@@ -12,6 +12,7 @@ use worth_query_declaration::facade::application_program::{
 };
 use worth_query_installation::facade::ApplicationSchema;
 
+use super::super::computation::nested_failure::{MemberComputeFailure, NestedFailureTransport};
 use super::super::execution_denial::kernel_failure;
 use super::super::{
     WorthQueryManagedComputationCheckpoint, WorthQueryManagedComputationExecution,
@@ -115,10 +116,22 @@ where
         WorthQueryCompletedPartitionedComputation<Schema, Feature, Computation, Owner>,
         Denial<Schema, Feature, Computation, Owner>,
     > {
+        // A standalone compute has no wave kernel's latch to acknowledge.
+        let mut take = || None;
+        self.compute_with_transport(execution, &mut NestedFailureTransport::new(&mut take))
+            .map_err(MemberComputeFailure::into_failure)
+    }
+
+    fn compute_with_transport(
+        self,
+        execution: WorthQueryManagedComputationExecution<'_>,
+        transport: &mut NestedFailureTransport<'_>,
+    ) -> Result<
+        WorthQueryCompletedPartitionedComputation<Schema, Feature, Computation, Owner>,
+        MemberComputeFailure<Denial<Schema, Feature, Computation, Owner>>,
+    > {
         if let Some(interruption) = execution.interruption() {
-            return Err(WorthQueryPartitionedComputationDenial::Interrupted(
-                interruption,
-            ));
+            return Err(WorthQueryPartitionedComputationDenial::Interrupted(interruption).into());
         }
         let owner = &*self.installed.owner;
         let execution = &execution;
@@ -180,28 +193,29 @@ where
                     .request
                     .reserve(0)
                     .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
-                let reduced = dispatch
-                    .reduce(
-                        remaining_work,
-                        &map,
-                        memory.into_held(),
-                        &mut tree_memory,
-                        kernel,
-                        (reducer.identity)(),
-                        reducer.combine,
-                        declared_bytes,
-                        cause,
-                    )
-                    .map_err(|denial| {
-                        // The reduce pattern contains its kernels' panics:
-                        // what is left is the reducer's.
-                        WorthQueryPartitionedComputationDenial::from_work_ceiling(
-                            denial,
-                            WorthQueryPartitionedComputationDenial::ReducerPanicked,
+                let (tree, report, metrics) = transport.call(|| {
+                    let reduced = dispatch
+                        .reduce(
+                            remaining_work,
+                            &map,
+                            memory.into_held(),
+                            &mut tree_memory,
+                            kernel,
+                            (reducer.identity)(),
+                            reducer.combine,
+                            declared_bytes,
+                            cause,
                         )
-                    })?;
-                let (tree, report, metrics) =
-                    reduced.map_err(WorthQueryPartitionedComputationDenial::from_reduce)?;
+                        .map_err(|denial| {
+                            // The reduce pattern contains its kernels' panics:
+                            // what is left is the reducer's.
+                            WorthQueryPartitionedComputationDenial::from_work_ceiling(
+                                denial,
+                                WorthQueryPartitionedComputationDenial::ReducerPanicked,
+                            )
+                        })?;
+                    reduced.map_err(WorthQueryPartitionedComputationDenial::from_reduce)
+                })?;
                 let reduced = tree.result().clone();
                 let completed = match recording {
                     Ok(recording) => recording.complete(
@@ -226,7 +240,7 @@ where
                     reduced,
                     computed_work,
                     completed,
-                } = prepared.compute(execution.request, kernel, &reducer)?;
+                } = prepared.compute(execution.request, kernel, &reducer, transport)?;
                 (reduced, computed_work, completed)
             }
         };

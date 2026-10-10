@@ -42,6 +42,7 @@ where
 
 mod checkpoint;
 mod member_execution;
+pub(in crate::domain_computation::primary_graph) mod nested_failure;
 pub(in crate::domain_computation::primary_graph) mod worker_custody;
 pub use member_execution::WorthQueryMemberExecution;
 mod decision_plan;
@@ -154,7 +155,7 @@ where
         WorthQueryCompletedManagedComputation<Schema, Feature, Computation, Owner>,
         WorthQueryManagedComputationDenial<Owner::Stopped>,
     > {
-        member.compute(|execution, charge| self.compute_with_charge(execution, charge))
+        member.compute(|execution, charge, _transport| self.compute_with_charge(execution, charge))
     }
 
     fn compute_with_charge<'a>(

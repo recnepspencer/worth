@@ -13,6 +13,9 @@ use worth_execution::{
 use worth_foundational::facade::PartitionIdentity;
 use worth_proof::CanonicalUniqueVec;
 
+use super::super::super::computation::nested_failure::{
+    MemberComputeFailure, NestedFailureTransport,
+};
 use super::super::super::execution_denial::PartitionRefusal;
 use super::super::super::request_execution::{
     kept_tree_bytes, QueryMemoryReservation, QueryRequestExecution,
@@ -178,7 +181,11 @@ where
         execution: &QueryRequestExecution<'_>,
         kernel: Kernel,
         reducer: &WorthQueryDeterministicReducer<Reduced>,
-    ) -> Result<ComputedIncremental<Reduced>, WorthQueryPartitionedComputationDenial<Stopped>>
+        transport: &mut NestedFailureTransport<'_>,
+    ) -> Result<
+        ComputedIncremental<Reduced>,
+        MemberComputeFailure<WorthQueryPartitionedComputationDenial<Stopped>>,
+    >
     where
         Item: Send + Sync + worth_execution::ChargedBytes + 'static,
         Reduced: Clone
@@ -250,35 +257,35 @@ where
                 .grow(result_bound)
                 .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
             // The map's admission takes over the gathered partition's hold.
-            let outcome = dispatch
-                .map(
-                    remaining.remaining(),
-                    &marked.map,
-                    marked.memory.into_held(),
-                    &kernel,
-                )
-                .map_err(|denial| {
-                    // Only the map runs under this ceiling, and it contains
-                    // its kernel's panics: what is left is the kernel's.
-                    WorthQueryPartitionedComputationDenial::from_work_ceiling(
-                        denial,
-                        WorthQueryPartitionedComputationDenial::Partition {
-                            partition: identity,
-                            cause: WorthQueryComputationPartitionStop::Panicked,
-                        },
+            let (value, units) = transport.call(|| {
+                let outcome = dispatch
+                    .map(
+                        remaining.remaining(),
+                        &marked.map,
+                        marked.memory.into_held(),
+                        &kernel,
                     )
-                })?;
-            let (value, units) = match outcome {
-                MapOutcome::Complete { mut values, report } => (
-                    values.pop().expect("one partition yields one result"),
-                    report.charged_work(),
-                ),
-                MapOutcome::Stopped { reason, .. } => {
-                    return Err(WorthQueryPartitionedComputationDenial::from_map_stop(
-                        reason,
-                    ));
+                    .map_err(|denial| {
+                        // Only the map runs under this ceiling, and it contains
+                        // its kernel's panics: what is left is the kernel's.
+                        WorthQueryPartitionedComputationDenial::from_work_ceiling(
+                            denial,
+                            WorthQueryPartitionedComputationDenial::Partition {
+                                partition: identity,
+                                cause: WorthQueryComputationPartitionStop::Panicked,
+                            },
+                        )
+                    })?;
+                match outcome {
+                    MapOutcome::Complete { mut values, report } => Ok((
+                        values.pop().expect("one partition yields one result"),
+                        report.charged_work(),
+                    )),
+                    MapOutcome::Stopped { reason, .. } => Err(
+                        WorthQueryPartitionedComputationDenial::from_map_stop(reason),
+                    ),
                 }
-            };
+            })?;
             remaining
                 .spend(Some(units))
                 .map_err(|_| exhausted(identity))?;

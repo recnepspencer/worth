@@ -40,6 +40,7 @@ impl NestedStop {
             (NestedStopOwner::Computation(cause), Self::Clear) => {
                 *self = Self::Computation(cause);
             }
+            // A second computation cause leaves the first untaken cause intact.
             (NestedStopOwner::Computation(_), Self::Computation(_) | Self::Request) => {}
         }
     }

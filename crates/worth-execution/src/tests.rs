@@ -35,6 +35,7 @@ mod nested_request_stops;
 mod nested_scope_ownership;
 mod nested_stop_dominance;
 mod nested_stop_ownership;
+mod nested_two_causes;
 mod nesting;
 mod owned_map;
 mod prepared_map;

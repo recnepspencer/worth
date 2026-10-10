@@ -12,6 +12,7 @@ use worth_query_admission::facade::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
 };
 use worth_runtime_world::facade::RuntimeWorldExecutionPlacement;
+mod nested_cost;
 
 fn run(
     width: Option<usize>,
