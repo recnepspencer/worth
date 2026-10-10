@@ -51,6 +51,7 @@ where
                 ContinuationCustody::Queue(&mut demand.required_continuations),
                 &head,
                 admission,
+                performed,
             )? {
                 HeldUpstream::Ready(ready) => {
                     let (shared, positioned) =

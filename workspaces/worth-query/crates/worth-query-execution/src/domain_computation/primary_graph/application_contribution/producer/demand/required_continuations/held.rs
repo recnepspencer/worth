@@ -1,6 +1,7 @@
 //! Resume an unfinished successor, and hand a queue frame's unfinished
 //! successors to registry custody on their own rows.
 
+use super::super::progression::PerformedMembers;
 use super::*;
 use crate::domain_computation::primary_graph::application_output_demand::{
     HeldRequiredSuccessor, OutputRowStage, WorthQueryOutputDemandKey,
@@ -94,7 +95,9 @@ pub(in crate::domain_computation::primary_graph) enum ContinuationCustody<
 /// `custody`'s newest entry: the predecessor edge its dependents still name
 /// resolves through it. One whose source moved before it published is
 /// dropped, and its occurrence goes back to the Ready it replaced.
-pub(in crate::domain_computation::primary_graph) fn resume_held_upstream<Schema>(
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn resume_held_upstream<
+    Schema,
+>(
     phase: &WorthQueryAdvancementPhase<'_>,
 
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -104,6 +107,7 @@ pub(in crate::domain_computation::primary_graph) fn resume_held_upstream<Schema>
     custody: ContinuationCustody<'_, Schema>,
     key: &WorthQueryOutputDemandKey,
     admission: &mut InvalidationEditAdmission,
+    performed: &mut PerformedMembers,
 ) -> Result<HeldUpstream, WorthQueryOutputDemandDenial>
 where
     Schema: ApplicationSchema + 'static,
@@ -113,8 +117,9 @@ where
         ContinuationCustody::Queue(custody) => (custody, None),
     };
     if let Some(index) = custody.position_of(key, admission)? {
-        let result =
-            custody.entries[index].resume(phase, runtime, principal, request, branch, admission);
+        let result = custody.entries[index].resume(
+            phase, runtime, principal, request, branch, admission, performed,
+        );
         custody.entries[index].report_caller_contacts(caller_contacts);
         let finished = matches!(result, Ok(Some(_)));
         if finished || result.is_err() {
@@ -150,9 +155,9 @@ where
     let mut held = held
         .downcast::<HeldFrameSuccessor<Schema>>()
         .unwrap_or_else(|_| unreachable!("the registry holds only this runtime's successors"));
-    let result = held
-        .progress
-        .resume(phase, runtime, principal, request, branch, admission);
+    let result = held.progress.resume(
+        phase, runtime, principal, request, branch, admission, performed,
+    );
     held.progress.report_caller_contacts(None);
     let ready = match result {
         Ok(Some(ready)) => ready,
@@ -212,6 +217,7 @@ where
         request: &WorthQueryRequestScope,
         branch: crate::basis::WorthQueryProductBranch,
         admission: &mut InvalidationEditAdmission,
+        performed: &mut PerformedMembers,
     ) -> Result<Option<SelectedReadyReadmission>, WorthQueryOutputDemandDenial> {
         let registry = &runtime.output_demands;
         if registry
@@ -228,8 +234,9 @@ where
             registry.row_stage_admitted(self.interest(), admission)?,
             OutputRowStage::Published
         ) {
-            self.successor
-                .resume(phase, runtime, principal, request, branch, admission)?;
+            self.successor.resume(
+                phase, runtime, principal, request, branch, admission, performed,
+            )?;
         }
         loop {
             if let Some(ready) = registry.interest_ready_readmission(self.interest(), admission)? {
@@ -261,6 +268,7 @@ where
         request: &WorthQueryRequestScope,
         branch: crate::basis::WorthQueryProductBranch,
         admission: &mut InvalidationEditAdmission,
+        performed: &mut PerformedMembers,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial> {
         let demand = self
             .demand
@@ -279,7 +287,7 @@ where
             .commit_authority()
             .clone();
         runtime.advance_retained_with_commit_authority(
-            phase, demand, principal, request, branch, authority, admission,
+            phase, demand, principal, request, branch, authority, admission, performed,
         )
     }
 }

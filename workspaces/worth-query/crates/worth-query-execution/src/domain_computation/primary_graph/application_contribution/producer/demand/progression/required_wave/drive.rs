@@ -318,7 +318,7 @@ where
                                     phase;
                                     runtime, principal, request_scope;
                                     wave, resolved_on_wave, queue, frame_custody;
-                                    demand, admission;
+                                    demand, admission, performed;
                                     hold_queue_frame, finish_caller, stopped)
                             }
                             requested_refusal::RequestedRefusal::Unavailable => {}
@@ -338,7 +338,7 @@ where
                                     phase;
                                     runtime, principal, request_scope;
                                     wave, resolved_on_wave, queue, frame_custody;
-                                    demand, admission;
+                                    demand, admission, performed;
                                     hold_queue_frame, finish_caller, stopped)
             }
             RequiredWaveStep::Pending => {
