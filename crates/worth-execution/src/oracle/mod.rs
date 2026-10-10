@@ -46,25 +46,22 @@ where
 {
     let retained_bytes = batch
         .retained_result_bytes::<R>()
-        .ok_or(ComparisonStop::Refused)
+        .ok_or_else(ComparisonStop::refused)
         .map_err(ComparisonStop::finish)?;
     let expected_retained = lease
         .reserve_retained_memory(retained_bytes)
-        .map_err(|_| ComparisonStop::Refused.finish())?;
+        .map_err(|_| ComparisonStop::refused().finish())?;
     let _expected_physical = enter_retained_memory(retained_bytes);
     let expected =
         run_checked_batch_with_charge(Some(lease), batch, BackendKind::Serial, kernel, false);
     let actual_retained = lease
         .reserve_retained_memory(retained_bytes)
-        .map_err(|_| ComparisonStop::Refused.finish())?;
+        .map_err(|_| ComparisonStop::refused().finish())?;
     let _actual_physical = enter_retained_memory(retained_bytes);
     let actual = run_checked_batch(Some(lease), batch, selected, kernel);
     let comparison = catch_unwind(AssertUnwindSafe(|| compare(lease, &expected, &actual)))
         .unwrap_or(Err(ComparisonStop::Encoding(OracleMismatch::Stop)))
         .map_err(ComparisonStop::finish);
-    if expected.stop_owner == Some(crate::backend::NestedStopOwner::Request) {
-        crate::backend::request_refusal(());
-    }
     comparison?;
     drop((expected_retained, actual_retained));
     Ok(actual)
@@ -113,15 +110,15 @@ fn same_bits_with_contract<T: CanonicalBits + ?Sized>(
     actual: &T,
 ) -> Result<bool, ComparisonStop> {
     let length = expected.canonical_len().ok_or(OracleMismatch::Stop)?;
-    let bytes = u64::try_from(length).map_err(|_| ComparisonStop::Refused)?;
+    let bytes = u64::try_from(length).map_err(|_| ComparisonStop::refused())?;
     let _reservation = lease
         .reserve_retained_memory(bytes)
-        .map_err(|_| ComparisonStop::Refused)?;
+        .map_err(|_| ComparisonStop::refused())?;
     let _physical = enter_retained_memory(bytes);
     let mut reference = Vec::new();
     reference
         .try_reserve_exact(length)
-        .map_err(|_| ComparisonStop::Refused)?;
+        .map_err(|_| ComparisonStop::refused())?;
     if !visit_exact(expected, &mut |chunk| {
         reference.extend_from_slice(chunk);
         true
@@ -130,15 +127,16 @@ fn same_bits_with_contract<T: CanonicalBits + ?Sized>(
     }
     if let Some(predicate) = lease.equivalence_predicate() {
         let candidate_len = actual.canonical_len().ok_or(OracleMismatch::Stop)?;
-        let candidate_bytes = u64::try_from(candidate_len).map_err(|_| ComparisonStop::Refused)?;
+        let candidate_bytes =
+            u64::try_from(candidate_len).map_err(|_| ComparisonStop::refused())?;
         let _candidate_reservation = lease
             .reserve_retained_memory(candidate_bytes)
-            .map_err(|_| ComparisonStop::Refused)?;
+            .map_err(|_| ComparisonStop::refused())?;
         let _candidate_physical = enter_retained_memory(candidate_bytes);
         let mut candidate = Vec::new();
         candidate
             .try_reserve_exact(candidate_len)
-            .map_err(|_| ComparisonStop::Refused)?;
+            .map_err(|_| ComparisonStop::refused())?;
         if !visit_exact(actual, &mut |chunk| {
             candidate.extend_from_slice(chunk);
             true

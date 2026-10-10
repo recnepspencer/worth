@@ -25,9 +25,7 @@ impl ExecutionResourceLease<'_> {
             || reservation.worker_count_per_node != 0
             || !reservation.worker_lineage.is_empty()
         {
-            return Err(crate::backend::request_refusal(
-                LeaseDenial::UnrelatedNestedLease,
-            ));
+            return Err(LeaseDenial::refused(LeaseDenial::UnrelatedNestedLease));
         }
         let lineage = self.lineage();
         let mut ledger = self

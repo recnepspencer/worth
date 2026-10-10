@@ -34,7 +34,7 @@ impl OnBusy for ClaimSlot {
     type Refusal = SlotRefusal;
 
     fn busy() -> Result<(), SlotRefusal> {
-        Err(SlotRefusal::WorkersBusy)
+        Err(crate::backend::request_refusal(SlotRefusal::WorkersBusy))
     }
 }
 

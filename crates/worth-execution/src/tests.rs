@@ -39,6 +39,7 @@ mod nested_stop_ownership;
 mod nested_two_causes;
 mod nesting;
 mod owned_map;
+mod pending_refusal;
 mod prepared_map;
 
 pub(crate) fn authority() -> &'static ExecutionAuthority {

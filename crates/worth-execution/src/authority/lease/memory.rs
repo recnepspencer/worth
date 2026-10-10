@@ -97,9 +97,7 @@ impl LeaseMemory {
         bytes: u64,
     ) -> Result<(), LeaseDenial> {
         if !Arc::ptr_eq(&self.authority, &lease.authority.inner) {
-            return Err(crate::backend::request_refusal(
-                LeaseDenial::UnrelatedNestedLease,
-            ));
+            return Err(LeaseDenial::refused(LeaseDenial::UnrelatedNestedLease));
         }
         let held = self.bytes;
         let old = self.lineage().map(|node| node.id).collect::<Vec<_>>();

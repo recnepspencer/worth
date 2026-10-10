@@ -43,9 +43,7 @@ pub(crate) fn prepare_batch_resources<T: ChargedBytes, R, E>(
     backend: BackendKind,
 ) -> Result<PreparedBatchResources, LeaseDenial> {
     if !lease.accepts_current_worker_context() {
-        return Err(crate::backend::request_refusal(
-            LeaseDenial::UnrelatedNestedLease,
-        ));
+        return Err(LeaseDenial::refused(LeaseDenial::UnrelatedNestedLease));
     }
     let memory_bytes = batch
         .execution_memory_bytes::<R, E>()

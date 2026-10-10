@@ -3,19 +3,17 @@
 use std::num::NonZeroUsize;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use worth_execution::{
-    ExecutionMap, KeylessPartition, MapKernelFailure, ReduceInputDenial, ReductionTree,
-};
+use worth_execution::{ExecutionMap, KeylessPartition, MapKernelFailure, ReduceInputDenial};
 
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::request_execution::{
     test_execution_authority, test_policy,
 };
+use crate::domain_computation::primary_graph::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;
 
 const PARTITIONS: usize = 16;
 const MEMORY: u64 = 1 << 20;
 const KERNEL_WORK: u64 = 3;
-const VALUE_BYTES: u64 = 4096;
 static COMBINES: AtomicUsize = AtomicUsize::new(0);
 
 fn sum(left: &u64, right: &u64) -> u64 {
@@ -23,21 +21,11 @@ fn sum(left: &u64, right: &u64) -> u64 {
     left + right
 }
 
-fn fill_room(execution: &QueryRequestExecution<'_>, before_map: bool) -> crate::domain_computation::primary_graph::application_contribution::request_execution::QueryMemoryReservation{
-    let bytes = if before_map {
-        MEMORY
-    } else {
-        // This successful hold leaves 64 KiB beside the tree's declared
-        // build memory, before framework charges. The admitted map finishes;
-        // the frontier's additional subtree result reservation cannot fit.
-        let build = ReductionTree::<u64, fn(&u64, &u64) -> u64>::checked_build_memory_bound(
-            PARTITIONS,
-            VALUE_BYTES,
-        )
-        .unwrap();
-        MEMORY - build - (64 << 10)
+fn fill_room(execution: &QueryRequestExecution<'_>) -> crate::domain_computation::primary_graph::application_contribution::request_execution::QueryMemoryReservation{
+    let Err(Resource::MemoryLimit { admitted, .. }) = execution.reserve(2 * MEMORY) else {
+        panic!("the finite policy names its remaining room")
     };
-    execution.reserve(bytes).unwrap()
+    execution.reserve(admitted).unwrap()
 }
 
 #[test]
@@ -69,7 +57,7 @@ fn scope_admission_reports_shape_work_only_when_construction_ran() {
                 .collect(),
         )
         .unwrap();
-        let filled = Mutex::new(before_map.then(|| fill_room(&execution, true)));
+        let filled = Mutex::new(before_map.then(|| fill_room(&execution)));
         let entries = AtomicUsize::new(0);
         let mut tree_memory = execution.reserve(0).unwrap();
         let inputs = execution.reserve(0).unwrap();
@@ -83,13 +71,13 @@ fn scope_admission_reports_shape_work_only_when_construction_ran() {
             |value, context| {
                 context.checkpoint(KERNEL_WORK)?;
                 if entries.fetch_add(1, Ordering::Relaxed) + 1 == PARTITIONS {
-                    *filled.lock().unwrap() = Some(fill_room(&execution, false));
+                    *filled.lock().unwrap() = Some(fill_room(&execution));
                 }
                 Ok::<u64, MapKernelFailure<u32>>(*value)
             },
             0,
             sum as fn(&u64, &u64) -> u64,
-            VALUE_BYTES,
+            4096,
             Cause::NoProducerPrior,
         );
         let reports = tree_runs();

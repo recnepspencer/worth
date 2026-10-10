@@ -2,7 +2,7 @@ use crate::{
     authority::{ExecutionResourceLease, LeaseDenial},
     backend::{
         run_checked_batch_with_charge, AdmittedBatch, BackendKind, BatchDenial, BatchStop,
-        KernelContext, KernelFailure, KernelStop, NestedStopOwner,
+        KernelContext, KernelFailure, KernelStop,
     },
     oracle::CanonicalBits,
     report::ChargedBytes,
@@ -94,7 +94,6 @@ where
             },
             false,
         );
-        let request_stopped = outcomes.stop_owner == Some(NestedStopOwner::Request);
         let settled = (|| {
             let failed = match outcomes.stop {
                 Some(BatchStop::Admission(denial)) => {
@@ -135,9 +134,9 @@ where
                 failed,
                 max_value_bytes,
                 |charge| match charge {
-                    FrontierCharge::Node => context.checkpoint(1),
+                    FrontierCharge::Node => context.checkpoint_frontier(1),
                     FrontierCharge::TaskUnit => {
-                        context.checkpoint(1)?;
+                        context.checkpoint_frontier(1)?;
                         accepted_task_work = accepted_task_work
                             .checked_add(1)
                             .ok_or_else(KernelStop::work_counter_overflow)?;
@@ -173,11 +172,6 @@ where
             }
             Ok((tree, metrics))
         })();
-        // Canonical metering preserves the accepted prefix and its failure.
-        // Even a discarded task's request owner dominates before we return.
-        if request_stopped {
-            context.record_nested_stop_owner(NestedStopOwner::Request);
-        }
         settled
     }
 }

@@ -28,17 +28,18 @@ pub(crate) fn active_serial_memory() -> Option<SerialMemoryBudget> {
 }
 
 mod activity;
+mod checkpoint;
 mod framework_bytes;
 mod nested;
 mod nested_stop;
 mod prepared_context;
 mod run_context;
 pub(crate) use activity::{enter_certification_activity, enter_retained_memory, has_active_kernel};
-pub(crate) use nested::record_nested;
-pub(crate) use nested_stop::request_refusal;
+pub(crate) use nested::{record_nested, record_nested_outcome};
 pub use nested_stop::NestedComputationStop;
 use nested_stop::NestedStop;
 pub(crate) use nested_stop::NestedStopOwner;
+pub(crate) use nested_stop::{request_refusal, request_stop};
 pub(crate) use prepared_context::PreparedMeterContext;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -52,7 +53,7 @@ pub enum KernelStop {
 
 impl KernelStop {
     pub(crate) fn work_counter_overflow() -> Self {
-        request_refusal(Self::WorkCounterOverflow)
+        request_stop(Self::WorkCounterOverflow)
     }
 }
 
@@ -214,6 +215,7 @@ struct KernelMeter {
     work: u64,
     span: u64,
     nested_stop: NestedStop,
+    pending_request_refusal: bool,
     checkpoint_stop: Option<KernelStop>,
 }
 
@@ -241,6 +243,7 @@ impl<'a, 'lease> KernelContext<'a, 'lease> {
                 work: 0,
                 span: 0,
                 nested_stop: NestedStop::Clear,
+                pending_request_refusal: false,
                 checkpoint_stop: None,
             })),
             _lease: PhantomData,
@@ -279,6 +282,7 @@ impl<'a, 'lease> KernelContext<'a, 'lease> {
             return false;
         };
         if meter.work != expected_work || meter.span != expected_span || stage_span > stage_work {
+            // A mismatched computation metric is not a request-room failure.
             return false;
         }
         meter.span = next_span;
@@ -291,56 +295,6 @@ impl<'a, 'lease> KernelContext<'a, 'lease> {
 
     pub(crate) fn checkpoint_stop(&self) -> Option<KernelStop> {
         self.meter.borrow().checkpoint_stop
-    }
-
-    /// Kernel checkpoint enforces the local remaining ceiling before work is
-    /// done, while canonical settlement determines the accepted prefix.
-    pub fn checkpoint(&mut self, units: u64) -> Result<(), KernelStop> {
-        let mut meter = self.meter.borrow_mut();
-        if let Some(stop) = meter.checkpoint_stop {
-            return Err(stop);
-        }
-        let result = (|| {
-            let KernelMeter {
-                limits,
-                nested_stop,
-                ..
-            } = &mut *meter;
-            limits.safe_point(nested_stop)?;
-            if meter.nested_stop.owner().is_some() {
-                return Err(KernelStop::NestedStopped);
-            }
-            let next = meter
-                .work
-                .checked_add(units)
-                .ok_or(KernelStop::WorkCounterOverflow)?;
-            if next > meter.limits.ceiling {
-                return Err(KernelStop::WorkCeiling);
-            }
-            let span = meter
-                .span
-                .checked_add(units)
-                .ok_or(KernelStop::WorkCounterOverflow)?;
-            meter.work = next;
-            meter.span = span;
-            Ok(())
-        })();
-        if let Err(stop) = result {
-            if matches!(stop, KernelStop::WorkCounterOverflow)
-                || (stop == KernelStop::WorkCeiling
-                    && meter.limits.ceiling_owner == NestedStopOwner::Request)
-            {
-                meter.nested_stop.record(NestedStopOwner::Request);
-            }
-            // The computational latch is the only memory of an untaken cause.
-            // A checkpoint cannot turn it into a second, irreversible latch.
-            if stop != KernelStop::NestedStopped
-                || meter.nested_stop.owner() == Some(NestedStopOwner::Request)
-            {
-                meter.checkpoint_stop = Some(stop);
-            }
-        }
-        result
     }
 
     /// Account work completed by a domain-local checked meter after it stops.

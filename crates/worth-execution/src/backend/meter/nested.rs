@@ -2,6 +2,19 @@ use worth_foundational::ExecutionReport;
 
 use super::{NestedStopOwner, ACTIVE_METER};
 
+/// Uncharged oracle/frontier lanes defer cost, never an established request stop.
+pub(crate) fn record_nested_outcome(
+    report: ExecutionReport,
+    stop: Option<NestedStopOwner>,
+    charge_parent: bool,
+) {
+    if charge_parent {
+        record_nested(report, stop);
+    } else if stop == Some(NestedStopOwner::Request) {
+        super::request_stop(());
+    }
+}
+
 /// Add a joined nested computation to the invoking partition, never to a
 /// global completion-order counter. The enclosing partition's canonical
 /// identity determines whether this cost is ultimately charged.

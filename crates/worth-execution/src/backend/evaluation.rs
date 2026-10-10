@@ -24,8 +24,8 @@ where
     let mut context = KernelContext::new(limits.clone());
     let result = match context.safe_point() {
         Err(stop) => {
-            let owner = context.failure_owner(&KernelFailure::<()>::Stop(stop));
-            context.record_nested_stop_owner(owner);
+            // Entry safe points already latch these request facts, even if
+            // skipped input destruction replaces the public cause with Panic.
             if std::mem::needs_drop::<I>() {
                 // Only owned destruction adds a panic boundary at a skipped item.
                 // A destructor panic replaces the public stop with Panic;
@@ -62,10 +62,7 @@ where
         other => other,
     };
     let (work, span) = context.cost();
-    let stop_owner = result
-        .as_ref()
-        .err()
-        .map(|failure| context.failure_owner(failure));
+    let stop_owner = context.settle_result(&result, |failure| context.failure_owner(failure));
     TaskOutcome {
         result: super::task_result::TaskResult::new(result, stop_owner),
         work,

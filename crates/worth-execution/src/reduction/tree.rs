@@ -121,7 +121,7 @@ pub enum ReductionRunStop<E> {
 
 impl<E> ReductionRunStop<E> {
     pub(crate) fn work_counter_overflow() -> Self {
-        crate::backend::request_refusal(Self::WorkCounterOverflow)
+        crate::backend::request_stop(Self::WorkCounterOverflow)
     }
 }
 

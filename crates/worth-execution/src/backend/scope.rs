@@ -8,7 +8,7 @@ use crate::{
 };
 
 use super::meter::{
-    record_nested, KernelContext, KernelFailure, KernelStop, NestedStopOwner, RunLimits,
+    record_nested_outcome, KernelContext, KernelFailure, KernelStop, NestedStopOwner, RunLimits,
 };
 
 #[derive(Debug)]
@@ -246,16 +246,11 @@ where
         Some(hold) => settle_hold(hold, result),
         None => result.map_err(ScopeStop::Failure),
     };
-    let stop_owner = result.as_ref().err().map(|stop| match stop {
+    let stop_owner = context.settle_result(&result, |stop| match stop {
         ScopeStop::Admission(_) => NestedStopOwner::Request,
         ScopeStop::Failure(failure) => context.failure_owner(failure),
     });
-    if charge_parent {
-        record_nested(report, stop_owner);
-    } else if stop_owner == Some(NestedStopOwner::Request) {
-        // An oracle defers its cost, never a producer's request refusal.
-        super::meter::request_refusal(());
-    }
+    record_nested_outcome(report, stop_owner, charge_parent);
     drop(reservation);
     drop(serial_reservation);
     ScopeOutcome { result, report }
@@ -293,9 +288,7 @@ fn denied<R, E>(denial: LeaseDenial, charge_parent: bool) -> ScopeOutcome<R, E> 
         0,
         ExecutionPhysicalReport::default(),
     );
-    if charge_parent {
-        record_nested(report, Some(NestedStopOwner::Request));
-    }
+    record_nested_outcome(report, Some(NestedStopOwner::Request), charge_parent);
     ScopeOutcome {
         result: Err(ScopeStop::Admission(denial)),
         report,

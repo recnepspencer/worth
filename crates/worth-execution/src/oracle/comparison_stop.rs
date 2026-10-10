@@ -1,7 +1,6 @@
 //! Canonical comparison distinguishes encoding failure from refused buffer custody.
 use super::OracleMismatch;
-use crate::backend::{record_nested, NestedStopOwner, ScopeKernelFailure};
-use worth_foundational::{ExecutionPhysicalReport, ExecutionPosture, ExecutionReport};
+use crate::backend::ScopeKernelFailure;
 
 pub(super) enum ComparisonStop {
     Encoding(OracleMismatch),
@@ -13,6 +12,10 @@ impl From<OracleMismatch> for ComparisonStop {
     }
 }
 impl ComparisonStop {
+    pub(super) fn refused() -> Self {
+        crate::backend::request_refusal(Self::Refused)
+    }
+
     pub(super) fn into_scope(self) -> ScopeKernelFailure<OracleMismatch> {
         match self {
             Self::Encoding(cause) => {
@@ -24,18 +27,7 @@ impl ComparisonStop {
     pub(super) fn finish(self) -> OracleMismatch {
         match self {
             Self::Encoding(cause) => cause,
-            Self::Refused => {
-                record_nested(
-                    ExecutionReport::new(
-                        ExecutionPosture::Serial,
-                        0,
-                        0,
-                        ExecutionPhysicalReport::default(),
-                    ),
-                    Some(NestedStopOwner::Request),
-                );
-                OracleMismatch::Stop
-            }
+            Self::Refused => OracleMismatch::Stop,
         }
     }
 }

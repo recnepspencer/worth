@@ -77,11 +77,11 @@ pub enum ExecutionPolicyDenial {
 
 impl From<ExecutionPolicyDenial> for LeaseDenial {
     fn from(denial: ExecutionPolicyDenial) -> Self {
-        match denial {
+        Self::refused(match denial {
             ExecutionPolicyDenial::WorkersExceedAuthority => Self::WorkerLimitExceedsParent,
             ExecutionPolicyDenial::MemoryExceedsAuthority => Self::MemoryLimitExceedsParent,
             ExecutionPolicyDenial::ContractUnavailable => Self::EquivalenceContractUnavailable,
-        }
+        })
     }
 }
 
@@ -219,7 +219,7 @@ impl ExecutionAuthority {
         request: LeaseRequest,
     ) -> Result<ExecutionResourceLease<'_>, LeaseDenial> {
         self.admits_policy(&request.policy)
-            .map_err(|denial| crate::backend::request_refusal(LeaseDenial::from(denial)))?;
+            .map_err(LeaseDenial::from)?;
         let budget = request.policy.budget();
         let id = self.next_id();
         Ok(ExecutionResourceLease {
@@ -283,9 +283,7 @@ impl<'a> ExecutionResourceLease<'a> {
             Some((owner, active_node)) if owner == identity => {
                 let lineage = self.lineage();
                 let Some(position) = lineage.iter().position(|node| node.id == active_node) else {
-                    return Err(crate::backend::request_refusal(
-                        LeaseDenial::UnrelatedNestedLease,
-                    ));
+                    return Err(LeaseDenial::refused(LeaseDenial::UnrelatedNestedLease));
                 };
                 let worker_nodes = lineage[..position]
                     .iter()

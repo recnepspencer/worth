@@ -1,7 +1,7 @@
 //! Request refusals retain their owner when a scope transports a domain-shaped cause.
 use super::{
     scope::{run_scope_with_charge, ScopeOutcome},
-    KernelContext, KernelFailure, KernelStop, NestedStopOwner,
+    KernelContext, KernelFailure, KernelStop,
 };
 use crate::{authority::ExecutionResourceLease, ChargedBytes};
 
@@ -31,8 +31,7 @@ pub(crate) fn run_admitting_scope<R: ChargedBytes, E: ChargedBytes>(
         |context| {
             kernel(context).map_err(|failure| match failure {
                 ScopeKernelFailure::Refused(cause) => {
-                    context.record_nested_stop_owner(NestedStopOwner::Request);
-                    KernelFailure::Domain(cause)
+                    KernelFailure::Domain(context.refuse_request(cause))
                 }
                 ScopeKernelFailure::Kernel(failure) => failure,
             })

@@ -99,9 +99,13 @@ pub(super) fn checked_edit(
     edit: impl FnOnce(&mut KernelContext<'_, '_>) -> Result<PartitionWork, PartitionUpdateDenial>,
 ) -> Result<PartitionWork, PartitionUpdateDenial> {
     if !parent.is_active() {
-        return Err(parent.refuse_request(PartitionUpdateDenial::Admission(
+        let refused = Err(parent.refuse_request(PartitionUpdateDenial::Admission(
             LeaseDenial::UnrelatedNestedLease,
         )));
+        // This checked edit has ended in admission failure on the context
+        // it was asked through, before a child scope could be entered.
+        parent.settle_result(&refused, |_| crate::backend::NestedStopOwner::Request);
+        return refused;
     }
     let scope = run_admitting_scope(Some(lease), 0, 0, true, |child| {
         let _structural_edit = StructuralEditGuard::enter();
