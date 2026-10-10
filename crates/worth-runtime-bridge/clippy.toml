@@ -1,0 +1,36 @@
+# WORTH uses explicit semantic inputs for proof construction and typed outcome
+# topologies whose variants intentionally carry complete recovery evidence.
+# Keep these generic Clippy heuristics bounded above the largest reviewed
+# ordinary surface; repository-specific function scrutiny and the 400-line
+# guard remain the composition enforcement.
+too-many-arguments-threshold = 32
+enum-variant-size-threshold = 32768
+type-complexity-threshold = 512
+# Milestone 3.16.2 requirements 1 and 3: a mint called as a method is resolved
+# only by Clippy. Each caller carries an `expect` that boundary-check admits only
+# at the callers road1.toml [[truth_type_denials]] declares.
+disallowed-methods = [
+  { path = "std::collections::HashMap::iter", reason = "canonical order: hash containers are for point lookup only" },
+  { path = "std::collections::HashMap::iter_mut", reason = "canonical order: hash containers are for point lookup only" },
+  { path = "std::collections::HashMap::keys", reason = "canonical order: hash containers are for point lookup only" },
+  { path = "std::collections::HashMap::values", reason = "canonical order: hash containers are for point lookup only" },
+  { path = "std::collections::HashMap::values_mut", reason = "canonical order: hash containers are for point lookup only" },
+  { path = "std::collections::HashMap::into_keys", reason = "canonical order: hash containers are for point lookup only" },
+  { path = "std::collections::HashMap::into_values", reason = "canonical order: hash containers are for point lookup only" },
+  { path = "std::collections::HashMap::drain", reason = "canonical order: hash containers are for point lookup only" },
+  { path = "std::collections::HashMap::retain", reason = "canonical order: hash containers are for point lookup only" },
+  { path = "std::collections::HashMap::extract_if", reason = "canonical order: hash containers are for point lookup only" },
+  { path = "std::collections::HashSet::iter", reason = "canonical order: hash containers are for point lookup only" },
+  { path = "std::collections::HashSet::drain", reason = "canonical order: hash containers are for point lookup only" },
+  { path = "std::collections::HashSet::retain", reason = "canonical order: hash containers are for point lookup only" },
+  { path = "std::collections::HashSet::extract_if", reason = "canonical order: hash containers are for point lookup only" },
+  { path = "std::collections::HashSet::difference", reason = "canonical order: hash containers are for point lookup only" },
+  { path = "std::collections::HashSet::symmetric_difference", reason = "canonical order: hash containers are for point lookup only" },
+  { path = "std::collections::HashSet::intersection", reason = "canonical order: hash containers are for point lookup only" },
+  { path = "std::collections::HashSet::union", reason = "canonical order: hash containers are for point lookup only" },
+  { path = "worth_ui_runtime::mounting::presentation::truth_geometry::published::UiPublishedRect::translated", reason = "published geometry is shifted only for a Portal entrance start, a Portal's content anchor, or a nested Portal's anchor; construct published truth through truth_geometry" },
+  { path = "worth_ui_runtime::mounting::projection::placement::spaces::UiLaidOut::in_place", reason = "only an occurrence no Portal presents is shown where it is laid out; present laid-out geometry through its UiMountedPlacement" },
+  { path = "worth_ui_runtime::mounting::projection::placement::spaces::UiPresented::map", reason = "presented geometry changes only where the change cannot move it; present laid-out geometry through its UiMountedPlacement" },
+  { path = "worth_ui_host_contract::mounted_frame::presentation::UiMountedFrameConsumptionView::acknowledge_presented", reason = "only a presentation host acknowledges presented work; the runtime admits it as the presented-frame witness" },
+  { path = "worth_ui_host_contract::mounted_frame::presentation::UiHostPresentationCompletionToken::acknowledge_presented", reason = "only a presentation host acknowledges presented work; the runtime admits it as the presented-frame witness" },
+]

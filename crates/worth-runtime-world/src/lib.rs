@@ -1,3 +1,8 @@
+#![cfg_attr(
+    not(test),
+    deny(clippy::iter_over_hash_type, clippy::disallowed_methods)
+)]
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 //! Memory-resident composition authority for one exact Relational/Signal world.
 //!
 //! Phase 1 freezes the owner-facing contracts and compiler-visible progression.
