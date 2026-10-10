@@ -25,6 +25,7 @@ mod closed_retirement;
 mod consumer_custody;
 mod demand_key;
 mod local_work;
+mod performed_release;
 mod prerequisite_retry;
 mod ready_reuse;
 mod record_capacity;

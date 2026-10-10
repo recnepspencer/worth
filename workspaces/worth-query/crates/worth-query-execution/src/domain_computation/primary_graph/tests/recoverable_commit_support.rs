@@ -59,7 +59,7 @@ fn commit_on_world(
     commit_with_observation(world, seed, current_status, replacement, false)
 }
 
-fn commit_on_world_with_output_demand_observation(
+pub(in crate::domain_computation::primary_graph) fn commit_on_world_with_output_demand_observation(
     world: &AuthorizationWorld,
     seed: u8,
     current_status: &str,

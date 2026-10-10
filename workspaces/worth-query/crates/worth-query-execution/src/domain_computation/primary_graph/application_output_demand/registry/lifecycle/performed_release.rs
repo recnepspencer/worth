@@ -20,7 +20,8 @@ use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 
 /// What a released performed source kept. It drops after the registry lock
 /// is released.
-pub(super) struct ReleasedPerformedSource {
+pub(in crate::domain_computation::primary_graph::application_output_demand::registry) struct ReleasedPerformedSource
+{
     _custody: SourceCustody,
     _admitted: Vec<WorthQueryPerformedOutputDemandSource>,
 }
@@ -28,7 +29,7 @@ pub(super) struct ReleasedPerformedSource {
 impl DemandRegistryState {
     /// Release the oldest retained performed source that no prepared token
     /// and no demand of a row it admitted holds.
-    pub(super) fn release_unheld_performed_source(
+    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn release_unheld_performed_source(
         &mut self,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<ReleasedPerformedSource>, WorthQueryOutputDemandDenial> {
@@ -38,7 +39,8 @@ impl DemandRegistryState {
                 .and_then(|work| admission.charge_external_work(work).ok())
                 .ok_or_else(work_denial)
         };
-        // One pass over the sources; each candidate compares the rows once.
+        // Commit order fixes which candidate comparisons are charged. After
+        // the oldest unheld source, later commits cannot replace it.
         charge(self.source_custody.len())?;
         let mut oldest = None;
         for (commit, custody) in &self.source_custody {

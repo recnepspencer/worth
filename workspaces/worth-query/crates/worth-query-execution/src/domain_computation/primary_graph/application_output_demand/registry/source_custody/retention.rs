@@ -90,10 +90,6 @@ impl WorthQueryOutputDemandRegistry {
                 abandoned.push(prior.clone());
             }
         }
-        state
-            .source_custody
-            .try_reserve(1)
-            .map_err(|_| source_capacity_denial())?;
         for (prior, candidate) in &mut state.source_custody {
             if direct_root
                 && prior.ordinal() < commit.ordinal()
