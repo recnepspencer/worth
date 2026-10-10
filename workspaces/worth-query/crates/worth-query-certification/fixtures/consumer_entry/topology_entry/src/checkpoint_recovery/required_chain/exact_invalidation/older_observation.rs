@@ -103,6 +103,7 @@ fn superseded(stop: &WorthQueryApplicationOutputDemandDenial) -> bool {
 /// nothing, and a head demand settles on the new output.
 #[test]
 fn a_demand_at_an_older_observation_ignores_later_commits() {
+    let _equivalence = primary_graph::WorthQueryInvalidationEquivalence::arm_on_this_thread();
     let _guard = checkpoint_recovery_test_guard();
     let application = install(None, ring_world::seed::<3>, Retained::AMPLE);
     let (scope, principal) = authenticate(&application);
@@ -175,6 +176,7 @@ fn a_demand_at_an_older_observation_ignores_later_commits() {
 /// rows are pinned still settles on them.
 #[test]
 fn an_observation_below_the_window_never_settles_on_an_older_pinned_output() {
+    let _equivalence = primary_graph::WorthQueryInvalidationEquivalence::arm_on_this_thread();
     let _guard = checkpoint_recovery_test_guard();
     let application = install(
         None,

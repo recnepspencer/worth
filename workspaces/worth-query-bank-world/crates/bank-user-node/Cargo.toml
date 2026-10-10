@@ -6,9 +6,6 @@ license.workspace = true
 description = "Independent authenticated Bank transport client process."
 publish = false
 
-[features]
-cold-certification = ["bank-http-adapter/cold-certification"]
-
 [dependencies]
 axum.workspace = true
 bank-http-adapter.workspace = true

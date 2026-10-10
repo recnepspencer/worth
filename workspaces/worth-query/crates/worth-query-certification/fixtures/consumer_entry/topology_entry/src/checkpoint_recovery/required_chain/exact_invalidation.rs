@@ -268,9 +268,7 @@ mod judges;
 mod locality;
 mod observation_room;
 mod older_observation;
-#[cfg(feature = "test-output-delivery-faults")]
 mod other_entries;
 mod randomized;
 mod replaced_ready;
-#[cfg(feature = "test-output-delivery-faults")]
 mod undelivered_refresh;

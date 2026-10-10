@@ -11,7 +11,6 @@ fn changed_own_decision_still_refreshes_the_dependency_it_reads() {
     journey(false, ChildDelivery::Direct, false);
 }
 
-#[cfg(feature = "test-output-delivery-faults")]
 #[test]
 fn changed_decision_finishes_a_held_dependency_without_advancing_its_caller() {
     journey(false, ChildDelivery::Held, false);
@@ -22,19 +21,16 @@ fn changed_decision_retries_after_cancellation_with_its_refreshed_child() {
     journey(false, ChildDelivery::Direct, true);
 }
 
-#[cfg(feature = "test-output-delivery-faults")]
 #[test]
 fn changed_decision_retries_after_cancellation_with_a_held_child() {
     journey(false, ChildDelivery::Held, true);
 }
 
-#[cfg(feature = "test-output-delivery-faults")]
 #[test]
 fn changed_decision_refreshes_a_child_superseded_before_readiness_delivery() {
     journey(false, ChildDelivery::SupersededWhileHeld, false);
 }
 
-#[cfg(feature = "test-output-delivery-faults")]
 #[test]
 fn superseded_child_refresh_survives_cancellation_of_its_consumer() {
     journey(false, ChildDelivery::SupersededWhileHeld, true);
@@ -43,18 +39,13 @@ fn superseded_child_refresh_survives_cancellation_of_its_consumer() {
 #[derive(Clone, Copy, Eq, PartialEq)]
 enum ChildDelivery {
     Direct,
-    #[cfg(feature = "test-output-delivery-faults")]
     Held,
-    #[cfg(feature = "test-output-delivery-faults")]
     SupersededWhileHeld,
 }
 
 fn journey(drop_edges: bool, child_delivery: ChildDelivery, cancel_decision: bool) {
     let held_child = child_delivery != ChildDelivery::Direct;
-    #[cfg(feature = "test-output-delivery-faults")]
     let superseded_child = child_delivery == ChildDelivery::SupersededWhileHeld;
-    #[cfg(not(feature = "test-output-delivery-faults"))]
-    let superseded_child = false;
     let _guard = checkpoint_recovery_test_guard();
     take_decisions("diamond-join");
     let profile =
@@ -94,7 +85,6 @@ fn journey(drop_edges: bool, child_delivery: ChildDelivery, cancel_decision: boo
         drop(root_demands.take());
     }
     change_root!(request, application, "diamond-left", 5, 0x9176_3580_u64);
-    #[cfg(feature = "test-output-delivery-faults")]
     if held_child {
         // A clean independent caller drives the dirty left root as a queue frame.
         // Its deferred successor is then owned by the registry, not an open caller.

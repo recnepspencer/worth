@@ -20,5 +20,4 @@ mod scale;
 mod support_cutoff;
 mod warm_locality;
 
-#[cfg(feature = "test-request-lifetime-probes")]
 mod advancement_custody;

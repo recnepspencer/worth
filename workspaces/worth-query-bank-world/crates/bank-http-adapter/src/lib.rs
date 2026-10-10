@@ -15,7 +15,6 @@ mod http;
 mod scope;
 mod validation;
 
-#[cfg(feature = "cold-certification")]
 pub mod cold_certification;
 pub use adapter::AuthentikOidcAdapter;
 pub use authorization::{

@@ -9,7 +9,6 @@ use worth_query_host::facade::primary_graph::{
     WorthQueryGeneratedEntity, WorthQueryReconstructedOutputEntity,
 };
 
-#[cfg(feature = "test-output-delivery-faults")]
 mod native_writer;
 
 const ROOT: &str = "anchor-a";
@@ -266,5 +265,4 @@ fn reconstruct_ring(
         .unwrap_or_else(|_| panic!("every suspended record is reconstructed once"))
 }
 
-#[cfg(feature = "test-query-execution-observer")]
 mod advancement_custody;

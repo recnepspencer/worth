@@ -54,7 +54,6 @@ impl AuthentikBankIdentity {
         })
     }
 
-    #[cfg(feature = "cold-certification")]
     pub(crate) async fn install_for_cold_certification(
         configuration: AuthentikOidcConfiguration,
         seeds: impl IntoIterator<Item = BankPrincipalSeed>,
@@ -69,7 +68,6 @@ impl AuthentikBankIdentity {
         Self::install_with_adapter(bank_configuration, adapter, seeds)
     }
 
-    #[cfg(feature = "cold-certification")]
     pub(crate) async fn install_world_for_cold_certification(
         configuration: AuthentikOidcConfiguration,
         seed: BankWorldSeed,

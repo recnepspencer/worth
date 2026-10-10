@@ -105,7 +105,6 @@ async fn install_node(
     install_cold_node(binding, installation).await
 }
 
-#[cfg(feature = "cold-certification")]
 async fn install_cold_node(
     binding: BankUserNodeBinding,
     installation: NodeInstallation,
@@ -116,15 +115,6 @@ async fn install_cold_node(
     crate::cold_certification::install(binding, installation.configuration, redirect)
         .await
         .map_err(Into::into)
-}
-
-#[cfg(not(feature = "cold-certification"))]
-async fn install_cold_node(
-    _binding: BankUserNodeBinding,
-    installation: NodeInstallation,
-) -> Result<BankUserNode, Box<dyn Error + Send + Sync>> {
-    let _ = installation.external_redirect_url;
-    Err("cold certification was not compiled into the user-node process".into())
 }
 
 fn write_posture(

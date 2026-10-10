@@ -23,7 +23,6 @@ pub(crate) fn http_client() -> Result<reqwest::Client, AuthentikOidcAdapterBuild
         .map_err(|_| AuthentikOidcAdapterBuildError::HttpClient)
 }
 
-#[cfg(feature = "cold-certification")]
 pub(crate) fn cold_certification_http_client(
 ) -> Result<reqwest::Client, AuthentikOidcAdapterBuildError> {
     reqwest::ClientBuilder::new()

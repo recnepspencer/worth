@@ -8,6 +8,7 @@ use super::*;
 /// stay demanded: they answer again and reach no producer.
 #[test]
 fn a_held_chain_outlives_a_newer_demand_that_closes_unsettled() {
+    let _equivalence = primary_graph::WorthQueryInvalidationEquivalence::arm_on_this_thread();
     let _guard = checkpoint_recovery_test_guard();
     let application = install(None, ring_world::seed::<1>, Retained::AMPLE);
     let (scope, principal) = authenticate(&application);
@@ -43,6 +44,7 @@ fn a_held_chain_outlives_a_newer_demand_that_closes_unsettled() {
 /// before its consumer: the row it follows answers again, not the one it left.
 #[test]
 fn a_refreshed_chain_outlives_a_newer_demand_that_closes_unsettled() {
+    let _equivalence = primary_graph::WorthQueryInvalidationEquivalence::arm_on_this_thread();
     let _guard = checkpoint_recovery_test_guard();
     let application = install(None, ring_world::seed::<1>, Retained::AMPLE);
     let (scope, principal) = authenticate(&application);
@@ -99,6 +101,7 @@ fn a_refreshed_chain_outlives_a_newer_demand_that_closes_unsettled() {
 /// refresh from the current source, and the stopped demand follows them.
 #[test]
 fn a_held_chain_outlives_a_newer_demand_the_next_commit_supersedes() {
+    let _equivalence = primary_graph::WorthQueryInvalidationEquivalence::arm_on_this_thread();
     let _guard = checkpoint_recovery_test_guard();
     let application = install(None, ring_world::seed::<1>, Retained::AMPLE);
     let (scope, principal) = authenticate(&application);
@@ -155,6 +158,7 @@ fn a_held_chain_outlives_a_newer_demand_the_next_commit_supersedes() {
 /// consumer when the middle one has just republished under it.
 #[test]
 fn a_held_chain_follows_an_edit_the_window_no_longer_retains() {
+    let _equivalence = primary_graph::WorthQueryInvalidationEquivalence::arm_on_this_thread();
     let _guard = checkpoint_recovery_test_guard();
     for (order, follows) in [
         (['a', 'b', 'c'], [(1, 2, 0), (1, 1, 1), (1, 1, 1)]),
@@ -226,6 +230,7 @@ fn a_held_chain_follows_an_edit_the_window_no_longer_retains() {
 /// demand advances first, and the joined demand then follows the refreshed root.
 #[test]
 fn a_never_settled_stop_leaves_the_output_to_its_settled_holders() {
+    let _equivalence = primary_graph::WorthQueryInvalidationEquivalence::arm_on_this_thread();
     let _guard = checkpoint_recovery_test_guard();
     for unsettled_first in [true, false] {
         let application = install(

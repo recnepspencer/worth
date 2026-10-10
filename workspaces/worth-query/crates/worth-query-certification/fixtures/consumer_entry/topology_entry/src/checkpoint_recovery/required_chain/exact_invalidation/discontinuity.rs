@@ -23,6 +23,7 @@ fn settled_checkpoint(
 
 #[test]
 fn a_restored_world_verifies_each_root_and_decides_each_consumer_once() {
+    let _equivalence = primary_graph::WorthQueryInvalidationEquivalence::arm_on_this_thread();
     let _guard = checkpoint_recovery_test_guard();
     let mut rings: Vec<Ring> = (0..3).map(Ring::seeded).collect();
     take_all_decisions();
@@ -89,6 +90,7 @@ fn a_restored_world_verifies_each_root_and_decides_each_consumer_once() {
 
 #[test]
 fn marks_older_than_the_retained_window_are_verified_in_full() {
+    let _equivalence = primary_graph::WorthQueryInvalidationEquivalence::arm_on_this_thread();
     let _guard = checkpoint_recovery_test_guard();
     let application = install(
         None,
@@ -168,6 +170,7 @@ fn marks_older_than_the_retained_window_are_verified_in_full() {
 
 #[test]
 fn an_output_demanded_inside_every_window_never_leaves_it() {
+    let _equivalence = primary_graph::WorthQueryInvalidationEquivalence::arm_on_this_thread();
     let _guard = checkpoint_recovery_test_guard();
     let application = install(
         None,
@@ -223,6 +226,7 @@ fn an_output_demanded_inside_every_window_never_leaves_it() {
 
 #[test]
 fn a_forked_branch_verifies_what_its_parent_settled() {
+    let _equivalence = primary_graph::WorthQueryInvalidationEquivalence::arm_on_this_thread();
     let _guard = checkpoint_recovery_test_guard();
     let application = install(None, ring_world::seed::<3>, Retained::AMPLE);
     let (scope, principal) = authenticate(&application);
@@ -267,6 +271,7 @@ fn a_forked_branch_verifies_what_its_parent_settled() {
 /// that upstream. Demanded after it, the chain decides over the edited root.
 #[test]
 fn a_restored_consumer_never_settles_over_a_stale_upstream() {
+    let _equivalence = primary_graph::WorthQueryInvalidationEquivalence::arm_on_this_thread();
     let _guard = checkpoint_recovery_test_guard();
     let mut rings: Vec<Ring> = (0..3).map(Ring::seeded).collect();
     take_all_decisions();
@@ -308,6 +313,7 @@ fn a_restored_consumer_never_settles_over_a_stale_upstream() {
 /// settles the whole chain over the new root.
 #[test]
 fn a_restored_chain_settles_through_its_last_consumer_alone() {
+    let _equivalence = primary_graph::WorthQueryInvalidationEquivalence::arm_on_this_thread();
     let _guard = checkpoint_recovery_test_guard();
     let mut rings: Vec<Ring> = (0..3).map(Ring::seeded).collect();
     take_all_decisions();

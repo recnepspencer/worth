@@ -8,7 +8,6 @@ mod protocol;
 mod server;
 mod session;
 
-#[cfg(feature = "cold-certification")]
 pub mod cold_certification;
 
 pub use configuration::{

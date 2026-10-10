@@ -8,6 +8,7 @@ use super::*;
 /// and the consumer decides over the new output.
 #[test]
 fn a_consumer_of_an_equally_republished_root_decides_again_when_the_root_changes() {
+    let _equivalence = primary_graph::WorthQueryInvalidationEquivalence::arm_on_this_thread();
     let _guard = checkpoint_recovery_test_guard();
     let application = install(None, ring_world::seed::<1>, Retained::AMPLE);
     let (scope, principal) = authenticate(&application);
@@ -65,6 +66,7 @@ fn a_consumer_of_an_equally_republished_root_decides_again_when_the_root_changes
 /// held root demand follows that refresh instead of stopping superseded.
 #[test]
 fn a_held_root_follows_a_refresh_of_its_equal_republication() {
+    let _equivalence = primary_graph::WorthQueryInvalidationEquivalence::arm_on_this_thread();
     let _guard = checkpoint_recovery_test_guard();
     let application = install(None, ring_world::seed::<1>, Retained::AMPLE);
     let (scope, principal) = authenticate(&application);
@@ -110,6 +112,7 @@ fn a_held_root_follows_a_refresh_of_its_equal_republication() {
 /// decision. Only the root's source query runs again.
 #[test]
 fn an_equal_root_republication_clears_the_marks_below_it() {
+    let _equivalence = primary_graph::WorthQueryInvalidationEquivalence::arm_on_this_thread();
     let _guard = checkpoint_recovery_test_guard();
     let application = install(None, ring_world::seed::<1>, Retained::AMPLE);
     let (scope, principal) = authenticate(&application);

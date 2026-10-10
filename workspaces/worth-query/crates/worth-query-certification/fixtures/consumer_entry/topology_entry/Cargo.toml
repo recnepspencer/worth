@@ -4,12 +4,6 @@ version.workspace = true
 edition.workspace = true
 publish.workspace = true
 
-[features]
-test-invalidation-equivalence = []
-test-output-delivery-faults = []
-test-query-execution-observer = []
-test-world-operation-control = []
-
 [dependencies]
 worth-query-consumer-values.workspace = true
 worth-query-decl.workspace = true

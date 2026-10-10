@@ -44,7 +44,6 @@ pub(super) enum EntryFact {
 }
 
 impl EntryFact {
-    #[cfg(feature = "test-query-execution-observer")]
     const fn code(self) -> u64 {
         match self {
             Self::Weight => 0,
@@ -91,7 +90,6 @@ pub(super) struct EntryEdit {
     count: usize,
 }
 
-#[cfg(feature = "test-query-execution-observer")]
 impl EntryEdit {
     pub(super) fn new(set: &str, entry: u64, fact: EntryFact, value: u64) -> Self {
         Self {

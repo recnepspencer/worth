@@ -47,6 +47,7 @@ pub(super) const BANK_PUBLIC_KEY: [u8; 32] = [
 ];
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "needs Docker: cargo test --manifest-path workspaces/worth-query-bank-world/Cargo.toml -p bank-courtroom --test transport_process_courtroom -- --ignored"]
 async fn completed_rail_callback_survives_lost_ack_and_publishes_world_once() {
     let mut rail = RailProcessHandle::spawn_awaiting_completion_installation(
         Path::new(env!("CARGO_BIN_EXE_cold-bank-rail")),

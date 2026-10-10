@@ -386,6 +386,5 @@ mod custody_stops;
 mod exhausted_index;
 mod recovery_isolation;
 mod reopened_dependent;
-#[cfg(feature = "test-output-delivery-faults")]
 mod request_stops;
 mod steady_retention;

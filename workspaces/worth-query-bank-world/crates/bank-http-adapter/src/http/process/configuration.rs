@@ -39,7 +39,6 @@ pub enum BankHttpProcessConfigurationError {
     Oidc(AuthentikOidcConfigurationError),
     World,
     Identity(AuthentikBankIdentityBuildError),
-    ColdCertificationUnavailable,
     ExternalRail(bank_server::BankExternalEffectTransportDenial),
 }
 
@@ -101,7 +100,6 @@ async fn install_identity(
         .map_err(BankHttpProcessConfigurationError::Identity)
 }
 
-#[cfg(feature = "cold-certification")]
 async fn install_cold_identity(
     oidc: AuthentikOidcConfiguration,
     world: bank_server::BankWorldSeed,
@@ -112,24 +110,12 @@ async fn install_cold_identity(
         .map_err(BankHttpProcessConfigurationError::Identity)
 }
 
-#[cfg(not(feature = "cold-certification"))]
-async fn install_cold_identity(
-    _oidc: AuthentikOidcConfiguration,
-    _world: bank_server::BankWorldSeed,
-    _scope: &WorthQueryRequestScope,
-) -> Result<AuthentikBankIdentity, BankHttpProcessConfigurationError> {
-    Err(BankHttpProcessConfigurationError::ColdCertificationUnavailable)
-}
-
 impl std::fmt::Display for BankHttpProcessConfigurationError {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Oidc(error) => error.fmt(formatter),
             Self::World => formatter.write_str("invalid Bank HTTP process world"),
             Self::Identity(error) => error.fmt(formatter),
-            Self::ColdCertificationUnavailable => {
-                formatter.write_str("cold certification was not compiled into this process")
-            }
             Self::ExternalRail(error) => error.fmt(formatter),
         }
     }

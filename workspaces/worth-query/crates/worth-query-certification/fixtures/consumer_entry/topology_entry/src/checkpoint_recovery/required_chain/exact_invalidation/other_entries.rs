@@ -51,6 +51,7 @@ fn judge_untouched(
 /// over the model, and no other ring is reached.
 #[test]
 fn a_native_writer_marks_what_a_declared_operation_marks() {
+    let _equivalence = primary_graph::WorthQueryInvalidationEquivalence::arm_on_this_thread();
     let _guard = checkpoint_recovery_test_guard();
     let application = install(None, ring_world::seed::<3>, Retained::AMPLE);
     let (scope, principal) = authenticate(&application);

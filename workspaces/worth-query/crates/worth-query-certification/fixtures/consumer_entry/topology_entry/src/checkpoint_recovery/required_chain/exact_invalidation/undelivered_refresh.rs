@@ -9,6 +9,7 @@ use super::*;
 /// more advance settles it on the second edit, and its consumer follows.
 #[test]
 fn a_settled_demand_follows_its_output_past_an_undelivered_refresh() {
+    let _equivalence = primary_graph::WorthQueryInvalidationEquivalence::arm_on_this_thread();
     let _guard = checkpoint_recovery_test_guard();
     let application = install(None, ring_world::seed::<1>, Retained::AMPLE);
     let (scope, principal) = authenticate(&application);
@@ -63,6 +64,7 @@ fn a_settled_demand_follows_its_output_past_an_undelivered_refresh() {
 /// demand then follows the refreshed root.
 #[test]
 fn a_never_settled_stop_leaves_an_undelivered_refresh_to_its_settled_holder() {
+    let _equivalence = primary_graph::WorthQueryInvalidationEquivalence::arm_on_this_thread();
     let _guard = checkpoint_recovery_test_guard();
     for unsettled_first in [true, false] {
         let application = install(None, ring_world::seed::<1>, Retained::AMPLE);

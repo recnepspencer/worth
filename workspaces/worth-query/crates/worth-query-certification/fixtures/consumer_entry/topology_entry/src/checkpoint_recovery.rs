@@ -20,10 +20,8 @@ use worth_query_host::facade::{
 };
 
 use super::*;
-#[cfg(feature = "test-query-execution-observer")]
 mod advancement_currentness;
 mod cached_locator_checkpoint;
-#[cfg(feature = "test-query-execution-observer")]
 mod clean_reuse;
 pub(crate) mod computation_partition;
 mod current_family_output;
@@ -32,10 +30,9 @@ mod demand_contact;
 mod demand_policy;
 mod generated_restoration;
 mod input_cutoff;
-#[cfg(all(feature = "test-world-operation-control", not(target_arch = "wasm32")))]
+#[cfg(not(target_arch = "wasm32"))]
 mod late_cancellation;
 pub(crate) mod mixed_retirement;
-#[cfg(feature = "test-query-execution-observer")]
 mod parallel_history;
 mod producer_domain_denial;
 pub(crate) mod required_chain;
@@ -374,14 +371,10 @@ fn settle_for<'application, 'principal, 'scope>(
         .expect("the program output settles within the bounded advances")
 }
 
-#[cfg(feature = "test-query-execution-observer")]
 mod advancement_lifetime;
 
-#[cfg(feature = "test-query-execution-observer")]
 mod advancement_custody;
 
-#[cfg(feature = "test-query-execution-observer")]
 mod advancement_bootstrap;
 
-#[cfg(feature = "test-query-execution-observer")]
 mod advancement_discovered;

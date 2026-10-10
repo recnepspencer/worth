@@ -37,7 +37,6 @@ impl AuthentikOidcAdapter {
         Self::discover_with_http_client(configuration, http_client, scope).await
     }
 
-    #[cfg(feature = "cold-certification")]
     pub(crate) async fn discover_for_cold_certification(
         configuration: AuthentikOidcConfiguration,
         scope: &WorthQueryRequestScope,

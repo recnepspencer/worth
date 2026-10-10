@@ -29,15 +29,12 @@ mod entry_correction;
 mod entry_edit;
 mod execution;
 mod facts;
-#[cfg(feature = "test-query-execution-observer")]
 mod oracle;
-#[cfg(feature = "test-query-execution-observer")]
 mod output_producer;
 mod owner;
 mod probe;
 mod refusal;
 mod region_output;
-#[cfg(feature = "test-query-execution-observer")]
 mod worker_axis;
 
 /// A set of entries, each tagged with the region it lies in. An owner reads

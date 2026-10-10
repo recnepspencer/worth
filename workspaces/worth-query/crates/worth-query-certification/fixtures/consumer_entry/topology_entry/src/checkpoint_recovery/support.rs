@@ -1,5 +1,4 @@
 mod execution_policy;
-#[cfg(feature = "test-query-execution-observer")]
 pub(super) use execution_policy::CHECKPOINT_EXECUTION_POLICY;
 use std::sync::{
     atomic::{AtomicBool, AtomicUsize},

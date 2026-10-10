@@ -22,7 +22,6 @@ fn an_initial_consumer_readmits_the_cached_dependency_it_actually_reads() {
 }
 
 #[test]
-#[cfg(feature = "test-output-delivery-faults")]
 fn a_cached_read_keeps_custody_while_another_demand_delivers_its_pending_child() {
     journey(false, true, true);
 }
@@ -62,7 +61,6 @@ fn journey(cancel_decision: bool, close_dependencies: bool, delay_child: bool) {
     if close_dependencies {
         drop((left, right));
     }
-    #[cfg(feature = "test-output-delivery-faults")]
     if delay_child {
         application.delay_next_output_readiness_delivery_for_test();
         assert!(matches!(
