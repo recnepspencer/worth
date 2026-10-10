@@ -40,6 +40,8 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
 }
 
 mod captured_input;
+mod certification;
+pub(super) use certification::CertifiedDecision;
 mod member_keys;
 use captured_input::CapturedDecisionInput;
 mod ordinary;

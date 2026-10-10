@@ -155,6 +155,7 @@ where
                 .map_err(admission_denial)?;
             match result {
                 Ok(RequiredWaveStep::Current(settlement)) => {
+                    let decision = performed.borrow().certify(settlement);
                     let storage = if caller {
                         &mut *caller_storage
                     } else {
@@ -162,6 +163,24 @@ where
                     };
                     storage.release_unused();
                     runtime.output_demands.clear_required_stop(member.key());
+                    if index == 0 {
+                        frontier.members[index].state = MemberState::Current(Some(decision));
+                        // Acceptance/return is the certification's decision.
+                        // Previously prepared siblings are dropped unapplied.
+                        for member in &mut frontier.members {
+                            if matches!(member.state, MemberState::Prepared) {
+                                member.state = MemberState::ReleasedPlan;
+                                member.caller = false;
+                            }
+                        }
+                        return Ok(PreparedRequiredWave {
+                            members: Vec::new(),
+                        });
+                    }
+                    let Some(settlement) = decision.into_current(&performed.borrow()) else {
+                        frontier.members[index].state = MemberState::Inspect;
+                        continue;
+                    };
                     let refresh = member.resolved_successor;
                     if !caller && queued.is_some() && !required_by_member {
                         // A reached Current row is not a newly resolved read.
@@ -176,8 +195,11 @@ where
                             admission,
                         )?;
                     }
-                    frontier.members[index].state =
-                        MemberState::Current((index == 0).then_some(settlement));
+                    if let Some(queued) = queued {
+                        queue.acknowledge_root(queued, admission)?;
+                        frontier.members[index].queued = None;
+                    }
+                    frontier.members[index].state = MemberState::Current(None);
                 }
                 Ok(RequiredWaveStep::Upstream(ready)) => {
                     let storage = if caller {

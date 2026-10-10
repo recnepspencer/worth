@@ -7,6 +7,7 @@ pub(super) fn finish<Schema, Family>(
     wave: &RequiredWaveSelection<'_, Schema>,
     frontier: &mut RequiredFrontier,
     queue: &mut QueuedRequiredRoots,
+    performed: &std::cell::RefCell<performed::PerformedMembers>,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<Option<WorthQueryOutputDemandAdvance>, WorthQueryOutputDemandDenial>
 where
@@ -14,35 +15,29 @@ where
     Family: WorthQueryProducerOutputFamily<Schema>,
 {
     if wave.target == RequiredWaveTarget::Requested {
-        return Ok(Some(match &frontier.members[0].state {
-            MemberState::Current(settlement) => WorthQueryOutputDemandAdvance::Settled(Arc::clone(
-                settlement
-                    .as_ref()
-                    .expect("the caller owns its Current report"),
-            )),
-            MemberState::Inspect
-            | MemberState::Waiting(_)
-            | MemberState::WaitingDeclaration(_)
-            | MemberState::UnselectedClaim
-            | MemberState::Prepared
-            | MemberState::Pending
-            | MemberState::AcceptedCaller
-            | MemberState::Held(_) => WorthQueryOutputDemandAdvance::Pending,
-        }));
+        let MemberState::Current(decision) = &mut frontier.members[0].state else {
+            return Ok(Some(WorthQueryOutputDemandAdvance::Pending));
+        };
+        let settlement = decision
+            .take()
+            .expect("the requested target owns its decision");
+        return Ok(match settlement.into_current(&performed.borrow()) {
+            Some(settlement) => Some(WorthQueryOutputDemandAdvance::Settled(settlement)),
+            None => {
+                frontier.members[0].state = MemberState::Inspect;
+                None
+            }
+        });
     }
     if !queue.draining() {
         queue.finish_caller(
-            accept_current_caller(runtime, demand, wave, frontier, admission)?
+            accept_current_caller(runtime, demand, wave, frontier, performed, admission)?
                 .unwrap_or(WorthQueryOutputDemandAdvance::Pending),
         );
     }
     for member in &frontier.members {
         if let Some(index) = member.queued {
-            if matches!(member.state, MemberState::Current(_)) {
-                queue.acknowledge_root(index, admission)?;
-            } else {
-                queue.hold_root(index, None, admission)?;
-            }
+            queue.hold_root(index, None, admission)?;
         }
     }
     Ok(queue.take_caller())
@@ -55,14 +50,22 @@ pub(super) fn accept_current_caller<Schema, Family>(
     demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
     wave: &RequiredWaveSelection<'_, Schema>,
     frontier: &mut RequiredFrontier,
+    performed: &std::cell::RefCell<performed::PerformedMembers>,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<Option<WorthQueryOutputDemandAdvance>, WorthQueryOutputDemandDenial>
 where
     Schema: ApplicationSchema + 'static,
     Family: WorthQueryProducerOutputFamily<Schema>,
 {
-    let caller = &frontier.members[0];
-    let MemberState::Current(settlement) = &caller.state else {
+    let caller = &mut frontier.members[0];
+    let MemberState::Current(decision) = &mut caller.state else {
+        return Ok(None);
+    };
+    let decision = decision
+        .take()
+        .expect("the caller owns its Current decision");
+    let Some(settlement) = decision.into_current(&performed.borrow()) else {
+        caller.state = MemberState::Inspect;
         return Ok(None);
     };
     if super::super::caller::finish_current_caller(
@@ -77,14 +80,11 @@ where
         },
         admission,
     )? {
-        let outcome = WorthQueryOutputDemandAdvance::Settled(Arc::clone(
-            settlement
-                .as_ref()
-                .expect("the caller owns its Current report"),
-        ));
+        let outcome = WorthQueryOutputDemandAdvance::Settled(settlement);
         frontier.members[0].state = MemberState::AcceptedCaller;
         Ok(Some(outcome))
     } else {
+        caller.state = MemberState::Pending;
         Ok(None)
     }
 }

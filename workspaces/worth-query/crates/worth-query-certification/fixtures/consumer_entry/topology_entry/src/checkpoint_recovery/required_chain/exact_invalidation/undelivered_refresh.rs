@@ -131,3 +131,68 @@ fn a_never_settled_stop_leaves_an_undelivered_refresh_to_its_settled_holder() {
         );
     }
 }
+
+/// The caller waits on a publication from an earlier advance. Its own
+/// advance publishes nothing on that chain before draining unrelated work.
+#[test]
+fn a_pending_caller_with_a_held_upstream_drains_independent_work() {
+    let _guard = checkpoint_recovery_test_guard();
+    let application = install(None, ring_world::seed::<2>, Retained::AMPLE);
+    let (scope, principal) = authenticate(&application);
+    let request = application.request(&principal, &scope);
+    let court = Court::new(&application, &request, 0x9176_4440);
+    let first = Ring::seeded(0);
+    let second = Ring::seeded(1);
+    let at = "initial settlements";
+    let mut a = root!(court, first.key("a"), at);
+    let mut b = consumer!(court, first.key("b"), at);
+    let mut independent = root!(court, second.key("a"), at);
+    settled!(court, a, at);
+    settled!(court, b, at);
+    settled!(court, independent, at);
+    court.write_y(&first.key("a"), 5, "hold the upstream publication");
+    application.delay_next_output_readiness_delivery_for_test();
+    settled!(
+        court,
+        independent,
+        "publish the queued upstream and defer delivery"
+    );
+    assert_eq!(court.length(&first.key("a")), 6);
+    court.write_y(&second.key("a"), 7, "mark the independent root");
+    application.delay_next_output_readiness_delivery_for_test();
+    assert!(
+        matches!(
+            b.demand.advance(court.request),
+            Ok(WorthQueryApplicationOutputDemandProgress::Pending)
+        ),
+        "the caller waits on the already held upstream delivery"
+    );
+    assert_eq!(
+        court.length(&second.key("a")),
+        8,
+        "the Pending caller drains and publishes the independent queued root"
+    );
+    let root = court
+        .request
+        .query(PlanarRead {
+            body_key: second.key("a"),
+        })
+        .execute()
+        .unwrap()
+        .observed_sources()[0]
+        .root_entity_for_test();
+    let before = primary_graph::query_read_kernel_entries_by_root_on_this_thread_for_test();
+    assert!(
+        matches!(
+            independent.demand.advance(court.request),
+            Ok(WorthQueryApplicationOutputDemandProgress::Settled(_))
+        ),
+        "the queue already published the independently settled root"
+    );
+    let after = primary_graph::query_read_kernel_entries_by_root_on_this_thread_for_test();
+    assert_eq!(
+        after.get(&root),
+        before.get(&root),
+        "the independently published root needs no new source query"
+    );
+}

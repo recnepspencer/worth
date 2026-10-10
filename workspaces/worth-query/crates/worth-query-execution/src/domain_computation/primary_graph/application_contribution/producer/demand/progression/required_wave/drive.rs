@@ -62,12 +62,21 @@ where
             performed,
             admission,
         )?;
-        for member in &mut frontier.members {
-            if matches!(member.state, MemberState::Current(_)) {
-                if let Some(index) = member.queued.take() {
-                    queue.acknowledge_root(index, admission)?;
-                }
+        if wave.target == RequiredWaveTarget::Requested
+            && matches!(frontier.members[0].state, MemberState::Current(_))
+        {
+            if let Some(outcome) = canonical_apply::finish(
+                runtime,
+                demand,
+                &wave,
+                &mut frontier,
+                queue,
+                performed,
+                admission,
+            )? {
+                return Ok(Some(outcome));
             }
+            continue;
         }
         if wave.target == RequiredWaveTarget::Caller && !queue.draining() {
             if let Some(outcome) = canonical_apply::accept_current_caller(
@@ -75,6 +84,7 @@ where
                 demand,
                 &wave,
                 &mut frontier,
+                performed,
                 admission,
             )? {
                 queue.finish_caller(outcome);
@@ -153,6 +163,7 @@ where
                             &wave,
                             &mut frontier,
                             queue,
+                            performed,
                             admission,
                         );
                     }
@@ -261,6 +272,14 @@ where
             resolved.clear();
             continue;
         }
-        return canonical_apply::finish(runtime, demand, &wave, &mut frontier, queue, admission);
+        return canonical_apply::finish(
+            runtime,
+            demand,
+            &wave,
+            &mut frontier,
+            queue,
+            performed,
+            admission,
+        );
     }
 }
