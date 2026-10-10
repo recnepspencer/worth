@@ -87,11 +87,7 @@ where
         Back: Fn(&BackInput<I, B>, &mut MapKernelContext<'_, '_>) -> Result<O, MapKernelFailure<E>>
             + Sync,
     {
-        self.check_changed(changed.identities(), editions)
-            .map_err(|cause| DecomposeRunFailure {
-                cause: DecomposeFailure::Input(cause),
-                total_report: empty_report(),
-            })?;
+        let checked_changed = self.check_changed(changed, editions)?;
         let tree_bound =
             match &self.snapshot {
                 None => ReductionTree::<C, F>::checked_build_memory_bound(
@@ -99,7 +95,7 @@ where
                     self.max_reduction_value_bytes,
                 )
                 .ok_or(ReductionEditMemoryBoundError::Overflow),
-                Some(snapshot) => changed.identities().iter().try_fold(
+                Some(snapshot) => checked_changed.map().identities().iter().try_fold(
                     self.max_reduction_value_bytes,
                     |sum, identity| {
                         sum.checked_add(snapshot.tree.checked_update_memory_bound(
@@ -169,20 +165,18 @@ where
             max_result_bytes,
             charge_parent,
             |_context| {
-                let staged = self
-                    .run_stages(
-                        lease,
-                        backend,
-                        changed,
-                        editions,
-                        &interior,
-                        &solve_interface,
-                        &back_substitute,
-                        _context,
-                        &stage,
-                        &fallback,
-                    )
-                    .map_err(|cause| ScopeKernelFailure::Kernel(MapKernelFailure::Domain(cause)))?;
+                let staged = Self::run_stages(
+                    checked_changed,
+                    lease,
+                    backend,
+                    &interior,
+                    &solve_interface,
+                    &back_substitute,
+                    _context,
+                    &stage,
+                    &fallback,
+                )
+                .map_err(|cause| ScopeKernelFailure::Kernel(MapKernelFailure::Domain(cause)))?;
                 if let Some(handoff) = retained_handoff.as_mut() {
                     let bytes = staged
                         .additional_charged_bytes()

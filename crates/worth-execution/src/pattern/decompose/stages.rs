@@ -14,11 +14,9 @@ where
     F: Fn(&C, &C) -> C + Clone + Sync,
 {
     pub(super) fn run_stages<T, K, E, Interior, Interface, Back>(
-        &self,
+        checked_changed: CheckedChangedInput<'_, Self, T, K>,
         lease: Option<&ExecutionResourceLease<'_>>,
         backend: BackendKind,
-        changed: &ExecutionMap<T, K>,
-        editions: DecomposeKernelEditions,
         interior: &Interior,
         solve_interface: &Interface,
         back_substitute: &Back,
@@ -42,6 +40,7 @@ where
         Back: Fn(&BackInput<I, B>, &mut MapKernelContext<'_, '_>) -> Result<O, MapKernelFailure<E>>
             + Sync,
     {
+        let (decomposition, changed, editions) = checked_changed.into_parts();
         stage.set(DecomposeStage::Interior);
         let interior_outcome = changed.run_with_backend(lease, backend, interior);
         note_fallback(fallback, &interior_outcome);
@@ -60,82 +59,86 @@ where
                 });
             }
         };
-        check_cap(&changed_values, self.max_staged_bytes).map_err(DecomposeFailure::Input)?;
-        let changed_contributions = self
+        check_cap(&changed_values, decomposition.max_staged_bytes)
+            .map_err(DecomposeFailure::Input)?;
+        let changed_contributions = decomposition
             .changed_contributions(changed.identities(), &changed_values)
             .map_err(DecomposeFailure::Input)?;
-        let (interiors, contributions) = self.merge_interiors(changed.identities(), changed_values);
-        check_cap(&interiors, self.max_staged_bytes).map_err(DecomposeFailure::Input)?;
-        check_cap(&contributions, self.max_staged_bytes).map_err(DecomposeFailure::Input)?;
+        let (interiors, contributions) =
+            decomposition.merge_interiors(changed.identities(), changed_values);
+        check_cap(&interiors, decomposition.max_staged_bytes).map_err(DecomposeFailure::Input)?;
+        check_cap(&contributions, decomposition.max_staged_bytes)
+            .map_err(DecomposeFailure::Input)?;
         let mut reuse = DecomposeReuse::default();
-        if self.snapshot.is_some() {
+        if decomposition.snapshot.is_some() {
             reuse.unchanged_contributions =
-                self.identities.as_slice().len() - changed_contributions.len();
+                decomposition.identities.as_slice().len() - changed_contributions.len();
         }
         stage.set(DecomposeStage::Reduction);
         let before = context.cost();
-        let (tree, reduction_metrics, needs_span_rewrite) = if let Some(previous) = &self.snapshot {
-            let mut tree = previous.tree.clone();
-            let mut metrics = ReductionMetrics::default();
-            for identity in changed_contributions {
-                let index = self
-                    .identities
-                    .as_slice()
-                    .binary_search(&identity)
-                    .expect("checked identity");
-                let edit = tree
-                    .update_checked(
-                        identity,
-                        contributions[index].clone(),
-                        self.max_reduction_value_bytes,
+        let (tree, reduction_metrics, needs_span_rewrite) =
+            if let Some(previous) = &decomposition.snapshot {
+                let mut tree = previous.tree.clone();
+                let mut metrics = ReductionMetrics::default();
+                for identity in changed_contributions {
+                    let index = decomposition
+                        .identities
+                        .as_slice()
+                        .binary_search(&identity)
+                        .expect("checked identity");
+                    let edit = tree
+                        .update_checked(
+                            identity,
+                            contributions[index].clone(),
+                            decomposition.max_reduction_value_bytes,
+                            || context.checkpoint(1),
+                        )
+                        .map_err(DecomposeFailure::ReductionRun)?;
+                    add_metrics(&mut metrics, edit).map_err(DecomposeFailure::ReductionRun)?;
+                }
+                (tree, metrics, true)
+            } else {
+                let plan = ReductionPlan::from_canonical(decomposition.identities.clone());
+                if let Some(lease) = lease {
+                    let (tree, metrics) = ReductionTree::build_scheduled_checked(
+                        lease,
+                        backend,
+                        plan,
+                        contributions.clone(),
+                        decomposition.reduction_identity.clone(),
+                        decomposition.combine.clone(),
+                        decomposition.max_reduction_value_bytes,
+                        context,
+                    )
+                    .map_err(|error| match error {
+                        ScheduledReductionError::Admission(denial) => {
+                            DecomposeFailure::ScopeAdmission(denial)
+                        }
+                        ScheduledReductionError::Reduction(failure) => {
+                            DecomposeFailure::ReductionRun(failure)
+                        }
+                    })?;
+                    (tree, metrics, false)
+                } else {
+                    let entries = decomposition
+                        .identities
+                        .as_slice()
+                        .iter()
+                        .copied()
+                        .zip(contributions.iter().cloned())
+                        .collect();
+                    let (tree, metrics) = ReductionTree::try_from_declared_checked(
+                        plan,
+                        entries,
+                        decomposition.reduction_identity.clone(),
+                        decomposition.combine.clone(),
+                        decomposition.max_reduction_value_bytes,
                         || context.checkpoint(1),
                     )
                     .map_err(DecomposeFailure::ReductionRun)?;
-                add_metrics(&mut metrics, edit).map_err(DecomposeFailure::ReductionRun)?;
-            }
-            (tree, metrics, true)
-        } else {
-            let plan = ReductionPlan::from_canonical(self.identities.clone());
-            if let Some(lease) = lease {
-                let (tree, metrics) = ReductionTree::build_scheduled_checked(
-                    lease,
-                    backend,
-                    plan,
-                    contributions.clone(),
-                    self.reduction_identity.clone(),
-                    self.combine.clone(),
-                    self.max_reduction_value_bytes,
-                    context,
-                )
-                .map_err(|error| match error {
-                    ScheduledReductionError::Admission(denial) => {
-                        DecomposeFailure::ScopeAdmission(denial)
-                    }
-                    ScheduledReductionError::Reduction(failure) => {
-                        DecomposeFailure::ReductionRun(failure)
-                    }
-                })?;
-                (tree, metrics, false)
-            } else {
-                let entries = self
-                    .identities
-                    .as_slice()
-                    .iter()
-                    .copied()
-                    .zip(contributions.iter().cloned())
-                    .collect();
-                let (tree, metrics) = ReductionTree::try_from_declared_checked(
-                    plan,
-                    entries,
-                    self.reduction_identity.clone(),
-                    self.combine.clone(),
-                    self.max_reduction_value_bytes,
-                    || context.checkpoint(1),
-                )
-                .map_err(DecomposeFailure::ReductionRun)?;
-                (tree, metrics, true)
-            }
-        };
+                    (tree, metrics, true)
+                }
+            };
         if needs_span_rewrite
             && context
                 .apply_structural_span(
@@ -150,12 +153,14 @@ where
             ));
         }
         let assembled = tree.result().clone();
-        check_cap(&assembled, self.max_staged_bytes).map_err(DecomposeFailure::Input)?;
-        let interface_unchanged = match &self.snapshot {
-            Some(previous) if previous.editions.interface == editions.interface => {
-                same_encoding(&previous.assembled, &assembled, self.max_staged_bytes)
-                    .map_err(DecomposeFailure::Input)?
-            }
+        check_cap(&assembled, decomposition.max_staged_bytes).map_err(DecomposeFailure::Input)?;
+        let interface_unchanged = match &decomposition.snapshot {
+            Some(previous) if previous.editions.interface == editions.interface => same_encoding(
+                &previous.assembled,
+                &assembled,
+                decomposition.max_staged_bytes,
+            )
+            .map_err(DecomposeFailure::Input)?,
             None => false,
             Some(_) => false,
         };
@@ -163,7 +168,12 @@ where
         let (interface, interface_report) = if interface_unchanged {
             reuse.interface_solve_reused = true;
             (
-                self.snapshot.as_ref().expect("checked").interface.clone(),
+                decomposition
+                    .snapshot
+                    .as_ref()
+                    .expect("checked")
+                    .interface
+                    .clone(),
                 None,
             )
         } else {
@@ -175,7 +185,7 @@ where
                     read_keys: Vec::<PartitionIdentity>::new(),
                     write_keys: Vec::new(),
                     kernel_scratch_bytes: 0,
-                    max_result_bytes: self.max_interface_result_bytes,
+                    max_result_bytes: decomposition.max_interface_result_bytes,
                 }],
             )
             .map_err(DecomposeFailure::InterfaceAdmission)?;
@@ -188,13 +198,13 @@ where
                 }
             }
         };
-        check_cap(&interface, self.max_staged_bytes).map_err(DecomposeFailure::Input)?;
-        if interface.slices.len() != self.identities.as_slice().len() {
+        check_cap(&interface, decomposition.max_staged_bytes).map_err(DecomposeFailure::Input)?;
+        if interface.slices.len() != decomposition.identities.as_slice().len() {
             return Err(DecomposeFailure::Input(
                 DecomposeInputDenial::InterfaceSliceCoverageMismatch,
             ));
         }
-        let previous = self
+        let previous = decomposition
             .snapshot
             .as_ref()
             .filter(|snapshot| snapshot.editions.back == editions.back)
@@ -205,21 +215,21 @@ where
                 )
             });
         let back_ids = changed_back_identities(
-            self.identities.as_slice(),
+            decomposition.identities.as_slice(),
             previous,
             &interiors,
             &interface.slices,
             &mut reuse,
-            self.max_staged_bytes,
+            decomposition.max_staged_bytes,
         )
         .map_err(DecomposeFailure::Input)?;
         stage.set(DecomposeStage::Back);
         let back_map = admit_back_map(
-            &self.identities,
+            &decomposition.identities,
             &back_ids,
             &interiors,
             &interface.slices,
-            self.max_back_result_bytes,
+            decomposition.max_back_result_bytes,
         )
         .map_err(DecomposeFailure::BackAdmission)?;
         let (back_values, back_report) = if back_ids.is_empty() {
@@ -243,16 +253,16 @@ where
                 }
             }
         };
-        check_cap(&back_values, self.max_staged_bytes).map_err(DecomposeFailure::Input)?;
-        let mut outputs = self
+        check_cap(&back_values, decomposition.max_staged_bytes).map_err(DecomposeFailure::Input)?;
+        let mut outputs = decomposition
             .snapshot
             .as_ref()
             .map_or_else(Vec::new, |old| old.outputs.clone());
-        if self.snapshot.is_none() {
+        if decomposition.snapshot.is_none() {
             outputs = back_values;
         } else {
             for (identity, value) in back_ids.into_iter().zip(back_values) {
-                let index = self
+                let index = decomposition
                     .identities
                     .as_slice()
                     .binary_search(&identity)
@@ -269,7 +279,7 @@ where
             interface,
             outputs: outputs.clone(),
         };
-        if snapshot.stage_bytes() > self.max_staged_bytes {
+        if snapshot.stage_bytes() > decomposition.max_staged_bytes {
             return Err(DecomposeFailure::Input(
                 DecomposeInputDenial::StagedCapacityExceeded,
             ));
@@ -283,7 +293,8 @@ where
             back_report,
             reuse,
         };
-        check_cap(&complete.values, self.max_staged_bytes).map_err(DecomposeFailure::Input)?;
+        check_cap(&complete.values, decomposition.max_staged_bytes)
+            .map_err(DecomposeFailure::Input)?;
         Ok(Staged { snapshot, complete })
     }
 }

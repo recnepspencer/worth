@@ -41,15 +41,20 @@ fn frontier_admission_in_nested_decomposition_cannot_be_taken() {
             )
             .unwrap();
             let stage = Cell::new(DecomposeStage::Interior);
-            let result = decomposition.run_stages(
+            let checked_changed = decomposition
+                .check_changed::<_, _, ()>(
+                    &map,
+                    DecomposeKernelEditions {
+                        interior: 1,
+                        interface: 1,
+                        back: 1,
+                    },
+                )
+                .unwrap();
+            let result = ExecutionDecompose::run_stages(
+                checked_changed,
                 Some(&lease),
                 BackendKind::Serial,
-                &map,
-                DecomposeKernelEditions {
-                    interior: 1,
-                    interface: 1,
-                    back: 1,
-                },
                 &|_, _| {
                     Ok::<_, MapKernelFailure<()>>(InteriorResult {
                         interior: (),
@@ -144,15 +149,20 @@ fn frontier_interruption_in_nested_decomposition_cannot_be_taken() {
             )
             .unwrap();
             let stage = Cell::new(DecomposeStage::Interior);
-            let result = decomposition.run_stages(
+            let checked_changed = decomposition
+                .check_changed::<_, _, ()>(
+                    &map,
+                    DecomposeKernelEditions {
+                        interior: 1,
+                        interface: 1,
+                        back: 1,
+                    },
+                )
+                .unwrap();
+            let result = ExecutionDecompose::run_stages(
+                checked_changed,
                 Some(&lease),
                 BackendKind::Serial,
-                &map,
-                DecomposeKernelEditions {
-                    interior: 1,
-                    interface: 1,
-                    back: 1,
-                },
                 &|_, _| {
                     Ok::<_, MapKernelFailure<()>>(InteriorResult {
                         interior: (),
