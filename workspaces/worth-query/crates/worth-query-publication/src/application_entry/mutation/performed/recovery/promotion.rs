@@ -50,7 +50,7 @@ where
     /// the handle. Promotion does not discharge those independent obligations.
     /// Every refusal returns the complete move-only recovery owner.
     pub fn promote_recovered_required_outputs<Program, Root>(
-        mut self,
+        self,
         recovery: WorthQueryUnpublishedRequiredApplicationMutation<Schema, Intent, Program, Root>,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
     ) -> Result<
@@ -71,7 +71,52 @@ where
                 RootConnection<Schema, Root>,
             >,
     {
-        let receipt = match self.published_required_receipt(application, &recovery) {
+        let runtime = self.request.application;
+        let scope = self.request.scope.clone();
+        let mut retained = Some(recovery);
+        match runtime.with_application_advancement(&scope, |phase| {
+            self.promote_recovered_required_outputs_in_advancement(
+                &phase,
+                retained
+                    .take()
+                    .expect("opened request owns recovery custody"),
+                application,
+            )
+        }) {
+            Ok(outcome) => outcome,
+            Err(cause) => Err((
+                WorthQueryApplicationRecoveryRequestDenial::advancement(cause),
+                retained.take().expect("refused request retains custody"),
+            )),
+        }
+    }
+
+    fn promote_recovered_required_outputs_in_advancement<Program, Root>(
+        mut self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
+        recovery: WorthQueryUnpublishedRequiredApplicationMutation<Schema, Intent, Program, Root>,
+        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+    ) -> Result<
+        WorthQueryRecoveredRequiredOutputs<Schema, Program, Root, Intent::Binding>,
+        (
+            WorthQueryApplicationRecoveryRequestDenial,
+            WorthQueryUnpublishedRequiredApplicationMutation<Schema, Intent, Program, Root>,
+        ),
+    >
+    where
+        Program: ApplicationProgramDefinition<Schema>,
+        Program::Outputs: ApplicationProgramOutputsShape<Schema>,
+        Root: ApplicationOutputGraphShape<Schema> + ApplicationRequiredOutputRoot,
+        RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
+        Intent::Binding:
+            worth_query_execution::facade::primary_graph::WorthQueryApplicationRequiredOutputSource<
+                Schema,
+                RootConnection<Schema, Root>,
+            >,
+    {
+        let receipt = match self.published_required_receipt(phase, application, &recovery) {
             Ok(receipt) => receipt,
             Err(denial) => return Err((denial, recovery)),
         };
@@ -147,6 +192,9 @@ where
 
     fn published_required_receipt<Program, Root>(
         &mut self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
         recovery: &WorthQueryUnpublishedRequiredApplicationMutation<Schema, Intent, Program, Root>,
     ) -> Result<
@@ -168,13 +216,9 @@ where
             return Err(binding_mismatch());
         }
         let prepared =
-            self.authorize_required_source::<Program, Root>(application, &recovery.source)?;
-        let read = self
-            .request
-            .application
-            .resolve_admitted_application_idempotency(&prepared.admission, prepared.idempotency)
-            .map_err(WorthQueryApplicationRecoveryRequestDenial::Idempotency)?;
-        self.check_required_recovery_liveness()?;
+            self.authorize_required_source::<Program, Root>(phase, application, &recovery.source)?;
+        let read = self.read_recovery_idempotency(phase, &prepared)?;
+        self.check_recovery_liveness()?;
         match read.into_resolution() {
             WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => Ok(receipt),
             WorthQueryApplicationIdempotencyResolution::Unseen

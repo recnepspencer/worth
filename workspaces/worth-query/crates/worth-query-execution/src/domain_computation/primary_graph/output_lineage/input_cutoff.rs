@@ -36,6 +36,7 @@ use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutp
 
 /// Pins the exact owner-selected record, including its retained capacity and
 /// source evidence. A restored row may lack the proofs needed for input reuse.
+#[derive(Clone)]
 pub(in crate::domain_computation::primary_graph) struct RetainedInputCutoffCandidate {
     cell: Arc<OnceLock<RecordedOutput>>,
 }

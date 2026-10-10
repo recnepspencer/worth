@@ -37,10 +37,6 @@ pub enum WorthQueryWorkspaceErrorKind {
         maximum_handles: usize,
     },
     CandidateIdentityExhausted,
-    PreparedRootBudgetExhausted {
-        maximum_bytes: u64,
-        required_bytes: u64,
-    },
     PatchPositionReservationContended,
     ProposalIdentityExhausted,
     RelationalBasisUnavailable,

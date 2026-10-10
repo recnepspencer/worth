@@ -72,7 +72,7 @@ fn assert_cause(denial: &PreparationDenial, memory: bool, placement: Placement) 
     }
 }
 #[test]
-fn discovered_start_and_recovery_open_once_before_their_first_reader() {
+fn discovered_start_recovery_and_advance_each_open_one_request() {
     let _guard = checkpoint_recovery_test_guard();
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
         let _restore = Restore(place(placement), bound(None));
@@ -186,11 +186,9 @@ fn discovered_start_and_recovery_open_once_before_their_first_reader() {
             assert_eq!(reads(), before);
             assert_eq!(reports().len(), 1);
             bound(None);
-            let before = reads();
             let mut started = performed
                 .start_required_outputs(&application, &request, Default::default())
                 .unwrap_or_else(|_| panic!("admitted discovery starts"));
-            assert_eq!(reads(), before, "start retains custody before discovery");
             assert_eq!(reports().len(), 1);
             let before = reads();
             started
@@ -204,7 +202,33 @@ fn discovered_start_and_recovery_open_once_before_their_first_reader() {
                 "discovery and demand reads borrow one advance"
             );
             drop(started);
-            let before = reads();
+            // Recovery gets its own still-discovered source, before any handle
+            // consumes that source into a started root.
+            let source = request
+                .query(PlanarRead {
+                    body_key: "anchor-a".into(),
+                })
+                .execute()
+                .unwrap()
+                .observed_sources()[0]
+                .clone();
+            let Outcome::Performed(performed) = request
+                .mutate(PlanarSourceAdjustment {
+                    scope_key: "anchor-a".into(),
+                    replacement_y: length(3),
+                })
+                .expect_source(source)
+                .idempotency(&8124_u64)
+                .execute_performed_discovered::<DiscoveredProgram, DiscoveredRoot>(
+                    &application,
+                    worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap()
+            else {
+                panic!("fresh source retains discovered custody")
+            };
+            let receipt = performed.receipt().clone();
+            reports();
             let mut recovered = request
                 .recover_discovered_required_outputs::<DiscoveredProgram, DiscoveredRoot>(
                     &application,
@@ -212,8 +236,8 @@ fn discovered_start_and_recovery_open_once_before_their_first_reader() {
                     Default::default(),
                 )
                 .unwrap();
-            assert_eq!(reads(), before, "recovery retains custody before discovery");
             assert_eq!(reports().len(), 1);
+            drop(performed);
             let before = reads();
             recovered.advance(&application, &request).unwrap();
             assert!(reads() > before);
@@ -221,3 +245,5 @@ fn discovered_start_and_recovery_open_once_before_their_first_reader() {
         }
     }
 }
+
+mod recovery_entries;

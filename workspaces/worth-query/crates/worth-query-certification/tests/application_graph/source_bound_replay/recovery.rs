@@ -15,9 +15,7 @@ use crate::document_retention_model::{
 };
 use std::time::{Duration, Instant};
 use worth_query_host::facade::{
-    admission::authenticated_principal::{
-        WorthQueryCancellationSource, WorthQueryRequestInterruption, WorthQueryRequestScope,
-    },
+    admission::authenticated_principal::{WorthQueryCancellationSource, WorthQueryRequestScope},
     application_contribution::WorthQueryApplicationProducerProvider,
     application_entry::{
         WorthQueryApplicationMutationOutcome as Outcome,
@@ -142,9 +140,7 @@ fn recover_original_source(result_set: bool, retention: u64) {
     assert!(matches!(
         request!(&principal, &stopped, intent.clone(), &key, result_set)
             .recover_unpublished_in_program(&recovery, &host),
-        Err(WorthQueryApplicationRecoveryRequestDenial::Interrupted(
-            WorthQueryRequestInterruption::Cancelled
-        ))
+        Err(WorthQueryApplicationRecoveryRequestDenial::Recovery(worth_query_host::facade::primary_graph::WorthQueryManagedApplicationRecoveryDenial::ExecutionDenied(worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial::Interrupted(worth_query_host::facade::application_contribution::WorthQueryManagedComputationInterruption::Cancelled))))
     ));
     assert!(recovery.inspect().unwrap().relational_requires_settlement());
     let fresh_scope = request_scope();

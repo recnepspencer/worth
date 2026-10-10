@@ -24,7 +24,6 @@ pub(crate) fn classify_merge_validation_kind(kind: Kind) -> Denial {
         | Kind::CandidateCapacityExhausted { .. }
         | Kind::PublishedSnapshotCapacityExhausted { .. }
         | Kind::CandidateIdentityExhausted
-        | Kind::PreparedRootBudgetExhausted { .. }
         | Kind::PatchPositionReservationContended
         | Kind::ProposalIdentityExhausted
         | Kind::RelationalBasisUnavailable

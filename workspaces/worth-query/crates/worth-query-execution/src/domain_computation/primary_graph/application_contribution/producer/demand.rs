@@ -18,6 +18,7 @@ mod denial_diagnostic;
 mod denial_posture;
 pub(super) mod disclosure;
 mod progression;
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) use progression::{PerformedMembers, SelectedDecisionInput};
 pub(in crate::domain_computation::primary_graph) use progression::{
     MatchedRequiredPredecessors, ReboundConsumedOutput, ResolvedRequiredPredecessors,
 };

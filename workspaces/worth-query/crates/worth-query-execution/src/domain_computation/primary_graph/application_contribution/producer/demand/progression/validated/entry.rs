@@ -103,6 +103,7 @@ where
         >,
         entry: &InstalledProducerProvider<Schema>,
         commit_authority: WorthQueryProducerCommitAuthority,
+        performed: &mut super::super::required_wave::performed::PerformedMembers,
         request_admission: &mut InvalidationEditAdmission,
     ) -> Result<
         CallerPass<FamilySourceQuery<Schema, Family>, FamilySourceValue<Schema, Family>>,
@@ -175,6 +176,7 @@ where
             request_scope,
             delivery_branch,
             &wave_authority,
+            performed,
             request_admission,
         )? {
             return Ok(CallerPass::Answer(advance));
@@ -193,6 +195,7 @@ where
     >(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
+        _readiness: super::super::required_wave::performed::FreshReadiness,
 
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
