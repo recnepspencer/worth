@@ -71,6 +71,19 @@ fn reduction_shape_uses_identity_digest_for_a_cancelling_float_pair() {
 }
 
 #[test]
+fn every_changed_reduction_leaf_reaches_the_root_aggregate() {
+    let (mut tree, _) = from_plan(plan(&[1, 2, 3]), vec![1_u64, 2, 3], 0, sum).unwrap();
+    assert_eq!(*tree.result(), 6);
+    tree.update(id(1), 10).unwrap();
+    assert_eq!(tree.leaf(id(1)), Some(&10));
+    assert_eq!(
+        *tree.result(),
+        15,
+        "every changed reduction leaf must reach the root aggregate"
+    );
+}
+
+#[test]
 fn a_leaf_reads_the_value_its_partition_holds() {
     let (mut tree, _) = from_plan(plan(&[3, 5, 9]), vec![30_u64, 50, 90], 0, sum).unwrap();
 
