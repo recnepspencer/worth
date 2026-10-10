@@ -8,7 +8,7 @@ use canonical_bits::visit_exact;
 pub use canonical_bits::CanonicalBits;
 
 use crate::{
-    authority::ExecutionResourceLease,
+    authority::{ExecutionResourceLease, LeaseDenial},
     backend::{
         enter_retained_memory, run_admitting_scope, run_checked_batch,
         run_checked_batch_with_charge, run_invoking_scope, AdmittedBatch, BackendKind,
@@ -64,7 +64,8 @@ where
 {
     let retained_bytes = batch
         .retained_result_bytes::<R>()
-        .ok_or(OracleMismatch::Stop)?;
+        .ok_or_else(LeaseDenial::charged_bytes_overflow)
+        .map_err(|_| OracleMismatch::Stop)?;
     let expected_retained = lease
         .reserve_retained_memory(retained_bytes)
         .map_err(|_| ComparisonStop::refused().finish())?;
@@ -127,7 +128,9 @@ fn same_bits_with_contract<T: CanonicalBits + ?Sized>(
     actual: &T,
 ) -> Result<bool, ComparisonStop> {
     let length = expected.canonical_len().ok_or(OracleMismatch::Stop)?;
-    let bytes = u64::try_from(length).map_err(|_| OracleMismatch::Stop)?;
+    let bytes = u64::try_from(length)
+        .map_err(|_| LeaseDenial::charged_bytes_overflow())
+        .map_err(|_| OracleMismatch::Stop)?;
     let _reservation = lease
         .reserve_retained_memory(bytes)
         .map_err(|_| ComparisonStop::refused())?;
@@ -144,7 +147,9 @@ fn same_bits_with_contract<T: CanonicalBits + ?Sized>(
     }
     if let Some(predicate) = lease.equivalence_predicate() {
         let candidate_len = actual.canonical_len().ok_or(OracleMismatch::Stop)?;
-        let candidate_bytes = u64::try_from(candidate_len).map_err(|_| OracleMismatch::Stop)?;
+        let candidate_bytes = u64::try_from(candidate_len)
+            .map_err(|_| LeaseDenial::charged_bytes_overflow())
+            .map_err(|_| OracleMismatch::Stop)?;
         let _candidate_reservation = lease
             .reserve_retained_memory(candidate_bytes)
             .map_err(|_| ComparisonStop::refused())?;

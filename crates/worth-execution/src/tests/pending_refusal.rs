@@ -35,7 +35,7 @@ fn a_real_nested_join_records_work_and_span_counter_overflow() {
 }
 
 #[test]
-fn declared_size_overflow_is_computation_owned_in_both_patterns() {
+fn swallowed_declared_size_overflow_latches_request_in_both_patterns() {
     use crate::{DecomposeKernelEditions, ExecutionDecompose, InterfaceSolution, InteriorResult};
     let _guard = TEST_LOCK.lock().unwrap_or_else(|error| error.into_inner());
     let lease = authority().request_lease(request(1, 2_000, 100)).unwrap();
@@ -101,16 +101,13 @@ fn declared_size_overflow_is_computation_owned_in_both_patterns() {
                         })
                     ));
                 }
-                Err::<(), _>(KernelFailure::Domain(()))
+                Ok::<_, KernelFailure<()>>(())
             });
             assert!(inner.result.is_err());
-            assert_eq!(
-                parent.take_nested_computation_stop(),
-                Some(crate::NestedComputationStop::DomainFailure)
-            );
+            assert_eq!(parent.take_nested_computation_stop(), None);
             Ok::<_, KernelFailure<()>>(())
         });
-        assert!(outer.result.is_ok());
+        assert!(outer.result.is_err());
     }
 }
 

@@ -16,9 +16,10 @@
 //! | Structural span arithmetic | Fact: latch | `KernelContext::apply_structural_span` |
 //! | Partition work sum | Fact: latch | `KernelContext::stop_request` |
 //! | Framework/reduction counters | Fact: latch | `request_stop` |
+//! | Charged-byte and size counters | Fact: latch | `LeaseDenial::charged_bytes_overflow` |
 //!
 //! Handed refusals mark the invoking run; framework narrowing marks nothing.
-//! Computation-size arithmetic and structural-metric mismatches mark nothing.
+//! Size-counter overflows latch Request; structural-metric mismatches mark nothing.
 //! Request facts latch immediately, independently of whether an error is swallowed.
 
 /// A nested failure owned by the computation, rather than its request.

@@ -60,7 +60,7 @@ fn successful_certification_does_not_clear_an_earlier_kernel_question() {
 }
 
 #[test]
-fn computation_size_overflow_and_pure_policy_conversion_remain_takeable() {
+fn size_overflow_is_request_owned_but_pure_policy_conversion_remains_takeable() {
     let _guard = TEST_LOCK.lock().unwrap_or_else(|error| error.into_inner());
     let lease = authority().request_lease(request(1, 1_000, 100)).unwrap();
     for size_overflow in [false, true] {
@@ -91,11 +91,15 @@ fn computation_size_overflow_and_pure_policy_conversion_remain_takeable() {
             assert!(inner.result.is_err());
             assert_eq!(
                 parent.take_nested_computation_stop(),
-                Some(NestedComputationStop::DomainFailure)
+                if size_overflow {
+                    None
+                } else {
+                    Some(NestedComputationStop::DomainFailure)
+                }
             );
             Ok::<_, KernelFailure<()>>(())
         });
-        assert!(outer.result.is_ok());
+        assert_eq!(outer.result.is_err(), size_overflow);
     }
 }
 

@@ -131,12 +131,12 @@ where
             let result = self.max_staged_bytes.checked_mul(2)?.checked_add(tree)?;
             Some((retained, result))
         });
-        let Some((retained_bytes, max_result_bytes)) = bound else {
-            return Err(DecomposeRunFailure {
+        let (retained_bytes, max_result_bytes) = bound
+            .ok_or_else(LeaseDenial::charged_bytes_overflow)
+            .map_err(|_| DecomposeRunFailure {
                 cause: DecomposeFailure::Input(DecomposeInputDenial::MemoryOverflow),
                 total_report: empty_report(),
-            });
-        };
+            })?;
         let stage = Cell::new(DecomposeStage::Interior);
         let fallback = Cell::new(None);
         let scope = run_admitting_scope(
