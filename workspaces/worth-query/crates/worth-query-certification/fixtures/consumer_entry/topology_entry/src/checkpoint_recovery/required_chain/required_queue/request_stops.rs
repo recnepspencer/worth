@@ -9,9 +9,9 @@ use worth_query_host::facade::application_contribution::{
 use worth_query_host::facade::primary_graph::WorthQueryOutputDemandRecoveryPosture;
 
 /// Advances the middle consumer on a request that `$cancel` stops, and checks
-/// it meets that request's own stop after `$decisions` middle-row decisions.
+/// it meets `$expected_kind` after `$decisions` middle-row decisions.
 macro_rules! cancelled_middle_advance {
-    ($application:expr, $principal:expr, $demand:expr, $cancel:expr, $decisions:expr) => {{
+    ($application:expr, $principal:expr, $demand:expr, $cancel:expr, $decisions:expr, $expected_kind:expr) => {{
         let cancellation = authentication::WorthQueryCancellationSource::new();
         let cancelled_scope = authentication::WorthQueryRequestScope::new(
             Instant::now() + Duration::from_secs(120),
@@ -22,20 +22,18 @@ macro_rules! cancelled_middle_advance {
         let cancel: fn(authentication::WorthQueryCancellationSource) = $cancel;
         cancel(cancellation);
         let stopped = $demand.advance(&cancelled);
+        let expected_kind = $expected_kind;
         assert!(
             matches!(
                 &stopped,
                 Err(worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(denial))
-                    if if $decisions == 0 {
-                        denial.kind() == WorthQueryOutputDemandDenialKind::ExecutionRequest(
-                            WorthQueryAdvancementDenial::Interrupted(
-                                WorthQueryManagedComputationInterruption::Cancelled,
-                            ),
-                        ) && denial.recovery_posture() == WorthQueryOutputDemandRecoveryPosture::Terminal
-                            && denial.subject() == "request admission"
-                    } else {
-                        denial.kind() == WorthQueryOutputDemandDenialKind::Cancelled
-                    }
+                    if denial.kind() == expected_kind
+                        && match expected_kind {
+                            WorthQueryOutputDemandDenialKind::ExecutionRequest(_) =>
+                                denial.recovery_posture() == WorthQueryOutputDemandRecoveryPosture::Terminal
+                                    && denial.subject() == "request admission",
+                            _ => true,
+                        }
             ),
             "the cancelled request meets its own stop: {:?}",
             stopped.as_ref().err()
@@ -62,7 +60,8 @@ macro_rules! cancelled_inside_middle_refresh {
                 "anchor-b",
                 cancellation
             ),
-            1
+            1,
+            WorthQueryOutputDemandDenialKind::Cancelled
         )
     };
 }
@@ -113,14 +112,22 @@ fn a_cancelled_caller_retries_its_own_successor_on_its_next_advance() {
     let request = application.request(&principal, &scope);
     let (mut a, mut b, mut c, mut d) = chain_with_unrelated!(application, request);
     let mut root_reading = Reading::default();
-    root_reading.contacts(
-        settled_in_one_advance!(a, request, "the initial root reading")
-            .producer_contacts_in_this_demand(),
+    assert_eq!(
+        root_reading.contacts(
+            settled_in_one_advance!(a, request, "the initial root reading")
+                .producer_contacts_in_this_demand(),
+        ),
+        1,
+        "the root baseline includes exactly its initial settlement"
     );
     let mut middle_reading = Reading::default();
-    middle_reading.contacts(
-        settled_in_one_advance!(b, request, "the initial middle reading")
-            .producer_contacts_in_this_demand(),
+    assert_eq!(
+        middle_reading.contacts(
+            settled_in_one_advance!(b, request, "the initial middle reading")
+                .producer_contacts_in_this_demand(),
+        ),
+        1,
+        "the middle baseline includes exactly its initial settlement"
     );
     change_root_input!(request, application, 2, 0x9176_3f80_u64);
     // A queue frame refreshes the root and leaves its readiness delivery
@@ -175,7 +182,12 @@ fn a_request_cancelled_before_it_advances_leaves_the_row_to_a_later_advance() {
         principal,
         b,
         |cancellation| cancellation.cancel(),
-        0
+        0,
+        WorthQueryOutputDemandDenialKind::ExecutionRequest(
+            WorthQueryAdvancementDenial::Interrupted(
+                WorthQueryManagedComputationInterruption::Cancelled,
+            ),
+        )
     );
     // The dependent of that row refreshes it on a later advance.
     settled_in_one_advance!(c, request, "the last consumer");

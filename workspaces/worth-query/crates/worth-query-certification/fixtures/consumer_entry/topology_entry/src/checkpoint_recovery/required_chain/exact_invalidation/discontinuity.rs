@@ -155,15 +155,24 @@ fn marks_older_than_the_retained_window_are_verified_in_full() {
         };
     }
     let refresh_c = interval_settled!(c);
+    let decisions_c = judge_decisions(&mut rings, at);
     let after_c = full_reads;
     let refresh_b = interval_settled!(b);
+    let decisions_b = judge_decisions(&mut rings, at);
     let after_b = full_reads;
     let refresh_a = interval_settled!(a);
+    let decisions_a = judge_decisions(&mut rings, at);
     let after_a = full_reads;
     let refresh = [refresh_c, refresh_b, refresh_a];
-    assert!(
-        judge_decisions(&mut rings, at) > 0,
-        "{at}: the middle consumer decides over the new root output"
+    assert_eq!(
+        [decisions_c, decisions_b, decisions_a],
+        [1, 0, 0],
+        "{at}: the middle consumer decides on the first advance, over the new root output"
+    );
+    assert_eq!(
+        after_c,
+        [1, 1],
+        "{at}: C's first advance verifies each far member once"
     );
     court.judge_chain(&rings[0], at);
     let before_far_call = full_reads;
@@ -186,8 +195,8 @@ fn marks_older_than_the_retained_window_are_verified_in_full() {
         settled!(court, b, at),
         settled!(court, a, at),
     ];
-    // C's earlier advance drains the required queue and verifies both far
-    // members once. Their own later advances only read the resulting marks.
+    // This per-call vector pins observed attribution for regression. The law
+    // is one full read per far member over the interval, asserted above.
     assert_eq!(
         far.map(|cost| (cost.producer_contacts, cost.source_queries)),
         [(0, 0), (0, 0)],
