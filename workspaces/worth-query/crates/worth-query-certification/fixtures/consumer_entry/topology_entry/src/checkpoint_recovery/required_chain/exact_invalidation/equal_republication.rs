@@ -14,7 +14,7 @@ fn a_consumer_of_an_equally_republished_root_decides_again_when_the_root_changes
     let request = application.request(&principal, &scope);
     let court = Court::new(&application, &request, 0x9176_3f00);
     let mut rings = vec![Ring::seeded(0)];
-    take_all_decisions();
+    Reading::decisions();
     let at = "the first settlement";
     {
         let mut a = root!(court, rings[0].key("a"), at);
@@ -71,7 +71,7 @@ fn a_held_root_follows_a_refresh_of_its_equal_republication() {
     let request = application.request(&principal, &scope);
     let court = Court::new(&application, &request, 0x9176_3f40);
     let mut rings = vec![Ring::seeded(0)];
-    take_all_decisions();
+    Reading::decisions();
     let at = "the first settlement";
     let mut a = root!(court, rings[0].key("a"), at);
     let mut b = consumer!(court, rings[0].key("b"), at);
@@ -116,7 +116,7 @@ fn an_equal_root_republication_clears_the_marks_below_it() {
     let request = application.request(&principal, &scope);
     let court = Court::new(&application, &request, 0x9176_3f80);
     let mut rings = vec![Ring::seeded(0)];
-    take_all_decisions();
+    Reading::decisions();
     let at = "the first settlement";
     let mut a = root!(court, rings[0].key("a"), at);
     let mut b = consumer!(court, rings[0].key("b"), at);

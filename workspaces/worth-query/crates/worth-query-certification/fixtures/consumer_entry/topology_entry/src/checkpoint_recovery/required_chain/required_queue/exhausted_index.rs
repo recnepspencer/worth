@@ -244,8 +244,9 @@ fn observed_chain_journey(invalidation_bytes: u64, observe: bool) -> Result<Jour
 
 /// A recorded journey's first stop is the index's own refusal; the recorder
 /// answers any other first stop as no index journey. After it a consumer whose
-/// upstream has no output is denied by the fixture's handler, and a row that
-/// refusal failed answers that its producer is unavailable. Nothing else
+/// upstream has no output is denied by the fixture's handler. A current-output
+/// retention refusal without a requested-output witness reaches a kept
+/// unavailable row through ExecutionDenied. Nothing else
 /// stops an advance, and no stop offers a retry.
 fn assert_index_stops(capacity: u64, stops: &[Stop]) {
     use WorthQueryOutputDemandDenialKind::{

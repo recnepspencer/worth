@@ -220,7 +220,14 @@ fn real_pending_refusal_keeps_idempotency_category_stage_and_evidence() {
                 for stage in [Stage::Idempotency, Stage::InvariantExecution] {
                     let application =
                         provider_session_kind_denied(kind, stage, "the refusing owner");
-                    assert_eq!(application.kind(), Application::ProviderRejected);
+                    assert_eq!(
+                        application.kind(),
+                        Application::ExecutionResource {
+                            denial: Resource::WorkExhausted,
+                            partition_identity: Some(1),
+                            policy_ancestor: None
+                        }
+                    );
                     assert_eq!(application.stage(), stage);
                     assert_eq!(
                         application.execution_denial_cause(),
@@ -253,4 +260,66 @@ fn nonallocation_session_evidence_preserves_the_mapped_detail_and_read_set_stage
     ));
     assert_eq!(read.stage(), Stage::ProviderCommit);
     assert_eq!(read.kind(), Application::SnapshotIdentityExhausted);
+}
+
+#[test]
+fn native_cause_context_and_commit_log_survive_application_kind_mapping() {
+    use worth_relational::facade::{
+        errors::{ErrorContext, ErrorOperation, RelationalSubsystem},
+        mvcc::TransactionCommitError,
+        transactions::{CommitExecutionDenial, CommitExecutionDenialKind, CommitLog, CommitPhase},
+    };
+    let mut log = CommitLog::new();
+    log.begin_phase(CommitPhase::AuthoritativeMutation);
+    let error = TransactionCommitError::Execution {
+        denial: CommitExecutionDenial {
+            kind: CommitExecutionDenialKind::Cause(worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted),
+            partition_identity: Some(23),
+        },
+        context: ErrorContext::new(
+            RelationalSubsystem::Transaction,
+            ErrorOperation::ApplyMutation,
+        ),
+        commit_log: log,
+    };
+    let failure = crate::domain_computation::WorthQueryProviderSessionFailure::new(
+        crate::domain_computation::WorthQueryProviderSessionDenialKind::ProviderRejected,
+        crate::domain_computation::WorthQueryProviderSessionProtocolStage::Commit,
+        error.detail(),
+        crate::domain_computation::WorthQueryProviderSessionProtocolCounters::default(),
+    )
+    .with_native_preparation_error(error.clone());
+    let Progression::Denied(denial) = provider_compare_denied(
+        crate::domain_computation::WorthQueryProviderCompareAndCommitDenial::ProviderSession(
+            failure.clone(),
+        ),
+    ) else {
+        panic!("preparation refusal must stay a denial");
+    };
+    assert_eq!(
+        denial.kind(),
+        Application::ExecutionResource {
+            denial: Resource::WorkExhausted,
+            partition_identity: Some(23),
+            policy_ancestor: None,
+        }
+    );
+    let cause = Session::ExecutionResource {
+        denial: Resource::WorkExhausted,
+        partition_identity: Some(23),
+        policy_ancestor: None,
+    };
+    assert_eq!(denial.execution_denial_cause(), Some(Ok(cause)));
+    let earlier = provider_session_kind_denied(cause, Stage::Idempotency, error.detail())
+        .with_provider_session_failure(failure);
+    assert_eq!(earlier.kind(), denial.kind());
+    assert_eq!(
+        earlier.execution_denial_cause(),
+        denial.execution_denial_cause()
+    );
+    assert_eq!(earlier.stage(), Stage::Idempotency);
+    assert_eq!(earlier.native_preparation_error(), Some(&error));
+    assert_eq!(denial.stage(), Stage::ProviderCommit);
+    assert_eq!(denial.detail(), Some(error.detail().as_str()));
+    assert_eq!(denial.native_preparation_error(), Some(&error));
 }
