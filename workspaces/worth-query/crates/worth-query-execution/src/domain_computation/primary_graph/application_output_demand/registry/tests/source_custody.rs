@@ -5,9 +5,7 @@ use crate::domain_computation::primary_graph::application_output_demand::registr
     source_custody::root_revision_order, BoundOutputSource, PreparedOutputRootKind, SourceCustody,
 };
 
-fn real_scope_and_occurrence(
-    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
-) -> (
+fn real_scope_and_occurrence() -> (
     crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
     worth_runtime_world::facade::ProductBranchIncarnation,
 ) {
@@ -15,6 +13,9 @@ fn real_scope_and_occurrence(
         crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
             true,
         );
+    world.application.with_host_advancement(|phase| {
+        let custody = phase.test_host_request();
+        let phase_custody = &custody;
     let request = crate::domain_computation::primary_graph::tests::fixture::live_scope();
     let account =
         crate::domain_computation::primary_graph::tests::application_attempt::resolved_account(
@@ -30,12 +31,13 @@ fn real_scope_and_occurrence(
         .admit_product_branch(world.application.product_runtime().default_branch())
         .expect("the fixture product occurrence is live");
     (scope, product.observation().lifecycle_incarnation())
+    }).expect("the fixture source read owns its host call")
 }
 
 #[test]
 fn newer_root_retires_only_its_matching_source() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
-        let (scope, occurrence) = real_scope_and_occurrence(&host_custody);
+    {
+        let (scope, occurrence) = real_scope_and_occurrence();
         let older = BoundOutputSource {
             scope,
             identity: key("producer", 5, 1).source,
@@ -76,19 +78,19 @@ fn newer_root_retires_only_its_matching_source() {
             custody.retired.is_none(),
             "one stale root cannot retire its sibling custody"
         );
-    })
+    }
 }
 
 #[test]
 fn completed_multi_root_custody_waits_for_token_and_active_record() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+    {
         let receipt = crate::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
         let commit = receipt
             .committed_product_publication()
             .composite_commit()
             .clone();
         let occurrence = receipt.product_branch().occurrence();
-        let (scope, _) = real_scope_and_occurrence(&host_custody);
+        let (scope, _) = real_scope_and_occurrence();
         let first = BoundOutputSource {
             scope,
             identity: key("producer", 5, 1).source,
@@ -130,18 +132,18 @@ fn completed_multi_root_custody_waits_for_token_and_active_record() {
         ));
         state.prune_completed_custody();
         assert!(state.source_custody.is_empty());
-    })
+    }
 }
 
 #[test]
 fn fully_superseded_multi_root_custody_prunes_after_its_last_token() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+    {
         let receipt = crate::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
         let commit = receipt
             .committed_product_publication()
             .composite_commit()
             .clone();
-        let (scope, _) = real_scope_and_occurrence(&host_custody);
+        let (scope, _) = real_scope_and_occurrence();
         let first = BoundOutputSource {
             scope,
             identity: key("producer", 5, 1).source,
@@ -178,5 +180,5 @@ fn fully_superseded_multi_root_custody_prunes_after_its_last_token() {
         state.source_custody.get_mut(&commit).unwrap().token_count = 0;
         state.prune_completed_custody();
         assert!(state.source_custody.is_empty());
-    })
+    }
 }
