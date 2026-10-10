@@ -183,7 +183,7 @@ where
             return self.no_effect(attempt, cause);
         }
 
-        let relational = match self.execute_relational(&mut attempt) {
+        let relational = match self.execute_relational(execution, &mut attempt) {
             Ok(progress) => progress,
             Err(RelationalExecutionFailure {
                 cause,

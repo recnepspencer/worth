@@ -22,6 +22,7 @@ where
     /// is a separate owner operation and never reaches this path.
     pub(super) fn execute_relational(
         &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
         attempt: &mut crate::publication::ReservedCompositePublicationAttempt,
     ) -> Result<RelationalAttemptProgress, RelationalExecutionFailure> {
         match attempt.plan().relational().posture() {
@@ -29,11 +30,20 @@ where
                 Ok(RelationalAttemptProgress::untouched())
             }
             crate::publication::RelationalComponentPlanPosture::PublishPrepared => {
-                let candidate = attempt
-                    .take_relational_candidate()
-                    .ok_or_else(|| pre_effect_failure(NoEffectCause::PreEffectFailure))?;
-                attempt.counters_mut().record_relational_owner_contact();
-                self.publish_relational_candidate(attempt, candidate)
+                // The candidate already owns its publication reservation. The
+                // caller's request still admits this owner contact; no new
+                // backing, speculative work reserve or post-effect refusal is
+                // introduced around the prepared publication.
+                execution
+                    .run(worth_execution::ExecutionWorkCeiling::new(0), |_| {
+                        let candidate = attempt
+                            .take_relational_candidate()
+                            .ok_or_else(|| pre_effect_failure(NoEffectCause::PreEffectFailure))?;
+                        attempt.counters_mut().record_relational_owner_contact();
+                        self.publish_relational_candidate(attempt, candidate)
+                    })
+                    .map_err(|denial| pre_effect_failure(NoEffectCause::ExecutionRequest(denial)))?
+                    .0
             }
             crate::publication::RelationalComponentPlanPosture::AdoptSettled => attempt
                 .take_settled_relational_adoption()

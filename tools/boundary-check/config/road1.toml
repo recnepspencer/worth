@@ -1590,3 +1590,17 @@ kind = "thread-spawn"
 count = 1
 category = "certification-harness"
 reason = "Test operation control holds the real Product reference write lock with one bounded, joined actor to verify final-currentness contention and cancellation."
+
+[[request_constructor_denials]]
+crate_root = "crates/worth-signal"
+host_entry = "src/data/host_execution.rs"
+guidance = "Borrow the request from the caller; the declared host entry takes the host policy."
+
+[[request_constructor_denials]]
+crate_root = "crates/worth-runtime-bridge"
+host_entry = "src/host_execution.rs"
+guidance = "Borrow the request from the caller; the declared host entry takes the host policy."
+
+[[request_constructor_denials]]
+crate_root = "crates/worth-runtime-world"
+guidance = "Borrow the request from the caller; the declared host entry takes the host policy."

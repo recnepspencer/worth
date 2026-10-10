@@ -2,6 +2,8 @@
 /// no product reference moved.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryGeneratedOutputPublicationNoEffectCause {
+    /// The caller request refused admission before owner contact.
+    ExecutionRequest(worth_execution::WorkCeilingDenial),
     /// The product head moved from the expected head.
     StaleExpectedProductHead,
     /// The publication was cancelled before the first owner effect.
@@ -50,6 +52,9 @@ const fn map_cause(
 ) -> WorthQueryGeneratedOutputPublicationNoEffectCause {
     use worth_runtime_world::facade::NoEffectCause as WorldCause;
     match cause {
+        WorldCause::ExecutionRequest(cause) => {
+            WorthQueryGeneratedOutputPublicationNoEffectCause::ExecutionRequest(cause)
+        }
         WorldCause::StaleExpectedProductHead => {
             WorthQueryGeneratedOutputPublicationNoEffectCause::StaleExpectedProductHead
         }

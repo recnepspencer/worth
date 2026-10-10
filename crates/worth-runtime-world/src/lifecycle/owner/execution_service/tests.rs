@@ -390,4 +390,6 @@ use owner_effect_assertion::assert_retains_only_the_relational_effect;
 
 #[path = "tests/clock.rs"]
 mod clock;
+#[path = "tests/request_custody.rs"]
+mod request_custody;
 use clock::MutableClock;

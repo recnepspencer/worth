@@ -232,19 +232,28 @@ fn world_no_effect(
         NoEffectCause::StaleExpectedProductHead => Stop::ProductStale(
             crate::domain_computation::WorthQueryProductStaleApplication::new(no_effect),
         ),
-        NoEffectCause::CancelledBeforeEffect => {
-            Stop::ControlStopped(WorthQueryProviderSessionCommitControlStopped::new(
-                WorthQueryProviderSessionControlStopKind::Cancelled,
-                "World publication cancelled before effect",
-            ))
-        }
-        NoEffectCause::DeadlineBeforeEffect => {
-            Stop::ControlStopped(WorthQueryProviderSessionCommitControlStopped::new(
-                WorthQueryProviderSessionControlStopKind::TimedOut,
-                "World publication deadline elapsed before effect",
-            ))
-        }
-        _ => Stop::NoEffect(no_effect),
+        NoEffectCause::CancelledBeforeEffect
+        | NoEffectCause::ExecutionRequest(worth_execution::WorkCeilingDenial::Stopped(
+            worth_execution::MapKernelStop::Cancelled,
+        )) => Stop::ControlStopped(WorthQueryProviderSessionCommitControlStopped::new(
+            WorthQueryProviderSessionControlStopKind::Cancelled,
+            "World publication cancelled before effect",
+        )),
+        NoEffectCause::DeadlineBeforeEffect
+        | NoEffectCause::ExecutionRequest(worth_execution::WorkCeilingDenial::Stopped(
+            worth_execution::MapKernelStop::DeadlineElapsed,
+        )) => Stop::ControlStopped(WorthQueryProviderSessionCommitControlStopped::new(
+            WorthQueryProviderSessionControlStopKind::TimedOut,
+            "World publication deadline elapsed before effect",
+        )),
+        NoEffectCause::ExecutionRequest(_)
+        | NoEffectCause::OwnerDeniedBeforeEffect
+        | NoEffectCause::CorrespondenceRebindRequired
+        | NoEffectCause::ReferenceGenerationExhausted
+        | NoEffectCause::CapacityExhausted
+        | NoEffectCause::OwnerUnavailable
+        | NoEffectCause::RelationalDeferred(_)
+        | NoEffectCause::PreEffectFailure => Stop::NoEffect(no_effect),
     }
 }
 impl WorthQueryCommittedApplicationSession {
