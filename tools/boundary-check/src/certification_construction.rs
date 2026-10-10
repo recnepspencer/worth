@@ -1,6 +1,6 @@
 use crate::diagnostics::{Diagnostic, DiagnosticCode};
 use proc_macro2::{TokenStream, TokenTree};
-use std::{collections::BTreeSet, fs, path::Path};
+use std::collections::BTreeSet;
 
 const BRIDGE: &[&str] = &[
     "registered_authoritative_source",
@@ -10,29 +10,6 @@ const BRIDGE: &[&str] = &[
 ];
 const LOOKUP: &str = "certification_query";
 const CALLERS: &str = include_str!("../config/certification-construction-callers.txt");
-
-pub(crate) fn validate(root: &Path) -> Vec<Diagnostic> {
-    let mut diagnostics = Vec::new();
-    let files = match crate::governed_sources::files_under(root) {
-        Ok(files) => files,
-        Err(error) => return vec![failure(".", error)],
-    };
-    for file in files
-        .into_iter()
-        .filter(|file| file.extension().is_some_and(|ext| ext == "rs"))
-    {
-        let path = file
-            .strip_prefix(root)
-            .unwrap()
-            .to_string_lossy()
-            .replace('\\', "/");
-        match fs::read_to_string(&file) {
-            Ok(source) => diagnostics.extend(source_references(&path, &source)),
-            Err(error) => diagnostics.push(failure(&path, error.to_string())),
-        }
-    }
-    diagnostics
-}
 
 fn failure(path: &str, message: impl Into<String>) -> Diagnostic {
     Diagnostic::new(
@@ -58,7 +35,7 @@ fn permitted(path: &str, name: &str) -> bool {
             .any(|(allowed_class, allowed_path)| allowed_class == class && allowed_path == path)
 }
 
-fn source_references(path: &str, source: &str) -> Vec<Diagnostic> {
+pub(crate) fn source_references(path: &str, source: &str) -> Vec<Diagnostic> {
     if !BRIDGE
         .iter()
         .chain([&LOOKUP])

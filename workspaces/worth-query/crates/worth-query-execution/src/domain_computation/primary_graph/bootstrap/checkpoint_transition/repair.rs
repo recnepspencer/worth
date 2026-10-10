@@ -52,12 +52,6 @@ impl WorthQueryCheckpointTransitionRecovery {
         }
     }
 
-    #[doc(hidden)]
-    pub fn fail_next_durable_append_for_test(&self) {
-        self.graph
-            .with_runtime(|runtime| runtime.fail_next_durable_append_for_test());
-    }
-
     pub(super) fn new(
         graph: WorthQueryPrimaryGraphIntegrationHandle,
         publication: WorthQueryPrimaryGraphPublication,
@@ -145,3 +139,5 @@ impl WorthQueryCheckpointTransitionRecovery {
         self.capture_denial = Some(denial);
     }
 }
+
+mod certification_controls;

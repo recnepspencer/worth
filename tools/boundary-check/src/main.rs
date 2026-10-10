@@ -6,6 +6,7 @@ mod configured_source_dependency_allowlists;
 mod configured_source_identifier_denials;
 mod configured_source_owner_isolations;
 mod context_workspace_rules;
+mod control_seal;
 mod dependency_rules;
 mod diagnostics;
 mod facade_docs;
@@ -16,6 +17,7 @@ mod manifest_types;
 mod naming;
 mod one_build;
 mod query_audience;
+mod sealed_sources;
 mod seed_contracts;
 mod snapshots;
 mod source_rules;
@@ -133,7 +135,7 @@ fn run(
 
     let mut diagnostics = Vec::<Diagnostic>::new();
     diagnostics.extend(one_build::validate(&root));
-    diagnostics.extend(certification_construction::validate(&root));
+    diagnostics.extend(sealed_sources::validate(&root));
     diagnostics.extend(validate_hook_authority(&root));
     diagnostics.extend(validate_context_workspaces(
         &root,

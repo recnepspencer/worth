@@ -1,0 +1,21 @@
+# Law 1, reach: owner prefix and sealed control file. Every public entry point is derived.
+crates/worth-relational/ crates/worth-relational/src/runtime/durability_fault_injection.rs
+crates/worth-relational/ crates/worth-relational/src/runtime/operation_control/fault_injection.rs
+crates/worth-signal/ crates/worth-signal/src/branch/owner_services/operation_control.rs
+crates/worth-signal/ crates/worth-signal/src/logic/transaction/runtime/state/runtime_state/operation_control.rs
+crates/worth-runtime-world/ crates/worth-runtime-world/src/lifecycle/operation_control.rs
+crates/worth-runtime-world/ crates/worth-runtime-world/src/lifecycle/operation_control/currentness_hold.rs
+crates/worth-runtime-bridge/ crates/worth-runtime-bridge/src/certification.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_runtime/certification_controls.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_runtime/operation_control.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_runtime/operation_control/attempt_registration.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/progression/caller_pass_observation.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_output_demand/registry/join_observation.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/output_lineage/invalidation/delivery_observation.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/request_execution/test_placement.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/bootstrap/checkpoint_transition/certification_controls.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/partitioned_computation/installed/certification.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/execution_runtime/product_world/runtime/operation_control.rs
+workspaces/worth-query-bank-world/crates/bank-server/ workspaces/worth-query-bank-world/crates/bank-server/src/identity_runtime/certification_controls.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/invalidation_equivalence_control.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/bootstrap/checkpoint_transition/repair/certification_controls.rs

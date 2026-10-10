@@ -5,7 +5,7 @@ installation workspaces/worth-query/crates/worth-query-certification/examples/pr
 installation workspaces/worth-query/crates/worth-query-certification/tests/granular_invalidation/financial_runtime_world/host/installation.rs
 installation workspaces/worth-query/crates/worth-query-certification/tests/runtime_world_branching/cost/live.rs
 installation workspaces/worth-query/crates/worth-query-certification/tests/runtime_world_branching/query_probe.rs
-installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/admission_preparation.rs
+installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/admission_preparation/tests.rs
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/continuation/tests/governed_authority.rs
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/continuation/tests/support.rs
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/derived_view/registration/collection/pair/reconstruct_parallel/read_ceiling_tests/map_ceiling.rs

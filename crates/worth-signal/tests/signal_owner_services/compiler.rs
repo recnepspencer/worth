@@ -21,7 +21,8 @@ fn owner_services_public_facade_and_negative_fences_are_current() {
     tests.compile_fail("tests/signal_owner_services/ui/generic_marker_cannot_issue_basis.rs");
     tests.compile_fail("tests/signal_owner_services/ui/forged_basis_is_not_public.rs");
     tests.compile_fail("tests/signal_owner_services/ui/private_cell_is_not_facade.rs");
-    tests.pass("tests/signal_owner_services/ui/ordinary_build_has_operation_control.rs");
+    // Law 1, reach: boundary-check control_seal tests replace the retired
+    // default_build_has_no_operation_control feature-absence contract.
     tests.compile_fail("tests/signal_owner_services/ui/unavailable_is_not_constructible.rs");
     tests.compile_fail("tests/signal_owner_services/ui/ports_are_not_constructible.rs");
 }

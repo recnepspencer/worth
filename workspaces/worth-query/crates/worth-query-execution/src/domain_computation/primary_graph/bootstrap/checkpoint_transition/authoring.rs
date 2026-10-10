@@ -20,14 +20,6 @@ pub struct WorthQueryCheckpointMigrationWriter<'installation, Schema> {
 impl<'installation, Schema: ApplicationSchema>
     WorthQueryCheckpointMigrationWriter<'installation, Schema>
 {
-    #[doc(hidden)]
-    pub fn fail_next_durable_append_for_test(&self) {
-        self.graph
-            .graph
-            .integration_handle()
-            .with_runtime(|runtime| runtime.fail_next_durable_append_for_test());
-    }
-
     pub(super) fn new(
         graph: &'installation mut WorthQueryPrimaryGraphBootstrap<Schema>,
         resources: WorthQueryCheckpointTransitionResources,

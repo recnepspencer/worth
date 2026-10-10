@@ -28,6 +28,7 @@ pub(crate) enum DiagnosticCode {
     Bc7006LifecycleStateDefault,
     Bc7007ThreadingBoundary,
     Bc7008CertificationConstructionSeal,
+    Bc7009ControlSeal,
     Bc9001OneBuild,
     Bc8001SnapshotBaseline,
     Bc8002FacadeSnapshotDrift,
@@ -38,7 +39,7 @@ pub(crate) enum DiagnosticCode {
 
 impl DiagnosticCode {
     #[cfg(test)]
-    pub(crate) const ALL: [Self; 31] = [
+    pub(crate) const ALL: [Self; 32] = [
         Self::Bc1001IllegalCrateName,
         Self::Bc1002UnreservedDomain,
         Self::Bc2001BandDependencyViolation,
@@ -64,6 +65,7 @@ impl DiagnosticCode {
         Self::Bc7006LifecycleStateDefault,
         Self::Bc7007ThreadingBoundary,
         Self::Bc7008CertificationConstructionSeal,
+        Self::Bc7009ControlSeal,
         Self::Bc9001OneBuild,
         Self::Bc8001SnapshotBaseline,
         Self::Bc8002FacadeSnapshotDrift,
@@ -99,6 +101,7 @@ impl DiagnosticCode {
             Self::Bc7006LifecycleStateDefault => "BC7006_LIFECYCLE_STATE_DEFAULT",
             Self::Bc7007ThreadingBoundary => "BC7007_THREADING_BOUNDARY",
             Self::Bc7008CertificationConstructionSeal => "BC7008_CERTIFICATION_CONSTRUCTION_SEAL",
+            Self::Bc7009ControlSeal => "BC7009_CONTROL_SEAL",
             Self::Bc9001OneBuild => "BC9001_ONE_BUILD",
             Self::Bc8001SnapshotBaseline => "BC8001_SNAPSHOT_BASELINE",
             Self::Bc8002FacadeSnapshotDrift => "BC8002_FACADE_SNAPSHOT_DRIFT",
@@ -127,6 +130,7 @@ impl DiagnosticCode {
             Self::Bc7006LifecycleStateDefault => "tools/boundary-check/config/road1.toml [[truth_type_denials]]; name the variant at each construction site instead of a Default",
             Self::Bc7007ThreadingBoundary => "tools/boundary-check/config/road1.toml [[threading_sites]]; parallel work belongs in worth-execution, while every non-compute thread needs an exact category and reason",
             Self::Bc7008CertificationConstructionSeal => "tools/boundary-check/config/certification-construction-callers.txt; sealed construction references belong only to owners and the closed caller paths",
+            Self::Bc7009ControlSeal => "tools/boundary-check/config/control-files.txt; Law 1, reach: control references belong only to owners and closed test/certification callers",
             Self::Bc9001OneBuild => "tools/boundary-check/src/one_build.rs; remove the build predicate or feature declaration and use an owned inert control",
             Self::Bc8001SnapshotBaseline | Self::Bc8002FacadeSnapshotDrift | Self::Bc8003CrateDagSnapshotDrift => "tools/boundary-check/snapshots/; regenerate the governed snapshot explicitly with boundary-check --update-snapshots",
             Self::Bc8004FacadeDocMissing | Self::Bc8005FacadeDocDebtStale => "tools/boundary-check/snapshots/facade-doc-debt.toml; document the named definition with a `///` comment, or delete the paid debt entry",

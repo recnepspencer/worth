@@ -15,7 +15,7 @@ fn mixed_same_head_race_has_one_winner_and_preserves_signal_loser() {
     let relational_attempt = court.prepare_cargo(&root, "5");
     let mut context = court.context(&root);
     let port = court.world.publication_port();
-    let control = court.world.operation_control();
+    let control = court.world.world_operation_control_for_test();
     let signal = court
         .signal
         .owner_component_services()
