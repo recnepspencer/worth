@@ -52,20 +52,17 @@ fn bounded_provider_fixture_opener_refuses_before_direct_and_workflow_readmissio
             let before = restores();
             let direct_stop = host
                 .run_provider_fixture(|phase| {
-                    direct
-                        .take()
-                        .unwrap()
-                        .readmit_same_runtime(&phase, &runtime, &bridge)
+                    let yielded = direct.take().unwrap();
+                    let installed = yielded.fixture_phase(&phase.test_host_request());
+                    yielded.readmit_same_runtime(&installed, &runtime, &bridge)
                 })
                 .err()
                 .expect("zero request refuses before direct restore");
             let workflow_stop = host
                 .run_provider_fixture(|phase| {
-                    workflow.take().unwrap().readmit_same_runtime(
-                        &phase,
-                        &workflow_runtime,
-                        &workflow_bridge,
-                    )
+                    let yielded = workflow.take().unwrap();
+                    let installed = yielded.fixture_phase(&phase.test_host_request());
+                    yielded.readmit_same_runtime(&installed, &workflow_runtime, &workflow_bridge)
                 })
                 .err()
                 .expect("zero request refuses before workflow restore");
@@ -96,10 +93,9 @@ fn bounded_provider_fixture_opener_refuses_before_direct_and_workflow_readmissio
         let before = restores();
         let direct = host
             .run_provider_fixture(|phase| {
-                direct
-                    .take()
-                    .unwrap()
-                    .readmit_same_runtime(&phase, &runtime, &bridge)
+                let yielded = direct.take().unwrap();
+                let installed = yielded.fixture_phase(&phase.test_host_request());
+                yielded.readmit_same_runtime(&installed, &runtime, &bridge)
             })
             .unwrap();
         assert!(
@@ -115,11 +111,9 @@ fn bounded_provider_fixture_opener_refuses_before_direct_and_workflow_readmissio
         let before = restores();
         let workflow = host
             .run_provider_fixture(|phase| {
-                workflow.take().unwrap().readmit_same_runtime(
-                    &phase,
-                    &workflow_runtime,
-                    &workflow_bridge,
-                )
+                let yielded = workflow.take().unwrap();
+                let installed = yielded.fixture_phase(&phase.test_host_request());
+                yielded.readmit_same_runtime(&installed, &workflow_runtime, &workflow_bridge)
             })
             .unwrap();
         assert!(

@@ -103,6 +103,7 @@ fn governed_provider_start_classifies_denial_and_panic_before_execution() {
             WorthQueryOperationGraphAccess::Observe,
             StartProvider(StartBehavior::Panic),
         );
+        let installed_running_phase = execution.phase_for_direct(&running);
         let panic = match running.begin_graph_execution(
             &installed_running_phase,
             &graph,

@@ -96,6 +96,7 @@ fn workflow_pending_and_paused_abandonment_release_output_and_queue() {
         assert!(terminal.provider_work().peak_retained_bytes() > 0);
 
         let (running, graph) = workflow_abandon_world();
+        let installed_running_phase = execution.phase_for_workflow(&running);
         let active =
             begin_workflow_projection(execution, running, &graph, "workflow-paused-abandon");
         let pending = match active.advance(&installed_running_phase) {

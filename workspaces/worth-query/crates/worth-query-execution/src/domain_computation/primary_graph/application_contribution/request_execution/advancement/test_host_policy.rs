@@ -64,9 +64,12 @@ impl<'scope> TestHostRequest<'scope> {
     }
 
     pub(super) fn from_installed(phase: &WorthQueryAdvancementPhase<'scope>) -> Self {
-        Self {
-            active: phase.active,
-            installed: Some((phase.source, phase.owner)),
+        match phase.source {
+            AdvancementSource::Bootstrap => Self::new(phase.active),
+            AdvancementSource::Relational(_) | AdvancementSource::ProductOwner(_) => Self {
+                active: phase.active,
+                installed: Some((phase.source, phase.owner)),
+            },
         }
     }
 
