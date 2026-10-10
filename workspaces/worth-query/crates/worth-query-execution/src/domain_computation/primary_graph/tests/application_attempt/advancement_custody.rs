@@ -156,14 +156,14 @@ fn product_transaction_refuses_zero_budgets_before_revalidation() {
             );
             assert_eq!(reports(), vec![Err(Denial::Resource(cause))]);
             assert_eq!(
-                world
+                &world
                     .application
-                    .with_host_advancement(
-                        |phase| world.selected_product(&phase.test_host_request())
+                    .product_runtime()
+                    .with_product_observation(
+                        world.application.product_runtime().default_branch(),
+                        |observation| Ok(observation.selected_commit().clone()),
                     )
-                    .expect("installed host call opens")
-                    .product()
-                    .selected_commit(),
+                    .expect("the owner returns the current fixed-size commit identity"),
                 &before_commit
             );
         }
