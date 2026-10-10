@@ -1,4 +1,5 @@
 //! Query and its runtime owners order declared identity, never Rust build identity.
+mod address_order;
 mod expression_identity;
 mod inventory;
 #[cfg(test)]
@@ -38,7 +39,7 @@ pub(super) fn validate(root: &std::path::Path) -> Result<Vec<Diagnostic>, String
     let mut diagnostics = Vec::new();
     for workspace in ["", "workspaces/worth-query"] {
         for governed in super::workspace_crates::discover_workspace_crates(root, workspace)? {
-            if CRATES.contains(&governed.package.as_str()) {
+            if CRATES.contains(&governed.package.as_str()) || governed.package == "worth-signal" {
                 let graph = super::crate_modules::parse_crate_modules(&governed)?;
                 diagnostics.extend(enforce(&governed, &graph));
             }
@@ -48,7 +49,7 @@ pub(super) fn validate(root: &std::path::Path) -> Result<Vec<Diagnostic>, String
 }
 
 fn enforce(governed: &GovernedCrate, graph: &ModuleGraph) -> Vec<Diagnostic> {
-    if !CRATES.contains(&governed.package.as_str()) {
+    if !CRATES.contains(&governed.package.as_str()) && governed.package != "worth-signal" {
         return Vec::new();
     }
     let files: Vec<_> = graph
@@ -58,6 +59,9 @@ fn enforce(governed: &GovernedCrate, graph: &ModuleGraph) -> Vec<Diagnostic> {
         .collect();
     findings(&files)
         .into_iter()
+        .filter(|finding| {
+            governed.package != "worth-signal" || finding.reason == "ordering impl reads an address"
+        })
         .map(|finding| {
             Diagnostic::new(
                 DiagnosticCode::Bc7009CanonicalOrder,

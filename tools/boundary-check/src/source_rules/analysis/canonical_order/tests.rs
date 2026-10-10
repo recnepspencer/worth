@@ -136,6 +136,16 @@ fn named_identity_lookup_orders_the_declaration() {
 }
 
 #[test]
+fn address_order_fixture_refuses_order_but_allows_equality_hashing() {
+    assert_eq!(
+        rejects(include_str!(
+            "../../../../tests/fixtures/canonical_order_rules/address_order.rs"
+        )),
+        ["ordering impl reads an address"; 3]
+    );
+}
+
+#[test]
 fn every_runtime_owner_is_in_scope() {
     let root =
         std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/canonical_order");

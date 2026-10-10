@@ -221,6 +221,14 @@ impl<'ast> Visit<'ast> for OrderingSites<'_> {
             path.segments
                 .last()
                 .is_some_and(|s| self.vocabulary.ordering.contains(&s.ident.to_string()))
+        }) && super::address_order::reads_address(item)
+        {
+            self.record(item.span().start().line, "ordering impl reads an address");
+        }
+        if item.trait_.as_ref().is_some_and(|(_, path, _)| {
+            path.segments
+                .last()
+                .is_some_and(|s| self.vocabulary.ordering.contains(&s.ident.to_string()))
         }) && self
             .local_fields
             .get(&self.item)
