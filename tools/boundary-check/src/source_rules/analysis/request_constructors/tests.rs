@@ -85,7 +85,7 @@ fn aliases_constructor_values_macros_and_raw_names_cannot_hide_mints() {
 }
 
 #[test]
-fn test_only_items_are_skipped_but_feature_selected_mints_are_production() {
+fn test_only_items_are_skipped_but_platform_selected_mints_are_production() {
     let rule = rule("worth-runtime-world");
     let source = r#"#[cfg(test)] mod tests { fn open() { SerialRequest::from_policy(&p,c,None); } }
         impl Owner { #[cfg(test)] fn open() { p.serial_request(c,None); } }
@@ -93,12 +93,85 @@ fn test_only_items_are_skipped_but_feature_selected_mints_are_production() {
     assert!(check_graphs(&[graph(source, None)], &rule).is_empty());
     assert!(!check_graphs(
         &[graph(
-            "#[cfg(feature = \"host\")] fn open() { SerialRequest::from_policy(&p,c,None); }",
+            "#[cfg(target_os = \"windows\")] fn open() { SerialRequest::from_policy(&p,c,None); }",
             None,
         )],
         &rule
     )
     .is_empty());
+}
+
+#[test]
+fn signal_wrapper_mint_mutant_is_refused_and_host_door_twin_is_accepted() {
+    let rule = rule("worth-signal");
+    let source =
+        "fn evaluate_host() { let request = declared_serial_request(policy); consume(request); }";
+    let refused = check_graphs(&[graph(source, rule.host_entry.as_deref())], &rule);
+    assert!(refused
+        .iter()
+        .any(|d| d.message().contains("declared_serial_request")));
+    for host_door in &rule.wrapper_callers {
+        let mut admitted = graph(source, rule.host_entry.as_deref());
+        admitted
+            .modules
+            .get_mut(&Vec::new())
+            .unwrap()
+            .relative_source = host_door.clone();
+        assert!(check_graphs(&[admitted], &rule).is_empty(), "{host_door}");
+        // Host-door files may call the wrapper, but cannot mint backing directly.
+        let mut direct = graph(
+            "fn door() { SerialRequest::from_policy(&p,c,None); }",
+            rule.host_entry.as_deref(),
+        );
+        direct.modules.get_mut(&Vec::new()).unwrap().relative_source = host_door.clone();
+        assert!(!check_graphs(&[direct], &rule).is_empty());
+    }
+    assert_eq!(rule.wrapper_callers.len(), 8);
+}
+
+#[test]
+fn carried_crates_refuse_unchecked_signal_doors_and_accept_checked_twins() {
+    for name in ["worth-runtime-bridge", "worth-runtime-world"] {
+        let rule = rule(name);
+        for source in [
+            "fn seam(g: &mut SignalGraph) { g.execute_prepared_plan(p, c, f); }",
+            "fn seam(g: &mut SignalRuntime) { g.target(n).run(c, f); }",
+            "use worth_signal::SignalRuntime as Runtime; fn seam(g: &mut Runtime) { let alias = g; alias.read(n,c,f); }",
+            "fn seam() { let graph = SignalGraph::new(); graph.read_many(n,c,f); }",
+            "use worth_signal::execute_prepared_plan as hidden; fn seam() { hidden(g,p,c,f); }",
+            "macro_rules! hidden { () => { g.evaluate_dirty(c,f); } }",
+            "type Alias = SignalRuntime; fn seam(g: &mut Alias) { g.r#read(n,c,f); }",
+            "fn seam(g: &mut SignalRuntime) { hidden!(g.target(n).run(c,f)); }",
+        ] {
+            let diagnostics = check_graphs(&[graph(source, rule.host_entry.as_deref())], &rule);
+            assert!(diagnostics.iter().any(|d| d.message().contains("unchecked Signal host door")), "{name}: {source}");
+        }
+        let checked = graph("fn seam(g: &mut SignalGraph, r: ExecutionRequest) { g.evaluate_checked(n,m,c,f,r); g.execute_prepared_plan_checked(p,c,f,r); }", rule.host_entry.as_deref());
+        assert!(check_graphs(&[checked], &rule).is_empty());
+        let unrelated = graph(
+            "fn seam(reader: Source) { reader.read(); worker.run(); }",
+            rule.host_entry.as_deref(),
+        );
+        assert!(check_graphs(&[unrelated], &rule).is_empty());
+    }
+    let config: Road1Config =
+        toml::from_str(include_str!("../../../../config/road1.toml")).unwrap();
+    for rule in config
+        .request_constructor_denials
+        .into_iter()
+        .filter(|r| r.crate_root.contains("worth-query"))
+    {
+        assert!(rule.carried_signal_only && rule.signal_doors_only);
+        assert!(!check_graphs(
+            &[graph(
+                "fn seam(g: SignalGraph) { g.execute_prepared_plan(p,c,f); }",
+                None
+            )],
+            &rule
+        )
+        .is_empty());
+        assert!(check_graphs(&[graph("fn seam(g: SignalGraph,r: ExecutionRequest) { g.execute_prepared_plan_checked(p,c,f,r); }", None)], &rule).is_empty());
+    }
 }
 
 #[test]

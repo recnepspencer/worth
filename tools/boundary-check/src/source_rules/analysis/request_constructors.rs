@@ -12,6 +12,7 @@ use std::collections::BTreeSet;
 use std::path::Path;
 use syn::visit::{self, Visit};
 use syn::{ImplItem, Item, TraitItem};
+mod signal_host_doors;
 
 pub(crate) fn enforce_request_constructor_denials(
     root: &Path,
@@ -38,19 +39,25 @@ fn check_graphs(graphs: &[ModuleGraph], rule: &RequestConstructorDenialConfig) -
         for item in module.items {
             visitor.visit_item(item);
         }
-        if visitor.found.is_empty() {
-            continue;
+        if rule.carried_signal_only {
+            diagnostics.extend(signal_host_doors::unchecked_references(module.items).into_iter().map(|(name, line)| Diagnostic::new(
+                DiagnosticCode::Bc7008RequestConstruction,
+                format!("{}/{}:{line}", rule.crate_root, module.relative_source),
+                format!("unchecked Signal host door `{name}` is unavailable to a carried-request crate: {}", rule.guidance),
+            )));
         }
         // An allowance names one file exactly, never a directory or item bag.
-        if rule
+        let at_host = rule
             .host_entry
             .as_deref()
-            .is_some_and(|host| module.sources().all(|source| source == host))
-        {
+            .is_some_and(|host| module.sources().all(|source| source == host));
+        if at_host && !visitor.found.is_empty() {
             host_seen = true;
-            continue;
         }
-        diagnostics.extend(visitor.found.into_iter().map(|(item, name, line)| Diagnostic::new(
+        diagnostics.extend(visitor.found.into_iter().filter(|(_, name, _)| {
+            if rule.signal_doors_only || at_host { return false; }
+            name != "declared_serial_request" || !module.sources().all(|source| rule.wrapper_callers.iter().any(|caller| caller == source))
+        }).map(|(item, name, line)| Diagnostic::new(
             DiagnosticCode::Bc7008RequestConstruction,
             format!("{}/{}:{line}", rule.crate_root, module.relative_source),
             format!("request backing name `{name}` in `{item}` is outside the declared host entry: {}", rule.guidance),
@@ -110,7 +117,10 @@ impl<'ast> Visit<'ast> for RequestBackingNames {
         let name = written.trim_start_matches("r#");
         // Deny the backing vocabulary too: a renamed import, type alias,
         // function-value constructor or macro cannot conceal the mint.
-        if matches!(name, "SerialRequest" | "serial_request") {
+        if matches!(
+            name,
+            "SerialRequest" | "serial_request" | "declared_serial_request"
+        ) {
             self.found.insert((
                 self.scope.join("::"),
                 name.to_owned(),

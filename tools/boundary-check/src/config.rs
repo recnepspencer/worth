@@ -43,6 +43,12 @@ pub(crate) struct Road1Config {
 pub(crate) struct RequestConstructorDenialConfig {
     pub(crate) crate_root: String,
     pub(crate) host_entry: Option<String>,
+    #[serde(default)]
+    pub(crate) wrapper_callers: Vec<String>,
+    #[serde(default)]
+    pub(crate) carried_signal_only: bool,
+    #[serde(default)]
+    pub(crate) signal_doors_only: bool,
     pub(crate) guidance: String,
 }
 

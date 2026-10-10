@@ -1594,13 +1594,91 @@ reason = "Test operation control holds the real Product reference write lock wit
 [[request_constructor_denials]]
 crate_root = "crates/worth-signal"
 host_entry = "src/data/host_execution.rs"
+wrapper_callers = [
+  "src/data/graph/runtime/execution.rs",
+  "src/logic/planner/planning/mod.rs",
+  "src/logic/planner/execution/prepared_plan.rs",
+  "src/logic/transaction/runtime/execution/runtime_execution/request.rs",
+  "src/logic/transaction/runtime/execution/runtime_execution/preparation.rs",
+  "src/logic/transaction/runtime/execution/runtime_execution/orchestration.rs",
+  "src/logic/transaction/runtime/execution/runtime_execution/effect_execution.rs",
+  "src/logic/transaction/runtime/execution/runtime_execution/access.rs",
+]
 guidance = "Borrow the request from the caller; the declared host entry takes the host policy."
 
 [[request_constructor_denials]]
 crate_root = "crates/worth-runtime-bridge"
+carried_signal_only = true
 host_entry = "src/host_execution.rs"
 guidance = "Borrow the request from the caller; the declared host entry takes the host policy."
 
 [[request_constructor_denials]]
 crate_root = "crates/worth-runtime-world"
+carried_signal_only = true
 guidance = "Borrow the request from the caller; the declared host entry takes the host policy."
+
+[[request_constructor_denials]]
+crate_root = "workspaces/worth-query/crates/worth-query"
+signal_doors_only = true
+carried_signal_only = true
+guidance = "Query carries its request to Signal checked doors; unchecked doors belong to Signal hosts."
+
+[[request_constructor_denials]]
+crate_root = "workspaces/worth-query/crates/worth-query-admission"
+signal_doors_only = true
+carried_signal_only = true
+guidance = "Query carries its request to Signal checked doors; unchecked doors belong to Signal hosts."
+
+[[request_constructor_denials]]
+crate_root = "workspaces/worth-query/crates/worth-query-certification"
+signal_doors_only = true
+carried_signal_only = true
+guidance = "Query carries its request to Signal checked doors; unchecked doors belong to Signal hosts."
+
+[[request_constructor_denials]]
+crate_root = "workspaces/worth-query/crates/worth-query-decl"
+signal_doors_only = true
+carried_signal_only = true
+guidance = "Query carries its request to Signal checked doors; unchecked doors belong to Signal hosts."
+
+[[request_constructor_denials]]
+crate_root = "workspaces/worth-query/crates/worth-query-declaration"
+signal_doors_only = true
+carried_signal_only = true
+guidance = "Query carries its request to Signal checked doors; unchecked doors belong to Signal hosts."
+
+[[request_constructor_denials]]
+crate_root = "workspaces/worth-query/crates/worth-query-execution"
+signal_doors_only = true
+carried_signal_only = true
+guidance = "Query carries its request to Signal checked doors; unchecked doors belong to Signal hosts."
+
+[[request_constructor_denials]]
+crate_root = "workspaces/worth-query/crates/worth-query-host"
+signal_doors_only = true
+carried_signal_only = true
+guidance = "Query carries its request to Signal checked doors; unchecked doors belong to Signal hosts."
+
+[[request_constructor_denials]]
+crate_root = "workspaces/worth-query/crates/worth-query-installation"
+signal_doors_only = true
+carried_signal_only = true
+guidance = "Query carries its request to Signal checked doors; unchecked doors belong to Signal hosts."
+
+[[request_constructor_denials]]
+crate_root = "workspaces/worth-query/crates/worth-query-package-archive"
+signal_doors_only = true
+carried_signal_only = true
+guidance = "Query carries its request to Signal checked doors; unchecked doors belong to Signal hosts."
+
+[[request_constructor_denials]]
+crate_root = "workspaces/worth-query/crates/worth-query-publication"
+signal_doors_only = true
+carried_signal_only = true
+guidance = "Query carries its request to Signal checked doors; unchecked doors belong to Signal hosts."
+
+[[request_constructor_denials]]
+crate_root = "workspaces/worth-query/crates/worth-query-replay"
+signal_doors_only = true
+carried_signal_only = true
+guidance = "Query carries its request to Signal checked doors; unchecked doors belong to Signal hosts."
