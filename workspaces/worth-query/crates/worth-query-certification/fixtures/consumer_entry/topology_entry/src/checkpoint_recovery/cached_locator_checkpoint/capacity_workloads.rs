@@ -195,7 +195,7 @@ pub(super) fn run_pair(budget: usize) -> Attempt {
         .demand(PlanarFinalOutputDemand::new("anchor-a"))
         .start_dependent_in_program::<CheckpointProgram, FinalConnection>(&reopened_again)
         .unwrap();
-    let repeated_result = setup_settle!(repeated, request, "repeated reopen does not fit");
+    let repeated_result = setup_settle!(repeated, request, "repeated Preserve demand is refused");
     let repeated_preserve = repeated_result
         .outputs_of::<FinalPlanarPreserveOutputs>()
         .expect("a checkpoint of performed Preserve must select Preserve again");
