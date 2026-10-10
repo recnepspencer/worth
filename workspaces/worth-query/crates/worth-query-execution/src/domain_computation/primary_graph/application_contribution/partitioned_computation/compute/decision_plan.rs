@@ -29,7 +29,7 @@ where
             PreparedCompute::new(
                 self.transport_bytes(),
                 self.result_capacity(),
-                move |member| self.compute(member.managed()),
+                move |member| member.compute(|execution, _charge| self.compute(execution)),
                 |result| match result {
                     Ok(completed) => completed.transport_bytes(),
                     Err(denial) => denial.additional_charged_bytes(),

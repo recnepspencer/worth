@@ -1,6 +1,6 @@
 mod execution_policy;
 #[cfg(feature = "test-query-execution-observer")]
-pub(super) use execution_policy::CHECKPOINT_EXECUTION_POLICY;
+pub(super) mod observation;
 use std::sync::{
     atomic::{AtomicBool, AtomicUsize},
     Arc,
@@ -25,9 +25,7 @@ use worth_query_host::facade::{
 };
 
 use super::*;
-pub(super) mod capacity_region;
 mod installation;
-pub(super) mod retained_inventory;
 
 pub(super) type Application = application_installation::WorthQueryProgramApplicationRuntime<
     CheckpointSchema,
@@ -292,25 +290,6 @@ pub(super) fn limits_with_policy(
         candidates,
         524_288,
         policy,
-    )
-}
-
-pub(super) fn limits_with_history_room(
-    retained_composite_commits: u64,
-    active_observations: u64,
-    unique_exact_component_pins: u64,
-    invalidation: worth_query_host::facade::runtime::WorthQueryInvalidationResources,
-    candidates: WorthQueryApplicationCandidateResourceProfile,
-    history_metadata_bytes: u64,
-) -> WorthQueryInMemoryApplicationLimits {
-    limits_with_history_and_policy(
-        retained_composite_commits,
-        active_observations,
-        unique_exact_component_pins,
-        invalidation,
-        candidates,
-        history_metadata_bytes,
-        execution_policy::CHECKPOINT_EXECUTION_POLICY,
     )
 }
 

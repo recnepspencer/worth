@@ -154,8 +154,7 @@ where
         WorthQueryCompletedManagedComputation<Schema, Feature, Computation, Owner>,
         WorthQueryManagedComputationDenial<Owner::Stopped>,
     > {
-        let (execution, charge) = member.into_parts();
-        self.compute_with_charge(execution, charge)
+        member.compute(|execution, charge| self.compute_with_charge(execution, charge))
     }
 
     fn compute_with_charge<'a>(

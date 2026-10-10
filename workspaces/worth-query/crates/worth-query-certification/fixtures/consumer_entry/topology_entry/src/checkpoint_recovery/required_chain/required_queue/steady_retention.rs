@@ -46,18 +46,18 @@ macro_rules! unrelated_settles_unverified {
 fn an_unrelated_caller_advances_for_many_cycles_under_tight_custody() {
     let _guard = checkpoint_recovery_test_guard();
     let row = primary_graph::required_ready_custody_bytes_for_test();
-    let band = support::capacity_region::search(
+    let band = support::observation::capacity_region::search(
         "steady custody bytes",
         1,
         4 * 32 * row,
-        support::capacity_region::Goal::Hit,
+        support::observation::capacity_region::Goal::Hit,
         |bytes| pressure::run(bytes, true),
     );
     band.require_hit("steady custody bytes");
     // The ample allowance admits the queued refreshes and the reopened consumer.
     assert_eq!(
         pressure::run(4 * 32 * row, false),
-        support::capacity_region::Attempt::Hit
+        support::observation::capacity_region::Attempt::Hit
     );
 }
 mod pressure;

@@ -37,7 +37,7 @@ fn a_refused_consumer_registration_performs_each_chain_member_once() {
         "justified handler entries at refused registration",
         1,
         ample.peak_retained_bytes as usize,
-        support::capacity_region::Goal::Hit,
+        support::observation::capacity_region::Goal::Hit,
         |capacity| {
             let journey = match observed_chain_journey(capacity as u64, true) {
                 Ok(journey) => journey,
@@ -123,7 +123,7 @@ fn a_refused_registration_cannot_publish_a_chain_member_twice_in_one_advance() {
         "publications at refused registration",
         1,
         ample.peak_retained_bytes as usize,
-        support::capacity_region::Goal::Hit,
+        support::observation::capacity_region::Goal::Hit,
         |capacity| {
             let journey = match observed_chain_journey(capacity as u64, true) {
                 Ok(journey) => journey,

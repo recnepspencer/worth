@@ -76,7 +76,7 @@ pub(super) fn install_rostered(model: &Model) -> Application {
         let binding = installed.principal_binding(ConsumerPrincipalBinding::reference::<CheckpointSchema>()).unwrap();
         let external = worth_query_host::facade::declaration::authentication::WorthQueryExternalPrincipalIdentity::new("https://checkpoint.invalid/local", "model-owner").unwrap();
         graph.bind_principal(&binding, primary_graph::WorthQueryApplicationPrincipalKey::new("model-owner").unwrap(), 1_u64, external, worth_query_host::facade::declaration::authentication::WorthQueryPrincipalMappingStatus::Enabled)?;
-        support::seed_cycle(graph); model.seed(graph); super::super::super::entry_correction::seed_correction_grant(graph, SCOPE); Ok(())
+        support::seed_cycle(graph); model.seed(graph); crate::checkpoint_recovery::computation_partition::oracle::courtroom::correction_grant::seed(graph, SCOPE); Ok(())
     }).unwrap()
 }
 

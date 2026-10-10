@@ -71,6 +71,11 @@ impl super::KernelContext<'_, '_> {
         self.meter.borrow_mut().nested_stop.take()
     }
 
+    /// Kernel adapters preserve ownership before wrapping a typed cause as data.
+    pub(crate) fn record_nested_stop_owner(&mut self, owner: NestedStopOwner) {
+        self.meter.borrow_mut().nested_stop.record(owner);
+    }
+
     pub(crate) fn failure_owner<E>(&self, failure: &super::KernelFailure<E>) -> NestedStopOwner {
         use super::{KernelFailure, KernelStop};
         let meter = self.meter.borrow();
@@ -79,7 +84,12 @@ impl super::KernelContext<'_, '_> {
         }
         match failure {
             KernelFailure::Domain(_) => {
-                NestedStopOwner::Computation(NestedComputationStop::DomainFailure)
+                meter
+                    .nested_stop
+                    .owner()
+                    .unwrap_or(NestedStopOwner::Computation(
+                        NestedComputationStop::DomainFailure,
+                    ))
             }
             KernelFailure::Panic => NestedStopOwner::Computation(NestedComputationStop::Panic),
             KernelFailure::ResultCapacityExceeded => {

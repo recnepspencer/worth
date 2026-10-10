@@ -221,3 +221,5 @@ fn a_later_member_finishes_first_even_when_a_canonical_member_fails() {
 
 mod exhaustion;
 mod interruptions;
+
+mod nested_outcomes;

@@ -39,13 +39,8 @@ where
 }
 
 #[cfg(test)]
-static DECISION_ENTRIES: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
-
-/// Counts actual handler entries; source-input preparation does not enter here.
-#[cfg(test)]
-pub(crate) fn take_decision_entries() -> usize {
-    DECISION_ENTRIES.swap(0, std::sync::atomic::Ordering::SeqCst)
-}
+pub(crate) static DECISION_ENTRIES: std::sync::atomic::AtomicUsize =
+    std::sync::atomic::AtomicUsize::new(0);
 
 pub struct PlanarHandler;
 trait PlanarHandlerBinding<Schema: TopologySchemaBinding>:

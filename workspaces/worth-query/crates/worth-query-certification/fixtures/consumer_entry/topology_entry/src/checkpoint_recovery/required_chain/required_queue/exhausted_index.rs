@@ -2,7 +2,7 @@
 
 use super::*;
 use primary_graph::WorthQueryOutputDemandRecoveryPosture as Posture;
-use support::capacity_region::{search, Attempt};
+use support::observation::capacity_region::{search, Attempt};
 use worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial;
 
 /// Commits the retained window holds.
@@ -327,7 +327,7 @@ fn an_index_too_small_for_a_commit_stops_the_advance_for_retention() {
         "refused index",
         1,
         usize::try_from(ample.peak_retained_bytes).unwrap(),
-        support::capacity_region::Goal::Hit,
+        support::observation::capacity_region::Goal::Hit,
         refused_index,
     )
     .require_hit("refused index") as u64;
@@ -356,7 +356,7 @@ fn a_consumer_with_incomplete_registration_settles_by_a_fresh_decision_after_cap
         "fresh consumer capacity",
         1,
         2 * 1024 * 1024,
-        support::capacity_region::Goal::Hit,
+        support::observation::capacity_region::Goal::Hit,
         |capacity| {
             let journey = match chain_journey(capacity as u64) {
                 Ok(journey) => journey,

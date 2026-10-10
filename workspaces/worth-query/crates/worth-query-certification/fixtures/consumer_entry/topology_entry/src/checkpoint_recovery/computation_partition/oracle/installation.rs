@@ -217,7 +217,7 @@ pub(super) fn install_variant_with_observations<
         ),
     )
     .expect("four retained image bounds fit preparation");
-    let limits = support::limits_with_history_room(
+    let limits = support::observation::limits_with_history_room(
         RETAINED_COMMITS + additional_observations,
         16 + additional_observations,
         64 + 3 * additional_observations,

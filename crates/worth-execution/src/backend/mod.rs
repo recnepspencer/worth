@@ -37,3 +37,5 @@ pub(crate) use scope::{
 pub(crate) use meter::active_serial_memory;
 
 mod task_result;
+
+pub(crate) use meter::{record_nested, NestedStopOwner};

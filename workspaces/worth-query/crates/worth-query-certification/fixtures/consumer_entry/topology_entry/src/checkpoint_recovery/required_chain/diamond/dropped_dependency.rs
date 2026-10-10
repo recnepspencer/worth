@@ -158,7 +158,7 @@ fn journey(drop_edges: bool, child_delivery: ChildDelivery, cancel_decision: boo
         );
         super::super::binding::cancel_during_next_decision("diamond-join", cancellation);
         let cancelled = application.request(&principal, &cancelled_scope);
-        crate::handler::take_decision_entries();
+        take_decision_entries();
         let stopped = join.advance(&cancelled);
         assert!(
             matches!(
@@ -184,7 +184,7 @@ fn journey(drop_edges: bool, child_delivery: ChildDelivery, cancel_decision: boo
         }
         if !held_child {
             assert_eq!(
-                crate::handler::take_decision_entries(),
+                take_decision_entries(),
                 1,
                 "one changed child completes before the canceled consumer"
             );
@@ -279,4 +279,9 @@ fn journey(drop_edges: bool, child_delivery: ChildDelivery, cancel_decision: boo
         0
     );
     assert!(take_decisions("diamond-join").is_empty());
+}
+
+/// Counts actual handler entries; source-input preparation does not enter here.
+fn take_decision_entries() -> usize {
+    crate::handler::DECISION_ENTRIES.swap(0, std::sync::atomic::Ordering::SeqCst)
 }

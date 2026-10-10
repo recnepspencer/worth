@@ -389,3 +389,7 @@ mod reopened_dependent;
 #[cfg(feature = "test-output-delivery-faults")]
 mod request_stops;
 mod steady_retention;
+
+// Contact probes share this module's existing observer boundary.
+#[path = "performed_head_movement.rs"]
+mod performed_head_movement;

@@ -1,5 +1,5 @@
 //! Independent copies of one neutral model. Each ring is the five-body cycle
-//! a → source-b → source-c → b → c → a, and shares nothing with another ring.
+//! a â†’ source-b â†’ source-c â†’ b â†’ c â†’ a, and shares nothing with another ring.
 //!
 //! The root output of a body publishes its Y plus one. `b` decides over the
 //! root output of `a` and `c` over the output of `b`; each republishes its own

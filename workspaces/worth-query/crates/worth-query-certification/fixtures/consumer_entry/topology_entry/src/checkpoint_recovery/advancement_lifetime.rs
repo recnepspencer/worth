@@ -43,7 +43,9 @@ fn a_leased_output_demand_carries_its_request_through_bridge_and_signal() {
     }
     let _restore = Restore(
         place(Placement::Leased(NonZeroUsize::MIN)),
-        bound(Some(super::support::CHECKPOINT_EXECUTION_POLICY.budget())),
+        bound(Some(
+            super::support::observation::CHECKPOINT_EXECUTION_POLICY.budget(),
+        )),
     );
     use worth_query_host::facade::primary_graph::partitioned_computation_runs_on_this_thread_for_test as computation_runs;
     reports();
@@ -61,7 +63,7 @@ fn a_leased_output_demand_carries_its_request_through_bridge_and_signal() {
     let charged = reports[0].as_ref().unwrap().charged_work();
     assert!(
         charged
-            <= super::support::CHECKPOINT_EXECUTION_POLICY
+            <= super::support::observation::CHECKPOINT_EXECUTION_POLICY
                 .budget()
                 .work_ceiling()
     );
@@ -283,7 +285,7 @@ fn signal_reservation_uses_the_advancement_work_ceiling() {
         place(Placement::Leased(NonZeroUsize::MIN)),
         bound(Some(worth_foundational::ExecutionBudget::new(
             NonZeroUsize::MIN,
-            super::support::CHECKPOINT_EXECUTION_POLICY
+            super::support::observation::CHECKPOINT_EXECUTION_POLICY
                 .budget()
                 .charged_memory_bytes(),
             handler_allowance as u64,

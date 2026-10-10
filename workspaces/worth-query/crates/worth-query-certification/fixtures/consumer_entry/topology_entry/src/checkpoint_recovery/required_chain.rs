@@ -17,7 +17,6 @@ mod diamond;
 ))]
 mod exact_invalidation;
 mod mixed_mode;
-mod performed_head_movement;
 mod producer;
 mod program;
 mod readiness;

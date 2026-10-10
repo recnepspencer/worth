@@ -2,7 +2,7 @@
 
 use super::*;
 use std::time::{Duration, Instant};
-use support::capacity_region::Attempt;
+use support::observation::capacity_region::Attempt;
 use worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial;
 
 macro_rules! start_root {
@@ -74,11 +74,11 @@ macro_rules! settled_within_eight_advances {
 #[test]
 fn a_lone_caller_whose_chain_outgrows_its_budget_stops_without_retry() {
     let _guard = checkpoint_recovery_test_guard();
-    support::capacity_region::search(
+    support::observation::capacity_region::search(
         "lone terminal",
         1,
         128 * 1024,
-        support::capacity_region::Goal::Hit,
+        support::observation::capacity_region::Goal::Hit,
         lone_terminal,
     )
     .require_hit("lone terminal");
@@ -221,11 +221,11 @@ fn a_refresh_cancelled_under_tight_custody_settles_on_the_next_advance() {
 #[test]
 fn publication_driven_retryable_progress_is_followed_by_stable_terminal_stops() {
     let _guard = checkpoint_recovery_test_guard();
-    support::capacity_region::search(
+    support::observation::capacity_region::search(
         "publication terminal",
         1,
         128 * 1024,
-        support::capacity_region::Goal::Hit,
+        support::observation::capacity_region::Goal::Hit,
         publication_terminal,
     )
     .require_hit("publication terminal");

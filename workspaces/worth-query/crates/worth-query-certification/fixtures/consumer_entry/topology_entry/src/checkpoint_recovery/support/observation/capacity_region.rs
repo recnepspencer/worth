@@ -82,7 +82,7 @@ macro_rules! start {
             Ok(value) => value,
             Err(worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(denial))
                 if denial.kind() == worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded =>
-                return support::capacity_region::Attempt::Below($step),
+                return support::observation::capacity_region::Attempt::Below($step),
             Err(other) => panic!("{}: unexpected setup refusal: {other:?}", $step),
         }
     };
@@ -98,7 +98,7 @@ macro_rules! settle {
                 Ok(worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandProgress::Settled(value)) => { settled = Some(value); break; },
                 Err(worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(denial))
                     if denial.kind() == worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded =>
-                    return support::capacity_region::Attempt::Below($step),
+                    return support::observation::capacity_region::Attempt::Below($step),
                 Err(other) => panic!("{}: unexpected setup refusal: {other:?}", $step),
             }
         }

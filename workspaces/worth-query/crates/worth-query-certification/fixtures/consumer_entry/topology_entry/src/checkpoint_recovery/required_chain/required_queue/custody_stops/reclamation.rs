@@ -51,7 +51,7 @@ pub(super) fn overwrite_middle_output(
 fn a_dependent_whose_row_was_reclaimed_decides_again_over_a_refreshed_upstream() {
     let _guard = checkpoint_recovery_test_guard();
     for overwritten in [false, true] {
-        support::capacity_region::search(
+        support::observation::capacity_region::search(
             if overwritten {
                 "reclaimed written rows"
             } else {
@@ -59,7 +59,7 @@ fn a_dependent_whose_row_was_reclaimed_decides_again_over_a_refreshed_upstream()
             },
             1,
             64 * primary_graph::required_ready_custody_bytes_for_test(),
-            support::capacity_region::Goal::Hit,
+            support::observation::capacity_region::Goal::Hit,
             |bytes| run_reclamation_budget(bytes, overwritten, true, 20, false),
         )
         .require_hit("a reclaimed dependent decides over refreshed upstream");
@@ -81,7 +81,7 @@ fn the_model_upper_edge_keeps_the_cached_consumer_without_a_handler_contact() {
     let _guard = checkpoint_recovery_test_guard();
     for overwritten in [false, true] {
         let row = primary_graph::required_ready_custody_bytes_for_test();
-        let band = support::capacity_region::search(
+        let band = support::observation::capacity_region::search(
             if overwritten {
                 "cached written upper edge"
             } else {
@@ -89,7 +89,7 @@ fn the_model_upper_edge_keeps_the_cached_consumer_without_a_handler_contact() {
             },
             1,
             64,
-            support::capacity_region::Goal::LowerEdge,
+            support::observation::capacity_region::Goal::LowerEdge,
             |rows| {
                 run_reclamation_budget(
                     rows * row,
@@ -181,7 +181,7 @@ fn run_reclamation_budget(
         );
     }
     let mut custody = None;
-    use support::retained_inventory::{Inventory, SteadyCycles};
+    use support::observation::retained_inventory::{Inventory, SteadyCycles};
     let mut steady = SteadyCycles::new();
     let measured_cycles = cycles.saturating_sub(2 * 8) as usize;
     let warm_up = measured_cycles != 0;
@@ -203,7 +203,11 @@ fn run_reclamation_budget(
         change_root_input!(request, application, y, idempotency);
         let mut a = start_root!(application, request);
         if cycle == 0 && !certify_closed_model {
-            support::capacity_region::settle!(a, request, "root refresh before consumer");
+            support::observation::capacity_region::settle!(
+                a,
+                request,
+                "root refresh before consumer"
+            );
         } else {
             settled_within_eight_advances!(a, request, format!("{at}: the root"));
         }
@@ -217,7 +221,11 @@ fn run_reclamation_budget(
         take_decisions("anchor-b");
         let mut b = start_consumer!(application, request, "anchor-b");
         if cycle == 0 && !certify_closed_model {
-            support::capacity_region::settle!(b, request, "middle refresh before consumer");
+            support::observation::capacity_region::settle!(
+                b,
+                request,
+                "middle refresh before consumer"
+            );
         } else {
             settled_within_eight_advances!(b, request, format!("{at}: the middle consumer"));
         }

@@ -28,13 +28,7 @@ use super::*;
 /// A set of 200 is refused at seeding: the planar turn invariant's work
 /// budget pays for every entity the bootstrap touches, of any kind.
 pub(super) const LARGEST_SET: usize = 160;
-const DECISION_FACTS_PER_ENTRY: usize = 8;
 const PROJECTION_WORK_PER_ENTRY: usize = 16;
-/// The scope, the set, its weight and the entry an armed decision writes.
-const DECISION_FACTS_BESIDE_ENTRIES: usize = 32;
-/// The facts the largest set's decision may read.
-pub(super) const DECISION_FACT_BUDGET: usize =
-    DECISION_FACTS_PER_ENTRY * LARGEST_SET + DECISION_FACTS_BESIDE_ENTRIES;
 
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub(super) struct RegionOutputInput {

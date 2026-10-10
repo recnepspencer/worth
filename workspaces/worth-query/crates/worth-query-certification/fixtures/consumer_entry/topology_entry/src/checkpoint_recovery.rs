@@ -22,7 +22,6 @@ use worth_query_host::facade::{
 use super::*;
 #[cfg(feature = "test-query-execution-observer")]
 mod advancement_currentness;
-mod cached_locator_checkpoint;
 #[cfg(feature = "test-query-execution-observer")]
 mod clean_reuse;
 pub(crate) mod computation_partition;

@@ -93,9 +93,14 @@ pub(in crate::domain_computation::primary_graph) fn dispatch(
                 let member = wave.member();
                 let mut slots = Vec::with_capacity(input.requests.len());
                 for request in input.requests {
-                    let mut charge = |units| context.checkpoint(units);
-                    let slot =
-                        request.run(WorthQueryMemberExecution::for_kernel(&member, &mut charge));
+                    let context = std::cell::RefCell::new(&mut *context);
+                    let mut charge = |units| context.borrow_mut().checkpoint(units);
+                    let mut take = || context.borrow_mut().take_nested_computation_stop();
+                    let slot = request.run(WorthQueryMemberExecution::for_kernel(
+                        &member,
+                        &mut charge,
+                        &mut take,
+                    ));
                     slots.push(slot);
                 }
                 let result = ComputedMember {

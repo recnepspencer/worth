@@ -29,7 +29,7 @@ fn query_refuses_zero_request_budgets_before_its_first_read() {
     let application = install(None);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
-    let policy = super::support::CHECKPOINT_EXECUTION_POLICY.budget();
+    let policy = super::support::observation::CHECKPOINT_EXECUTION_POLICY.budget();
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
         let _restore = Restore(place(placement), bound(None));
         let before = reads();
@@ -141,7 +141,7 @@ fn held_mutation_commit_refuses_zero_budgets_before_revalidation() {
             else {
                 panic!("the fresh mutation prepares its unpublished candidate");
             };
-            let policy = super::support::CHECKPOINT_EXECUTION_POLICY.budget();
+            let policy = super::support::observation::CHECKPOINT_EXECUTION_POLICY.budget();
             let restore = Restore(
                 place(placement),
                 bound(Some(worth_foundational::ExecutionBudget::new(
@@ -252,7 +252,7 @@ fn mutation_handler_and_inline_commit_remain_in_one_request() {
         .execute()
         .unwrap();
     let before = observed.receipt().inspect().basis().version();
-    let policy = support::CHECKPOINT_EXECUTION_POLICY.budget();
+    let policy = support::observation::CHECKPOINT_EXECUTION_POLICY.budget();
     // This handler has no managed computation, and the ordinary Relational
     // reads are inline until part two. One is the least positive opening
     // allowance. This mutation reaches no Signal dispatch: Relational commit
