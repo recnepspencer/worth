@@ -36,6 +36,7 @@ mod advancement_custody;
 mod counts;
 mod courtroom;
 mod cutoff;
+mod decision_plan;
 mod handler_absence;
 mod installation;
 mod republication;

@@ -474,7 +474,10 @@ use worth_query_host::facade::{
         application_program::*,
         application_schema::ApplicationSchema,
     },
-    primary_graph::{DecisionReader, WorthQueryPrimaryGraphInstallationDenial},
+    primary_graph::{
+        DecisionReader, HandlerResult, WorthQueryDecisionPlan,
+        WorthQueryPrimaryGraphInstallationDenial,
+    },
 };
 
 #[derive(Clone, Serialize)]
@@ -485,6 +488,9 @@ pub struct InventoryLine {
 }
 impl ChargedBytes for InventoryLine {
     fn additional_charged_bytes(&self) -> u64 { 0 }
+}
+impl ApplicationComputationPartition for InventoryLine {
+    const IDENTITY: &'static str = "inventory.line.v1";
 }
 
 pub struct InventoryInput;
@@ -618,13 +624,16 @@ where
     setup.partitioned_computation::<F, InventoryTotal<A>, _>(InventoryOwner(PhantomData))
 }
 
-pub fn run_inventory<S, F, A, Op, B>(
+pub fn prepare_inventory<S, F, A, Op, B>(
     installed: &WorthQueryInstalledPartitionedComputation<
         S, F, InventoryTotal<A>, InventoryOwner<Op>,
     >,
     reader: &mut DecisionReader<'_, '_, '_, S, B>,
     input: &Vec<InventoryLine>,
-) -> Result<(f64, u64), WorthQueryPartitionedComputationDenial<u32>>
+) -> Result<
+    WorthQueryDecisionPlan<Result<(f64, u64), WorthQueryPartitionedComputationDenial<u32>>, u32>,
+    WorthQueryPartitionedComputationDenial<u32>,
+>
 where
     S: ApplicationSchema,
     F: ApplicationFeature<S>,
@@ -632,10 +641,14 @@ where
     Op: 'static,
     B: ApplicationMutationBinding<S, Operation = Op>,
 {
-    let computed = installed.prepare(reader, input)?
-        .compute(reader.managed_computation_execution())?;
-    let charged_work = computed.charged_work();
-    Ok((computed.complete()?, charged_work))
+    let prepared = installed.prepare(reader, input)?;
+    Ok(prepared.into_decision_plan(|computed| {
+        HandlerResult::Completed((|| {
+            let computed = computed?;
+            let charged_work = computed.charged_work();
+            Ok((computed.complete()?, charged_work))
+        })())
+    }))
 }
 ```
 
@@ -649,8 +662,10 @@ at every admitted worker count.
 
 `checkpoint.advance` charges kernel work and checks interruption. Framework
 planning and reduction also contribute charged work; `charged_work()` reports
-the computation's total. Handle the typed denial before authoring a candidate
-from the result. Computing and completing a value do not commit it.
+the computation's total. Return the prepared plan from the handler's
+`prepare_decision`; the framework runs compute and then calls its completion
+on the owner. Handle the typed denial before authoring a candidate from the
+result. Computing and completing a value do not commit it.
 
 ---
 

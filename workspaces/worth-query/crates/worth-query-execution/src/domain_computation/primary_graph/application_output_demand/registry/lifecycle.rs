@@ -1,3 +1,4 @@
+pub(in crate::domain_computation::primary_graph) use selected_execution_finish::RunningSelectedExecution;
 mod cached_reclaim;
 mod closed_retirement;
 mod completed_custody;

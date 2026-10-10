@@ -25,6 +25,7 @@ type BoundResult<Schema, Binding> = <<SourceBinding<Schema, Binding> as Applicat
 #[allow(clippy::too_many_arguments)]
 pub(in crate::domain_computation::primary_graph::application_contribution::producer::execution) fn certify_ready_on_selected_with_disclosure<
     'basis,
+    'owner,
     Schema,
     Binding,
 >(
@@ -55,10 +56,13 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
         Option<MatchedRequiredPredecessors<'_>>,
         &mut InvalidationEditAdmission,
     ) -> Result<
-        super::super::required_cue::RequiredCueProgress<'basis, Schema>,
+        super::super::required_cue::RequiredCueProgress<'basis, 'owner, Schema>,
         ProducerExecutionStop,
     >,
-) -> Result<super::super::required_cue::RequiredCueProgress<'basis, Schema>, ProducerExecutionStop>
+) -> Result<
+    super::super::required_cue::RequiredCueProgress<'basis, 'owner, Schema>,
+    ProducerExecutionStop,
+>
 where
     Schema: ApplicationSchema + 'static,
     Binding: WorthQueryApplicationProducerBinding<Schema>,

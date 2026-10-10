@@ -6,6 +6,8 @@ use worth_query_declaration::facade::application_program::{
 };
 use worth_query_installation::facade::ApplicationSchema;
 
+/// Prepared values and the transported owner are the handler author's own data.
+/// An author-held runtime handle used from compute follows the worker reentry rule.
 pub trait WorthQueryManagedComputationPrepared: Send + 'static {
     fn retained_bytes(&self) -> usize;
 }
@@ -20,7 +22,7 @@ where
     type Prepared: WorthQueryManagedComputationPrepared;
     type Computed: Send + 'static;
     type Output;
-    type Stopped;
+    type Stopped: Send + 'static;
 
     fn prepare(
         &self,
@@ -39,7 +41,12 @@ where
 }
 
 mod checkpoint;
+mod member_execution;
+pub use member_execution::WorthQueryMemberExecution;
+mod decision_plan;
 mod denial;
+mod preparation_loans;
+pub(in crate::domain_computation::primary_graph) mod prepared_request;
 
 use checkpoint::CheckpointWork;
 pub use checkpoint::{

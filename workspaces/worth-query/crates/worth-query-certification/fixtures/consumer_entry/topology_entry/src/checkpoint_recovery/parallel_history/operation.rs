@@ -109,36 +109,9 @@ impl OperationHandler<Schema, Binding<Schema>> for Handler {
         input: &Input,
         reader: &mut DecisionReader<'_, '_, '_, Schema, Binding<Schema>>,
     ) -> HandlerResult<Decision<Schema>, Denied> {
-        let upstream = match input
-            .upstream
-            .iter()
-            .map(|key| reader.resolve_entity(NodeKey::reference(), *key))
-            .collect::<Result<Vec<_>, _>>()
-        {
-            Ok(upstream) => upstream,
-            Err(error) => return HandlerResult::ExecutionDenied(error),
-        };
-        let facts = computation::ReadInput {
-            upstream,
-            partitions: input.partitions.clone(),
-        };
-        let computed = self
-            .0
-            .prepare(reader, &facts)
-            .and_then(|prepared| prepared.compute(reader.managed_computation_execution()));
-        let computed = match computed {
-            Ok(computed) => computed,
-            Err(WorthQueryPartitionedComputationDenial::Partition {
-                cause: WorthQueryComputationPartitionStop::Owner(partition),
-                ..
-            }) => return HandlerResult::DomainDenied(Denied { partition }),
-            Err(error) => panic!("unexpected computation denial: {error:?}"),
-        };
-        CHARGES.with(|charges| charges.borrow_mut().push(computed.charged_work()));
-        let value = computed.complete().unwrap();
         let decided = (|| {
             let node = reader.resolve_entity(NodeKey::reference(), input.key)?;
-            reader.field(&node, Value::reference())?;
+            let value = reader.field(&node, Value::reference())?.unwrap();
             let applied = reader.field(&node, Applied::reference())?.unwrap();
             Ok(Decision {
                 target: reader.mutation_target(&node)?,
@@ -149,6 +122,63 @@ impl OperationHandler<Schema, Binding<Schema>> for Handler {
         match decided {
             Ok(value) => HandlerResult::Completed(value),
             Err(error) => HandlerResult::ExecutionDenied(error),
+        }
+    }
+    fn prepare_decision(
+        &self,
+        input: &Input,
+        reader: &mut DecisionReader<'_, '_, '_, Schema, Binding<Schema>>,
+    ) -> WorthQueryDecisionPlan<Decision<Schema>, Denied> {
+        let upstream = match input
+            .upstream
+            .iter()
+            .map(|key| reader.resolve_entity(NodeKey::reference(), *key))
+            .collect::<Result<Vec<_>, _>>()
+        {
+            Ok(upstream) => upstream,
+            Err(error) => {
+                return WorthQueryDecisionPlan::immediate(HandlerResult::ExecutionDenied(error))
+            }
+        };
+        let facts = computation::ReadInput {
+            upstream,
+            partitions: input.partitions.clone(),
+        };
+        let prepared = self.0.prepare(reader, &facts);
+        let decided = self.decide(input, reader);
+        let finish = move |computed: Result<
+            WorthQueryCompletedPartitionedComputation<
+                Schema,
+                Feature,
+                computation::Computation,
+                computation::Owner,
+            >,
+            _,
+        >| {
+            let computed = match computed {
+                Ok(computed) => computed,
+                Err(WorthQueryPartitionedComputationDenial::Partition {
+                    cause: WorthQueryComputationPartitionStop::Owner(partition),
+                    ..
+                }) => return HandlerResult::DomainDenied(Denied { partition }),
+                Err(error) => panic!("unexpected computation denial: {error:?}"),
+            };
+            CHARGES.with(|charges| charges.borrow_mut().push(computed.charged_work()));
+            let value = computed.complete().unwrap();
+            match decided {
+                HandlerResult::Completed(mut decision) => {
+                    decision.value = value;
+                    HandlerResult::Completed(decision)
+                }
+                HandlerResult::DomainDenied(cause) => HandlerResult::DomainDenied(cause),
+                HandlerResult::ExecutionDenied(cause) => HandlerResult::ExecutionDenied(cause),
+                HandlerResult::Cancelled => HandlerResult::Cancelled,
+                HandlerResult::DeadlineExceeded => HandlerResult::DeadlineExceeded,
+            }
+        };
+        match prepared {
+            Ok(prepared) => prepared.into_decision_plan(finish),
+            Err(error) => WorthQueryDecisionPlan::immediate(finish(Err(error))),
         }
     }
     fn candidate_requirements(

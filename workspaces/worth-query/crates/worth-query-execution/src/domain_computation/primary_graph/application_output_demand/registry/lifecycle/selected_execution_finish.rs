@@ -17,14 +17,57 @@ use crate::domain_computation::primary_graph::{
 /// Prepared before Running and consumed by exactly one execution outcome.
 pub(in crate::domain_computation::primary_graph) struct PreparedSelectedExecutionFinish<'a> {
     registry: &'a WorthQueryOutputDemandRegistry,
-    interest: &'a WorthQueryOutputDemandInterest,
+    key: Arc<super::super::WorthQueryOutputDemandKey>,
     member: Arc<RequiredWorkMembership>,
+}
+
+/// Holds only this invocation's Running claim. Abandoning a prepared suffix
+/// releases it back to Scheduled before its last Interest can be destroyed.
+pub(in crate::domain_computation::primary_graph) struct RunningSelectedExecution<'a> {
+    finish: Option<PreparedSelectedExecutionFinish<'a>>,
+}
+impl<'a> RunningSelectedExecution<'a> {
+    pub(in crate::domain_computation::primary_graph) fn new(
+        finish: PreparedSelectedExecutionFinish<'a>,
+    ) -> Self {
+        Self {
+            finish: Some(finish),
+        }
+    }
+    pub(in crate::domain_computation::primary_graph) fn relinquish(mut self) {
+        self.finish.take().expect("one Running finish").relinquish();
+    }
+    pub(in crate::domain_computation::primary_graph) fn publish(
+        mut self,
+        checkpoint: WorthQueryOutputCheckpoint,
+    ) -> Result<(), (WorthQueryOutputDemandDenial, WorthQueryOutputCheckpoint)> {
+        self.finish
+            .take()
+            .expect("one Running finish")
+            .publish(checkpoint)
+    }
+    pub(in crate::domain_computation::primary_graph) fn failure(
+        mut self,
+        denial: &mut WorthQueryOutputDemandDenial,
+    ) {
+        self.finish
+            .take()
+            .expect("one Running finish")
+            .failure(denial);
+    }
+}
+impl Drop for RunningSelectedExecution<'_> {
+    fn drop(&mut self) {
+        if let Some(finish) = self.finish.take() {
+            finish.relinquish();
+        }
+    }
 }
 
 impl WorthQueryOutputDemandRegistry {
     pub(in crate::domain_computation::primary_graph) fn prepare_selected_execution_finish<'a>(
         &'a self,
-        interest: &'a WorthQueryOutputDemandInterest,
+        interest: &WorthQueryOutputDemandInterest,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<PreparedSelectedExecutionFinish<'a>, WorthQueryOutputDemandDenial> {
         // The existing ordered lookup owner may allocate one subject of at
@@ -40,7 +83,7 @@ impl WorthQueryOutputDemandRegistry {
         // checkpoint/state move, an empty retained denial, and an Arc key
         // retain for deferred terminal cleanup. Its variable diagnostic
         // stays with the immediate caller.
-        let fixed = 2 * std::mem::size_of::<PreparedSelectedExecutionFinish<'_>>()
+        let fixed = 2 * std::mem::size_of::<RunningSelectedExecution<'_>>()
             + 2 * std::mem::size_of::<DemandState>()
             + std::mem::size_of::<WorthQueryOutputProgress>()
             + std::mem::size_of::<WorthQueryOutputDemandDenial>()
@@ -77,7 +120,7 @@ impl WorthQueryOutputDemandRegistry {
             .ok_or_else(empty_work_denial)?;
         Ok(PreparedSelectedExecutionFinish {
             registry: self,
-            interest,
+            key: Arc::clone(member.key_arc()),
             member,
         })
     }
@@ -92,7 +135,7 @@ impl PreparedSelectedExecutionFinish<'_> {
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         let record = state
             .records
-            .get_mut(&self.interest.key)
+            .get_mut(self.key.as_ref())
             .expect("the selected executor retains its Interest");
         if record
             .work_membership
@@ -117,7 +160,7 @@ impl PreparedSelectedExecutionFinish<'_> {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let Some(record) = state.records.get_mut(&self.interest.key) else {
+        let Some(record) = state.records.get_mut(self.key.as_ref()) else {
             return Err((
                 empty_denial(WorthQueryOutputDemandDenialKind::Closed),
                 checkpoint,
@@ -166,7 +209,7 @@ impl PreparedSelectedExecutionFinish<'_> {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let Some(record) = state.records.get_mut(&self.interest.key) else {
+        let Some(record) = state.records.get_mut(self.key.as_ref()) else {
             return;
         };
         if !record

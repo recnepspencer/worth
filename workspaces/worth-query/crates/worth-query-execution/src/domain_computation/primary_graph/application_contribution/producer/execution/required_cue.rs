@@ -12,6 +12,7 @@ use crate::domain_computation::primary_graph::{
 /// successor. Fresh carries its move-only typed demand/interest custody.
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) enum RequiredCueProgress<
     'basis,
+    'owner,
     Schema,
 > where
     Schema: ApplicationSchema,
@@ -19,5 +20,11 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     Current(Arc<WorthQueryOutputDemandSettlement>),
     PendingExact(SelectedPendingConsumedOutput<'basis>),
     PendingUnresolved,
-    Fresh(super::super::demand::RequiredFreshProgress<Schema>),
+    Fresh(
+        super::prepared_plan::OwnerPlan<
+            'owner,
+            super::super::demand::RequiredFreshProgress<Schema>,
+            super::WorthQueryOutputDemandDenial,
+        >,
+    ),
 }

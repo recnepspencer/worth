@@ -1,5 +1,5 @@
 mod composition;
-mod computation;
+pub(in crate::domain_computation::primary_graph) mod computation;
 mod conditional;
 mod contracts;
 mod execution_denial;
@@ -18,7 +18,7 @@ pub use computation::{
     WorthQueryManagedComputationDenial, WorthQueryManagedComputationExecution,
     WorthQueryManagedComputationInterruption, WorthQueryManagedComputationOwner,
     WorthQueryManagedComputationPrepared, WorthQueryManagedComputationResourceDenial,
-    WorthQueryMemoryLimitLevel, WorthQueryPreparedManagedComputation,
+    WorthQueryMemberExecution, WorthQueryMemoryLimitLevel, WorthQueryPreparedManagedComputation,
 };
 pub use conditional::{
     WorthQueryApplicationConditionalBinding, WorthQueryApplicationConditionalPackageContract,

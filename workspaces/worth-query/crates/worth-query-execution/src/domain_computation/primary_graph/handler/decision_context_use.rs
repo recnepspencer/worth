@@ -28,7 +28,7 @@ impl DecisionContextUse {
         Self(self.0 | Self::OPAQUE_READER)
     }
 
-    pub(super) const fn managed_computation(self) -> Self {
+    pub(in crate::domain_computation::primary_graph) const fn managed_computation(self) -> Self {
         Self(self.0 | Self::MANAGED_COMPUTATION)
     }
 

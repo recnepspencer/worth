@@ -34,39 +34,11 @@ impl WorthQueryApplicationContribution<CheckpointSchema> for HistoryContribution
         let installed = setup
             .partitioned_computation::<PlanarFinalOutputFeature, OracleTotals, _>(HistoryOwner)?;
         let handler = RegionOutputHandler::running(move |reader, set| {
-            worth_query_host::facade::primary_graph::full_partitioned_computation_preparations_on_this_thread_for_test();
-            take_calls();
-            COMBINES.store(0, Ordering::Relaxed);
-            tree_count::reset();
-            worth_query_host::facade::primary_graph::partitioned_computation_tree_work_on_this_thread_for_test();
-            let outcome = (|| {
-                let computed = installed
-                    .prepare(reader, set)?
-                    .compute(reader.managed_computation_execution())?;
-                let charged_work = computed.charged_work();
-                Ok((computed.complete()?.to_bits(), charged_work))
-            })();
-            let observations = runs_on_this_thread();
-            REPORTS.with(|reports| {
-                reports.borrow_mut().extend(
-                    observations
-                        .iter()
-                        .map(|(_, report)| report.map(|report| report.charged_work())),
-                )
-            });
-            let runs = observations.into_iter().map(|(run, _)| run);
-            let value = outcome.as_ref().ok().map(|(bits, _)| *bits);
-            room().push(OracleRun {
-                published: Vec::new(), full_preparations: worth_query_host::facade::primary_graph::full_partitioned_computation_preparations_on_this_thread_for_test(),
-                outcome,
-                runs: runs.collect(),
-                calls: take_calls(),
-                tree_runs: worth_query_host::facade::primary_graph::partitioned_computation_tree_work_on_this_thread_for_test(),
-                combines: COMBINES.swap(0, Ordering::Relaxed),
-                tree_nodes: tree_count::take_nodes(),
-                placement: tree_count::placement(),
-            });
-            value
+            super::super::decision_plan::begin();
+            let prepared = installed.prepare(reader, set);
+            super::super::decision_plan::prepared(prepared, |observations| {
+                REPORTS.with(|reports| reports.borrow_mut().extend(observations));
+            })
         });
         setup.handler::<RegionOutputBinding<CheckpointSchema>, _>(handler)?;
         setup.handler::<RegionTotalsDemandBinding<CheckpointSchema>, _>(

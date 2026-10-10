@@ -23,6 +23,7 @@ mod prepared;
 mod progress;
 mod promotion;
 mod slot_preparation;
+mod wave_preparation;
 use crate::domain_computation::primary_graph::{
     application_contribution::producer::registry::InstalledProducerProvider,
     application_output_demand::{
@@ -33,6 +34,7 @@ use crate::domain_computation::primary_graph::{
     output_lineage::invalidation::InvalidationEditAdmission,
     WorthQueryApplicationProjection, WorthQueryPrimaryGraphApplicationRuntime,
 };
+pub(super) use wave_preparation::PreparedContinuationWave;
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
 };
@@ -318,17 +320,6 @@ impl<Schema> RequiredContinuations<Schema>
 where
     Schema: ApplicationSchema + 'static,
 {
-    /// The last installed successor is the exact Fresh result of the current
-    /// wave step. The caller may borrow its issued Interest after the slot's
-    /// infallible install, while this container keeps typed custody alive.
-    pub(super) fn last(&self) -> Option<&RequiredFreshProgress<Schema>> {
-        self.entries.last()
-    }
-
-    pub(super) fn last_mut(&mut self) -> Option<&mut RequiredFreshProgress<Schema>> {
-        self.entries.last_mut()
-    }
-
     pub(super) fn take_all(&mut self) -> Self {
         std::mem::take(self)
     }

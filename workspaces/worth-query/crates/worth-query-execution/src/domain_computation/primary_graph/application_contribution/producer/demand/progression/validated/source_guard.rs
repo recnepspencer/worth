@@ -23,7 +23,7 @@ where
         source: &WorthQueryObservedSource<FamilySourceQuery<Schema, Family>>,
         commit_authority: &WorthQueryProducerCommitAuthority,
         entry: &InstalledProducerProvider<Schema>,
-        progression: &ScheduleProgression<'_, '_, Schema>,
+        progression: &ScheduleProgression<'_, '_, '_, Schema>,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<SourceGuard, WorthQueryOutputDemandDenial>
     where

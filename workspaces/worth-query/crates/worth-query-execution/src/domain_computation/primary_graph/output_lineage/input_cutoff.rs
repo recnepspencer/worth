@@ -15,7 +15,7 @@ pub(in crate::domain_computation::primary_graph) use stable_publication::{
 
 pub(in crate::domain_computation::primary_graph) use selected_basis::PreparedInputCutoffBasis;
 pub(in crate::domain_computation::primary_graph) use verification::{
-    cutoff_declines, InputCutoffDecision, InputCutoffVerificationStop, VerifiedInputCutoff,
+    cutoff_declines, InputCutoffVerificationStop, OwnedInputCutoffDecision, VerifiedInputCutoff,
 };
 
 use std::{

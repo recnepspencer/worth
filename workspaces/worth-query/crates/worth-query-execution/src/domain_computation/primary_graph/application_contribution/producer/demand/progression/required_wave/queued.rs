@@ -1,6 +1,5 @@
-//! Dirty required records from the shared queue become frames of the wave
-//! after the caller's own outcome, so one advance progresses the dirty set
-//! and no queued record can starve the caller of its own request.
+//! Selected queue tokens hold required roots for one advancement.
+//! Only a Current proof acknowledges a token; every unfinished token requeues.
 
 use worth_relational::facade::mvcc::CompanionPublicationCompletion;
 
@@ -10,51 +9,44 @@ use crate::domain_computation::primary_graph::application_output_demand::{
     SelectedRequiredWork, SelectedRequiredWorkKind,
 };
 
-/// Popped work for one advance. The frame item backs the queue chain being
-/// certified. Held items requeue when this advance ends: only a cause
+/// Popped work for one advance. Each token backs its selected required root.
+/// Held items requeue when this advance ends: only a cause
 /// covered by a Current proof on this wave is acknowledged.
-pub(super) struct RequiredQueueFrames {
+pub(super) struct QueuedRequiredRoots {
     drained: bool,
-    frame: Option<SelectedRequiredWork>,
+    roots: Vec<Option<SelectedRequiredWork>>,
     held: Vec<SelectedRequiredWork>,
-    /// The caller's own outcome, decided before any queue frame runs.
+    /// A certified caller outcome cannot be replaced by a queued root's failure.
     caller: Option<WorthQueryOutputDemandAdvance>,
-    /// Whether the caller settled at the wave's current position. A queue
-    /// frame's commit moves the wave past the caller's proof.
     caller_current: bool,
 }
 
-impl RequiredQueueFrames {
+impl QueuedRequiredRoots {
     pub(super) const fn new() -> Self {
         Self {
             drained: false,
-            frame: None,
+            roots: Vec::new(),
             held: Vec::new(),
             caller: None,
             caller_current: false,
         }
     }
 
-    /// Whether the caller's outcome is decided and queue frames now run.
+    /// Whether the caller's own Current proof has decided its outcome.
     pub(super) const fn draining(&self) -> bool {
         self.caller.is_some()
     }
 
-    /// Whether the chain being certified started from a queue item.
-    pub(super) const fn active(&self) -> bool {
-        self.frame.is_some()
-    }
-
-    /// The caller's own chain ended; queue frames take the rest of the
-    /// request.
+    /// The caller is certified; queue failures retain their own scheduling custody.
     pub(super) fn finish_caller(&mut self, outcome: WorthQueryOutputDemandAdvance) {
         self.caller_current = matches!(&outcome, WorthQueryOutputDemandAdvance::Settled(_));
         self.caller = Some(outcome);
     }
 
-    /// A committed successor moved the wave past the caller's proof.
     pub(super) fn wave_moved(&mut self) {
         self.caller_current = false;
+        // Publication can add causes after the preceding collection drained.
+        self.drained = false;
     }
 
     /// The caller's outcome once queue work ends, in any way.
@@ -62,7 +54,7 @@ impl RequiredQueueFrames {
         self.caller.take()
     }
 
-    /// Once the caller's outcome is decided, nothing a queue frame meets can
+    /// Once the caller's outcome is decided, nothing a queued root meets can
     /// replace it: held items requeue on drop and their errors surface on
     /// their own demands. Earlier errors are the caller's own.
     pub(super) fn conclude(
@@ -75,15 +67,15 @@ impl RequiredQueueFrames {
         }
     }
 
-    /// Pop until one item becomes a frame or this advance has visited the
+    /// Pop until one item becomes a root or this advance has visited the
     /// whole queue. Each item is popped at most once unless a new cause or
     /// acknowledgement requeues it.
-    pub(super) fn next_frame<Schema>(
+    pub(super) fn next_root<Schema>(
         &mut self,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         wave: &RequiredWaveSelection<'_, Schema>,
         admission: &mut InvalidationEditAdmission,
-    ) -> Result<Option<SelectedReadyReadmission>, WorthQueryOutputDemandDenial> {
+    ) -> Result<Option<(usize, SelectedReadyReadmission)>, WorthQueryOutputDemandDenial> {
         while !self.drained {
             let Some(work) = runtime.output_demands.next_required_work_for_selected(
                 wave.shared.selected().product().read_lease_ref(),
@@ -131,10 +123,9 @@ impl RequiredQueueFrames {
                 self.hold(work, admission)?;
                 continue;
             };
+            // The caller already certified its own occurrence. A moved basis
+            // cannot use that old certification to discharge a newer cause.
             if ready.same_record(&wave.anchor_ready, admission)? {
-                // The caller's proof covers its own cause only while the wave
-                // is still where the caller settled. An unfunded
-                // acknowledgement leaves the cause queued.
                 if self.caller_current {
                     drop(work.acknowledge_subsumed_admitted(admission));
                 } else {
@@ -142,21 +133,82 @@ impl RequiredQueueFrames {
                 }
                 continue;
             }
-            self.frame = Some(work);
-            return Ok(Some(ready));
+            admission
+                .charge_external_work(std::mem::size_of::<Option<SelectedRequiredWork>>() as u64)
+                .map_err(|_| work_denial())?;
+            if self.roots.len() == self.roots.capacity() {
+                let next = self
+                    .roots
+                    .capacity()
+                    .checked_mul(2)
+                    .ok_or_else(capacity_denial)?
+                    .max(1);
+                let item = std::mem::size_of::<Option<SelectedRequiredWork>>();
+                admission
+                    .admit_read_scratch(
+                        u64::try_from(next.checked_mul(item).ok_or_else(capacity_denial)?)
+                            .map_err(|_| capacity_denial())?,
+                    )
+                    .map_err(admission_denial)?;
+                admission
+                    .charge_external_work(
+                        u64::try_from(self.roots.len().checked_mul(item).ok_or_else(work_denial)?)
+                            .map_err(|_| work_denial())?,
+                    )
+                    .map_err(|_| work_denial())?;
+                let mut replacement = Vec::new();
+                replacement
+                    .try_reserve_exact(next)
+                    .map_err(|_| capacity_denial())?;
+                if replacement.capacity() != next {
+                    return Err(capacity_denial());
+                }
+                replacement.append(&mut self.roots);
+                self.roots = replacement;
+            }
+            let index = self.roots.len();
+            self.roots.push(Some(work));
+            return Ok(Some((index, ready)));
         }
         Ok(None)
     }
 
-    /// The queue frame itself is Current on this wave.
-    pub(super) fn discharge_frame(
+    /// Revalidate a collected selection before its member has published.
+    pub(super) fn retains_selection<Schema>(
         &mut self,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        index: usize,
+        ready: &SelectedReadyReadmission,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<bool, WorthQueryOutputDemandDenial> {
+        let work = self.roots[index]
+            .as_ref()
+            .expect("a queued root owns its selection");
+        let current = runtime
+            .output_demands
+            .selected_ready_completion(work, admission)?;
+        if let Some(current) = current {
+            if current.same_ready_cell(ready, admission)? {
+                return Ok(true);
+            }
+        }
+        // A publication can supersede a selection collected for a later wave.
+        // Dropping its issued token requeues the cause; only a fresh owner join
+        // can provide the next Ready pin and selected version.
+        drop(self.roots[index].take());
+        self.drained = false;
+        Ok(false)
+    }
+
+    /// The queued root itself is Current on this basis.
+    pub(super) fn acknowledge_root(
+        &mut self,
+        index: usize,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
-        let work = self
-            .frame
+        let work = self.roots[index]
             .take()
-            .expect("an active queue chain has its item");
+            .expect("a selected queued root has its token");
         drop(work.acknowledge_subsumed_admitted(admission)?);
         Ok(())
     }
@@ -164,18 +216,18 @@ impl RequiredQueueFrames {
     /// The queue chain cannot finish on this wave. Budget exhaustion ends the
     /// queue work and returns the caller's outcome; any other stop keeps the
     /// item for a later advance and moves on to the next one.
-    pub(super) fn hold_frame(
+    pub(super) fn hold_root(
         &mut self,
+        index: usize,
         stop: Option<WorthQueryOutputDemandDenial>,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         if let Some(stop) = stop.filter(is_budget) {
             return Err(stop);
         }
-        let work = self
-            .frame
+        let work = self.roots[index]
             .take()
-            .expect("an active queue chain has its item");
+            .expect("a selected queued root has its token");
         self.hold(work, admission)
     }
 
@@ -232,7 +284,7 @@ mod tests {
 
     #[test]
     fn a_queue_stop_after_the_caller_finished_returns_the_caller_outcome() {
-        let mut queue = RequiredQueueFrames::new();
+        let mut queue = QueuedRequiredRoots::new();
         queue.finish_caller(WorthQueryOutputDemandAdvance::Pending);
         assert!(matches!(
             queue.conclude(Err(unrelated_stop())),
@@ -242,7 +294,7 @@ mod tests {
 
     #[test]
     fn a_stop_before_the_caller_finished_is_the_callers_own() {
-        let mut queue = RequiredQueueFrames::new();
+        let mut queue = QueuedRequiredRoots::new();
         assert!(matches!(
             queue.conclude(Err(unrelated_stop())),
             Err(stop) if stop.kind() == WorthQueryOutputDemandDenialKind::ForeignSource

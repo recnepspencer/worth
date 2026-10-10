@@ -1,3 +1,4 @@
+pub(in crate::domain_computation::primary_graph) use lifecycle::RunningSelectedExecution;
 use std::collections::HashMap;
 use std::sync::{Arc, Condvar, Mutex};
 

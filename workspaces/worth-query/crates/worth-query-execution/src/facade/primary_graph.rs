@@ -163,7 +163,7 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryConditionalRuntimeReinstallationReceipt, WorthQueryConditionalSignalDecision,
     WorthQueryCorrelatedInboundOccurrence, WorthQueryCurrentOutputDenial,
     WorthQueryCurrentOutputDenialKind, WorthQueryCurrentOutputSelection,
-    WorthQueryCustomInvariantDenial, WorthQueryDelegationActivationProgram,
+    WorthQueryCustomInvariantDenial, WorthQueryDecisionPlan, WorthQueryDelegationActivationProgram,
     WorthQueryElevationApprovalAuthorizationDenial, WorthQueryElevationApprovalOutcome,
     WorthQueryElevationApprovalProgram, WorthQueryElevationCloseAuthorizationDenial,
     WorthQueryElevationCloseOutcome, WorthQueryElevationCloseProgram,

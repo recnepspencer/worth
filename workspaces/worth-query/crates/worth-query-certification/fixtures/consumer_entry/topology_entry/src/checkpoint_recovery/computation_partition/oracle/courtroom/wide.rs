@@ -133,20 +133,18 @@ impl<const FRESH: bool> WorthQueryApplicationContribution<CheckpointSchema>
     ) -> Result<(), primary_graph::WorthQueryPrimaryGraphInstallationDenial> {
         let installed =
             setup.partitioned_computation::<PlanarFinalOutputFeature, Totals, _>(WideOwner)?;
-        setup.handler::<RegionOutputBinding<CheckpointSchema>, _>(RegionOutputHandler::running(move |reader, set| {
-            worth_query_host::facade::primary_graph::full_partitioned_computation_preparations_on_this_thread_for_test();
-            take_calls(); COMBINES.store(0, Ordering::Relaxed); tree_count::reset();
-            worth_query_host::facade::primary_graph::partitioned_computation_tree_work_on_this_thread_for_test();
-            let outcome = (|| {
-                let prepared = if FRESH { installed.prepare_without_reuse_for_test(reader, set)? } else { installed.prepare(reader, set)? };
-                let computed = prepared.compute(reader.managed_computation_execution())?;
-                let charged = computed.charged_work();
-                Ok((computed.complete()?.to_bits(), charged))
-            })();
-            let value = outcome.as_ref().ok().map(|(bits, _)| *bits);
-            room().push(OracleRun { published: Vec::new(), full_preparations: worth_query_host::facade::primary_graph::full_partitioned_computation_preparations_on_this_thread_for_test(), outcome, runs: runs_on_this_thread().into_iter().map(|(run,_)| run).collect(), calls: take_calls(), tree_runs: worth_query_host::facade::primary_graph::partitioned_computation_tree_work_on_this_thread_for_test(), combines: COMBINES.swap(0, Ordering::Relaxed), tree_nodes: tree_count::take_nodes(), placement: tree_count::placement() });
-            value
-        }).preserving_payload())?;
+        setup.handler::<RegionOutputBinding<CheckpointSchema>, _>(
+            RegionOutputHandler::running(move |reader, set| {
+                super::super::decision_plan::begin();
+                let prepared = if FRESH {
+                    installed.prepare_without_reuse_for_test(reader, set)
+                } else {
+                    installed.prepare(reader, set)
+                };
+                super::super::decision_plan::prepared(prepared, |_| {})
+            })
+            .preserving_payload(),
+        )?;
         let unretained =
             owner::running::<program::UnretainedTotals<WORK>, _>(setup, owner::RegionTotalsOwner)?;
         setup.handler::<RegionTotalsDemandBinding<CheckpointSchema>, _>(unretained)?;

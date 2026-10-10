@@ -1,4 +1,5 @@
 pub(in crate::domain_computation::primary_graph) use registry::ConsumerCustody;
+pub(in crate::domain_computation::primary_graph) use registry::RunningSelectedExecution;
 mod currentness;
 mod readiness_delivery;
 mod recovered_outputs;

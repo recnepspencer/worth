@@ -45,8 +45,8 @@ mod requested;
 pub(super) use requested::advance_requested_output;
 mod cycles;
 mod drive;
-mod frame;
-use frame::{FrameRole, RequiredWaveFrame};
+mod frontier;
+mod member_key;
 mod queued;
 mod resolved;
 mod selection;
@@ -67,119 +67,19 @@ pub(super) enum RequiredWaveTarget {
 
 /// A cue is only scheduling custody. A Current result comes from the exact
 /// accepted row, its installed producer, and the selected Product/native proof.
-pub(super) enum RequiredWaveStep<Schema: ApplicationSchema> {
+pub(super) enum RequiredWaveStep<'owner, Schema: ApplicationSchema> {
     Current(Arc<WorthQueryOutputDemandSettlement>),
     Upstream(SelectedReadyReadmission),
     /// The upstream row is still refreshing.
     Held(WorthQueryOutputDemandKey),
     Pending,
-    Fresh(RequiredFreshProgress<Schema>),
-}
-
-/// Only the exact dependency chain currently being resolved is held here.
-/// It never enumerates unrelated required or clean records.
-struct RequiredWaveStack {
-    frames: Vec<RequiredWaveFrame>,
-}
-
-impl RequiredWaveStack {
-    fn new() -> Self {
-        Self { frames: Vec::new() }
-    }
-
-    /// Preserve role and contact attribution while a prerequisite runs.
-    fn suspend_current(
-        &mut self,
-        current: &mut Option<SelectedReadyReadmission>,
-        role: FrameRole,
-        contacts: usize,
-        admission: &mut InvalidationEditAdmission,
-    ) -> Result<bool, WorthQueryOutputDemandDenial> {
-        match current.take() {
-            Some(ready) => self.push(
-                RequiredWaveFrame {
-                    ready,
-                    role,
-                    contacts,
-                },
-                admission,
-            ),
-            None => Ok(true),
-        }
-    }
-
-    /// A repeated live registry member is a pending cycle, not authority to
-    /// discharge any edge. The caller keeps its original interest for retry.
-    fn push(
-        &mut self,
-        next: RequiredWaveFrame,
-        admission: &mut InvalidationEditAdmission,
-    ) -> Result<bool, WorthQueryOutputDemandDenial> {
-        admission
-            .charge_external_work(3)
-            .map_err(|_| work_denial())?;
-        for prior in &self.frames {
-            if prior.ready.same_record(&next.ready, admission)? {
-                return Ok(false);
-            }
-        }
-        let old_bytes = self
-            .frames
-            .capacity()
-            .checked_mul(std::mem::size_of::<RequiredWaveFrame>())
-            .ok_or_else(capacity_denial)?;
-        let next_len = self
-            .frames
-            .len()
-            .checked_add(1)
-            .ok_or_else(capacity_denial)?;
-        if self.frames.len() == self.frames.capacity() {
-            // A chain grows geometrically so successive prerequisites do not
-            // repeatedly relocate the whole stack. The old and new buffers
-            // coexist during reserve; the selected pin is then written once.
-            let next_capacity = self.frames.capacity().saturating_mul(2).max(next_len);
-            let new_bytes = next_capacity
-                .checked_mul(std::mem::size_of::<RequiredWaveFrame>())
-                .ok_or_else(capacity_denial)?;
-            let peak = old_bytes
-                .checked_add(new_bytes)
-                .ok_or_else(capacity_denial)?;
-            admission
-                .admit_read_scratch(u64::try_from(peak).map_err(|_| capacity_denial())?)
-                .map_err(admission_denial)?;
-            let moved_and_written = old_bytes
-                .checked_mul(2)
-                .ok_or_else(work_denial)?
-                .checked_add(std::mem::size_of::<RequiredWaveFrame>())
-                .and_then(|work| work.checked_add(3))
-                .ok_or_else(work_denial)?;
-            admission
-                .charge_external_work(u64::try_from(moved_and_written).map_err(|_| work_denial())?)
-                .map_err(|_| work_denial())?;
-            let mut replacement = Vec::new();
-            replacement
-                .try_reserve_exact(next_capacity)
-                .map_err(|_| capacity_denial())?;
-            if replacement.capacity() != next_capacity {
-                return Err(capacity_denial());
-            }
-            replacement.append(&mut self.frames);
-            self.frames = replacement;
-        } else {
-            admission
-                .charge_external_work(
-                    u64::try_from(std::mem::size_of::<RequiredWaveFrame>() + 1)
-                        .map_err(|_| work_denial())?,
-                )
-                .map_err(|_| work_denial())?;
-        }
-        self.frames.push(next);
-        Ok(true)
-    }
-
-    fn pop(&mut self) -> Option<RequiredWaveFrame> {
-        self.frames.pop()
-    }
+    Fresh(
+        super::super::super::execution::prepared_plan::OwnerPlan<
+            'owner,
+            RequiredFreshProgress<Schema>,
+            WorthQueryOutputDemandDenial,
+        >,
+    ),
 }
 
 /// Dispatch by the selected registry row's producer identity. The installed
@@ -222,20 +122,20 @@ pub(super) fn installed_for_selected_cue<'runtime, Schema>(
 /// Certify one exact Ready cell while the wave retains one selected Product.
 /// The registry's exact consumed-ID join converts PendingExact to owned
 /// scheduling custody before the candidate's borrowed proof leaves scope.
-pub(super) fn certify_required_ready<Schema>(
-    phase: &WorthQueryAdvancementPhase<'_>,
+pub(super) fn certify_required_ready<'owner, Schema>(
+    phase: &'owner WorthQueryAdvancementPhase<'owner>,
 
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &'owner WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request_scope: &WorthQueryRequestScope,
-    wave: &RequiredWaveSelection<'_, Schema>,
+    wave: &'owner RequiredWaveSelection<'_, Schema>,
     selected: &SelectedReadyReadmission,
     caller_installed: Option<&InstalledProducerProvider<Schema>>,
     resolved: Option<&ResolvedRequiredPredecessors<'_, Schema>>,
     producer_contacts_in_this_demand: usize,
     refresh_permission: Result<(), WorthQueryOutputDemandDenial>,
     admission: &mut InvalidationEditAdmission,
-) -> Result<RequiredWaveStep<Schema>, WorthQueryOutputDemandDenial>
+) -> Result<RequiredWaveStep<'owner, Schema>, WorthQueryOutputDemandDenial>
 where
     Schema: ApplicationSchema + 'static,
 {
@@ -308,7 +208,7 @@ where
             })
         }
         RequiredCueProgress::PendingUnresolved => Ok(RequiredWaveStep::Pending),
-        RequiredCueProgress::Fresh(progress) => Ok(RequiredWaveStep::Fresh(progress)),
+        RequiredCueProgress::Fresh(plan) => Ok(RequiredWaveStep::Fresh(plan)),
     }
 }
 

@@ -61,10 +61,6 @@ where
         self.installation_work
     }
 
-    pub(in super::super) fn entries(&self) -> &[RequiredFreshProgress<Schema>] {
-        &self.caller.entries
-    }
-
     /// Install `progress` as the last entry, ending any it supersedes.
     pub(super) fn push(
         mut self,
@@ -95,23 +91,6 @@ where
         let caller = self.caller;
         caller.entries.push(progress);
         caller
-    }
-}
-
-impl<Schema> PreparedRequiredContinuationSlot<'_, Schema>
-where
-    Schema: ApplicationSchema + 'static,
-{
-    /// Install `progress` and take its outcome.
-    pub(in super::super) fn install(
-        self,
-        progress: RequiredFreshProgress<Schema>,
-    ) -> RequiredFreshOutcome {
-        self.push(progress)
-            .entries
-            .last_mut()
-            .expect("prepared slot installs one successor")
-            .take_outcome()
     }
 }
 

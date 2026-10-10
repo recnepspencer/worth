@@ -5,7 +5,7 @@ use super::super::{
     WorthQueryAdmittedOutputDemand, WorthQueryOutputDemandAdvance, WorthQueryProducerOutputFamily,
 };
 use super::drive::drive_required_wave;
-use super::queued::RequiredQueueFrames;
+use super::queued::QueuedRequiredRoots;
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::producer::WorthQueryProducerCommitAuthority;
 use crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority as Authority;
@@ -148,7 +148,7 @@ where
             ) => return Ok(None),
         }
     }
-    let mut queue = RequiredQueueFrames::new();
+    let mut queue = QueuedRequiredRoots::new();
     // A queue frame refreshes rows for owners outside this request. Its
     // unfinished successors go to registry custody when the wave ends.
     let mut frame_custody = RequiredContinuations::default();

@@ -1,9 +1,10 @@
 //! Canonical producer input preparation on the demand's cumulative admission.
 
+#[cfg(test)]
+use worth_query_declaration::facade::application_operation::ApplicationMutationIdentities;
 use worth_query_declaration::facade::application_operation::{
-    ApplicationMutationBinding, ApplicationMutationIdentities,
-    ApplicationMutationIdentityAdmittedDenial, ApplicationMutationIdentityDenial,
-    CanonicalEncodingCharge,
+    ApplicationMutationBinding, ApplicationMutationIdentityAdmittedDenial,
+    ApplicationMutationIdentityDenial, CanonicalEncodingCharge,
 };
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -12,7 +13,8 @@ use super::{
     WorthQueryOutputDemandDenialKind,
 };
 
-pub(super) fn encode_input<'input, Schema, Binding>(
+#[cfg(test)]
+fn encode_input<'input, Schema, Binding>(
     producer: &str,
     key: &'input Binding::IdempotencyKey,
     input: &'input Binding::Input,
@@ -22,7 +24,39 @@ where
     Schema: ApplicationSchema,
     Binding: ApplicationMutationBinding<Schema>,
 {
-    ApplicationMutationIdentities::encode_admitted(key, input, &mut |charge| match charge {
+    ApplicationMutationIdentities::encode_admitted(key, input, &mut |charge| {
+        admit_encoding_charge(producer, admission, charge)
+    })
+    .map_err(|error| encoding_denial(producer, error))
+}
+
+pub(super) fn encode_owned_input<Schema, Binding>(
+    producer: &str,
+    key: Binding::IdempotencyKey,
+    input: Binding::Input,
+    admission: &mut InvalidationEditAdmission,
+) -> Result<
+    worth_query_declaration::facade::application_operation::ApplicationOwnedMutationIdentities<
+        Schema,
+        Binding,
+    >,
+    WorthQueryOutputDemandDenial,
+>
+where
+    Schema: ApplicationSchema,
+    Binding: ApplicationMutationBinding<Schema>,
+{
+    worth_query_declaration::facade::application_operation::ApplicationOwnedMutationIdentities::encode_admitted(
+        key, input, &mut |charge| admit_encoding_charge(producer, admission, charge),
+    ).map_err(|error| encoding_denial(producer, error))
+}
+
+fn admit_encoding_charge(
+    producer: &str,
+    admission: &mut InvalidationEditAdmission,
+    charge: CanonicalEncodingCharge,
+) -> Result<(), WorthQueryOutputDemandDenial> {
+    match charge {
         CanonicalEncodingCharge::Work(units) => {
             admission.charge_external_work(units).map_err(|stop| {
                 denial(
@@ -39,8 +73,14 @@ where
                 )
             })
         }
-    })
-    .map_err(|error| match error {
+    }
+}
+
+fn encoding_denial(
+    producer: &str,
+    error: ApplicationMutationIdentityAdmittedDenial<WorthQueryOutputDemandDenial>,
+) -> WorthQueryOutputDemandDenial {
+    match error {
         ApplicationMutationIdentityAdmittedDenial::Key(error) => {
             identity_unavailable(producer, ApplicationMutationIdentityDenial::Key(error))
         }
@@ -53,7 +93,7 @@ where
             WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
             format!("{producer}: canonical input capacity unavailable"),
         ),
-    })
+    }
 }
 
 #[cfg(test)]
@@ -69,6 +109,45 @@ mod tests {
             maximum_work_visits: work,
             maximum_preparation_bytes: 1024 * 1024,
         })
+    }
+
+    #[test]
+    fn owned_request_keeps_the_issued_pair_without_another_encoding_charge() {
+        let key = "suspended-owner-request".to_owned();
+        let input = ProgramRequiredInput::new("open");
+        let plain = ApplicationMutationIdentities::<
+            IdentityExecutionSchema,
+            ProgramRequiredMutationBinding,
+        >::encode(&key, &input)
+        .unwrap();
+        let expected_key = *plain.key_identity();
+        let expected_input = *plain.input_identity();
+        let expected_work = plain.canonical_work();
+        let mut borrowed_admission = admission(1_000_000);
+        encode_input::<IdentityExecutionSchema, ProgramRequiredMutationBinding>(
+            "producer",
+            &key,
+            &input,
+            &mut borrowed_admission,
+        )
+        .unwrap();
+        let mut owned_admission = admission(1_000_000);
+        let owned = encode_owned_input::<IdentityExecutionSchema, ProgramRequiredMutationBinding>(
+            "producer",
+            key,
+            input,
+            &mut owned_admission,
+        )
+        .unwrap();
+        let work = owned_admission.charged_work();
+        assert_eq!(work, borrowed_admission.charged_work());
+        for _ in 0..2 {
+            let borrowed = owned.borrow();
+            assert_eq!(*borrowed.key_identity(), expected_key);
+            assert_eq!(*borrowed.input_identity(), expected_input);
+            assert_eq!(borrowed.canonical_work(), expected_work);
+        }
+        assert_eq!(owned_admission.charged_work(), work);
     }
 
     #[test]

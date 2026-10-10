@@ -1,3 +1,4 @@
+mod declared_predecessors;
 use super::super::{
     DemandRegistryState, DemandState, ReadyCompletion, WorthQueryOutputAdvancement,
     WorthQueryOutputCheckpoint,

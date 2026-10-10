@@ -89,13 +89,15 @@ impl ResolvedOnWave {
             .any(|(prior, _)| prior.completion().same_cell(upstream.completion()))
     }
 
-    pub(super) fn view<'a, Schema: ApplicationSchema>(
+    pub(super) fn view_two<'a, Schema: ApplicationSchema>(
         &'a self,
         custody: &'a [RequiredFreshProgress<Schema>],
+        other_custody: &'a [RequiredFreshProgress<Schema>],
     ) -> Option<ResolvedRequiredPredecessors<'a, Schema>> {
         (!self.entries.is_empty()).then_some(ResolvedRequiredPredecessors {
             resolved: &self.entries,
             custody,
+            other_custody,
         })
     }
 }
@@ -113,6 +115,7 @@ where
         Arc<WorthQueryOutputDemandSettlement>,
     )],
     custody: &'a [RequiredFreshProgress<Schema>],
+    other_custody: &'a [RequiredFreshProgress<Schema>],
 }
 
 impl<Schema> ResolvedRequiredPredecessors<'_, Schema>
@@ -130,7 +133,7 @@ where
     ) -> Result<Option<ResolvedConsumedPredecessor>, WorthQueryOutputDemandDenial> {
         for (successor_ready, current) in self.resolved {
             let mut progress = None;
-            for entry in self.custody.iter().rev() {
+            for entry in self.custody.iter().chain(self.other_custody).rev() {
                 if successor_ready.matches_interest(entry.interest(), admission)? {
                     progress = Some(entry);
                     break;

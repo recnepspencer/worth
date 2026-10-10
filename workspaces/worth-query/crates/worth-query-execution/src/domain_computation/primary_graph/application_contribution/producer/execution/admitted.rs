@@ -9,7 +9,7 @@ pub(super) fn execute_fresh<Schema, Binding>(
     request_scope: &WorthQueryRequestScope,
     branch: WorthQueryProductBranch,
     required_output: RequiredOutputDemandContext,
-    provider: &Binding::Provider,
+    provider: &std::sync::Arc<Binding::Provider>,
     disclosure: FreshOutputDisclosure<SourceQuery<Schema, Binding>, SourceValue<Schema, Binding>>,
     successor_of: Option<[u8; 32]>,
     commit_authority: WorthQueryProducerCommitAuthority,

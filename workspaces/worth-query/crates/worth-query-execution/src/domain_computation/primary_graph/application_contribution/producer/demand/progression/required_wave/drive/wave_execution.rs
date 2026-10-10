@@ -1,0 +1,133 @@
+//! Serial backing of the one wave driver: all prepare, all compute, ordered apply.
+use super::*;
+use super::readiness_collection::{self, MemberStop};
+use super::super::selection::committed_ready;
+use super::super::super::super::RequiredFreshOutcome;
+use crate::domain_computation::primary_graph::application_contribution::producer::execution::canonical_apply::CanonicalApplyCursor;
+
+pub(super) struct WaveProgress {
+    pub moved: bool,
+    pub prepared: bool,
+    pub stopped: Option<(usize, WorthQueryOutputDemandDenial)>,
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(super) fn run_serial<'owner, Schema, Family>(
+    phase: &'owner WorthQueryAdvancementPhase<'owner>,
+    runtime: &'owner WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
+    principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+    request: &WorthQueryRequestScope,
+    authority: &WorthQueryProducerCommitAuthority,
+    wave: &'owner RequiredWaveSelection<'owner, Schema>,
+    frontier: &mut RequiredFrontier,
+    resolved: &mut ResolvedOnWave,
+    queue_custody: &mut RequiredContinuations<Schema>,
+    admission: &mut InvalidationEditAdmission,
+) -> Result<WaveProgress, WorthQueryOutputDemandDenial>
+where
+    Schema: ApplicationSchema + 'static,
+    Family: WorthQueryProducerOutputFamily<Schema>,
+{
+    let mut caller_storage = demand.required_continuations.prepare_wave();
+    let mut queue_storage = queue_custody.prepare_wave();
+    let prepared = readiness_collection::collect::<Schema, Family>(
+        phase,
+        runtime,
+        principal,
+        request,
+        wave,
+        frontier,
+        resolved,
+        &mut caller_storage,
+        &mut queue_storage,
+        &demand.installed_entry,
+        demand.producer_contacts_in_this_demand,
+        demand.admission_kind,
+        authority,
+        admission,
+    )?;
+    if prepared.members.is_empty() {
+        return Ok(WaveProgress {
+            moved: false,
+            prepared: false,
+            stopped: None,
+        });
+    }
+    let (keys, plans): (Vec<_>, Vec<_>) = prepared.members.into_iter().unzip();
+    let keys = worth_proof::CanonicalUniqueVec::try_from_sorted_unique(keys)
+        .map_err(|_| foreign_denial())?;
+    let execution = phase
+        .execution_for(&runtime.product_runtime)
+        .map_err(|_| foreign_denial())?;
+    let cursor = CanonicalApplyCursor::compute_serial(keys, plans, execution);
+    let mut moved = false;
+    let result = cursor.apply(admission, |key, mut progress, admission| {
+        let index = key.index;
+        let member = &mut frontier.members[index];
+        let storage = if member.caller {
+            &mut caller_storage
+        } else {
+            &mut queue_storage
+        };
+        if index == 0 && wave.target == RequiredWaveTarget::Caller {
+            progress.attribute_to_caller(&mut demand.producer_contacts_in_this_demand);
+        }
+        member.contacts = progress.producer_contacts();
+        match storage.install_next(progress) {
+            RequiredFreshOutcome::Refused(stop) => return Err(MemberStop { index, stop }),
+            RequiredFreshOutcome::Advanced => {}
+        }
+        // Each slot commits, publishes and advances its actual checkpoint
+        // before the consuming cursor can yield the next slot.
+        loop {
+            let successor = storage.last_mut();
+            match runtime
+                .output_demands
+                .interest_ready_readmission(successor.interest(), admission)
+            {
+                Ok(Some(ready)) => {
+                    runtime
+                        .output_demands
+                        .clear_required_stop(successor.interest().key());
+                    moved |= committed_ready(&ready, admission)
+                        .map_err(|stop| MemberStop { index, stop })?;
+                    member.ready = ready;
+                    member.resolved_successor = true;
+                    member.caller_successor |= index == 0;
+                    member.state = MemberState::Inspect;
+                    break;
+                }
+                Err(stop) => return Err(MemberStop { index, stop }),
+                Ok(None) => {}
+            }
+            match successor.advance_checkpoint(phase, runtime, request, admission) {
+                Ok(true) => continue,
+                Ok(false) => {
+                    member.state = MemberState::Pending;
+                    moved = true;
+                    break;
+                }
+                Err(stop) => return Err(MemberStop { index, stop }),
+            }
+        }
+        Ok(())
+    });
+    // The unvisited suffix's owner closures and computed values have already
+    // dropped. Their real interests are restored by the original claim custody.
+    for member in &mut frontier.members {
+        if matches!(member.state, MemberState::Prepared) {
+            member.state = if result.is_err() {
+                MemberState::Pending
+            } else {
+                MemberState::Inspect
+            };
+        }
+    }
+    let stopped = result.err().map(|failure| (failure.index, failure.stop));
+    Ok(WaveProgress {
+        moved,
+        prepared: true,
+        stopped,
+    })
+}

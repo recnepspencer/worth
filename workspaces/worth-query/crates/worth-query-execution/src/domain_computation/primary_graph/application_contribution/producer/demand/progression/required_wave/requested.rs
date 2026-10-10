@@ -6,7 +6,7 @@ use super::super::{
     WorthQueryAdmittedOutputDemand, WorthQueryOutputDemandAdvance, WorthQueryProducerOutputFamily,
 };
 use super::drive::drive_required_wave;
-use super::queued::RequiredQueueFrames;
+use super::queued::QueuedRequiredRoots;
 use super::*;
 
 #[allow(clippy::too_many_arguments)]
@@ -73,7 +73,7 @@ where
         branch,
         target: RequiredWaveTarget::Requested,
     };
-    let mut queue = RequiredQueueFrames::new();
+    let mut queue = QueuedRequiredRoots::new();
     let mut frame_custody = RequiredContinuations::default();
     // This target can certify only the requested chain. It never discharges or
     // promotes the parent's Interest; its successors stay in that parent's custody.

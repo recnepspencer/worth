@@ -192,58 +192,8 @@ pub(super) fn kernels_entered() -> usize {
     room().kernels
 }
 
-/// Installs the computation's partitioned owner and returns the demand's
-/// handler, which runs the computation over the demanded set at every
-/// decision, reading through its own reader with its request's execution.
-pub(super) fn running<Computation, Owner>(setup: &mut Setup<'_>, owner: Owner) -> Installed
-where
-    Computation: ApplicationManagedComputation<
-        CheckpointSchema,
-        PlanarFinalOutputFeature,
-        Input = RegionEntries,
-    >,
-    Owner: WorthQueryPartitionedComputationOwner<
-        CheckpointSchema,
-        PlanarFinalOutputFeature,
-        Computation,
-        Operation = TotalRegions,
-        Output = f64,
-        Stopped = u32,
-    >,
-{
-    let installed =
-        setup.partitioned_computation::<PlanarFinalOutputFeature, Computation, _>(owner)?;
-    Ok(RegionTotalsHandler::running(move |reader, set| {
-        let outcome: RegionOutcome = (|| {
-            let computed = installed
-                .prepare(reader, set)?
-                .compute(reader.managed_computation_execution())?;
-            let charged_work = computed.charged_work();
-            #[cfg(feature = "test-query-execution-observer")]
-            let report = observed_report();
-            Ok(RegionTotal {
-                bits: computed.complete()?.to_bits(),
-                charged_work,
-                #[cfg(feature = "test-query-execution-observer")]
-                report,
-            })
-        })();
-        room().outcomes.push(outcome);
-    }))
-}
-
-/// Execution's report of the decision's one run, which ran in full. How a
-/// run ran is the observer's, never the handler's value.
-#[cfg(feature = "test-query-execution-observer")]
-fn observed_report() -> ExecutionReport {
-    let runs = runs_on_this_thread();
-    assert_eq!(runs.len(), 1, "one run per decision");
-    assert_eq!(runs[0].0, WorthQueryPartitionedComputationRun::Full(
-        worth_query_host::facade::application_contribution::WorthQueryPartitionedComputationFullCause::Unretained));
-    runs[0]
-        .1
-        .expect("the unretained full run reports its execution work")
-}
+mod decision_plan;
+pub(super) use decision_plan::running;
 
 /// The region totals under their partitioned owner.
 pub(super) fn with_region_totals(

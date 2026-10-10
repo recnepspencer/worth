@@ -1,5 +1,7 @@
 //! The compute and complete phases of a prepared partitioned computation.
 
+mod decision_plan;
+
 use std::collections::BTreeMap;
 use std::sync::Mutex;
 
@@ -231,11 +233,12 @@ where
             .prepared_work
             .checked_add(computed_work)
             .ok_or_else(exhausted)?;
-        self.deposit.write(completed);
         Ok(WorthQueryCompletedPartitionedComputation {
             installed: self.installed,
             reduced,
             charged_work,
+            completed,
+            deposit: self.deposit,
         })
     }
 }
@@ -250,6 +253,8 @@ where
     installed: WorthQueryInstalledPartitionedComputation<Schema, Feature, Computation, Owner>,
     reduced: Owner::PartitionResult,
     charged_work: u64,
+    completed: CompletedComputationRetention,
+    deposit: ComputationDeposit,
 }
 
 impl<Schema, Feature, Computation, Owner>
@@ -269,6 +274,7 @@ where
 
     /// Completes the reduced result on the calling thread.
     pub fn complete(self) -> Result<Owner::Output, Denial<Schema, Feature, Computation, Owner>> {
+        self.deposit.write(self.completed);
         self.installed
             .owner
             .complete(self.reduced)

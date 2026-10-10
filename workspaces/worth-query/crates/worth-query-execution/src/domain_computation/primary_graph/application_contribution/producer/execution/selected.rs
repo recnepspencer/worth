@@ -20,15 +20,15 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     Send + Sync
 {
     #[allow(clippy::too_many_arguments)]
-    fn advance_ready_on_selected<'basis>(
+    fn advance_ready_on_selected<'basis, 'owner>(
         &self,
-        phase: &WorthQueryAdvancementPhase<'_>,
+        phase: &'owner WorthQueryAdvancementPhase<'owner>,
 
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &'owner WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
-        shared: &'basis crate::domain_computation::primary_graph::SharedSelectedProductOperation<
-            '_,
+        shared: &'owner crate::domain_computation::primary_graph::SharedSelectedProductOperation<
+            'owner,
             Schema,
         >,
         positioned: &'basis PositionedRelationalSnapshot,
@@ -40,19 +40,23 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
         producer_contacts_in_this_demand: usize,
         refresh_permission: Result<(), WorthQueryOutputDemandDenial>,
         request_admission: &mut InvalidationEditAdmission,
-    ) -> Result<super::required_cue::RequiredCueProgress<'basis, Schema>, ProducerExecutionStop>
+    ) -> Result<
+        super::required_cue::RequiredCueProgress<'basis, 'owner, Schema>,
+        ProducerExecutionStop,
+    >
     where
+        'owner: 'basis,
         Schema: ApplicationSchema;
 
     #[allow(clippy::too_many_arguments)]
-    fn execute_on_selected(
+    fn execute_on_selected<'owner>(
         &self,
-        phase: &WorthQueryAdvancementPhase<'_>,
+        phase: &'owner WorthQueryAdvancementPhase<'owner>,
 
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &'owner WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
-        shared: &crate::domain_computation::primary_graph::SharedSelectedProductOperation<
+        shared: &'owner crate::domain_computation::primary_graph::SharedSelectedProductOperation<
             '_,
             Schema,
         >,
@@ -65,7 +69,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
         limits: WorthQueryOutputDemandLimits,
         request_admission: &mut InvalidationEditAdmission,
         producer_contacts: &mut usize,
-    ) -> Result<PreparedProducerExecutionOutcome, ProducerExecutionStop>;
+    ) -> Result<super::outcome::PreparedProducerExecutionPlan<'owner>, ProducerExecutionStop>;
 
     fn preserved_readiness_output_admitted(
         &self,
@@ -118,15 +122,15 @@ where
     }
 
     #[allow(clippy::too_many_arguments)]
-    fn advance_ready_on_selected<'basis>(
+    fn advance_ready_on_selected<'basis, 'owner>(
         &self,
-        phase: &WorthQueryAdvancementPhase<'_>,
+        phase: &'owner WorthQueryAdvancementPhase<'owner>,
 
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &'owner WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
-        shared: &'basis crate::domain_computation::primary_graph::SharedSelectedProductOperation<
-            '_,
+        shared: &'owner crate::domain_computation::primary_graph::SharedSelectedProductOperation<
+            'owner,
             Schema,
         >,
         positioned: &'basis PositionedRelationalSnapshot,
@@ -138,7 +142,12 @@ where
         producer_contacts_in_this_demand: usize,
         refresh_permission: Result<(), WorthQueryOutputDemandDenial>,
         request_admission: &mut InvalidationEditAdmission,
-    ) -> Result<super::required_cue::RequiredCueProgress<'basis, Schema>, ProducerExecutionStop>
+    ) -> Result<
+        super::required_cue::RequiredCueProgress<'basis, 'owner, Schema>,
+        ProducerExecutionStop,
+    >
+    where
+        'owner: 'basis,
     {
         use super::required_cue::RequiredCueProgress;
         // The registry selects this entry by the exact Ready producer, and
@@ -216,7 +225,7 @@ where
                     admission,
                 )?;
                 let progress = runtime
-                    .continue_required_fresh::<Binding::OutputFamily>(
+                    .prepare_required_fresh::<Binding::OutputFamily>(
                         phase,
                         fresh,
                         shared,
@@ -235,14 +244,14 @@ where
     }
 
     #[allow(clippy::too_many_arguments)]
-    fn execute_on_selected(
+    fn execute_on_selected<'owner>(
         &self,
-        phase: &WorthQueryAdvancementPhase<'_>,
+        phase: &'owner WorthQueryAdvancementPhase<'owner>,
 
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &'owner WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
-        shared: &crate::domain_computation::primary_graph::SharedSelectedProductOperation<
+        shared: &'owner crate::domain_computation::primary_graph::SharedSelectedProductOperation<
             '_,
             Schema,
         >,
@@ -255,7 +264,7 @@ where
         limits: WorthQueryOutputDemandLimits,
         request_admission: &mut InvalidationEditAdmission,
         producer_contacts: &mut usize,
-    ) -> Result<PreparedProducerExecutionOutcome, ProducerExecutionStop> {
+    ) -> Result<super::outcome::PreparedProducerExecutionPlan<'owner>, ProducerExecutionStop> {
         use super::super::demand::disclosure::FreshDisclosureAdmissionStop;
         // Fund the typed edition/type checks and the move-only execution split
         // before any early refusal. Producer subjects are borrowed statics.
@@ -338,14 +347,14 @@ where
             request_admission,
         )
         .map_err(|stop| super::selected_public::preparation_stop::<Schema, Binding>(stop))?;
-        let outcome = super::post_authorization::execute_authorized::<Schema, Binding>(
+        let plan = super::post_authorization::prepare_authorized::<Schema, Binding>(
             phase,
             runtime,
             shared.selected(),
             prepared.principal.principal(),
             prepared.operation,
             required_output,
-            self.provider.as_ref(),
+            std::sync::Arc::clone(&self.provider),
             source,
             observed_source,
             input,
@@ -358,9 +367,8 @@ where
             request_admission,
             producer_contacts,
         )?;
-        Ok(PreparedProducerExecutionOutcome::new(
-            outcome,
-            ready_backing,
-        ))
+        Ok(plan.map_result(move |outcome, _| {
+            outcome.map(|outcome| PreparedProducerExecutionOutcome::new(outcome, ready_backing))
+        }))
     }
 }

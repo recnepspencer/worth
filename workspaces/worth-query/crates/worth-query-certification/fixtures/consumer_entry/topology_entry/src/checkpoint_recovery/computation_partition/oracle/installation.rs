@@ -50,39 +50,24 @@ impl<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>
                 OracleOwner::<MODE>,
             )?;
         let handler = RegionOutputHandler::running(move |reader, set| {
-            let mut last_value = None;
+            let mut plan =
+                worth_query_host::facade::primary_graph::WorthQueryDecisionPlan::immediate(
+                    worth_query_host::facade::primary_graph::HandlerResult::Completed(None),
+                );
             for _ in 0..RUNS {
-                worth_query_host::facade::primary_graph::full_partitioned_computation_preparations_on_this_thread_for_test();
-                take_calls();
-                COMBINES.store(0, Ordering::Relaxed);
-                tree_count::reset();
-                worth_query_host::facade::primary_graph::partitioned_computation_tree_work_on_this_thread_for_test();
-                let outcome = (|| {
-                    let prepared = if MODE == 3 || super::differential::reference::model_replay() {
-                        installed.prepare_without_reuse_for_test(reader, set)?
-                    } else if super::branch_sharing::reinstallation_requested() {
-                        installed.prepare_after_reinstallation_for_test(reader, set)?
-                    } else {
-                        installed.prepare(reader, set)?
-                    };
-                    let computed = prepared.compute(reader.managed_computation_execution())?;
-                    let charged_work = computed.charged_work();
-                    Ok((computed.complete()?.to_bits(), charged_work))
-                })();
-                last_value = outcome.as_ref().ok().map(|(bits, _)| *bits);
-                let runs = runs_on_this_thread().into_iter().map(|(run, _)| run);
-                room().push(OracleRun {
-                    published: Vec::new(), full_preparations: worth_query_host::facade::primary_graph::full_partitioned_computation_preparations_on_this_thread_for_test(),
-                    outcome,
-                    runs: runs.collect(),
-                    calls: take_calls(),
-                    tree_runs: worth_query_host::facade::primary_graph::partitioned_computation_tree_work_on_this_thread_for_test(),
-                    combines: COMBINES.swap(0, Ordering::Relaxed),
-                tree_nodes: tree_count::take_nodes(),
-                placement: tree_count::placement(),
-                });
+                decision_plan::begin();
+                let prepared = if MODE == 3 || super::differential::reference::model_replay() {
+                    installed.prepare_without_reuse_for_test(reader, set)
+                } else if super::branch_sharing::reinstallation_requested() {
+                    installed.prepare_after_reinstallation_for_test(reader, set)
+                } else {
+                    installed.prepare(reader, set)
+                };
+                plan = plan
+                    .zip(decision_plan::prepared(prepared, |_| {}))
+                    .map(|(_, value)| value);
             }
-            last_value
+            plan
         });
         let handler = if MODE == 2 {
             handler.with_generated_payload()

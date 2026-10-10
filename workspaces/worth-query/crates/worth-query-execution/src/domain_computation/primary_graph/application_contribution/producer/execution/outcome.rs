@@ -15,6 +15,14 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     Stable(graph::output_lineage::PublishedStableLineage),
 }
 
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) type PreparedProducerExecutionPlan<
+    'owner,
+> = super::prepared_plan::OwnerPlan<
+    'owner,
+    PreparedProducerExecutionOutcome,
+    super::ProducerExecutionStop,
+>;
+
 /// A successful producer returns its original pre-effect Ready storage.
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct PreparedProducerExecutionOutcome
 {

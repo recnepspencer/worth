@@ -28,6 +28,8 @@ fn cancellation_of_a_joined_stable_refresh_restores_its_ready_and_all_custody() 
             invalidation.retained_capacity_bytes(),
             application.output_lineage_retained_bytes_for_test(),
         );
+        let before_breakdown = application.required_custody_breakdown_for_test();
+        let before_rows = application.registry_row_keys_for_test();
         let ready = application.stable_ready_sources_for_test();
         let claims = application.registry_successor_claims_for_test();
         let cancellation = authentication::WorthQueryCancellationSource::new();
@@ -55,7 +57,7 @@ fn cancellation_of_a_joined_stable_refresh_restores_its_ready_and_all_custody() 
             let (stopped, joined, stops) = worker.join().unwrap();
             assert!(
                 reached,
-                "the interrupted refresh really joined C's held Stable Ready"
+                "attempt {attempt}: the interrupted refresh really joined C's held Stable Ready; stops={stops:?}"
             );
             assert_eq!(
                 joined
@@ -105,7 +107,9 @@ fn cancellation_of_a_joined_stable_refresh_restores_its_ready_and_all_custody() 
                     before.1 + primary_graph::carried_read_basis_custody_for_test("main".len(), 6),
                     before.2,
                 ),
-                "the interrupted join refunds its custody; the live mark state retains one carried basis"
+                "the interrupted join refunds its custody; the live mark state retains one carried basis; before={before_breakdown:?}; after={:?}; before_rows={before_rows:?}; after_rows={:?}",
+                application.required_custody_breakdown_for_test(),
+                application.registry_row_keys_for_test()
             );
         }
     }
