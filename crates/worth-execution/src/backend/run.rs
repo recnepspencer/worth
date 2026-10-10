@@ -3,7 +3,7 @@ use super::{
     custody::RunCustody,
     evaluation,
     input::InputMode,
-    meter::{record_nested, KernelContext, KernelFailure, RunLimits},
+    meter::{record_nested, KernelContext, KernelFailure, NestedStopOwner, RunLimits},
     port::{BackendKind, BatchOutcome, BatchStop, TaskOutcome},
     settlement, PreparedBatchResources,
 };
@@ -35,7 +35,7 @@ where
     let mut custody = RunCustody::new(inputs, taken, prepared);
     if lease.is_none() && RunLimits::has_leased_parent() {
         let outcome = denied(LeaseDenial::UnrelatedNestedLease);
-        record_nested(outcome.report, true);
+        record_nested(outcome.report, Some(NestedStopOwner::Request));
         return custody.finish(outcome, batch);
     }
     if custody
@@ -45,7 +45,7 @@ where
     {
         let outcome = denied(LeaseDenial::UnrelatedNestedLease);
         if charge_parent {
-            record_nested(outcome.report, true);
+            record_nested(outcome.report, Some(NestedStopOwner::Request));
         }
         return custody.finish(outcome, batch);
     }
@@ -91,12 +91,13 @@ where
         let outcome = BatchOutcome {
             values: Vec::new(),
             stop: None,
+            stop_owner: None,
             prefix_boundary: None,
             report: ExecutionReport::new(ExecutionPosture::Serial, 0, 0, physical)
                 .with_fallback(ExecutionFallbackCause::NoWork),
         };
         if charge_parent {
-            record_nested(outcome.report, false);
+            record_nested(outcome.report, None);
         }
         return custody.finish(outcome, batch);
     }
@@ -113,7 +114,7 @@ where
     let Some(memory_bytes) = memory_bytes else {
         let outcome = denied(LeaseDenial::ChargedBytesOverflow);
         if charge_parent {
-            record_nested(outcome.report, true);
+            record_nested(outcome.report, Some(NestedStopOwner::Request));
         }
         return custody.finish(outcome, batch);
     };
@@ -124,7 +125,7 @@ where
     {
         let outcome = denied(LeaseDenial::UnrelatedNestedLease);
         if charge_parent {
-            record_nested(outcome.report, true);
+            record_nested(outcome.report, Some(NestedStopOwner::Request));
         }
         return custody.finish(outcome, batch);
     }
@@ -139,7 +140,7 @@ where
             Err(denial) => {
                 let outcome = denied(denial);
                 if charge_parent {
-                    record_nested(outcome.report, true);
+                    record_nested(outcome.report, Some(NestedStopOwner::Request));
                 }
                 return custody.finish(outcome, batch);
             }
@@ -154,7 +155,7 @@ where
             drop(custody.reservation.take());
             let outcome = denied(denial);
             if charge_parent {
-                record_nested(outcome.report, true);
+                record_nested(outcome.report, Some(NestedStopOwner::Request));
             }
             return custody.finish(outcome, batch);
         }
@@ -165,7 +166,7 @@ where
             Err(denial) => {
                 let outcome = denied(LeaseDenial::MemoryExhausted(denial));
                 if charge_parent {
-                    record_nested(outcome.report, true);
+                    record_nested(outcome.report, Some(NestedStopOwner::Request));
                 }
                 return custody.finish(outcome, batch);
             }
@@ -237,7 +238,7 @@ where
         fallback,
     );
     if charge_parent {
-        record_nested(outcome.report, outcome.stop.is_some());
+        record_nested(outcome.report, outcome.stop_owner);
     }
     custody.finish(outcome, batch)
 }
@@ -246,6 +247,7 @@ fn denied<R, E>(denial: LeaseDenial) -> BatchOutcome<R, E> {
     BatchOutcome {
         values: Vec::new(),
         stop: Some(BatchStop::Admission(denial)),
+        stop_owner: Some(NestedStopOwner::Request),
         prefix_boundary: None,
         report: ExecutionReport::new(
             ExecutionPosture::Serial,

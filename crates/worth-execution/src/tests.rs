@@ -31,6 +31,7 @@ mod adversarial;
 mod controlled_child;
 mod map_dispatch;
 mod memory_level;
+mod nested_stop_ownership;
 mod nesting;
 mod owned_map;
 mod prepared_map;

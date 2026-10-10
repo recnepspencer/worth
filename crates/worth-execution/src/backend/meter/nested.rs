@@ -1,31 +1,34 @@
 use worth_foundational::ExecutionReport;
 
-use super::ACTIVE_METER;
+use super::{NestedStopOwner, ACTIVE_METER};
 
 /// Add a joined nested computation to the invoking partition, never to a
 /// global completion-order counter. The enclosing partition's canonical
 /// identity determines whether this cost is ultimately charged.
-pub(crate) fn record_nested(report: ExecutionReport, stopped: bool) {
+pub(crate) fn record_nested(report: ExecutionReport, stop: Option<NestedStopOwner>) {
     ACTIVE_METER.with(|active| {
         if let Some(parent) = active.borrow().last() {
             let mut parent = parent.borrow_mut();
             parent.work = match parent.work.checked_add(report.charged_work()) {
                 Some(work) => work,
                 None => {
-                    parent.nested_stopped = true;
+                    parent.nested_stop.record(NestedStopOwner::Request);
                     u64::MAX
                 }
             };
             parent.span = match parent.span.checked_add(report.charged_span()) {
                 Some(span) => span,
                 None => {
-                    parent.nested_stopped = true;
+                    parent.nested_stop.record(NestedStopOwner::Request);
                     u64::MAX
                 }
             };
-            parent.nested_stopped |= stopped;
+            if let Some(owner) = stop {
+                parent.nested_stop.record(owner);
+            }
             if parent.work > parent.limits.ceiling {
-                parent.nested_stopped = true;
+                let owner = parent.limits.ceiling_owner;
+                parent.nested_stop.record(owner);
             }
         }
     });

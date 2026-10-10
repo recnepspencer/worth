@@ -30,10 +30,14 @@ pub(crate) fn active_serial_memory() -> Option<SerialMemoryBudget> {
 mod activity;
 mod framework_bytes;
 mod nested;
+mod nested_stop;
 mod prepared_context;
 mod run_context;
 pub(crate) use activity::{enter_certification_activity, enter_retained_memory, has_active_kernel};
 pub(crate) use nested::record_nested;
+pub use nested_stop::NestedComputationStop;
+use nested_stop::NestedStop;
+pub(crate) use nested_stop::NestedStopOwner;
 pub(crate) use prepared_context::PreparedMeterContext;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -70,6 +74,7 @@ pub(crate) struct RunLimits {
     tokens: Vec<CancellationToken>,
     deadline: Option<Instant>,
     ceiling: u64,
+    ceiling_owner: NestedStopOwner,
     worker_activity: Arc<WorkerActivity>,
     physical_activity: Arc<PhysicalActivity>,
     physical_cell_charged: bool,
@@ -110,6 +115,9 @@ impl Drop for WorkerActivityGuard {
 }
 
 impl RunLimits {
+    pub(crate) fn work_stop_owner(&self) -> NestedStopOwner {
+        self.ceiling_owner
+    }
     pub(crate) fn has_parent() -> bool {
         ACTIVE_METER.with(|active| !active.borrow().is_empty())
     }
@@ -196,7 +204,7 @@ struct KernelMeter {
     limits: RunLimits,
     work: u64,
     span: u64,
-    nested_stopped: bool,
+    nested_stop: NestedStop,
     checkpoint_stop: Option<KernelStop>,
 }
 
@@ -214,7 +222,7 @@ impl<'a, 'lease> KernelContext<'a, 'lease> {
                 limits,
                 work: 0,
                 span: 0,
-                nested_stopped: false,
+                nested_stop: NestedStop::Clear,
                 checkpoint_stop: None,
             })),
             _lease: PhantomData,
@@ -257,7 +265,7 @@ impl<'a, 'lease> KernelContext<'a, 'lease> {
     }
 
     pub(crate) fn nested_stopped(&self) -> bool {
-        self.meter.borrow().nested_stopped
+        self.meter.borrow().nested_stop.owner().is_some()
     }
 
     pub(crate) fn checkpoint_stop(&self) -> Option<KernelStop> {
@@ -273,7 +281,7 @@ impl<'a, 'lease> KernelContext<'a, 'lease> {
         }
         let result = (|| {
             meter.limits.safe_point()?;
-            if meter.nested_stopped {
+            if meter.nested_stop.owner().is_some() {
                 return Err(KernelStop::NestedStopped);
             }
             let next = meter
@@ -292,7 +300,13 @@ impl<'a, 'lease> KernelContext<'a, 'lease> {
             Ok(())
         })();
         if let Err(stop) = result {
-            meter.checkpoint_stop = Some(stop);
+            // The computational latch is the only memory of an untaken cause.
+            // A checkpoint cannot turn it into a second, irreversible latch.
+            if stop != KernelStop::NestedStopped
+                || meter.nested_stop.owner() == Some(NestedStopOwner::Request)
+            {
+                meter.checkpoint_stop = Some(stop);
+            }
         }
         result
     }

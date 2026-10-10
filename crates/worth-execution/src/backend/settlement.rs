@@ -6,7 +6,7 @@ use worth_foundational::{
 
 use super::{
     admission::BatchDeclaration,
-    meter::{KernelFailure, KernelStop, RunLimits},
+    meter::{KernelFailure, KernelStop, NestedStopOwner, RunLimits},
     port::{BatchOutcome, BatchStop, TaskOutcome},
 };
 
@@ -29,6 +29,7 @@ pub(crate) fn settle<R, E>(
     let mut discarded_work = 0_u64;
     let mut stop = None;
     let mut prefix_boundary = None;
+    let mut stop_owner = None;
     for (index, slot) in outcomes.into_iter().enumerate() {
         let outcome = slot
             .into_inner()
@@ -39,10 +40,13 @@ pub(crate) fn settle<R, E>(
             continue;
         }
         let identity = batch.identities()[index];
-        if charged_work
-            .checked_add(outcome.work)
-            .is_none_or(|sum| sum > limits.ceiling())
-        {
+        let next = charged_work.checked_add(outcome.work);
+        if next.is_none_or(|sum| sum > limits.ceiling()) {
+            stop_owner = Some(if next.is_none() {
+                NestedStopOwner::Request
+            } else {
+                limits.work_stop_owner()
+            });
             stop = Some(BatchStop::WorkExhausted { identity });
             prefix_boundary = Some(identity);
             discarded_work = discarded_work.saturating_add(outcome.work);
@@ -50,13 +54,16 @@ pub(crate) fn settle<R, E>(
         }
         charged_work += outcome.work;
         charged_span = charged_span.max(outcome.span);
-        match outcome.result {
+        let (result, owner) = outcome.result.into_parts(limits);
+        match result {
             Ok(value) => values.push(value),
             Err(KernelFailure::Stop(KernelStop::WorkCeiling)) => {
+                stop_owner = owner;
                 stop = Some(BatchStop::WorkExhausted { identity });
                 prefix_boundary = Some(identity);
             }
             Err(cause) => {
+                stop_owner = owner;
                 stop = Some(BatchStop::Failure { identity, cause });
                 prefix_boundary = Some(identity);
             }
@@ -80,5 +87,6 @@ pub(crate) fn settle<R, E>(
         stop,
         prefix_boundary,
         report: fallback.map_or(report, |cause| report.with_fallback(cause)),
+        stop_owner,
     }
 }

@@ -21,6 +21,7 @@ pub(crate) use meter::enter_certification_activity;
 pub(crate) use meter::enter_retained_memory;
 pub(crate) use meter::has_active_kernel;
 pub(crate) use meter::MemoryActivityGuard;
+pub use meter::NestedComputationStop;
 pub use meter::{KernelContext, KernelFailure, KernelStop};
 pub(crate) use ordered::{run_ordered, run_ordered_until, OrderedOutcome, OrderedStep};
 pub use port::BatchStop;
@@ -34,3 +35,5 @@ pub(crate) use scope::{
 };
 
 pub(crate) use meter::active_serial_memory;
+
+mod task_result;

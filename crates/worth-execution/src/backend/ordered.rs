@@ -12,7 +12,7 @@ use crate::{
 };
 
 use super::{
-    meter::{record_nested, KernelContext, KernelFailure, KernelStop, RunLimits},
+    meter::{record_nested, KernelContext, KernelFailure, KernelStop, NestedStopOwner, RunLimits},
     port::BatchStop,
 };
 
@@ -89,7 +89,7 @@ where
             ExecutionPhysicalReport::default(),
         )
         .with_fallback(ExecutionFallbackCause::NoWork);
-        record_nested(report, false);
+        record_nested(report, None);
         return OrderedOutcome {
             state: initial,
             outputs: Vec::new(),
@@ -157,6 +157,7 @@ where
     let mut state = initial;
     let mut outputs = Vec::with_capacity(identities.as_slice().len());
     let mut stop = None;
+    let mut stop_owner = None;
     let mut boundary = None;
     let mut completed_early = false;
     for (index, identity) in identities.as_slice().iter().copied().enumerate() {
@@ -177,6 +178,10 @@ where
         } else {
             result
         };
+        let failure_owner = result
+            .as_ref()
+            .err()
+            .map(|cause| context.failure_owner(cause));
         match result {
             Ok(step) => {
                 let (next, output, done) = match step {
@@ -186,6 +191,8 @@ where
                 if next.additional_charged_bytes() > max_state_bytes
                     || output.additional_charged_bytes() > max_output_bytes
                 {
+                    stop_owner =
+                        Some(context.failure_owner(&KernelFailure::<E>::ResultCapacityExceeded));
                     stop = Some(BatchStop::Failure {
                         identity,
                         cause: KernelFailure::ResultCapacityExceeded,
@@ -201,6 +208,7 @@ where
                 }
             }
             Err(KernelFailure::Stop(KernelStop::WorkCeiling)) => {
+                stop_owner = failure_owner;
                 stop = Some(BatchStop::WorkExhausted { identity });
                 boundary = Some(identity);
                 break;
@@ -208,6 +216,8 @@ where
             Err(KernelFailure::Domain(error))
                 if error.additional_charged_bytes() > max_error_bytes =>
             {
+                stop_owner =
+                    Some(context.failure_owner(&KernelFailure::<E>::ResultCapacityExceeded));
                 stop = Some(BatchStop::Failure {
                     identity,
                     cause: KernelFailure::ResultCapacityExceeded,
@@ -216,6 +226,7 @@ where
                 break;
             }
             Err(cause) => {
+                stop_owner = failure_owner;
                 stop = Some(BatchStop::Failure { identity, cause });
                 boundary = Some(identity);
                 break;
@@ -240,7 +251,7 @@ where
             limits.discarded_work(),
         ),
     );
-    record_nested(report, stop.is_some());
+    record_nested(report, stop_owner);
     drop(reservation);
     OrderedOutcome {
         state,
@@ -259,7 +270,7 @@ fn denied<S, O, E>(state: S, denial: LeaseDenial) -> OrderedOutcome<S, O, E> {
         0,
         ExecutionPhysicalReport::default(),
     );
-    record_nested(report, true);
+    record_nested(report, Some(NestedStopOwner::Request));
     OrderedOutcome {
         state,
         outputs: Vec::new(),

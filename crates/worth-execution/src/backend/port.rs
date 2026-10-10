@@ -8,7 +8,7 @@ use crate::{
 use super::{
     admission::AdmittedBatch,
     input::{BorrowedInputs, OwnedInputs},
-    meter::{KernelContext, KernelFailure},
+    meter::{KernelContext, KernelFailure, NestedStopOwner},
     run::run_batch,
     PreparedBatchResources,
 };
@@ -21,7 +21,7 @@ pub(crate) enum BackendKind {
 }
 
 pub(crate) struct TaskOutcome<R, E> {
-    pub(crate) result: Result<R, KernelFailure<E>>,
+    pub(crate) result: super::task_result::TaskResult<R, E>,
     pub(crate) work: u64,
     pub(crate) span: u64,
 }
@@ -44,6 +44,7 @@ pub(crate) struct BatchOutcome<R, E> {
     /// Exclusive identity boundary; every earlier partition settled.
     pub(crate) prefix_boundary: Option<PartitionIdentity>,
     pub(crate) report: ExecutionReport,
+    pub(crate) stop_owner: Option<NestedStopOwner>,
 }
 
 pub(crate) fn run_checked_batch<T, R, E, F>(

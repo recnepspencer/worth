@@ -59,5 +59,13 @@ where
         other => other,
     };
     let (work, span) = context.cost();
-    TaskOutcome { result, work, span }
+    let stop_owner = result
+        .as_ref()
+        .err()
+        .map(|failure| context.failure_owner(failure));
+    TaskOutcome {
+        result: super::task_result::TaskResult::new(result, stop_owner),
+        work,
+        span,
+    }
 }

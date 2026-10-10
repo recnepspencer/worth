@@ -7,7 +7,9 @@ use crate::{
     report::ChargedBytes,
 };
 
-use super::meter::{record_nested, KernelContext, KernelFailure, KernelStop, RunLimits};
+use super::meter::{
+    record_nested, KernelContext, KernelFailure, KernelStop, NestedStopOwner, RunLimits,
+};
 
 #[derive(Debug)]
 pub(crate) enum ScopeStop<E> {
@@ -245,7 +247,11 @@ where
         None => result.map_err(ScopeStop::Failure),
     };
     if charge_parent {
-        record_nested(report, result.is_err());
+        let stop_owner = result.as_ref().err().map(|stop| match stop {
+            ScopeStop::Admission(_) => NestedStopOwner::Request,
+            ScopeStop::Failure(failure) => context.failure_owner(failure),
+        });
+        record_nested(report, stop_owner);
     }
     drop(reservation);
     drop(serial_reservation);
@@ -285,7 +291,7 @@ fn denied<R, E>(denial: LeaseDenial, charge_parent: bool) -> ScopeOutcome<R, E> 
         ExecutionPhysicalReport::default(),
     );
     if charge_parent {
-        record_nested(report, true);
+        record_nested(report, Some(NestedStopOwner::Request));
     }
     ScopeOutcome {
         result: Err(ScopeStop::Admission(denial)),

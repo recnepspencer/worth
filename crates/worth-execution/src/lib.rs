@@ -24,6 +24,7 @@ pub use oracle::{compare_canonical_values, CanonicalBits};
 
 #[cfg(test)]
 mod tests;
+pub use backend::NestedComputationStop;
 pub use partition::{
     Bisection, BisectionDenial, BisectionQuality, ComponentDenial, ComponentPartitioner,
     KeyedDenial, KeyedEditDenial, KeyedItem, KeyedPartitioner, PartitionItemId,
