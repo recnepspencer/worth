@@ -5,7 +5,7 @@ use super::super::super::required_continuations::{
 use super::super::{
     WorthQueryAdmittedOutputDemand, WorthQueryOutputDemandAdvance, WorthQueryProducerOutputFamily,
 };
-use super::frontier::{DependencySchedule, MemberState, RequiredFrontier};
+use super::frontier::{DependencySchedule, MemberState, RequiredFrontier, RequiredUpstream};
 use super::queued::QueuedRequiredRoots;
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::producer::WorthQueryProducerCommitAuthority;
@@ -79,7 +79,11 @@ where
         }
         if wave.target == RequiredWaveTarget::Caller && !queue.draining() {
             if let Some(outcome) = canonical_apply::accept_current_caller(
-                runtime, demand, &wave, &frontier, admission,
+                runtime,
+                demand,
+                &wave,
+                &mut frontier,
+                admission,
             )? {
                 queue.finish_caller(outcome);
             }
@@ -120,8 +124,14 @@ where
                 admission,
             )? {
                 requested_refusal::RequestedRefusal::Ready(ready) => {
-                    let upstream = frontier.require_upstream(ready, member.caller, admission)?;
-                    frontier.wait_for(index, upstream);
+                    match frontier.require_upstream(ready, member.caller, admission)? {
+                        RequiredUpstream::Member(upstream) => {
+                            frontier.wait_for(index, upstream);
+                        }
+                        RequiredUpstream::HeldCaller => {
+                            frontier.members[index].state = MemberState::Pending;
+                        }
+                    }
                     continue;
                 }
                 requested_refusal::RequestedRefusal::Held(head) => {
@@ -146,7 +156,12 @@ where
                             | WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
                     ) {
                         return canonical_apply::finish(
-                            runtime, demand, &wave, &frontier, queue, admission,
+                            runtime,
+                            demand,
+                            &wave,
+                            &mut frontier,
+                            queue,
+                            admission,
                         );
                     }
                     if let Some(queued) = frontier.members[index].queued.take() {
@@ -224,6 +239,6 @@ where
         if resumed {
             continue;
         }
-        return canonical_apply::finish(runtime, demand, &wave, &frontier, queue, admission);
+        return canonical_apply::finish(runtime, demand, &wave, &mut frontier, queue, admission);
     }
 }

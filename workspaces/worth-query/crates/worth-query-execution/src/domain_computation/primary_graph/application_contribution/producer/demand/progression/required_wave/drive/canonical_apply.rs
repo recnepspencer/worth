@@ -5,7 +5,7 @@ pub(super) fn finish<Schema, Family>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
     wave: &RequiredWaveSelection<'_, Schema>,
-    frontier: &RequiredFrontier,
+    frontier: &mut RequiredFrontier,
     queue: &mut QueuedRequiredRoots,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<Option<WorthQueryOutputDemandAdvance>, WorthQueryOutputDemandDenial>
@@ -24,6 +24,7 @@ where
             | MemberState::Waiting(_)
             | MemberState::Prepared
             | MemberState::Pending
+            | MemberState::AcceptedCaller
             | MemberState::Held(_) => WorthQueryOutputDemandAdvance::Pending,
         }));
     }
@@ -51,7 +52,7 @@ pub(super) fn accept_current_caller<Schema, Family>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
     wave: &RequiredWaveSelection<'_, Schema>,
-    frontier: &RequiredFrontier,
+    frontier: &mut RequiredFrontier,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<Option<WorthQueryOutputDemandAdvance>, WorthQueryOutputDemandDenial>
 where
@@ -74,11 +75,13 @@ where
         },
         admission,
     )? {
-        Ok(Some(WorthQueryOutputDemandAdvance::Settled(Arc::clone(
+        let outcome = WorthQueryOutputDemandAdvance::Settled(Arc::clone(
             settlement
                 .as_ref()
                 .expect("the caller owns its Current report"),
-        ))))
+        ));
+        frontier.members[0].state = MemberState::AcceptedCaller;
+        Ok(Some(outcome))
     } else {
         Ok(None)
     }

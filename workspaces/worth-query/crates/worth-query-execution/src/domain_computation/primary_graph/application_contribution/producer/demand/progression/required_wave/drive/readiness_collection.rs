@@ -61,7 +61,7 @@ where
                 let mut pending = None;
                 for (upstream, member) in frontier.members.iter().enumerate() {
                     if upstream != index
-                        && !matches!(member.state, MemberState::Current(_))
+                        && !member.state.is_done()
                         && declared.contains_occurrence(&member.ready, admission)?
                     {
                         pending = Some(upstream);
@@ -174,11 +174,21 @@ where
                         &frontier.members[index].ready,
                         admission,
                     )?;
+                    let mut held = false;
                     for prerequisite in prerequisites {
-                        frontier.require_upstream(prerequisite, caller, admission)?;
+                        held |= matches!(
+                            frontier.require_upstream(prerequisite, caller, admission)?,
+                            RequiredUpstream::HeldCaller
+                        );
                     }
-                    let upstream = frontier.require_upstream(ready, caller, admission)?;
-                    frontier.wait_for(index, upstream);
+                    match frontier.require_upstream(ready, caller, admission)? {
+                        RequiredUpstream::Member(upstream) if !held => {
+                            frontier.wait_for(index, upstream);
+                        }
+                        RequiredUpstream::Member(_) | RequiredUpstream::HeldCaller => {
+                            frontier.members[index].state = MemberState::Pending;
+                        }
+                    }
                 }
                 Ok(RequiredWaveStep::Held(head)) => {
                     let storage = if caller {

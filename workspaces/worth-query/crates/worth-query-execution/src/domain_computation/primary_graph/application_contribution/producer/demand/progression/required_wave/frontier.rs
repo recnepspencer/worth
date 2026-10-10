@@ -8,8 +8,23 @@ pub(super) enum MemberState {
     // Only the caller keeps its return report. Upstream reports live in the
     // basis-bound resolved set and must die when that basis moves.
     Current(Option<Arc<WorthQueryOutputDemandSettlement>>),
+    /// Its outcome belongs to this advance; a queue closure cannot reopen it.
+    AcceptedCaller,
     Pending,
     Held(WorthQueryOutputDemandKey),
+}
+
+impl MemberState {
+    /// A decided caller needs no scheduling work; native certification alone
+    /// decides whether its output satisfies a queued member.
+    pub fn is_done(&self) -> bool {
+        matches!(self, Self::Current(_) | Self::AcceptedCaller)
+    }
+}
+
+pub(super) enum RequiredUpstream {
+    Member(usize),
+    HeldCaller,
 }
 
 /// Scheduling posture only; each basis still requires native certification.
@@ -46,9 +61,12 @@ impl RequiredFrontier {
         caller: bool,
         queued: Option<usize>,
         admission: &mut InvalidationEditAdmission,
-    ) -> Result<usize, WorthQueryOutputDemandDenial> {
+    ) -> Result<RequiredUpstream, WorthQueryOutputDemandDenial> {
         for (index, member) in self.members.iter_mut().enumerate() {
             if ready.same_record(&member.ready, admission)? {
+                if let MemberState::AcceptedCaller = member.state {
+                    return Ok(RequiredUpstream::HeldCaller);
+                }
                 // Membership identifies the physical row, not its current
                 // readmission binding. Keep the exact pin the owner just issued.
                 if !ready.same_ready_cell(&member.ready, admission)? {
@@ -60,7 +78,7 @@ impl RequiredFrontier {
                     member.queued = queued;
                     member.state = MemberState::Inspect;
                 }
-                return Ok(index);
+                return Ok(RequiredUpstream::Member(index));
             }
         }
         let item = std::mem::size_of::<RequiredMember>();
@@ -122,7 +140,7 @@ impl RequiredFrontier {
             state: MemberState::Inspect,
             dependency_schedule: DependencySchedule::OwnSelection,
         });
-        Ok(index)
+        Ok(RequiredUpstream::Member(index))
     }
 
     /// An issued prerequisite or observed pending edge can defer a member. A cycle
@@ -132,14 +150,16 @@ impl RequiredFrontier {
         ready: SelectedReadyReadmission,
         caller: bool,
         admission: &mut InvalidationEditAdmission,
-    ) -> Result<usize, WorthQueryOutputDemandDenial> {
-        let index = self.insert(ready, caller, None, admission)?;
+    ) -> Result<RequiredUpstream, WorthQueryOutputDemandDenial> {
+        let RequiredUpstream::Member(index) = self.insert(ready, caller, None, admission)? else {
+            return Ok(RequiredUpstream::HeldCaller);
+        };
         // An actual unresolved consumed edge asks for a new certification.
         // An earlier scheduling result cannot answer that owner-issued edge.
         if matches!(self.members[index].state, MemberState::Current(_)) {
             self.members[index].state = MemberState::Inspect;
         }
-        Ok(index)
+        Ok(RequiredUpstream::Member(index))
     }
 }
 

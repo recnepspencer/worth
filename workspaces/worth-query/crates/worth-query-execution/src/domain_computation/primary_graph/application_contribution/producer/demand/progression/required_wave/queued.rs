@@ -45,8 +45,7 @@ impl QueuedRequiredRoots {
 
     pub(super) fn wave_moved(&mut self) {
         self.caller_current = false;
-        // Publication can add causes after the preceding collection drained.
-        self.drained = false;
+        // The selected queue is visited once per advance, even as its basis moves.
     }
 
     /// The caller's outcome once queue work ends, in any way.
@@ -76,8 +75,7 @@ impl QueuedRequiredRoots {
     }
 
     /// Pop until one item becomes a root or this advance has visited the
-    /// whole queue. Each item is popped at most once unless a new cause or
-    /// acknowledgement requeues it.
+    /// whole queue. A moved basis never restarts that collection in this advance.
     pub(super) fn next_root<Schema>(
         &mut self,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -204,7 +202,6 @@ impl QueuedRequiredRoots {
         // Dropping its issued token requeues the cause; only a fresh owner join
         // can provide the next Ready pin and selected version.
         drop(self.roots[index].take());
-        self.drained = false;
         Ok(false)
     }
 
