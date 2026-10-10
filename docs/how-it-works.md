@@ -387,9 +387,10 @@ restarts belongs to Store ([section 15](#15-durability-and-the-other-surfaces)).
 
 ### 6.2 Signal: derived computation
 
-Signal is a deterministic, incremental runtime for derived work. Under Query,
-source data stays in Relational, and Signal receives it as the snapshots and
-committed patches the Bridge reads from there. Signal owns dependency tracking,
+Signal is a deterministic, incremental runtime for derived work. Signal never
+owns source data: it has no access to Relational. Under Query, source data
+stays in Relational, and Signal receives it as the snapshots and committed
+patches the Bridge reads from there. Signal owns dependency tracking,
 invalidation, recompute, rollback, diagnostics, replay, installed condition
 decisions, and the decision about whether an output changed meaningfully.
 It consumes snapshots and emits derived refreshes.
@@ -662,10 +663,6 @@ let runtime = in_memory_program(
   resolves installed names, such as a principal binding, for the seed. The
   types are exported from the host facade modules
   `application_contribution`, `primary_graph`, and `domain`, in that order.
-  Compiled uses:
-  `workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/contribution_installation.rs`
-  and
-  `workspaces/worth-query-bank-world/crates/bank-server/src/identity_runtime/installation.rs`.
 - `in_memory_rostered_program` supports several program revisions against one
   installed schema.
 - `in_memory` installs schema meaning without a program.
@@ -874,10 +871,10 @@ descriptive history.
   `INPUT_REUSE` constant, which is `None` unless declared. The contract names
   the producer's determinism and which of the key, the principal, and the
   scope its result depends on. Only canonical-bitwise determinism qualifies.
-  A run that reads through a raw reader, or uses a context value the contract
-  did not declare, leaves nothing to reuse. Stable republication of the
-  output that input cutoff kept can clear pending marks below the producer
-  without calling consumers.
+  A run that reads through a raw reader, takes a checkpoint, runs a managed
+  computation, or uses a context value the contract did not declare, leaves
+  nothing to reuse. Stable republication of the output that input cutoff
+  kept can clear pending marks below the producer without calling consumers.
   [§10.5](#105-marking-and-currentness) gives the rules.
 
 ### 9.9 Resources, execution, and cost
@@ -923,16 +920,20 @@ request entry: a query, a mutation, a live read, an adoption step, or one
 `advance` of a demand. Query opens one execution request for it, and every
 runtime below works under that request.
 
-- **Opening.** The request takes its cancellation and deadline from the
-  caller's request and its ceilings from the installed execution policy. It
-  is opened before the advancement's first read. A policy that grants no
-  work or no memory refuses the advancement there, before any read.
+- **Opening.** A request-scoped entry takes its cancellation and deadline
+  from the caller's request. A host-owned entry (an inbound occurrence, a
+  clock observation, a workflow frontier) opens with neither. Both take
+  their ceilings from the installed execution policy. The request is opened
+  before the advancement's first read. A policy that grants no work or no
+  memory refuses the advancement there, before any read.
 - **Placement.** The host decides placement when it builds the Runtime
   World: it installs an execution policy, and optionally the process
   authority. With an authority whose limits admit the policy, every
   advancement is *leased*: it holds a request lease from that authority.
-  With none, every advancement is *serial*. Query reads the placement from
-  the World and never chooses it per request.
+  An authority that cannot admit the policy refuses the World build. With
+  none, every advancement is *serial*. Query reads the placement from the
+  World. The one exception is adoption publication after the World owner
+  has expired, which runs serially.
 - **One work ceiling.** The policy's work ceiling bounds the whole
   advancement in both placements. Nested computations draw from what
   remains.
@@ -945,14 +946,16 @@ runtime below works under that request.
   `NestedOpening`. Custody is per thread, so another thread's public call
   owns its own request.
 - **Seams.** A seam is a function where one runtime calls another. Every
-  seam on the request's path takes the request as a required argument, so
-  work cannot start outside it. The Bridge takes it to read a committed
-  patch or a snapshot and to deliver a change. Signal takes it to advance a
-  branch and to receive a committed patch. The Runtime World takes it to run
-  a publication, and hands it to the Relational and Signal legs. Relational
-  takes the request's lease in its leased doors for commit, preparation,
-  validation, and index build; a lease-free caller of Relational supplies an
-  allocation policy and runs on the calling thread.
+  seam that starts computation takes the request as a required argument.
+  Publishing or settling an already prepared candidate takes neither request
+  nor lease; the World consults the request before it contacts those doors.
+  The Bridge takes the request to read a committed patch or a snapshot and
+  to deliver a change. Signal takes it to advance a branch and to receive a
+  committed patch. The Runtime World takes it to run a publication, and
+  hands it to the Relational and Signal legs. Relational takes the request's
+  lease in its leased doors for commit, preparation, validation, and index
+  build; a lease-free caller of commit, preparation, or validation supplies
+  an allocation policy. Every lease-free door runs on the calling thread.
 - **Closing.** The request closes when the callback returns. Delivery of a
   performed change through the Bridge needs the phase, so the final delivery
   happens inside the advancement.
@@ -1132,13 +1135,15 @@ takes every stage through three phases that its types keep apart.
 | Phase | Runs | Sees |
 |---|---|---|
 | Prepare | Owner, in canonical stage order | The stage's input facts, fixed before the frontier starts. No executor, no execution context, and no workspace. It returns an owned task. |
-| Compute | Any worker | Its task and a meter that offers checkpoints only. It is a plain function pointer, never a closure over owner state, and it cannot start nested work. |
+| Compute | Any worker | Its task and a work meter: checkpoints and work accounting, no lease. It is a plain function pointer, never a closure over owner state, and it cannot start nested work. |
 | Apply | Owner, in canonical stage order | The owner and the computed result. Every effect happens here. |
 
 - **Canonical order** is ascending stage identity. A frontier with fewer than
   two stages, or with one stage named twice, is denied.
-- **What runs in parallel.** Only the compute steps. They go through one
-  owned-map dispatch under the frontier's request, in serial placement too.
+- **What runs in parallel.** Across stages, only the compute steps run
+  concurrently. They go through one owned-map dispatch under the frontier's
+  request, in serial placement too. A stage's apply runs alone on the owner,
+  and the graph work it starts runs under the same request.
 - **Least failure.** Preparation stops at the first stage in canonical order
   that fails to prepare. Later stages are neither prepared nor computed;
   earlier stages compute exactly once. Application then runs the canonical
@@ -1154,8 +1159,10 @@ takes every stage through three phases that its types keep apart.
   depend on execution order and worker count.
 - **Determinism and interruption.** With sufficient memory, worker count
   changes neither results nor charged work when no cancellation or deadline
-  arrives during compute. One that arrives during compute can change how far
-  the frontier gets. Application is then a canonical prefix that ends at or
+  arrives during compute. The frontier's entry opens a host-owned request,
+  which carries no caller cancellation and no deadline. Under a request that
+  carries one, an interruption during compute can change how far the
+  frontier gets. Application is then a canonical prefix that ends at or
   before the interrupted stage, with the receipts and effects a serial run
   produces for that prefix, and the cause stays cancellation or deadline.
 - **Stop causes.** Cancellation, deadline, work exhaustion, a nested stop, a
@@ -1163,11 +1170,11 @@ takes every stage through three phases that its types keep apart.
 
 *Example.* A document review advances three stages together: `citations`,
 `layout`, and `spelling`. Each prepares from the document revision fixed when
-the frontier starts. The three computes run on workers. Findings are applied
-in the order `citations`, `layout`, `spelling`, whatever order the computes
-finished in. If `layout` fails in compute, `citations` is applied, the
-failure is recorded as `layout`'s result, and `spelling` is not applied even
-if it finished first.
+the frontier starts. Under leased placement with automatic posture, the three
+computes run on workers. Findings are applied in the order `citations`,
+`layout`, `spelling`, whatever order the computes finished in. If `layout`
+fails in compute, `citations` is applied, the call returns `layout`'s
+failure, and `spelling` is not applied even if it finished first.
 
 The staged-run surface belongs to the engine beneath the consumer facades,
 which do not export it. It is not the workflow kernel of
@@ -1181,7 +1188,7 @@ count.
 |---|---|---|
 | Execution | A map's kernels and a fork-join's children. A leased run under automatic posture uses workers; every other run is serial. | A scan carries one value through ordered items. Rounds are a sequence of barriers. A map settles its results in canonical partition order. |
 | Relational | With a lease: the packets of a query plan, index builds (one packet per index definition), and the invariant packets of commit validation. | Each merges in one ordered pass on the calling thread, and index generations publish there afterward. Without a lease, packets run in order on the calling thread. |
-| Signal | Within one stage: read preparation for the tasks that need computing, and application of tasks, each declaring its write keys. | The request is one ordered pass over stages. The owner reduces after the join: commits in task order, snapshots in stage order. A stage below the configured task minimum runs serially. |
+| Signal | Within one epoch of a stage: read preparation for the tasks that need computing, and application of tasks, each declaring its write keys. An epoch is a resource-admitted prefix of the stage's remaining tasks, none of which reads another's node. | The request is one ordered pass over stages. A stage is an ordered sequence of epochs; each publishes through the owner before the next starts. The owner reduces after the join: commits in task order, snapshots in stage order. Read preparation and application each run serially in an epoch below their own configured task minimum. |
 | Query: partitioned computation | Partition kernels (`compute_partition`). | Naming, keying, gathering, and completing run on the calling thread. Results settle in partition identity order. |
 | Query: workflow frontier | The compute steps of a frontier's stages. | Prepare and apply run on the owner in canonical stage order. |
 | Query: derived collections | Rebuilding a derived collection dispatches one partition per unique root through a map. | The map supplies canonical order, charging, and one execution authority. It does not make native reads concurrent: reads serialize at the Relational owner. Projection and link checks run on the calling thread in entity identity order. Only the canonical completed prefix reaches the owner, and retention changes only on success. |
@@ -1741,9 +1748,9 @@ to see the two facades used end to end.
 - Keep `partition_key`, `gather`, and `compute_partition` pure. A partition
   whose facts did not change keeps its last result without being gathered or
   computed again, so an impure function yields a stale result.
-- Expect one execution request per public call. Worker count never changes a
-  result or its charged work; cancellation and deadlines can change how far a
-  call gets.
+- Expect one execution request per public call. With sufficient memory,
+  worker count never changes a result or its charged work; cancellation and
+  deadlines can change how far a call gets.
 - When a name you need is not on the audience facades, the answer is a
   missing platform capability to report. It is not a reason to reach into an
   internal crate.

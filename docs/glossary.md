@@ -130,14 +130,16 @@ explained). Rust names are given where a type embodies the term.
 : In Signal, one unit of ready graph work that may run beside the other
   units of its batch because their worker-local effects are proven not to
   overlap. The planner lowers a stage into ordered groups
-  (`DisjointApplyGroup`, one per task). The batch that admits them
-  (`DisjointGraphBatch`) is created only by the invalidation progression
-  owner, which derives every member node's full set of proposal surfaces
+  (`DisjointApplyGroup`, one per task). Each batch (`DisjointGraphBatch`)
+  admits a prefix of the stage's remaining ready tasks and is created only
+  by the invalidation progression owner, never from the planner's groups;
+  the owner derives every member node's full set of proposal surfaces
   (state, dependencies, produced aspects, subscriptions, snapshot, lineage,
   observation, diagnostic) and refuses the batch when two members overlap.
   The plan reduces group results in stage task order.
-  **Not** an execution partition: a conflict group proves that graph effects
-  do not collide and carries no data identity.
+  **Not** an execution partition: a conflict group proves that worker-local
+  proposal surfaces do not collide, not that final graph writes are
+  disjoint, and carries no data identity.
   **See** *Partition (execution)*.
 
 **Contribution**
@@ -364,11 +366,11 @@ explained). Rust names are given where a type embodies the term.
   Signal observation scope selected by `whole_partition`, which matches a
   subtree of scope paths.
   **Not** a Signal *conflict group* (`DisjointApplyGroup`): a conflict group
-  is ready graph work admitted because its effects do not overlap another
-  group's, and it carries no data identity.
-  **Not** the `WholePartition` scope lane: a Signal subscription built by
+  is ready graph work admitted because its worker-local proposal surfaces do
+  not overlap another group's, and it carries no data identity.
+  **Not** a whole-partition subscription: a Signal subscription built by
   `PartitionSubscription::whole_partition` selects the subtree of scope paths
-  under one partition segment. That lane decides which subscriptions a
+  under one partition segment. That selection decides which subscriptions a
   changed region reaches. It names no unit of work.
   **See** *Conflict group* and *Scope path*.
 
