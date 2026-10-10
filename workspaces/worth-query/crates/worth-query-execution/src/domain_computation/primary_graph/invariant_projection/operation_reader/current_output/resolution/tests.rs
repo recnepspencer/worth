@@ -18,15 +18,13 @@ fn current_role_cardinality_ignores_repeated_identity_but_not_distinct_outputs()
 
 #[test]
 fn a_full_ledger_reaches_the_handler_and_projection_as_capacity_exhausted() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
-        let (handler, projection) = crate::domain_computation::primary_graph::tests::fixture::retained_output_capacity::project_at_full_ledger(&host_custody, );
-        assert_eq!(
-            handler,
-            super::super::WorthQueryCurrentOutputDenialKind::RetentionCapacityExhausted
-        );
-        assert_eq!(projection.kind(), crate::domain_computation::primary_graph::WorthQueryOperationProjectionDenialKind::InvariantAdmission(
+    let (handler, projection) = crate::domain_computation::primary_graph::tests::fixture::retained_output_capacity::project_at_full_ledger();
+    assert_eq!(
+        handler,
+        super::super::WorthQueryCurrentOutputDenialKind::RetentionCapacityExhausted
+    );
+    assert_eq!(projection.kind(), crate::domain_computation::primary_graph::WorthQueryOperationProjectionDenialKind::InvariantAdmission(
         crate::domain_computation::primary_graph::WorthQueryInvariantProjectionDenialKind::RetentionCapacityExhausted));
-    })
 }
 
 #[test]

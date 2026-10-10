@@ -64,25 +64,16 @@ fn nested_execution_phases_share_one_work_ceiling() {
     let stop = request
         .run_advancement(None, None, |phase| {
             assert!(matches!(
-                charged_request(
-                    phase.request_for_source(0).expect("standalone fixture"),
-                    UNITS
-                ),
+                charged_request(phase.borrowed_request_for_test(), UNITS),
                 MapOutcome::Complete { .. }
             ));
             assert!(matches!(
-                charged_request(
-                    phase.request_for_source(0).expect("standalone fixture"),
-                    UNITS
-                ),
+                charged_request(phase.borrowed_request_for_test(), UNITS),
                 MapOutcome::Complete { .. }
             ));
             // This local law probes nested scopes; the real caller retry
             // is covered by the topology-entry advancement_custody fixture.
-            charged_request(
-                phase.request_for_source(0).expect("standalone fixture"),
-                UNITS,
-            )
+            charged_request(phase.borrowed_request_for_test(), UNITS)
         })
         .unwrap();
     assert!(matches!(stop, MapOutcome::Stopped {

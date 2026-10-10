@@ -127,42 +127,69 @@ fn reused_relation_key_is_denied_during_public_authoring() {
 
 #[test]
 fn two_real_relation_deletes_share_one_ordered_provisional_step_through_commit() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+    {
         let world = installed_authorization_world(false);
         let request = live_scope();
-        let actor = authenticated(
-            &host_custody.phase_for_application(&world.application),
-            &(host_custody.phase_for_application(&world.application)).borrowed_request_for_test(),
-            &world,
-            "alice",
-            &request,
-        );
+
+        let actor = world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+                authenticated(
+                    &host_custody.phase_for_application(&world.application),
+                    &(host_custody.phase_for_application(&world.application))
+                        .borrowed_request_for_test(),
+                    &world,
+                    "alice",
+                    &request,
+                )
+            })
+            .expect("the fixture read owns its installed host call");
 
         for (status, key, caller) in [("open", "owner-open", 90), ("unrelated", "owner-other", 91)]
         {
-            let principal = resolved_principal(
-                &host_custody.phase_for_application(&world.application),
-                &host_custody.borrowed_request_for_test(),
-                &world,
-                1,
-                &request,
-            );
-            let account = resolved_account(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
-                &world,
-                status,
-                &request,
-            );
-            let program = link_program(
-                &host_custody.phase_for_application(&world.application),
-                &world,
-                &actor,
-                &principal,
-                &account,
-                &request,
-                status,
-                key,
-            );
+            let principal = world
+                .application
+                .with_host_advancement(|phase| {
+                    let host_custody = phase.test_host_request();
+                    resolved_principal(
+                        &host_custody.phase_for_application(&world.application),
+                        &host_custody.borrowed_request_for_test(),
+                        &world,
+                        1,
+                        &request,
+                    )
+                })
+                .expect("the fixture read owns its installed host call");
+            let account = world
+                .application
+                .with_host_advancement(|phase| {
+                    let host_custody = phase.test_host_request();
+                    resolved_account(
+                        &(host_custody.phase_for_application(&world.application))
+                            .test_host_request(),
+                        &world,
+                        status,
+                        &request,
+                    )
+                })
+                .expect("the fixture read owns its installed host call");
+            let program = world
+                .application
+                .with_host_advancement(|phase| {
+                    let host_custody = phase.test_host_request();
+                    link_program(
+                        &host_custody.phase_for_application(&world.application),
+                        &world,
+                        &actor,
+                        &principal,
+                        &account,
+                        &request,
+                        status,
+                        key,
+                    )
+                })
+                .expect("the fixture read owns its installed host call");
             assert!(matches!(
                 world.application.compare_and_commit_application(
                     program,
@@ -173,71 +200,108 @@ fn two_real_relation_deletes_share_one_ordered_provisional_step_through_commit()
             ));
         }
 
-        let principal = resolved_principal(
-            &host_custody.phase_for_application(&world.application),
-            &host_custody.borrowed_request_for_test(),
-            &world,
-            1,
-            &request,
-        );
-        let open = resolved_account(
-            &(host_custody.phase_for_application(&world.application)).test_host_request(),
-            &world,
-            "open",
-            &request,
-        );
-        let other = resolved_account(
-            &(host_custody.phase_for_application(&world.application)).test_host_request(),
-            &world,
-            "unrelated",
-            &request,
-        );
+        let principal = world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+                resolved_principal(
+                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.borrowed_request_for_test(),
+                    &world,
+                    1,
+                    &request,
+                )
+            })
+            .expect("the fixture read owns its installed host call");
+        let open = world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+                resolved_account(
+                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &world,
+                    "open",
+                    &request,
+                )
+            })
+            .expect("the fixture read owns its installed host call");
+        let other = world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+                resolved_account(
+                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &world,
+                    "unrelated",
+                    &request,
+                )
+            })
+            .expect("the fixture read owns its installed host call");
         let operation = world
             .application
             .installed_schema()
             .installed_operation(ChangeOwnershipOperation::reference())
             .unwrap();
         let admission = world
-            .selected_product(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
-            )
-            .authorize_operation(
-                &host_custody.phase_for_application(&world.application),
-                &actor,
-                &principal,
-                &operation,
-                Default::default(),
-                &request,
-            )
-            .unwrap();
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+                world
+                    .selected_product(
+                        &(host_custody.phase_for_application(&world.application))
+                            .test_host_request(),
+                    )
+                    .authorize_operation(
+                        &host_custody.phase_for_application(&world.application),
+                        &actor,
+                        &principal,
+                        &operation,
+                        Default::default(),
+                        &request,
+                    )
+                    .unwrap()
+            })
+            .expect("the fixture read owns its installed host call");
         let (_, projection, _) = world
-            .invariant
-            .project_admitted_operation(
-                &host_custody.phase_for_application(&world.application),
-                &admission,
-                |reader, principal| {
-                    reader
-                        .decision_relations_from(AccountOwner::reference(), principal)
-                        .unwrap();
-                },
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .unwrap()
-            .into_parts();
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+                world
+                    .invariant
+                    .project_admitted_operation(
+                        &host_custody.phase_for_application(&world.application),
+                        &admission,
+                        |reader, principal| {
+                            reader
+                                .decision_relations_from(AccountOwner::reference(), principal)
+                                .unwrap();
+                        },
+                        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                    )
+                    .unwrap()
+                    .into_parts()
+            })
+            .expect("the fixture read owns its installed host call");
         let reads = world
             .application
-            .begin_projected_application_read_attempt(
-                &host_custody.phase_for_application(&world.application),
-                admission,
-                projection,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .unwrap()
-            .complete_projected_dependencies(
-                &host_custody.phase_for_application(&world.application),
-                crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .unwrap();
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+                world
+                    .application
+                    .begin_projected_application_read_attempt(
+                        &host_custody.phase_for_application(&world.application),
+                        admission,
+                        projection,
+                        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                    )
+                    .unwrap()
+                    .complete_projected_dependencies(
+                        &host_custody.phase_for_application(&world.application),
+                        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                    )
+                    .unwrap()
+            })
+            .expect("the fixture read owns its installed host call");
         let mut effects = reads.begin_effect_program();
         let from = effects.existing_entity(&principal).unwrap();
         let open = effects.existing_entity(&open).unwrap();
@@ -264,33 +328,47 @@ fn two_real_relation_deletes_share_one_ordered_provisional_step_through_commit()
         assert_eq!(work.expected_step_duplicate_equalities(), 1);
         assert_eq!(work.proposed_fact_count(), 1);
         assert_eq!(work.touched_record_count(), 3);
-        assert_membership_absent(
-            &host_custody.phase_for_application(&world.application),
-            &world,
-            &actor,
-            &principal,
-            &resolved_account(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
-                &world,
-                "open",
-                &request,
-            ),
-            &request,
-            "open",
-        );
-        assert_membership_absent(
-            &host_custody.phase_for_application(&world.application),
-            &world,
-            &actor,
-            &principal,
-            &resolved_account(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
-                &world,
-                "unrelated",
-                &request,
-            ),
-            &request,
-            "unrelated",
-        );
-    })
+        world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+                assert_membership_absent(
+                    &host_custody.phase_for_application(&world.application),
+                    &world,
+                    &actor,
+                    &principal,
+                    &resolved_account(
+                        &(host_custody.phase_for_application(&world.application))
+                            .test_host_request(),
+                        &world,
+                        "open",
+                        &request,
+                    ),
+                    &request,
+                    "open",
+                )
+            })
+            .expect("the fixture read owns its installed host call");
+        world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+                assert_membership_absent(
+                    &host_custody.phase_for_application(&world.application),
+                    &world,
+                    &actor,
+                    &principal,
+                    &resolved_account(
+                        &(host_custody.phase_for_application(&world.application))
+                            .test_host_request(),
+                        &world,
+                        "unrelated",
+                        &request,
+                    ),
+                    &request,
+                    "unrelated",
+                )
+            })
+            .expect("the fixture read owns its installed host call");
+    }
 }
