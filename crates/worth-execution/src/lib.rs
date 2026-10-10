@@ -41,7 +41,7 @@ pub use pattern::{
     RoundsDenial, RoundsOutcome, ScanDenial, ScanOutcome, WorkCeilingDenial,
 };
 pub use reduction::{
-    ReductionDenial, ReductionMetrics, ReductionPlan, ReductionRunFailure, ReductionRunStop,
-    ReductionTree, ReductionUpdateMemoryBoundError,
+    ReductionDenial, ReductionEditMemoryBoundError, ReductionMetrics, ReductionPlan,
+    ReductionRunFailure, ReductionRunStop, ReductionTree,
 };
 pub use report::ChargedBytes;

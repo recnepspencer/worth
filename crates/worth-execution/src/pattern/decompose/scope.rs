@@ -4,7 +4,7 @@ use worth_foundational::{ExecutionPhysicalReport, ExecutionPosture};
 
 use super::*;
 use crate::backend::{run_admitting_scope, BackendKind, ScopeKernelFailure};
-use crate::ReductionUpdateMemoryBoundError;
+use crate::ReductionEditMemoryBoundError;
 
 impl<I, C, S, B, O, F> ExecutionDecompose<I, C, S, B, O, F>
 where
@@ -98,7 +98,7 @@ where
                     self.identities.as_slice().len(),
                     self.max_reduction_value_bytes,
                 )
-                .ok_or(ReductionUpdateMemoryBoundError::Overflow),
+                .ok_or(ReductionEditMemoryBoundError::Overflow),
                 Some(snapshot) => changed.identities().iter().try_fold(
                     self.max_reduction_value_bytes,
                     |sum, identity| {
@@ -106,16 +106,19 @@ where
                             *identity,
                             self.max_reduction_value_bytes,
                         )?)
-                        .ok_or(ReductionUpdateMemoryBoundError::Overflow)
+                        .ok_or(ReductionEditMemoryBoundError::Overflow)
                     },
                 ),
             }
             .map_err(|error| DecomposeRunFailure {
                 cause: DecomposeFailure::Input(match error {
-                    ReductionUpdateMemoryBoundError::UnknownIdentity(identity) => {
+                    ReductionEditMemoryBoundError::UnknownIdentity(identity) => {
                         DecomposeInputDenial::UnknownIdentity(identity)
                     }
-                    ReductionUpdateMemoryBoundError::Overflow => {
+                    ReductionEditMemoryBoundError::AlreadyPresent(_) => {
+                        unreachable!("update bounds never refuse an already present identity")
+                    }
+                    ReductionEditMemoryBoundError::Overflow => {
                         LeaseDenial::charged_bytes_overflow();
                         DecomposeInputDenial::MemoryOverflow
                     }
