@@ -35,6 +35,13 @@ pub(crate) fn settle<R, E>(
             .into_inner()
             .unwrap_or_else(|error| error.into_inner())
             .expect("every worker joined before settlement");
+        // A discarded suffix still contributed its request stop. Its value
+        // and work remain outside the canonical prefix, but its owner cannot
+        // become computational merely because an earlier member failed.
+        let (result, owner) = outcome.result.into_parts(limits);
+        if owner == Some(NestedStopOwner::Request) {
+            stop_owner = owner;
+        }
         if stop.is_some() {
             discarded_work = discarded_work.saturating_add(outcome.work);
             continue;
@@ -42,11 +49,13 @@ pub(crate) fn settle<R, E>(
         let identity = batch.identities()[index];
         let next = charged_work.checked_add(outcome.work);
         if next.is_none_or(|sum| sum > limits.ceiling()) {
-            stop_owner = Some(if next.is_none() {
-                NestedStopOwner::Request
-            } else {
-                limits.work_stop_owner()
-            });
+            if stop_owner != Some(NestedStopOwner::Request) {
+                stop_owner = Some(if next.is_none() {
+                    NestedStopOwner::Request
+                } else {
+                    limits.work_stop_owner()
+                });
+            }
             stop = Some(BatchStop::WorkExhausted { identity });
             prefix_boundary = Some(identity);
             discarded_work = discarded_work.saturating_add(outcome.work);
@@ -54,16 +63,19 @@ pub(crate) fn settle<R, E>(
         }
         charged_work += outcome.work;
         charged_span = charged_span.max(outcome.span);
-        let (result, owner) = outcome.result.into_parts(limits);
         match result {
             Ok(value) => values.push(value),
             Err(KernelFailure::Stop(KernelStop::WorkCeiling)) => {
-                stop_owner = owner;
+                if stop_owner != Some(NestedStopOwner::Request) {
+                    stop_owner = owner;
+                }
                 stop = Some(BatchStop::WorkExhausted { identity });
                 prefix_boundary = Some(identity);
             }
             Err(cause) => {
-                stop_owner = owner;
+                if stop_owner != Some(NestedStopOwner::Request) {
+                    stop_owner = owner;
+                }
                 stop = Some(BatchStop::Failure { identity, cause });
                 prefix_boundary = Some(identity);
             }

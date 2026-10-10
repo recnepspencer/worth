@@ -30,20 +30,27 @@ fn taken_domain_failure_is_data_and_every_outer_member_completes() {
                     placement(width),
                     &|value, child| {
                         child.checkpoint(2)?;
-                        Err::<u64, _>(KernelFailure::Domain(*value))
+                        if *value == 1 {
+                            Err::<u64, _>(KernelFailure::Domain(*value))
+                        } else {
+                            Ok(*value)
+                        }
                     },
                 );
                 assert_eq!(
                     context.take_nested_computation_stop(),
-                    Some(NestedComputationStop::DomainFailure)
+                    (*value == 1).then_some(NestedComputationStop::DomainFailure)
                 );
                 assert_eq!(context.take_nested_computation_stop(), None);
-                let Some(BatchStop::Failure {
-                    cause: KernelFailure::Domain(cause),
-                    ..
-                }) = nested.stop
-                else {
-                    panic!("the real child returns its declared domain failure");
+                let cause = match nested.stop {
+                    Some(BatchStop::Failure {
+                        cause: KernelFailure::Domain(cause),
+                        ..
+                    }) => cause,
+                    None => nested.values[0],
+                    other => panic!(
+                        "the child returns its domain data or its successful value: {other:?}"
+                    ),
                 };
                 Ok::<_, KernelFailure<()>>(cause)
             },

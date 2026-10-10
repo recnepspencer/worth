@@ -24,9 +24,12 @@ where
     let mut context = KernelContext::new(limits.clone());
     let result = match limits.safe_point() {
         Err(stop) => {
+            let owner = context.failure_owner(&KernelFailure::<()>::Stop(stop));
+            context.record_nested_stop_owner(owner);
             if std::mem::needs_drop::<I>() {
                 // Only owned destruction adds a panic boundary at a skipped item.
-                // A destructor panic replaces the safe-point stop with Panic.
+                // A destructor panic replaces the public stop with Panic;
+                // it cannot release the interruption's request ownership.
                 contain(AssertUnwindSafe(|| drop(input)))
                     .map(|()| Err(KernelFailure::Stop(stop)))
                     .unwrap_or(Err(KernelFailure::Panic))
