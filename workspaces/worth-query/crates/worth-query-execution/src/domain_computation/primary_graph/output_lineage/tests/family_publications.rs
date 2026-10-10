@@ -68,7 +68,7 @@ impl Court {
         lineage.fixture_binding(std::any::TypeId::of::<Preserve>(), "Preserve");
 
         lineage.install_output_families(BTreeMap::from([(
-            "family".to_owned(),
+            "family".to_owned().into(),
             vec![
                 (TypeId::of::<Initial>(), "output".to_owned()),
                 (TypeId::of::<Preserve>(), "output".to_owned()),

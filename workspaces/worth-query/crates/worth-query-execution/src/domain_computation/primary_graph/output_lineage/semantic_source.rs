@@ -7,8 +7,7 @@ pub(in crate::domain_computation::primary_graph) struct SemanticSource {
     pub(super) schema: ApplicationSchemaBindingIdentity,
     pub(super) scope:
         crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
-    pub(super) output_binding:
-        super::super::output_binding_identity::OutputBindingIdentity,
+    pub(super) output_binding: super::super::output_binding_identity::OutputBindingIdentity,
 }
 
 impl Ord for SemanticSource {

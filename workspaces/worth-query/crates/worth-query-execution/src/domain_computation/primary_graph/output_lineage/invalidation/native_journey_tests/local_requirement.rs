@@ -45,7 +45,7 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
     lineage.fixture_binding(std::any::TypeId::of::<StatusOutput>(), "StatusOutput");
 
     lineage.install_output_families(BTreeMap::from([(
-        "local-requirement".to_owned(),
+        "local-requirement".to_owned().into(),
         vec![(TypeId::of::<StatusOutput>(), "output".to_owned())],
     )]));
     let runtime_authority = world.application.runtime.authority_identity().as_u64();

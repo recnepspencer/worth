@@ -257,3 +257,5 @@ impl WorthQueryApplicationOutputRoleFamily for Member {
     const POSTURES: ApplicationMutationOutputPostureSet = ApplicationMutationOutputPostureSet::ALL;
     const MINIMUM: usize = 2;
 }
+
+mod canonical_inventory;

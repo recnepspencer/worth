@@ -122,7 +122,7 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
     assert_eq!(history[&maximum_generation].len(), 2);
 
     lineage.install_output_families(std::collections::BTreeMap::from([(
-        "partitioned-family".to_owned(),
+        "partitioned-family".to_owned().into(),
         vec![(
             std::any::TypeId::of::<RestoredOutputBinding>(),
             "output".to_owned(),
@@ -357,4 +357,28 @@ fn source_facts(
             ),
         },
     ])
+}
+
+#[test]
+fn family_inventory_visits_follow_declared_names() {
+    use std::collections::BTreeMap;
+    for _ in 0..16 {
+        for reverse in [false, true] {
+            let mut declarations = [
+                ("zulu-family".to_owned().into(), Vec::new()),
+                ("alpha-family".to_owned().into(), Vec::new()),
+            ];
+            if reverse {
+                declarations.reverse();
+            }
+            let mut lineage = WorthQueryApplicationOutputLineage::default();
+            lineage.install_output_families(BTreeMap::from(declarations));
+            let visits: Vec<_> = lineage
+                .output_families
+                .keys()
+                .map(|family| family.as_str())
+                .collect();
+            assert_eq!(visits, ["alpha-family", "zulu-family"]);
+        }
+    }
 }

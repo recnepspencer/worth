@@ -53,8 +53,9 @@ pub(in crate::domain_computation::primary_graph) mod registry_fixture;
 #[cfg(test)]
 mod tests;
 
+use super::output_family_identity::OutputFamilyIdentity;
 use std::any::TypeId;
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::collections::{BTreeMap, BTreeSet};
 use std::sync::{Arc, OnceLock};
 
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
@@ -105,7 +106,7 @@ pub(crate) struct WorthQueryApplicationOutputLineage {
     origins: BTreeMap<worth_runtime_world::facade::ProductBranchIncarnation, ProductCoordinate>,
     live_occurrences: BTreeSet<worth_runtime_world::facade::ProductBranchIncarnation>,
     cancelled_slots: Option<Box<prepared_slot::CancelledLineageSlot>>,
-    output_families: HashMap<String, Vec<(TypeId, String)>>,
+    output_families: BTreeMap<OutputFamilyIdentity, Vec<(TypeId, String)>>,
     retention: retained_capacity::LineageRetentionLedger,
 }
 
@@ -171,7 +172,7 @@ pub(super) struct WorthQueryCurrentOutputFamilyResolution {
 impl WorthQueryApplicationOutputLineage {
     pub(super) fn install_output_families(
         &mut self,
-        families: BTreeMap<String, Vec<(TypeId, String)>>,
+        families: BTreeMap<OutputFamilyIdentity, Vec<(TypeId, String)>>,
     ) {
         assert!(self.output_families.is_empty());
         self.output_families.extend(families);
