@@ -24,7 +24,7 @@ runtime_policies=(
 echo "[signal-snapshots] Writing canonical semantic snapshots to ${output_dir}"
 for runtime_policy in "${runtime_policies[@]}"; do
   for profile in "${profiles[@]}"; do
-    cargo run -q -p worth-signal --features parallel --bin signal_semantic_snapshot -- "${profile}" "${runtime_policy}" \
+    cargo run -q -p worth-signal --bin signal_semantic_snapshot -- "${profile}" "${runtime_policy}" \
       > "${output_dir}/${runtime_policy}-${profile}.json"
   done
 done
@@ -32,7 +32,7 @@ done
 status=0
 for runtime_policy in "${runtime_policies[@]}"; do
   echo "[signal-snapshots] Re-running hottest profile for ${runtime_policy} to catch flaky drift"
-  cargo run -q -p worth-signal --features parallel --bin signal_semantic_snapshot -- full-4x2 "${runtime_policy}" \
+  cargo run -q -p worth-signal --bin signal_semantic_snapshot -- full-4x2 "${runtime_policy}" \
     > "${output_dir}/${runtime_policy}-full-4x2-repeat.json"
   baseline="${output_dir}/${runtime_policy}-serial.json"
   for profile in "${profiles[@]:1}"; do

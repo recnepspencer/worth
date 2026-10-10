@@ -37,7 +37,7 @@ Run the bounded cold portfolio at milestone closeout or when allocation,
 hostile-world, reconstruction, or replay behavior changes:
 
 ```text
-cargo test -p worth-query-execution --features allocation-probes --lib -- --test-threads=4
+cargo test -p worth-query-execution --lib -- --test-threads=4
 cargo test -p worth-query-certification -p worth-query-replay
 ```
 

@@ -1,4 +1,5 @@
 mod cargo_graph;
+mod certification_construction;
 mod config;
 mod configured_dependency_denials;
 mod configured_source_dependency_allowlists;
@@ -8,10 +9,12 @@ mod context_workspace_rules;
 mod dependency_rules;
 mod diagnostics;
 mod facade_docs;
+mod governed_sources;
 mod hook_authority;
 mod legacy_references;
 mod manifest_types;
 mod naming;
+mod one_build;
 mod query_audience;
 mod seed_contracts;
 mod snapshots;
@@ -129,6 +132,8 @@ fn run(
     })?;
 
     let mut diagnostics = Vec::<Diagnostic>::new();
+    diagnostics.extend(one_build::validate(&root));
+    diagnostics.extend(certification_construction::validate(&root));
     diagnostics.extend(validate_hook_authority(&root));
     diagnostics.extend(validate_context_workspaces(
         &root,

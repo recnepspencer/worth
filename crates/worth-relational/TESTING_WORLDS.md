@@ -343,54 +343,37 @@ baseline-publication ceilings, direct GraphComposition `Touched` result and
 one-call counters, ordinary publication lowering, ordinary graph exclusion,
 and duplicate-rejection behavior.
 
-## Feature-gated evidence commands
+## Plain-build evidence commands
 
-Two features hold evidence out of the ordinary command above.
+The cancellation, owner-phase locality, schema-transition and allocation-slope
+courts all compile in the ordinary test build. Tests arm the boundary control
+through their owned handle. The unit-test binary owns its counting allocator;
+the Relational library declares no global allocator.
 
-Three certification courts are compiled only under the `test-operation-control`
-feature, because they need the test-only boundary pause hook. The feature
-supplies observation and pausing only; it cannot change authority, outcome
-meaning, or production transition logic.
-
-The allocation-slope court is compiled only under `allocation-probes`, which
-installs a counting global allocator. An ordinary run must not pay for that
-instrumentation, so without the feature the court does not exist rather than
-being skipped.
-
-The ordinary command compiles neither family, so each court has its own push/PR
-CI step that names it exactly:
-
-| Court | Gating feature | CI step in the `build-and-test` job |
-| --- | --- | --- |
-| `mvcc_cancellation_publication_boundaries::` (2 tests) | `test-operation-control` | worth-relational operation-control cancellation lane |
-| `mvcc_owner_phase_locality::…preparation…` | `test-operation-control` | worth-relational operation-control preparation locality lane |
-| `mvcc_owner_phase_locality::…publication…` | `test-operation-control` | worth-relational operation-control publication locality lane |
-| `mvcc_owner_phase_locality::…settlement…` | `test-operation-control` | worth-relational operation-control settlement locality lane |
-| `schema_transition_cancellation::…` | `test-operation-control` | worth-relational operation-control schema transition cancellation lane |
-| `substrate_edition_budgets::allocation_slope::` (4 tests) | `allocation-probes` | worth-relational allocation-slope lane |
+The named CI selections below prove that the intended courts execute:
 
 Each step runs the command below verbatim, so a local reproduction and its lane
 cannot drift apart:
 
 ```text
 bash scripts/ci/run_relational_named_test_selection.sh \
-  --test relational_certification --features test-operation-control \
+  --test relational_certification \
   --selection mvcc_cancellation_publication_boundaries::
 
 bash scripts/ci/run_relational_named_test_selection.sh \
-  --test relational_certification --features test-operation-control --exact \
+  --test relational_certification --exact \
   --selection mvcc_owner_phase_locality::paused_supply_chain_preparation_leaves_an_unrelated_branch_commit_unblocked
 
 bash scripts/ci/run_relational_named_test_selection.sh \
-  --test relational_certification --features test-operation-control --exact \
+  --test relational_certification --exact \
   --selection mvcc_owner_phase_locality::paused_supply_chain_publication_leaves_an_unrelated_branch_commit_unblocked
 
 bash scripts/ci/run_relational_named_test_selection.sh \
-  --test relational_certification --features test-operation-control --exact \
+  --test relational_certification --exact \
   --selection mvcc_owner_phase_locality::paused_supply_chain_settlement_leaves_an_unrelated_branch_commit_unblocked
 
 bash scripts/ci/run_relational_named_test_selection.sh \
-  --test relational_certification --features test-operation-control --exact \
+  --test relational_certification --exact \
   --selection schema_transition_cancellation::cancelled_schema_transition_leaves_no_target_or_branch_residue
 
 bash scripts/ci/check_relational_allocation_probes.sh
@@ -551,11 +534,10 @@ authoritative bytes remain separate observations.
 The Version Boundary lane installs Hazard Classification V2 through the public
 schema transition, executes V1/V2 acceptance and rejection cases, observes
 exact pre- and post-transition roots, and proves canonical replay and recovery
-preserve schema meaning. The controlled transition-cancellation test is gated
-by `test-operation-control`, so the ordinary certification command above does
-not compile its test-only pause hook. The push/PR operation-control lanes build
-the feature-enabled target and execute this court under its own exact named
-selection; see [Feature-gated evidence commands](#feature-gated-evidence-commands).
+preserve schema meaning. The controlled transition-cancellation test runs in the ordinary build and
+holds its boundary-control handle. The push/PR operation-control lanes execute
+this court under its own exact named selection; see
+[Plain-build evidence commands](#plain-build-evidence-commands).
 
 ## Contract retained for merge certification
 

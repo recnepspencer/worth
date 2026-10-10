@@ -31,6 +31,22 @@ parallel authority lane.
 
 ## Hard Invariants
 
+Query/Bank runtime has one build: the six owners `worth-relational`,
+`worth-execution`, `worth-signal`, `worth-signal-wasm`, `worth-runtime-bridge`,
+`worth-runtime-world`, and every crate/fixture in `workspaces/worth-query` and
+`workspaces/worth-query-bank-world` declare no Cargo features beyond Signal's
+retained product profiles/default (including WASM forwarding) and Signal-only
+`test-peak-allocation`. Unit-test-only hooks use `cfg(test)`; other controls and
+observers are compiled and armed through owned handles. The rule is enforced by
+`tools/boundary-check/src/one_build.rs`.
+
+The four Bridge source factories and Installation's `certification_query` are
+compiled public doors with a named source boundary. Only the owners and the
+closed caller list in
+`tools/boundary-check/config/certification-construction-callers.txt` may reference
+them. Consumer-facing declaration and host production facades do not re-export
+them. A new caller requires an explicit boundary ruling.
+
 - Pure meaning stays Query-agnostic: `worth-schema-*` crates must never import
   `worth-query`. Query is consumed only through audience facades
   (`worth-query-decl`, `worth-query-host`) from `entry`-band crates, and

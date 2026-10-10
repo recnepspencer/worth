@@ -24,7 +24,7 @@ set -euo pipefail
 #
 # Usage:
 #   run_relational_named_test_selection.sh (--lib | --test <target>) \
-#     --selection <filter> [--exact] [--ignored] [--features <list>] \
+#     --selection <filter> [--exact] [--ignored] \
 #     [--expect-name <exact test path>]...
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -32,14 +32,12 @@ cd "$ROOT_DIR"
 
 PACKAGE="worth-relational"
 CARGO_TARGET_ARGS=()
-FEATURE_ARGS=()
 SELECTION_FILTER_ARGS=()
 HARNESS_FILTER_ARGS=()
 IGNORED_PROBE_ARGS=()
 EXPECTED_NAMES=()
 SELECTION=""
 TARGET_LABEL=""
-FEATURE_LABEL="<none>"
 POSTURE_LABEL="<default>"
 IGNORED_POSTURE=""
 
@@ -59,12 +57,6 @@ parse_selection_request() {
         [[ $# -ge 2 ]] || fail_usage "--test requires a target name"
         CARGO_TARGET_ARGS=(--test "$2")
         TARGET_LABEL="--test $2"
-        shift 2
-        ;;
-      --features)
-        [[ $# -ge 2 ]] || fail_usage "--features requires a feature list"
-        FEATURE_ARGS=(--features "$2")
-        FEATURE_LABEL="$2"
         shift 2
         ;;
       --selection)
@@ -102,7 +94,7 @@ parse_selection_request() {
   HARNESS_FILTER_ARGS=("${SELECTION_FILTER_ARGS[@]}")
   [[ -n "$ignored" ]] && HARNESS_FILTER_ARGS+=("$ignored")
 
-  # Same target, features, filter and --exact posture; only --ignored is added.
+  # Same target, filter and --exact posture; only --ignored is added.
   IGNORED_PROBE_ARGS=("${SELECTION_FILTER_ARGS[@]}" --ignored)
 
   IGNORED_POSTURE="$ignored"
@@ -113,7 +105,7 @@ parse_selection_request() {
 
 fail_usage() {
   echo "FAIL: $1" >&2
-  echo "Usage: $(basename "${BASH_SOURCE[0]}") (--lib | --test <target>) --selection <filter> [--exact] [--ignored] [--features <list>] [--expect-name <exact test path>]..." >&2
+  echo "Usage: $(basename "${BASH_SOURCE[0]}") (--lib | --test <target>) --selection <filter> [--exact] [--ignored] [--expect-name <exact test path>]..." >&2
   exit 2
 }
 
@@ -122,10 +114,9 @@ report_empty_selection() {
 FAIL: selection '$SELECTION' matched 0 compiled tests.
   package : $PACKAGE
   target  : $TARGET_LABEL
-  features: $FEATURE_LABEL
   posture : $POSTURE_LABEL
 A named CI selection must reach at least one test. The test name, its #[ignore]
-posture, or its feature gate changed. Enumerate the real names with:
+posture, or its target membership changed. Enumerate the real names with:
   cargo test -p $PACKAGE $TARGET_LABEL -- --list
 EOF
   exit 1
@@ -137,7 +128,6 @@ report_non_executable_selection() {
 FAIL: selection '$SELECTION' matched $selected test(s), all of them #[ignore]d.
   package : $PACKAGE
   target  : $TARGET_LABEL
-  features: $FEATURE_LABEL
   posture : $POSTURE_LABEL
 This lane runs in ordinary posture, which executes only non-ignored tests, so
 the selection would report success while executing nothing. Listing cannot
@@ -157,7 +147,6 @@ report_roster_drift() {
     echo "FAIL: selection '$SELECTION' no longer matches its declared roster."
     echo "  package   : $PACKAGE"
     echo "  target    : $TARGET_LABEL"
-    echo "  features  : $FEATURE_LABEL"
     echo "  posture   : $POSTURE_LABEL"
     echo "  declared  : ${#EXPECTED_NAMES[@]} test(s)"
     echo "  executable: $executable test(s)"
@@ -183,7 +172,7 @@ EOF
 
 # Emits one bare test path per line for the given harness filter vector.
 list_selected_tests() {
-  cargo test -p "$PACKAGE" "${CARGO_TARGET_ARGS[@]}" "${FEATURE_ARGS[@]}" \
+  cargo test -p "$PACKAGE" "${CARGO_TARGET_ARGS[@]}" \
     -- --list "$@" | sed -n 's/^\([A-Za-z0-9_:]\+\): test$/\1/p' || true
 }
 
@@ -254,7 +243,7 @@ assert_selection_is_executable() {
 
 execute_named_selection() {
   echo "[relational-selection] executing '$SELECTION'"
-  cargo test -p "$PACKAGE" "${CARGO_TARGET_ARGS[@]}" "${FEATURE_ARGS[@]}" \
+  cargo test -p "$PACKAGE" "${CARGO_TARGET_ARGS[@]}" \
     -- "${HARNESS_FILTER_ARGS[@]}" --nocapture --test-threads=1
 }
 
