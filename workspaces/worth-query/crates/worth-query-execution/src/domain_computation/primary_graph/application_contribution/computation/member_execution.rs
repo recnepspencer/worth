@@ -1,5 +1,5 @@
 //! The member's bounded execution, without any owner or graph access.
-use super::super::QueryRequestExecution;
+use super::super::{request_execution::MemberRequestExecution, QueryRequestExecution};
 use super::{WorthQueryManagedComputationExecution, WorthQueryManagedComputationInterruption};
 
 /// Execution lent only for one prepared member's compute.
@@ -25,9 +25,11 @@ pub struct WorthQueryMemberExecution<'member> {
 }
 impl<'member> WorthQueryMemberExecution<'member> {
     pub(in crate::domain_computation::primary_graph) fn new(
-        execution: &'member QueryRequestExecution<'member>,
+        execution: &'member MemberRequestExecution<'member>,
     ) -> Self {
-        Self { execution }
+        Self {
+            execution: execution.request(),
+        }
     }
 
     pub fn interruption(&self) -> Option<WorthQueryManagedComputationInterruption> {

@@ -157,13 +157,15 @@ impl<Value: 'static, Denial: 'static> WorthQueryDecisionPlan<Value, Denial> {
         self,
         execution: &QueryRequestExecution<'_>,
     ) -> HandlerResult<Value, Denial> {
+        let wave = execution.wave();
+        let member = wave.member();
         let (requests, completion) = self.into_parts();
         let slots = requests
             .into_iter()
             .map(|request| {
                 request.run(
                     super::super::super::application_contribution::WorthQueryMemberExecution::new(
-                        execution,
+                        &member,
                     ),
                 )
             })

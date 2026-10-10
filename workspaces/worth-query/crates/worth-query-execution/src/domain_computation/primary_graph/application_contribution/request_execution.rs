@@ -38,6 +38,8 @@ pub(in crate::domain_computation::primary_graph) use test_placement::{
 
 type Resource = WorthQueryManagedComputationResourceDenial;
 
+mod descendants;
+pub(in crate::domain_computation::primary_graph) use descendants::MemberRequestExecution;
 mod advancement;
 pub(in crate::domain_computation::primary_graph) use advancement::{
     with_serial_host_advancement, with_world_advancement,

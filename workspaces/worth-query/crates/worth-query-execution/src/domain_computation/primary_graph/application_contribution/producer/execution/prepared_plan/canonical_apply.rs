@@ -38,12 +38,14 @@ impl<'owner, Key, Value, Stop> CanonicalApplyCursor<'owner, Key, Value, Stop> {
             plans.len(),
             "one aligned slot per admitted member"
         );
+        let wave = execution.wave();
         let slots = plans
             .into_iter()
             .map(|mut plan| {
+                let member = wave.member();
                 let computed = std::mem::take(&mut plan.requests)
                     .into_iter()
-                    .map(|request| request.run(WorthQueryMemberExecution::new(execution)))
+                    .map(|request| request.run(WorthQueryMemberExecution::new(&member)))
                     .collect();
                 (plan, computed)
             })
