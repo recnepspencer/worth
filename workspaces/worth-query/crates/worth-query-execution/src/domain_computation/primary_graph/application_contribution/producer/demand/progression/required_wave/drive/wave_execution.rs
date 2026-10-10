@@ -1,4 +1,4 @@
-//! Serial backing of the one wave driver: all prepare, all compute, ordered apply.
+//! One wave: owner preparation, owned compute dispatch, consuming ordered apply.
 use super::*;
 use super::readiness_collection::{self, MemberStop};
 use super::super::selection::committed_ready;
@@ -12,7 +12,7 @@ pub(super) struct WaveProgress {
 }
 
 #[allow(clippy::too_many_arguments)]
-pub(super) fn run_serial<'owner, Schema, Family>(
+pub(super) fn run<'owner, Schema, Family>(
     phase: &'owner WorthQueryAdvancementPhase<'owner>,
     runtime: &'owner WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
@@ -71,57 +71,67 @@ where
             .admit_prepared_wave(&wave.positioned, keys, plans, admission)?;
     let cursor = CanonicalApplyCursor::compute_admitted(admitted, execution);
     let mut moved = false;
-    let result = cursor.apply(admission, |key, mut progress, admission| {
-        let index = key.index;
-        let member = &mut frontier.members[index];
-        let storage = if member.caller {
-            &mut caller_storage
-        } else {
-            &mut queue_storage
-        };
-        if index == 0 && wave.target == RequiredWaveTarget::Caller {
-            progress.attribute_to_caller(&mut demand.producer_contacts_in_this_demand);
-        }
-        member.contacts = progress.producer_contacts();
-        match storage.install_next(progress) {
-            RequiredFreshOutcome::Refused(stop) => return Err(MemberStop { index, stop }),
-            RequiredFreshOutcome::Advanced => {}
-        }
-        // Each slot commits, publishes and advances its actual checkpoint
-        // before the consuming cursor can yield the next slot.
-        loop {
-            let successor = storage.last_mut();
-            match runtime
-                .output_demands
-                .interest_ready_readmission(successor.interest(), admission)
-            {
-                Ok(Some(ready)) => {
-                    runtime
-                        .output_demands
-                        .clear_required_stop(successor.interest().key());
-                    moved |= committed_ready(&ready, admission)
-                        .map_err(|stop| MemberStop { index, stop })?;
-                    member.ready = ready;
-                    member.resolved_successor = true;
-                    member.caller_successor |= index == 0;
-                    member.state = MemberState::Inspect;
-                    break;
-                }
-                Err(stop) => return Err(MemberStop { index, stop }),
-                Ok(None) => {}
+    let result = cursor.apply(
+        admission,
+        |key, mut progress, admission| {
+            let index = key.index;
+            let member = &mut frontier.members[index];
+            let storage = if member.caller {
+                &mut caller_storage
+            } else {
+                &mut queue_storage
+            };
+            if index == 0 && wave.target == RequiredWaveTarget::Caller {
+                progress.attribute_to_caller(&mut demand.producer_contacts_in_this_demand);
             }
-            match successor.advance_checkpoint(phase, runtime, request, admission) {
-                Ok(true) => continue,
-                Ok(false) => {
-                    member.state = MemberState::Pending;
-                    moved = true;
-                    break;
-                }
-                Err(stop) => return Err(MemberStop { index, stop }),
+            member.contacts = progress.producer_contacts();
+            match storage.install_next(progress) {
+                RequiredFreshOutcome::Refused(stop) => return Err(MemberStop { index, stop }),
+                RequiredFreshOutcome::Advanced => {}
             }
-        }
-        Ok(())
-    });
+            // Each slot commits, publishes and advances its actual checkpoint
+            // before the consuming cursor can yield the next slot.
+            loop {
+                let successor = storage.last_mut();
+                match runtime
+                    .output_demands
+                    .interest_ready_readmission(successor.interest(), admission)
+                {
+                    Ok(Some(ready)) => {
+                        runtime
+                            .output_demands
+                            .clear_required_stop(successor.interest().key());
+                        moved |= committed_ready(&ready, admission)
+                            .map_err(|stop| MemberStop { index, stop })?;
+                        member.ready = ready;
+                        member.resolved_successor = true;
+                        member.caller_successor |= index == 0;
+                        member.state = MemberState::Inspect;
+                        break;
+                    }
+                    Err(stop) => return Err(MemberStop { index, stop }),
+                    Ok(None) => {}
+                }
+                match successor.advance_checkpoint(phase, runtime, request, admission) {
+                    Ok(true) => continue,
+                    Ok(false) => {
+                        member.state = MemberState::Pending;
+                        moved = true;
+                        break;
+                    }
+                    Err(stop) => return Err(MemberStop { index, stop }),
+                }
+            }
+            Ok(())
+        },
+        |key, denial| MemberStop {
+            index: key.index,
+            stop: WorthQueryOutputDemandDenial::new(
+                WorthQueryOutputDemandDenialKind::ExecutionRequest(denial),
+                format!("required member compute refused: {denial}"),
+            ),
+        },
+    );
     // The unvisited suffix's owner closures and computed values have already
     // dropped. Their real interests are restored by the original claim custody.
     for member in &mut frontier.members {

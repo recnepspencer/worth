@@ -111,26 +111,39 @@ impl<Value: 'static, Denial: 'static> WorthQueryDecisionPlan<Value, Denial> {
         let Self { requests, complete } = self;
         let before = std::sync::Arc::new(before);
         let after = std::sync::Arc::new(after);
+        let mut observations = Vec::with_capacity(requests.len());
         let requests = requests
             .into_iter()
             .map(|request| {
+                let captured = std::sync::Arc::new(std::sync::Mutex::new(None));
+                observations.push(captured.clone());
                 let before = before.clone();
                 let after = after.clone();
-                PreparedCompute::new(move |member| {
-                    before();
-                    let slot = request.run(member);
-                    (slot, after())
-                })
+                request.observe(
+                    move || before(),
+                    move || {
+                        *captured
+                            .lock()
+                            .unwrap_or_else(std::sync::PoisonError::into_inner) = Some(after());
+                    },
+                )
             })
             .collect();
         Self {
             requests,
             complete: Box::new(move |slots| {
-                let (slots, observations): (Vec<_>, Vec<_>) = slots
-                    .into_iter()
-                    .map(|slot| slot.into_value::<(ComputedSlot, Observation)>())
-                    .unzip();
-                observed(observations);
+                observed(
+                    observations
+                        .into_iter()
+                        .map(|captured| {
+                            captured
+                                .lock()
+                                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                                .take()
+                                .expect("a completed request recorded its probe")
+                        })
+                        .collect(),
+                );
                 complete(slots)
             }),
         }
@@ -153,24 +166,24 @@ impl<Value: 'static, Denial: 'static> WorthQueryDecisionPlan<Value, Denial> {
         }
     }
 
-    pub(in crate::domain_computation::primary_graph) fn run_serial(
+    pub(in crate::domain_computation::primary_graph) fn run(
         self,
         execution: &QueryRequestExecution<'_>,
     ) -> HandlerResult<Value, Denial> {
-        let wave = execution.wave();
-        let member = wave.member();
         let (requests, completion) = self.into_parts();
-        let slots = requests
-            .into_iter()
-            .map(|request| {
-                request.run(
-                    super::super::super::application_contribution::WorthQueryMemberExecution::new(
-                        &member,
-                    ),
-                )
-            })
-            .collect();
-        completion.finish(slots)
+        let mut settled = crate::domain_computation::primary_graph::application_contribution::computation::wave_dispatch::dispatch(
+            execution, vec![crate::domain_computation::primary_graph::application_contribution::computation::wave_dispatch::PreparedMember {
+                requests, preparation_failed: false,
+            }]);
+        assert_eq!(settled.len(), 1, "one ordinary decision is one member");
+        match settled.pop().unwrap() {
+            Ok(computed) => computed.finish(|slots| completion.finish(slots)),
+            Err(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Interrupted(
+                crate::domain_computation::primary_graph::WorthQueryManagedComputationInterruption::Cancelled)) => HandlerResult::Cancelled,
+            Err(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Interrupted(
+                crate::domain_computation::primary_graph::WorthQueryManagedComputationInterruption::DeadlineExceeded)) => HandlerResult::DeadlineExceeded,
+            Err(denial) => HandlerResult::ExecutionDenied(super::HandlerExecutionDenial::new(denial)),
+        }
     }
 
     pub(in crate::domain_computation::primary_graph) fn into_parts(

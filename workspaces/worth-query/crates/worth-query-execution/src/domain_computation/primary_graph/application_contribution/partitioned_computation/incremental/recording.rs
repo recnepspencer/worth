@@ -6,6 +6,8 @@ use std::sync::Arc;
 use worth_execution::{ChargedBytes, PartitionItemId, ReductionTree};
 use worth_foundational::facade::{ExecutionReport, PartitionIdentity};
 
+mod transport;
+
 use super::super::super::request_execution::QueryMemoryReservation;
 use super::super::items::{ItemDigests, Items};
 use super::super::routing::ComputationPartitionRouting;

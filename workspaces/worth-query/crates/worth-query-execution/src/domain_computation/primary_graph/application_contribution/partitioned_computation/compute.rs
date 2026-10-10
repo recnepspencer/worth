@@ -1,6 +1,7 @@
 //! The compute and complete phases of a prepared partitioned computation.
 
 mod decision_plan;
+mod transport;
 
 use std::collections::BTreeMap;
 use std::sync::Mutex;

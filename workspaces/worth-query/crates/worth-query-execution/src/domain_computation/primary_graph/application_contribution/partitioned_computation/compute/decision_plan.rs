@@ -4,6 +4,7 @@ use crate::domain_computation::primary_graph::{
     application_contribution::computation::prepared_request::PreparedCompute,
     application_entry::mutation::{HandlerResult, WorthQueryDecisionPlan},
 };
+use worth_execution::ChargedBytes;
 
 impl<Schema, Feature, Computation, Owner>
     WorthQueryPreparedPartitionedComputation<Schema, Feature, Computation, Owner>
@@ -25,7 +26,16 @@ where
             + 'static,
     ) -> WorthQueryDecisionPlan<Value, Domain> {
         WorthQueryDecisionPlan::prepared(
-            PreparedCompute::new(move |member| self.compute(member.managed())),
+            PreparedCompute::new(
+                self.transport_bytes(),
+                self.result_capacity(),
+                move |member| self.compute(member.managed()),
+                |result| match result {
+                    Ok(completed) => completed.transport_bytes(),
+                    Err(denial) => denial.additional_charged_bytes(),
+                },
+                Result::is_err,
+            ),
             complete,
         )
     }

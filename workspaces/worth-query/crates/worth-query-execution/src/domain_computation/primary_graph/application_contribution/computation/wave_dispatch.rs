@@ -1,0 +1,200 @@
+//! One owned map settles the compute prefix; only the owner receives that prefix.
+use super::super::execution_denial::{checkpoint_denial, lease_denial};
+use super::super::{QueryRequestExecution, WorthQueryAdvancementDenial};
+use super::prepared_request::{ComputedSlot, PreparedCompute};
+use super::WorthQueryMemberExecution;
+use worth_execution::{
+    ChargedBytes, ExecutionMap, KeylessPartition, MapKernelFailure, MapOutcome, MapStop,
+};
+use worth_foundational::PartitionIdentity;
+
+pub(in crate::domain_computation::primary_graph) struct PreparedMember {
+    pub requests: Vec<PreparedCompute>,
+    pub preparation_failed: bool,
+}
+impl ChargedBytes for PreparedMember {
+    fn additional_charged_bytes(&self) -> u64 {
+        let Self {
+            requests,
+            preparation_failed: _,
+        } = self;
+        requests.additional_charged_bytes()
+    }
+}
+pub(in crate::domain_computation::primary_graph) struct ComputedMember {
+    slots: Vec<ComputedSlot>,
+    // Release the payload before its owner-side request hold.
+    custody: Option<super::super::request_execution::QueryMemoryReservation>,
+}
+impl ChargedBytes for ComputedMember {
+    fn additional_charged_bytes(&self) -> u64 {
+        let Self { slots, custody: _ } = self;
+        slots.additional_charged_bytes()
+    }
+}
+
+/// Interruption already present at dispatch has width-independent settlement.
+/// An interruption arriving during compute can be seen by an earlier running
+/// member: only the canonical-prefix safety law is promised across widths.
+pub(in crate::domain_computation::primary_graph) fn dispatch(
+    execution: &QueryRequestExecution<'_>,
+    members: Vec<PreparedMember>,
+) -> Vec<Result<ComputedMember, WorthQueryAdvancementDenial>> {
+    if members.iter().all(|member| member.requests.is_empty()) {
+        return members
+            .into_iter()
+            .map(|_| {
+                Ok(ComputedMember {
+                    slots: Vec::new(),
+                    custody: None,
+                })
+            })
+            .collect();
+    }
+    let wave = execution.wave();
+    let partitions = members
+        .into_iter()
+        .enumerate()
+        .map(|(rank, member)| {
+            let capacity = member.requests.iter().fold(
+                (member.requests.len() * size_of::<ComputedSlot>()) as u64,
+                |sum, request| sum.saturating_add(request.result_capacity()),
+            );
+            (
+                PartitionIdentity::new(rank as u64 + 1),
+                KeylessPartition {
+                    value: member,
+                    kernel_scratch_bytes: 0,
+                    max_result_bytes: capacity,
+                },
+            )
+        })
+        .collect();
+    let map = match ExecutionMap::<_, u64>::from_keyless_partitions(partitions) {
+        Ok(map) => map,
+        Err(worth_execution::MapMemoryOverflow) => {
+            return vec![Err(WorthQueryAdvancementDenial::Resource(
+                super::super::WorthQueryManagedComputationResourceDenial::CapacityOverflow,
+            ))]
+        }
+    };
+    let request = match wave.request().execution_request() {
+        Ok(request) => request,
+        Err(denial) => return vec![Err(WorthQueryAdvancementDenial::Resource(denial))],
+    };
+    let outcome = request.in_scope(|lease| {
+        let outcome = map.run_owned(lease, |input: PreparedMember, context| {
+            let member = wave.member();
+            let mut slots = Vec::with_capacity(input.requests.len());
+            let mut failed = input.preparation_failed;
+            for request in input.requests {
+                let mut charge = |units| context.checkpoint(units);
+                let slot = request.run(WorthQueryMemberExecution::for_kernel(&member, &mut charge));
+                failed |= slot.failed();
+                slots.push(slot);
+            }
+            let result = ComputedMember {
+                slots,
+                custody: None,
+            };
+            if failed {
+                Err(MapKernelFailure::Domain(result))
+            } else {
+                Ok(result)
+            }
+        });
+        retain_outcome(execution, outcome)
+    });
+    match outcome {
+        Ok(outcome) => outcome,
+        Err(denial) => vec![Err(super::super::request_execution::advancement_denial(
+            denial,
+        ))],
+    }
+}
+
+fn retain_outcome(
+    execution: &QueryRequestExecution<'_>,
+    outcome: MapOutcome<ComputedMember, ComputedMember>,
+) -> Vec<Result<ComputedMember, WorthQueryAdvancementDenial>> {
+    match outcome {
+        MapOutcome::Complete { values, report: _ } => {
+            retain_members(execution, values.into_iter().map(Ok).collect())
+        }
+        MapOutcome::Stopped {
+            completed_prefix,
+            boundary: _,
+            reason,
+            report: _,
+        } => {
+            let mut settled: Vec<_> = completed_prefix.into_iter().map(Ok).collect();
+            let failed = match reason {
+                MapStop::Failure { identity: _, cause: MapKernelFailure::Domain(member) } => Ok(member),
+                MapStop::Failure { identity: _, cause: MapKernelFailure::Stop(stop) } => Err(from_checkpoint(stop)),
+                MapStop::Failure { identity: _, cause: MapKernelFailure::Panic } => Err(WorthQueryAdvancementDenial::Panicked),
+                MapStop::Failure { identity: _, cause: MapKernelFailure::ResultCapacityExceeded } => Err(
+                    WorthQueryAdvancementDenial::Resource(super::super::WorthQueryManagedComputationResourceDenial::ResultCapacityExceeded)),
+                MapStop::WorkExhausted { identity: _ } => Err(WorthQueryAdvancementDenial::Resource(
+                    super::super::WorthQueryManagedComputationResourceDenial::WorkExhausted)),
+                MapStop::Admission(denial) => Err(WorthQueryAdvancementDenial::Resource(lease_denial(denial))),
+            };
+            settled.push(failed);
+            retain_members(execution, settled)
+        }
+    }
+}
+fn retain_members(
+    execution: &QueryRequestExecution<'_>,
+    members: Vec<Result<ComputedMember, WorthQueryAdvancementDenial>>,
+) -> Vec<Result<ComputedMember, WorthQueryAdvancementDenial>> {
+    let mut kept = Vec::with_capacity(members.len());
+    for result in members {
+        let result = result.and_then(|mut member| {
+            member.custody = Some(
+                execution
+                    .reserve(member.slots.additional_charged_bytes())
+                    .map_err(WorthQueryAdvancementDenial::Resource)?,
+            );
+            Ok(member)
+        });
+        let stopped = result.is_err();
+        kept.push(result);
+        if stopped {
+            break;
+        }
+    }
+    kept
+}
+
+impl ComputedMember {
+    pub(in crate::domain_computation::primary_graph) fn finish<T>(
+        self,
+        complete: impl FnOnce(Vec<ComputedSlot>) -> T,
+    ) -> T {
+        let Self { slots, custody } = self;
+        let result = complete(slots);
+        drop(custody);
+        result
+    }
+    #[cfg(test)]
+    pub(in crate::domain_computation::primary_graph) fn into_slots(self) -> Vec<ComputedSlot> {
+        self.finish(|slots| slots)
+    }
+}
+
+fn from_checkpoint(stop: worth_execution::MapKernelStop) -> WorthQueryAdvancementDenial {
+    match checkpoint_denial(stop) {
+        super::WorthQueryManagedComputationCheckpointDenial::Resource(denial) => {
+            WorthQueryAdvancementDenial::Resource(denial)
+        }
+        super::WorthQueryManagedComputationCheckpointDenial::Interrupted(denial) => {
+            WorthQueryAdvancementDenial::Interrupted(denial)
+        }
+        super::WorthQueryManagedComputationCheckpointDenial::NestedPatternStopped => {
+            WorthQueryAdvancementDenial::NestedStopped
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests;

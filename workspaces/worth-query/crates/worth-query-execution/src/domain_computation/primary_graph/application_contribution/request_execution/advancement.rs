@@ -15,7 +15,8 @@ use worth_query_installation::facade::ApplicationSchema;
 pub enum WorthQueryAdvancementDenial {
     Resource(Resource),
     Interrupted(WorthQueryManagedComputationInterruption),
-    /// A public call tried to open a second advancement on the same thread.
+    /// A public call tried to open an advancement from an active host call or
+    /// a member compute.
     NestedOpening,
     /// The phase belongs to a different installed runtime.
     ForeignPhase,
@@ -81,7 +82,9 @@ mod opening_custody;
 use opening_custody::OpeningCustody;
 
 impl QueryRequestExecution<'_> {
-    fn execution_request(&self) -> Result<ExecutionRequest<'_, '_>, Resource> {
+    pub(in crate::domain_computation::primary_graph) fn execution_request(
+        &self,
+    ) -> Result<ExecutionRequest<'_, '_>, Resource> {
         match &self.form {
             Form::Leased { lease, .. } => lease
                 .as_ref()

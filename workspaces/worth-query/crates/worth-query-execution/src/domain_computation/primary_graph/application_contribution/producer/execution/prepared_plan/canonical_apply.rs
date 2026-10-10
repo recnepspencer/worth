@@ -2,9 +2,7 @@
 use super::*;
 use worth_proof::CanonicalUniqueVec;
 
-use crate::domain_computation::primary_graph::application_contribution::{
-    computation::prepared_request::ComputedSlot, QueryRequestExecution, WorthQueryMemberExecution,
-};
+use crate::domain_computation::primary_graph::application_contribution::QueryRequestExecution;
 
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct CanonicalApplyCursor<
     'owner,
@@ -14,7 +12,13 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
 > {
     basis: Option<&'owner worth_relational::facade::runtime::PositionedRelationalSnapshot>,
     keys: CanonicalUniqueVec<Key>,
-    slots: Vec<(OwnerPlan<'owner, Value, Stop>, Vec<ComputedSlot>)>,
+    slots: Vec<(
+        OwnerPlan<'owner, Value, Stop>,
+        Result<
+            crate::domain_computation::primary_graph::application_contribution::computation::wave_dispatch::ComputedMember,
+            crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
+        >,
+    )>,
 }
 
 impl<'owner, Key, Value, Stop> CanonicalApplyCursor<'owner, Key, Value, Stop> {
@@ -23,14 +27,14 @@ impl<'owner, Key, Value, Stop> CanonicalApplyCursor<'owner, Key, Value, Stop> {
         execution: &QueryRequestExecution<'_>,
     ) -> Self {
         let (basis, keys, plans) = wave.into_parts();
-        let mut cursor = Self::compute_serial(keys, plans, execution);
+        let mut cursor = Self::compute(keys, plans, execution);
         cursor.basis = Some(basis);
         cursor
     }
 
-    fn compute_serial(
+    fn compute(
         keys: CanonicalUniqueVec<Key>,
-        plans: Vec<OwnerPlan<'owner, Value, Stop>>,
+        mut plans: Vec<OwnerPlan<'owner, Value, Stop>>,
         execution: &QueryRequestExecution<'_>,
     ) -> Self {
         assert_eq!(
@@ -38,18 +42,18 @@ impl<'owner, Key, Value, Stop> CanonicalApplyCursor<'owner, Key, Value, Stop> {
             plans.len(),
             "one aligned slot per admitted member"
         );
-        let wave = execution.wave();
-        let slots = plans
-            .into_iter()
-            .map(|mut plan| {
-                let member = wave.member();
-                let computed = std::mem::take(&mut plan.requests)
-                    .into_iter()
-                    .map(|request| request.run(WorthQueryMemberExecution::new(&member)))
-                    .collect();
-                (plan, computed)
-            })
+        let members = plans
+            .iter_mut()
+            .map(
+                |plan| super::super::super::super::computation::wave_dispatch::PreparedMember {
+                    requests: std::mem::take(&mut plan.requests),
+                    preparation_failed: plan.preparation_failed,
+                },
+            )
             .collect();
+        let computed =
+            super::super::super::super::computation::wave_dispatch::dispatch(execution, members);
+        let slots = plans.into_iter().zip(computed).collect();
         Self {
             basis: None,
             keys,
@@ -63,6 +67,10 @@ impl<'owner, Key, Value, Stop> CanonicalApplyCursor<'owner, Key, Value, Stop> {
         self,
         admission: &mut InvalidationEditAdmission,
         mut published: impl FnMut(Key, Value, &mut InvalidationEditAdmission) -> Result<(), Stop>,
+        refused: impl FnOnce(
+            Key,
+            crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
+        ) -> Stop,
     ) -> Result<(), Stop> {
         let Self {
             basis: _basis,
@@ -70,7 +78,11 @@ impl<'owner, Key, Value, Stop> CanonicalApplyCursor<'owner, Key, Value, Stop> {
             slots,
         } = self;
         for (key, (plan, computed)) in keys.into_keys().into_iter().zip(slots) {
-            let outcome = (plan.complete)(computed, admission)?;
+            let computed = match computed {
+                Ok(computed) => computed,
+                Err(denial) => return Err(refused(key, denial)),
+            };
+            let outcome = computed.finish(|slots| (plan.complete)(slots, admission))?;
             published(key, outcome, admission)?;
         }
         Ok(())
@@ -84,12 +96,23 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
 ) -> Result<ProducerExecutionOutcome, ProducerExecutionStop> {
     let keys = CanonicalUniqueVec::try_from_sorted_unique(vec![()])
         .unwrap_or_else(|_| unreachable!("the singleton key is canonical"));
-    let cursor = CanonicalApplyCursor::compute_serial(keys, vec![plan], execution);
+    let cursor = CanonicalApplyCursor::compute(keys, vec![plan], execution);
     let mut outcome = None;
-    cursor.apply(admission, |(), applied, _| {
-        outcome = Some(applied);
-        Ok(())
-    })?;
+    cursor.apply(
+        admission,
+        |(), applied, _| {
+            outcome = Some(applied);
+            Ok(())
+        },
+        |(), denial| {
+            ProducerExecutionStop::ExecutionStopped(
+                super::super::WorthQueryOutputDemandDenial::new(
+                    super::super::WorthQueryOutputDemandDenialKind::ExecutionRequest(denial),
+                    format!("member compute refused: {denial}"),
+                ),
+            )
+        },
+    )?;
     Ok(outcome.expect("the singleton cursor applied its one slot"))
 }
 

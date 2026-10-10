@@ -68,12 +68,12 @@ where
         }
     }
 
-    pub(super) fn run_serial(
+    pub(super) fn run(
         self,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
     ) -> Report<Schema, Binding> {
-        let decision = self.plan.run_serial(self.execution);
+        let decision = self.plan.run(self.execution);
         (self.complete)(runtime, identities, decision, self.projection)
     }
 

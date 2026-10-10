@@ -32,7 +32,10 @@ impl<'request> WorthQueryManagedComputationExecution<'request> {
 pub(super) enum CheckpointWork<'request> {
     /// The single partition of a `Deterministic` computation spends the
     /// declared ceiling directly.
-    Declared { remaining: usize },
+    Declared {
+        remaining: usize,
+        charge: Option<&'request mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>>,
+    },
     /// One partition of a `DeterministicPartitioned` computation charges the
     /// execution kernel it runs in, which owns the remaining ceiling. A
     /// refused charge is final: it is kept, and the partition reports it
@@ -81,7 +84,7 @@ impl<'request> WorthQueryManagedComputationCheckpoint<'request> {
             .interruption()
             .map(WorthQueryManagedComputationCheckpointDenial::Interrupted);
         match &mut self.work {
-            CheckpointWork::Declared { remaining } => {
+            CheckpointWork::Declared { remaining, charge } => {
                 if let Some(interruption) = interruption {
                     return Err(interruption);
                 }
@@ -90,6 +93,9 @@ impl<'request> WorthQueryManagedComputationCheckpoint<'request> {
                         WorthQueryManagedComputationResourceDenial::WorkExhausted,
                     ),
                 )?;
+                if let Some(charge) = charge {
+                    charge(u64::try_from(work).unwrap_or(u64::MAX)).map_err(checkpoint_denial)?;
+                }
                 Ok(())
             }
             CheckpointWork::Partition { charge, refused } => {

@@ -1,6 +1,8 @@
 //! The next tree of an incremental run: every partition carried or computed
 //! again, in a full run's order and with a full run's charges.
 
+mod transport;
+
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 

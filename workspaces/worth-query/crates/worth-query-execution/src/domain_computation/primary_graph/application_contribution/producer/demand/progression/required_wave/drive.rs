@@ -43,7 +43,7 @@ where
                 frontier.insert(ready, false, Some(queued), admission)?;
             }
         }
-        let result = wave_execution::run_serial::<Schema, Family>(
+        let result = wave_execution::run::<Schema, Family>(
             phase,
             runtime,
             demand,

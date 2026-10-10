@@ -133,3 +133,12 @@ impl<Stopped> From<WorthQueryComputationReadDenial> for WorthQueryComputationInp
         Self::Read(denial)
     }
 }
+
+impl worth_execution::ChargedBytes for WorthQueryComputationReadDenial {
+    fn additional_charged_bytes(&self) -> u64 {
+        match self {
+            Self::Field(denial) => denial.additional_charged_bytes(),
+            Self::Relations(denial) => denial.additional_charged_bytes(),
+        }
+    }
+}

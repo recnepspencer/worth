@@ -44,14 +44,20 @@ fn every_compute_precedes_owner_completion_and_failure_destroys_the_suffix() {
             let dropped = Arc::clone(&dropped);
             let completion = Rc::clone(&completed);
             plans.push(OwnerPlan::new(
-                vec![PreparedCompute::new(move |member| {
-                    assert_eq!(member.interruption(), None);
-                    computed.lock().unwrap().push(rank);
-                    ResultValue {
-                        rank: Cell::new(rank),
-                        dropped,
-                    }
-                })],
+                vec![PreparedCompute::new(
+                    0,
+                    0,
+                    move |member| {
+                        assert_eq!(member.interruption(), None);
+                        computed.lock().unwrap().push(rank);
+                        ResultValue {
+                            rank: Cell::new(rank),
+                            dropped,
+                        }
+                    },
+                    |_| 0,
+                    |_| false,
+                )],
                 move |mut slots, _| {
                     assert_eq!(slots.len(), 1);
                     let result = slots.pop().unwrap().into_value::<ResultValue>();
@@ -65,7 +71,7 @@ fn every_compute_precedes_owner_completion_and_failure_destroys_the_suffix() {
             ));
         }
         let keys = CanonicalUniqueVec::try_from_sorted_unique(vec![0, 1, 2]).unwrap();
-        let cursor = CanonicalApplyCursor::compute_serial(keys, plans, &execution);
+        let cursor = CanonicalApplyCursor::compute(keys, plans, &execution);
         assert_eq!(*computed.lock().unwrap(), vec![0, 1, 2]);
         assert!(completed.borrow().is_empty());
         let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
@@ -74,11 +80,15 @@ fn every_compute_precedes_owner_completion_and_failure_destroys_the_suffix() {
         });
         let mut applied = Vec::new();
         assert_eq!(
-            cursor.apply(&mut admission, |key, value, _| {
-                assert_eq!(key, value, "canonical slots retain their semantic keys");
-                applied.push(value);
-                Ok(())
-            }),
+            cursor.apply(
+                &mut admission,
+                |key, value, _| {
+                    assert_eq!(key, value, "canonical slots retain their semantic keys");
+                    applied.push(value);
+                    Ok(())
+                },
+                |_, denied| panic!("unexpected compute refusal: {denied:?}")
+            ),
             Err(failure)
         );
         assert_eq!(applied, (0..failure).collect::<Vec<_>>());
@@ -92,3 +102,7 @@ fn every_compute_precedes_owner_completion_and_failure_destroys_the_suffix() {
         );
     }
 }
+
+mod phase_failure;
+
+mod host_refusal;

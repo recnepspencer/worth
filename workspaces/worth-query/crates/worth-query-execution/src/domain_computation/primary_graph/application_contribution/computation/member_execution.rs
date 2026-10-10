@@ -22,14 +22,29 @@ use super::{WorthQueryManagedComputationExecution, WorthQueryManagedComputationI
 /// ```
 pub struct WorthQueryMemberExecution<'member> {
     execution: &'member QueryRequestExecution<'member>,
+    charge: Option<&'member mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>>,
 }
 impl<'member> WorthQueryMemberExecution<'member> {
-    pub(in crate::domain_computation::primary_graph) fn new(
+    pub(in crate::domain_computation::primary_graph) fn for_kernel(
         execution: &'member MemberRequestExecution<'member>,
+        charge: &'member mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
     ) -> Self {
         Self {
             execution: execution.request(),
+            charge: Some(charge),
         }
+    }
+
+    pub(super) fn into_parts(
+        self,
+    ) -> (
+        WorthQueryManagedComputationExecution<'member>,
+        Option<&'member mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>>,
+    ) {
+        (
+            WorthQueryManagedComputationExecution::new(self.execution),
+            self.charge,
+        )
     }
 
     pub fn interruption(&self) -> Option<WorthQueryManagedComputationInterruption> {

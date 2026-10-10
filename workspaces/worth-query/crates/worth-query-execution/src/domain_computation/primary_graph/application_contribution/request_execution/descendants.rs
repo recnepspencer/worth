@@ -39,8 +39,7 @@ impl<'authority> QueryRequestExecution<'authority> {
     }
 }
 impl<'authority> WaveRequestExecution<'authority> {
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph::application_contribution) fn request(
+    pub(in crate::domain_computation::primary_graph) fn request(
         &self,
     ) -> &QueryRequestExecution<'_> {
         &self.execution

@@ -33,10 +33,13 @@ fn selected() -> std::sync::Arc<PositionedRelationalSnapshot> {
         })
 }
 fn compute_plan() -> OwnerPlan<'static, (), ()> {
-    OwnerPlan::new(vec![PreparedCompute::new(|_| ())], |slots, _| {
-        assert_eq!(slots.len(), 1);
-        Ok(())
-    })
+    OwnerPlan::new(
+        vec![PreparedCompute::new(0, 0, |_| (), |_| 0, |_| false)],
+        |slots, _| {
+            assert_eq!(slots.len(), 1);
+            Ok(())
+        },
+    )
 }
 #[test]
 fn computing_members_without_owner_input_admission_are_refused() {

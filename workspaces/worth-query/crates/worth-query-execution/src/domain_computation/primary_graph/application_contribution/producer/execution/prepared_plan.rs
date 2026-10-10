@@ -15,6 +15,7 @@ type OwnerCallback<'owner, Value, Stop> = Box<
 
 pub(in crate::domain_computation::primary_graph) struct OwnerPlan<'owner, Value, Stop> {
     requests: Vec<PreparedCompute>,
+    preparation_failed: bool,
     inputs: Option<
         crate::domain_computation::primary_graph::application_output_demand::PreparedRequiredInputs,
     >,
@@ -56,13 +57,16 @@ impl<'owner, Value: 'owner, Stop: 'owner> OwnerPlan<'owner, Value, Stop> {
     pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn immediate(
         outcome: Result<Value, Stop>,
     ) -> Self {
-        Self::new(Vec::new(), move |slots, _| {
+        let failed = outcome.is_err();
+        let mut plan = Self::new(Vec::new(), move |slots, _| {
             assert!(
                 slots.is_empty(),
                 "an immediate owner plan has no compute slots"
             );
             outcome
-        })
+        });
+        plan.preparation_failed = failed;
+        plan
     }
     pub(in crate::domain_computation::primary_graph) fn new(
         requests: Vec<PreparedCompute>,
@@ -71,6 +75,7 @@ impl<'owner, Value: 'owner, Stop: 'owner> OwnerPlan<'owner, Value, Stop> {
     ) -> Self {
         Self {
             requests,
+            preparation_failed: false,
             inputs: None,
             complete: Box::new(complete),
         }
@@ -108,6 +113,7 @@ impl<'owner, Value: 'owner, Stop: 'owner> OwnerPlan<'owner, Value, Stop> {
     ) -> OwnerPlan<'owner, Next, NextStop> {
         let Self {
             requests,
+            preparation_failed,
             inputs,
             complete,
         } = self;
@@ -120,6 +126,7 @@ impl<'owner, Value: 'owner, Stop: 'owner> OwnerPlan<'owner, Value, Stop> {
             apply(completion.with_slots(slots), admission)
         });
         plan.inputs = inputs;
+        plan.preparation_failed = preparation_failed;
         plan
     }
 
@@ -133,6 +140,7 @@ impl<'owner, Value: 'owner, Stop: 'owner> OwnerPlan<'owner, Value, Stop> {
     ) -> OwnerPlan<'owner, Next, NextStop> {
         let Self {
             requests,
+            preparation_failed,
             inputs,
             complete,
         } = self;
@@ -140,6 +148,7 @@ impl<'owner, Value: 'owner, Stop: 'owner> OwnerPlan<'owner, Value, Stop> {
             finish(complete(slots, admission), admission)
         });
         plan.inputs = inputs;
+        plan.preparation_failed = preparation_failed;
         plan
     }
 }

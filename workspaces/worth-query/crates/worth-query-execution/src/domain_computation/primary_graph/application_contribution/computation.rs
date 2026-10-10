@@ -42,11 +42,13 @@ where
 
 mod checkpoint;
 mod member_execution;
+pub(in crate::domain_computation::primary_graph) mod worker_custody;
 pub use member_execution::WorthQueryMemberExecution;
 mod decision_plan;
 mod denial;
 mod preparation_loans;
 pub(in crate::domain_computation::primary_graph) mod prepared_request;
+pub(in crate::domain_computation::primary_graph) mod wave_dispatch;
 
 use checkpoint::CheckpointWork;
 pub use checkpoint::{
@@ -142,9 +144,36 @@ where
         WorthQueryCompletedManagedComputation<Schema, Feature, Computation, Owner>,
         WorthQueryManagedComputationDenial<Owner::Stopped>,
     > {
+        self.compute_with_charge(execution, None)
+    }
+
+    fn compute_for_member(
+        self,
+        member: WorthQueryMemberExecution<'_>,
+    ) -> Result<
+        WorthQueryCompletedManagedComputation<Schema, Feature, Computation, Owner>,
+        WorthQueryManagedComputationDenial<Owner::Stopped>,
+    > {
+        let (execution, charge) = member.into_parts();
+        self.compute_with_charge(execution, charge)
+    }
+
+    fn compute_with_charge<'a>(
+        self,
+        execution: WorthQueryManagedComputationExecution<'a>,
+        mut charge: Option<&'a mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>>,
+    ) -> Result<
+        WorthQueryCompletedManagedComputation<Schema, Feature, Computation, Owner>,
+        WorthQueryManagedComputationDenial<Owner::Stopped>,
+    > {
+        let mut delegated = |units| match &mut charge {
+            Some(charge) => charge(units),
+            None => Ok(()),
+        };
         let mut checkpoint = WorthQueryManagedComputationCheckpoint {
             work: CheckpointWork::Declared {
                 remaining: Computation::RESOURCES.maximum_work(),
+                charge: Some(&mut delegated),
             },
             execution: &execution,
         };

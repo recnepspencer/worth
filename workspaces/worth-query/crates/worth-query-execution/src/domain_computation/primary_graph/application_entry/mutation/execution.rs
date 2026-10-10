@@ -169,7 +169,7 @@ where
             on_contact,
             allocation_policy,
         ) {
-            Ok(prepared) => prepared.run_serial(self, identities),
+            Ok(prepared) => prepared.run(self, identities),
             Err(report) => report,
         }
     }
