@@ -152,27 +152,33 @@ fn terminal_outcome(
 ) -> WorthQueryDirectConvergenceIterationOutcome {
     let epoch =
         direct_admission_fixture_with_contract(disposition, contract, resource_request).admit();
-    let started = match {
-        let fixture_target = epoch;
-        let installed_fixture_phase = fixture_target.fixture_phase(execution);
-        fixture_target.begin_iteration(
-            &installed_fixture_phase,
-            WorthQueryManagedGraphCallRequest::new(
-                WorthQueryGraphProviderCallKind::Observe,
-                "oscillation-policy",
-            ),
-        )
-    } {
-        Ok(started) => started,
-        Err(_) => panic!("oscillation policy fixture iteration must start"),
+    let started = {
+        let fixture_phase_result = {
+            let fixture_target = epoch;
+            let installed_fixture_phase = fixture_target.fixture_phase(execution);
+            fixture_target.begin_iteration(
+                &installed_fixture_phase,
+                WorthQueryManagedGraphCallRequest::new(
+                    WorthQueryGraphProviderCallKind::Observe,
+                    "oscillation-policy",
+                ),
+            )
+        };
+        match fixture_phase_result {
+            Ok(started) => started,
+            Err(_) => panic!("oscillation policy fixture iteration must start"),
+        }
     };
-    let outcome = match {
-        let fixture_target = started;
-        let installed_fixture_phase = fixture_target.fixture_phase(execution);
-        fixture_target.advance(&installed_fixture_phase)
-    } {
-        WorthQueryDirectConvergenceStepOutcome::Completed(outcome) => outcome,
-        _ => panic!("oscillation policy fixture provider must complete and rejoin its epoch"),
+    let outcome = {
+        let fixture_phase_result = {
+            let fixture_target = started;
+            let installed_fixture_phase = fixture_target.fixture_phase(execution);
+            fixture_target.advance(&installed_fixture_phase)
+        };
+        match fixture_phase_result {
+            WorthQueryDirectConvergenceStepOutcome::Completed(outcome) => outcome,
+            _ => panic!("oscillation policy fixture provider must complete and rejoin its epoch"),
+        }
     };
     outcome
 }

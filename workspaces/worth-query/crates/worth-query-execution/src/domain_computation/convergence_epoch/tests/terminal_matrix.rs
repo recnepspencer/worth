@@ -219,30 +219,36 @@ fn managed_signal_cancellation_remains_a_distinct_convergence_terminal() {
         let execution = phase;
 
         let epoch = direct_epoch_fixture(FixtureDisposition::Converged, resource_request);
-        let started = match {
-            let fixture_target = epoch;
-            let installed_fixture_phase = fixture_target.fixture_phase(execution);
-            fixture_target.begin_iteration(
-                &installed_fixture_phase,
-                WorthQueryManagedGraphCallRequest::new(
-                    WorthQueryGraphProviderCallKind::Observe,
-                    "cancelled-terminal",
-                ),
-            )
-        } {
-            Ok(started) => started,
-            Err(_) => panic!("cancelled terminal iteration must start"),
+        let started = {
+            let fixture_phase_result = {
+                let fixture_target = epoch;
+                let installed_fixture_phase = fixture_target.fixture_phase(execution);
+                fixture_target.begin_iteration(
+                    &installed_fixture_phase,
+                    WorthQueryManagedGraphCallRequest::new(
+                        WorthQueryGraphProviderCallKind::Observe,
+                        "cancelled-terminal",
+                    ),
+                )
+            };
+            match fixture_phase_result {
+                Ok(started) => started,
+                Err(_) => panic!("cancelled terminal iteration must start"),
+            }
         };
         started
             .request_cancellation(BridgeManagedExecutionCancellationReason::HostRequested)
             .expect("Signal cancellation request must admit");
-        let outcome = match {
-            let fixture_target = started;
-            let installed_fixture_phase = fixture_target.fixture_phase(execution);
-            fixture_target.advance(&installed_fixture_phase)
-        } {
-            WorthQueryDirectConvergenceStepOutcome::Terminal(outcome) => outcome,
-            _ => panic!("Signal cancellation must terminalize and rejoin before provider work"),
+        let outcome = {
+            let fixture_phase_result = {
+                let fixture_target = started;
+                let installed_fixture_phase = fixture_target.fixture_phase(execution);
+                fixture_target.advance(&installed_fixture_phase)
+            };
+            match fixture_phase_result {
+                WorthQueryDirectConvergenceStepOutcome::Terminal(outcome) => outcome,
+                _ => panic!("Signal cancellation must terminalize and rejoin before provider work"),
+            }
         };
         let terminal = match outcome {
             WorthQueryDirectConvergenceIterationOutcome::Cancelled(terminal) => terminal,

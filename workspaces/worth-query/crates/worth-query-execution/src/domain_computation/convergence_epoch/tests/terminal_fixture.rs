@@ -16,27 +16,33 @@ pub(super) fn direct_terminal_outcome(
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorthQueryDirectConvergenceIterationOutcome {
     let epoch = direct_epoch_fixture(disposition, resource_request);
-    let started = match {
-        let fixture_target = epoch;
-        let installed_fixture_phase = fixture_target.fixture_phase(execution);
-        fixture_target.begin_iteration(
-            &installed_fixture_phase,
-            WorthQueryManagedGraphCallRequest::new(
-                WorthQueryGraphProviderCallKind::Observe,
-                "terminal-matrix",
-            ),
-        )
-    } {
-        Ok(started) => started,
-        Err(_) => panic!("terminal matrix iteration must start"),
+    let started = {
+        let fixture_phase_result = {
+            let fixture_target = epoch;
+            let installed_fixture_phase = fixture_target.fixture_phase(execution);
+            fixture_target.begin_iteration(
+                &installed_fixture_phase,
+                WorthQueryManagedGraphCallRequest::new(
+                    WorthQueryGraphProviderCallKind::Observe,
+                    "terminal-matrix",
+                ),
+            )
+        };
+        match fixture_phase_result {
+            Ok(started) => started,
+            Err(_) => panic!("terminal matrix iteration must start"),
+        }
     };
-    match {
-        let fixture_target = started;
-        let installed_fixture_phase = fixture_target.fixture_phase(execution);
-        fixture_target.advance(&installed_fixture_phase)
-    } {
-        WorthQueryDirectConvergenceStepOutcome::Completed(outcome) => outcome,
-        _ => panic!("terminal matrix provider must complete and rejoin"),
+    {
+        let fixture_phase_result = {
+            let fixture_target = started;
+            let installed_fixture_phase = fixture_target.fixture_phase(execution);
+            fixture_target.advance(&installed_fixture_phase)
+        };
+        match fixture_phase_result {
+            WorthQueryDirectConvergenceStepOutcome::Completed(outcome) => outcome,
+            _ => panic!("terminal matrix provider must complete and rejoin"),
+        }
     }
 }
 
@@ -105,27 +111,33 @@ fn workflow_terminal_outcome(
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorthQueryWorkflowConvergenceIterationOutcome {
     let epoch = workflow_epoch_fixture(disposition, resource_request);
-    let started = match {
-        let fixture_target = epoch;
-        let installed_fixture_phase = fixture_target.fixture_phase(execution);
-        fixture_target.begin_stage_iteration(
-            &installed_fixture_phase,
-            WORKFLOW_STAGE,
-            WorthQueryManagedGraphCallRequest::new(
-                WorthQueryGraphProviderCallKind::Observe,
-                "ordinary-workflow-convergence-iteration",
-            ),
-        )
-    } {
-        Ok(started) => started,
-        Err(_) => panic!("ordinary workflow iteration must start"),
+    let started = {
+        let fixture_phase_result = {
+            let fixture_target = epoch;
+            let installed_fixture_phase = fixture_target.fixture_phase(execution);
+            fixture_target.begin_stage_iteration(
+                &installed_fixture_phase,
+                WORKFLOW_STAGE,
+                WorthQueryManagedGraphCallRequest::new(
+                    WorthQueryGraphProviderCallKind::Observe,
+                    "ordinary-workflow-convergence-iteration",
+                ),
+            )
+        };
+        match fixture_phase_result {
+            Ok(started) => started,
+            Err(_) => panic!("ordinary workflow iteration must start"),
+        }
     };
-    match {
-        let fixture_target = started;
-        let installed_fixture_phase = fixture_target.fixture_phase(execution);
-        fixture_target.advance(&installed_fixture_phase)
-    } {
-        WorthQueryWorkflowConvergenceStepOutcome::Completed(outcome) => outcome,
-        _ => panic!("ordinary workflow provider must complete and rejoin"),
+    {
+        let fixture_phase_result = {
+            let fixture_target = started;
+            let installed_fixture_phase = fixture_target.fixture_phase(execution);
+            fixture_target.advance(&installed_fixture_phase)
+        };
+        match fixture_phase_result {
+            WorthQueryWorkflowConvergenceStepOutcome::Completed(outcome) => outcome,
+            _ => panic!("ordinary workflow provider must complete and rejoin"),
+        }
     }
 }

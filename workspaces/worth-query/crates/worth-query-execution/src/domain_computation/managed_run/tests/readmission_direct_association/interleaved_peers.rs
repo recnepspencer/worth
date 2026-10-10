@@ -14,25 +14,31 @@ fn interleaved_readmitted_peers_keep_attempt_ledger_and_release_authority_associ
         let first_binding = first.inspection().operation_binding_identity().to_owned();
         let second_binding = second.inspection().operation_binding_identity().to_owned();
 
-        let first = match {
-            let fixture_target = first;
-            let installed_fixture_phase = fixture_target.fixture_phase(active_request);
-            fixture_target.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
-        } {
-            crate::domain_computation::WorthQueryDirectReadmissionOutcome::Readmitted(
-                readmitted,
-            ) => readmitted.into_active(),
-            _ => panic!("first shared peer should readmit"),
+        let first = {
+            let fixture_phase_result = {
+                let fixture_target = first;
+                let installed_fixture_phase = fixture_target.fixture_phase(active_request);
+                fixture_target.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+            };
+            match fixture_phase_result {
+                crate::domain_computation::WorthQueryDirectReadmissionOutcome::Readmitted(
+                    readmitted,
+                ) => readmitted.into_active(),
+                _ => panic!("first shared peer should readmit"),
+            }
         };
-        let second = match {
-            let fixture_target = second;
-            let installed_fixture_phase = fixture_target.fixture_phase(active_request);
-            fixture_target.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
-        } {
-            crate::domain_computation::WorthQueryDirectReadmissionOutcome::Readmitted(
-                readmitted,
-            ) => readmitted.into_active(),
-            _ => panic!("second shared peer should readmit"),
+        let second = {
+            let fixture_phase_result = {
+                let fixture_target = second;
+                let installed_fixture_phase = fixture_target.fixture_phase(active_request);
+                fixture_target.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+            };
+            match fixture_phase_result {
+                crate::domain_computation::WorthQueryDirectReadmissionOutcome::Readmitted(
+                    readmitted,
+                ) => readmitted.into_active(),
+                _ => panic!("second shared peer should readmit"),
+            }
         };
         let first_resource = first.resource_attempt_identity().to_owned();
         let second_resource = second.resource_attempt_identity().to_owned();
@@ -59,13 +65,16 @@ fn interleaved_readmitted_peers_keep_attempt_ledger_and_release_authority_associ
         assert_ne!(first_bridge_basis, second_bridge_basis);
         assert_ne!(first_bridge_intent, second_bridge_intent);
 
-        let first = match {
-            let fixture_target = first;
-            let installed_fixture_phase = fixture_target.fixture_phase(execution);
-            fixture_target.advance(&installed_fixture_phase)
-        } {
-            WorthQueryDirectGraphStepOutcome::Completed(completion) => completion,
-            _ => panic!("first restored peer should complete"),
+        let first = {
+            let fixture_phase_result = {
+                let fixture_target = first;
+                let installed_fixture_phase = fixture_target.fixture_phase(execution);
+                fixture_target.advance(&installed_fixture_phase)
+            };
+            match fixture_phase_result {
+                WorthQueryDirectGraphStepOutcome::Completed(completion) => completion,
+                _ => panic!("first restored peer should complete"),
+            }
         }
         .into_running()
         .completed()
@@ -78,13 +87,16 @@ fn interleaved_readmitted_peers_keep_attempt_ledger_and_release_authority_associ
         assert_cleanup_association(&first, &first_resource, &first_session);
 
         assert_eq!(second.retained_capacity_reservation_count(), 2);
-        let second = match {
-            let fixture_target = second;
-            let installed_fixture_phase = fixture_target.fixture_phase(execution);
-            fixture_target.advance(&installed_fixture_phase)
-        } {
-            WorthQueryDirectGraphStepOutcome::Completed(completion) => completion,
-            _ => panic!("second peer must remain live after first cleanup"),
+        let second = {
+            let fixture_phase_result = {
+                let fixture_target = second;
+                let installed_fixture_phase = fixture_target.fixture_phase(execution);
+                fixture_target.advance(&installed_fixture_phase)
+            };
+            match fixture_phase_result {
+                WorthQueryDirectGraphStepOutcome::Completed(completion) => completion,
+                _ => panic!("second peer must remain live after first cleanup"),
+            }
         }
         .into_running()
         .completed()

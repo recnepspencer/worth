@@ -16,15 +16,18 @@ fn provider_restore_panic_remains_typed_recovery_with_retained_authority() {
             YieldProvider::checkpoint_restore_panic(7),
             resource_request,
         );
-        let recovery = match {
-            let fixture_target = yielded;
-            let installed_fixture_phase = fixture_target.fixture_phase(active_request);
-            fixture_target.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
-        } {
-            crate::domain_computation::WorthQueryDirectReadmissionOutcome::RecoveryRequired(
-                recovery,
-            ) => recovery,
-            _ => panic!("provider restore panic must not become ordinary denial"),
+        let recovery = {
+            let fixture_phase_result = {
+                let fixture_target = yielded;
+                let installed_fixture_phase = fixture_target.fixture_phase(active_request);
+                fixture_target.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+            };
+            match fixture_phase_result {
+                crate::domain_computation::WorthQueryDirectReadmissionOutcome::RecoveryRequired(
+                    recovery,
+                ) => recovery,
+                _ => panic!("provider restore panic must not become ordinary denial"),
+            }
         };
         assert_eq!(
         recovery.kind(),
@@ -73,15 +76,18 @@ fn provider_restore_rejection_after_admission_carries_exact_release_evidence() {
             YieldProvider::checkpoint_restore_reject_after_admission(7),
             resource_request,
         );
-        let recovery = match {
-            let fixture_target = yielded;
-            let installed_fixture_phase = fixture_target.fixture_phase(active_request);
-            fixture_target.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
-        } {
-            crate::domain_computation::WorthQueryDirectReadmissionOutcome::RecoveryRequired(
-                recovery,
-            ) => recovery,
-            _ => panic!("post-admission restore rejection became ordinary retryable denial"),
+        let recovery = {
+            let fixture_phase_result = {
+                let fixture_target = yielded;
+                let installed_fixture_phase = fixture_target.fixture_phase(active_request);
+                fixture_target.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+            };
+            match fixture_phase_result {
+                crate::domain_computation::WorthQueryDirectReadmissionOutcome::RecoveryRequired(
+                    recovery,
+                ) => recovery,
+                _ => panic!("post-admission restore rejection became ordinary retryable denial"),
+            }
         };
         assert_eq!(
         recovery.kind(),
@@ -144,15 +150,18 @@ fn restore_panic_and_replacement_destructor_panic_flow_into_terminal_cleanup() {
             YieldProvider::checkpoint_restore_panic_after_admission(7),
             resource_request,
         );
-        let recovery = match {
-            let fixture_target = yielded;
-            let installed_fixture_phase = fixture_target.fixture_phase(active_request);
-            fixture_target.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
-        } {
-            crate::domain_computation::WorthQueryDirectReadmissionOutcome::RecoveryRequired(
-                recovery,
-            ) => recovery,
-            _ => panic!("double restore failure escaped typed recovery"),
+        let recovery = {
+            let fixture_phase_result = {
+                let fixture_target = yielded;
+                let installed_fixture_phase = fixture_target.fixture_phase(active_request);
+                fixture_target.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+            };
+            match fixture_phase_result {
+                crate::domain_computation::WorthQueryDirectReadmissionOutcome::RecoveryRequired(
+                    recovery,
+                ) => recovery,
+                _ => panic!("double restore failure escaped typed recovery"),
+            }
         };
         assert_eq!(
         recovery.kind(),
