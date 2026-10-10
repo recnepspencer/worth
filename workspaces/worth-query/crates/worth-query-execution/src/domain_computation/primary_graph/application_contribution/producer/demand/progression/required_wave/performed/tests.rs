@@ -4,6 +4,10 @@ use crate::domain_computation::primary_graph::application_contribution::producer
 use crate::domain_computation::primary_graph::application_contribution::{
     WorthQueryProducerApplicability, WorthQueryProducerLifecyclePosture,
 };
+use crate::domain_computation::primary_graph::application_output_demand::{
+    ReadyCompletion, WorthQueryAcceptedOutputAuthority, WorthQueryCompletedOutputDemand,
+    WorthQueryOutputReadinessDeliveryEvidence,
+};
 use crate::domain_computation::primary_graph::{
     output_lineage::own_write_fixture::with_committed_own_write, WorthQueryApplicationCommitOutcome,
 };
@@ -140,7 +144,10 @@ fn assert_refused_registration_remains_performed(
 
 #[test]
 fn a_ready_and_its_successor_share_one_performed_member() {
-    for producer in ["test producer", "replacement producer"] {
+    for (producer, grant_from_predecessor) in ["test producer", "replacement producer"]
+        .into_iter()
+        .flat_map(|producer| [false, true].map(|predecessor| (producer, predecessor)))
+    {
         with_committed_own_write(|world, receipt, _, _| {
             let runtime = &world.application;
             let mut admission = runtime.demand_request_admission();
@@ -190,6 +197,11 @@ fn a_ready_and_its_successor_share_one_performed_member() {
                 )
                 .unwrap_or_else(|_| panic!("selected member admitted"))
                 .unwrap();
+            let completion = ReadyCompletion::for_test(WorthQueryCompletedOutputDemand {
+                authority: WorthQueryAcceptedOutputAuthority::Committed(receipt.clone()),
+                readiness: WorthQueryOutputReadinessDeliveryEvidence::for_test(),
+                resources: None,
+            });
             let publication = commit_receipt(
                 "published successor",
                 WorthQueryApplicationCommitOutcome::Committed(receipt),
@@ -239,6 +251,50 @@ fn a_ready_and_its_successor_share_one_performed_member() {
                     &mut admission,
                 )
                 .unwrap();
+            assert!(
+                matches!(
+                    performed
+                        .entries
+                        .iter()
+                        .find(|entry| entry.names(&successor))
+                        .unwrap()
+                        .input,
+                    CapturedDecisionInput::Withheld
+                ),
+                "the first capture must retain the withheld comparison"
+            );
+            let later_candidate = runtime
+                .primary_provider
+                .graph
+                .output_lineage
+                .lock()
+                .unwrap()
+                .resolve_required_settlement(
+                    runtime.runtime.authority_identity().as_u64(),
+                    &runtime.installed_schema.binding_identity(),
+                    &completion,
+                    &mut admission,
+                )
+                .unwrap();
+            assert!(
+                matches!(later_candidate, Ok(Some(_))),
+                "the later capture has an exact accepted candidate"
+            );
+            performed
+                .capture(&selected, &later_candidate, &mut admission)
+                .unwrap();
+            assert!(
+                matches!(
+                    performed
+                        .entries
+                        .iter()
+                        .find(|entry| entry.names(&selected))
+                        .unwrap()
+                        .input,
+                    CapturedDecisionInput::Withheld
+                ),
+                "a later accepted capture must not overwrite the withheld comparison"
+            );
             for lookup in [&successor, &selected] {
                 assert!(
                     performed
@@ -258,9 +314,14 @@ fn a_ready_and_its_successor_share_one_performed_member() {
             let changed_source = source_with_identity(changed_identity);
             assert!(source.same_occurrence(&changed_source));
             assert!(!source.same_semantic_source(&changed_source));
+            let lookup = if grant_from_predecessor {
+                &selected
+            } else {
+                &successor
+            };
             assert!(performed
                 .fresh(
-                    &successor,
+                    lookup,
                     changed_source,
                     &DecisionInput::Selected(&input),
                     &mut admission,
