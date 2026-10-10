@@ -1,3 +1,6 @@
+mod basis_readiness;
+use basis_readiness::{current_basis_digest, is_stale_for_current_basis};
+
 use std::collections::{hash_map::Entry, BTreeMap, HashMap};
 
 use worth_query::facade::runtime::WorthQueryRuntimeError;
@@ -59,10 +62,38 @@ fn execute_group(group: OrderedLaneExecution) -> GroupExecution {
             continue;
         }
 
-        if is_stale_for_current_basis(&execution.slot, latest_lane_basis_digest.as_deref()) {
-            let observed_basis_digest = latest_lane_basis_digest
-                .clone()
-                .unwrap_or_else(|| current_basis_digest(&execution.slot));
+        let stale_basis =
+            is_stale_for_current_basis(&execution.slot, latest_lane_basis_digest.as_deref())
+                .and_then(|stale| {
+                    if !stale {
+                        return Ok(None);
+                    }
+                    latest_lane_basis_digest
+                        .clone()
+                        .map(Ok)
+                        .unwrap_or_else(|| current_basis_digest(&execution.slot))
+                        .map(Some)
+                });
+        let observed_basis_digest =
+            match stale_basis {
+                Ok(observed) => observed,
+                Err(denial) => {
+                    counters.increment_isolated_failure_count();
+                    failed_slot_ordinal = Some(execution.slot.ordinal());
+                    outcomes.push(
+                        WorthServerScheduledOperationOutcome::failed_without_counters(
+                            execution.slot,
+                            WorthServerSchedulerFailurePosture::IsolatedRuntimeFailure {
+                                runtime_failure: WorthServerSchedulerRuntimeFailure::opaque(
+                                    format!("{:?}: {}", denial.code(), denial.detail(),),
+                                ),
+                            },
+                        ),
+                    );
+                    continue;
+                }
+            };
+        if let Some(observed_basis_digest) = observed_basis_digest {
             let expected_basis_digest = execution
                 .slot
                 .slot_basis_digest()
@@ -209,41 +240,6 @@ fn increment_completion_counter(
         }
         WorthServerSchedulerLane::SharedRead => {}
     }
-}
-
-fn is_stale_for_current_basis(
-    slot: &WorthServerOperationExecutionSlot,
-    latest_lane_basis_digest: Option<&str>,
-) -> bool {
-    let Some(precondition) = slot.precondition_posture().compatibility_mutation() else {
-        let Some(requested_basis_digest) = slot.slot_basis_digest() else {
-            return false;
-        };
-        return match latest_lane_basis_digest {
-            Some(latest_lane_basis_digest) => latest_lane_basis_digest != requested_basis_digest,
-            None => current_basis_digest(slot) != requested_basis_digest,
-        };
-    };
-    let Some(requested_basis_digest) = precondition
-        .requested_basis_digest()
-        .or_else(|| slot.slot_basis_digest())
-    else {
-        return false;
-    };
-    match latest_lane_basis_digest {
-        Some(latest_lane_basis_digest) => latest_lane_basis_digest != requested_basis_digest,
-        None => current_basis_digest(slot) != requested_basis_digest,
-    }
-}
-
-fn current_basis_digest(slot: &WorthServerOperationExecutionSlot) -> String {
-    slot.handoff()
-        .workspace()
-        .with_advancement(|phase| slot.handoff().workspace().snapshot_identity(&phase))
-        .expect("installed snapshot host call opens")
-        .expect("snapshot phase belongs to workspace")
-        .terminal_projection_for_reporting()
-        .to_string()
 }
 
 struct PreparedGroups {
