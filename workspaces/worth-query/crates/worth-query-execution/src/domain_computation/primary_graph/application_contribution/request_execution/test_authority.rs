@@ -11,7 +11,7 @@ pub fn test_execution_workers() -> NonZeroUsize {
 }
 
 /// This process's one authority, admitting [`test_execution_workers`].
-pub fn test_execution_authority() -> &'static ExecutionAuthority {
+pub fn query_test_execution_authority() -> &'static ExecutionAuthority {
     static AUTHORITY: OnceLock<ExecutionAuthority> = OnceLock::new();
     AUTHORITY.get_or_init(|| {
         ExecutionAuthority::try_construct(ExecutionAuthorityConfig {

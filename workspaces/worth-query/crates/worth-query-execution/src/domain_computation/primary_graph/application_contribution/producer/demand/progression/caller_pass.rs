@@ -137,7 +137,10 @@ where
             AdvancePass::Initial | AdvancePass::Refreshed(_) | AdvancePass::RetryDisclosure => None,
         };
         if let Some(publication) = publication {
-            super::caller_pass_observation::run_interleaving();
+            self.primary_provider
+                .application_attempt_operation_control
+                .caller_pass
+                .run_interleaving();
             let selected = self.on_branch(delivery_branch).select().map_err(|stop| {
                 WorthQueryOutputDemandDenial::product_selection(
                     stop,

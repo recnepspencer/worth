@@ -8,7 +8,7 @@
 //! the machine has. Each policy carries its own budget, far under the
 //! authority's, so tests running at once never meet on its memory.
 
-use super::test_authority::test_execution_authority;
+use super::test_authority::query_test_execution_authority;
 pub use super::test_authority::test_execution_workers;
 use std::cell::Cell;
 use std::num::NonZeroUsize;
@@ -125,7 +125,7 @@ pub(super) fn placed(
         WorthQueryExecutionPlacementForTest::Leased(workers)
         | WorthQueryExecutionPlacementForTest::Certified { workers, .. } => {
             RuntimeWorldExecutionPlacement::Leased {
-                authority: test_execution_authority(),
+                authority: query_test_execution_authority(),
                 policy: request_policy(workers),
             }
         }

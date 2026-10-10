@@ -1,13 +1,9 @@
 //! A constructed writer interleaving at the owned-publication continuation.
 use super::InvalidationEditAdmission;
-use crate::domain_computation::execution_observation::owned_control_scope;
 use std::cell::RefCell;
 thread_local! {
-    static EXHAUST_OWNER: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
-    static INTERLEAVING_OWNER: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
     static PUBLICATIONS: RefCell<std::collections::BTreeMap<(u64, worth_relational::facade::identity::EntityId), u64>> = const { RefCell::new(std::collections::BTreeMap::new()) };
     static PUBLICATION_RECORDS: RefCell<std::collections::BTreeMap<(u64, worth_relational::facade::identity::EntityId), u64>> = const { RefCell::new(std::collections::BTreeMap::new()) };
-    static EXHAUST_AFTER_COMMIT: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
     static READ_DEBITS: RefCell<Vec<(u64, u64)>> = const { RefCell::new(Vec::new()) };
     static REQUEST_NAVIGATION: RefCell<Vec<(u64,u64)>> = const { RefCell::new(Vec::new()) };
     static ADMISSION_WORK: RefCell<Vec<u64>> = const { RefCell::new(Vec::new()) };
@@ -30,6 +26,7 @@ pub(super) fn observe_request_work(admission: &InvalidationEditAdmission) {
     REQUEST_WORK.with(|requests| requests.borrow_mut().push(work));
 }
 pub(super) fn exhaust_after_commit(
+    control: &crate::domain_computation::primary_graph::application_runtime::WorthQueryApplicationAttemptOperationControl,
     admission: &mut InvalidationEditAdmission,
     published: bool,
     recorded: bool,
@@ -55,7 +52,7 @@ pub(super) fn exhaust_after_commit(
             });
         }
     }
-    if EXHAUST_AFTER_COMMIT.with(|armed| armed.replace(false)) {
+    if control.caller_pass.take_exhaustion() {
         admission
             .charge_external_work(admission.remaining_work() as u64)
             .expect("the constructed exhaustion consumes exactly the remaining allowance");
@@ -69,13 +66,6 @@ pub(super) fn observe_read_debit(executed: u64, debited: u64) {
         crate::domain_computation::execution_observation::register_cleanup(clear_observations);
     }
     READ_DEBITS.with(|reads| reads.borrow_mut().push((executed, debited)));
-}
-thread_local! { static INTERLEAVING: RefCell<Option<Box<dyn FnOnce()>>> = const { RefCell::new(None) }; }
-pub(super) fn run_interleaving() {
-    let action = INTERLEAVING.with(|slot| slot.borrow_mut().take());
-    if let Some(action) = action {
-        action();
-    }
 }
 impl<Schema>
     crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
@@ -110,16 +100,10 @@ impl<Schema>
     }
     #[doc(hidden)]
     pub fn exhaust_request_at_performed_commit_for_test(&self) {
-        // Law 2, scope: guard cleanup clears an unreached arm, including panic.
-        let owner = owned_control_scope::current_id();
-        owned_control_scope::register(move || {
-            if EXHAUST_OWNER.get() == owner {
-                EXHAUST_AFTER_COMMIT.set(false);
-                EXHAUST_OWNER.set(0);
-            }
-        });
-        EXHAUST_OWNER.set(owner);
-        EXHAUST_AFTER_COMMIT.with(|armed| armed.set(true));
+        self.primary_provider
+            .application_attempt_operation_control
+            .caller_pass
+            .arm_exhaustion();
     }
     #[doc(hidden)]
     pub fn retained_read_request_debits_for_test(&self) -> Vec<(u64, u64)> {
@@ -134,18 +118,14 @@ impl<Schema>
         REQUEST_WORK.with(|requests| std::mem::take(&mut *requests.borrow_mut()))
     }
     #[doc(hidden)]
-    pub fn interleave_before_owned_reobservation_for_test(&self, action: impl FnOnce() + 'static) {
-        // Guard-only edit: a shared producer dispatch still owns the reach site.
-        let owner = owned_control_scope::current_id();
-        owned_control_scope::register(move || {
-            if INTERLEAVING_OWNER.get() == owner {
-                let action = INTERLEAVING.with(|slot| slot.borrow_mut().take());
-                INTERLEAVING_OWNER.set(0);
-                drop(action);
-            }
-        });
-        INTERLEAVING_OWNER.set(owner);
-        INTERLEAVING.with(|slot| *slot.borrow_mut() = Some(Box::new(action)));
+    pub fn interleave_before_owned_reobservation_for_test(
+        &self,
+        action: impl FnOnce() + Send + 'static,
+    ) {
+        self.primary_provider
+            .application_attempt_operation_control
+            .caller_pass
+            .arm_interleaving(action);
     }
 }
 
@@ -189,7 +169,6 @@ fn clear_observations() {
 
 #[cfg(test)]
 mod scope_tests {
-    use super::*;
     #[test]
     fn dropping_the_arming_guard_clears_both_caller_pass_arms() {
         let guard = crate::domain_computation::execution_observation::WorthQueryExecutionObservation::install_on_this_thread();
@@ -206,9 +185,12 @@ mod scope_tests {
                 panic!("a dropped arm must never run")
             });
         drop(guard);
-        assert!(!EXHAUST_AFTER_COMMIT.get());
-        assert!(INTERLEAVING.with(|slot| slot.borrow().is_none()));
-        assert_eq!(EXHAUST_OWNER.get(), 0);
-        assert_eq!(INTERLEAVING_OWNER.get(), 0);
+        let control = &world
+            .application
+            .primary_provider
+            .application_attempt_operation_control
+            .caller_pass;
+        assert!(!control.take_exhaustion());
+        control.run_interleaving();
     }
 }

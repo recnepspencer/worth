@@ -58,7 +58,7 @@ pub use super::application_checkpoint::{
     WorthQueryCheckpointCaptureDenial, WorthQueryCheckpointCapturePolicy,
     WorthQueryNativeCheckpointSectionBytes,
 };
-pub use super::application_contribution::test_execution_authority;
+pub use super::application_contribution::query_test_execution_authority;
 pub use super::application_contribution::{
     bound_advancement_requests_on_this_thread_for_test,
     discarded_computation_retention_on_this_thread_for_test,

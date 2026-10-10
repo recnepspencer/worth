@@ -74,7 +74,7 @@ fn assert_target_record(
 fn checkpoint_transition_admission_refusal_retains_acknowledged_effects_for_explicit_repair() {
     let _serial = SERIAL.lock().unwrap();
     let (source, predecessor) = source();
-    let lease = primary_graph::test_execution_authority()
+    let lease = primary_graph::query_test_execution_authority()
         .request_lease(request(0, CancellationToken::new()))
         .unwrap();
     let mut calls = 0;
@@ -120,7 +120,7 @@ fn checkpoint_transition_admission_refusal_retains_acknowledged_effects_for_expl
         calls, 1,
         "capture refusal follows actual authoring and acknowledgment"
     );
-    let native_only = primary_graph::test_execution_authority()
+    let native_only = primary_graph::query_test_execution_authority()
         .request_lease(request(native_quote, CancellationToken::new()))
         .unwrap();
     let pending = pending
@@ -146,7 +146,7 @@ fn checkpoint_transition_admission_refusal_retains_acknowledged_effects_for_expl
     let released = native_only.reserve_memory(native_quote).unwrap();
     drop(released);
     drop(native_only);
-    let repair = primary_graph::test_execution_authority()
+    let repair = primary_graph::query_test_execution_authority()
         .request_lease(request(
             native_quote.checked_add(frame_quote).unwrap(),
             CancellationToken::new(),
@@ -188,7 +188,7 @@ fn checkpoint_transition_cancelled_repair_preserves_deferred_phase_and_clears_st
     // the actual next native append fault, which is exercised below.
     pending.fail_next_durable_append_for_test();
     let cancellation = worth_query_host::facade::runtime::CancellationSource::new();
-    let lease = primary_graph::test_execution_authority()
+    let lease = primary_graph::query_test_execution_authority()
         .request_lease(request(0, cancellation.token()))
         .unwrap();
     cancellation.cancel();

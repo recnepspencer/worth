@@ -21,8 +21,6 @@ use super::{WorthQueryManagedComputationInterruption, WorthQueryManagedComputati
 
 mod test_placement;
 #[cfg(test)]
-pub(in crate::domain_computation::primary_graph) use test_authority::test_execution_authority as test_authority;
-#[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use test_placement::test_policy;
 pub use test_placement::{
     bound_advancement_requests_on_this_thread_for_test,
@@ -30,7 +28,7 @@ pub use test_placement::{
     WorthQueryExecutionPlacementForTest,
 };
 mod test_authority;
-pub use test_authority::test_execution_authority;
+pub use test_authority::query_test_execution_authority;
 
 type Resource = WorthQueryManagedComputationResourceDenial;
 

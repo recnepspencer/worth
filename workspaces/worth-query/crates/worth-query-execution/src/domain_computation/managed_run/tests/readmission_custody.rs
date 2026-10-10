@@ -23,6 +23,7 @@ impl Drop for Restore {
 }
 #[test]
 fn bounded_provider_fixture_opener_refuses_before_direct_and_workflow_readmission() {
+    let _observation = crate::domain_computation::execution_observation::WorthQueryExecutionObservation::install_on_this_thread();
     use std::num::NonZeroUsize;
     bound(None);
     let host = AdvancementHost::install();

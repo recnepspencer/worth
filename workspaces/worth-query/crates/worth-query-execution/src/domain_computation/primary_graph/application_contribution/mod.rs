@@ -72,7 +72,7 @@ pub use producer::{
     WorthQueryProducerOutputFamily, WorthQuerySelectedApplicationProducer,
     WorthQueryWorkflowAssessmentOutputFamily, WorthQueryWorkflowAssessmentPosture,
 };
-pub use request_execution::test_execution_authority;
+pub use request_execution::query_test_execution_authority;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use request_execution::test_policy;
 pub(in crate::domain_computation::primary_graph) use request_execution::QueryRequestExecution;

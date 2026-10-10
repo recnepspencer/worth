@@ -125,6 +125,7 @@ pub(super) fn enter_overlapped() {
 /// Runs `test` with this thread's managed computations at `placement`, and
 /// returns them to the World's placement after, even when `test` panics.
 pub(super) fn placed<T>(placement: Placement, test: impl FnOnce() -> T) -> T {
+    let _observation = worth_query_host::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     struct Restore(Placement);
     impl Drop for Restore {
         fn drop(&mut self) {

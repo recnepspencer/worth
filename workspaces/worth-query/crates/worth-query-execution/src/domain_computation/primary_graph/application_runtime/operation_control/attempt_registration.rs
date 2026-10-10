@@ -7,9 +7,13 @@ use std::sync::{
 };
 use std::time::Duration;
 
+mod caller_pass;
+
 #[derive(Clone, Default)]
 pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationAttemptOperationControl
 {
+    pub(in crate::domain_computation::primary_graph) caller_pass:
+        Arc<caller_pass::CallerPassControl>,
     pending_registration: Arc<PendingAttemptPause>,
     pending_candidate: Arc<PendingAttemptPause>,
 }

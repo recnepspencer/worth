@@ -362,6 +362,7 @@ where
             .into_parts();
         let receipt = (publication, receipt.1);
         super::caller_pass_observation::exhaust_after_commit(
+            &self.primary_provider.application_attempt_operation_control,
             request_admission,
             receipt.0.published_in_this_advance(),
             *_recorded,
