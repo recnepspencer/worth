@@ -151,7 +151,7 @@ impl WorthQueryOutputDemandRegistry {
     }
 }
 
-fn ready_member(
+pub(super) fn ready_member(
     state: &DemandRegistryState,
     key: &WorthQueryOutputDemandKey,
     admission: &mut InvalidationEditAdmission,

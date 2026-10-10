@@ -1,5 +1,5 @@
-//! Serial public requests and committed rows; part two replaces the placement and
-//! report adapter with one advancement report and canonical committed identities.
+//! Public request histories read owner commit evidence from the advancement observer.
+//! A required-wave history plugs into the same report/identity boundary.
 use super::{
     application::Program,
     expected_history::{FailureChargeRule, History, OrderRule, World},
@@ -11,18 +11,22 @@ use worth_query_host::facade::application_entry::{
     WorthQueryApplicationMutationOutcome as Outcome, WorthQueryApplicationRequestExt,
 };
 use worth_query_host::facade::primary_graph::{
+    advancement_observations_on_this_thread_for_test as advancements,
     partitioned_computation_runs_on_this_thread_for_test as runs,
     place_managed_computations_on_this_thread_for_test as place,
+    WorthQueryAdvancementEventKind as EventKind, WorthQueryAdvancementIdentity as AppliedIdentity,
     WorthQueryExecutionPlacementForTest as Placement,
 };
 #[derive(Clone, Copy)]
 pub(super) enum Posture {
     Serial,
+    Leased(std::num::NonZeroUsize),
 }
 pub(super) struct AdvancementReport {
     pub managed_charges: Vec<u64>,
+    pub execution: Vec<worth_foundational::ExecutionReport>,
+    pub committed: Vec<u64>,
 }
-// Ordered commit positions wait for the advancement report in part two.
 pub(super) struct Observed {
     pub failure: Option<(u64, u64)>,
     pub kernel_work: u64,
@@ -30,14 +34,17 @@ pub(super) struct Observed {
     pub committed_facts: Vec<(u64, u64, u64)>,
 }
 pub(super) fn observe(world: &World, posture: Posture) -> Observed {
-    assert!(matches!(posture, Posture::Serial));
+    let placement = match posture {
+        Posture::Serial => Placement::Serial,
+        Posture::Leased(workers) => Placement::Leased(workers),
+    };
     struct Restore(Placement);
     impl Drop for Restore {
         fn drop(&mut self) {
             place(self.0);
         }
     }
-    let _restore = Restore(place(Placement::Serial));
+    let _restore = Restore(place(placement));
     let application = installation::install(world);
     let (scope, principal) = installation::authenticate(&application);
     let request = application.request(&principal, &scope);
@@ -50,6 +57,8 @@ pub(super) fn observe(world: &World, posture: Posture) -> Observed {
         .collect();
     let mut failure = None;
     let mut kernel_work = 0;
+    let mut execution = Vec::new();
+    let mut committed = Vec::new();
     operation::CHARGES.with(|charges| charges.borrow_mut().clear());
     runs();
     while let Some((index, ready)) = stack.pop() {
@@ -71,6 +80,7 @@ pub(super) fn observe(world: &World, posture: Posture) -> Observed {
                 .collect(),
             partitions: member.partitions.clone(),
         };
+        advancements(); // Discard completed setup/read requests, never mutation events.
         let outcome = request
             .mutate(input)
             .idempotency(&member.key)
@@ -79,8 +89,37 @@ pub(super) fn observe(world: &World, posture: Posture) -> Observed {
                 worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
             .unwrap();
+        let observations = advancements();
+        let [observed] = observations.as_slice() else {
+            panic!("one mutation advancement: {observations:?}")
+        };
+        assert!(observed.refusal.is_none());
+        execution.push(observed.report);
         match outcome {
-            Outcome::Committed { result, .. } => {
+            Outcome::Committed { result, receipt } => {
+                let binding = receipt.idempotency_binding();
+                let identity = AppliedIdentity::Mutation {
+                    operation: *receipt.installed_operation(),
+                    key: *binding.key_identity(),
+                    intent: *binding.intent_identity(),
+                };
+                assert_eq!(
+                    observed.applied,
+                    [
+                        worth_query_host::facade::primary_graph::WorthQueryAdvancementEvent {
+                            kind: EventKind::Commit,
+                            identity: identity.clone()
+                        },
+                        worth_query_host::facade::primary_graph::WorthQueryAdvancementEvent {
+                            kind: EventKind::Publication,
+                            identity
+                        },
+                    ],
+                    "one actual commit followed by its product publication"
+                );
+                // Bind the system-issued intent to the declared semantic member key.
+                // Membership in this list is decided by an observed commit, not submission.
+                committed.push(member.key);
                 let rows = request
                     .query(read::Read { key: member.key })
                     .execute()
@@ -94,6 +133,10 @@ pub(super) fn observe(world: &World, posture: Posture) -> Observed {
                 visited.insert(index);
             }
             Outcome::DomainDenied(denied) => {
+                assert!(
+                    observed.applied.is_empty(),
+                    "the failed member applies no effect"
+                );
                 assert!(runs().is_empty(), "failed members have no completed run");
                 failure = Some((member.key, denied.partition));
                 break;
@@ -130,7 +173,11 @@ pub(super) fn observe(world: &World, posture: Posture) -> Observed {
     Observed {
         failure,
         kernel_work,
-        report: AdvancementReport { managed_charges },
+        report: AdvancementReport {
+            managed_charges,
+            execution,
+            committed,
+        },
         committed_facts,
     }
 }
@@ -171,8 +218,15 @@ fn serial_seed_per_family_matches_independent_history() {
             observed.kernel_work, expected.kernel_work,
             "{family:?}: settled kernel work"
         );
-        // Rows prove values and application counts. Request traversal is not
-        // evidence of system commit order; that assertion waits for 7.7.
+        assert_eq!(
+            observed.report.committed,
+            expected
+                .effects
+                .iter()
+                .map(|(key, _)| *key)
+                .collect::<Vec<_>>(),
+            "{family:?}: owner-recorded semantic commit sequence"
+        );
         assert_eq!(
             observed.report.managed_charges,
             declared_charges(&world, &expected),
@@ -229,6 +283,56 @@ fn declared_failure_at_each_member_position_stops_before_its_effect() {
                 observed.report.managed_charges,
                 declared_charges(&world, &expected),
                 "completed managed charges"
+            );
+            assert_committed_facts(&observed, &expected);
+        }
+    }
+}
+
+#[test]
+fn seeded_public_histories_agree_at_serial_one_two_and_four_workers() {
+    let _guard = super::super::checkpoint_recovery_test_guard();
+    for family in FAMILIES {
+        let world = super::seeded_world::world(family, SEED);
+        let expected = world.expected(
+            OrderRule::CallerTraversal,
+            FailureChargeRule::COMPLETED_MEMBERS_ONLY,
+        );
+        let serial = observe(&world, Posture::Serial);
+        for width in [1, 2, 4] {
+            let observed = observe(
+                &world,
+                Posture::Leased(std::num::NonZeroUsize::new(width).unwrap()),
+            );
+            assert_eq!(observed.failure, expected.failure);
+            assert_eq!(observed.kernel_work, expected.kernel_work);
+            assert_eq!(observed.committed_facts, serial.committed_facts);
+            assert_eq!(
+                observed.report.managed_charges,
+                declared_charges(&world, &expected)
+            );
+            assert_eq!(
+                observed.report.committed,
+                expected
+                    .effects
+                    .iter()
+                    .map(|(key, _)| *key)
+                    .collect::<Vec<_>>()
+            );
+            assert_eq!(
+                observed
+                    .report
+                    .execution
+                    .iter()
+                    .map(|r| (r.charged_work(), r.charged_span()))
+                    .collect::<Vec<_>>(),
+                serial
+                    .report
+                    .execution
+                    .iter()
+                    .map(|r| (r.charged_work(), r.charged_span()))
+                    .collect::<Vec<_>>(),
+                "{family:?} width {width}: structural advancement cost"
             );
             assert_committed_facts(&observed, &expected);
         }

@@ -10,7 +10,7 @@ use worth_query_host::facade::primary_graph::{
 
 /// Three separate rings: each root's source reads only its own ring, and the
 /// shared dependent's source reads only its own.
-fn seed(graph: &mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>) {
+pub(super) fn seed(graph: &mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>) {
     for (ring, offset) in [("left", 1), ("right", 50), ("join", 100)] {
         let keys = [
             format!("diamond-{ring}"),

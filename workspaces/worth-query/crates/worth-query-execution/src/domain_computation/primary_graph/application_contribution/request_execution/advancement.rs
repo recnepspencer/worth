@@ -100,6 +100,14 @@ impl QueryRequestExecution<'_> {
         source_instance: Option<u64>,
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
+        #[cfg(any(test, feature = "test-query-execution-observer"))]
+        observation::begin(match &self.form {
+            Form::Serial(_) => worth_foundational::ExecutionPosture::Serial,
+            Form::Leased { lease, policy } => lease
+                .as_ref()
+                .map(|lease| lease.resolved_posture())
+                .unwrap_or(policy.posture()),
+        });
         let result = self.run_admitted_advancement(owner, source_instance, body);
         #[cfg(any(test, feature = "test-query-execution-observer"))]
         observation::record_result(&result);
@@ -145,6 +153,8 @@ impl QueryRequestExecution<'_> {
         // The execution owner catches unwinds to close its accounting scope.
         // Preserve the host body's original unwind and its existing posture.
         if let Some(payload) = body_unwind {
+            #[cfg(any(test, feature = "test-query-execution-observer"))]
+            observation::record_panicked(outcome.as_ref().ok().map(|(_, report)| *report));
             std::panic::resume_unwind(payload);
         }
         outcome
@@ -293,10 +303,13 @@ impl WorthQueryAdvancementDenial {
 }
 
 #[cfg(any(test, feature = "test-query-execution-observer"))]
-mod observation;
+pub(in crate::domain_computation::primary_graph) mod observation;
 #[cfg(feature = "test-query-execution-observer")]
 pub use observation::{
-    advancement_requests_on_this_thread_for_test, caller_pass_reports_on_this_thread_for_test,
+    advancement_observations_on_this_thread_for_test, advancement_requests_on_this_thread_for_test,
+    caller_pass_reports_on_this_thread_for_test, WorthQueryAdvancementEvent,
+    WorthQueryAdvancementEventKind, WorthQueryAdvancementIdentity,
+    WorthQueryAdvancementObservation,
 };
 
 #[cfg(test)]

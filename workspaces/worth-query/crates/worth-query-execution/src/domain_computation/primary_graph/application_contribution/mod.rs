@@ -104,7 +104,10 @@ pub(in crate::domain_computation::primary_graph) use request_execution::{
 
 #[cfg(feature = "test-query-execution-observer")]
 pub use request_execution::{
-    advancement_requests_on_this_thread_for_test, caller_pass_reports_on_this_thread_for_test,
+    advancement_observations_on_this_thread_for_test, advancement_requests_on_this_thread_for_test,
+    caller_pass_reports_on_this_thread_for_test, WorthQueryAdvancementEvent,
+    WorthQueryAdvancementEventKind, WorthQueryAdvancementIdentity,
+    WorthQueryAdvancementObservation,
 };
 
 #[cfg(test)]
@@ -113,3 +116,6 @@ pub(crate) use request_execution::with_test_advancement;
 pub use request_execution::with_bootstrap_advancement;
 
 pub use request_execution::WorthQueryBootstrapAdvancementPhase;
+
+#[cfg(any(test, feature = "test-query-execution-observer"))]
+pub(in crate::domain_computation::primary_graph) use request_execution::advancement::observation::application::record_commit as record_advancement_commit;

@@ -168,6 +168,13 @@ where
                     storage.release_unused();
                     frontier.members[index].dependency_schedule =
                         DependencySchedule::PendingConsumed;
+                    let prerequisites = runtime.output_demands.declared_required_readmissions(
+                        &frontier.members[index].ready,
+                        admission,
+                    )?;
+                    for prerequisite in prerequisites {
+                        frontier.require_upstream(prerequisite, caller, admission)?;
+                    }
                     let upstream = frontier.require_upstream(ready, caller, admission)?;
                     frontier.wait_for(index, upstream);
                 }

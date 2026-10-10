@@ -60,9 +60,10 @@ pub(crate) fn contracts<Schema: TopologySchemaBinding>(
 
 pub(crate) fn configure<Schema: TopologySchemaBinding>(
     setup: &mut worth_query_host::facade::application_contribution::WorthQueryApplicationContributionSetup<'_, Schema>,
+    uniform_decimal_key_width: bool,
 ) -> Result<(), primary_graph::WorthQueryPrimaryGraphInstallationDenial> {
     setup.handler::<ChainBinding<Schema>, _>(ChainHandler)?;
-    setup.producer::<ChainProducer<Schema>>(ChainProvider)?;
+    setup.producer::<ChainProducer<Schema>>(ChainProvider::new(uniform_decimal_key_width))?;
     setup.conditional::<readiness::ChainReadiness<Schema>>(())
 }
 
@@ -208,3 +209,6 @@ fn one_advance_discharge_follows_real_consumed_output_edges_after_upstream_stabl
     // Keep all three ordinary interests live: their required membership is real.
     drop((a, b, c));
 }
+
+#[cfg(feature = "test-query-execution-observer")]
+mod concurrent_waves;

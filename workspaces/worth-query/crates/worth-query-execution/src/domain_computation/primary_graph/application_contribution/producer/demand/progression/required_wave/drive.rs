@@ -35,8 +35,9 @@ where
     frontier.insert(wave.anchor_ready.retain(admission)?, true, None, admission)?;
     let mut resolved = ResolvedOnWave::default();
     loop {
-        // Preparation may replace the caller's consumed membership. Its Current
-        // proof closes that handoff before unrelated queue claims enter the set.
+        // The caller's own selection closes its membership handoff before
+        // unrelated queue claims join. Actual pending consumed edges collect
+        // their issued prerequisites together during readiness collection.
         let caller_was_current = queue.draining();
         if wave.target == RequiredWaveTarget::Caller && caller_was_current {
             while let Some((queued, ready)) = queue.next_root(runtime, &wave, admission)? {

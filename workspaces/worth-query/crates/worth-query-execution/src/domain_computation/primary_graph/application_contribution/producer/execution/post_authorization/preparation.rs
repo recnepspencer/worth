@@ -50,6 +50,14 @@ where
         >,
 {
     require_selected_program(selected, &commit_authority, request_admission)?;
+    #[cfg(any(test, feature = "test-query-execution-observer"))]
+    let application_identity = crate::domain_computation::primary_graph::application_contribution::request_execution::advancement::observation::WorthQueryAdvancementIdentity::Producer {
+        producer: Binding::IDENTITY.to_owned(),
+        query: *observed_source.query_identity.as_bytes(),
+        parameters: *observed_source.parameter_binding_identity.bytes(),
+        root: observed_source.source_root(),
+        source: observed_source.checkpoint_observation_identity(),
+    };
     let source_epoch = observed_source.idempotency_identity();
     let key = provider.idempotency_key(&source, &source_epoch.bytes());
     let owned_identities = super::super::input_identity::encode_owned_input::<
@@ -161,7 +169,14 @@ where
                     Vec::new(),
                     move |slots, admission_work| {
                         assert!(slots.is_empty(), "stable reuse has no compute slots");
-                        publish(&admission, admission_work).map(ProducerExecutionOutcome::Stable)
+                        let published = publish(&admission, admission_work)?;
+                        #[cfg(any(test, feature = "test-query-execution-observer"))]
+                        crate::domain_computation::primary_graph::application_contribution::request_execution::record_event(
+                            crate::domain_computation::primary_graph::application_contribution::request_execution::advancement::observation::WorthQueryAdvancementEvent {
+                                kind: crate::domain_computation::primary_graph::application_contribution::request_execution::advancement::observation::WorthQueryAdvancementEventKind::Publication,
+                                identity: application_identity,
+                            });
+                        Ok(ProducerExecutionOutcome::Stable(published))
                     },
                 ));
             }
@@ -222,6 +237,8 @@ where
     Ok(super::super::prepared_plan::ProducerExecutionPlan::new(
         requests,
         move |slots, request_admission| {
+            #[cfg(any(test, feature = "test-query-execution-observer"))]
+            let _observation = crate::domain_computation::primary_graph::application_contribution::request_execution::advancement::observation::application::apply_identity(application_identity);
             let identities = owned_identities.borrow();
             let completed = completed_handler(
                 Binding::IDENTITY,

@@ -31,6 +31,52 @@ impl DeclaredRequiredPredecessors {
     }
 }
 impl WorthQueryOutputDemandRegistry {
+    /// Pins the issued prerequisites of a caller that actually reached a
+    /// pending consumed edge. These are scheduling pins, never Current proofs.
+    pub(in crate::domain_computation::primary_graph) fn declared_required_readmissions(
+        &self,
+        selected: &SelectedReadyReadmission,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<Vec<SelectedReadyReadmission>, WorthQueryOutputDemandDenial> {
+        let declared = self.declared_required_predecessors(selected, admission)?;
+        let count = declared.keys.len();
+        let bytes = count
+            .checked_mul(std::mem::size_of::<SelectedReadyReadmission>())
+            .ok_or_else(capacity_denial)?;
+        admission
+            .admit_read_scratch(u64::try_from(bytes).map_err(|_| capacity_denial())?)
+            .map_err(|_| capacity_denial())?;
+        admission
+            .charge_external_work(u64::try_from(bytes).map_err(|_| work_denial())?)
+            .map_err(|_| work_denial())?;
+        let mut ready = Vec::new();
+        ready
+            .try_reserve_exact(count)
+            .map_err(|_| capacity_denial())?;
+        if ready.capacity() != count {
+            return Err(capacity_denial());
+        }
+        let state = self
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        for key in declared.keys {
+            state.charge_record_lookup(&key, admission)?;
+            let Some(head) =
+                super::super::super::required_stop::lineage_head(&state.records, &key, admission)?
+            else {
+                continue;
+            };
+            state.charge_record_lookup(&head, admission)?;
+            charge_required_key_lookup(&state, &head, admission)?;
+            if let Some(member) =
+                super::super::pending_readmission::ready_member(&state, &head, admission)?
+            {
+                ready.push(member);
+            }
+        }
+        Ok(ready)
+    }
     pub(in crate::domain_computation::primary_graph) fn declared_required_predecessors(
         &self,
         selected: &SelectedReadyReadmission,

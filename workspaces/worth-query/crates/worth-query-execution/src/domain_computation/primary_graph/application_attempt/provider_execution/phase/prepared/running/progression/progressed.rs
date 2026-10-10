@@ -47,6 +47,8 @@ where
         ))
     });
     if let WorthQueryApplicationCommitOutcome::Committed(receipt) = &committed {
+        #[cfg(any(test, feature = "test-query-execution-observer"))]
+        crate::domain_computation::primary_graph::application_contribution::record_advancement_commit(receipt);
         if let Some(publication) = workflow_settlement_publication {
             publication.maintain(application, receipt);
         }

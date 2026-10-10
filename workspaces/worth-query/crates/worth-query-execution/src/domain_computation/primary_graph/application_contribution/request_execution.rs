@@ -40,7 +40,7 @@ type Resource = WorthQueryManagedComputationResourceDenial;
 
 mod descendants;
 pub(in crate::domain_computation::primary_graph) use descendants::MemberRequestExecution;
-mod advancement;
+pub(in crate::domain_computation::primary_graph) mod advancement;
 pub(in crate::domain_computation::primary_graph) use advancement::{
     advancement_denial, with_serial_host_advancement, with_world_advancement,
 };
@@ -342,7 +342,10 @@ impl QueryDispatch<'_> {
 
 #[cfg(feature = "test-query-execution-observer")]
 pub use advancement::{
-    advancement_requests_on_this_thread_for_test, caller_pass_reports_on_this_thread_for_test,
+    advancement_observations_on_this_thread_for_test, advancement_requests_on_this_thread_for_test,
+    caller_pass_reports_on_this_thread_for_test, WorthQueryAdvancementEvent,
+    WorthQueryAdvancementEventKind, WorthQueryAdvancementIdentity,
+    WorthQueryAdvancementObservation,
 };
 
 #[cfg(test)]
@@ -354,3 +357,6 @@ pub use advancement::WorthQueryBootstrapAdvancementPhase;
 
 #[cfg(feature = "test-query-execution-observer")]
 pub(in crate::domain_computation::primary_graph) use advancement::record_caller_pass;
+
+#[cfg(any(test, feature = "test-query-execution-observer"))]
+pub(in crate::domain_computation::primary_graph) use advancement::observation::record_event;

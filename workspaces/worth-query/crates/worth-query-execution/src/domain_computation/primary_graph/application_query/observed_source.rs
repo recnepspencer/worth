@@ -242,6 +242,13 @@ impl<Query> WorthQueryObservedSource<Query> {
         )
     }
 
+    #[cfg(any(test, feature = "test-query-execution-observer"))]
+    pub(in crate::domain_computation::primary_graph) fn checkpoint_observation_identity(
+        &self,
+    ) -> [u8; 32] {
+        self.source_meaning.checkpoint_identity().bytes()
+    }
+
     pub(in crate::domain_computation::primary_graph) fn source_root(&self) -> EntityId {
         self.source_meaning.footprint().root
     }

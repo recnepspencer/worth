@@ -291,7 +291,10 @@ pub use crate::domain_computation::{
 
 #[cfg(feature = "test-query-execution-observer")]
 pub use crate::domain_computation::primary_graph::{
-    advancement_requests_on_this_thread_for_test, caller_pass_reports_on_this_thread_for_test,
+    advancement_observations_on_this_thread_for_test, advancement_requests_on_this_thread_for_test,
+    caller_pass_reports_on_this_thread_for_test, WorthQueryAdvancementEvent,
+    WorthQueryAdvancementEventKind, WorthQueryAdvancementIdentity,
+    WorthQueryAdvancementObservation,
 };
 
 #[cfg(feature = "test-query-execution-observer")]

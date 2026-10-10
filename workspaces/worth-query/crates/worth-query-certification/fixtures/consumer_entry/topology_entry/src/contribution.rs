@@ -69,17 +69,27 @@ impl TopologyContribution {
             Arc::clone(&configuration.producer_authorization_denials),
             Arc::clone(&configuration.producer_domain_denial),
         );
-        Self::configure_topology_with_provider(configuration, setup, provider)
+        Self::configure_topology_with_provider(configuration, setup, provider, PlanarHandler)
     }
 
-    pub(crate) fn configure_topology_with_provider<Schema: TopologySchemaBinding>(
+    pub(crate) fn configure_topology_with_provider<Schema: TopologySchemaBinding, Handler>(
         configuration: TopologyConfiguration,
         setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
         provider: super::InitialPlanarProvider,
-    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+        handler: Handler,
+    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>
+    where
+        Handler: worth_query_host::facade::primary_graph::OperationHandler<
+            Schema,
+            PlanarMutationBinding<Schema>,
+        >,
+    {
         configuration.setup_calls.fetch_add(1, Ordering::SeqCst);
         #[cfg(test)]
-        super::checkpoint_recovery::required_chain::configure(setup)?;
+        super::checkpoint_recovery::required_chain::configure(
+            setup,
+            provider.has_uniform_decimal_key_width(),
+        )?;
         setup.invariant(
             PositivePlanarTurn::reference(),
             ApplicationInvariantExecutionPoint::CommitBoundary,
@@ -91,7 +101,7 @@ impl TopologyContribution {
                 )
             },
         )?;
-        setup.handler::<PlanarMutationBinding<Schema>, _>(PlanarHandler)?;
+        setup.handler::<PlanarMutationBinding<Schema>, _>(handler)?;
         setup.handler::<super::PlanarEditBinding<Schema>, _>(PlanarHandler)?;
         setup.handler::<super::FinalPlanarMutationBinding<Schema>, _>(
             super::FinalPlanarMutationHandler,

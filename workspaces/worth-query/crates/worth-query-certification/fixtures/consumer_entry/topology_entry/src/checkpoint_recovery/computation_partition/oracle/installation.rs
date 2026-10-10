@@ -90,7 +90,12 @@ impl<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>
                 std::sync::Arc::clone(&configuration.producer_domain_denial),
             )
             .with_uniform_decimal_key_width();
-            TopologyContribution::configure_topology_with_provider(configuration, setup, provider)
+            TopologyContribution::configure_topology_with_provider(
+                configuration,
+                setup,
+                provider,
+                crate::PlanarHandler,
+            )
         } else {
             TopologyContribution::configure_topology(configuration, setup)
         }

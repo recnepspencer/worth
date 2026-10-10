@@ -172,3 +172,5 @@ fn unwinding_a_host_callback_releases_opening_custody() {
 }
 
 mod member_lineage;
+
+mod observations;
