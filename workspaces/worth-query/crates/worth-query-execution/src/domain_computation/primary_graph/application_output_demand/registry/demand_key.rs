@@ -63,7 +63,7 @@ impl WorthQueryOutputDemandKey {
             && self.source.same_semantic_source(&other.source)
     }
 
-    pub(super) fn comparison_work(&self) -> Option<usize> {
+    pub(in crate::domain_computation::primary_graph) fn comparison_work(&self) -> Option<usize> {
         self.producer
             .len()
             .checked_add(self.family.as_str().len())?
@@ -87,7 +87,7 @@ impl WorthQueryOutputDemandKey {
             }));
         }
         // Another binding may succeed this row only through the declared
-        // Initial→Preserve transition of the same profile, never text order.
+        // Initialâ†’Preserve transition of the same profile, never text order.
         if self.applicability.profile_kind() != other.applicability.profile_kind()
             || self.applicability.lifecycle() == other.applicability.lifecycle()
         {

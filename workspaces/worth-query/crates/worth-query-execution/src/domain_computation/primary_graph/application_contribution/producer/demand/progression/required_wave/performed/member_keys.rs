@@ -57,10 +57,7 @@ impl PerformedMember {
 fn key_comparison_work(
     key: &WorthQueryOutputDemandKey,
 ) -> Result<u64, WorthQueryOutputDemandDenial> {
-    key.producer_identity()
-        .len()
-        .checked_add(key.applicability().profile_kind().len())
-        .and_then(|bytes| bytes.checked_add(3))
+    key.comparison_work()
         .and_then(|work| u64::try_from(work).ok())
         .ok_or_else(work_denial)
 }
@@ -69,4 +66,28 @@ fn same_key(left: &WorthQueryOutputDemandKey, right: &WorthQueryOutputDemandKey)
         && left.producer_identity() == right.producer_identity()
         && left.applicability() == right.applicability()
         && left.source_epoch().same_occurrence(right.source_epoch())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn performed_comparison_charges_every_declared_key_axis() {
+        crate::domain_computation::primary_graph::output_lineage::own_write_fixture::with_committed_own_write(|world, _, _, _| {
+            let runtime = &world.application;
+            let mut admission = runtime.demand_request_admission();
+            let (shared, _) = super::super::super::selection::select_required_basis(
+                runtime, runtime.current_world(), &mut admission).unwrap();
+            let source = WorthQueryObservedSourceEpoch::new(
+                [1; 32], [2; 32],
+                worth_relational::facade::identity::EntityId::new(
+                    worth_relational::facade::identity::PartitionId::main(), 1, 1),
+                shared.selected().product().observation().lifecycle_incarnation(), 0, [3; 32]);
+            let key = WorthQueryOutputDemandKey::new(
+                "declared-family", "producer".to_owned(),
+                crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerApplicability::new(
+                    "profile", crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerLifecyclePosture::Initial), source);
+            assert_eq!(key_comparison_work(&key).unwrap(), ("declared-family".len() + "producer".len() + "profile".len() + 10) as u64);
+        });
+    }
 }

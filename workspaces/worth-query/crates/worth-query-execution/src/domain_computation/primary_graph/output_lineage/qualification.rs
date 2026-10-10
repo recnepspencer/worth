@@ -54,8 +54,11 @@ impl WorthQueryApplicationOutputLineage {
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
         generation: u64,
     ) -> bool {
+        let Some(output_binding) = self.binding_identity(TypeId::of::<Binding>()) else {
+            return false;
+        };
         self.by_source.iter().any(|(source, versions)| {
-            self.binding_identity(TypeId::of::<Binding>()).as_ref() == Some(&source.output_binding)
+            output_binding == source.output_binding
                 && versions.get(&occurrence).is_some_and(|history| {
                     history
                         .range(..=generation)
