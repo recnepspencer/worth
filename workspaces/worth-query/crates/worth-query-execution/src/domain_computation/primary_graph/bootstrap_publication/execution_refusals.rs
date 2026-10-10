@@ -36,11 +36,12 @@ pub(in crate::domain_computation::primary_graph) fn isolated(test_name: &str, ru
         run();
         return;
     }
-    let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .args(["--exact", test_name, "--nocapture"])
-        .env(PROBE, test_name)
-        .output()
-        .unwrap();
+    let output = crate::process_deadline::output(
+        std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", test_name, "--nocapture"])
+            .env(PROBE, test_name),
+    )
+    .unwrap();
     assert!(
         output.status.success(),
         "{}\n{}",

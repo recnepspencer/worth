@@ -244,11 +244,12 @@ pub(super) fn isolated(name: &str, module: &str) -> bool {
     if std::env::var("WORTH_QUERY_RETAINED_FACT_CASE").as_deref() == Ok(filter) {
         return true;
     }
-    let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .args(["--exact", filter, "--test-threads=1", "--nocapture"])
-        .env("WORTH_QUERY_RETAINED_FACT_CASE", filter)
-        .output()
-        .unwrap();
+    let output = crate::process_deadline::output(
+        std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", filter, "--test-threads=1", "--nocapture"])
+            .env("WORTH_QUERY_RETAINED_FACT_CASE", filter),
+    )
+    .unwrap();
     assert!(
         output.status.success(),
         "{}\n{}",

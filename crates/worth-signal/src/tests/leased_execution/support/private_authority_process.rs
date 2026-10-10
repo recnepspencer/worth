@@ -3,12 +3,13 @@ pub(crate) fn run_with_private_authority(test_name: &str) -> bool {
     if std::env::var(CHILD_TEST).as_deref() == Ok(test_name) {
         return false;
     }
-    let output = std::process::Command::new(
-        std::env::current_exe().expect("current test binary should be discoverable"),
+    let output = crate::process_deadline::output(
+        std::process::Command::new(
+            std::env::current_exe().expect("current test binary should be discoverable"),
+        )
+        .args(["--exact", test_name, "--nocapture"])
+        .env(CHILD_TEST, test_name),
     )
-    .args(["--exact", test_name, "--nocapture"])
-    .env(CHILD_TEST, test_name)
-    .output()
     .expect("private authority test child should start");
     assert!(
         output.status.success(),

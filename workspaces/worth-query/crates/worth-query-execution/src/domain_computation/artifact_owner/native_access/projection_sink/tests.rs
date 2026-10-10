@@ -49,11 +49,12 @@ fn allocated_capacity_includes_nested_variable_width_buffers() {
 #[test]
 #[cfg(feature = "allocation-probes")]
 fn chunk_width_changes_independently_measured_live_allocation_peak() {
-    let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .arg("isolated_resident_allocation_probe")
-        .env("WORTH_QUERY_RUN_ALLOCATION_PROBE", "1")
-        .output()
-        .unwrap();
+    let output = crate::process_deadline::output(
+        std::process::Command::new(std::env::current_exe().unwrap())
+            .arg("isolated_resident_allocation_probe")
+            .env("WORTH_QUERY_RUN_ALLOCATION_PROBE", "1"),
+    )
+    .unwrap();
     assert!(
         output.status.success(),
         "allocation probe failed:\n{}\n{}",

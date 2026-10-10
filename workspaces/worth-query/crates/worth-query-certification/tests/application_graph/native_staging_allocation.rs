@@ -49,11 +49,12 @@ fn ordinary_mutation_read_set_fits_before_native_staging_refuses_the_same_lease(
             "{}::ordinary_mutation_read_set_fits_before_native_staging_refuses_the_same_lease",
             module_path!().split_once("::").unwrap().1
         );
-        let output = std::process::Command::new(std::env::current_exe().unwrap())
-            .args(["--exact", &name, "--nocapture"])
-            .env(CHILD, "1")
-            .output()
-            .unwrap();
+        let output = crate::process_deadline::output(
+            std::process::Command::new(std::env::current_exe().unwrap())
+                .args(["--exact", &name, "--nocapture"])
+                .env(CHILD, "1"),
+        )
+        .unwrap();
         assert!(
             output.status.success(),
             "{}\n{}",

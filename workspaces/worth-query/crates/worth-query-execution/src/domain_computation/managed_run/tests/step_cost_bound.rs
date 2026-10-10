@@ -159,11 +159,12 @@ fn admitted_chunk_count_has_only_the_declared_linear_step_cost() {
 #[test]
 #[cfg(feature = "allocation-probes")]
 fn one_provider_step_allocation_count_is_width_invariant() {
-    let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .arg("isolated_provider_step_allocation_slope_probe")
-        .env("WORTH_QUERY_STEP_ALLOCATION_PROBE", "1")
-        .output()
-        .unwrap();
+    let output = crate::process_deadline::output(
+        std::process::Command::new(std::env::current_exe().unwrap())
+            .arg("isolated_provider_step_allocation_slope_probe")
+            .env("WORTH_QUERY_STEP_ALLOCATION_PROBE", "1"),
+    )
+    .unwrap();
     assert!(
         output.status.success(),
         "provider-step allocation probe failed:\n{}\n{}",

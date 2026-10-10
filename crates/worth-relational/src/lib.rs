@@ -62,3 +62,7 @@ pub mod facade;
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+#[path = "test_support/process_deadline.rs"]
+mod process_deadline;

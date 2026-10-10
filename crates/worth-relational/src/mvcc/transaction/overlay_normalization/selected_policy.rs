@@ -27,18 +27,22 @@ fn request(memory: u64) -> LeaseRequest {
 #[test]
 fn native_normalization_and_validation_footprint_retain_selected_policy() {
     if std::env::var_os(CHILD).is_none() {
-        let status = std::process::Command::new(std::env::current_exe().unwrap())
-            .args([
-                "native_normalization_and_validation_footprint_retain_selected_policy",
-                "--nocapture",
-                "--test-threads=1",
-            ])
-            .env(CHILD, "1")
-            .status()
-            .unwrap();
+        let output = crate::process_deadline::output(
+            std::process::Command::new(std::env::current_exe().unwrap())
+                .args([
+                    "native_normalization_and_validation_footprint_retain_selected_policy",
+                    "--nocapture",
+                    "--test-threads=1",
+                ])
+                .env(CHILD, "1"),
+        )
+        .unwrap();
         assert!(
-            status.success(),
-            "isolated native owner proof failed: {status}"
+            output.status.success(),
+            "isolated native owner proof failed: {}\n{}\n{}",
+            output.status,
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr),
         );
         return;
     }

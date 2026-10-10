@@ -143,11 +143,12 @@ fn ordinary_slot_preparation_keeps_single_owner_bookkeeping_inline() {
     const CHILD: &str = "WORTH_SIGNAL_CAUSE_SLOT_INLINE_ALLOCATION_CHILD";
     const TEST: &str = "data::graph::storage::invalidation_causes::cause_sets::slot_preparation::tests::ordinary_slot_preparation_keeps_single_owner_bookkeeping_inline";
     if std::env::var_os(CHILD).is_none() {
-        let output = std::process::Command::new(std::env::current_exe().unwrap())
-            .args(["--exact", TEST, "--nocapture", "--test-threads=1"])
-            .env(CHILD, "1")
-            .output()
-            .unwrap();
+        let output = crate::process_deadline::output(
+            std::process::Command::new(std::env::current_exe().unwrap())
+                .args(["--exact", TEST, "--nocapture", "--test-threads=1"])
+                .env(CHILD, "1"),
+        )
+        .unwrap();
         assert!(
             output.status.success(),
             "{}\n{}",

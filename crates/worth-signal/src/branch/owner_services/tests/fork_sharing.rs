@@ -90,14 +90,15 @@ fn exact_fork_and_first_write_have_no_node_count_allocation_slope() {
     const CHILD_PROCESS: &str = "WORTH_SIGNAL_FORK_ALLOCATION_CHILD";
     const TEST_NAME: &str = "branch::owner_services::tests::fork_sharing::exact_fork_and_first_write_have_no_node_count_allocation_slope";
     if env::var_os(CHILD_PROCESS).is_none() {
-        let output = Command::new(env::current_exe().expect("test executable resolves"))
-            .arg("--exact")
-            .arg(TEST_NAME)
-            .arg("--nocapture")
-            .arg("--test-threads=1")
-            .env(CHILD_PROCESS, "1")
-            .output()
-            .expect("isolated allocation-probe process starts");
+        let output = crate::process_deadline::output(
+            Command::new(env::current_exe().expect("test executable resolves"))
+                .arg("--exact")
+                .arg(TEST_NAME)
+                .arg("--nocapture")
+                .arg("--test-threads=1")
+                .env(CHILD_PROCESS, "1"),
+        )
+        .expect("isolated allocation-probe process starts");
         let stdout = String::from_utf8_lossy(&output.stdout);
         print!("{stdout}");
         eprint!("{}", String::from_utf8_lossy(&output.stderr));

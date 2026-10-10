@@ -42,14 +42,15 @@ fn repeated_fork_insert_has_no_inherited_cause_payload_slope() {
     const MAX_CHANGED_PAGE_ALLOCATION_CALLS: usize = 32;
     const MAX_CHANGED_PAGE_ALLOCATED_BYTES: usize = 32 * 512;
     if env::var_os(CHILD_PROCESS).is_none() {
-        let output = Command::new(env::current_exe().expect("test executable resolves"))
-            .arg("--exact")
-            .arg(TEST_NAME)
-            .arg("--nocapture")
-            .arg("--test-threads=1")
-            .env(CHILD_PROCESS, "1")
-            .output()
-            .expect("isolated cause-set granule probe starts");
+        let output = crate::process_deadline::output(
+            Command::new(env::current_exe().expect("test executable resolves"))
+                .arg("--exact")
+                .arg(TEST_NAME)
+                .arg("--nocapture")
+                .arg("--test-threads=1")
+                .env(CHILD_PROCESS, "1"),
+        )
+        .expect("isolated cause-set granule probe starts");
         let stdout = String::from_utf8_lossy(&output.stdout);
         let stderr = String::from_utf8_lossy(&output.stderr);
         assert!(

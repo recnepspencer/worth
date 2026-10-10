@@ -23,14 +23,15 @@ const MAX_UNRELATED_REPLACE_BYTES: usize = 128 * 1_024;
 #[test]
 fn unrelated_replace_does_not_clone_an_inherited_changed_consumer_payload() {
     if env::var_os(CHILD_PROCESS).is_none() {
-        let output = Command::new(env::current_exe().expect("test executable resolves"))
-            .arg("--exact")
-            .arg(TEST_NAME)
-            .arg("--nocapture")
-            .arg("--test-threads=1")
-            .env(CHILD_PROCESS, "1")
-            .output()
-            .expect("isolated subscriber fork-granule probe starts");
+        let output = crate::process_deadline::output(
+            Command::new(env::current_exe().expect("test executable resolves"))
+                .arg("--exact")
+                .arg(TEST_NAME)
+                .arg("--nocapture")
+                .arg("--test-threads=1")
+                .env(CHILD_PROCESS, "1"),
+        )
+        .expect("isolated subscriber fork-granule probe starts");
         let stdout = String::from_utf8_lossy(&output.stdout);
         let stderr = String::from_utf8_lossy(&output.stderr);
         print!("{stdout}");

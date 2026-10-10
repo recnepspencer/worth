@@ -164,3 +164,7 @@ pub mod branch_bases_guide;
 
 #[cfg(test)]
 pub(crate) mod tests;
+
+#[cfg(test)]
+#[path = "test_support/process_deadline.rs"]
+mod process_deadline;

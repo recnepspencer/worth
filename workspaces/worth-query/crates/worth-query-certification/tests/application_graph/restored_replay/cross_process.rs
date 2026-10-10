@@ -86,11 +86,12 @@ fn restore_phase() {
 
 fn run_phase(phase: &str, directory: &Path) {
     let test = format!("{}::{phase}", own_test_module());
-    let output = Command::new(std::env::current_exe().expect("the test binary is known"))
-        .args([test.as_str(), "--exact", "--nocapture", "--test-threads=1"])
-        .env(PHASE_DIRECTORY, directory)
-        .output()
-        .expect("the phase process runs");
+    let output = crate::process_deadline::output(
+        Command::new(std::env::current_exe().expect("the test binary is known"))
+            .args([test.as_str(), "--exact", "--nocapture", "--test-threads=1"])
+            .env(PHASE_DIRECTORY, directory),
+    )
+    .expect("the phase process runs");
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(
         output.status.success() && stdout.contains("1 passed"),
