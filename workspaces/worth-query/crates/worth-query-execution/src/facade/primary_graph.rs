@@ -312,3 +312,6 @@ pub use crate::domain_computation::primary_graph::WorthQueryDerivedPairReadPlans
 
 #[cfg(feature = "test-query-execution-observer")]
 pub use crate::domain_computation::primary_graph::carried_read_basis_custody_for_test;
+
+/// Owns this thread's Signal checkpoint observation; grants no request authority.
+pub use worth_signal::facade::SignalRequestWorkObservation;

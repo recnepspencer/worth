@@ -278,7 +278,6 @@ where
         self.counters.snapshot()
     }
 
-    #[cfg(any(test, feature = "test-operation-control"))]
     #[cfg_attr(
         not(test),
         allow(

@@ -17,7 +17,6 @@ fn lifecycle_ordinal(observation: SignalOwnerLifecycleObservation) -> u8 {
     }
 }
 
-#[cfg(feature = "test-operation-control")]
 fn operation_boundary_ordinal(boundary: crate::facade::branch::SignalOwnerOperationBoundary) -> u8 {
     use crate::facade::branch::SignalOwnerOperationBoundary;
 
@@ -58,7 +57,6 @@ fn branch_facade_preserves_existing_exports_and_adds_owner_vocabulary() {
     );
 }
 
-#[cfg(feature = "test-operation-control")]
 #[test]
 fn operation_control_feature_exports_the_frozen_progression_roster() {
     use crate::facade::branch::SignalOwnerOperationBoundary;

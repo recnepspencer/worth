@@ -42,7 +42,6 @@ fn with_movement_permit(operation: impl FnOnce(&super::SignalOwnerMovementPermit
     operation(&permit);
 }
 
-#[cfg(feature = "test-operation-control")]
 #[test]
 fn test_operation_control_build_preserves_kernel_authority_boundary() {
     use super::super::SignalOwnerOperationBoundary;

@@ -16,8 +16,8 @@ pub enum SignalOwnerOperationBoundary {
     OwnerCloseBatch,
 }
 
-#[cfg(any(test, feature = "test-operation-control"))]
 mod deterministic {
+    use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::{Arc, Condvar, Mutex};
     use std::time::{Duration, Instant};
 
@@ -25,6 +25,7 @@ mod deterministic {
 
     #[derive(Debug, Default)]
     struct SignalOwnerOperationControlState {
+        active: AtomicBool,
         armed: Mutex<SignalOwnerArmedOperationControl>,
     }
 
@@ -60,7 +61,7 @@ mod deterministic {
         not(test),
         allow(
             dead_code,
-            reason = "Phase 4 service operation controls consume this feature-only seam"
+            reason = "Phase 4 service operation controls consume this in-process seam"
         )
     )]
     impl SignalOwnerOperationControl {
@@ -82,6 +83,7 @@ mod deterministic {
                 .unwrap_or_else(|poisoned| poisoned.into_inner());
             assert!(armed.pause.is_none(), "only one owner pause may be armed");
             armed.pause = Some((boundary, Arc::clone(&latch)));
+            self.state.active.store(true, Ordering::Release);
             SignalOwnerOperationPause { latch }
         }
 
@@ -93,12 +95,16 @@ mod deterministic {
                 .unwrap_or_else(|poisoned| poisoned.into_inner());
             assert!(armed.panic.is_none(), "only one owner panic may be armed");
             armed.panic = Some(boundary);
+            self.state.active.store(true, Ordering::Release);
         }
 
         pub(in crate::branch::owner_services) fn reach(
             &self,
             boundary: SignalOwnerOperationBoundary,
         ) {
+            if !self.state.active.load(Ordering::Acquire) {
+                return;
+            }
             let (panic_now, pause) = {
                 let mut armed = self
                     .state
@@ -115,6 +121,10 @@ mod deterministic {
                     }
                     _ => None,
                 };
+                self.state.active.store(
+                    armed.pause.is_some() || armed.panic.is_some(),
+                    Ordering::Release,
+                );
                 (panic_now, pause)
             };
             if let Some(latch) = pause {
@@ -156,7 +166,7 @@ mod deterministic {
         not(test),
         allow(
             dead_code,
-            reason = "Phase 4 service operation controls consume this feature-only seam"
+            reason = "Phase 4 service operation controls consume this in-process seam"
         )
     )]
     impl SignalOwnerOperationPause {
@@ -196,7 +206,6 @@ mod deterministic {
     }
 }
 
-#[cfg(any(test, feature = "test-operation-control"))]
 #[allow(
     unused_imports,
     reason = "the frozen controller contract names the pause type for service-lane consumers"

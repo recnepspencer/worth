@@ -44,11 +44,19 @@ mod stable_refresh;
 mod support;
 use support::{authenticate, install, length};
 
-fn checkpoint_recovery_test_guard() -> std::sync::MutexGuard<'static, ()> {
+struct CheckpointRecoveryTestGuard {
+    _exclusive: std::sync::MutexGuard<'static, ()>,
+    _signal_observation: primary_graph::SignalRequestWorkObservation,
+}
+
+fn checkpoint_recovery_test_guard() -> CheckpointRecoveryTestGuard {
     static EXCLUSIVE_PROVIDER_COUNTER: std::sync::Mutex<()> = std::sync::Mutex::new(());
-    EXCLUSIVE_PROVIDER_COUNTER
-        .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner)
+    CheckpointRecoveryTestGuard {
+        _exclusive: EXCLUSIVE_PROVIDER_COUNTER
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner),
+        _signal_observation: primary_graph::SignalRequestWorkObservation::install_on_this_thread(),
+    }
 }
 
 worth_query_application! {

@@ -378,6 +378,7 @@ exports = [
     "RuntimeWorldSettledRelationalAdoptionDenial",
     "SignalCheckpointDenial",
     "SignalConditionalEvaluationBudget",
+    "SignalRequestWorkObservation",
     "WorthQueryAdmittedApplicationCapabilityAccess",
     "WorthQueryAdmittedApplicationConditionalDefinition",
     "WorthQueryAdmittedApplicationOperation",

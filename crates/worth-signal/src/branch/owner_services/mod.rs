@@ -77,7 +77,6 @@ pub use definition_publication_port::{
     AdmittedSignalConditionalDefinitionPublication, SignalConditionalDefinitionPublicationPort,
 };
 pub use lifecycle_observation::SignalOwnerLifecycleObservation;
-#[cfg(feature = "test-operation-control")]
 pub use operation_control::{
     SignalOwnerOperationBoundary, SignalOwnerOperationControl, SignalOwnerOperationPause,
 };

@@ -79,7 +79,6 @@ fn public_facade_issues_weak_ports_over_the_canonical_owner() {
     assert!(unavailable.is_err());
 }
 
-#[cfg(feature = "test-operation-control")]
 #[test]
 fn public_facade_issues_drop_safe_control_for_real_owner_boundaries() {
     use worth_signal::facade::branch::{

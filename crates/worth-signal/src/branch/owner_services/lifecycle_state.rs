@@ -4,7 +4,6 @@ use std::sync::{Arc, Condvar, Mutex, MutexGuard};
 use super::admission_table::SignalOwnerAdmissionTable;
 use super::counters::SignalOwnerServiceCounters;
 use super::operation_control::SignalOwnerOperationBoundary;
-#[cfg(any(test, feature = "test-operation-control"))]
 use super::operation_control::SignalOwnerOperationControl;
 use super::SignalOwnerLifecycleObservation;
 
@@ -76,7 +75,6 @@ pub(crate) struct SignalOwnerLifecycleState {
     cleanup_waiters: std::sync::atomic::AtomicUsize,
     counters: Arc<SignalOwnerServiceCounters>,
     recovered_poison: AtomicBool,
-    #[cfg(any(test, feature = "test-operation-control"))]
     operation_control: SignalOwnerOperationControl,
 }
 
@@ -97,7 +95,6 @@ impl SignalOwnerLifecycleState {
             cleanup_waiters: std::sync::atomic::AtomicUsize::new(0),
             counters,
             recovered_poison: AtomicBool::new(false),
-            #[cfg(any(test, feature = "test-operation-control"))]
             operation_control: SignalOwnerOperationControl::new(),
         })
     }
@@ -251,13 +248,9 @@ impl SignalOwnerLifecycleState {
     }
 
     pub(crate) fn reach_operation_boundary(&self, boundary: SignalOwnerOperationBoundary) {
-        #[cfg(any(test, feature = "test-operation-control"))]
         self.operation_control.reach(boundary);
-        #[cfg(not(any(test, feature = "test-operation-control")))]
-        let _ = boundary;
     }
 
-    #[cfg(any(test, feature = "test-operation-control"))]
     pub(super) fn operation_control(&self) -> SignalOwnerOperationControl {
         self.operation_control.clone()
     }

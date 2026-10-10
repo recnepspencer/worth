@@ -42,8 +42,7 @@ where
         )
     }
 
-    /// Issue deterministic control over the real owner progression in test builds.
-    #[cfg(feature = "test-operation-control")]
+    /// Issue deterministic control over the real owner progression through its owned handle.
     pub fn owner_operation_control(
         &self,
     ) -> Result<

@@ -108,7 +108,6 @@ where
         }
     }
 
-    #[cfg(feature = "test-operation-control")]
     pub(crate) fn operation_control(
         &self,
     ) -> Result<

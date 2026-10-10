@@ -30,8 +30,7 @@ pub(super) fn validate_capture_posture() {
     assert!(
         cfg!(feature = "profile-extended")
             && !cfg!(feature = "profile-compact")
-            && !cfg!(feature = "profile-standard")
-            && !cfg!(feature = "test-operation-control"),
+            && !cfg!(feature = "profile-standard"),
         "capture requires profile-extended only (plus optional test-peak-allocation)"
     );
     assert!(

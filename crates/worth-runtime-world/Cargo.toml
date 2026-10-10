@@ -12,7 +12,6 @@ categories = ["data-structures", "database-implementations"]
 default = []
 test-execution-observer = []
 test-operation-control = [
-    "worth-signal/test-operation-control",
 ]
 test-durability-faults = []
 
