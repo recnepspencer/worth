@@ -12,6 +12,7 @@ mod memory;
 mod recombine;
 mod scheduled;
 mod staged;
+mod structural_span;
 
 use construction::Shape;
 use edit::{contains, delete, insert, update};

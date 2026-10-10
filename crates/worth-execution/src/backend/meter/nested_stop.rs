@@ -1,18 +1,25 @@
 //! A refused question is pending until the invoking kernel settles.
 //! Success clears it; failure promotes it to the permanent request latch.
 //!
-//! | Refusal family | Marking door |
-//! | --- | --- |
-//! | Lease policy, lineage, reservation binding | `LeaseDenial::refused` |
-//! | Lease, serial, or declared memory room | `MemoryLimitDenial::refused` |
-//! | Extra worker slot | `ClaimSlot::busy` |
-//! | Oracle encoding buffer admission | `ComparisonStop::refused` |
-//! | Typed scope refusal | `KernelContext::refuse_request` |
+//! | Family | Kind | Door |
+//! | --- | --- | --- |
+//! | Authority lease policy | Handed: pending | `ExecutionAuthority::request_lease` |
+//! | Child policy, lineage, reservation binding | Handed: pending | `LeaseDenial::refused` |
+//! | Lease, serial, declared memory room | Handed: pending | `MemoryLimitDenial::refused` |
+//! | Extra worker slot | Absorbed: nothing | `ClaimSlot::busy` |
+//! | Oracle encoding buffer admission | Handed: pending | `ComparisonStop::refused` |
+//! | Typed scope refusal | Handed: pending | `KernelContext::refuse_request` |
+//! | Cancellation/deadline observation | Fact: latch | `RunLimits::safe_point` |
+//! | Checkpoint request ceiling/counters | Fact: latch | `KernelContext::checkpoint_inner` |
+//! | Completed work ceiling/counters | Fact: latch | `KernelContext::account_completed_work` |
+//! | Joined work/span counters | Fact: latch | `record_nested` |
+//! | Structural span arithmetic | Fact: latch | `KernelContext::apply_structural_span` |
+//! | Partition work sum | Fact: latch | `KernelContext::stop_request` |
+//! | Framework/reduction counters | Fact: latch | `request_stop` |
 //!
-//! These doors use `request_refusal` or the supplied context's pending mark.
-//! Cancellation, deadlines, request ceilings and counter overflows are facts,
-//! not refusals: their producers record the latch directly (`request_stop`
-//! serves producers without an explicit context).
+//! Handed refusals mark the invoking run; framework narrowing marks nothing.
+//! Computation-size arithmetic and structural-metric mismatches mark nothing.
+//! Request facts latch immediately, independently of whether an error is swallowed.
 
 /// A nested failure owned by the computation, rather than its request.
 /// The child's outcome retains its specific domain value and identity.
@@ -95,6 +102,15 @@ impl super::KernelContext<'_, '_> {
 
     pub(crate) fn refuse_request<E>(&self, cause: E) -> E {
         self.meter.borrow_mut().pending_request_refusal = true;
+        cause
+    }
+
+    /// A request fact stops this kernel even when its caller swallows the error.
+    pub(crate) fn stop_request<E>(&self, cause: E) -> E {
+        self.meter
+            .borrow_mut()
+            .nested_stop
+            .record(NestedStopOwner::Request);
         cause
     }
 

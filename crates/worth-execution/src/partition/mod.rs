@@ -47,7 +47,7 @@ impl PartitionWork {
     pub fn charge(self, context: &mut KernelContext<'_, '_>) -> Result<Self, KernelStop> {
         let units = self
             .units()
-            .ok_or_else(|| context.refuse_request(KernelStop::WorkCounterOverflow))?;
+            .ok_or_else(|| context.stop_request(KernelStop::WorkCounterOverflow))?;
         context.checkpoint(units)?;
         Ok(self)
     }

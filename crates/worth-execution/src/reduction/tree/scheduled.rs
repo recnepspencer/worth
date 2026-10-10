@@ -2,7 +2,7 @@ use crate::{
     authority::{ExecutionResourceLease, LeaseDenial},
     backend::{
         run_checked_batch_with_charge, AdmittedBatch, BackendKind, BatchDenial, BatchStop,
-        KernelContext, KernelFailure, KernelStop,
+        KernelContext, KernelFailure, KernelStop, StructuralSpanFailure,
     },
     oracle::CanonicalBits,
     report::ChargedBytes,
@@ -83,13 +83,18 @@ where
                     || child_context.checkpoint(1),
                 )
                 .map_err(KernelFailure::Domain)?;
-                if !child_context.apply_structural_span(
-                    before,
-                    result.metrics.charged_work,
-                    result.metrics.charged_span,
-                ) {
-                    return Err(KernelFailure::Stop(KernelStop::work_counter_overflow()));
-                }
+                child_context
+                    .apply_structural_span(
+                        before,
+                        result.metrics.charged_work,
+                        result.metrics.charged_span,
+                    )
+                    .map_err(|failure| {
+                        KernelFailure::Domain(ReductionRunFailure::structural_span_failure(
+                            failure,
+                            result.metrics,
+                        ))
+                    })?;
                 Ok(result)
             },
             false,
@@ -104,7 +109,7 @@ where
                         .tasks
                         .iter()
                         .find(|spec| spec.identity == identity)
-                        .ok_or_else(|| overflow(shape_metrics))?;
+                        .ok_or_else(|| metrics_mismatch(shape_metrics))?;
                     let target = u64::try_from(spec.len())
                         .ok()
                         .and_then(|len| len.checked_mul(4))
@@ -146,7 +151,7 @@ where
             );
             if !context.reconcile_discarded_work(outcomes.report.charged_work(), accepted_task_work)
             {
-                return Err(overflow(shape_metrics));
+                return Err(metrics_mismatch(shape_metrics));
             }
             let (tree, metrics) = settled.map_err(|mut failure| {
                 // The serial checked oracle reports an interrupted traversal's
@@ -157,19 +162,23 @@ where
                 ScheduledReductionError::Reduction(failure)
             })?;
             if outcomes.report.charged_work() != accepted_task_work {
-                return Err(overflow(metrics));
+                return Err(metrics_mismatch(metrics));
             }
             let evaluation_work = metrics
                 .charged_work
                 .checked_sub(shape_metrics.charged_work)
-                .ok_or_else(|| overflow(metrics))?;
+                .ok_or_else(|| metrics_mismatch(metrics))?;
             let evaluation_span = metrics
                 .charged_span
                 .checked_sub(shape_metrics.charged_span)
-                .ok_or_else(|| overflow(metrics))?;
-            if !context.apply_structural_span(before_evaluation, evaluation_work, evaluation_span) {
-                return Err(overflow(metrics));
-            }
+                .ok_or_else(|| metrics_mismatch(metrics))?;
+            context
+                .apply_structural_span(before_evaluation, evaluation_work, evaluation_span)
+                .map_err(|failure| {
+                    ScheduledReductionError::Reduction(
+                        ReductionRunFailure::structural_span_failure(failure, metrics),
+                    )
+                })?;
             Ok((tree, metrics))
         })();
         settled
@@ -199,6 +208,13 @@ fn overflow(metrics: ReductionMetrics) -> ScheduledReductionError {
         reason: ReductionRunStop::work_counter_overflow(),
         metrics,
     })
+}
+
+fn metrics_mismatch(metrics: ReductionMetrics) -> ScheduledReductionError {
+    ScheduledReductionError::Reduction(ReductionRunFailure::structural_span_failure(
+        StructuralSpanFailure::MetricsMismatch,
+        metrics,
+    ))
 }
 
 #[cfg(test)]

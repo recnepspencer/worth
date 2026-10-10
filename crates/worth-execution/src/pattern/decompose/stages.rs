@@ -139,11 +139,13 @@ where
             }
         };
         if needs_span_rewrite
-            && !context.apply_structural_span(
-                before,
-                reduction_metrics.charged_work,
-                reduction_metrics.charged_span,
-            )
+            && context
+                .apply_structural_span(
+                    before,
+                    reduction_metrics.charged_work,
+                    reduction_metrics.charged_span,
+                )
+                .is_err()
         {
             return Err(DecomposeFailure::Input(
                 DecomposeInputDenial::StagedCapacityExceeded,

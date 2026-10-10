@@ -77,11 +77,11 @@ pub enum ExecutionPolicyDenial {
 
 impl From<ExecutionPolicyDenial> for LeaseDenial {
     fn from(denial: ExecutionPolicyDenial) -> Self {
-        Self::refused(match denial {
+        match denial {
             ExecutionPolicyDenial::WorkersExceedAuthority => Self::WorkerLimitExceedsParent,
             ExecutionPolicyDenial::MemoryExceedsAuthority => Self::MemoryLimitExceedsParent,
             ExecutionPolicyDenial::ContractUnavailable => Self::EquivalenceContractUnavailable,
-        })
+        }
     }
 }
 
@@ -219,7 +219,7 @@ impl ExecutionAuthority {
         request: LeaseRequest,
     ) -> Result<ExecutionResourceLease<'_>, LeaseDenial> {
         self.admits_policy(&request.policy)
-            .map_err(LeaseDenial::from)?;
+            .map_err(|denial| LeaseDenial::refused(denial.into()))?;
         let budget = request.policy.budget();
         let id = self.next_id();
         Ok(ExecutionResourceLease {

@@ -11,8 +11,8 @@ use crate::{
     authority::ExecutionResourceLease,
     backend::{
         enter_retained_memory, run_admitting_scope, run_checked_batch,
-        run_checked_batch_with_charge, AdmittedBatch, BackendKind, BatchOutcome, KernelContext,
-        KernelFailure,
+        run_checked_batch_with_charge, run_invoking_scope, AdmittedBatch, BackendKind,
+        BatchOutcome, KernelContext, KernelFailure,
     },
     report::ChargedBytes,
 };
@@ -44,10 +44,27 @@ where
     E: Send + ChargedBytes + CanonicalBits,
     F: Fn(&T, &mut KernelContext<'_, '_>) -> Result<R, KernelFailure<E>> + Sync,
 {
+    run_invoking_scope(
+        || certify_ports(lease, batch, selected, kernel),
+        |context, mismatch| context.failure_owner(&KernelFailure::Domain(*mismatch)),
+    )
+}
+
+fn certify_ports<T, R, E, F>(
+    lease: &ExecutionResourceLease<'_>,
+    batch: &AdmittedBatch<T>,
+    selected: BackendKind,
+    kernel: &F,
+) -> Result<BatchOutcome<R, E>, OracleMismatch>
+where
+    T: Sync + ChargedBytes,
+    R: Send + ChargedBytes + CanonicalBits,
+    E: Send + ChargedBytes + CanonicalBits,
+    F: Fn(&T, &mut KernelContext<'_, '_>) -> Result<R, KernelFailure<E>> + Sync,
+{
     let retained_bytes = batch
         .retained_result_bytes::<R>()
-        .ok_or_else(ComparisonStop::refused)
-        .map_err(ComparisonStop::finish)?;
+        .ok_or(OracleMismatch::Stop)?;
     let expected_retained = lease
         .reserve_retained_memory(retained_bytes)
         .map_err(|_| ComparisonStop::refused().finish())?;
@@ -110,7 +127,7 @@ fn same_bits_with_contract<T: CanonicalBits + ?Sized>(
     actual: &T,
 ) -> Result<bool, ComparisonStop> {
     let length = expected.canonical_len().ok_or(OracleMismatch::Stop)?;
-    let bytes = u64::try_from(length).map_err(|_| ComparisonStop::refused())?;
+    let bytes = u64::try_from(length).map_err(|_| OracleMismatch::Stop)?;
     let _reservation = lease
         .reserve_retained_memory(bytes)
         .map_err(|_| ComparisonStop::refused())?;
@@ -127,8 +144,7 @@ fn same_bits_with_contract<T: CanonicalBits + ?Sized>(
     }
     if let Some(predicate) = lease.equivalence_predicate() {
         let candidate_len = actual.canonical_len().ok_or(OracleMismatch::Stop)?;
-        let candidate_bytes =
-            u64::try_from(candidate_len).map_err(|_| ComparisonStop::refused())?;
+        let candidate_bytes = u64::try_from(candidate_len).map_err(|_| OracleMismatch::Stop)?;
         let _candidate_reservation = lease
             .reserve_retained_memory(candidate_bytes)
             .map_err(|_| ComparisonStop::refused())?;

@@ -41,6 +41,7 @@ mod nesting;
 mod owned_map;
 mod pending_refusal;
 mod prepared_map;
+mod refusal_kinds;
 
 pub(crate) fn authority() -> &'static ExecutionAuthority {
     AUTHORITY.get_or_init(|| {

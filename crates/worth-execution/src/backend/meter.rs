@@ -30,10 +30,13 @@ pub(crate) fn active_serial_memory() -> Option<SerialMemoryBudget> {
 mod activity;
 mod checkpoint;
 mod framework_bytes;
+mod invoking_scope;
+pub(crate) use invoking_scope::run_invoking_scope;
 mod nested;
 mod nested_stop;
 mod prepared_context;
 mod run_context;
+mod structural_span;
 pub(crate) use activity::{enter_certification_activity, enter_retained_memory, has_active_kernel};
 pub(crate) use nested::{record_nested, record_nested_outcome};
 pub use nested_stop::NestedComputationStop;
@@ -41,6 +44,7 @@ use nested_stop::NestedStop;
 pub(crate) use nested_stop::NestedStopOwner;
 pub(crate) use nested_stop::{request_refusal, request_stop};
 pub(crate) use prepared_context::PreparedMeterContext;
+pub(crate) use structural_span::StructuralSpanFailure;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum KernelStop {
@@ -258,35 +262,6 @@ impl<'a, 'lease> KernelContext<'a, 'lease> {
     pub(crate) fn cost(&self) -> (u64, u64) {
         let meter = self.meter.borrow();
         (meter.work, meter.span)
-    }
-
-    /// Replace the sequential checkpoint span of a completed stage with its
-    /// proven dependency span. Work remains the exact checkpoint count.
-    pub(crate) fn apply_structural_span(
-        &mut self,
-        before: (u64, u64),
-        stage_work: u64,
-        stage_span: u64,
-    ) -> bool {
-        let mut meter = self.meter.borrow_mut();
-        let Some(expected_work) = before.0.checked_add(stage_work) else {
-            meter.nested_stop.record(NestedStopOwner::Request);
-            return false;
-        };
-        let Some(expected_span) = before.1.checked_add(stage_work) else {
-            meter.nested_stop.record(NestedStopOwner::Request);
-            return false;
-        };
-        let Some(next_span) = before.1.checked_add(stage_span) else {
-            meter.nested_stop.record(NestedStopOwner::Request);
-            return false;
-        };
-        if meter.work != expected_work || meter.span != expected_span || stage_span > stage_work {
-            // A mismatched computation metric is not a request-room failure.
-            return false;
-        }
-        meter.span = next_span;
-        true
     }
 
     pub(crate) fn nested_stopped(&self) -> bool {
