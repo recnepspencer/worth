@@ -66,7 +66,6 @@ pub(super) fn certify_persisted_recovery_replay_round_trip(
                         .plan_query_packet(&recovered_snapshot, recovered_packet)
                         .expect("planned recovered workflow query"),
                     execution,
-                    crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                 )
                 .expect("request remains live")
                 .map(|read| read.outcome)

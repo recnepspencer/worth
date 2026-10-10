@@ -43,11 +43,7 @@ fn leased_traversal_stops_inside_high_fanout() {
         .unwrap();
     let unleased = runtime
         .read_truth()
-        .execute_query_plan(
-            plan.clone(),
-            execution,
-            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
-        )
+        .execute_query_plan(plan.clone(), execution)
         .expect("request remains live")
         .map(|read| read.outcome)
         .unwrap();
@@ -59,7 +55,6 @@ fn leased_traversal_stops_inside_high_fanout() {
         .execute_query_plan(
             plan,
             &worth_execution::ExecutionRequest::leased(&constrained),
-            crate::facade::runtime::RelationalQueryReadStrategy::RequestPatterns,
         )
         .map(|read| read.map(|read| read.outcome));
     assert!(
@@ -114,11 +109,7 @@ fn leased_any_of_scan_matches_serial_with_reversed_values() {
         .unwrap();
     let expected = runtime
         .read_truth()
-        .execute_query_plan(
-            plan.clone(),
-            execution,
-            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
-        )
+        .execute_query_plan(plan.clone(), execution)
         .expect("request remains live")
         .map(|read| read.outcome)
         .unwrap();
@@ -131,7 +122,6 @@ fn leased_any_of_scan_matches_serial_with_reversed_values() {
                 1 << 20,
                 CancellationToken::new(),
             )),
-            crate::facade::runtime::RelationalQueryReadStrategy::RequestPatterns,
         )
         .map(|read| read.map(|read| read.outcome))
         .unwrap()

@@ -71,7 +71,6 @@ fn planned_query_execution_parallelized_traversal_matches_serial_reference() {
                 .plan_query_packet(&serial_snapshot, serial_packet)
                 .expect("serial query plan"),
             execution,
-            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
         )
         .expect("request remains live")
         .map(|read| read.outcome)
@@ -87,7 +86,6 @@ fn planned_query_execution_parallelized_traversal_matches_serial_reference() {
                 .plan_query_packet(&staged_snapshot, staged_packet)
                 .expect("staged query plan"),
             &worth_execution::ExecutionRequest::leased(&test_execution_lease()),
-            crate::facade::runtime::RelationalQueryReadStrategy::RequestPatterns,
         )
         .map(|read| read.map(|read| read.outcome))
         .expect("leased execution")
@@ -186,7 +184,6 @@ fn planned_query_execution_reports_workload_derived_scratch_reuse_consistently_w
                 .plan_query_packet(&serial_snapshot, serial_packet)
                 .expect("serial query plan"),
             execution,
-            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
         )
         .expect("request remains live")
         .map(|read| read.outcome)
@@ -204,7 +201,6 @@ fn planned_query_execution_reports_workload_derived_scratch_reuse_consistently_w
                 .plan_query_packet(&staged_snapshot, staged_packet)
                 .expect("staged query plan"),
             &worth_execution::ExecutionRequest::leased(&test_execution_lease()),
-            crate::facade::runtime::RelationalQueryReadStrategy::RequestPatterns,
         )
         .map(|read| read.map(|read| read.outcome))
         .expect("leased execution")
@@ -276,7 +272,6 @@ fn planned_query_execution_parallelized_overlapping_seed_traversal_dedupes_and_m
                 .plan_query_packet(&serial_snapshot, serial_packet)
                 .expect("serial plan"),
             execution,
-            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
         )
         .expect("request remains live")
         .map(|read| read.outcome)
@@ -292,7 +287,6 @@ fn planned_query_execution_parallelized_overlapping_seed_traversal_dedupes_and_m
                 .plan_query_packet(&staged_snapshot, staged_packet)
                 .expect("staged plan"),
             &worth_execution::ExecutionRequest::leased(&test_execution_lease()),
-            crate::facade::runtime::RelationalQueryReadStrategy::RequestPatterns,
         )
         .map(|read| read.map(|read| read.outcome))
         .expect("leased execution")

@@ -21,11 +21,7 @@ impl IndexAccess<'_> {
         let storage_execution = || {
             self.runtime
                 .read_truth()
-                .execute_query_plan(
-                    plan.clone(),
-                    request,
-                    crate::runtime::RelationalQueryReadStrategy::CallingThread,
-                )
+                .execute_query_plan(plan.clone(), request)
                 .map(|read| read.map(|read| read.outcome))
         };
         let (execution, access_path) = match admissible_access_path(self.runtime, &plan) {

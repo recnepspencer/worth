@@ -234,7 +234,6 @@ fn concurrent_pinned_traversal_reads_stay_snapshot_stable_under_hot_rewrite_pres
                 .plan_query_packet(&snapshot, packet.clone())
                 .expect("baseline query plan"),
             execution,
-            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
         )
         .expect("request remains live")
         .map(|read| read.outcome)
@@ -261,6 +260,9 @@ fn concurrent_pinned_traversal_reads_stay_snapshot_stable_under_hot_rewrite_pres
             let packet = packet.clone();
             let expected = baseline.clone();
             readers.push(scope.spawn(move || {
+                // Each independent reader call owns its request budget.
+                let host_request = crate::test_execution_policy::serial_request();
+                let execution = &worth_execution::ExecutionRequest::serial(&host_request);
                 let result = runtime
                     .read_truth()
                     .execute_query_plan(
@@ -269,7 +271,6 @@ fn concurrent_pinned_traversal_reads_stay_snapshot_stable_under_hot_rewrite_pres
                             .plan_query_packet(&snapshot, packet)
                             .expect("thread query plan"),
                         execution,
-                        crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                     )
                     .expect("request remains live")
                     .map(|read| read.outcome)
@@ -368,6 +369,9 @@ fn concurrent_relation_index_certification_parity_stays_stable_under_scheduler_p
             let packet = packet.clone();
             let expected = baseline.clone();
             readers.push(scope.spawn(move || {
+                // Each independent reader call owns its request budget.
+                let host_request = crate::test_execution_policy::serial_request();
+                let execution = &worth_execution::ExecutionRequest::serial(&host_request);
                 let outcome = runtime
                     .index_access()
                     .execute_query_plan_with_index_parity(

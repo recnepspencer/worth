@@ -120,11 +120,7 @@ pub(super) fn resolve_principal_target(
         .ok_or_else(|| stale_proof_denial(binding))?;
     let outcome = runtime
         .read_truth()
-        .execute_query_plan(
-            plan,
-            execution,
-            worth_relational::facade::runtime::RelationalQueryReadStrategy::CallingThread,
-        )
+        .execute_query_plan(plan, execution)
         .map_err(|stop| super::resolution_denial::query_read_resolution_denial(&stop, binding))?
         .ok_or_else(|| stale_proof_denial(binding))?
         .outcome;

@@ -54,7 +54,6 @@ pub(super) fn certify_geometry_commit_downstream_mixed_locality_wave(
                         .plan_query_packet(&snapshot, traversal_packet)
                         .expect("downstream mixed traversal plan"),
                     execution,
-                    crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                 )
                 .expect("request remains live")
                 .map(|read| read.outcome)
@@ -78,7 +77,6 @@ pub(super) fn certify_geometry_commit_downstream_mixed_locality_wave(
                                 )
                                 .expect("downstream mixed explicit plan"),
                             execution,
-                            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                         )
                         .expect("request remains live")
                         .map(|read| read.outcome)

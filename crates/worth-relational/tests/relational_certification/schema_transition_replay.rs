@@ -303,11 +303,7 @@ fn execute_exact_query(
     world
         .runtime
         .read_truth()
-        .execute_query_plan(
-            plan,
-            execution,
-            worth_relational::facade::runtime::RelationalQueryReadStrategy::CallingThread,
-        )
+        .execute_query_plan(plan, execution)
         .expect("request remains live")
         .map(|read| read.outcome)
         .expect("the exact V2 query plan executes")

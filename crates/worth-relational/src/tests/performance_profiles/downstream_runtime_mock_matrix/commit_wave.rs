@@ -74,7 +74,6 @@ pub(super) fn certify_geometry_commit_downstream_wave(
                         .plan_query_packet(&snapshot, traversal_packet)
                         .expect("merged traversal plan"),
                     execution,
-                    crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                 )
                 .expect("request remains live")
                 .map(|read| read.outcome)

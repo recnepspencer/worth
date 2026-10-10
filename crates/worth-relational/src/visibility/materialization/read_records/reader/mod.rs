@@ -7,15 +7,11 @@ mod kind_scan_visibility;
 mod native_output_probe;
 mod positioned_snapshot;
 mod query_execution;
-mod query_fragment_scratch;
-mod query_fragment_work;
-mod query_packet_scope;
 mod query_packetization;
 mod query_plan_execution;
 mod query_planning;
 mod query_preparation;
 mod query_preparation_packetization;
-mod query_traversal;
 mod snapshot_reads;
 mod truth_access;
 mod truth_adjacency;
@@ -25,18 +21,16 @@ mod truth_kind_scan;
 mod truth_record_access;
 mod truth_relation_kind_scan;
 
-use crate::authority::commit::preparation::planning::strategy::{
-    coarse_preparation_packet_count, TARGET_PREPARATION_ITEMS_PER_PACKET,
-};
+use crate::authority::commit::preparation::planning::strategy::TARGET_PREPARATION_ITEMS_PER_PACKET;
 use crate::capabilities::{SnapshotSource, VersionSource, VisibilityPolicySource};
 use crate::diagnostics::data::{
     DeterminismExpectation, DiagnosticCode, DiagnosticsArtifactKind, DiagnosticsScope,
     RelationalDiagnosticArtifact, RelationalDiagnosticsEntry,
 };
 use crate::query::data::{
-    PlannedQueryPacket, QueryExecutionOutcome, QueryOrderingContract, QueryParallelLegality,
-    QueryParallelProfitability, QueryPlanContextId, QueryPlanEvidenceBasis, QueryScope,
-    QuerySerialReason, SnapshotPinnedQueryPlan,
+    PlannedQueryPacket, QueryExecutionOutcome, QueryParallelLegality, QueryParallelProfitability,
+    QueryPlanContextId, QueryPlanEvidenceBasis, QueryScope, QuerySerialReason,
+    SnapshotPinnedQueryPlan,
 };
 use crate::runtime::{RelationalRuntime, VisibilityResidency};
 use crate::snapshots::data::{SnapshotHandle, SnapshotInspectionSummary, SnapshotReadPolicy};
@@ -51,7 +45,6 @@ use crate::visibility::snapshot_states::{
     read_view_from_snapshot_state, resolve_snapshot_basis, resolve_snapshot_handle,
     resolve_snapshot_inspection, resolve_snapshot_state,
 };
-use std::collections::{BTreeMap, BTreeSet};
 use worth_foundational::facade::AspectKey;
 
 use super::materialization::{
@@ -73,11 +66,7 @@ pub(crate) use kind_scan_visibility::KindScanVisibility;
 pub use positioned_snapshot::{
     PositionedRelationalSnapshot, RelationalSnapshotPositionAdmissionStop, SnapshotPositionDenial,
 };
-pub use query_execution::{
-    QueryLeasedReadOutcome, QueryReadExecutionStop, QueryReadPacketDenial,
-    RelationalQueryReadStrategy,
-};
-use query_fragment_scratch::QueryFragmentScratch;
+pub use query_execution::{QueryLeasedReadOutcome, QueryReadExecutionStop, QueryReadPacketDenial};
 pub use truth_adjacency::{AdjacencyTruthReadLimitExceeded, BoundedAdjacencyTruthRead};
 pub use truth_frontier_adjacency::{
     BoundedFrontierAdjacencyTruthRead, FrontierAdjacencyTruthReadLimitExceeded,

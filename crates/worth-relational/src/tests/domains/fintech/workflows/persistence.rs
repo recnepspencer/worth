@@ -50,7 +50,6 @@ fn fintech_persisted_workflow_recovers_checkpoint_tail_and_keeps_queryable_portf
                 .plan_query_packet(&recovered_snapshot, packet)
                 .expect("planned recovered query"),
             execution,
-            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
         )
         .expect("request remains live")
         .map(|read| read.outcome)
@@ -254,7 +253,6 @@ fn fintech_persisted_workflow_supports_compaction_after_checkpoint() {
                 .plan_query_packet(&recovered_snapshot, packet)
                 .expect("planned recovered portfolio query"),
             execution,
-            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
         )
         .expect("request remains live")
         .map(|read| read.outcome)
@@ -374,7 +372,6 @@ fn fintech_recovery_falls_back_from_corrupt_latest_checkpoint_and_keeps_truth() 
                 .plan_query_packet(&recovered_snapshot, packet)
                 .expect("planned recovered correction query"),
             execution,
-            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
         )
         .expect("request remains live")
         .map(|read| read.outcome)

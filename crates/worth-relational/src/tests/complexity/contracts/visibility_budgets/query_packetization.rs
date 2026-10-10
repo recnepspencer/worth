@@ -24,7 +24,6 @@ fn complexity_budget_query_packetization_reports_parallel_shape_for_cross_partit
                 ],
             ),
             &worth_execution::ExecutionRequest::leased(&lease),
-            crate::facade::runtime::RelationalQueryReadStrategy::RequestPatterns,
         )
         .map(|read| read.map(|read| read.outcome))
         .expect("leased query execution")
@@ -65,7 +64,6 @@ fn complexity_budget_query_packetization_reports_narrow_shape_with_a_lease() {
                 vec![crate::facade::transactions::RecordRef::Entity(entity)],
             ),
             &worth_execution::ExecutionRequest::leased(&lease),
-            crate::facade::runtime::RelationalQueryReadStrategy::RequestPatterns,
         )
         .map(|read| read.map(|read| read.outcome))
         .expect("leased query execution")

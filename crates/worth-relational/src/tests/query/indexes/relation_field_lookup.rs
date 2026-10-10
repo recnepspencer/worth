@@ -57,11 +57,7 @@ fn derived_index_contract_relation_field_equals_executes_through_real_index_path
         .expect("query plan");
     let storage = runtime
         .read_truth()
-        .execute_query_plan(
-            plan.clone(),
-            execution,
-            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
-        )
+        .execute_query_plan(plan.clone(), execution)
         .expect("request remains live")
         .map(|read| read.outcome)
         .expect("storage outcome");
@@ -242,11 +238,7 @@ fn derived_index_contract_relation_field_any_of_executes_through_real_index_path
         .expect("query plan");
     let storage = runtime
         .read_truth()
-        .execute_query_plan(
-            plan.clone(),
-            execution,
-            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
-        )
+        .execute_query_plan(plan.clone(), execution)
         .expect("request remains live")
         .map(|read| read.outcome)
         .expect("storage outcome");
@@ -346,11 +338,7 @@ fn derived_index_contract_relation_field_equals_partition_scope_keeps_bounded_pa
         .expect("query plan");
     let storage = runtime
         .read_truth()
-        .execute_query_plan(
-            plan.clone(),
-            execution,
-            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
-        )
+        .execute_query_plan(plan.clone(), execution)
         .expect("request remains live")
         .map(|read| read.outcome)
         .expect("storage outcome");

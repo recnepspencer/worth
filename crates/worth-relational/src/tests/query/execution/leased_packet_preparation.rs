@@ -61,8 +61,7 @@ fn any_of_encoding_checks_work_and_memory_before_packet_clones() {
             .read_truth()
             .execute_query_plan(
                 plan.clone(),
-                &worth_execution::ExecutionRequest::leased(&lease(1 << 20, 1)),
-                crate::facade::runtime::RelationalQueryReadStrategy::RequestPatterns
+                &worth_execution::ExecutionRequest::leased(&lease(1 << 20, 1))
             )
             .map(|read| read.map(|read| read.outcome)),
         Err(QueryReadExecutionStop::PreparationStopped {
@@ -75,8 +74,7 @@ fn any_of_encoding_checks_work_and_memory_before_packet_clones() {
             .read_truth()
             .execute_query_plan(
                 plan,
-                &worth_execution::ExecutionRequest::leased(&tight_lease()),
-                crate::facade::runtime::RelationalQueryReadStrategy::RequestPatterns
+                &worth_execution::ExecutionRequest::leased(&tight_lease())
             )
             .map(|read| read.map(|read| read.outcome)),
         Err(QueryReadExecutionStop::PreparationStopped {
@@ -105,7 +103,6 @@ fn explicit_and_traversal_packet_copies_deny_before_allocation() {
         .execute_query_plan(
             explicit,
             &worth_execution::ExecutionRequest::leased(&tight_lease()),
-            crate::facade::runtime::RelationalQueryReadStrategy::RequestPatterns,
         )
         .map(|read| read.map(|read| read.outcome));
     assert!(matches!(
@@ -146,7 +143,6 @@ fn explicit_and_traversal_packet_copies_deny_before_allocation() {
         .execute_query_plan(
             traversal,
             &worth_execution::ExecutionRequest::leased(&tight_lease()),
-            crate::facade::runtime::RelationalQueryReadStrategy::RequestPatterns,
         )
         .map(|read| read.map(|read| read.outcome));
     assert!(matches!(
@@ -196,7 +192,6 @@ fn scoped_scan_does_not_charge_unrelated_partitions() {
             .execute_query_plan(
                 plan,
                 &worth_execution::ExecutionRequest::leased(&lease(1 << 20, 100_000)),
-                crate::facade::runtime::RelationalQueryReadStrategy::RequestPatterns,
             )
             .unwrap()
             .unwrap()

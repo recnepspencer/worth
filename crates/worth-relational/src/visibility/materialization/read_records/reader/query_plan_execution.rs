@@ -8,25 +8,15 @@ use super::query_execution::{
     query_execution_outcome_maybe_leased, record_query_packet_metrics, PacketizedQueryMetrics,
     QueryLeasedReadOutcome, QueryReadExecutionStop,
 };
-use super::query_fragment_work::{
-    execute_query_fragment, execute_traversal_query_fragment_from_state,
-};
-use super::query_packetization::{
-    packetized_explicit_target_work, packetized_query_work, packetized_traversal_query_work,
-};
 use super::query_preparation::{
-    combine_query_reports, combine_query_stop, prepare_query_packets, remaining_work_lease,
-    QueryPreparationBudget,
+    check_query_preparation_request, combine_query_reports, combine_query_stop,
+    prepare_query_packets, remaining_work_lease, QueryPreparationBudget,
 };
 use super::query_preparation_packetization::{
     prepare_explicit_packets, prepare_scan_packets, prepare_traversal_packets,
 };
 use super::*;
 
-type QueryFragments = (
-    Vec<crate::query::data::QueryWorkerFragment>,
-    Option<ExecutionReport>,
-);
 type QueryReadResult =
     Result<Option<(QueryExecutionOutcome, Option<ExecutionReport>)>, QueryReadExecutionStop>;
 
@@ -36,34 +26,24 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         &self,
         plan: SnapshotPinnedQueryPlan,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        strategy: super::query_execution::RelationalQueryReadStrategy,
     ) -> Result<Option<QueryLeasedReadOutcome>, QueryReadExecutionStop> {
-        if !execution.is_leased()
-            || matches!(
-                strategy,
-                super::query_execution::RelationalQueryReadStrategy::CallingThread
-            )
-        {
-            execution.check_live().map_err(|stop| {
-                QueryReadExecutionStop::Request(worth_execution::WorkCeilingDenial::Stopped(stop))
-            })?;
-        }
-        let read = match strategy {
-            super::query_execution::RelationalQueryReadStrategy::CallingThread => {
-                self.execute_query_plan_internal(plan, None, execution)
-            }
-            super::query_execution::RelationalQueryReadStrategy::RequestPatterns
-                if execution.is_leased() =>
-            {
-                execution
-                    .in_scope(|lease| self.execute_query_plan_internal(plan, lease, execution))
-                    .map_err(QueryReadExecutionStop::Request)?
-            }
-            super::query_execution::RelationalQueryReadStrategy::RequestPatterns => {
-                self.execute_query_plan_internal(plan, None, execution)
-            }
-        };
+        check_query_preparation_request(execution)?;
+        let read = execution
+            .in_scope(|lease| self.execute_query_plan_internal(plan, lease, execution))
+            .map_err(QueryReadExecutionStop::Request)?;
         read.map(|read| read.map(|(outcome, report)| QueryLeasedReadOutcome { outcome, report }))
+    }
+
+    fn count_query_backing(&self, lease: Option<&ExecutionResourceLease<'_>>) {
+        if lease.is_some() {
+            self.runtime
+                .performance_access()
+                .count_query_staged_parallel_strategy();
+        } else {
+            self.runtime
+                .performance_access()
+                .count_query_serial_strategy();
+        }
     }
 
     fn execute_query_plan_internal(
@@ -90,95 +70,42 @@ impl<'runtime> VisibilityReadContext<'runtime> {
             return self.execute_traversal_query_plan(plan, lease, execution);
         }
 
-        let (read_view, basis, packets, preparation_report) = if let Some(lease) = lease {
-            let Some(basis) = resolve_snapshot_basis(self.runtime, &plan.snapshot) else {
-                return Ok(None);
-            };
-            let (packets, report) = prepare_query_packets(lease, |budget| {
-                let (entities, relations) =
-                    if query_has_explicit_partition_scope(&plan.packet.scope) {
-                        (Vec::new(), Vec::new())
-                    } else {
-                        leased_scan_partitions(basis.root(), budget)?
-                    };
-                prepare_scan_packets(&plan.packet, &entities, &relations, budget)
-            })?;
-            (None, Some(basis), packets, Some(report))
-        } else {
-            let Some(read_view) = self.read_snapshot(&plan.snapshot, execution) else {
-                return Ok(None);
-            };
-            let entity_partitions = read_view
-                .entities()
-                .iter()
-                .map(|record| record.entity_id.partition_id)
-                .collect::<BTreeSet<_>>()
-                .into_iter()
-                .collect::<Vec<_>>();
-            let relation_partitions = read_view
-                .relations()
-                .iter()
-                .map(|record| record.relation_id.partition_id)
-                .collect::<BTreeSet<_>>()
-                .into_iter()
-                .collect::<Vec<_>>();
-            let Some(packets) =
-                packetized_query_work(&plan.packet, &entity_partitions, &relation_partitions)
-            else {
-                return Ok(None);
-            };
-            (Some(read_view), None, packets, None)
+        let Some(basis) = resolve_snapshot_basis(self.runtime, &plan.snapshot) else {
+            return Ok(None);
         };
+        let (packets, preparation) = prepare_query_packets(execution, lease, |budget| {
+            let (entities, relations) = if query_has_explicit_partition_scope(&plan.packet.scope) {
+                (Vec::new(), Vec::new())
+            } else {
+                leased_scan_partitions(basis.root(), budget)?
+            };
+            prepare_scan_packets(&plan.packet, &entities, &relations, budget)
+        })?;
         let metrics = PacketizedQueryMetrics::from_packets(&packets);
         record_query_packet_metrics(self.runtime, &plan, &metrics);
-        let (fragments, report) = if let Some(lease) = lease {
-            let preparation = preparation_report.expect("leased preparation has report");
-            let remaining_lease = remaining_work_lease(lease, preparation)?;
-            self.runtime
-                .performance_access()
-                .count_query_staged_parallel_strategy();
-            let (fragments, report) = execute_leased_query_packets(
-                packets,
-                &remaining_lease,
-                |packet, ordinal, ceiling, context| {
-                    super::query_execution::execute_leased_scan_fragment(
-                        execution,
-                        self.runtime,
-                        basis.as_ref().expect("leased scan has basis"),
-                        &plan.packet,
-                        packet,
-                        ordinal as u64,
-                        ceiling,
-                        context,
-                    )
-                },
-            )
-            .map_err(|stop| combine_query_stop(stop, preparation))?;
-            (fragments, Some(combine_query_reports(preparation, report)))
-        } else {
-            self.runtime
-                .performance_access()
-                .count_query_serial_strategy();
-            let read_view = read_view.as_ref().expect("serial scan has read view");
-            let mut scratch = QueryFragmentScratch::default();
-            let Some(fragments) = packets
-                .iter()
-                .enumerate()
-                .map(|(ordinal, packet)| {
-                    execute_query_fragment(
-                        read_view,
-                        &plan.packet,
-                        packet,
-                        ordinal as u64,
-                        &mut scratch,
-                    )
-                })
-                .collect()
-            else {
-                return Ok(None);
-            };
-            (fragments, None)
-        };
+        let remaining = lease
+            .map(|lease| remaining_work_lease(lease, preparation))
+            .transpose()?;
+        self.count_query_backing(lease);
+        let (fragments, report) = execute_leased_query_packets(
+            packets,
+            execution,
+            remaining.as_ref(),
+            |packet, ordinal, ceiling, context| {
+                super::query_execution::execute_leased_scan_fragment(
+                    execution,
+                    self.runtime,
+                    &basis,
+                    &plan.packet,
+                    packet,
+                    ordinal as u64,
+                    ceiling,
+                    context,
+                )
+            },
+        )
+        .map_err(|stop| combine_query_stop(stop, preparation))?;
+        let report = Some(combine_query_reports(preparation, report));
         Ok(Some(query_execution_outcome_maybe_leased(
             self.runtime,
             plan,
@@ -186,6 +113,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
             metrics.touched_partitions,
             metrics.target_count,
             fragments,
+            execution,
             lease,
             report,
         )?))

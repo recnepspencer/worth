@@ -67,11 +67,7 @@ fn unleased_query_execution_preserves_multi_seed_traversal_packets() {
         .expect("planned query packet");
     let outcome = runtime
         .read_truth()
-        .execute_query_plan(
-            plan,
-            execution,
-            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
-        )
+        .execute_query_plan(plan, execution)
         .expect("request remains live")
         .map(|read| read.outcome)
         .expect("query execution outcome");

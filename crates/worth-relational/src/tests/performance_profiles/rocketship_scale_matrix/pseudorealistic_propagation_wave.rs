@@ -76,11 +76,7 @@ pub(super) fn certify_hundred_k_nodes_pseudorealistic_propagation_wave(
             let propagation_execution_started_at = Instant::now();
             let propagation_outcome = runtime
                 .read_truth()
-                .execute_query_plan(
-                    propagation_plan,
-                    execution,
-                    crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
-                )
+                .execute_query_plan(propagation_plan, execution)
                 .expect("request remains live")
                 .map(|read| read.outcome)
                 .expect("rocketship propagation outcome");
@@ -108,7 +104,6 @@ pub(super) fn certify_hundred_k_nodes_pseudorealistic_propagation_wave(
                         .plan_query_packet(&snapshot, explicit_packet)
                         .expect("planned rocketship propagation explicit query"),
                     execution,
-                    crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                 )
                 .expect("request remains live")
                 .map(|read| read.outcome)

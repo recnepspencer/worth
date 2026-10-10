@@ -256,11 +256,7 @@ fn traverse(
         .expect("root-qualified traversal plan is admitted");
     let outcome = runtime
         .read_truth()
-        .execute_query_plan(
-            plan,
-            execution,
-            worth_relational::facade::runtime::RelationalQueryReadStrategy::CallingThread,
-        )
+        .execute_query_plan(plan, execution)
         .expect("request remains live")
         .map(|read| read.outcome)
         .expect("root-qualified traversal executes");

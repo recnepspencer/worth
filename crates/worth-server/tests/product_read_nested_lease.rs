@@ -80,7 +80,6 @@ impl WorthServerProductApplicationAdapter for NestedRelationalReadAdapter {
         match self.runtime.read_truth().execute_query_plan(
             self.plan.clone(),
             &worth_execution::ExecutionRequest::leased(lease),
-            worth_relational::facade::runtime::RelationalQueryReadStrategy::RequestPatterns,
         ) {
             Ok(Some(_)) => Ok(self.execute(operation)),
             Ok(None) => Err(MapKernelStop::NestedStopped),

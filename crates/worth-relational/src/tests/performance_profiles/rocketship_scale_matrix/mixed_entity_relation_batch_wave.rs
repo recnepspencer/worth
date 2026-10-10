@@ -160,7 +160,6 @@ pub(super) fn certify_hundred_k_nodes_pseudorealistic_mixed_entity_relation_batc
                         .plan_query_packet(&snapshot, explicit_packet)
                         .expect("planned rocketship mixed batch explicit query"),
                     execution,
-                    crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                 )
                 .expect("request remains live")
                 .map(|read| read.outcome)

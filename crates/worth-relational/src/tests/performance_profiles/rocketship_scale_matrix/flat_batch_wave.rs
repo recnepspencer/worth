@@ -123,7 +123,6 @@ pub(super) fn certify_hundred_k_nodes_pseudorealistic_flat_batch_wave(
                         .plan_query_packet(&snapshot, explicit_packet)
                         .expect("planned rocketship flat batch explicit query"),
                     execution,
-                    crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                 )
                 .expect("request remains live")
                 .map(|read| read.outcome)

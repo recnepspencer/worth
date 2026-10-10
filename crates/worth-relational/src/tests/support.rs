@@ -220,7 +220,6 @@ pub(super) fn execute_explicit_query(
         .execute_query_plan(
             planned_explicit_query(runtime, snapshot, label, targets),
             execution,
-            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
         )
         .expect("request remains live")
         .map(|read| read.outcome)

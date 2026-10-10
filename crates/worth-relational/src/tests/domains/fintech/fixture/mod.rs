@@ -140,7 +140,6 @@ impl FintechWorld {
                     .plan_query_packet(snapshot, packet)
                     .expect("planned fintech query"),
                 execution,
-                crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
             )
             .expect("request remains live")
             .map(|read| read.outcome)

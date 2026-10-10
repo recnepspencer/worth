@@ -41,11 +41,7 @@ fn planned_query_execution_supports_aspect_filtered_entity_scans_through_reducer
         .expect("planned query packet");
     let outcome = runtime
         .read_truth()
-        .execute_query_plan(
-            plan,
-            execution,
-            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
-        )
+        .execute_query_plan(plan, execution)
         .expect("request remains live")
         .map(|read| read.outcome)
         .expect("query execution outcome");
@@ -109,11 +105,7 @@ fn planned_query_execution_aspect_filter_requires_projected_authoritative_presen
         .expect("planned query packet");
     let outcome = runtime
         .read_truth()
-        .execute_query_plan(
-            plan,
-            execution,
-            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
-        )
+        .execute_query_plan(plan, execution)
         .expect("request remains live")
         .map(|read| read.outcome)
         .expect("query execution outcome");
@@ -170,11 +162,7 @@ fn planned_query_execution_aspect_filter_supports_field_mask_presence() {
         .expect("planned query packet");
     let outcome = runtime
         .read_truth()
-        .execute_query_plan(
-            plan,
-            execution,
-            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
-        )
+        .execute_query_plan(plan, execution)
         .expect("request remains live")
         .map(|read| read.outcome)
         .expect("query execution outcome");
@@ -235,11 +223,7 @@ fn planned_query_execution_supports_aspect_filtered_relation_scans_through_reduc
         .expect("planned query packet");
     let outcome = runtime
         .read_truth()
-        .execute_query_plan(
-            plan,
-            execution,
-            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
-        )
+        .execute_query_plan(plan, execution)
         .expect("request remains live")
         .map(|read| read.outcome)
         .expect("query execution outcome");

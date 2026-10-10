@@ -62,7 +62,6 @@ pub(super) fn certify_local_scene_graph_propagation_wave(
                         .plan_query_packet(&snapshot, propagation_packet)
                         .expect("scene local propagation plan"),
                     execution,
-                    crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                 )
                 .expect("request remains live")
                 .map(|read| read.outcome)
@@ -84,7 +83,6 @@ pub(super) fn certify_local_scene_graph_propagation_wave(
                         .plan_query_packet(&snapshot, explicit_packet)
                         .expect("scene local explicit plan"),
                     execution,
-                    crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                 )
                 .expect("request remains live")
                 .map(|read| read.outcome)

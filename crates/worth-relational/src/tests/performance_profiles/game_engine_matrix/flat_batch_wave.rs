@@ -105,7 +105,6 @@ pub(super) fn certify_flat_entity_batch_region_wave(
                         .plan_query_packet(&snapshot, explicit_packet)
                         .expect("scene batch explicit plan"),
                     execution,
-                    crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                 )
                 .expect("request remains live")
                 .map(|read| read.outcome)

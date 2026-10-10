@@ -54,11 +54,7 @@ fn derived_index_contract_entity_field_equals_executes_through_real_index_path_w
         .expect("query plan");
     let storage = runtime
         .read_truth()
-        .execute_query_plan(
-            plan.clone(),
-            execution,
-            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
-        )
+        .execute_query_plan(plan.clone(), execution)
         .expect("request remains live")
         .map(|read| read.outcome)
         .expect("storage outcome");
@@ -142,11 +138,7 @@ fn derived_index_contract_entity_field_any_of_executes_through_real_index_path_w
         .expect("query plan");
     let storage = runtime
         .read_truth()
-        .execute_query_plan(
-            plan.clone(),
-            execution,
-            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
-        )
+        .execute_query_plan(plan.clone(), execution)
         .expect("request remains live")
         .map(|read| read.outcome)
         .expect("storage outcome");

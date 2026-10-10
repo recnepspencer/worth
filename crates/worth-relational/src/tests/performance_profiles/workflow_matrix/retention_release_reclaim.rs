@@ -51,7 +51,6 @@ pub(super) fn certify_retention_release_reclaim_round_trip(
                         .plan_query_packet(&snapshot, packet)
                         .expect("planned retention workflow query"),
                     execution,
-                    crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                 )
                 .expect("request remains live")
                 .map(|read| read.outcome)

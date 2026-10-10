@@ -73,7 +73,6 @@ pub(super) fn certify_rocketship_hot_update_endurance(
                                 .plan_query_packet(&snapshot, packet)
                                 .expect("planned rocketship endurance explicit query"),
                             execution,
-                            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                         )
                         .expect("request remains live")
                         .map(|read| read.outcome)

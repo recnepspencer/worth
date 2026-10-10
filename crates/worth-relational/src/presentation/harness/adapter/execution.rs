@@ -51,7 +51,6 @@ pub(super) fn execute_request(
                 )
                 .ok_or_else(|| RelationalHarnessError("query plan unavailable".to_string()))?,
             execution,
-            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
         )
         .expect("request remains live")
         .map(|read| read.outcome)

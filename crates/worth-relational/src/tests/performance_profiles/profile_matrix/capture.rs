@@ -51,7 +51,6 @@ fn perf_profile_matrix() {
                         .plan_query_packet(&snapshot, packet)
                         .expect("planned certification-core profile query"),
                     execution,
-                    crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                 )
                 .expect("request remains live")
                 .map(|read| read.outcome)
@@ -182,7 +181,6 @@ fn perf_profile_matrix() {
                         .plan_query_packet(&snapshot, packet)
                         .expect("planned geometry-kernel profile query"),
                     execution,
-                    crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                 )
                 .expect("request remains live")
                 .map(|read| read.outcome)

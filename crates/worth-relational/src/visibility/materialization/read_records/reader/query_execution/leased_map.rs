@@ -20,13 +20,6 @@ impl ChargedBytes for QueryPacketMapInput {
     }
 }
 
-/// The existing read strategy chosen by the caller. Custody is required for both.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum RelationalQueryReadStrategy {
-    CallingThread,
-    RequestPatterns,
-}
-
 #[derive(Debug)]
 pub enum QueryReadExecutionStop {
     Request(worth_execution::WorkCeilingDenial),
@@ -181,7 +174,8 @@ impl<'context, 'meter, 'lease> QueryPacketBudget<'context, 'meter, 'lease> {
 
 pub(in crate::visibility::materialization::read_records::reader) fn execute_leased_query_packets(
     packets: Vec<PacketizedQueryWork>,
-    lease: &ExecutionResourceLease<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    lease: Option<&ExecutionResourceLease<'_>>,
     execute: impl Fn(
             &PacketizedQueryWork,
             usize,
@@ -192,7 +186,7 @@ pub(in crate::visibility::materialization::read_records::reader) fn execute_leas
 ) -> Result<(Vec<QueryWorkerFragment>, ExecutionReport), QueryReadExecutionStop> {
     let packet_count = packets.len();
     let packet_count_u64 = u64::try_from(packet_count).unwrap_or(u64::MAX);
-    let per_packet_ceiling = lease.policy().budget().charged_memory_bytes()
+    let per_packet_ceiling = execution.memory_limit()
         / RESULT_BUDGET_DIVISOR
             .saturating_mul(packet_count_u64)
             .max(1);
@@ -214,7 +208,7 @@ pub(in crate::visibility::materialization::read_records::reader) fn execute_leas
         .collect();
     let map = ExecutionMap::try_from_declared_partitions(identities, partitions)
         .map_err(QueryReadExecutionStop::PacketAdmission)?;
-    match map.run(Some(lease), |input, context| {
+    match map.run(lease, |input, context| {
         context.checkpoint(0)?;
         execute(&input.work, input.ordinal, per_packet_ceiling, context)
     }) {

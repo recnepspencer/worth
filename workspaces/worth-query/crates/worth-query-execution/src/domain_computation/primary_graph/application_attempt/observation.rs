@@ -107,11 +107,7 @@ pub(super) fn exact_relations(
         .ok_or_else(|| missing_fact("relation plan"))?;
     let outcome = runtime
         .read_truth()
-        .execute_query_plan(
-            plan,
-            execution,
-            worth_relational::facade::runtime::RelationalQueryReadStrategy::CallingThread,
-        )
+        .execute_query_plan(plan, execution)
         .map_err(|stop| {
             WorthQueryApplicationAttemptDenial::query_read_denial(&stop, "relation execution")
         })?

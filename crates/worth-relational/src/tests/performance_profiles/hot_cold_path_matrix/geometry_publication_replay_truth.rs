@@ -61,7 +61,6 @@ pub(super) fn certify_geometry_rich_publication_hot_vs_replay_truth(
                         .plan_query_packet(&snapshot, hot_packet)
                         .expect("planned hot rich geometry query"),
                     execution,
-                    crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                 )
                 .expect("request remains live")
                 .map(|read| read.outcome)
@@ -122,7 +121,6 @@ pub(super) fn certify_geometry_rich_publication_hot_vs_replay_truth(
                         .plan_query_packet(&recovered_snapshot, cold_packet)
                         .expect("planned cold rich geometry query"),
                     execution,
-                    crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                 )
                 .expect("request remains live")
                 .map(|read| read.outcome)

@@ -67,11 +67,7 @@ fn index_query_keeps_the_admitted_root_after_same_and_sibling_reference_movement
         .expect("exact observation plans after both references move");
     let authoritative = runtime
         .read_truth()
-        .execute_query_plan(
-            plan.clone(),
-            execution,
-            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
-        )
+        .execute_query_plan(plan.clone(), execution)
         .expect("request remains live")
         .map(|read| read.outcome)
         .expect("authoritative exact-root query succeeds");

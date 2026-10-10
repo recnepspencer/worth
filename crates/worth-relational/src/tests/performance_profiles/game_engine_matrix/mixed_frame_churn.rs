@@ -70,7 +70,6 @@ pub(super) fn certify_mixed_read_write_frame_churn_window(
                             .plan_query_packet(&snapshot, propagation_packet)
                             .expect("scene frame propagation plan"),
                         execution,
-                        crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                     )
                     .expect("request remains live")
                     .map(|read| read.outcome)
@@ -101,7 +100,6 @@ pub(super) fn certify_mixed_read_write_frame_churn_window(
                             .plan_query_packet(&snapshot, explicit_packet)
                             .expect("scene frame explicit plan"),
                         execution,
-                        crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                     )
                     .expect("request remains live")
                     .map(|read| read.outcome)

@@ -116,7 +116,6 @@ pub(super) fn certify_flat_entity_step_batch_compile_window(
                         .plan_query_packet(&snapshot, explicit_packet)
                         .expect("planned chip flat batch explicit query"),
                     execution,
-                    crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                 )
                 .expect("request remains live")
                 .map(|read| read.outcome)

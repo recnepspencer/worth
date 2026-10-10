@@ -64,7 +64,6 @@ pub(super) fn certify_geometry_commit_downstream_medium_region_wave(
                         .plan_query_packet(&snapshot, traversal_packet)
                         .expect("downstream medium traversal plan"),
                     execution,
-                    crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                 )
                 .expect("request remains live")
                 .map(|read| read.outcome)

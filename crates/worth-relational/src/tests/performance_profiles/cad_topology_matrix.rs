@@ -96,7 +96,6 @@ fn perf_cad_topology_matrix() {
                         .plan_query_packet(&snapshot, explicit_packet)
                         .expect("planned cad explicit packet"),
                     execution,
-                    crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                 )
                 .expect("request remains live")
                 .map(|read| read.outcome)

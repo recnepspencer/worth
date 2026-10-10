@@ -62,7 +62,6 @@ fn perf_geometry_artifact_decomposition_matrix() {
                         )
                         .expect("planned artifact decomposition explicit query"),
                     execution,
-                    crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                 )
                 .expect("request remains live")
                 .map(|read| read.outcome)

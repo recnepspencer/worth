@@ -55,11 +55,7 @@ fn leased_explicit_read_preserves_packet_identity_and_reports_stops() {
     let plan = planned_explicit_query(&runtime, &snapshot, "leased-explicit", targets);
     let expected = runtime
         .read_truth()
-        .execute_query_plan(
-            plan.clone(),
-            execution,
-            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
-        )
+        .execute_query_plan(plan.clone(), execution)
         .expect("request remains live")
         .map(|read| read.outcome)
         .unwrap();
@@ -71,7 +67,6 @@ fn leased_explicit_read_preserves_packet_identity_and_reports_stops() {
         .execute_query_plan(
             plan.clone(),
             &worth_execution::ExecutionRequest::leased(&width_one),
-            crate::facade::runtime::RelationalQueryReadStrategy::RequestPatterns,
         )
         .unwrap()
         .unwrap();
@@ -81,7 +76,6 @@ fn leased_explicit_read_preserves_packet_identity_and_reports_stops() {
         .execute_query_plan(
             plan.clone(),
             &worth_execution::ExecutionRequest::leased(&width_four),
-            crate::facade::runtime::RelationalQueryReadStrategy::RequestPatterns,
         )
         .unwrap()
         .unwrap();
@@ -122,8 +116,7 @@ fn leased_explicit_read_preserves_packet_identity_and_reports_stops() {
             .read_truth()
             .execute_query_plan(
                 plan.clone(),
-                &worth_execution::ExecutionRequest::leased(&almost_complete),
-                crate::facade::runtime::RelationalQueryReadStrategy::RequestPatterns
+                &worth_execution::ExecutionRequest::leased(&almost_complete)
             )
             .map(|read| read.map(|read| read.outcome)),
         Err(QueryReadExecutionStop::CompletionStopped {
@@ -140,7 +133,6 @@ fn leased_explicit_read_preserves_packet_identity_and_reports_stops() {
         .execute_query_plan(
             plan.clone(),
             &worth_execution::ExecutionRequest::leased(&cancelled_lease),
-            crate::facade::runtime::RelationalQueryReadStrategy::RequestPatterns,
         )
         .map(|read| read.map(|read| read.outcome))
         .unwrap_err();
@@ -160,8 +152,7 @@ fn leased_explicit_read_preserves_packet_identity_and_reports_stops() {
             .read_truth()
             .execute_query_plan(
                 plan,
-                &worth_execution::ExecutionRequest::leased(&constrained),
-                crate::facade::runtime::RelationalQueryReadStrategy::RequestPatterns
+                &worth_execution::ExecutionRequest::leased(&constrained)
             )
             .map(|read| read.map(|read| read.outcome)),
         Err(QueryReadExecutionStop::PreparationStopped {
@@ -208,11 +199,7 @@ fn leased_field_filter_charges_captured_comparison_bytes() {
         .unwrap();
     let expected = runtime
         .read_truth()
-        .execute_query_plan(
-            plan.clone(),
-            execution,
-            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
-        )
+        .execute_query_plan(plan.clone(), execution)
         .expect("request remains live")
         .map(|read| read.outcome)
         .unwrap();
@@ -222,7 +209,6 @@ fn leased_field_filter_charges_captured_comparison_bytes() {
         .execute_query_plan(
             plan.clone(),
             &worth_execution::ExecutionRequest::leased(&wide),
-            crate::facade::runtime::RelationalQueryReadStrategy::RequestPatterns,
         )
         .map(|read| read.map(|read| read.outcome))
         .unwrap()
@@ -233,11 +219,7 @@ fn leased_field_filter_charges_captured_comparison_bytes() {
     assert!(matches!(
         runtime
             .read_truth()
-            .execute_query_plan(
-                plan,
-                &worth_execution::ExecutionRequest::leased(&tight),
-                crate::facade::runtime::RelationalQueryReadStrategy::RequestPatterns
-            )
+            .execute_query_plan(plan, &worth_execution::ExecutionRequest::leased(&tight))
             .map(|read| read.map(|read| read.outcome)),
         Err(QueryReadExecutionStop::PreparationStopped {
             reason: MapStop::Admission(worth_execution::LeaseDenial::MemoryExhausted(_))
@@ -286,11 +268,7 @@ fn leased_kind_scan_stops_at_a_record_checkpoint() {
         .unwrap();
     let unleased = runtime
         .read_truth()
-        .execute_query_plan(
-            plan.clone(),
-            execution,
-            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
-        )
+        .execute_query_plan(plan.clone(), execution)
         .expect("request remains live")
         .map(|read| read.outcome)
         .unwrap();
@@ -302,7 +280,6 @@ fn leased_kind_scan_stops_at_a_record_checkpoint() {
         .execute_query_plan(
             plan,
             &worth_execution::ExecutionRequest::leased(&constrained),
-            crate::facade::runtime::RelationalQueryReadStrategy::RequestPatterns,
         )
         .map(|read| read.map(|read| read.outcome));
     assert!(
@@ -355,8 +332,7 @@ fn leased_kind_scan_rejects_one_record_larger_than_its_packet_ceiling() {
             .read_truth()
             .execute_query_plan(
                 plan,
-                &worth_execution::ExecutionRequest::leased(&constrained),
-                crate::facade::runtime::RelationalQueryReadStrategy::RequestPatterns
+                &worth_execution::ExecutionRequest::leased(&constrained)
             )
             .map(|read| read.map(|read| read.outcome)),
         Err(QueryReadExecutionStop::PacketStopped {

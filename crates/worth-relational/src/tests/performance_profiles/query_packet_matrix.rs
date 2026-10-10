@@ -40,11 +40,7 @@ fn perf_query_packet_matrix() {
             let execution_started_at = Instant::now();
             let outcome = runtime
                 .read_truth()
-                .execute_query_plan(
-                    planned,
-                    execution,
-                    crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
-                )
+                .execute_query_plan(planned, execution)
                 .expect("request remains live")
                 .map(|read| read.outcome)
                 .expect("explicit target query outcome");
@@ -151,7 +147,6 @@ fn perf_query_packet_matrix() {
                         .plan_query_packet(&snapshot, packet)
                         .expect("planned query packet"),
                     execution,
-                    crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                 )
                 .expect("request remains live")
                 .map(|read| read.outcome)
@@ -262,11 +257,7 @@ fn perf_query_packet_matrix() {
             let execution_started_at = Instant::now();
             let outcome = runtime
                 .read_truth()
-                .execute_query_plan(
-                    planned,
-                    execution,
-                    crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
-                )
+                .execute_query_plan(planned, execution)
                 .expect("request remains live")
                 .map(|read| read.outcome)
                 .expect("connectivity traversal outcome");

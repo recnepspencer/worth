@@ -38,11 +38,7 @@ fn planned_query_execution_supports_outgoing_neighborhood_with_canonical_travers
         .expect("planned query packet");
     let outcome = runtime
         .read_truth()
-        .execute_query_plan(
-            plan,
-            execution,
-            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
-        )
+        .execute_query_plan(plan, execution)
         .expect("request remains live")
         .map(|read| read.outcome)
         .expect("query execution outcome");
@@ -106,11 +102,7 @@ fn planned_query_execution_supports_incoming_neighborhood_with_canonical_travers
         .expect("planned query packet");
     let outcome = runtime
         .read_truth()
-        .execute_query_plan(
-            plan,
-            execution,
-            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
-        )
+        .execute_query_plan(plan, execution)
         .expect("request remains live")
         .map(|read| read.outcome)
         .expect("query execution outcome");
@@ -174,11 +166,7 @@ fn planned_query_execution_supports_connectivity_traversal_with_depth_bound() {
         .expect("planned query packet");
     let outcome = runtime
         .read_truth()
-        .execute_query_plan(
-            plan,
-            execution,
-            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
-        )
+        .execute_query_plan(plan, execution)
         .expect("request remains live")
         .map(|read| read.outcome)
         .expect("query execution outcome");
@@ -261,7 +249,6 @@ fn planned_query_execution_normalizes_traversal_seed_order_deterministically() {
                 .plan_query_packet(&snapshot, descending_packet)
                 .expect("descending plan"),
             execution,
-            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
         )
         .expect("request remains live")
         .map(|read| read.outcome)
@@ -274,7 +261,6 @@ fn planned_query_execution_normalizes_traversal_seed_order_deterministically() {
                 .plan_query_packet(&snapshot, ascending_packet)
                 .expect("ascending plan"),
             execution,
-            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
         )
         .expect("request remains live")
         .map(|read| read.outcome)

@@ -32,9 +32,9 @@ pub use crate::visibility::materialization::read_records::{
     QueryReadExecutionStop, QueryReadPacketDenial, RelationProjectionRecord,
     RelationRecordProjection, RelationalAdjacencyDirection, RelationalAdjacencyVisit,
     RelationalBorrowedRecordReadDenial, RelationalEntityMetadata, RelationalEntityRetirement,
-    RelationalQueryReadStrategy, RelationalRelationMetadata,
-    RelationalSnapshotPositionAdmissionStop, RelationalSnapshotProjectionAdmissionStop,
-    SnapshotPositionDenial, VisibilityProjectionView, VisibilityReadContext,
+    RelationalRelationMetadata, RelationalSnapshotPositionAdmissionStop,
+    RelationalSnapshotProjectionAdmissionStop, SnapshotPositionDenial, VisibilityProjectionView,
+    VisibilityReadContext,
 };
 pub use crate::visibility::retention::VisibilityRetentionAuthority;
 pub use initial_schema_installation::{

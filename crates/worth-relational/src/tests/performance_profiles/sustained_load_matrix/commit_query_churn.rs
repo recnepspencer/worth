@@ -38,7 +38,6 @@ pub(super) fn certify_commit_query_churn_stability(
                             .plan_query_packet(&snapshot, packet)
                             .expect("planned sustained explicit query"),
                         execution,
-                        crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                     )
                     .expect("request remains live")
                     .map(|read| read.outcome)

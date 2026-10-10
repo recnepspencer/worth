@@ -56,11 +56,7 @@ pub(super) fn certify_hundred_k_nodes_geometry_profile_narrow_round_trip(
             let hot_query_execution_started_at = Instant::now();
             let outcome = runtime
                 .read_truth()
-                .execute_query_plan(
-                    planned,
-                    execution,
-                    crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
-                )
+                .execute_query_plan(planned, execution)
                 .expect("request remains live")
                 .map(|read| read.outcome)
                 .expect("rocketship explicit rich query outcome");

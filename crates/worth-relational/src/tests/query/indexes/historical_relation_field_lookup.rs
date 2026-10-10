@@ -56,11 +56,7 @@ fn relation_field_index_executes_retained_history_after_relation_deletion() {
         .unwrap();
     let storage = runtime
         .read_truth()
-        .execute_query_plan(
-            plan.clone(),
-            execution,
-            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
-        )
+        .execute_query_plan(plan.clone(), execution)
         .expect("request remains live")
         .map(|read| read.outcome)
         .unwrap();

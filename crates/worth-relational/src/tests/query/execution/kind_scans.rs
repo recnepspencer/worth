@@ -38,11 +38,7 @@ fn planned_query_execution_supports_entity_kind_scans_through_reducer_path() {
         .expect("planned query packet");
     let outcome = runtime
         .read_truth()
-        .execute_query_plan(
-            plan,
-            execution,
-            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
-        )
+        .execute_query_plan(plan, execution)
         .expect("request remains live")
         .map(|read| read.outcome)
         .expect("query execution outcome");
@@ -93,11 +89,7 @@ fn planned_query_execution_reports_non_zero_packet_items_for_kind_scans() {
         .expect("planned query packet");
     let _ = runtime
         .read_truth()
-        .execute_query_plan(
-            plan,
-            execution,
-            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
-        )
+        .execute_query_plan(plan, execution)
         .expect("request remains live")
         .map(|read| read.outcome)
         .expect("query execution outcome");
@@ -146,11 +138,7 @@ fn planned_query_execution_supports_relation_kind_scans_through_reducer_path() {
         .expect("planned query packet");
     let outcome = runtime
         .read_truth()
-        .execute_query_plan(
-            plan,
-            execution,
-            crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
-        )
+        .execute_query_plan(plan, execution)
         .expect("request remains live")
         .map(|read| read.outcome)
         .expect("query execution outcome");

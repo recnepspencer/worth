@@ -55,11 +55,7 @@ pub(super) fn certify_hundred_k_nodes_pseudorealistic_narrow_round_trip(
             let explicit_execution_started_at = Instant::now();
             let explicit_outcome = runtime
                 .read_truth()
-                .execute_query_plan(
-                    explicit_plan,
-                    execution,
-                    crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
-                )
+                .execute_query_plan(explicit_plan, execution)
                 .expect("request remains live")
                 .map(|read| read.outcome)
                 .expect("pseudorealistic explicit query outcome");
@@ -95,11 +91,7 @@ pub(super) fn certify_hundred_k_nodes_pseudorealistic_narrow_round_trip(
             let traversal_execution_started_at = Instant::now();
             let traversal_outcome = runtime
                 .read_truth()
-                .execute_query_plan(
-                    traversal_plan,
-                    execution,
-                    crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
-                )
+                .execute_query_plan(traversal_plan, execution)
                 .expect("request remains live")
                 .map(|read| read.outcome)
                 .expect("pseudorealistic traversal outcome");

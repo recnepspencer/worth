@@ -120,11 +120,7 @@ fn assert_child_explicit_query_uses_snapshot_root(
     let outcome = world
         .runtime
         .read_truth()
-        .execute_query_plan(
-            plan,
-            execution,
-            worth_relational::facade::runtime::RelationalQueryReadStrategy::CallingThread,
-        )
+        .execute_query_plan(plan, execution)
         .expect("request remains live")
         .map(|read| read.outcome)
         .expect("child explicit query executes against its retained root");
@@ -148,11 +144,7 @@ fn assert_child_explicit_query_uses_snapshot_root(
     let main_outcome = world
         .runtime
         .read_truth()
-        .execute_query_plan(
-            main_plan,
-            execution,
-            worth_relational::facade::runtime::RelationalQueryReadStrategy::CallingThread,
-        )
+        .execute_query_plan(main_plan, execution)
         .expect("request remains live")
         .map(|read| read.outcome)
         .expect("advanced main explicit query executes against R1");

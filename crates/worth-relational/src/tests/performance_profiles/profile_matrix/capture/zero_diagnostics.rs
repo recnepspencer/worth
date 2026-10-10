@@ -48,7 +48,6 @@ pub(super) fn certify(execution: &worth_execution::ExecutionRequest<'_, '_>, sui
                         .plan_query_packet(&snapshot, packet)
                         .expect("planned zero-diagnostics profile query"),
                     execution,
-                    crate::facade::runtime::RelationalQueryReadStrategy::CallingThread,
                 )
                 .expect("request remains live")
                 .map(|read| read.outcome)
