@@ -5,7 +5,7 @@ use super::super::world::CourtroomWorld;
 
 pub(crate) fn shared_component_sibling_cannot_claim_another_product_commit() {
     let world = CourtroomWorld::publish("ready");
-    let source = &world
+    let source = world
         .application
         .with_host_advancement(|phase| {
             world
