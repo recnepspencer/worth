@@ -210,9 +210,7 @@ mod tests {
 
     #[test]
     fn closeout_report_keeps_stabilization_inputs_in_sync() {
-        let host_request =
-            worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-                .serial_request(worth_execution::CancellationToken::new(), None);
+        let host_request = crate::bridge_host_request::serial_request();
         let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
         let report = worth_query_lower_runtime_closeout_report(resource_request);
@@ -273,9 +271,7 @@ mod tests {
 
     #[test]
     fn closeout_report_digest_is_distinct_from_bundle_digest() {
-        let host_request =
-            worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-                .serial_request(worth_execution::CancellationToken::new(), None);
+        let host_request = crate::bridge_host_request::serial_request();
         let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
         let report = worth_query_lower_runtime_closeout_report(resource_request);

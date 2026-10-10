@@ -2,8 +2,7 @@ use super::*;
 
 #[test]
 fn advisory_materialization_rejects_mismatched_query_observation_binding() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = bridge_runtime();
@@ -72,8 +71,7 @@ fn advisory_materialization_rejects_mismatched_query_observation_binding() {
 
 #[test]
 fn advisory_replay_materialization_rejects_missing_requested_replay_posture() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = bridge_runtime();

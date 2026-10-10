@@ -11,8 +11,7 @@ use crate::facade::runtime::ExecutionAllocationPolicy;
 
 #[test]
 fn first_post_commit_admission_failure_retains_exact_idempotent_recovery_evidence() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let world = installed_authorization_world(true);

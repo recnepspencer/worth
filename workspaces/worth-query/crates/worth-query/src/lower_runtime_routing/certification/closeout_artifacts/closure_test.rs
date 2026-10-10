@@ -263,9 +263,7 @@ mod tests {
 
     #[test]
     fn closure_test_has_named_control_hostile_and_parity_lanes() {
-        let host_request =
-            worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-                .serial_request(worth_execution::CancellationToken::new(), None);
+        let host_request = crate::bridge_host_request::serial_request();
         let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
         let suite = worth_query_lower_runtime_closure_test(resource_request);
@@ -300,9 +298,7 @@ mod tests {
 
     #[test]
     fn closure_test_binds_downstream_boundary_lane_to_certified_row() {
-        let host_request =
-            worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-                .serial_request(worth_execution::CancellationToken::new(), None);
+        let host_request = crate::bridge_host_request::serial_request();
         let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
         let suite = worth_query_lower_runtime_closure_test(resource_request);
@@ -324,9 +320,7 @@ mod tests {
 
     #[test]
     fn closure_test_hostile_lane_aggregates_phase_seven_hostile_obligations() {
-        let host_request =
-            worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-                .serial_request(worth_execution::CancellationToken::new(), None);
+        let host_request = crate::bridge_host_request::serial_request();
         let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
         let suite = worth_query_lower_runtime_closure_test(resource_request);

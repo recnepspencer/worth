@@ -9,8 +9,7 @@ use super::support::*;
 
 #[test]
 fn admitted_query_causal_artifact_materializes_sealed_bridge_envelope() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = bridge_runtime();
@@ -135,8 +134,7 @@ fn admitted_query_causal_artifact_materializes_sealed_bridge_envelope() {
 
 #[test]
 fn advisory_query_causal_artifact_redacts_detail_without_changing_bridge_identity() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = bridge_runtime();
@@ -265,8 +263,7 @@ fn advisory_query_causal_artifact_redacts_detail_without_changing_bridge_identit
 
 #[test]
 fn admitted_materialization_rejects_wrong_bridge_summary_kind() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = bridge_runtime();

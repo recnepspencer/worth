@@ -2,8 +2,7 @@ use super::*;
 
 #[test]
 fn composed_workflow_run_mints_artifact_authority_and_cleans_every_owner() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = query_runtime();
@@ -56,8 +55,7 @@ fn composed_workflow_run_mints_artifact_authority_and_cleans_every_owner() {
 
 #[test]
 fn workflow_cleanup_pending_retains_run_until_live_artifact_owner_closes() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = query_runtime();
@@ -197,8 +195,7 @@ fn workflow_cleanup_pending_retains_run_until_live_artifact_owner_closes() {
 
 #[test]
 fn workflow_cleanup_thread_failure_returns_the_same_terminal_for_retry() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = query_runtime();
@@ -264,8 +261,7 @@ fn workflow_cleanup_thread_failure_returns_the_same_terminal_for_retry() {
 
 #[test]
 fn rejected_workflow_admission_returns_its_reserved_attempt() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let owner_runtime = query_runtime();

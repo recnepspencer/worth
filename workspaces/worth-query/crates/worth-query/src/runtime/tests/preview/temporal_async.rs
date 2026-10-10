@@ -73,8 +73,7 @@ fn install_temporal_async_and_mixed_residue(
 
 #[test]
 fn preview_discard_closeout_tracks_temporal_async_and_mixed_residue_parity() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = stateful_bridge_task_runtime();
@@ -134,8 +133,7 @@ fn preview_discard_closeout_tracks_temporal_async_and_mixed_residue_parity() {
 
 #[test]
 fn preview_promotion_closeout_records_rebinding_for_temporal_async_and_mixed_handles() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = stateful_bridge_task_runtime();
@@ -228,8 +226,7 @@ fn preview_promotion_closeout_records_rebinding_for_temporal_async_and_mixed_han
 
 #[test]
 fn preview_discard_retains_crossed_preview_completion_residue_typed() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = stateful_bridge_task_runtime();

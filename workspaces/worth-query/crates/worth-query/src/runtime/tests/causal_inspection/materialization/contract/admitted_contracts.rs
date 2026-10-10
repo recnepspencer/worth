@@ -2,8 +2,7 @@ use super::*;
 
 #[test]
 fn admitted_replay_materialization_rejects_missing_requested_replay_posture() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = bridge_runtime();
@@ -43,8 +42,7 @@ fn admitted_replay_materialization_rejects_missing_requested_replay_posture() {
 
 #[test]
 fn bridge_request_rejects_missing_query_observation_binding_before_materialization() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = bridge_runtime();
@@ -82,8 +80,7 @@ fn bridge_request_rejects_missing_query_observation_binding_before_materializati
 
 #[test]
 fn bridge_request_rejects_multiple_query_observation_bindings_before_materialization() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = bridge_runtime();

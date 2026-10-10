@@ -16,8 +16,7 @@ use super::view_plan_world::{collection_canonical, planned_view, runtime_basis};
 
 #[test]
 fn grouped_delta_is_explicit_and_deterministic() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let planned = planned_view(
@@ -96,8 +95,7 @@ fn grouped_delta_is_explicit_and_deterministic() {
 
 #[test]
 fn grouped_churn_overrun_stays_on_grouped_membership_delta() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let planned = planned_view(
@@ -192,8 +190,7 @@ fn grouped_churn_overrun_stays_on_grouped_membership_delta() {
 
 #[test]
 fn grouped_core_refresh_still_emits_grouped_semantics() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let planned = planned_view(
@@ -249,8 +246,7 @@ fn grouped_core_refresh_still_emits_grouped_semantics() {
 
 #[test]
 fn grouped_delta_mixed_member_churn_stays_incremental() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let planned = planned_view(

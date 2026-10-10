@@ -6,8 +6,7 @@ use super::matrix_support::representative_matrix;
 
 #[test]
 fn causal_inspection_proof_shape_binds_runtime_path_inputs() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let changed = admitted_artifact(
@@ -101,8 +100,7 @@ fn causal_inspection_proof_shape_binds_runtime_path_inputs() {
 
 #[test]
 fn causal_inspection_certification_rejects_worthd_proof_shape() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let changed = admitted_artifact(
@@ -158,8 +156,7 @@ fn causal_inspection_certification_rejects_worthd_proof_shape() {
 
 #[test]
 fn causal_inspection_certification_rejects_stale_proof_shape_digest() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let changed = admitted_artifact(

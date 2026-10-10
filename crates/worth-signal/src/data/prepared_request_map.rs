@@ -48,9 +48,11 @@ where
                         .map(PreparedMapBacking::Leased)
                         .map_err(SignalError::execution_admission_denied)
                 } else {
-                    let bytes = map
-                        .serial_memory_requirement::<R, E>()
-                        .ok_or_else(|| SignalError::invalid_input("serial map memory overflow"))?;
+                    let bytes = map.serial_memory_requirement::<R, E>().ok_or_else(|| {
+                        SignalError::execution_admission_denied(
+                            worth_execution::LeaseDenial::ChargedBytesOverflow,
+                        )
+                    })?;
                     let memory = ExecutionMemoryReservation::reserve_in_scope(None, bytes)
                         .map_err(SignalError::execution_admission_denied)?;
                     Ok(PreparedMapBacking::Serial { map, memory })
@@ -80,3 +82,6 @@ where
         }
     }
 }
+
+#[cfg(test)]
+mod tests;

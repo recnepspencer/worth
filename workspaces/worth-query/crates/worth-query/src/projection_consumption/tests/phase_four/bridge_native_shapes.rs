@@ -25,8 +25,7 @@ use super::support::{admitted, binding};
 
 #[test]
 fn bridge_row_set_preserves_complete_struct_values_through_consumption() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = bridge_runtime();

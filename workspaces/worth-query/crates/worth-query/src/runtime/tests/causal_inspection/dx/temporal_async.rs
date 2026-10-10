@@ -2,8 +2,7 @@ use super::*;
 
 #[test]
 fn temporal_async_reason_helpers_materialize_bridge_backed_explanations() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = bridge_runtime();

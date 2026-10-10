@@ -17,8 +17,7 @@ use super::view_plan_world::{collection_canonical, planned_view, runtime_basis};
 
 #[test]
 fn grouped_baseline_is_derived_from_authoritative_execution_bindings() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let planned = planned_view(
@@ -75,8 +74,7 @@ fn grouped_baseline_is_derived_from_authoritative_execution_bindings() {
 
 #[test]
 fn grouped_baseline_rejects_mismatched_grouped_execution_surface() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let planned = planned_view(
@@ -103,8 +101,7 @@ fn grouped_baseline_rejects_mismatched_grouped_execution_surface() {
 
 #[test]
 fn grouped_execution_rejects_truth_view_with_mismatched_identity_binding() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let planned = planned_view(
@@ -132,8 +129,7 @@ fn grouped_execution_rejects_truth_view_with_mismatched_identity_binding() {
 
 #[test]
 fn grouped_execution_rejects_truth_view_with_mismatched_snapshot_identity() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let planned = planned_view(

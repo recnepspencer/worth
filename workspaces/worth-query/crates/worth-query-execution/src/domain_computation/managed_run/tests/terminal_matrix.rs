@@ -31,8 +31,7 @@ impl NonCompletionTerminal {
 
 #[test]
 fn direct_noncompletion_terminals_cancel_signal_and_release_every_owner() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     for terminal in NonCompletionTerminal::ALL {
@@ -54,8 +53,7 @@ fn direct_noncompletion_terminals_cancel_signal_and_release_every_owner() {
 
 #[test]
 fn workflow_noncompletion_terminals_cancel_signal_and_release_every_owner() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     for terminal in NonCompletionTerminal::ALL {

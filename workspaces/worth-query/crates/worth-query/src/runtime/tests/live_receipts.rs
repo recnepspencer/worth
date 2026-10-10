@@ -249,8 +249,7 @@ fn runtime_live_read_receipt_retains_time_only_materialized_posture() {
 
 #[test]
 fn runtime_live_read_receipt_retains_async_and_mixed_cause_posture_precedence() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut async_runtime = stateful_bridge_task_runtime();

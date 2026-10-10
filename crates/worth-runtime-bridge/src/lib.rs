@@ -111,4 +111,5 @@ mod truth_identity_fixtures;
 #[cfg(test)]
 mod tests {}
 
+#[cfg(test)]
 mod host_execution;

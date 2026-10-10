@@ -2,8 +2,7 @@ use super::evidence::worth_query_lower_runtime_representative_surface;
 
 #[test]
 fn representative_surface_reports_concrete_and_synthetic_coverage_widths() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let surface = worth_query_lower_runtime_representative_surface(resource_request);

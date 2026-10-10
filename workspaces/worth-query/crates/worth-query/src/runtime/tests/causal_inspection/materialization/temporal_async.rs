@@ -27,8 +27,7 @@ fn reference_set_for(
 
 #[test]
 fn admitted_temporal_wake_materialization_projects_query_owned_temporal_explanation() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = bridge_runtime();
@@ -131,8 +130,7 @@ fn admitted_temporal_wake_materialization_projects_query_owned_temporal_explanat
 
 #[test]
 fn advisory_async_completion_materialization_projects_query_owned_async_explanation() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = bridge_runtime();
@@ -233,8 +231,7 @@ fn advisory_async_completion_materialization_projects_query_owned_async_explanat
 
 #[test]
 fn admitted_mixed_cause_suppression_materialization_retains_suppression_identity() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = bridge_runtime();

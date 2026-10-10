@@ -8,8 +8,7 @@ use worth_runtime_bridge::facade::{
 
 #[test]
 fn runtime_mixed_cause_delivery_replays_canonically_across_shuffled_bridge_input_order() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let bridge = test_bridge();
@@ -170,8 +169,7 @@ fn runtime_mixed_cause_delivery_retains_duplicate_suppression_explicitly() {
 
 #[test]
 fn runtime_mixed_cause_delivery_preserves_denied_preview_boundary_without_coalescing_it() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let bridge = test_bridge();
@@ -228,8 +226,7 @@ fn runtime_mixed_cause_delivery_preserves_denied_preview_boundary_without_coales
 
 #[test]
 fn runtime_state_and_inspection_retain_mixed_cause_delivery_projection_after_drain() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let bridge = test_bridge();

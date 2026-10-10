@@ -5,8 +5,7 @@ use worth_runtime_bridge::facade::{
 use super::*;
 #[test]
 fn direct_run_observes_signal_and_pressure_through_its_bound_bridge_basis() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = query_runtime();
@@ -56,8 +55,7 @@ fn direct_run_observes_signal_and_pressure_through_its_bound_bridge_basis() {
 
 #[test]
 fn workflow_run_uses_the_same_managed_safe_point_authority() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = query_runtime();

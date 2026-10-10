@@ -2,8 +2,7 @@ use super::*;
 
 #[test]
 fn common_changed_observation_plans_and_materializes_admitted() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = bridge_runtime();
@@ -55,8 +54,7 @@ fn common_changed_observation_plans_and_materializes_admitted() {
 
 #[test]
 fn common_suppressed_observation_uses_reason_helper() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = bridge_runtime();
@@ -85,8 +83,7 @@ fn common_suppressed_observation_uses_reason_helper() {
 
 #[test]
 fn materialized_detail_common_path_is_advisory_before_bridge_materialization() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = bridge_runtime();
@@ -128,8 +125,7 @@ fn materialized_detail_common_path_is_advisory_before_bridge_materialization() {
 
 #[test]
 fn common_path_preserves_core_digests_from_explicit_pipeline() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = bridge_runtime();

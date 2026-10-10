@@ -2,8 +2,7 @@ use super::*;
 
 #[test]
 fn retained_temporal_evidence_projects_same_explanation_for_all_retained_and_explicit_requests() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = bridge_runtime();

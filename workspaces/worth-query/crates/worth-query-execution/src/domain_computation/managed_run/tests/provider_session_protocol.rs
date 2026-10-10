@@ -297,8 +297,7 @@ fn closed_session_affinity(
 
 #[test]
 fn provider_without_session_lifecycle_is_denied_before_any_protocol_call() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let (mut running, graph) = managed_graph_run_with_provider(

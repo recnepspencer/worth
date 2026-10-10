@@ -106,3 +106,7 @@ mod relational_execution_refusal;
 
 #[cfg(test)]
 mod test_execution_authority;
+
+#[cfg(test)]
+#[path = "test_support/bridge_host_request.rs"]
+mod bridge_host_request;

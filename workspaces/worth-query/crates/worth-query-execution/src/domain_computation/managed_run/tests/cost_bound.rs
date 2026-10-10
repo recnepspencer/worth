@@ -8,8 +8,7 @@ const UNRELATED_RUN_COUNT: usize = 12;
 
 #[test]
 fn managed_run_work_is_invariant_to_unrelated_live_authority_width() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let disposed = Arc::new(AtomicUsize::new(0));

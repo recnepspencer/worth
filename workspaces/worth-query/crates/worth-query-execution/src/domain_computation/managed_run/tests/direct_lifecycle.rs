@@ -2,8 +2,7 @@ use super::*;
 
 #[test]
 fn causal_lower_authorities_admit_one_managed_direct_run_and_cleanup_every_owner() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = query_runtime();
@@ -48,8 +47,7 @@ fn causal_lower_authorities_admit_one_managed_direct_run_and_cleanup_every_owner
 
 #[test]
 fn cleanup_thread_failure_returns_all_authority_for_owner_thread_retry() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = query_runtime();

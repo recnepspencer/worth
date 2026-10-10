@@ -25,8 +25,7 @@ use crate::lower_runtime_routing::{
 
 #[test]
 fn certification_bundle_contains_phase_seven_lanes() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let bundle = certify_lower_runtime_routing(resource_request);
@@ -50,8 +49,7 @@ fn certification_bundle_contains_phase_seven_lanes() {
 
 #[test]
 fn certification_bundle_emits_required_outputs() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let bundle = certify_lower_runtime_routing(resource_request);
@@ -223,8 +221,7 @@ fn phase_manifest_is_public_and_consumable_by_closeout_bundle() {
 
 #[test]
 fn stabilization_closeout_report_is_public_and_consumes_final_phase_artifacts() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let report = worth_query_lower_runtime_closeout_report(resource_request);
@@ -293,8 +290,7 @@ fn stabilization_closeout_report_is_public_and_consumes_final_phase_artifacts() 
 
 #[test]
 fn certification_bundle_acceptance_lane_matches_named_suite() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let bundle = certify_lower_runtime_routing(resource_request);
@@ -318,8 +314,7 @@ fn certification_bundle_acceptance_lane_matches_named_suite() {
 
 #[test]
 fn certification_bundle_failure_digest_is_hostile_row_aggregate() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let bundle = certify_lower_runtime_routing(resource_request);
@@ -339,8 +334,7 @@ fn certification_bundle_failure_digest_is_hostile_row_aggregate() {
 
 #[test]
 fn parity_digest_changes_when_intentionally_different_route_families_are_compared() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let bundle = certify_lower_runtime_routing(resource_request);
@@ -362,8 +356,7 @@ fn parity_digest_changes_when_intentionally_different_route_families_are_compare
 
 #[test]
 fn proof_shape_and_slope_surfaces_stay_exported() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let proof = worth_query_lower_runtime_proof_shape_audit();
@@ -380,8 +373,7 @@ fn proof_shape_and_slope_surfaces_stay_exported() {
 
 #[test]
 fn compatibility_debt_registry_digest_tracks_closed_gap_registry() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let bundle = certify_lower_runtime_routing(resource_request);

@@ -15,8 +15,7 @@ use matrix_support::representative_matrix;
 
 #[test]
 fn causal_inspection_certification_bundle_closes_runtime_backed_rows() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let changed = admitted_artifact(
@@ -142,8 +141,7 @@ fn causal_inspection_certification_bundle_closes_runtime_backed_rows() {
 
 #[test]
 fn causal_inspection_certification_rejects_bridge_envelope_slope_drift() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let changed = admitted_artifact(
@@ -200,8 +198,7 @@ fn causal_inspection_certification_rejects_bridge_envelope_slope_drift() {
 
 #[test]
 fn causal_inspection_certification_rejects_redaction_identity_drift() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let changed = admitted_artifact(
@@ -261,8 +258,7 @@ fn causal_inspection_certification_rejects_redaction_identity_drift() {
 
 #[test]
 fn causal_inspection_certification_rejects_incomplete_representative_matrix() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let changed = admitted_artifact(
@@ -373,8 +369,7 @@ fn causal_inspection_certification_failure_evidence_names_forbidden_and_debt_pos
 
 #[test]
 fn causal_inspection_certification_rejects_rich_slot_row_without_named_slots() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let changed = admitted_artifact(

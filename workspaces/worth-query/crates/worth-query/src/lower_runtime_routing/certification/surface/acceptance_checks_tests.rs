@@ -9,8 +9,7 @@ use crate::lower_runtime_routing::WorthQueryLowerRuntimeSeamKey;
 
 #[test]
 fn required_phase_six_concrete_seams_are_enforced_hostilely() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let surface = worth_query_lower_runtime_representative_surface(resource_request)
@@ -28,8 +27,7 @@ fn required_phase_six_concrete_seams_are_enforced_hostilely() {
 
 #[test]
 fn synthetic_tail_exactness_rejects_unexpected_runtime_backing_drift() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let surface = worth_query_lower_runtime_representative_surface(resource_request)

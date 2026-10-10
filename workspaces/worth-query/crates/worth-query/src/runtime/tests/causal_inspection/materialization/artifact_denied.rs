@@ -9,8 +9,7 @@ use super::support::*;
 
 #[test]
 fn denied_query_causal_artifact_carries_boundary_context_without_bridge_envelope() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = bridge_runtime();
@@ -71,8 +70,7 @@ fn denied_query_causal_artifact_carries_boundary_context_without_bridge_envelope
 
 #[test]
 fn denied_query_causal_artifact_carries_bridge_denial_posture_and_counters() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = bridge_runtime();

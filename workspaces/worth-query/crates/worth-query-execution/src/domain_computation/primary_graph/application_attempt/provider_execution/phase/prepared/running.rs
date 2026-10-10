@@ -99,7 +99,10 @@ where
     .map_err(|_| denied(DenialStage::ManagedRunAdmission))?;
     let execution = phase
         .execution_request_for(&application.product_runtime)
-        .map_err(|_| denied(DenialStage::ResourceAdmission))?;
+        .map_err(|foreign| {
+            crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(foreign)
+                .into_commit_outcome()
+        })?;
     let operation =
         bind_execution_operation(application, &admission, &lease, effect_posture, execution)?;
     let reserved = admission

@@ -136,9 +136,7 @@ mod tests {
 
     #[test]
     fn acceptance_suite_exposes_control_hostile_and_parity_lanes() {
-        let host_request =
-            worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-                .serial_request(worth_execution::CancellationToken::new(), None);
+        let host_request = crate::bridge_host_request::serial_request();
         let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
         let suite = worth_query_lower_runtime_acceptance_suite(resource_request);
@@ -161,9 +159,7 @@ mod tests {
 
     #[test]
     fn acceptance_suite_control_lane_proves_exact_cardinality() {
-        let host_request =
-            worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-                .serial_request(worth_execution::CancellationToken::new(), None);
+        let host_request = crate::bridge_host_request::serial_request();
         let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
         let suite = worth_query_lower_runtime_acceptance_suite(resource_request);
@@ -180,9 +176,7 @@ mod tests {
 
     #[test]
     fn acceptance_suite_hostile_digest_stays_distinct_from_control() {
-        let host_request =
-            worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-                .serial_request(worth_execution::CancellationToken::new(), None);
+        let host_request = crate::bridge_host_request::serial_request();
         let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
         let suite = worth_query_lower_runtime_acceptance_suite(resource_request);

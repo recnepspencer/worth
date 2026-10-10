@@ -2,8 +2,7 @@ use super::*;
 
 #[test]
 fn workflow_cleanup_contains_artifact_disposal_and_destructor_panics() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let world = double_panicking_artifact_world("artifact-double-panic", resource_request);
@@ -55,8 +54,7 @@ fn workflow_cleanup_contains_artifact_disposal_and_destructor_panics() {
 
 #[test]
 fn surviving_borrow_delays_and_then_contains_both_artifact_release_panics() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let world = double_panicking_artifact_world("artifact-delayed-double-panic", resource_request);

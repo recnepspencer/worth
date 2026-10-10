@@ -145,8 +145,7 @@ fn future_explanation_families_deny_without_bridge_assembly() {
 
 #[test]
 fn redaction_and_materialization_policy_matrix_preserves_causal_identity() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = bridge_runtime();

@@ -77,8 +77,7 @@ fn runtime_state_and_inspection_share_time_only_compact_posture() {
 
 #[test]
 fn runtime_state_and_inspection_share_mixed_async_compact_posture() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let bridge = test_bridge();

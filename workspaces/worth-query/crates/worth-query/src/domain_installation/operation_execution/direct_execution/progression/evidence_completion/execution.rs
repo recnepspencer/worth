@@ -110,9 +110,8 @@ where
         admitted: WorthQueryAdmittedDirectOperation<D, O, F, L>,
         workspace: &mut crate::runtime::WorthQueryWorkspace,
     ) -> Result<Self, super::super::WorthQueryBoundExecutionOutcome<D, O, F, L, O::Output>> {
-        let resource_request = execution
-            .execution_request_for(&workspace.advancement_owner())
-            .expect("direct admission uses its workspace advancement");
+        let resource_request =
+            admit_direct_request(execution, workspace).map_err(TransitionOutcome::Denied)?;
         let mut counters = WorthQueryOperationExecutionCounters {
             runtime_authority_checks: 1,
             ..Default::default()
@@ -301,3 +300,28 @@ fn classify_executor_failure<D, O, F, L: BasisOperationLane>(
 }
 
 mod executor_progression;
+
+fn admit_direct_request<'request>(
+    phase: &'request worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
+    workspace: &crate::runtime::WorthQueryWorkspace,
+) -> Result<worth_execution::ExecutionRequest<'request, 'request>, WorthQueryBoundExecutionDenial> {
+    use worth_query_execution::facade::application_contribution::{
+        WorthQueryAdvancementDenial, WorthQueryManagedComputationResourceDenial,
+    };
+    phase
+        .execution_request_for(&workspace.advancement_owner())
+        .map_err(|_| {
+            WorthQueryBoundExecutionDenial::new(
+                WorthQueryBoundExecutionDenialKind::ExecutionRequest(
+                    WorthQueryAdvancementDenial::Resource(
+                        WorthQueryManagedComputationResourceDenial::ForeignAdvancementPhase,
+                    ),
+                ),
+                "direct advancement belongs to another installed runtime",
+                Default::default(),
+            )
+        })
+}
+
+#[cfg(test)]
+mod foreign_phase_tests;

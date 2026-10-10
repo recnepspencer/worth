@@ -311,8 +311,12 @@ fn execute_source_free(
     session: &worth_runtime_bridge::facade::BridgeConditionalEvaluationSession,
     attempt: u64,
 ) {
-    let serial_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let serial_request = worth_execution::SerialRequest::from_policy(
+        &worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+            .request_policy(),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
     bridge

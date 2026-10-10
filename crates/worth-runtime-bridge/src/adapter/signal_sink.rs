@@ -7,12 +7,6 @@ pub enum SignalBridgeSinkErrorKind {
     ExternalSinkFailure,
     /// The request refused this sink contact.
     Execution(crate::error::BridgeExecutionDenial),
-    /// Signal refused evaluation or mutation.
-    Signal(worth_signal::facade::SignalError),
-    /// Installed scoped-change admission refused the target set.
-    ScopedChangeAdmission(worth_signal::facade::SignalInstalledScopedChangeDenial),
-    /// The committed-patch owner service refused delivery.
-    CommittedPatch(worth_signal::facade::branch::SignalCommittedPatchDeliveryDenial),
     /// Query mutation must use its World publication service.
     WorldPublicationRequired,
 }
@@ -44,9 +38,6 @@ impl SignalBridgeSinkError {
                 BridgeDeliveryErrorKind::ExecutionDenied(*denial)
             }
             SignalBridgeSinkErrorKind::ExternalSinkFailure
-            | SignalBridgeSinkErrorKind::Signal(_)
-            | SignalBridgeSinkErrorKind::ScopedChangeAdmission(_)
-            | SignalBridgeSinkErrorKind::CommittedPatch(_)
             | SignalBridgeSinkErrorKind::WorldPublicationRequired => {
                 BridgeDeliveryErrorKind::SignalSinkRejection(self.kind.clone())
             }

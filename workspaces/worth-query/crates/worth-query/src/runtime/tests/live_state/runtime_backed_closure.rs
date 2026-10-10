@@ -59,8 +59,7 @@ fn remasked_runtime(projection: WorthQueryRuntimeRemaskProjection) -> WorthQuery
 
 #[test]
 fn runtime_backed_reference_workload_exercises_temporal_async_preview_causal_and_follow_on_lanes() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut time_only_runtime = stateful_bridge_task_runtime();
@@ -301,8 +300,7 @@ fn runtime_backed_reference_workload_exercises_temporal_async_preview_causal_and
 
 #[test]
 fn runtime_backed_closure_matrix_preserves_equivalent_and_distinct_public_meaning() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = stateful_bridge_task_runtime();

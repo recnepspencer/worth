@@ -5,8 +5,7 @@ use crate::harness::certification::{
 
 #[test]
 fn milestone_eight_certification_adapter_emits_named_matrix() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let artifact = MilestoneEightCertificationAdapter::
@@ -22,8 +21,7 @@ fn milestone_eight_certification_adapter_emits_named_matrix() {
 
 #[test]
 fn milestone_eight_certification_matrix_meets_required_rows() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let matrix = MilestoneEightCertificationAdapter::scope_template_view_shape_semantic_parity_test(
@@ -44,8 +42,7 @@ fn milestone_eight_certification_matrix_meets_required_rows() {
 
 #[test]
 fn milestone_eight_certification_rows_have_required_outputs() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let matrix = MilestoneEightCertificationAdapter::scope_template_view_shape_semantic_parity_test(
@@ -73,8 +70,7 @@ fn milestone_eight_certification_rows_have_required_outputs() {
 
 #[test]
 fn milestone_eight_certification_covers_named_semantic_rows() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let matrix = MilestoneEightCertificationAdapter::scope_template_view_shape_semantic_parity_test(
@@ -112,8 +108,7 @@ fn milestone_eight_certification_covers_named_semantic_rows() {
 
 #[test]
 fn milestone_eight_saved_query_support_profile_drift_is_typed_rejection() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let matrix = MilestoneEightCertificationAdapter::scope_template_view_shape_semantic_parity_test(
@@ -133,8 +128,7 @@ fn milestone_eight_saved_query_support_profile_drift_is_typed_rejection() {
 
 #[test]
 fn milestone_eight_deferred_and_grouped_rows_are_typed_rejections() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let matrix = MilestoneEightCertificationAdapter::scope_template_view_shape_semantic_parity_test(
@@ -163,8 +157,7 @@ fn milestone_eight_deferred_and_grouped_rows_are_typed_rejections() {
 
 #[test]
 fn milestone_eight_grouped_delta_row_is_non_cosmetic() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let matrix = MilestoneEightCertificationAdapter::scope_template_view_shape_semantic_parity_test(
@@ -188,8 +181,7 @@ fn milestone_eight_grouped_delta_row_is_non_cosmetic() {
 
 #[test]
 fn milestone_eight_grouped_proof_chain_rows_are_present_and_stable() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let matrix = MilestoneEightCertificationAdapter::scope_template_view_shape_semantic_parity_test(
@@ -244,8 +236,7 @@ fn milestone_eight_grouped_proof_chain_rows_are_present_and_stable() {
 
 #[test]
 fn milestone_eight_parity_rows_are_actually_adversarial() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let matrix = MilestoneEightCertificationAdapter::scope_template_view_shape_semantic_parity_test(
@@ -288,8 +279,7 @@ fn milestone_eight_parity_rows_are_actually_adversarial() {
 
 #[test]
 fn milestone_eight_identity_aware_inspector_rows_preserve_identity_classification() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let matrix = MilestoneEightCertificationAdapter::scope_template_view_shape_semantic_parity_test(
@@ -357,8 +347,7 @@ fn milestone_eight_identity_aware_inspector_rows_preserve_identity_classificatio
 
 #[test]
 fn milestone_eight_support_profile_row_tracks_full_report_state() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let matrix = MilestoneEightCertificationAdapter::scope_template_view_shape_semantic_parity_test(

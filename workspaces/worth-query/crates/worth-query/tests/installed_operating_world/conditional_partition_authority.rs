@@ -9,8 +9,7 @@ use super::installed_operation_fixture::{
 
 #[test]
 fn partition_dependency_crosses_the_real_relational_source_and_signal_delivery_path() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let partition = worth_foundational::facade::TruthPartitionRole::new("model-main").unwrap();

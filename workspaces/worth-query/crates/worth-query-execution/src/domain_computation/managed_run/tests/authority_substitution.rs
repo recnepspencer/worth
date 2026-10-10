@@ -5,8 +5,7 @@ use crate::domain_computation::{
 
 #[test]
 fn same_runtime_foreign_bridge_adapter_denies_before_lower_authority_admission() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = query_runtime();
@@ -54,8 +53,7 @@ fn same_runtime_foreign_bridge_adapter_denies_before_lower_authority_admission()
 
 #[test]
 fn foreign_query_runtime_denies_before_resource_or_lower_basis_checks() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let owner = query_runtime();
@@ -88,8 +86,7 @@ fn foreign_query_runtime_denies_before_resource_or_lower_basis_checks() {
 
 #[test]
 fn stale_installation_generation_denies_before_resource_or_lower_basis_checks() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = query_runtime();
@@ -124,8 +121,7 @@ fn stale_installation_generation_denies_before_resource_or_lower_basis_checks() 
 
 #[test]
 fn independently_valid_resource_attempt_cannot_substitute_for_the_operation() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = query_runtime();
@@ -172,8 +168,7 @@ fn independently_valid_resource_attempt_cannot_substitute_for_the_operation() {
 
 #[test]
 fn bridge_attempt_for_a_different_run_intent_cannot_substitute() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = query_runtime();
@@ -203,8 +198,7 @@ fn bridge_attempt_for_a_different_run_intent_cannot_substitute() {
 
 #[test]
 fn independently_valid_relational_runtime_cannot_substitute_for_bridge_source() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = query_runtime();
@@ -244,8 +238,7 @@ fn independently_valid_relational_runtime_cannot_substitute_for_bridge_source() 
 
 #[test]
 fn independently_valid_snapshot_lease_cannot_substitute_within_one_runtime() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = query_runtime();

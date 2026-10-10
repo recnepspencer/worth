@@ -11,8 +11,7 @@ use crate::domain_computation::primary_graph::{
 
 #[test]
 fn one_missing_batch_slot_denies_before_world_or_bridge_movement() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     assert_live_reservation_denial(0, u64::MAX, "slot-short", 211, resource_request);
@@ -20,8 +19,7 @@ fn one_missing_batch_slot_denies_before_world_or_bridge_movement() {
 
 #[test]
 fn one_missing_payload_byte_denies_before_world_or_bridge_movement() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let payload = "byte-short".to_owned();

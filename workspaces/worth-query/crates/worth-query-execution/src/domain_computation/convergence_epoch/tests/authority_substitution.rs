@@ -242,8 +242,7 @@ fn same_installed_operation_cannot_substitute_a_different_semantic_basis() {
 
 #[test]
 fn stale_operation_generation_denies_before_graph_or_provider_work() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let DirectAdmissionFixture {
@@ -279,8 +278,7 @@ fn stale_operation_generation_denies_before_graph_or_provider_work() {
 
 #[test]
 fn every_installed_provider_family_mismatch_denies_before_epoch_construction() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     for mismatch in [

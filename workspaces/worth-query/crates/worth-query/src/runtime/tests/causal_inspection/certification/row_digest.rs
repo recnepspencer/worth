@@ -7,8 +7,7 @@ use super::slot_support::artifact_with_lower_runtime_slot_evidence;
 
 #[test]
 fn causal_inspection_representative_rows_expose_digest_inventory() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let changed = admitted_artifact(

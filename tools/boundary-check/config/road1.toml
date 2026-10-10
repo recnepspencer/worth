@@ -1609,7 +1609,6 @@ guidance = "Borrow the request from the caller; the declared host entry takes th
 [[request_constructor_denials]]
 crate_root = "crates/worth-runtime-bridge"
 carried_signal_only = true
-host_entry = "src/host_execution.rs"
 guidance = "Borrow the request from the caller; the declared host entry takes the host policy."
 
 [[request_constructor_denials]]

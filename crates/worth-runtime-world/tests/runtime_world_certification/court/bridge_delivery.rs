@@ -6,8 +6,12 @@ use worth_runtime_bridge::facade::{RelationalCommittedPatchRequest, TruthCommitI
 
 #[test]
 fn committed_patch_delivery_changes_the_installed_graph_before_world_sealing() {
-    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let host_request = worth_execution::SerialRequest::from_policy(
+        &worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+            .request_policy(),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let records = CargoRecords::install(true);
