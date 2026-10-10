@@ -20,7 +20,7 @@ impl ChargedBytes for QueryPacketMapInput {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum QueryReadExecutionStop {
     Request(worth_execution::WorkCeilingDenial),
     PreparationAdmission(ScanDenial),
@@ -41,6 +41,14 @@ pub enum QueryReadExecutionStop {
         report: ExecutionReport,
     },
 }
+
+impl std::fmt::Display for QueryReadExecutionStop {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(formatter, "relational query read stopped: {self:?}")
+    }
+}
+
+impl std::error::Error for QueryReadExecutionStop {}
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum QueryReadPacketDenial {

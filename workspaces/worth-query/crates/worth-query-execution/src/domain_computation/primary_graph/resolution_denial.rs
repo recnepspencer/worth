@@ -66,6 +66,8 @@ pub enum WorthQueryPrincipalResolutionDenialKind {
 pub struct WorthQueryPrincipalResolutionDenial {
     kind: WorthQueryPrincipalResolutionDenialKind,
     binding: String,
+    native_query_read_stop:
+        Option<std::sync::Arc<worth_relational::facade::runtime::QueryReadExecutionStop>>,
 }
 
 impl WorthQueryPrincipalResolutionDenial {
@@ -76,6 +78,7 @@ impl WorthQueryPrincipalResolutionDenial {
         Self {
             kind,
             binding: binding.into(),
+            native_query_read_stop: None,
         }
     }
 
@@ -85,6 +88,13 @@ impl WorthQueryPrincipalResolutionDenial {
 
     pub fn binding(&self) -> &str {
         &self.binding
+    }
+
+    /// The original Relational read refusal, shared when this denial is cloned.
+    pub fn native_query_read_stop(
+        &self,
+    ) -> Option<&worth_relational::facade::runtime::QueryReadExecutionStop> {
+        self.native_query_read_stop.as_deref()
     }
 }
 
@@ -98,7 +108,12 @@ impl std::fmt::Display for WorthQueryPrincipalResolutionDenial {
     }
 }
 
-impl std::error::Error for WorthQueryPrincipalResolutionDenial {}
+impl std::error::Error for WorthQueryPrincipalResolutionDenial {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        self.native_query_read_stop()
+            .map(|stop| stop as &(dyn std::error::Error + 'static))
+    }
+}
 
 pub(super) fn principal_binding_resolution_denial(
     kind: WorthQueryPrincipalBindingInstallationDenialKind,
@@ -169,18 +184,23 @@ pub(super) fn resolution_denial(
 }
 
 pub(super) fn query_read_resolution_denial(
-    stop: &worth_relational::facade::runtime::QueryReadExecutionStop,
+    stop: worth_relational::facade::runtime::QueryReadExecutionStop,
     binding: &str,
 ) -> WorthQueryPrincipalResolutionDenial {
     use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
     use WorthQueryPrincipalResolutionDenialKind as Kind;
-    let kind = match super::provider::relational_execution_denial::query_read_execution_kind(stop) {
+    let kind = match super::provider::relational_execution_denial::query_read_execution_kind(&stop)
+    {
         Ok(Some(kind)) => Kind::ExecutionRequest(kind),
         Ok(None) => Kind::StalePrincipalProof,
         Err(Control::Cancelled) => Kind::Cancelled,
         Err(Control::TimedOut) => Kind::DeadlineExceeded,
     };
-    resolution_denial(kind, binding)
+    WorthQueryPrincipalResolutionDenial {
+        kind,
+        binding: binding.to_owned(),
+        native_query_read_stop: Some(std::sync::Arc::new(stop)),
+    }
 }
 
 #[cfg(test)]

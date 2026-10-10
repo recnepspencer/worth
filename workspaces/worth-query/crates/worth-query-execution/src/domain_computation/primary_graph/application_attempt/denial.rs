@@ -166,6 +166,7 @@ pub struct WorthQueryApplicationAttemptDenial {
 #[derive(Debug)]
 enum AttemptDenialCause {
     None,
+    NativeQueryRead(Box<worth_relational::facade::runtime::QueryReadExecutionStop>),
     RetainedSource(Box<super::retained_decision_facts::StoreDenial>),
     Expression(Box<worth_foundational::expression_api::ExpressionDenial>),
     Allocation(Box<worth_execution::ExecutionAllocationDenial>),
@@ -265,6 +266,16 @@ impl WorthQueryApplicationAttemptDenial {
         &self.subject
     }
 
+    /// The original Relational read refusal, including non-request causes.
+    pub fn native_query_read_stop(
+        &self,
+    ) -> Option<&worth_relational::facade::runtime::QueryReadExecutionStop> {
+        match &self.cause {
+            AttemptDenialCause::NativeQueryRead(stop) => Some(stop),
+            _ => None,
+        }
+    }
+
     /// The language denial behind `WorkflowConditionExpressionDenied`.
     pub const fn expression(
         &self,
@@ -301,6 +312,7 @@ impl std::fmt::Display for WorthQueryApplicationAttemptDenial {
 impl std::error::Error for WorthQueryApplicationAttemptDenial {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match &self.cause {
+            AttemptDenialCause::NativeQueryRead(stop) => Some(stop.as_ref()),
             AttemptDenialCause::RetainedSource(denial) => Some(denial.as_ref()),
             AttemptDenialCause::Allocation(denial) => Some(denial.as_ref()),
             _ => None,
@@ -311,22 +323,29 @@ impl std::error::Error for WorthQueryApplicationAttemptDenial {
 #[cfg(test)]
 mod allocation_error_source_tests;
 
+#[cfg(test)]
+mod native_query_cause;
+
 impl WorthQueryApplicationAttemptDenial {
     pub(super) fn query_read_denial(
-        stop: &worth_relational::facade::runtime::QueryReadExecutionStop,
+        stop: worth_relational::facade::runtime::QueryReadExecutionStop,
         subject: &str,
     ) -> Self {
         use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
         use WorthQueryApplicationAttemptDenialKind as Kind;
         let kind =
             match super::super::provider::relational_execution_denial::query_read_execution_kind(
-                stop,
+                &stop,
             ) {
                 Ok(Some(kind)) => Kind::ExecutionRequest(kind),
                 Ok(None) => Kind::MissingAuthoritativeFact,
                 Err(Control::Cancelled) => Kind::Cancelled,
                 Err(Control::TimedOut) => Kind::DeadlineExceeded,
             };
-        Self::new(kind, subject)
+        Self {
+            kind,
+            subject: subject.to_owned(),
+            cause: AttemptDenialCause::NativeQueryRead(Box::new(stop)),
+        }
     }
 }

@@ -121,7 +121,7 @@ pub(super) fn resolve_principal_target(
     let outcome = runtime
         .read_truth()
         .execute_query_plan(plan, execution)
-        .map_err(|stop| super::resolution_denial::query_read_resolution_denial(&stop, binding))?
+        .map_err(|stop| super::resolution_denial::query_read_resolution_denial(stop, binding))?
         .ok_or_else(|| stale_proof_denial(binding))?
         .outcome;
     let mut relations = outcome.result.relations.iter().filter(|relation| {

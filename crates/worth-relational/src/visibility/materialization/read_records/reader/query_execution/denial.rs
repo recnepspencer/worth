@@ -11,7 +11,8 @@ impl QueryReadExecutionStop {
     /// failures retain their native cause and the selected partition.
     pub fn execution_denial(&self) -> Option<CommitExecutionDenial> {
         // None classifies canonicality or fragment failures as non-request stops;
-        // it does not consume this stop. Callers retain the original typed cause.
+        // it does not consume this stop. Query's denial handoffs own the original
+        // stop separately, so classification cannot erase its native cause.
         let (cause, partition_identity) = match self {
             Self::Request(denial) => (
                 Some(match denial {

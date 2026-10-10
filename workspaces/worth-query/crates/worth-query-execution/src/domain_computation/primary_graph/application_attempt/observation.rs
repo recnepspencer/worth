@@ -109,7 +109,7 @@ pub(super) fn exact_relations(
         .read_truth()
         .execute_query_plan(plan, execution)
         .map_err(|stop| {
-            WorthQueryApplicationAttemptDenial::query_read_denial(&stop, "relation execution")
+            WorthQueryApplicationAttemptDenial::query_read_denial(stop, "relation execution")
         })?
         .ok_or_else(|| missing_fact("relation execution"))?
         .outcome;
