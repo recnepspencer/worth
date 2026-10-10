@@ -27,7 +27,7 @@ fn edit_cost(rings: usize) -> EditCost {
         court.create_ring(index, &at);
         model.push(Ring::created(index));
     }
-    take_all_decisions();
+    Reading::decisions();
     let mut open = Vec::new();
     for ring in &model {
         let at = format!("{rings} rings, opening ring {}", ring.index);
@@ -42,10 +42,8 @@ fn edit_cost(rings: usize) -> EditCost {
     judge_decisions(&mut model, &at);
 
     let inexact = inexact_deliveries();
-    let before_commit = query_entries();
     model[0].a_y = 2;
-    court.write_y(&model[0].key("a"), 2, &at);
-    let commit_source_queries = query_entries() - before_commit;
+    let (_, commit_source_queries) = Reading::queries(|| court.write_y(&model[0].key("a"), 2, &at));
     let (a, b, c) = &mut open[0];
     let refresh = [
         settled!(court, c, at),

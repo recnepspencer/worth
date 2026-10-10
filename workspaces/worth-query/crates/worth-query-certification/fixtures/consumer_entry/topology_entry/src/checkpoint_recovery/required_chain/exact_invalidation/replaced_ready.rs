@@ -14,7 +14,7 @@ fn a_held_chain_outlives_a_newer_demand_that_closes_unsettled() {
     let request = application.request(&principal, &scope);
     let court = Court::new(&application, &request, 0x9176_3f80);
     let mut rings = vec![Ring::seeded(0)];
-    take_all_decisions();
+    Reading::decisions();
     let at = "the first settlement";
     let mut a = root!(court, rings[0].key("a"), at);
     let mut b = consumer!(court, rings[0].key("b"), at);
@@ -49,7 +49,7 @@ fn a_refreshed_chain_outlives_a_newer_demand_that_closes_unsettled() {
     let request = application.request(&principal, &scope);
     let court = Court::new(&application, &request, 0x9176_3fa0);
     let mut rings = vec![Ring::seeded(0)];
-    take_all_decisions();
+    Reading::decisions();
     let at = "the first settlement";
     let mut a = root!(court, rings[0].key("a"), at);
     let mut b = consumer!(court, rings[0].key("b"), at);
@@ -105,7 +105,7 @@ fn a_held_chain_outlives_a_newer_demand_the_next_commit_supersedes() {
     let request = application.request(&principal, &scope);
     let court = Court::new(&application, &request, 0x9176_3fc0);
     let mut rings = vec![Ring::seeded(0)];
-    take_all_decisions();
+    Reading::decisions();
     let at = "the first settlement";
     let mut a = root!(court, rings[0].key("a"), at);
     let mut b = consumer!(court, rings[0].key("b"), at);
@@ -173,7 +173,7 @@ fn a_held_chain_follows_an_edit_the_window_no_longer_retains() {
         let request = application.request(&principal, &scope);
         let court = Court::new(&application, &request, 0x9176_3ec0);
         let mut rings: Vec<Ring> = (0..3).map(Ring::seeded).collect();
-        take_all_decisions();
+        Reading::decisions();
         let at = format!("held order {order:?}, before the commits");
         let mut a = root!(court, rings[2].key("a"), at);
         let mut b = consumer!(court, rings[2].key("b"), at);
@@ -240,7 +240,7 @@ fn a_never_settled_stop_leaves_the_output_to_its_settled_holders() {
         let request = application.request(&principal, &scope);
         let court = Court::new(&application, &request, 0x9176_3e80);
         let mut rings: Vec<Ring> = (0..3).map(Ring::seeded).collect();
-        take_all_decisions();
+        Reading::decisions();
         let at = format!("unsettled first {unsettled_first}, before the commits");
         let mut a = root!(court, rings[2].key("a"), at);
         let mut b = consumer!(court, rings[2].key("b"), at);

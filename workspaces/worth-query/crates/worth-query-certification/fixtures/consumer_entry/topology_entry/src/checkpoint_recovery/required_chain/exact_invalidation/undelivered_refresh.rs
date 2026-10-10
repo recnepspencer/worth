@@ -15,7 +15,7 @@ fn a_settled_demand_follows_its_output_past_an_undelivered_refresh() {
     let request = application.request(&principal, &scope);
     let court = Court::new(&application, &request, 0x9176_3e40);
     let mut rings = vec![Ring::seeded(0)];
-    take_all_decisions();
+    Reading::decisions();
     let at = "the first settlement";
     let mut a = root!(court, rings[0].key("a"), at);
     let mut b = consumer!(court, rings[0].key("b"), at);
@@ -70,7 +70,7 @@ fn a_never_settled_stop_leaves_an_undelivered_refresh_to_its_settled_holder() {
         let request = application.request(&principal, &scope);
         let court = Court::new(&application, &request, 0x9176_3e60);
         let mut rings = vec![Ring::seeded(0)];
-        take_all_decisions();
+        Reading::decisions();
         let at = format!("unsettled first {unsettled_first}, the first settlement");
         let mut a = root!(court, rings[0].key("a"), at);
         let mut b = consumer!(court, rings[0].key("b"), at);

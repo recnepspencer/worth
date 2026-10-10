@@ -57,7 +57,7 @@ fn a_native_writer_marks_what_a_declared_operation_marks() {
     let request = application.request(&principal, &scope);
     let court = Court::new(&application, &request, 0x9176_3f00);
     let mut rings: Vec<Ring> = (0..3).map(Ring::seeded).collect();
-    take_all_decisions();
+    Reading::decisions();
     for index in 0..rings.len() {
         court.demand_ring(&mut rings, index, "before any native write");
     }

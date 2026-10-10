@@ -136,7 +136,7 @@ impl Ring {
 /// Every decision since the last judgment read exactly what the model says
 /// its upstream publishes. Returns how many decisions ran.
 fn judge_decisions(rings: &mut [Ring], at: &str) -> usize {
-    let decisions = take_all_decisions();
+    let decisions = Reading::decisions();
     for (scope, read) in &decisions {
         let (index, role) = ring_world::ring_and_role(scope)
             .unwrap_or_else(|| panic!("{at}: {scope} is no ring body"));
@@ -185,7 +185,7 @@ fn offers_retry(stop: &WorthQueryApplicationOutputDemandDenial) -> bool {
 struct Open<Demand> {
     body: String,
     demand: Demand,
-    producer_contacts: usize,
+    reading: readings::Reading,
 }
 
 /// One advance settles `$demand`, whether it starts its row or has settled
@@ -194,26 +194,19 @@ struct Open<Demand> {
 /// on what it reports.
 macro_rules! settled {
     ($court:expr, $demand:expr, $at:expr) => {{
-        let before = query_entries();
-        let settlement = match $demand.demand.advance($court.request) {
-            Ok(WorthQueryApplicationOutputDemandProgress::Settled(settled)) => settled,
-            answer => panic!(
-                "{}: one advance settles the funded demand of {}; it answers {:?}",
-                $at,
-                $demand.body,
-                answer.map(|_| "Pending")
-            ),
-        };
-        // The settlement reports the caller's lifetime count;
-        // this courtroom measures only contacts since its preceding advance.
-        let contacts = settlement.producer_contacts_in_this_demand();
-        let cost = Cost {
-            producer_contacts: contacts
-                .checked_sub($demand.producer_contacts)
-                .expect("a caller's lifetime contact count never decreases"),
-            source_queries: query_entries() - before,
-        };
-        $demand.producer_contacts = contacts;
+        let (settlement, cost) = $demand.reading.measure(|| {
+            let settlement = match $demand.demand.advance($court.request) {
+                Ok(WorthQueryApplicationOutputDemandProgress::Settled(settled)) => settled,
+                answer => panic!(
+                    "{}: one advance settles the funded demand of {}; it answers {:?}",
+                    $at,
+                    $demand.body,
+                    answer.map(|_| "Pending")
+                ),
+            };
+            let lifetime = settlement.producer_contacts_in_this_demand();
+            (settlement, lifetime)
+        });
         $court.judge_settlement(&$demand.body, settlement.observation(), &$at);
         cost
     }};
@@ -232,7 +225,7 @@ macro_rules! root {
         Open {
             body,
             demand,
-            producer_contacts: 0,
+            reading: readings::Reading::default(),
         }
     }};
 }
@@ -250,7 +243,7 @@ macro_rules! consumer {
         Open {
             body,
             demand,
-            producer_contacts: 0,
+            reading: readings::Reading::default(),
         }
     }};
 }
@@ -280,6 +273,8 @@ mod commits;
 mod discontinuity;
 mod equal_republication;
 mod judges;
+mod readings;
+use readings::Reading;
 mod locality;
 mod observation_room;
 mod older_observation;

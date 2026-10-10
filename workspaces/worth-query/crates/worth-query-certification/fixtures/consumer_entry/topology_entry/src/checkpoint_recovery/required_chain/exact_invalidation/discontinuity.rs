@@ -25,7 +25,7 @@ fn settled_checkpoint(
 fn a_restored_world_verifies_each_root_and_decides_each_consumer_once() {
     let _guard = checkpoint_recovery_test_guard();
     let mut rings: Vec<Ring> = (0..3).map(Ring::seeded).collect();
-    take_all_decisions();
+    Reading::decisions();
     let checkpoint = settled_checkpoint(&mut rings);
 
     let application = install(Some(checkpoint), ring_world::seed::<3>, Retained::AMPLE);
@@ -72,7 +72,7 @@ fn a_restored_world_verifies_each_root_and_decides_each_consumer_once() {
         (1, rings[0].root_output()),
         "{at}: the edited root executes again and publishes what the model computes"
     );
-    take_all_decisions();
+    Reading::decisions();
     for index in 1..rings.len() {
         let (costs, decisions) = court.demand_ring(&mut rings, index, at);
         assert!(
@@ -102,7 +102,7 @@ fn marks_older_than_the_retained_window_are_verified_in_full() {
     let request = application.request(&principal, &scope);
     let court = Court::new(&application, &request, 0x9176_3d80);
     let mut rings: Vec<Ring> = (0..3).map(Ring::seeded).collect();
-    take_all_decisions();
+    Reading::decisions();
     let at = "inside the retained window";
     let mut a = root!(court, rings[0].key("a"), at);
     let mut b = consumer!(court, rings[0].key("b"), at);
@@ -181,7 +181,7 @@ fn an_output_demanded_inside_every_window_never_leaves_it() {
     let request = application.request(&principal, &scope);
     let court = Court::new(&application, &request, 0x9176_3dc0);
     let mut rings: Vec<Ring> = (0..3).map(Ring::seeded).collect();
-    take_all_decisions();
+    Reading::decisions();
     let at = "before the commits";
     let mut far_a = root!(court, rings[2].key("a"), at);
     let mut far_b = consumer!(court, rings[2].key("b"), at);
@@ -229,7 +229,7 @@ fn a_forked_branch_verifies_what_its_parent_settled() {
     let request = application.request(&principal, &scope);
     let court = Court::new(&application, &request, 0x9176_3dc0);
     let mut rings: Vec<Ring> = (0..3).map(Ring::seeded).collect();
-    take_all_decisions();
+    Reading::decisions();
     for index in 0..rings.len() {
         court.demand_ring(&mut rings, index, "on the parent branch");
     }
@@ -269,7 +269,7 @@ fn a_forked_branch_verifies_what_its_parent_settled() {
 fn a_restored_consumer_never_settles_over_a_stale_upstream() {
     let _guard = checkpoint_recovery_test_guard();
     let mut rings: Vec<Ring> = (0..3).map(Ring::seeded).collect();
-    take_all_decisions();
+    Reading::decisions();
     let checkpoint = settled_checkpoint(&mut rings);
 
     let application = install(Some(checkpoint), ring_world::seed::<3>, Retained::AMPLE);
@@ -310,7 +310,7 @@ fn a_restored_consumer_never_settles_over_a_stale_upstream() {
 fn a_restored_chain_settles_through_its_last_consumer_alone() {
     let _guard = checkpoint_recovery_test_guard();
     let mut rings: Vec<Ring> = (0..3).map(Ring::seeded).collect();
-    take_all_decisions();
+    Reading::decisions();
     let checkpoint = settled_checkpoint(&mut rings);
 
     let application = install(Some(checkpoint), ring_world::seed::<3>, Retained::AMPLE);

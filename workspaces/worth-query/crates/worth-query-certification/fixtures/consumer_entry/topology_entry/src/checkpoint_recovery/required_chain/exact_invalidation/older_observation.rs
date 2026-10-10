@@ -5,25 +5,37 @@
 use super::*;
 
 macro_rules! older_root {
-    ($court:expr, $observation:expr, $body:expr) => {
+    ($court:expr, $observation:expr, $body:expr) => {{
+        let body: String = $body;
         $court
             .request
             .at($observation)
-            .demand(PlanarOutputDemand::new($body))
+            .demand(PlanarOutputDemand::new(body.clone()))
             .start_in_program::<program::ChainProgram, program::ChainRoot>($court.application)
-    };
+            .map(|demand| Open {
+                body,
+                demand,
+                reading: Reading::default(),
+            })
+    }};
 }
 
 macro_rules! older_consumer {
-    ($court:expr, $observation:expr, $body:expr) => {
+    ($court:expr, $observation:expr, $body:expr) => {{
+        let body: String = $body;
         $court
             .request
             .at($observation)
-            .demand(ChainDemand($body))
+            .demand(ChainDemand(body.clone()))
             .start_dependent_in_program::<program::ChainProgram, program::ChainConnection>(
                 $court.application,
             )
-    };
+            .map(|demand| Open {
+                body,
+                demand,
+                reading: Reading::default(),
+            })
+    }};
 }
 
 /// One advance settles the started demand `$demand` of `$body` on
@@ -32,19 +44,17 @@ macro_rules! older_consumer {
 macro_rules! settles_on {
     ($court:expr, $demand:expr, $body:expr, $expected:expr, $at:expr) => {{
         let body: String = $body;
-        let before = query_entries();
-        let settlement = match $demand.advance($court.request) {
-            Ok(WorthQueryApplicationOutputDemandProgress::Settled(settled)) => settled,
-            answer => panic!(
-                "{}: one advance settles the older demand of {body}; it answers {:?}",
-                $at,
-                answer.map(|_| "Pending")
-            ),
-        };
-        let cost = Cost {
-            producer_contacts: settlement.producer_contacts_in_this_demand(),
-            source_queries: query_entries() - before,
-        };
+        let (settlement, cost) = $demand.reading.measure(|| {
+            let settlement = match $demand.demand.advance($court.request) {
+                Ok(WorthQueryApplicationOutputDemandProgress::Settled(settled)) => settled,
+                answer => panic!(
+                    "{}: one advance settles the older demand of {body}; it answers {:?}",
+                    $at, answer.map(|_| "Pending")
+                ),
+            };
+            let lifetime = settlement.producer_contacts_in_this_demand();
+            (settlement, lifetime)
+        });
         let reads = $court
             .request
             .at(settlement.observation())
@@ -109,7 +119,7 @@ fn a_demand_at_an_older_observation_ignores_later_commits() {
     let request = application.request(&principal, &scope);
     let court = Court::new(&application, &request, 0x9176_3f40);
     let mut rings: Vec<Ring> = (0..3).map(Ring::seeded).collect();
-    take_all_decisions();
+    Reading::decisions();
     for index in 0..rings.len() {
         court.demand_ring(&mut rings, index, "before the edit");
     }
@@ -117,11 +127,7 @@ fn a_demand_at_an_older_observation_ignores_later_commits() {
     let older = rings.clone();
 
     let at = "while the retained observation is the head";
-    let mut current = Open {
-        body: rings[0].key("a"),
-        demand: older_root!(court, &retained, rings[0].key("a")).unwrap(),
-        producer_contacts: 0,
-    };
+    let mut current = older_root!(court, &retained, rings[0].key("a")).unwrap();
     let cost = settled!(court, current, at);
     assert!(
         cost.is_free() && judge_decisions(&mut rings, at) == 0,
@@ -138,7 +144,7 @@ fn a_demand_at_an_older_observation_ignores_later_commits() {
         settle_at(&court, &retained, ring, at);
     }
     assert_eq!(
-        take_all_decisions().len(),
+        Reading::decisions().len(),
         0,
         "{at}: a demand at an older observation decides nothing"
     );
@@ -162,7 +168,7 @@ fn a_demand_at_an_older_observation_ignores_later_commits() {
         settle_at(&court, &retained, ring, at);
     }
     assert_eq!(
-        take_all_decisions().len(),
+        Reading::decisions().len(),
         0,
         "{at}: a demand at an older observation decides nothing"
     );
@@ -189,7 +195,7 @@ fn an_observation_below_the_window_never_settles_on_an_older_pinned_output() {
     let request = application.request(&principal, &scope);
     let court = Court::new(&application, &request, 0x9176_3f80);
     let mut rings: Vec<Ring> = (0..3).map(Ring::seeded).collect();
-    take_all_decisions();
+    Reading::decisions();
     court.demand_ring(&mut rings, 0, "before any edit");
     let first = court.request.retain_read().unwrap();
     let first_ring = rings[0].clone();
@@ -221,7 +227,7 @@ fn an_observation_below_the_window_never_settles_on_an_older_pinned_output() {
         court.write_y(&rings[0].key("a"), y, at);
         court.demand_ring(&mut rings, 0, at);
     }
-    take_all_decisions();
+    Reading::decisions();
     let root = older_root!(court, &second, rings[0].key("a")).map(drop);
     let consumer = older_consumer!(court, &second, rings[0].key("b")).map(drop);
     assert!(
@@ -241,7 +247,7 @@ fn an_observation_below_the_window_never_settles_on_an_older_pinned_output() {
     let mut again = older_consumer!(court, &first, rings[0].key("b")).unwrap();
     settles_on!(court, again, rings[0].key("b"), first_ring.b_length, at);
     assert_eq!(
-        take_all_decisions().len(),
+        Reading::decisions().len(),
         0,
         "{at}: a demand at an older observation decides nothing"
     );
