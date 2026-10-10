@@ -230,8 +230,11 @@ fn execute_target_with_chunks(
 #[cfg(feature = "allocation-probes")]
 fn measured_target(unrelated_width: usize) -> stats_alloc::Stats {
     crate::domain_computation::primary_graph::with_test_advancement(|execution| {
+        let bootstrap = execution.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
         let execution = &execution;
-        let (active, unrelated, _) = prepared_target(execution, unrelated_width, 1);
+        let (active, unrelated, _) =
+            prepared_target(execution, unrelated_width, 1, resource_request);
         let region = stats_alloc::Region::new(&stats_alloc::INSTRUMENTED_SYSTEM);
         let completion = complete_target(execution, active);
         let stats = region.change();

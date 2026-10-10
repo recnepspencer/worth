@@ -3,6 +3,7 @@ use super::InvalidationEditAdmission;
 use std::cell::RefCell;
 thread_local! {
     static PUBLICATIONS: RefCell<std::collections::BTreeMap<(u64, worth_relational::facade::identity::EntityId), u64>> = const { RefCell::new(std::collections::BTreeMap::new()) };
+    static PUBLICATION_RECORDS: RefCell<std::collections::BTreeMap<(u64, worth_relational::facade::identity::EntityId), u64>> = const { RefCell::new(std::collections::BTreeMap::new()) };
     static EXHAUST_AFTER_COMMIT: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
     static READ_DEBITS: RefCell<Vec<(u64, u64)>> = const { RefCell::new(Vec::new()) };
     static REQUEST_NAVIGATION: RefCell<Vec<(u64,u64)>> = const { RefCell::new(Vec::new()) };
@@ -22,6 +23,7 @@ pub(super) fn observe_request_work(admission: &InvalidationEditAdmission) {
 pub(super) fn exhaust_after_commit(
     admission: &mut InvalidationEditAdmission,
     published: bool,
+    recorded: bool,
     runtime: u64,
     root: worth_relational::facade::identity::EntityId,
 ) {
@@ -31,6 +33,11 @@ pub(super) fn exhaust_after_commit(
                 .borrow_mut()
                 .entry((runtime, root))
                 .or_default() += 1;
+        });
+    }
+    if published && recorded {
+        PUBLICATION_RECORDS.with(|records| {
+            *records.borrow_mut().entry((runtime, root)).or_default() += 1;
         });
     }
     if EXHAUST_AFTER_COMMIT.with(|armed| armed.replace(false)) {
@@ -60,6 +67,20 @@ impl<Schema>
     ) -> u64 {
         PUBLICATIONS.with(|publications| {
             publications
+                .borrow()
+                .get(&(self.runtime.authority_identity().as_u64(), root))
+                .copied()
+                .unwrap_or(0)
+        })
+    }
+    /// Counts publication handoffs whose member is sealed in the advance's record.
+    #[doc(hidden)]
+    pub fn producer_recorded_publications_at_root_on_this_thread_for_test(
+        &self,
+        root: worth_relational::facade::identity::EntityId,
+    ) -> u64 {
+        PUBLICATION_RECORDS.with(|records| {
+            records
                 .borrow()
                 .get(&(self.runtime.authority_identity().as_u64(), root))
                 .copied()

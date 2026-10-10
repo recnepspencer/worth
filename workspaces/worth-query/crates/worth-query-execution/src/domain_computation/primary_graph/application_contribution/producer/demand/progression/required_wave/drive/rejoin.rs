@@ -3,7 +3,7 @@ macro_rules! rejoin_successor {
     ($label:lifetime; $phase:ident; $runtime:ident, $principal:ident, $request_scope:ident;
      $wave:ident, $resolved_on_wave:ident, $queue:ident, $frame_custody:ident;
      $demand:ident, $admission:ident; $current:ident, $current_contacts:ident, $current_role:ident, $successor_role:ident;
-     $performed:ident; $hold_queue_frame:ident, $finish_caller:ident, $stopped:ident) => {{
+     $hold_queue_frame:ident, $finish_caller:ident, $stopped:ident) => {{
                 loop {
                     // Rejoin the actual successor after each real
                     // Published/Delivered stage. A deferred stage leaves its

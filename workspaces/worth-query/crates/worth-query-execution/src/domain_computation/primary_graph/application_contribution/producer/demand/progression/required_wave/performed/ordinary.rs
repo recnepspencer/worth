@@ -54,7 +54,7 @@ impl PerformedMembers {
             admission
                 .charge_external_work(entry.comparison_work()?)
                 .map_err(admission_denial)?;
-            if !entry.names(key) || !entry.performed || entry.input.is_some() {
+            if !entry.names(key) || !entry.performed || !entry.input.is_uncaptured() {
                 continue;
             }
             super::super::preclaim_required_settlement_arguments(admission)?;
@@ -70,10 +70,8 @@ impl PerformedMembers {
                     completion,
                     admission,
                 )
-                .map_err(super::super::required_settlement_denial)?
-                .ok()
-                .flatten();
-            entry.input = candidate;
+                .map_err(super::super::required_settlement_denial)?;
+            entry.input = CapturedDecisionInput::from_result(candidate);
         }
         Ok(())
     }
@@ -87,13 +85,18 @@ impl PerformedMembers {
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         branch: WorthQueryProductBranch,
         admission: &mut InvalidationEditAdmission,
-    ) -> Result<Option<FreshReadiness>, WorthQueryOutputDemandDenial> {
+    ) -> Result<Option<PublicationReadiness>, WorthQueryOutputDemandDenial> {
         self.fresh(
             key,
             source,
             &DecisionInput::Ordinary { runtime, branch },
             admission,
         )
+        .map(|permission| {
+            permission.map(|permission| PublicationReadiness {
+                member: permission.member,
+            })
+        })
         .map_err(|stop| match stop {
             ProducerExecutionStop::RequestAdmissionDenied(rejection) => rejection.into_denial(),
             ProducerExecutionStop::ExecutionStopped(denial) => denial,

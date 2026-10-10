@@ -273,6 +273,7 @@ fn prepared_target(
 fn prepared_workflow_target(
     execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     unrelated_width: usize,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     crate::domain_computation::WorthQueryPausedWorkflowGraphExecution,
     Vec<(
@@ -282,7 +283,13 @@ fn prepared_workflow_target(
 ) {
     let disposed = Arc::new(AtomicUsize::new(0));
     let unrelated = (0..unrelated_width)
-        .map(|index| super::cost_bound::unrelated_artifact_run(index, Arc::clone(&disposed)))
+        .map(|index| {
+            super::cost_bound::unrelated_artifact_run(
+                index,
+                Arc::clone(&disposed),
+                resource_request,
+            )
+        })
         .collect();
     let installer = WorthQueryExecutionRuntimeInstaller::new();
     let provider_anchor = Arc::new(
@@ -320,8 +327,12 @@ fn prepared_workflow_target(
         &graph,
         WorthQueryOperationGraphAccess::Observe,
     );
-    let running =
-        super::workflow_provider_steps::admitted_workflow(&runtime, &operation, resources);
+    let running = super::workflow_provider_steps::admitted_workflow(
+        &runtime,
+        &operation,
+        resources,
+        resource_request,
+    );
     let active = running
         .begin_stage_graph_execution(
             execution,

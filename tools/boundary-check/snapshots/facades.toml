@@ -841,6 +841,7 @@ exports = [
     "safe_retry_recovery_handle",
     "signal_request_charges_on_this_thread_for_test",
     "signal_request_refusals_on_this_thread_for_test",
+    "test_execution_authority",
     "test_execution_workers",
 ]
 

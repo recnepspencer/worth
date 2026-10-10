@@ -286,22 +286,30 @@ fn revoke_exact_support(
     principal: &BankAuthenticatedPrincipal,
     idempotency_seed: u8,
 ) {
-    let outcome = fixture
-        .runtime
-        .revoke_estate_capability_with_key(
-            principal,
-            EstateAction::RevokeCapability {
-                estate: ESTATE,
-                grant: GRANT,
-            },
-            &BankIdempotencyKey::new(format!(
-                "elevated-query-support-revocation-{idempotency_seed}"
-            ))
-            .unwrap(),
-            &request_scope(),
-        )
-        .expect("the exact support revocation should execute after query admission");
-    assert!(matches!(outcome, BankMutationCommitOutcome::Committed(_)));
+    let runtime = &fixture.runtime;
+    // Join the real writer before the admitted read reaches its payload.
+    std::thread::scope(|callers| {
+        callers
+            .spawn(move || {
+                let outcome = runtime
+                    .revoke_estate_capability_with_key(
+                        principal,
+                        EstateAction::RevokeCapability {
+                            estate: ESTATE,
+                            grant: GRANT,
+                        },
+                        &BankIdempotencyKey::new(format!(
+                            "elevated-query-support-revocation-{idempotency_seed}"
+                        ))
+                        .unwrap(),
+                        &request_scope(),
+                    )
+                    .expect("the exact support revocation should execute after query admission");
+                assert!(matches!(outcome, BankMutationCommitOutcome::Committed(_)));
+            })
+            .join()
+            .expect("the concurrent revocation caller completes");
+    });
 }
 
 fn assert_stale_authorization(kind: crate::BankApplicationOneShotDenialKind) {

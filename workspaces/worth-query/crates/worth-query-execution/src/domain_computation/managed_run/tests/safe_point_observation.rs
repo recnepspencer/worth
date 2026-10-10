@@ -130,9 +130,11 @@ fn isolated_managed_safe_point_allocation_probe() {
         .start_direct_resource_attempt(&operation, plan)
         .expect("allocation probe attempt should reserve");
     let lower = causal_fixture::managed_admission_context();
+    let host_request = crate::bridge_host_request::serial_request();
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
     let running = runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
-        .admit_direct(&operation, attempt, lower.read_request())
+        .admit_direct(&operation, attempt, lower.read_request(), resource_request)
         .expect("allocation probe run should admit")
         .start();
 

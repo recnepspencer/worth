@@ -16,8 +16,9 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
 }
 struct PerformedMember {
     key: WorthQueryOutputDemandKey,
+    successor: Option<Box<WorthQueryOutputDemandKey>>,
     source: WorthQueryObservedSourceEpoch,
-    input: Option<AcceptedCurrentCandidate>,
+    input: CapturedDecisionInput,
     performed: bool,
 }
 
@@ -27,18 +28,31 @@ struct PerformedMember {
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct FreshReadiness
 {
     member: usize,
-    _changed_input: Option<ChangedDecisionInput>,
+    _input: Option<FreshDecisionInput>,
 }
 
-struct ChangedDecisionInput(());
+/// Publication permission for an attached member key. Ordinary execution
+/// keeps its key; selected execution must attach the actual admitted successor.
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct PublicationReadiness
+{
+    member: usize,
+}
+
+enum FreshDecisionInput {
+    Changed,
+    VerificationWithheld,
+}
 impl FreshReadiness {
-    fn changed(member: usize, evidence: ChangedDecisionInput) -> Self {
+    fn for_input(member: usize, evidence: FreshDecisionInput) -> Self {
         Self {
             member,
-            _changed_input: Some(evidence),
+            _input: Some(evidence),
         }
     }
 }
+mod captured_input;
+mod member_keys;
+use captured_input::CapturedDecisionInput;
 mod ordinary;
 mod publication;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use ordinary::DecisionInput;
@@ -57,28 +71,25 @@ impl PerformedMembers {
     /// facts and consumed identities. The record survives every wave reselect.
     pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn capture(
         &mut self,
-        ready: &SelectedReadyReadmission,
-        candidate: Option<&AcceptedCurrentCandidate>,
+        key: &WorthQueryOutputDemandKey,
+        candidate: &Result<
+            Option<AcceptedCurrentCandidate>,
+            captured_input::FullVerificationReason,
+        >,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         for entry in &mut self.entries {
             admission
                 .charge_external_work(entry.comparison_work()?)
                 .map_err(admission_denial)?;
-            if entry.names(ready.key()) && entry.performed && entry.input.is_none() {
+            if entry.names(key) && entry.performed && entry.input.is_uncaptured() {
                 admission
                     .charge_external_work(std::mem::size_of::<AcceptedCurrentCandidate>() as u64)
                     .map_err(admission_denial)?;
-                entry.input = candidate.cloned();
+                entry.input = CapturedDecisionInput::capture(candidate);
             }
         }
         Ok(())
-    }
-
-    /// The permission identifies the exact record that admitted this attempt.
-    /// Publication seals it before any checkpoint delivery or Ready rejoin.
-    fn performed(&mut self, permission: FreshReadiness) {
-        self.entries[permission.member].performed = true;
     }
 
     pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn fresh<
@@ -104,27 +115,34 @@ impl PerformedMembers {
                 entry.source = source;
                 return Ok(Some(FreshReadiness {
                     member: index,
-                    _changed_input: None,
+                    _input: None,
                 }));
             }
-            let different = !entry.source.same_semantic_source(&source)
-                || match &entry.input {
-                    Some(input) => runtime.changed(input, admission)?,
-                    None => false,
-                };
-            if !different {
+            let evidence = if !entry.source.same_semantic_source(&source) {
+                Some(FreshDecisionInput::Changed)
+            } else {
+                match &entry.input {
+                    CapturedDecisionInput::Accepted(input) => runtime
+                        .changed(input, admission)?
+                        .then_some(FreshDecisionInput::Changed),
+                    // Withheld verification cannot establish unchanged input.
+                    // Fresh must run the existing full verification instead.
+                    CapturedDecisionInput::Withheld => {
+                        Some(FreshDecisionInput::VerificationWithheld)
+                    }
+                    CapturedDecisionInput::Uncaptured => None,
+                }
+            };
+            let Some(evidence) = evidence else {
                 return Ok(None);
-            }
+            };
             admission
                 .charge_external_work(4)
                 .map_err(admission_denial)?;
             entry.source = source;
-            entry.input = None;
+            entry.input = CapturedDecisionInput::Uncaptured;
             entry.performed = false;
-            return Ok(Some(FreshReadiness::changed(
-                index,
-                ChangedDecisionInput(()),
-            )));
+            return Ok(Some(FreshReadiness::for_input(index, evidence)));
         }
         let item = std::mem::size_of::<PerformedMember>();
         admission
@@ -168,32 +186,15 @@ impl PerformedMembers {
             .map_err(admission_denial)?;
         self.entries.push(PerformedMember {
             key: key.clone(),
+            successor: None,
             source,
-            input: None,
+            input: CapturedDecisionInput::Uncaptured,
             performed: false,
         });
         Ok(Some(FreshReadiness {
             member: index,
-            _changed_input: None,
+            _input: None,
         }))
-    }
-}
-
-impl PerformedMember {
-    fn comparison_work(&self) -> Result<u64, WorthQueryOutputDemandDenial> {
-        self.key
-            .producer_identity()
-            .len()
-            .checked_add(self.key.applicability().profile_kind().len())
-            .and_then(|bytes| bytes.checked_add(3))
-            .and_then(|work| u64::try_from(work).ok())
-            .ok_or_else(work_denial)
-    }
-    fn names(&self, key: &WorthQueryOutputDemandKey) -> bool {
-        self.key.family_type() == key.family_type()
-            && self.key.producer_identity() == key.producer_identity()
-            && self.key.applicability() == key.applicability()
-            && self.key.source_epoch().same_occurrence(key.source_epoch())
     }
 }
 
