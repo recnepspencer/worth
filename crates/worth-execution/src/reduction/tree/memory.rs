@@ -10,6 +10,15 @@ use super::{
     Link, Node, ReductionTree,
 };
 
+/// Why an existing partition's edit memory bound cannot be computed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ReductionUpdateMemoryBoundError {
+    /// The tree has no partition with this identity; no arithmetic was attempted.
+    UnknownIdentity(PartitionIdentity),
+    /// The edit's byte bound overflowed.
+    Overflow,
+}
+
 impl<T: ChargedBytes, F> ChargedBytes for ReductionTree<T, F> {
     fn additional_charged_bytes(&self) -> u64 {
         self.root
@@ -91,11 +100,12 @@ impl<T, F> ReductionTree<T, F> {
         &self,
         partition: PartitionIdentity,
         max_value_bytes: u64,
-    ) -> Option<u64> {
+    ) -> Result<u64, ReductionUpdateMemoryBoundError> {
         let (depth, found) = search_depth(&self.root, partition);
-        found
-            .then(|| path_ceiling::<T>(depth, max_value_bytes))
-            .flatten()
+        if !found {
+            return Err(ReductionUpdateMemoryBoundError::UnknownIdentity(partition));
+        }
+        path_ceiling::<T>(depth, max_value_bytes).ok_or(ReductionUpdateMemoryBoundError::Overflow)
     }
 
     /// Additional edit scratch beyond the retained tree and incoming value.

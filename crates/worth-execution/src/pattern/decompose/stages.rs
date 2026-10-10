@@ -42,8 +42,6 @@ where
         Back: Fn(&BackInput<I, B>, &mut MapKernelContext<'_, '_>) -> Result<O, MapKernelFailure<E>>
             + Sync,
     {
-        self.check_changed(changed.identities(), editions)
-            .map_err(DecomposeFailure::Input)?;
         stage.set(DecomposeStage::Interior);
         let interior_outcome = changed.run_with_backend(lease, backend, interior);
         note_fallback(fallback, &interior_outcome);

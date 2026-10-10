@@ -4,6 +4,7 @@ use worth_foundational::{ExecutionPhysicalReport, ExecutionPosture};
 
 use super::*;
 use crate::backend::{run_admitting_scope, BackendKind, ScopeKernelFailure};
+use crate::ReductionUpdateMemoryBoundError;
 
 impl<I, C, S, B, O, F> ExecutionDecompose<I, C, S, B, O, F>
 where
@@ -86,12 +87,18 @@ where
         Back: Fn(&BackInput<I, B>, &mut MapKernelContext<'_, '_>) -> Result<O, MapKernelFailure<E>>
             + Sync,
     {
+        self.check_changed(changed.identities(), editions)
+            .map_err(|cause| DecomposeRunFailure {
+                cause: DecomposeFailure::Input(cause),
+                total_report: empty_report(),
+            })?;
         let tree_bound =
             match &self.snapshot {
                 None => ReductionTree::<C, F>::checked_build_memory_bound(
                     self.identities.as_slice().len(),
                     self.max_reduction_value_bytes,
-                ),
+                )
+                .ok_or(ReductionUpdateMemoryBoundError::Overflow),
                 Some(snapshot) => changed.identities().iter().try_fold(
                     self.max_reduction_value_bytes,
                     |sum, identity| {
@@ -99,10 +106,24 @@ where
                             *identity,
                             self.max_reduction_value_bytes,
                         )?)
+                        .ok_or(ReductionUpdateMemoryBoundError::Overflow)
                     },
                 ),
-            };
-        let bound = tree_bound.and_then(|tree_scratch| {
+            }
+            .map_err(|error| DecomposeRunFailure {
+                cause: DecomposeFailure::Input(match error {
+                    ReductionUpdateMemoryBoundError::UnknownIdentity(identity) => {
+                        DecomposeInputDenial::UnknownIdentity(identity)
+                    }
+                    ReductionUpdateMemoryBoundError::Overflow => {
+                        LeaseDenial::charged_bytes_overflow();
+                        DecomposeInputDenial::MemoryOverflow
+                    }
+                }),
+                total_report: empty_report(),
+            })?;
+        let bound = (|| {
+            let tree_scratch = tree_bound;
             let tree = tree_scratch.checked_add(
                 self.snapshot
                     .as_ref()
@@ -130,7 +151,7 @@ where
                 .checked_add(self.reducer_storage_bytes)?;
             let result = self.max_staged_bytes.checked_mul(2)?.checked_add(tree)?;
             Some((retained, result))
-        });
+        })();
         let (retained_bytes, max_result_bytes) = bound
             .ok_or_else(LeaseDenial::charged_bytes_overflow)
             .map_err(|_| DecomposeRunFailure {

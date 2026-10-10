@@ -7,6 +7,7 @@ use super::tree_report::WorthQueryPartitionedTreeRebuildCause as Cause;
 use std::collections::BTreeMap;
 use worth_execution::{
     ChargedBytes, MapKernelStop, ReductionPlan, ReductionRunFailure, ReductionTree,
+    ReductionUpdateMemoryBoundError,
 };
 use worth_foundational::facade::PartitionIdentity;
 
@@ -42,7 +43,14 @@ where
         let bound = match edit {
             None => tree.checked_delete_memory_bound(identity, declared_bytes),
             Some(value) => if present {
-                tree.checked_update_memory_bound(identity, declared_bytes)
+                match tree.checked_update_memory_bound(identity, declared_bytes) {
+                    Ok(bound) => Some(bound),
+                    Err(ReductionUpdateMemoryBoundError::Overflow) => None,
+                    Err(ReductionUpdateMemoryBoundError::UnknownIdentity(_)) => {
+                        return attempt
+                            .map_result(|_| Ok(EditDisposition::Rebuild(Cause::EditDenied)));
+                    }
+                }
             } else {
                 tree.checked_insert_memory_bound(identity, declared_bytes)
             }

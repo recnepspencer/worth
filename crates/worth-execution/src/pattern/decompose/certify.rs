@@ -59,6 +59,13 @@ where
             + Clone
             + Sync,
     {
+        self.check_changed(changed.identities(), editions)
+            .map_err(|cause| {
+                DecomposeCertificationFailure::Run(DecomposeRunFailure {
+                    cause: DecomposeFailure::Input(cause),
+                    total_report: scope::empty_report(),
+                })
+            })?;
         let activity = enter_certification_activity();
         let snapshot_bytes = self
             .snapshot

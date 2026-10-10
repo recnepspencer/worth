@@ -19,8 +19,13 @@
 //! | Charged-byte and size counters | Fact: latch | `LeaseDenial::charged_bytes_overflow` |
 //!
 //! Handed refusals mark the invoking run; framework narrowing marks nothing.
-//! Size-counter overflows latch Request; structural-metric mismatches mark nothing.
-//! Request facts latch immediately, independently of whether an error is swallowed.
+//! A door holds the request's lease: there an overflowed work, span or byte counter
+//! latches immediately; structural-metric mismatches mark nothing.
+//! Constructing a batch, map, scan, rounds input or keyed edit holds no lease and
+//! charges nothing: overflow is a typed value denial, and the first lease holder
+//! turning it into a stop latches.
+//! An overflowing sum compared against declared capacity exceeds that capacity;
+//! an encoding whose length cannot be taken is invalid: both are computation-owned.
 
 /// A nested failure owned by the computation, rather than its request.
 /// The child's outcome retains its specific domain value and identity.

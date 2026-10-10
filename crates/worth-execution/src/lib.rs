@@ -42,6 +42,6 @@ pub use pattern::{
 };
 pub use reduction::{
     ReductionDenial, ReductionMetrics, ReductionPlan, ReductionRunFailure, ReductionRunStop,
-    ReductionTree,
+    ReductionTree, ReductionUpdateMemoryBoundError,
 };
 pub use report::ChargedBytes;
