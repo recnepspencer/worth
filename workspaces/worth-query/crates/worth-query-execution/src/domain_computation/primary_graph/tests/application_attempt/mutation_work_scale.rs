@@ -23,184 +23,192 @@ mod locality;
 
 #[test]
 fn mutation_work_is_invariant_to_unrelated_graph_population() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
-        let baseline = mutation_work(&host_custody, 0, 71);
-        let expanded = mutation_work(&host_custody, 128, 72);
+    let baseline = mutation_work(0, 71);
+    let expanded = mutation_work(128, 72);
 
+    assert_eq!(
+        expanded.decision_fact_count(),
+        baseline.decision_fact_count()
+    );
+    assert_eq!(
+        expanded.proposed_fact_count(),
+        baseline.proposed_fact_count()
+    );
+    assert_eq!(
+        expanded.expected_step_key_lookups(),
+        baseline.expected_step_key_lookups()
+    );
+    assert_eq!(
+        baseline.expected_step_key_lookups(),
+        baseline.proposed_fact_count()
+    );
+    assert_eq!(baseline.expected_step_duplicate_equalities(), 0);
+    assert_eq!(
+        expanded.invariant_state_fact_count(),
+        baseline.invariant_state_fact_count()
+    );
+    assert_eq!(
+        expanded.invariant_work_units(),
+        baseline.invariant_work_units()
+    );
+    assert_eq!(
+        expanded.relational_invariant_execution_count(),
+        baseline.relational_invariant_execution_count()
+    );
+    assert_eq!(
+        expanded.relational_invariant_result_count(),
+        baseline.relational_invariant_result_count()
+    );
+    assert_eq!(
+        expanded.performed_touch_validated_intents_examined(),
+        baseline.performed_touch_validated_intents_examined()
+    );
+    assert_eq!(
+        expanded.performed_touch_targets_materialized(),
+        baseline.performed_touch_targets_materialized()
+    );
+    assert_eq!(
+        expanded.performed_application_touches_admitted(),
+        baseline.performed_application_touches_admitted()
+    );
+    assert_eq!(
+        expanded.installed_touch_scopes_compared(),
+        baseline.installed_touch_scopes_compared()
+    );
+    assert_eq!(
+        expanded.installed_read_touch_overlaps_observed(),
+        baseline.installed_read_touch_overlaps_observed()
+    );
+    assert!(baseline.decision_fact_count() > 0);
+    assert!(baseline.proposed_fact_count() > 0);
+    assert_eq!(
+        baseline.invariant_state_fact_count(),
+        baseline.proposed_fact_count()
+    );
+    assert_eq!(
+        baseline.invariant_work_units(),
+        // The always-installed publication custody receipt costs one fixed
+        // unit even when this account mutation does not touch a workflow.
+        baseline.proposed_fact_count() as u64 + 1
+    );
+    assert_eq!(baseline.relational_invariant_execution_count(), 3);
+    assert!(baseline.relational_invariant_result_count() > 0);
+    assert!(baseline.performed_touch_validated_intents_examined() > 0);
+    assert!(baseline.performed_touch_targets_materialized() > 0);
+    assert_eq!(baseline.performed_application_touches_admitted(), 1);
+    assert!(baseline.installed_touch_scopes_compared() >= 1);
+    assert!(baseline.installed_read_touch_overlaps_observed() >= 1);
+    for (name, work) in [("baseline", &baseline), ("expanded", &expanded)] {
         assert_eq!(
-            expanded.decision_fact_count(),
-            baseline.decision_fact_count()
+            work.preimage_validated_intents_examined(),
+            0,
+            "{name} no-demand commit must not ask Relational for a footprint"
         );
         assert_eq!(
-            expanded.proposed_fact_count(),
-            baseline.proposed_fact_count()
+            work.preimage_mutation_targets_materialized(),
+            0,
+            "{name} no-demand commit must materialize no footprint targets"
         );
         assert_eq!(
-            expanded.expected_step_key_lookups(),
-            baseline.expected_step_key_lookups()
+            work.preimage_decision_facts_examined(),
+            0,
+            "{name} no-demand commit must scan no decision facts"
         );
         assert_eq!(
-            baseline.expected_step_key_lookups(),
-            baseline.proposed_fact_count()
-        );
-        assert_eq!(baseline.expected_step_duplicate_equalities(), 0);
-        assert_eq!(
-            expanded.invariant_state_fact_count(),
-            baseline.invariant_state_fact_count()
+            work.preimage_candidates_materialized(),
+            0,
+            "{name} no-demand commit must collect no retention candidates"
         );
         assert_eq!(
-            expanded.invariant_work_units(),
-            baseline.invariant_work_units()
+            work.preimage_demanded_loci_examined(),
+            0,
+            "{name} no-demand commit must examine no pre-image loci"
         );
-        assert_eq!(
-            expanded.relational_invariant_execution_count(),
-            baseline.relational_invariant_execution_count()
-        );
-        assert_eq!(
-            expanded.relational_invariant_result_count(),
-            baseline.relational_invariant_result_count()
-        );
-        assert_eq!(
-            expanded.performed_touch_validated_intents_examined(),
-            baseline.performed_touch_validated_intents_examined()
-        );
-        assert_eq!(
-            expanded.performed_touch_targets_materialized(),
-            baseline.performed_touch_targets_materialized()
-        );
-        assert_eq!(
-            expanded.performed_application_touches_admitted(),
-            baseline.performed_application_touches_admitted()
-        );
-        assert_eq!(
-            expanded.installed_touch_scopes_compared(),
-            baseline.installed_touch_scopes_compared()
-        );
-        assert_eq!(
-            expanded.installed_read_touch_overlaps_observed(),
-            baseline.installed_read_touch_overlaps_observed()
-        );
-        assert!(baseline.decision_fact_count() > 0);
-        assert!(baseline.proposed_fact_count() > 0);
-        assert_eq!(
-            baseline.invariant_state_fact_count(),
-            baseline.proposed_fact_count()
-        );
-        assert_eq!(
-            baseline.invariant_work_units(),
-            // The always-installed publication custody receipt costs one fixed
-            // unit even when this account mutation does not touch a workflow.
-            baseline.proposed_fact_count() as u64 + 1
-        );
-        assert_eq!(baseline.relational_invariant_execution_count(), 3);
-        assert!(baseline.relational_invariant_result_count() > 0);
-        assert!(baseline.performed_touch_validated_intents_examined() > 0);
-        assert!(baseline.performed_touch_targets_materialized() > 0);
-        assert_eq!(baseline.performed_application_touches_admitted(), 1);
-        assert!(baseline.installed_touch_scopes_compared() >= 1);
-        assert!(baseline.installed_read_touch_overlaps_observed() >= 1);
-        for (name, work) in [("baseline", &baseline), ("expanded", &expanded)] {
-            assert_eq!(
-                work.preimage_validated_intents_examined(),
-                0,
-                "{name} no-demand commit must not ask Relational for a footprint"
-            );
-            assert_eq!(
-                work.preimage_mutation_targets_materialized(),
-                0,
-                "{name} no-demand commit must materialize no footprint targets"
-            );
-            assert_eq!(
-                work.preimage_decision_facts_examined(),
-                0,
-                "{name} no-demand commit must scan no decision facts"
-            );
-            assert_eq!(
-                work.preimage_candidates_materialized(),
-                0,
-                "{name} no-demand commit must collect no retention candidates"
-            );
-            assert_eq!(
-                work.preimage_demanded_loci_examined(),
-                0,
-                "{name} no-demand commit must examine no pre-image loci"
-            );
-        }
-        // C2 — commit-derived names are present. Absolute EntityIds differ across
-        // separately populated worlds; the *count* of records this mutation
-        // touched must not grow with unrelated graph width.
-        assert!(!baseline.touched_records().is_empty());
-        assert_eq!(
-            expanded.touched_record_count(),
-            baseline.touched_record_count()
-        );
-    })
+    }
+    // C2 — commit-derived names are present. Absolute EntityIds differ across
+    // separately populated worlds; the *count* of records this mutation
+    // touched must not grow with unrelated graph width.
+    assert!(!baseline.touched_records().is_empty());
+    assert_eq!(
+        expanded.touched_record_count(),
+        baseline.touched_record_count()
+    );
 }
 
 #[test]
 fn no_demand_work_is_exact_zero_across_real_mutation_breadth() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
-        let narrow = no_demand_mutation_work(&host_custody, false, 73);
-        let wide = no_demand_mutation_work(&host_custody, true, 74);
+    let narrow = no_demand_mutation_work(false, 73);
+    let wide = no_demand_mutation_work(true, 74);
 
-        assert_eq!(narrow.proposed_fact_count(), 1);
-        assert_eq!(wide.proposed_fact_count(), 2);
-        assert_eq!(narrow.expected_step_key_lookups(), 1);
-        assert_eq!(wide.expected_step_key_lookups(), 2);
-        assert!(wide.touched_record_count() > narrow.touched_record_count());
-        assert_eq!(narrow.performed_application_touches_admitted(), 1);
-        assert_eq!(wide.performed_application_touches_admitted(), 2);
-        assert_eq!(
-            narrow.installed_touch_scopes_compared(),
-            wide.installed_touch_scopes_compared()
-        );
-        for (name, work) in [("narrow", &narrow), ("wide", &wide)] {
-            assert_eq!(work.preimage_validated_intents_examined(), 0, "{name}");
-            assert_eq!(work.preimage_mutation_targets_materialized(), 0, "{name}");
-            assert_eq!(work.preimage_decision_facts_examined(), 0, "{name}");
-            assert_eq!(work.preimage_candidates_materialized(), 0, "{name}");
-            assert_eq!(work.preimage_demanded_loci_examined(), 0, "{name}");
-        }
-    })
+    assert_eq!(narrow.proposed_fact_count(), 1);
+    assert_eq!(wide.proposed_fact_count(), 2);
+    assert_eq!(narrow.expected_step_key_lookups(), 1);
+    assert_eq!(wide.expected_step_key_lookups(), 2);
+    assert!(wide.touched_record_count() > narrow.touched_record_count());
+    assert_eq!(narrow.performed_application_touches_admitted(), 1);
+    assert_eq!(wide.performed_application_touches_admitted(), 2);
+    assert_eq!(
+        narrow.installed_touch_scopes_compared(),
+        wide.installed_touch_scopes_compared()
+    );
+    for (name, work) in [("narrow", &narrow), ("wide", &wide)] {
+        assert_eq!(work.preimage_validated_intents_examined(), 0, "{name}");
+        assert_eq!(work.preimage_mutation_targets_materialized(), 0, "{name}");
+        assert_eq!(work.preimage_decision_facts_examined(), 0, "{name}");
+        assert_eq!(work.preimage_candidates_materialized(), 0, "{name}");
+        assert_eq!(work.preimage_demanded_loci_examined(), 0, "{name}");
+    }
 }
 
 fn mutation_work(
-    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     unrelated_accounts: usize,
     idempotency_key: u8,
 ) -> super::super::super::provider::WorthQueryPrimaryMutationWorkEvidence {
     let world = installed_authorization_world(true);
-    grow_unrelated_accounts(
-        &phase_custody.borrowed_request_for_test(),
-        &world,
-        unrelated_accounts,
-    );
-    let request = live_scope();
-    let principal = authenticated_principal(&(phase_custody).test_host_request(), &world, &request);
-    let account = resolved_account(
-        &(phase_custody).test_host_request(),
-        &world,
-        "open",
-        &request,
-    );
-    let program = admitted_program(
-        &phase_custody.phase_for_application(&world.application),
-        &world,
-        &principal,
-        &account,
-        &request,
-        "scale-committed",
-    );
+    let program = world
+        .application
+        .with_host_advancement(|phase| {
+            let custody = phase.test_host_request();
+            let phase_custody = &custody;
+            grow_unrelated_accounts(
+                &phase_custody.borrowed_request_for_test(),
+                &world,
+                unrelated_accounts,
+            );
+            let request = live_scope();
+            let principal =
+                authenticated_principal(&(phase_custody).test_host_request(), &world, &request);
+            let account = resolved_account(
+                &(phase_custody).test_host_request(),
+                &world,
+                "open",
+                &request,
+            );
+            let program = admitted_program(
+                &phase_custody.phase_for_application(&world.application),
+                &world,
+                &principal,
+                &account,
+                &request,
+                "scale-committed",
+            );
+            program
+        })
+        .expect("the fixture preparation owns its host call");
     commit_work(&world, program, idempotency_key)
 }
 
 fn no_demand_mutation_work(
-    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     wide: bool,
     idempotency_key: u8,
 ) -> super::super::super::provider::WorthQueryPrimaryMutationWorkEvidence {
     let world = installed_authorization_world(true);
-    let program = no_demand_mutation_program(phase_custody, &world, wide);
+    let program = world
+        .application
+        .with_host_advancement(|phase| {
+            no_demand_mutation_program(&phase.test_host_request(), &world, wide)
+        })
+        .expect("the fixture preparation owns its host call");
     commit_work(&world, program, idempotency_key)
 }
 

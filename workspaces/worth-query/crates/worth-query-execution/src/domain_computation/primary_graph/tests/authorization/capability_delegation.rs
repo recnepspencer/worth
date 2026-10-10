@@ -59,44 +59,8 @@ fn lawful_multi_link_delegation_is_one_composite_exact_authorization_fact() {
 #[path = "capability_delegation/width_and_cycle_attacks_are_typed_denials_before_access_authorit.rs"]
 mod width_and_cycle_attacks_are_typed_denials_before_access_authorit;
 
-#[test]
-fn resource_and_grantor_grantee_link_drift_deny_at_the_transition() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
-        let resource = installed_delegated_capability_world();
-        resource.authorization_time.script([time(100)]);
-        replace_parent_resource(&host_custody, &resource);
-        let request = live_scope();
-        let principal = authenticated_principal(&host_custody, &resource, &request);
-        let Err(denial) =
-            admitted_capability_access(&host_custody, &resource, &principal, &request, 100)
-        else {
-            panic!("a parent bound to another resource must deny");
-        };
-        assert_eq!(
-            denial.kind(),
-            WorthQueryOperationAuthorizationDenialKind::DelegationRejected
-        );
-
-        let actors = installed_delegated_capability_world();
-        actors.authorization_time.script([time(100)]);
-        replace_child_grantor_with_grantee(
-            &host_custody,
-            &host_custody.borrowed_request_for_test(),
-            &actors,
-        );
-        let request = live_scope();
-        let principal = authenticated_principal(&host_custody, &actors, &request);
-        let Err(denial) =
-            admitted_capability_access(&host_custody, &actors, &principal, &request, 100)
-        else {
-            panic!("a child grantor who is not the parent grantee must deny");
-        };
-        assert_eq!(
-            denial.kind(),
-            WorthQueryOperationAuthorizationDenialKind::DelegationRejected
-        );
-    })
-}
+#[path = "capability_delegation/resource_and_grantor_grantee_link_drift_deny_at_the_transition.rs"]
+mod resource_and_grantor_grantee_link_drift_deny_at_the_transition;
 
 #[test]
 fn exact_parent_policy_cannot_borrow_an_alternate_grant_path() {

@@ -3,18 +3,14 @@ use crate::domain_computation::primary_graph::WorthQueryMutationHandlerWork;
 
 #[test]
 fn handler_projection_work_survives_candidate_denials_and_domain_refusal() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+    {
         let world = installed_authorization_world(true);
+
         for plan in [
             OptionalOutputPlan::RequiredAndOptionalTwice,
             OptionalOutputPlan::OptionalOnly,
         ] {
-            let (report, _) = execute_report_with_key(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
-                &world,
-                plan,
-                "candidate-denial",
-            );
+            let (report, _) = { execute_report_with_key(&world, plan, "candidate-denial") };
             let WorthQueryMutationHandlerWork::Captured(work) = report.decision_work() else {
                 panic!("the real installed handler must execute before candidate refusal");
             };
@@ -28,12 +24,13 @@ fn handler_projection_work_survives_candidate_denials_and_domain_refusal() {
             );
         }
 
-        let (report, key) = execute_report_with_key(
-            &(host_custody.phase_for_application(&world.application)).test_host_request(),
-            &world,
-            OptionalOutputPlan::RequiredAfterIndexedAbsence,
-            "publish-membership",
-        );
+        let (report, key) = {
+            execute_report_with_key(
+                &world,
+                OptionalOutputPlan::RequiredAfterIndexedAbsence,
+                "publish-membership",
+            )
+        };
         let WorthQueryMutationHandlerWork::Captured(work) = report.decision_work() else {
             panic!("the complete indexed decision executes");
         };
@@ -53,15 +50,16 @@ fn handler_projection_work_survives_candidate_denials_and_domain_refusal() {
             WorthQueryApplicationCommitOutcome::Committed(_)
         ));
 
-        let (report, _) = execute_report_for_input(
-            &(host_custody.phase_for_application(&world.application)).test_host_request(),
-            &world,
-            OptionalOutputInput {
-                status: "unrelated".to_owned(),
-                plan: OptionalOutputPlan::RequiredAfterIndexedAbsence,
-            },
-            "membership-exists",
-        );
+        let (report, _) = {
+            execute_report_for_input(
+                &world,
+                OptionalOutputInput {
+                    status: "unrelated".to_owned(),
+                    plan: OptionalOutputPlan::RequiredAfterIndexedAbsence,
+                },
+                "membership-exists",
+            )
+        };
         let WorthQueryMutationHandlerWork::Captured(work) = report.decision_work() else {
             panic!("the installed decision executes before refusing existing membership");
         };
@@ -73,5 +71,5 @@ fn handler_projection_work_survives_candidate_denials_and_domain_refusal() {
             report.into_outcome(),
             Ok(HandlerResult::DomainDenied(_))
         ));
-    })
+    }
 }

@@ -18,34 +18,24 @@ use worth_relational::facade::transactions::{
 #[test]
 fn handler_absence_selection_competes_at_the_real_commit_boundary() {
     let world = installed_authorization_world(true);
-    let (loser, loser_key) = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            execute_with_key(
-                &(phase).test_host_request(),
-                &world,
-                OptionalOutputPlan::RequiredAfterIndexedAbsence,
-                "loser",
-            )
-        })
-        .expect("the fixture read owns its installed host call");
+    let (loser, loser_key) = {
+        execute_with_key(
+            &world,
+            OptionalOutputPlan::RequiredAfterIndexedAbsence,
+            "loser",
+        )
+    };
     let Ok(HandlerResult::Completed(loser)) = loser else {
         panic!("the installed handler must retain the absent predicate");
     };
     let (loser, _) = loser.into_parts();
-    let (winner, winner_key) = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            execute_with_key(
-                &(phase).test_host_request(),
-                &world,
-                OptionalOutputPlan::RequiredAfterIndexedAbsence,
-                "winner",
-            )
-        })
-        .expect("the fixture read owns its installed host call");
+    let (winner, winner_key) = {
+        execute_with_key(
+            &world,
+            OptionalOutputPlan::RequiredAfterIndexedAbsence,
+            "winner",
+        )
+    };
     let Ok(HandlerResult::Completed(winner)) = winner else {
         panic!("both decisions see the same absence");
     };
@@ -65,14 +55,13 @@ fn handler_absence_selection_competes_at_the_real_commit_boundary() {
     let committed_head = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .product()
                 .selected_commit()
                 .clone()
         })
-        .expect("the fixture read owns its installed host call");
+        .expect("the fixture metadata read owns its host call");
     let outcome = world.application.compare_and_commit_application(
         loser,
         loser_key,
@@ -82,7 +71,6 @@ fn handler_absence_selection_competes_at_the_real_commit_boundary() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             assert_eq!(
                 world
                     .selected_product(&(phase).test_host_request(),)
@@ -91,11 +79,10 @@ fn handler_absence_selection_competes_at_the_real_commit_boundary() {
                 &committed_head
             )
         })
-        .expect("the fixture read owns its installed host call");
+        .expect("the fixture metadata read owns its host call");
     let _published = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(
                 &(phase).test_host_request(),
                 &world,
@@ -103,7 +90,7 @@ fn handler_absence_selection_competes_at_the_real_commit_boundary() {
                 &live_scope(),
             )
         })
-        .expect("the fixture read owns its installed host call");
+        .expect("the fixture entity read owns its host call");
 }
 
 #[test]
@@ -112,17 +99,7 @@ fn handler_predicate_rebases_and_its_codec_compares_against_the_reopened_world()
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let world = installed_authorization_world(true);
-    let (execution, key) = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            execute(
-                &(phase).test_host_request(),
-                &world,
-                OptionalOutputPlan::RequiredAfterIndexedAbsence,
-            )
-        })
-        .expect("the fixture read owns its installed host call");
+    let (execution, key) = { execute(&world, OptionalOutputPlan::RequiredAfterIndexedAbsence) };
     let Ok(HandlerResult::Completed(completed)) = execution else {
         panic!("the installed handler completes its indexed decision");
     };

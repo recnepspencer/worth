@@ -32,27 +32,20 @@ struct LocalityRun {
 
 #[test]
 fn same_kind_unrelated_population_keeps_source_query_and_local_edit_work_flat() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
-        assert_locality(&host_custody, &[1_000, 10_000]);
-    })
+    assert_locality(&[1_000, 10_000]);
 }
 
 /// Scheduled 100k scale court, run by exact name with `--ignored --nocapture`.
 #[test]
 #[ignore = "100k native population is a separately budgeted scale court"]
 fn hundred_thousand_same_kind_accounts_preserve_local_source_query_and_edit_work() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
-        assert_locality(&host_custody, &[1_000, 100_000]);
-    })
+    assert_locality(&[1_000, 100_000]);
 }
 
-fn assert_locality(
-    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
-    populations: &[usize],
-) {
+fn assert_locality(populations: &[usize]) {
     let mut baseline = None;
     for &count in populations {
-        let run = run_locality(phase_custody, count);
+        let run = run_locality(count);
         eprintln!(
             "Query Account locality: unrelated={count} installation={:?} population={:?} local_edit={:?} work={:?}",
             run.installation, run.population, run.local_edit, run.work
@@ -68,34 +61,53 @@ fn assert_locality(
     }
 }
 
-fn run_locality(
-    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
-    count: usize,
-) -> LocalityRun {
+fn run_locality(count: usize) -> LocalityRun {
     let installation_start = Instant::now();
     let world = installed_authorization_world(true);
     let installation = installation_start.elapsed();
     let population_start = Instant::now();
-    grow_unrelated_accounts(&phase_custody.borrowed_request_for_test(), &world, count);
+    world
+        .application
+        .with_host_advancement(|phase| {
+            grow_unrelated_accounts(
+                &phase
+                    .execution_request_for(&world.application.product_runtime)
+                    .unwrap(),
+                &world,
+                count,
+            );
+        })
+        .expect("the fixture population owns its host call");
     let population = population_start.elapsed();
 
     let request = live_scope();
-    let principal = authenticated_principal(&(phase_custody).test_host_request(), &world, &request);
-    let source_query_before = source_query_work(phase_custody, &world, &principal, &request);
-    let unrelated = resolved_account(
-        &(phase_custody).test_host_request(),
-        &world,
-        "unrelated",
-        &request,
-    );
-    let program = admitted_program(
-        &phase_custody.phase_for_application(&world.application),
-        &world,
-        &principal,
-        &unrelated,
-        &request,
-        "local-edit",
-    );
+    let (principal, source_query_before, program) = world
+        .application
+        .with_host_advancement(|phase| {
+            let custody = phase.test_host_request();
+            let phase_custody = &custody;
+            let principal =
+                authenticated_principal(&(phase_custody).test_host_request(), &world, &request);
+
+            let source_query_before =
+                source_query_work(phase_custody, &world, &principal, &request);
+            let unrelated = resolved_account(
+                &(phase_custody).test_host_request(),
+                &world,
+                "unrelated",
+                &request,
+            );
+            let program = admitted_program(
+                &phase_custody.phase_for_application(&world.application),
+                &world,
+                &principal,
+                &unrelated,
+                &request,
+                "local-edit",
+            );
+            (principal, source_query_before, program)
+        })
+        .expect("the fixture preparation owns its host call");
     let local_edit_start = Instant::now();
     let outcome = world.application.compare_and_commit_application(
         program,
@@ -111,7 +123,12 @@ fn run_locality(
         .expect("the local edit carries native mutation work");
     let work = LocalWork {
         source_query_before,
-        source_query_after: source_query_work(phase_custody, &world, &principal, &request),
+        source_query_after: world
+            .application
+            .with_host_advancement(|phase| {
+                source_query_work(&phase.test_host_request(), &world, &principal, &request)
+            })
+            .expect("the fixture source read owns its host call"),
         mutation_decision_facts: mutation.decision_fact_count(),
         mutation_proposed_facts: mutation.proposed_fact_count(),
         mutation_invariant_work: mutation.invariant_work_units(),
