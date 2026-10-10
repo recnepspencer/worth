@@ -87,7 +87,7 @@ fn ordered_key(ordinal: usize, population: usize, order: usize) -> usize {
     match order {
         0 => ordinal,
         1 => population - ordinal - 1,
-        _ if ordinal % 2 == 0 => ordinal / 2,
+        _ if ordinal.is_multiple_of(2) => ordinal / 2,
         _ => population - ordinal / 2 - 1,
     }
 }
