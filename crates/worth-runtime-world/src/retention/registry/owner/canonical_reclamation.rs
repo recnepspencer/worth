@@ -1,8 +1,7 @@
 //! Canonical maintenance selects complete equal-description groups.
-use super::{PinEntry, RuntimeWorldRetentionOwner};
+use super::{RetainedComponentPins, RuntimeWorldRetentionOwner};
 use crate::retention::registry::RetentionReclamationReport;
 use crate::retention::unique_component_pin::ExactComponentBasisKey;
-use std::collections::HashMap;
 
 impl<D, I, T> RuntimeWorldRetentionOwner<D, I, T>
 where
@@ -39,13 +38,12 @@ where
 }
 
 fn canonical_candidates(
-    entries: &HashMap<ExactComponentBasisKey, PinEntry>,
+    entries: &RetainedComponentPins,
     maximum: usize,
 ) -> Vec<ExactComponentBasisKey> {
-    // This explicit maintenance pass reconstructs its order in O(n log n)
-    // time and O(n) scratch. Ordinary pin admission remains hash-indexed.
-    let mut ordered: Vec<_> = entries.iter().collect();
-    ordered.sort_by(|left, right| left.1.basis_order.cmp(&right.1.basis_order));
+    // This maintenance pass visits the carried order in O(n) time and scratch.
+    // Ordinary exact admission lookup remains hash-indexed, without a walk.
+    let ordered: Vec<_> = entries.by_declared_basis().collect();
     let mut count = 0;
     while count < ordered.len() {
         let basis = &ordered[count].1.basis_order;

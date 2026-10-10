@@ -34,7 +34,9 @@ mod claim_lifecycle;
 mod component_basis_order;
 mod history_claims;
 mod inspection;
+mod retained_pins;
 use component_basis_order::ComponentBasisOrder;
+use retained_pins::RetainedComponentPins;
 
 pub(crate) use capacity_reservation::ReservedComponentPinPairCapacity;
 
@@ -103,7 +105,7 @@ where
     reserved_in_flight_reservations: usize,
     active_obligations: usize,
     next_lease_ordinal: u64,
-    entries: HashMap<ExactComponentBasisKey, PinEntry>,
+    entries: RetainedComponentPins,
     flights: HashMap<ExactComponentBasisKey, Arc<PinFlight>>,
     costs: RetentionCostSnapshot,
 }
@@ -179,7 +181,7 @@ where
             reserved_in_flight_reservations: 0,
             active_obligations: 0,
             next_lease_ordinal: 0,
-            entries: HashMap::new(),
+            entries: RetainedComponentPins::default(),
             flights: HashMap::new(),
             costs: RetentionCostSnapshot::default(),
         };
