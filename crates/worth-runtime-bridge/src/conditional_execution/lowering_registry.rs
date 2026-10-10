@@ -43,6 +43,7 @@ pub(super) struct BridgePreparedExactConditionalBasisResolution {
 struct BridgeExactConditionalBasisClaim {
     registry: Arc<RwLock<BridgeConditionalLoweringRegistry>>,
     key: BridgeExactConditionalBasisKey,
+    alias_owners: Vec<BridgeConditionalLoweringKey>,
     active: bool,
 }
 
@@ -183,7 +184,30 @@ impl BridgeConditionalLoweringRegistry {
                 })
                 .cloned(),
         );
-        installed.reserve_exact_basis_slot(super::contract::lowering_key(anchor))?;
+        let mut alias_owners = Vec::new();
+        alias_owners
+            .try_reserve_exact(candidates.len() + 1)
+            .map_err(|_| exact_basis_capacity_denial())?;
+        alias_owners.push(super::contract::lowering_key(anchor).clone());
+        for candidate in &candidates {
+            let owner = super::contract::lowering_key(candidate);
+            if !alias_owners.contains(owner) {
+                alias_owners.push(owner.clone());
+            }
+        }
+        let total = installed
+            .reserved_exact_basis_slots
+            .checked_add(1)
+            .ok_or_else(exact_basis_capacity_denial)?;
+        for (reserved, owner) in alias_owners.iter().enumerate() {
+            if installed.exact_basis.reserve(owner, total).is_err() {
+                for prior in &alias_owners[..reserved] {
+                    installed.exact_basis.release_reservation(prior);
+                }
+                return Err(exact_basis_capacity_denial());
+            }
+        }
+        installed.reserved_exact_basis_slots = total;
         drop(installed);
 
         Ok(BridgeExactConditionalBasisLookup::Unindexed(
@@ -192,6 +216,7 @@ impl BridgeConditionalLoweringRegistry {
                 claim: BridgeExactConditionalBasisClaim {
                     registry: Arc::clone(registry),
                     key,
+                    alias_owners,
                     active: true,
                 },
             },
@@ -235,6 +260,9 @@ impl BridgeExactConditionalBasisClaim {
                 .exact_basis
                 .insert(self.key.clone(), Arc::clone(lowering));
         }
+        for owner in &self.alias_owners {
+            registry.exact_basis.release_reservation(owner);
+        }
         registry.reserved_exact_basis_slots = registry
             .reserved_exact_basis_slots
             .checked_sub(1)
@@ -250,6 +278,9 @@ impl Drop for BridgeExactConditionalBasisClaim {
                 .registry
                 .write()
                 .unwrap_or_else(PoisonError::into_inner);
+            for owner in &self.alias_owners {
+                registry.exact_basis.release_reservation(owner);
+            }
             registry.reserved_exact_basis_slots = registry
                 .reserved_exact_basis_slots
                 .checked_sub(1)
@@ -268,6 +299,7 @@ impl BridgeConditionalLoweringSlotClaim {
             *slot = BridgeConditionalLoweringSlot::Installed(Arc::clone(&lowering));
         }
         registry.index_exact_basis(&lowering);
+        registry.exact_basis.release_reservation(&self.key);
         registry.reserved_exact_basis_slots = registry
             .reserved_exact_basis_slots
             .checked_sub(1)
@@ -289,6 +321,7 @@ impl Drop for BridgeConditionalLoweringSlotClaim {
             ) {
                 registry.slots.remove(&self.key);
             }
+            registry.exact_basis.release_reservation(&self.key);
             registry.reserved_exact_basis_slots = registry
                 .reserved_exact_basis_slots
                 .checked_sub(1)
@@ -305,43 +338,4 @@ fn exact_basis_capacity_denial() -> BridgeConditionalDenial {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn key(generation: u64) -> BridgeConditionalLoweringKey {
-        BridgeConditionalLoweringKey::successor(
-            worth_signal::facade::branch::signal_branch_identity(
-                "lowering-registry-test",
-                1,
-                "main",
-            )
-            .unwrap(),
-            worth_signal::facade::NodeId::new(7, 1),
-            generation,
-        )
-    }
-
-    #[test]
-    fn claims_preallocate_and_release_exact_basis_capacity() {
-        let registry = Arc::new(RwLock::new(BridgeConditionalLoweringRegistry::default()));
-        let first = BridgeConditionalLoweringRegistry::claim(&registry, key(1)).unwrap();
-        {
-            let state = registry.read().unwrap();
-            assert_eq!(state.reserved_exact_basis_slots, 1);
-            assert!(state.exact_basis.capacity() > state.exact_basis.len());
-        }
-        let second = BridgeConditionalLoweringRegistry::claim(&registry, key(2)).unwrap();
-        {
-            let state = registry.read().unwrap();
-            assert_eq!(state.reserved_exact_basis_slots, 2);
-            assert!(state.exact_basis.capacity() >= state.exact_basis.len() + 2);
-        }
-
-        drop(first);
-        assert_eq!(registry.read().unwrap().reserved_exact_basis_slots, 1);
-        drop(second);
-        let state = registry.read().unwrap();
-        assert_eq!(state.reserved_exact_basis_slots, 0);
-        assert!(state.slots.is_empty());
-    }
-}
+mod tests;

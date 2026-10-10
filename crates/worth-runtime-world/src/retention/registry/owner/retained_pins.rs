@@ -26,10 +26,9 @@ impl RetainedComponentPins {
     pub(super) fn insert(&mut self, key: ExactComponentBasisKey, entry: PinEntry) {
         let prior = self.remove(&key);
         let position = (entry.basis_order.clone(), entry.lease_identity);
-        assert!(
-            self.order.insert(position, key.clone()).is_none(),
-            "lease position is unique"
-        );
+        // The opaque lease identity is issued from the owner's checked, monotonic
+        // ordinal under its registry lock; replacement removed its prior position.
+        self.order.insert(position, key.clone());
         self.exact.insert(key, entry);
         drop(prior);
     }

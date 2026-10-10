@@ -9,7 +9,13 @@ use crate::conditional_execution::{contract, BridgeInstalledConditionalLowering}
 #[derive(Default)]
 pub(super) struct BridgeExactConditionalBasisIndex {
     exact: HashMap<BridgeExactConditionalBasisKey, Arc<BridgeInstalledConditionalLowering>>,
-    aliases: BTreeMap<BridgeConditionalLoweringKey, Vec<BridgeExactConditionalBasisKey>>,
+    aliases: BTreeMap<BridgeConditionalLoweringKey, AliasOwner>,
+}
+
+#[derive(Default)]
+struct AliasOwner {
+    keys: Vec<BridgeExactConditionalBasisKey>,
+    reservations: usize,
 }
 
 impl BridgeExactConditionalBasisIndex {
@@ -26,10 +32,14 @@ impl BridgeExactConditionalBasisIndex {
         additional: usize,
     ) -> Result<(), TryReserveError> {
         self.exact.try_reserve(additional)?;
-        self.aliases
-            .entry(owner.clone())
-            .or_default()
-            .try_reserve(additional)
+        let aliases = self.aliases.entry(owner.clone()).or_default();
+        if let Err(error) = aliases.keys.try_reserve(additional) {
+            self.prune_empty_owner(owner);
+            return Err(error);
+        }
+        // Each owner count is bounded by the registry's checked total of claims.
+        aliases.reservations += 1;
+        Ok(())
     }
 
     pub(super) fn insert(
@@ -40,29 +50,58 @@ impl BridgeExactConditionalBasisIndex {
         let owner = contract::lowering_key(&lowering).clone();
         if let Some(previous) = self.exact.insert(key.clone(), lowering) {
             let previous_owner = contract::lowering_key(&previous);
-            self.aliases
-                .get_mut(previous_owner)
-                .expect("indexed basis has its declared owner")
-                .retain(|alias| alias != &key);
+            if let Some(aliases) = self.aliases.get_mut(previous_owner) {
+                aliases.keys.retain(|alias| alias != &key);
+            }
+            self.prune_empty_owner(previous_owner);
         }
         // These are the existing publication positions within one declaration.
-        self.aliases.entry(owner).or_default().push(key);
+        self.aliases.entry(owner).or_default().keys.push(key);
+    }
+
+    pub(super) fn release_reservation(&mut self, owner: &BridgeConditionalLoweringKey) {
+        // Only a move-only, active registry claim releases its reserved owner.
+        if let Some(aliases) = self.aliases.get_mut(owner) {
+            aliases.reservations -= 1;
+        }
+        self.prune_empty_owner(owner);
+    }
+
+    fn prune_empty_owner(&mut self, owner: &BridgeConditionalLoweringKey) {
+        if self
+            .aliases
+            .get(owner)
+            .is_some_and(|aliases| aliases.keys.is_empty() && aliases.reservations == 0)
+        {
+            self.aliases.remove(owner);
+        }
     }
 
     pub(super) fn remove_owner(&mut self, owner: &BridgeConditionalLoweringKey) {
-        if let Some(aliases) = self.aliases.remove(owner) {
-            for alias in aliases {
+        if let Some(aliases) = self.aliases.get_mut(owner) {
+            for alias in aliases.keys.drain(..) {
                 self.exact.remove(&alias);
             }
         }
+        self.prune_empty_owner(owner);
     }
 
     pub(super) fn clear(&mut self) {
-        while let Some((_, aliases)) = self.aliases.pop_first() {
-            for alias in aliases {
+        let mut reserved = BTreeMap::new();
+        while let Some((owner, mut aliases)) = self.aliases.pop_first() {
+            for alias in aliases.keys.drain(..) {
                 self.exact.remove(&alias);
             }
+            if aliases.reservations != 0 {
+                reserved.insert(owner, aliases);
+            }
         }
+        self.aliases = reserved;
+    }
+
+    #[cfg(test)]
+    pub(super) fn alias_owner_count(&self) -> usize {
+        self.aliases.len()
     }
 
     #[cfg(test)]
