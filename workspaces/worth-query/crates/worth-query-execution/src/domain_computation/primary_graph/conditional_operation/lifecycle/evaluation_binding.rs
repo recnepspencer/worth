@@ -1,3 +1,4 @@
+use super::evaluation_predecessor::WorthQueryPredecessorEvaluationState;
 use std::{collections::BTreeMap, sync::Arc};
 
 use worth_query_installation::facade::{
@@ -133,8 +134,8 @@ where
         let active_identity = self
             .active_affinity
             .as_ref()
-            .map(|active| active.identity().clone());
-        if let Some(mut selected) = self.inactive_bindings.remove(&selected_identity) {
+            .map(|active| active.identity().position().clone());
+        if let Some(mut selected) = self.inactive_bindings.remove(selected_identity.position()) {
             if let Some(active_identity) = active_identity {
                 self.swap_evaluation_binding(&mut selected);
                 self.inactive_bindings.insert(active_identity, selected);
@@ -286,32 +287,10 @@ where
         &self,
         selected: &crate::basis::WorthQueryProductBranchReadIdentity,
     ) -> Option<WorthQueryPredecessorEvaluationState> {
-        let active = self.active_affinity.as_ref().and_then(|affinity| {
-            affinity
-                .is_predecessor_of(selected)
-                .then_some((
-                    affinity.identity(),
-                    WorthQueryPredecessorEvaluationState {
-                        cursor: self.authoritative_commit_cursor,
-                        commit_watch: self.commit_watch.clone(),
-                    },
-                ))
-        });
-        self.inactive_bindings
-            .values()
-            .filter(|binding| binding.affinity.is_predecessor_of(selected))
-            .map(|binding| {
-                (
-                    binding.affinity.identity(),
-                    WorthQueryPredecessorEvaluationState {
-                        cursor: binding.authoritative_commit_cursor,
-                        commit_watch: binding.commit_watch.clone(),
-                    },
-                )
-            })
-            .chain(active)
-            .max_by(|left, right| left.0.cmp(right.0))
-            .map(|(_, state)| state)
+        super::evaluation_predecessor::select(
+            self.active_affinity.as_ref(), self.authoritative_commit_cursor,
+            &self.commit_watch, &self.inactive_bindings, selected,
+        )
     }
 }
 
@@ -383,9 +362,4 @@ impl<Binding, Reconstruction, Execution, Clock, Input>
         self.authoritative_commit_cursor = authoritative_commit_cursor;
         self.commit_watch = commit_watch;
     }
-}
-
-struct WorthQueryPredecessorEvaluationState {
-    cursor: Option<worth_relational::facade::publication::PatchStreamPosition>,
-    commit_watch: super::commit_watch::WorthQueryConditionalCommitWatchSet,
 }

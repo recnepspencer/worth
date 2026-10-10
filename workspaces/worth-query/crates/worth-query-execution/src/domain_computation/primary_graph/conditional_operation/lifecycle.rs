@@ -5,6 +5,7 @@ mod commit_watch;
 mod due_wake_retention;
 mod evaluation_affinity;
 mod evaluation_binding;
+mod evaluation_predecessor;
 mod installed_operation;
 mod operation_cell;
 mod operation_totals;

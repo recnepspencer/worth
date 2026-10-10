@@ -171,7 +171,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryInstalledTempo
         super::pending_invalidations::WorthQueryPendingGranularInvalidations,
     pub(in crate::domain_computation::primary_graph::conditional_operation) inactive_bindings:
         BTreeMap<
-            crate::basis::WorthQueryProductBranchReadIdentity,
+            crate::basis::WorthQueryProductBranchReadPosition,
             super::evaluation_binding::WorthQueryInactiveTemporalEvaluationBinding<Clock, Input>,
         >,
     pub(in crate::domain_computation::primary_graph::conditional_operation) next_evaluation_binding_ordinal:
