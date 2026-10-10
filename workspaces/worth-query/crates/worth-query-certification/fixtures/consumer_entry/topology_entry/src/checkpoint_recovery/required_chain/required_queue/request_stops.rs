@@ -8,6 +8,8 @@ use worth_query_host::facade::application_contribution::{
 };
 use worth_query_host::facade::primary_graph::WorthQueryOutputDemandRecoveryPosture;
 
+mod requested_custody;
+
 /// Advances the middle consumer on a request that `$cancel` stops, and checks
 /// it meets `$expected_kind` after `$decisions` middle-row decisions.
 macro_rules! cancelled_middle_advance {

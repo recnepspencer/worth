@@ -209,6 +209,10 @@ where
                         &mut demand.required_continuations,
                         &mut demand.producer_contacts_in_this_demand,
                     )
+                } else if frontier.members[index].caller {
+                    // A Requested target belongs to the parent demand without
+                    // attributing the child's handler contacts to that parent.
+                    ContinuationCustody::Queue(&mut demand.required_continuations)
                 } else {
                     ContinuationCustody::Queue(queue_custody)
                 };
