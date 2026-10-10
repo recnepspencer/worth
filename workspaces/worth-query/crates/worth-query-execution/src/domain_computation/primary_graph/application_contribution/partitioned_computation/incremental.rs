@@ -10,8 +10,10 @@
 //! has no accessor outside this module, so every later way to skip work
 //! enters through it.
 //!
-//! An outcome never depends on reuse. Carried charges replay in a full run's
-//! order among the calls made again, membership, item keys, gathers and
+//! A run's result, its charged work and the partition a work ceiling names
+//! never depend on reuse; request memory and checkpoint count do, since a
+//! carried partition holds no gather bytes. Carried charges replay in a full
+//! run's order among the calls made again, membership, item keys, gathers and
 //! kernels by identity over the run's own items and partitions, then the
 //! combines of the run's own tree, so a ceiling names the partition a full
 //! run would name.
