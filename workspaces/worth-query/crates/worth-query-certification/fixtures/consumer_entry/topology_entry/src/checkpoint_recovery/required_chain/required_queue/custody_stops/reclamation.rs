@@ -180,9 +180,9 @@ fn run_reclamation_budget(
             "the closed chain's named owners"
         );
     }
-    let mut custody = [None, None];
+    let mut custody = None;
     use support::retained_inventory::{Inventory, SteadyCycles};
-    let mut steady = SteadyCycles::alternating();
+    let mut steady = SteadyCycles::new();
     let measured_cycles = cycles.saturating_sub(2 * 8) as usize;
     let warm_up = measured_cycles != 0;
     // Each retained owner has eight version positions. After two windows,
@@ -194,12 +194,7 @@ fn run_reclamation_budget(
     } else {
         cycles
     } {
-        // Queue drainage starts after warm-up; compare equal-parity cycles
-        // within the same phase, rather than undrained and drained inventories.
-        if cycle == steady_start {
-            custody = [None, None];
-        }
-        let mut reclaimed_inventory = None;
+        let reclaimed_inventory;
         let boundary_baseline = invalidation.native_retained_allocations_for_test();
         let at = format!("{budget} bytes, cycle {cycle}, overwritten {overwritten}");
         let y = 2 + (cycle % 2) * 3;
@@ -258,7 +253,8 @@ fn run_reclamation_budget(
             "{at}: the model predicts whether the last row is reclaimed"
         );
         drop(selected_c);
-        if cycle >= steady_start {
+        // Drain publication cues during warm-up too, so every cycle runs one workload.
+        {
             let earlier = invalidation.native_retained_allocations_for_test();
             assert_eq!(
                 earlier.len(),
@@ -374,9 +370,9 @@ fn run_reclamation_budget(
         }
         let held = application.required_custody_bytes_for_test();
         assert_eq!(
-            *custody[cycle as usize % 2].get_or_insert(held),
+            *custody.get_or_insert(held),
             held,
-            "{at}: the closed chain holds what it held at the same input parity"
+            "{at}: the closed chain holds what it held a cycle before"
         );
     }
     assert!(

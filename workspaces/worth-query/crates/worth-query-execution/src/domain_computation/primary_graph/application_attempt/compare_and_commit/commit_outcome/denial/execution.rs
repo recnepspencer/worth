@@ -95,7 +95,7 @@ impl Denial {
 }
 
 /// Both projections of a preparation refusal carry the same execution category.
-fn execution_kind(
+pub(super) fn execution_kind(
     cause: Result<
         crate::domain_computation::WorthQueryProviderSessionDenialKind,
         crate::domain_computation::WorthQueryProviderSessionControlStopKind,

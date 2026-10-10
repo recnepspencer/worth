@@ -86,7 +86,7 @@ where
     {
         let request_scope = self.request_scope().clone();
         let runtime = self.application_runtime();
-        runtime.with_application_advancement(&request_scope, |_phase| {
+        runtime.with_application_advancement(&request_scope, |phase| {
 
         let workflow = workflow.into();
         let application = self.application_runtime();
@@ -102,7 +102,7 @@ where
         let identities = self
             .identities()
             .map_err(WorthQueryWorkflowAdvancePreparationDenial::RequestAdmission)?;
-        let mutation = authorization::prepare_capability_selected(&self, &identities, staged, &selected)
+        let mutation = authorization::prepare_capability_selected(&phase, &self, &identities, staged, &selected)
             .map_err(WorthQueryWorkflowAdvancePreparationDenial::RequestAdmission)?;
         let prepared = WorthQueryWorkflowAdvanceAdapter::prepare_approval::<
             Schema,

@@ -289,3 +289,5 @@ fn required_promotion_opens_before_its_receipt_reader_and_returns_custody_on_ref
         one_admitted_request("promote_recovered_required_outputs");
     }
 }
+
+mod cancellation;

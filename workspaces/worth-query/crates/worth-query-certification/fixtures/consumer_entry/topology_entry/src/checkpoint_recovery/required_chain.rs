@@ -8,6 +8,7 @@ use worth_query_host::facade::application_entry::{
 use worth_query_host::facade::primary_graph::query_read_kernel_entries_on_this_thread_for_test as query_entries;
 
 mod binding;
+mod contact_readings;
 #[cfg(feature = "test-query-execution-observer")]
 mod diamond;
 #[cfg(all(
@@ -99,21 +100,30 @@ fn one_advance_discharge_follows_real_consumed_output_edges_after_upstream_stabl
             WorthQueryApplicationOutputDemandProgress::Settled(settled) => Some(settled),
         })
         .expect("the actual upstream initially settles");
-    assert_eq!(initial_a.producer_contacts_in_this_demand(), 1);
+    assert_eq!(
+        contact_readings::Reading::default().contacts(initial_a.producer_contacts_in_this_demand()),
+        1
+    );
     let initial_b = (0..256)
         .find_map(|_| match b.advance(&request).unwrap() {
             WorthQueryApplicationOutputDemandProgress::Pending => None,
             WorthQueryApplicationOutputDemandProgress::Settled(settled) => Some(settled),
         })
         .expect("the actual middle consumer initially settles");
-    assert_eq!(initial_b.producer_contacts_in_this_demand(), 1);
+    assert_eq!(
+        contact_readings::Reading::default().contacts(initial_b.producer_contacts_in_this_demand()),
+        1
+    );
     let original = (0..256)
         .find_map(|_| match c.advance(&request).unwrap() {
             WorthQueryApplicationOutputDemandProgress::Pending => None,
             WorthQueryApplicationOutputDemandProgress::Settled(settled) => Some(settled),
         })
         .expect("the actual A to B to C chain initially settles");
-    assert_eq!(original.producer_contacts_in_this_demand(), 1);
+    assert_eq!(
+        contact_readings::Reading::default().contacts(original.producer_contacts_in_this_demand()),
+        1
+    );
 
     let before_input = request
         .query(PlanarRead {

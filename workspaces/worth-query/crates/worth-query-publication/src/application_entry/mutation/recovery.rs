@@ -1,6 +1,5 @@
 //! Fresh request admission for an ordinary unpublished application.
 
-use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption;
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationIntent, ApplicationMutationScopeResolution,
 };
@@ -24,7 +23,6 @@ use crate::application_entry::WorthQueryApplicationRequestMutationDenial;
 #[derive(Debug)]
 pub enum WorthQueryApplicationRecoveryRequestDenial {
     Request(WorthQueryApplicationRequestMutationDenial),
-    Interrupted(WorthQueryRequestInterruption),
     /// Workflow control and transition-bound requests need their workflow owner.
     WorkflowUnsupported,
     Recovery(WorthQueryManagedApplicationRecoveryDenial),
@@ -32,7 +30,7 @@ pub enum WorthQueryApplicationRecoveryRequestDenial {
 }
 
 impl WorthQueryApplicationRecoveryRequestDenial {
-    pub(in crate::application_entry::mutation) fn advancement(
+    pub(in crate::application_entry) fn advancement(
         cause: worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
     ) -> Self {
         Self::Recovery(WorthQueryManagedApplicationRecoveryDenial::ExecutionDenied(
@@ -45,6 +43,41 @@ impl From<WorthQueryApplicationRequestMutationDenial>
     for WorthQueryApplicationRecoveryRequestDenial
 {
     fn from(denial: WorthQueryApplicationRequestMutationDenial) -> Self {
+        use worth_query_execution::facade::application_contribution::{
+            WorthQueryAdvancementDenial as Denial,
+            WorthQueryManagedComputationInterruption as Interruption,
+        };
+        use worth_query_execution::facade::primary_graph::{
+            WorthQueryEntityResolutionDenialKind as Scope,
+            WorthQueryPrincipalResolutionDenialKind as Principal,
+        };
+        let interruption = match &denial {
+            WorthQueryApplicationRequestMutationDenial::Authorization(cause) => {
+                authorization_interruption(cause.kind())
+            }
+            WorthQueryApplicationRequestMutationDenial::PrincipalResolution(cause) => {
+                match cause.kind() {
+                    Principal::Cancelled => Some(Denial::Interrupted(Interruption::Cancelled)),
+                    Principal::DeadlineExceeded => {
+                        Some(Denial::Interrupted(Interruption::DeadlineExceeded))
+                    }
+                    _ => None,
+                }
+            }
+            WorthQueryApplicationRequestMutationDenial::ScopeResolution(cause) => {
+                match cause.kind() {
+                    Scope::Cancelled => Some(Denial::Interrupted(Interruption::Cancelled)),
+                    Scope::DeadlineExceeded => {
+                        Some(Denial::Interrupted(Interruption::DeadlineExceeded))
+                    }
+                    _ => None,
+                }
+            }
+            _ => None,
+        };
+        if let Some(interruption) = interruption {
+            return Self::advancement(interruption);
+        }
         Self::Request(denial)
     }
 }
@@ -190,7 +223,7 @@ where
         // The retained attempt already owns its source facts: do not consume the
         // pending expectation into a fresh candidate or invoke the handler.
         super::authorization::prepare_selected(phase, self, &identities, staged, &selected)
-            .map_err(WorthQueryApplicationRecoveryRequestDenial::Request)
+            .map_err(WorthQueryApplicationRecoveryRequestDenial::from)
     }
 
     pub(in crate::application_entry::mutation) fn read_recovery_idempotency(
@@ -224,5 +257,56 @@ where
             )),
             None => Ok(()),
         }
+    }
+}
+
+fn authorization_interruption(
+    cause: worth_query_execution::facade::primary_graph::WorthQueryOperationAuthorizationDenialKind,
+) -> Option<worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial> {
+    use worth_query_execution::facade::{
+        application_contribution::{
+            WorthQueryAdvancementDenial as Denial,
+            WorthQueryManagedComputationInterruption as Interruption,
+        },
+        primary_graph::WorthQueryOperationAuthorizationDenialKind as Authorization,
+    };
+    match cause {
+        Authorization::Cancelled => Some(Denial::Interrupted(Interruption::Cancelled)),
+        Authorization::DeadlineExceeded => {
+            Some(Denial::Interrupted(Interruption::DeadlineExceeded))
+        }
+        _ => None,
+    }
+}
+
+#[cfg(test)]
+mod cancellation_spelling {
+    use super::*;
+    use worth_query_execution::facade::{
+        application_contribution::{
+            WorthQueryAdvancementDenial as Denial,
+            WorthQueryManagedComputationInterruption as Interruption,
+        },
+        primary_graph::WorthQueryOperationAuthorizationDenialKind as Authorization,
+    };
+
+    #[test]
+    fn authorization_interruption_uses_the_opening_cause() {
+        for (reader, opening) in [
+            (Authorization::Cancelled, Interruption::Cancelled),
+            (
+                Authorization::DeadlineExceeded,
+                Interruption::DeadlineExceeded,
+            ),
+        ] {
+            let mapped = WorthQueryApplicationRecoveryRequestDenial::advancement(
+                authorization_interruption(reader).unwrap(),
+            );
+            assert!(matches!(mapped,
+                WorthQueryApplicationRecoveryRequestDenial::Recovery(
+                    WorthQueryManagedApplicationRecoveryDenial::ExecutionDenied(
+                        Denial::Interrupted(cause))) if cause == opening));
+        }
+        assert!(authorization_interruption(Authorization::ExplicitDenyRuleMatched).is_none());
     }
 }
