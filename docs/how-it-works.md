@@ -922,7 +922,7 @@ runtime below works under that request.
 
 - **Opening.** A request-scoped entry takes its cancellation and deadline
   from the caller's request. A host-owned entry (an inbound occurrence, a
-  clock observation, a workflow frontier) opens with neither. Both take
+  clock observation, a staged run) opens with neither. Both take
   their ceilings from the installed execution policy. The request is opened
   before the advancement's first read. A policy that grants no work or no
   memory refuses the advancement there, before any read.
@@ -1188,7 +1188,7 @@ count.
 |---|---|---|
 | Execution | A map's kernels and a fork-join's children. A leased run under automatic posture uses workers; every other run is serial. | A scan carries one value through ordered items. Rounds are a sequence of barriers. A map settles its results in canonical partition order. |
 | Relational | With a lease: the packets of a query plan, index builds (one packet per index definition), and the invariant packets of commit validation. | Each merges in one ordered pass on the calling thread, and index generations publish there afterward. Without a lease, packets run in order on the calling thread. |
-| Signal | Within one epoch of a stage: read preparation for the tasks that need computing, and application of tasks, each declaring its write keys. An epoch is a resource-admitted prefix of the stage's remaining tasks, none of which reads another's node. | The request is one ordered pass over stages. A stage is an ordered sequence of epochs; each publishes through the owner before the next starts. The owner reduces after the join: commits in task order, snapshots in stage order. Read preparation and application each run serially in an epoch below their own configured task minimum. |
+| Signal | Within one epoch of a stage: read preparation for the tasks that need computing, and application of tasks, each declaring its write keys. An epoch is a resource-admitted prefix of the stage's remaining tasks, none of which reads another's node. | The request is one ordered pass over stages. A stage is an ordered sequence of epochs; each publishes through the owner before the next starts. The owner reduces after the join: commits in task order, snapshots in stage order. Read preparation runs serially when the epoch's tasks that need computing are fewer than its configured minimum; application does when the epoch's tasks are fewer than its own. |
 | Query: partitioned computation | Partition kernels (`compute_partition`). | Naming, keying, gathering, and completing run on the calling thread. Results settle in partition identity order. |
 | Query: workflow frontier | The compute steps of a frontier's stages. | Prepare and apply run on the owner in canonical stage order. |
 | Query: derived collections | Rebuilding a derived collection dispatches one partition per unique root through a map. | The map supplies canonical order, charging, and one execution authority. It does not make native reads concurrent: reads serialize at the Relational owner. Projection and link checks run on the calling thread in entity identity order. Only the canonical completed prefix reaches the owner, and retention changes only on success. |

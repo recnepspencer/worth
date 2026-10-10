@@ -503,11 +503,11 @@ item IDs identify inventory lines; the zone key defines partition membership.
 Neither depends on worker assignment. The generic schema, feature, artifact,
 and operation parameters stand for your application's declarations. The
 `Reuse` marker names declaration vocabulary; partition reuse depends on the
-state kept from the previous run and the purity contract above. The compiled
-counterpart is the consumer fixture at
-`workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition.rs`
-(declaration) and `.../checkpoint_recovery/computation_partition/owner.rs`
-(owner, installation, and run).
+state kept from the previous run and the purity contract above. Both examples
+in this section are compiled as written: the consumer fixture builds and runs
+`workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/warehouse_inventory.rs`
+and `.../sensor_telemetry.rs`, and a test fails when a block here and its file
+differ.
 
 <!-- compiled: warehouse_inventory.rs -->
 ```rust
