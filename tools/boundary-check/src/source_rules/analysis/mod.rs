@@ -73,6 +73,7 @@ pub(super) fn validate(
     facade_exports: &FacadeVocabularyAuthority<'_>,
 ) -> Result<Vec<Diagnostic>, String> {
     let mut diagnostics = canonical_order::validate(root)?;
+    diagnostics.extend(truth_types::check_hash_walk_configuration(root)?);
     let query_vocabulary = query_fence::QueryVocabulary::load(query_audience, facade_exports);
     let crates = governed_crates::discover_governed_crates(root, subworkspaces)?;
     for governed in crates {

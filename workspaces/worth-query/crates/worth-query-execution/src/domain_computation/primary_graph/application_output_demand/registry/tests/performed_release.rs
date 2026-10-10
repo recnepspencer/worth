@@ -72,7 +72,6 @@ fn unheld_performed_sources_release_the_oldest_with_commit_order_work() {
         .values()
         .all(|row| !row.source_commits.contains(&oldest)));
     let charged = admission.charged_work();
-    eprintln!("release-proof-count={charged}");
     // Eight source visits, one candidate's three row comparisons, and three
     // row visits releasing that candidate; later commits cannot replace it.
     assert_eq!(

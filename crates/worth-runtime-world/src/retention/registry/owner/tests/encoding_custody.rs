@@ -69,3 +69,36 @@ fn admitted_basis_pair_reuses_its_encoding_on_pin_and_unpin() {
         + unpin_copy;
     assert_eq!(copied, 0, "encoding bytes copied on paired pin and unpin");
 }
+
+#[test]
+fn equal_descriptions_visit_the_earlier_owner_issued_lease_first() {
+    let fixture = real_fixture(4, 4);
+    let request = |signal| {
+        let dependency = ComponentBasisDependencyClass::ActivePublicationAttempt;
+        if signal {
+            ExactComponentPinRequest::signal(&fixture.basis, dependency)
+        } else {
+            ExactComponentPinRequest::relational(&fixture.basis, dependency)
+        }
+    };
+    drop(fixture.owner.issue_component(request(false)).unwrap());
+    drop(fixture.owner.issue_component(request(true)).unwrap());
+    let first = request(false).key();
+    let second = request(true).key();
+    let mut state = fixture.owner.lock();
+    let mut earlier = state.entries.remove(&first).unwrap();
+    let later = state.entries.remove(&second).unwrap();
+    assert!(earlier.lease_identity < later.lease_identity);
+    // Descriptions are comparison data here; both lease identities came through
+    // the real owner. Equal descriptions must preserve both lease positions.
+    earlier.basis_order = later.basis_order.clone();
+    let mut pins = super::super::RetainedComponentPins::default();
+    pins.insert(second.clone(), later);
+    pins.insert(first.clone(), earlier);
+    assert_eq!(
+        pins.by_declared_basis()
+            .map(|(key, _)| key.clone())
+            .collect::<Vec<_>>(),
+        [first, second]
+    );
+}

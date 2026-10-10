@@ -188,10 +188,13 @@ impl BridgeConditionalLoweringRegistry {
         alias_owners
             .try_reserve_exact(candidates.len() + 1)
             .map_err(|_| exact_basis_capacity_denial())?;
-        alias_owners.push(super::contract::lowering_key(anchor).clone());
+        let anchor_owner = super::contract::lowering_key(anchor);
+        alias_owners.push(anchor_owner.clone());
+        // Installed slots already have unique declaration keys; only the anchor
+        // can occur both here and in that inventory. No quadratic dedup scan.
         for candidate in &candidates {
             let owner = super::contract::lowering_key(candidate);
-            if !alias_owners.contains(owner) {
+            if owner != anchor_owner {
                 alias_owners.push(owner.clone());
             }
         }

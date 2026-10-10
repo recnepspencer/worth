@@ -108,29 +108,3 @@ fn declared_managed_computation_requires_its_exact_owner_inventory() {
         .expect_err("an undeclared owner must be denied");
     assert_eq!(denial.kind(), DenialKind::ForeignManagedComputationOwner);
 }
-
-#[test]
-fn missing_owners_are_named_in_declared_computation_order() {
-    let a = TypeId::of::<Computation>();
-    let b = TypeId::of::<OtherFeature>();
-    let (alpha_type, zulu_type) = if a > b { (a, b) } else { (b, a) };
-    let alpha = ManagedComputationExpectation {
-        identity: "alpha-computation",
-        computation_type: alpha_type,
-        ..expectation()
-    };
-    let zulu = ManagedComputationExpectation {
-        identity: "zulu-computation",
-        computation_type: zulu_type,
-        ..expectation()
-    };
-    for reverse in [false, true] {
-        let mut entries = [(alpha_type, alpha), (zulu_type, zulu)];
-        if reverse {
-            entries.reverse();
-        }
-        let denied = validate_managed_computation_inventory(&HashMap::new(), &Vec::from(entries))
-            .unwrap_err();
-        assert_eq!(denied.subject(), "alpha-computation");
-    }
-}

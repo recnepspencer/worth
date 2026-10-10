@@ -203,7 +203,7 @@ impl WorthQueryProductActivationRegistry {
     }
 }
 
-/// All fallible storage admission precedes World branch creation.
+/// Branch capacity admission precedes World branch creation.
 pub(crate) struct WorthQueryProductActivationReservation<'a> {
     registry: &'a WorthQueryProductActivationRegistry,
     gate: Arc<WorthQueryProductActivationGate>,
