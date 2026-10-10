@@ -8,8 +8,6 @@ repository = "https://github.com/recnepspencer/WORTH"
 keywords = ["bridge", "runtime", "invalidation", "snapshot", "facade"]
 categories = ["data-structures", "science"]
 
-[features]
-
 [dependencies]
 worth-foundational = { path = "../worth-foundational" }
 worth-execution = { path = "../worth-execution" }

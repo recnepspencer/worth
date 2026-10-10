@@ -18,10 +18,14 @@ use super::{
     WorthQueryCompiledApplicationQueryBinding, WorthQueryInstalledApplicationQueryLimits,
 };
 
+mod certification_catalog;
+use certification_catalog::CertificationQueryCatalog;
+mod query_compilation;
+use query_compilation::compile_queries;
+
 #[derive(Default)]
 pub(crate) struct WorthQueryInstalledApplicationQueryCatalog {
-    queries: BTreeMap<ApplicationQueryBindingKey, Arc<WorthQueryCompiledApplicationQuery>>,
-    queries_by_name: BTreeMap<String, Arc<WorthQueryCompiledApplicationQuery>>,
+    certification: CertificationQueryCatalog,
     bindings: BTreeMap<String, Arc<WorthQueryCompiledApplicationQueryBinding>>,
 }
 
@@ -51,14 +55,19 @@ impl WorthQueryInstalledApplicationQueryCatalog {
         &self,
         key: &ApplicationQueryBindingKey,
     ) -> Option<Arc<WorthQueryCompiledApplicationQuery>> {
-        self.queries.get(key).map(Arc::clone)
+        self.certification.get_query(key)
     }
 
     pub(crate) fn get_query_by_name(
         &self,
         name: &str,
     ) -> Option<Arc<WorthQueryCompiledApplicationQuery>> {
-        self.queries_by_name.get(name).map(Arc::clone)
+        self.certification.get_query_by_name(name)
+    }
+
+    #[cfg(test)]
+    pub(crate) fn certification_maps_are_initialized(&self) -> bool {
+        self.certification.is_initialized()
     }
 
     pub(crate) fn get_binding(
@@ -126,47 +135,9 @@ where
         }
     }
     Ok(WorthQueryInstalledApplicationQueryCatalog {
-        queries,
-        queries_by_name,
+        certification: CertificationQueryCatalog::new(queries.into_values().collect()),
         bindings,
     })
-}
-
-type QueryMaps = (
-    BTreeMap<ApplicationQueryBindingKey, Arc<WorthQueryCompiledApplicationQuery>>,
-    BTreeMap<String, Arc<WorthQueryCompiledApplicationQuery>>,
-);
-
-fn compile_queries<Schema>(
-    schema: &WorthQueryInstalledApplicationSchema<Schema>,
-) -> Result<QueryMaps, WorthQueryApplicationQueryInstallationDenial>
-where
-    Schema: ApplicationSchema,
-{
-    let mut queries = BTreeMap::new();
-    let mut names = BTreeMap::new();
-    for definition in schema
-        .installed_declaration()
-        .members()
-        .iter()
-        .filter_map(|member| match member {
-            ApplicationSchemaMember::ApplicationQuery { definition } => Some(definition),
-            _ => None,
-        })
-    {
-        let key = ApplicationQueryBindingKey::from_definition(definition);
-        let compiled = Arc::new(WorthQueryCompiledApplicationQuery::compile(
-            schema, definition,
-        )?);
-        if queries.insert(key, Arc::clone(&compiled)).is_some()
-            || names
-                .insert(definition.name().to_owned(), compiled)
-                .is_some()
-        {
-            return Err(denial(DenialKind::QueryMeaningChanged, definition.name()));
-        }
-    }
-    Ok((queries, names))
 }
 
 fn require_exact_query(

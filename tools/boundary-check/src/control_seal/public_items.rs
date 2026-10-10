@@ -4,6 +4,12 @@ use syn::{
     Visibility,
 };
 
+// Law 1 uses the same spelling for raw and ordinary references.
+fn spelling(ident: &syn::Ident) -> String {
+    let name = ident.to_string();
+    name.strip_prefix("r#").unwrap_or(&name).to_owned()
+}
+
 pub(super) fn names(source: &str) -> Result<BTreeSet<String>, String> {
     let file = syn::parse_file(source).map_err(|error| error.to_string())?;
     RejectUninspectable::check(&file)?;
@@ -22,23 +28,23 @@ struct PublicTypes(BTreeSet<String>);
 impl<'ast> Visit<'ast> for PublicTypes {
     fn visit_item_trait(&mut self, item: &'ast syn::ItemTrait) {
         if matches!(item.vis, Visibility::Public(_)) {
-            self.0.insert(item.ident.to_string());
+            self.0.insert(spelling(&item.ident));
         }
     }
     fn visit_item_mod(&mut self, item: &'ast syn::ItemMod) {
         if matches!(item.vis, Visibility::Public(_)) {
-            self.0.insert(item.ident.to_string());
+            self.0.insert(spelling(&item.ident));
         }
         visit::visit_item_mod(self, item);
     }
     fn visit_item_struct(&mut self, item: &'ast syn::ItemStruct) {
         if matches!(item.vis, Visibility::Public(_)) {
-            self.0.insert(item.ident.to_string());
+            self.0.insert(spelling(&item.ident));
         }
     }
     fn visit_item_enum(&mut self, item: &'ast syn::ItemEnum) {
         if matches!(item.vis, Visibility::Public(_)) {
-            self.0.insert(item.ident.to_string());
+            self.0.insert(spelling(&item.ident));
         }
     }
 }
@@ -48,6 +54,35 @@ struct PublicNames {
     receiver: Option<String>,
 }
 impl<'ast> Visit<'ast> for PublicNames {
+    fn visit_item_macro(&mut self, item: &'ast syn::ItemMacro) {
+        if item.attrs.iter().any(|attr| {
+            attr.path().segments.len() == 1
+                && spelling(&attr.path().segments[0].ident) == "macro_export"
+        }) {
+            if let Some(name) = &item.ident {
+                self.names.insert(spelling(name));
+            }
+        }
+    }
+    fn visit_item_trait(&mut self, item: &'ast syn::ItemTrait) {
+        if matches!(item.vis, Visibility::Public(_)) {
+            // Law 1, reach: trait members are public without a `pub` token.
+            for member in &item.items {
+                match member {
+                    syn::TraitItem::Fn(member) => {
+                        self.names.insert(spelling(&member.sig.ident));
+                    }
+                    syn::TraitItem::Const(member) => {
+                        self.names.insert(spelling(&member.ident));
+                    }
+                    syn::TraitItem::Type(member) => {
+                        self.names.insert(spelling(&member.ident));
+                    }
+                    _ => {}
+                }
+            }
+        }
+    }
     fn visit_item_impl(&mut self, item: &'ast syn::ItemImpl) {
         let previous = self.receiver.take();
         self.receiver = match item.self_ty.as_ref() {
@@ -55,7 +90,7 @@ impl<'ast> Visit<'ast> for PublicNames {
                 .path
                 .segments
                 .last()
-                .map(|segment| segment.ident.to_string()),
+                .map(|segment| spelling(&segment.ident)),
             _ => None,
         };
         visit::visit_item_impl(self, item);
@@ -65,7 +100,7 @@ impl<'ast> Visit<'ast> for PublicNames {
         if !matches!(item.vis, Visibility::Public(_)) {
             return;
         }
-        let name = item.sig.ident.to_string();
+        let name = spelling(&item.sig.ident);
         // Law 1, reach: lifecycle members of a sealed control type cannot be
         // reached without a sealed acquisition door or a reference to that type.
         // Do not globally forbid ordinary APIs also named `release` or `new`.
@@ -85,24 +120,44 @@ impl<'ast> Visit<'ast> for PublicNames {
             self.names.insert(name);
         }
     }
+    fn visit_impl_item_const(&mut self, item: &'ast syn::ImplItemConst) {
+        if matches!(item.vis, Visibility::Public(_)) {
+            self.names.insert(spelling(&item.ident));
+        }
+    }
+    fn visit_impl_item_type(&mut self, item: &'ast syn::ImplItemType) {
+        if matches!(item.vis, Visibility::Public(_)) {
+            self.names.insert(spelling(&item.ident));
+        }
+    }
+    fn visit_foreign_item_fn(&mut self, item: &'ast syn::ForeignItemFn) {
+        if matches!(item.vis, Visibility::Public(_)) {
+            self.names.insert(spelling(&item.sig.ident));
+        }
+    }
+    fn visit_foreign_item_static(&mut self, item: &'ast syn::ForeignItemStatic) {
+        if matches!(item.vis, Visibility::Public(_)) {
+            self.names.insert(spelling(&item.ident));
+        }
+    }
     fn visit_item_fn(&mut self, item: &'ast syn::ItemFn) {
         if matches!(item.vis, Visibility::Public(_)) {
-            self.names.insert(item.sig.ident.to_string());
+            self.names.insert(spelling(&item.sig.ident));
         }
     }
     fn visit_item_const(&mut self, item: &'ast syn::ItemConst) {
         if matches!(item.vis, Visibility::Public(_)) {
-            self.names.insert(item.ident.to_string());
+            self.names.insert(spelling(&item.ident));
         }
     }
     fn visit_item_static(&mut self, item: &'ast syn::ItemStatic) {
         if matches!(item.vis, Visibility::Public(_)) {
-            self.names.insert(item.ident.to_string());
+            self.names.insert(spelling(&item.ident));
         }
     }
     fn visit_item_type(&mut self, item: &'ast syn::ItemType) {
         if matches!(item.vis, Visibility::Public(_)) {
-            self.names.insert(item.ident.to_string());
+            self.names.insert(spelling(&item.ident));
         }
     }
     fn visit_item_use(&mut self, item: &'ast syn::ItemUse) {
@@ -115,10 +170,10 @@ fn reexports(tree: &syn::UseTree, names: &mut BTreeSet<String>) {
     match tree {
         syn::UseTree::Path(path) => reexports(&path.tree, names),
         syn::UseTree::Name(name) => {
-            names.insert(name.ident.to_string());
+            names.insert(spelling(&name.ident));
         }
         syn::UseTree::Rename(rename) => {
-            names.insert(rename.rename.to_string());
+            names.insert(spelling(&rename.rename));
         }
         syn::UseTree::Group(group) => {
             for tree in &group.items {
@@ -149,8 +204,17 @@ impl<'ast> Visit<'ast> for RejectUninspectable {
                 _ => false,
             })
         }
-        if has_public(item.mac.tokens.clone()) {
-            self.0 = Some("public control items inside macros must be declared explicitly".into());
+        // Law 1: an opaque item invocation could add a new public door.
+        // Private std thread locals and macro definitions are inspectable here;
+        // any invocation that could publish items must declare them explicitly.
+        let known_private = item.mac.path.is_ident("thread_local")
+            || item.mac.path.is_ident("macro_rules")
+            || quote::quote!(#item)
+                .to_string()
+                .starts_with("std :: thread_local !");
+        if has_public(item.mac.tokens.clone()) || !known_private {
+            self.0 =
+                Some("unexpanded control item macros must declare public doors explicitly".into());
         }
     }
     fn visit_item_use(&mut self, item: &'ast syn::ItemUse) {

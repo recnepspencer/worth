@@ -2,45 +2,55 @@ use crate::diagnostics::{Diagnostic, DiagnosticCode};
 use proc_macro2::{TokenStream, TokenTree};
 use std::{collections::BTreeSet, fs, path::Path};
 
-const ROOTS: &[&str] = &[
-    "crates/worth-relational",
-    "crates/worth-execution",
-    "crates/worth-signal",
-    "crates/worth-signal-wasm",
-    "crates/worth-runtime-bridge",
-    "crates/worth-runtime-world",
-    "workspaces/worth-query",
-    "workspaces/worth-query-bank-world",
+// Every workspace/package root is governed unless its team is named here.
+const OTHER_TEAMS: &[&str] = &[
+    "workspaces/worth-store",
+    "workspaces/worth-ui",
+    "crates/worth-proof",
 ];
+mod owned_dependencies;
+use owned_dependencies::OwnedDependencies;
+
+fn governed(path: &str) -> bool {
+    !OTHER_TEAMS.iter().any(|owner| {
+        path == *owner
+            || path
+                .strip_prefix(owner)
+                .is_some_and(|suffix| suffix.starts_with('/'))
+    })
+}
 
 pub(crate) fn validate(root: &Path) -> Vec<Diagnostic> {
+    let files = match crate::governed_sources::files_under(root) {
+        Ok(files) => files,
+        Err(error) => return vec![failure(".", error)],
+    };
     let mut diagnostics = Vec::new();
-    for owner in ROOTS {
-        // Contract fixtures may supply a smaller repository: govern owners present.
-        if matches!(root.join(owner).try_exists(), Ok(false)) {
+    let mut sources = Vec::new();
+    let mut manifests = Vec::new();
+    for file in files {
+        let path = file
+            .strip_prefix(root)
+            .unwrap()
+            .to_string_lossy()
+            .replace('\\', "/");
+        if !governed(&path) {
             continue;
         }
-        let files = match crate::governed_sources::files_under(&root.join(owner)) {
-            Ok(files) => files,
-            Err(error) => {
-                diagnostics.push(failure(owner, error));
-                continue;
+        match fs::read_to_string(&file) {
+            Ok(source) if file.file_name().is_some_and(|name| name == "Cargo.toml") => {
+                manifests.push((path, source))
             }
-        };
-        for file in files {
-            let path = file
-                .strip_prefix(root)
-                .unwrap()
-                .to_string_lossy()
-                .replace('\\', "/");
-            match fs::read_to_string(&file) {
-                Ok(source) if file.file_name().is_some_and(|name| name == "Cargo.toml") => {
-                    diagnostics.extend(manifest(&path, &source))
-                }
-                Ok(source) => diagnostics.extend(source_predicates(&path, &source)),
-                Err(error) => diagnostics.push(failure(&path, error.to_string())),
-            }
+            Ok(source) => sources.push((path, source)),
+            Err(error) => diagnostics.push(failure(&path, error.to_string())),
         }
+    }
+    let owners = OwnedDependencies::from_manifests(&manifests);
+    for (path, source) in manifests {
+        diagnostics.extend(manifest_with_owners(&path, &source, &owners));
+    }
+    for (path, source) in sources {
+        diagnostics.extend(source_predicates(&path, &source));
     }
     diagnostics
 }
@@ -60,7 +70,12 @@ fn failure(path: &str, message: impl Into<String>) -> Diagnostic {
     Diagnostic::new(DiagnosticCode::Bc9001OneBuild, path, message)
 }
 
+#[cfg(test)]
 fn manifest(path: &str, source: &str) -> Vec<Diagnostic> {
+    manifest_with_owners(path, source, &OwnedDependencies::default())
+}
+
+fn manifest_with_owners(path: &str, source: &str, owners: &OwnedDependencies) -> Vec<Diagnostic> {
     let value: toml::Value = match toml::from_str(source) {
         Ok(value) => value,
         Err(error) => {
@@ -73,6 +88,9 @@ fn manifest(path: &str, source: &str) -> Vec<Diagnostic> {
     let mut diagnostics = Vec::new();
     let features = value.get("features").and_then(toml::Value::as_table);
     if let Some(features) = features {
+        if features.is_empty() {
+            diagnostics.push(failure(path, "one build forbids an empty features table"));
+        }
         for name in features.keys().filter(|name| !allowed(path, name)) {
             diagnostics.push(failure(
                 path,
@@ -88,7 +106,7 @@ fn manifest(path: &str, source: &str) -> Vec<Diagnostic> {
         .filter_map(toml::Value::as_str)
         .filter_map(|name| name.strip_prefix("dep:"))
         .collect();
-    inspect_manifest_tables(path, &value, &explicitly_named, &mut diagnostics);
+    inspect_manifest_tables(path, &value, &explicitly_named, owners, &mut diagnostics);
     diagnostics
 }
 
@@ -96,6 +114,7 @@ fn inspect_manifest_tables(
     path: &str,
     value: &toml::Value,
     explicit: &BTreeSet<&str>,
+    owners: &OwnedDependencies,
     diagnostics: &mut Vec<Diagnostic>,
 ) {
     match value {
@@ -107,6 +126,11 @@ fn inspect_manifest_tables(
                 ) {
                     if let Some(dependencies) = child.as_table() {
                         for (name, dependency) in dependencies {
+                            if dependency.get("features").is_some()
+                                && owners.owns(path, name, dependency)
+                            {
+                                diagnostics.push(failure(path, format!("one build forbids dependency features on governed package `{name}`")));
+                            }
                             if dependency.get("optional").and_then(toml::Value::as_bool)
                                 == Some(true)
                                 && !explicit.contains(name.as_str())
@@ -131,12 +155,12 @@ fn inspect_manifest_tables(
                         ));
                     }
                 }
-                inspect_manifest_tables(path, child, explicit, diagnostics);
+                inspect_manifest_tables(path, child, explicit, owners, diagnostics);
             }
         }
         toml::Value::Array(values) => {
             for child in values {
-                inspect_manifest_tables(path, child, explicit, diagnostics);
+                inspect_manifest_tables(path, child, explicit, owners, diagnostics);
             }
         }
         _ => {}

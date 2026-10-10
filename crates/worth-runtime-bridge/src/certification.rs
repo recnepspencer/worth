@@ -1,4 +1,4 @@
-//! Feature-gated drivers for certification against the real Bridge/Signal
+//! Always-compiled, boundary-sealed drivers for certification against the real Bridge/Signal
 //! async lifecycle.
 //!
 //! These functions create external lifecycle conditions and return ordinary

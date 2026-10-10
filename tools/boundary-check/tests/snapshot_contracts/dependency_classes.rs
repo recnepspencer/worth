@@ -3,6 +3,8 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 use std::time::{SystemTime, UNIX_EPOCH};
 
+// Disabled optional edges belong to Store's existing other-team root.
+// Keep the exact DAG assertions while honoring the one-build owner policy.
 struct Repository {
     root: PathBuf,
 }
@@ -27,14 +29,10 @@ impl Repository {
             "tools/boundary-check/snapshots/legacy-references.toml",
             "schema_version=1\nreferences=[]\n",
         );
+        write(&root, "workspaces/worth-store/README.md", "fixture\n");
         write(
             &root,
-            "cad/workspaces/worth-contracts/README.md",
-            "fixture\n",
-        );
-        write(
-            &root,
-            "cad/workspaces/worth-contracts/Cargo.toml",
+            "workspaces/worth-store/Cargo.toml",
             SUBWORKSPACE_MANIFEST,
         );
         create_crate(&root, "worth-schema-core", "CoreThing");
@@ -143,7 +141,7 @@ fn every_declared_cargo_dependency_class_is_an_exact_canonical_edge() {
 }
 
 fn create_crate(root: &Path, package: &str, item: &str) {
-    let base = format!("cad/workspaces/worth-contracts/crates/{package}");
+    let base = format!("workspaces/worth-store/crates/{package}");
     write(
         root,
         &format!("{base}/Cargo.toml"),
@@ -176,8 +174,8 @@ fn stderr(output: &Output) -> String {
     String::from_utf8_lossy(&output.stderr).into_owned()
 }
 
-const CORE_MANIFEST: &str = "cad/workspaces/worth-contracts/crates/worth-schema-core/Cargo.toml";
+const CORE_MANIFEST: &str = "workspaces/worth-store/crates/worth-schema-core/Cargo.toml";
 const PACKAGE: &str = "[package]\nname='worth-schema-core'\nversion='0.1.0'\nedition='2021'\n";
-const ROOT_MANIFEST: &str = "[workspace]\nresolver='2'\nexclude=['cad/workspaces/*']\nmembers=[]\n[workspace.metadata.worth_topology]\nrole='thin_orchestrator'\nforbidden_member_prefixes=['cad/workspaces/']\nboundary_check_manifest='tools/boundary-check/Cargo.toml'\nboundary_check_config='tools/boundary-check/config/road1.toml'\n";
-const SUBWORKSPACE_MANIFEST: &str = "[workspace]\nresolver='2'\nmembers=['crates/worth-schema-core','crates/worth-schema-graph']\n[workspace.metadata.worth_topology]\nrole='road1_subworkspace'\nconstitutional_lane='worth-contracts'\nmember_lane='crates/*'\nallowed_crate_prefixes=['worth-schema-']\n";
-const CONFIG: &str = "root_manifest='Cargo.toml'\nforbidden_root_prefixes=['cad/workspaces/']\nseed_skeletons=[]\n[[born_crates]]\npath='cad/workspaces/worth-contracts/crates/worth-schema-core'\npackage='worth-schema-core'\n[[born_crates]]\npath='cad/workspaces/worth-contracts/crates/worth-schema-graph'\npackage='worth-schema-graph'\n[machine_authority]\ncanonical_config='tools/boundary-check/config/road1.toml'\nmirrored_docs=['plans/worthy/NAMING.md']\n[naming]\nbands=['schema']\n[[naming.reserved_domains]]\ntier='worth'\nband='schema'\ndomains=['core','graph']\n[[law_substrates]]\npackage='worth-proof'\ntiers=['worth','worthy']\nbands=['schema']\n[rule_contracts]\nreplay_surfaces=[]\n[[rule_contracts.band_rules]]\nsource_band='schema'\nallowed_target_bands=['schema']\n[rule_contracts.query_audience]\nengine_package='worth-query'\naudiences=[]\n[[subworkspaces]]\npath='cad/workspaces/worth-contracts'\nallowed_crate_prefixes=['worth-schema-']\nmember_lane='crates/*'\n[legacy_reference_ratchet]\ngoverned_roots=[]\nforbidden_fragments=[]\nsnapshot='tools/boundary-check/snapshots/legacy-references.toml'\nexclude_paths=[]\nreplacement_guidance='none'\n";
+const ROOT_MANIFEST: &str = "[workspace]\nresolver='2'\nexclude=['workspaces/*']\nmembers=[]\n[workspace.metadata.worth_topology]\nrole='thin_orchestrator'\nforbidden_member_prefixes=['workspaces/']\nboundary_check_manifest='tools/boundary-check/Cargo.toml'\nboundary_check_config='tools/boundary-check/config/road1.toml'\n";
+const SUBWORKSPACE_MANIFEST: &str = "[workspace]\nresolver='2'\nmembers=['crates/worth-schema-core','crates/worth-schema-graph']\n[workspace.metadata.worth_topology]\nrole='road1_subworkspace'\nconstitutional_lane='worth-store'\nmember_lane='crates/*'\nallowed_crate_prefixes=['worth-schema-']\n";
+const CONFIG: &str = "root_manifest='Cargo.toml'\nforbidden_root_prefixes=['workspaces/']\nseed_skeletons=[]\n[[born_crates]]\npath='workspaces/worth-store/crates/worth-schema-core'\npackage='worth-schema-core'\n[[born_crates]]\npath='workspaces/worth-store/crates/worth-schema-graph'\npackage='worth-schema-graph'\n[machine_authority]\ncanonical_config='tools/boundary-check/config/road1.toml'\nmirrored_docs=['plans/worthy/NAMING.md']\n[naming]\nbands=['schema']\n[[naming.reserved_domains]]\ntier='worth'\nband='schema'\ndomains=['core','graph']\n[[law_substrates]]\npackage='worth-proof'\ntiers=['worth','worthy']\nbands=['schema']\n[rule_contracts]\nreplay_surfaces=[]\n[[rule_contracts.band_rules]]\nsource_band='schema'\nallowed_target_bands=['schema']\n[rule_contracts.query_audience]\nengine_package='worth-query'\naudiences=[]\n[[subworkspaces]]\npath='workspaces/worth-store'\nallowed_crate_prefixes=['worth-schema-']\nmember_lane='crates/*'\n[legacy_reference_ratchet]\ngoverned_roots=[]\nforbidden_fragments=[]\nsnapshot='tools/boundary-check/snapshots/legacy-references.toml'\nexclude_paths=[]\nreplacement_guidance='none'\n";

@@ -109,9 +109,14 @@ impl WorthQueryInvalidationResources {
             .store(true, Ordering::Release);
     }
     pub(in crate::domain_computation) fn take_delivery_exhaustion(&self) -> bool {
+        use std::sync::atomic::Ordering;
+        // An unarmed receiver pays one atomic read and branch, without a write.
+        if !self.retention.exhaust_delivery.load(Ordering::Acquire) {
+            return false;
+        }
         self.retention
             .exhaust_delivery
-            .swap(false, std::sync::atomic::Ordering::AcqRel)
+            .swap(false, Ordering::AcqRel)
     }
     // Runtime construction, including resources prepared before its fixture guard.
     pub(in crate::domain_computation) fn attach_runtime_observations(&self) {

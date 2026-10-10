@@ -31,14 +31,19 @@ parallel authority lane.
 
 ## Hard Invariants
 
-Query/Bank runtime has one build: the six owners `worth-relational`,
-`worth-execution`, `worth-signal`, `worth-signal-wasm`, `worth-runtime-bridge`,
-`worth-runtime-world`, and every crate/fixture in `workspaces/worth-query` and
-`workspaces/worth-query-bank-world` declare no Cargo features beyond Signal's
-retained product profiles/default (including WASM forwarding) and Signal-only
-`test-peak-allocation`. Unit-test-only hooks use `cfg(test)`; other controls and
-observers are compiled and armed through owned handles. The rule is enforced by
-`tools/boundary-check/src/one_build.rs`.
+Every workspace and package root has one build except the named other-team
+roots `workspaces/worth-store`, `workspaces/worth-ui`, and `crates/worth-proof`.
+No Cargo features are declared beyond Signal's retained product profiles/default
+(including WASM forwarding) and Signal-only `test-peak-allocation`. Empty feature
+tables and feature arrays on governed dependencies are refused. Unit-test-only
+hooks use `cfg(test)`; other controls and observers compile and use owned handles.
+The rule is enforced by `tools/boundary-check/src/one_build.rs`.
+
+Law 1, reach: every public control entry in the named files in
+`tools/boundary-check/config/control-files.txt` is sealed to its owner and the
+closed test/certification callers in `control-callers.txt`. Law 2, scope: a
+control's arm lives on its receiver. Pre-runtime placement and read-only
+recorders may use thread-local guards that clear their state during unwinding.
 
 The four Bridge source factories and Installation's `certification_query` are
 compiled public doors with a named source boundary. Only the owners and the
