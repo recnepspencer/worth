@@ -39,6 +39,8 @@ fn cancellation_of_a_joined_stable_refresh_restores_its_ready_and_all_custody() 
         let pause = application.pause_stable_join_for_test(root);
         std::thread::scope(|threads| {
             let worker = threads.spawn(|| {
+                let _observation =
+                    primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
                 application.joined_stable_roots_for_test();
                 application.required_refresh_stops_for_test();
                 let stopped = d.advance(&cancelled);
