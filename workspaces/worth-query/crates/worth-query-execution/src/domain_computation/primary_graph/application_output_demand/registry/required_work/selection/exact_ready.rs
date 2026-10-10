@@ -45,8 +45,7 @@ impl SelectedReadyReadmission {
     }
 
     /// Compare the selected required row with the caller's actual interest.
-    /// The source epoch has fixed-width ordering coordinates; the producer
-    /// name is the only variable-width comparison.
+    /// The demand key owns the comparison charge for all declared strings.
     pub(in crate::domain_computation::primary_graph) fn matches_interest(
         &self,
         interest: &super::super::super::WorthQueryOutputDemandInterest,
@@ -55,9 +54,7 @@ impl SelectedReadyReadmission {
         let comparison_work = self
             .membership
             .key
-            .producer
-            .len()
-            .checked_add(7)
+            .comparison_work()
             .ok_or_else(work_denial)?;
         admission
             .charge_external_work(u64::try_from(comparison_work).map_err(|_| work_denial())?)

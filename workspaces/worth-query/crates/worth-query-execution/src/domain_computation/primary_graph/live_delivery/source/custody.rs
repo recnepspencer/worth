@@ -72,10 +72,12 @@ impl Drop for WorthQueryLiveSubscription {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut released = false;
         let remove = state
             .partitions
             .get_mut(&self.key)
             .is_some_and(|partition| {
+                released = true;
                 partition.subscriber_count = partition
                     .subscriber_count
                     .checked_sub(1)
@@ -84,6 +86,12 @@ impl Drop for WorthQueryLiveSubscription {
             });
         if remove {
             state.partitions.remove(&self.key);
+        }
+        if released {
+            state.subscriber_count = state
+                .subscriber_count
+                .checked_sub(1)
+                .expect("live subscription releases exactly once");
         }
     }
 }

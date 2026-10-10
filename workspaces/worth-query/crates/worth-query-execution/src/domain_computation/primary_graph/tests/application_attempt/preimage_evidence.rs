@@ -366,6 +366,7 @@ pub(in crate::domain_computation::primary_graph) fn retained_status_program(
         )
         .unwrap()
         .begin_effect_program();
+    world.declare_output_contract::<RetentionOutputs>("RetentionOutputs");
     effects.prepare_output_contract_for_test::<RetentionOutputs>();
     let account = effects.existing_entity(account).unwrap();
     effects

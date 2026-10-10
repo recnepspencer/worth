@@ -264,8 +264,8 @@ impl ProductBranchRegistryReservation {
         if !self.root && !state.reserved_names.contains(installed.name.as_str()) {
             return Err(ProductBranchRegistryDenial::ReservationMissing);
         }
-        // Both maps' spare storage was reserved before effects. No allocation,
-        // callback or destructor separates taking custody and stamping success.
+        // Exact lookup storage and branch capacity were admitted before effects.
+        // The ordered visit index grows on insertion under this same custody lock.
         let cell = installed
             .cell
             .take()

@@ -1,3 +1,8 @@
+#![cfg_attr(
+    not(test),
+    deny(clippy::iter_over_hash_type, clippy::disallowed_methods)
+)]
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 //! `worth-runtime-bridge` owns the runtime bridge facade and its internal
 //! subdomain boundaries.
 //!

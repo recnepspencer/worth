@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 use std::sync::Arc;
 
 use super::{
@@ -39,6 +40,10 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
     let first = Arc::new(WorthQueryApplicationOutputCorrespondence::default());
     let sibling = Arc::new(WorthQueryApplicationOutputCorrespondence::default());
     let mut lineage = WorthQueryApplicationOutputLineage::default();
+    lineage.fixture_binding(
+        std::any::TypeId::of::<RestoredOutputBinding>(),
+        "RestoredOutputBinding",
+    );
 
     lineage.record_restoration(
         std::any::TypeId::of::<RestoredOutputBinding>(),
@@ -90,7 +95,7 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
         runtime_authority,
         schema,
         scope,
-        output_binding: std::any::TypeId::of::<RestoredOutputBinding>(),
+        output_binding: OutputBindingIdentity::declared("RestoredOutputBinding"),
     };
     let history = &lineage.by_source[&source][&observation.lifecycle_incarnation()];
     let maximum_generation = observation.reference_generation().get();
@@ -117,7 +122,7 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
     assert_eq!(history[&maximum_generation].len(), 2);
 
     lineage.install_output_families(std::collections::BTreeMap::from([(
-        "partitioned-family".to_owned(),
+        "partitioned-family".to_owned().into(),
         vec![(
             std::any::TypeId::of::<RestoredOutputBinding>(),
             "output".to_owned(),
@@ -218,6 +223,10 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
         .unwrap(),
     );
     let mut lineage = WorthQueryApplicationOutputLineage::default();
+    lineage.fixture_binding(
+        std::any::TypeId::of::<RestoredOutputBinding>(),
+        "RestoredOutputBinding",
+    );
 
     lineage.record_recovered_prior_output(
         std::any::TypeId::of::<RestoredOutputBinding>(),
@@ -251,7 +260,7 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
         runtime_authority,
         schema: schema.clone(),
         scope,
-        output_binding: std::any::TypeId::of::<RestoredOutputBinding>(),
+        output_binding: OutputBindingIdentity::declared("RestoredOutputBinding"),
     };
     assert_eq!(
         lineage.by_source[&semantic_source][&observation.lifecycle_incarnation()].len(),
@@ -348,4 +357,28 @@ fn source_facts(
             ),
         },
     ])
+}
+
+#[test]
+fn family_inventory_visits_follow_declared_names() {
+    use std::collections::BTreeMap;
+    for _ in 0..16 {
+        for reverse in [false, true] {
+            let mut declarations = [
+                ("zulu-family".to_owned().into(), Vec::new()),
+                ("alpha-family".to_owned().into(), Vec::new()),
+            ];
+            if reverse {
+                declarations.reverse();
+            }
+            let mut lineage = WorthQueryApplicationOutputLineage::default();
+            lineage.install_output_families(BTreeMap::from(declarations));
+            let visits: Vec<_> = lineage
+                .output_families
+                .keys()
+                .map(|family| family.as_str())
+                .collect();
+            assert_eq!(visits, ["alpha-family", "zulu-family"]);
+        }
+    }
 }

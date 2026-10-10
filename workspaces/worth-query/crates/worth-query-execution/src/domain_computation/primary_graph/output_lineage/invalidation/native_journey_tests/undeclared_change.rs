@@ -2,6 +2,7 @@
 //! delivery epoch under which every reader registered before it verifies in
 //! full; a snapshot retained from before it keeps its exact answer, and a
 //! reader registered after it is exact again.
+use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 
 use super::super::logical_marking::NativeMarkingPrecision;
 use super::super::mark_state::FullVerificationReason;
@@ -49,7 +50,7 @@ fn a_commit_delivered_without_touch_keys_starts_a_fully_verified_epoch() {
         runtime_authority: world.application.runtime.authority_identity().as_u64(),
         schema: world.application.installed_schema.binding_identity().clone(),
         scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(entity),
-        output_binding: TypeId::of::<StatusOutput>(),
+        output_binding: OutputBindingIdentity::declared("StatusOutput"),
     };
     let earlier = RecordedSettlementIdentity::retain(&source, coordinate, 0);
     let later = RecordedSettlementIdentity::retain(&source, coordinate, 1);

@@ -3,7 +3,7 @@ use worth_signal::facade::{branch::SignalBranchBasisAdmissionIdentity, NodeId};
 /// O(1)-axis lookup identity for one owner-admitted Signal basis and node.
 /// The admission token is descriptive; the returned lowering remains the
 /// live authority checked by Bridge before use.
-#[derive(Clone, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Eq, Hash, PartialEq)]
 pub(in crate::conditional_execution) struct BridgeExactConditionalBasisKey {
     basis: SignalBranchBasisAdmissionIdentity,
     node: NodeId,

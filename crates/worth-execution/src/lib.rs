@@ -1,3 +1,8 @@
+#![cfg_attr(
+    not(test),
+    deny(clippy::iter_over_hash_type, clippy::disallowed_methods)
+)]
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 //! Bounded computation authority shared by WORTH runtimes.
 //!
 //! Only the composition root constructs an authority. Domain runtimes receive

@@ -61,6 +61,7 @@ fn commit_own_write(
         crate::domain_computation::execution_runtime::product_world::test_product_world_resources();
     let resources = product_resources.invalidation_resources();
     let world = crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world_with_product_resources(product_resources);
+    world.declare_output_contract::<OwnWriteOutputs>("OwnWriteOutputs");
     let request = live_scope();
     let principal = authenticated_principal(&world, &request);
     let account = resolved_account(&world, "open", &request);

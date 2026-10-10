@@ -1,5 +1,6 @@
 //! A late re-registration that replays a change must reach consumers that were
 //! registered against the earlier, current row.
+use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 
 use super::*;
 
@@ -38,10 +39,13 @@ fn retained_re_registration_marks_existing_consumers_pending() {
         output_binding,
     }
     };
-    let upstream =
-        RecordedSettlementIdentity::retain(&source(TypeId::of::<StatusOutput>()), coordinate, 0);
+    let upstream = RecordedSettlementIdentity::retain(
+        &source(OutputBindingIdentity::declared("StatusOutput")),
+        coordinate,
+        0,
+    );
     let consumer = RecordedSettlementIdentity::retain(
-        &source(TypeId::of::<DownstreamOutput>()),
+        &source(OutputBindingIdentity::declared("DownstreamOutput")),
         coordinate,
         0,
     );

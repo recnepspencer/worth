@@ -98,11 +98,16 @@ pub(in crate::domain_computation::primary_graph) fn prepare_stable_address<
     if !coordination.admits(observation) {
         return Err(denial(Kind::PublicationStale));
     }
+    let mut lineage = owner
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
     let source = SemanticSource {
         runtime_authority: scope.runtime_authority(),
         schema: scope.binding_identity().clone(),
         scope: scope.scope(),
-        output_binding: std::any::TypeId::of::<Binding>(),
+        output_binding: lineage
+            .binding_identity(std::any::TypeId::of::<Binding>())
+            .expect("admitted binding is installed"),
     };
     if verified.candidate.settlement_identity().source() != &source {
         return Err(denial(Kind::ForeignSource));
@@ -116,9 +121,6 @@ pub(in crate::domain_computation::primary_graph) fn prepare_stable_address<
         occurrence: observation.lifecycle_incarnation(),
         generation: observation.reference_generation().get(),
     };
-    let mut lineage = owner
-        .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner);
     lineage.drain_cancelled_slots(admission)?;
     // History no retained reader selects is freed before this address extends it.
     lineage.retire_unselected_generations(&source, coordinate.occurrence, admission)?;

@@ -105,7 +105,7 @@ impl WorthQueryApplicationOutputLineage {
             runtime_authority,
             schema: schema.clone(),
             scope,
-            output_binding,
+            output_binding: self.binding_identity(output_binding)?,
         };
         let history = self.by_source.get(&source)?.get(&suspended_occurrence)?;
         let suspended = latest_output_matching(history, suspended_generation, |recorded| {

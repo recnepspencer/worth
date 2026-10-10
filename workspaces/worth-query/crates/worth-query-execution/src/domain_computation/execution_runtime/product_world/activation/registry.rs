@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 use std::sync::{Arc, Mutex};
 
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
@@ -25,7 +25,7 @@ pub(crate) struct WorthQueryProductActivationRegistry {
 
 struct ActivationRegistryState {
     gates: HashMap<ProductBranchIdentity, ActivationEntry>,
-    live_occurrences: HashSet<ProductBranchIncarnation>,
+    live_occurrences: BTreeSet<ProductBranchIncarnation>,
     unavailable_programs: HashSet<ApplicationProgramRevision>,
     in_flight_programs: HashMap<ApplicationProgramRevision, usize>,
     program_coordination_required: bool,
@@ -39,10 +39,7 @@ impl WorthQueryProductActivationRegistry {
         gates
             .try_reserve(limit.get())
             .map_err(|_| WorthQueryProductActivationDenial::AllocationRejected)?;
-        let mut live_occurrences = HashSet::new();
-        live_occurrences
-            .try_reserve(limit.get())
-            .map_err(|_| WorthQueryProductActivationDenial::AllocationRejected)?;
+        let live_occurrences = BTreeSet::new();
         Ok(Self {
             state: Mutex::new(ActivationRegistryState {
                 gates,
@@ -144,7 +141,6 @@ impl WorthQueryProductActivationRegistry {
             .try_reserve_exact(state.live_occurrences.len())
             .map_err(|_| WorthQueryProductActivationDenial::AllocationRejected)?;
         occurrences.extend(state.live_occurrences.iter().copied());
-        occurrences.sort_unstable();
         Ok(occurrences.into_boxed_slice())
     }
 
@@ -207,7 +203,7 @@ impl WorthQueryProductActivationRegistry {
     }
 }
 
-/// All fallible storage admission precedes World branch creation.
+/// Branch capacity admission precedes World branch creation.
 pub(crate) struct WorthQueryProductActivationReservation<'a> {
     registry: &'a WorthQueryProductActivationRegistry,
     gate: Arc<WorthQueryProductActivationGate>,

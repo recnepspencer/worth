@@ -1,5 +1,5 @@
 use std::any::{Any, TypeId};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::marker::PhantomData;
 use std::sync::Arc;
 
@@ -47,18 +47,20 @@ pub(in crate::domain_computation::primary_graph) struct InstalledManagedComputat
 
 pub(in crate::domain_computation::primary_graph) struct PendingMutationHandlerRegistry<Schema> {
     entries: BTreeMap<String, PendingMutationHandler>,
-    computations: BTreeMap<TypeId, InstalledManagedComputationOwner>,
+    computations: HashMap<TypeId, InstalledManagedComputationOwner>,
     _schema: PhantomData<fn() -> Schema>,
 }
 
 pub(in crate::domain_computation::primary_graph) struct InstalledMutationHandlerRegistry<Schema> {
     entries: BTreeMap<String, PendingMutationHandler>,
-    computations: BTreeMap<TypeId, InstalledManagedComputationOwner>,
+    computations: HashMap<TypeId, InstalledManagedComputationOwner>,
     _schema: PhantomData<fn() -> Schema>,
 }
 
 #[derive(Clone, Copy)]
 struct ManagedComputationExpectation {
+    composition_instance: &'static str,
+    feature_identity: &'static str,
     identity: &'static str,
     feature_type: TypeId,
     computation_type: TypeId,
@@ -69,7 +71,7 @@ impl<Schema> Default for PendingMutationHandlerRegistry<Schema> {
     fn default() -> Self {
         Self {
             entries: BTreeMap::new(),
-            computations: BTreeMap::new(),
+            computations: HashMap::new(),
             _schema: PhantomData,
         }
     }
@@ -253,30 +255,49 @@ impl<Schema> InstalledMutationHandlerRegistry<Schema> {
         &self,
         features: &[worth_query_declaration::facade::application_program::ApplicationFeatureDeclaration],
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-        let declared = features
-            .iter()
-            .flat_map(|feature| feature.managed_computations())
-            .map(|computation| {
-                (
-                    computation.computation_type(),
-                    ManagedComputationExpectation {
-                        identity: computation.identity(),
-                        feature_type: computation.feature_type(),
-                        computation_type: computation.computation_type(),
-                        output_artifact_type: computation.output_artifact_type(),
-                    },
-                )
-            })
-            .collect::<BTreeMap<_, _>>();
+        let mut declared = Vec::new();
+        let mut positions = HashMap::<TypeId, usize>::new();
+        for (feature, computation) in features.iter().flat_map(|feature| {
+            feature
+                .managed_computations()
+                .iter()
+                .map(move |computation| (feature, computation))
+        }) {
+            let entry = (
+                computation.computation_type(),
+                ManagedComputationExpectation {
+                    composition_instance: feature.composition_instance(),
+                    feature_identity: feature.identity(),
+                    identity: computation.identity(),
+                    feature_type: computation.feature_type(),
+                    computation_type: computation.computation_type(),
+                    output_artifact_type: computation.output_artifact_type(),
+                },
+            );
+            if let Some(position) = positions.get(&entry.0) {
+                declared[*position] = entry;
+            } else {
+                positions.insert(entry.0, declared.len());
+                declared.push(entry);
+            }
+        }
         validate_managed_computation_inventory(&self.computations, &declared)
     }
 }
 
 fn validate_managed_computation_inventory(
-    installed: &BTreeMap<TypeId, InstalledManagedComputationOwner>,
-    declared: &BTreeMap<TypeId, ManagedComputationExpectation>,
+    installed: &HashMap<TypeId, InstalledManagedComputationOwner>,
+    declared: &[(TypeId, ManagedComputationExpectation)],
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-    for (computation_type, computation) in declared {
+    let mut computations: Vec<_> = declared.iter().collect();
+    computations.sort_by_key(|(_, computation)| {
+        (
+            computation.composition_instance,
+            computation.feature_identity,
+            computation.identity,
+        )
+    });
+    for (computation_type, computation) in computations {
         let owner = installed.get(computation_type).ok_or_else(|| {
             denial(
                 DenialKind::MissingManagedComputationOwner,

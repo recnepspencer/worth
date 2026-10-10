@@ -2,6 +2,7 @@
 //! field-revision oracle. This does not measure public producer contacts.
 use super::super::logical_marking::{LogicalMarkingCounts, NativeMarkingPrecision};
 use super::*;
+use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 use crate::domain_computation::primary_graph::tests::fixture::{Account, AccountIdentity};
 use worth_relational::facade::{
     identity::PartitionId,
@@ -96,7 +97,7 @@ fn run_population(population: usize) -> LogicalMarkingCounts {
             output_binding: binding,
         };
         let identities: Vec<_> = entities.iter().map(|entity|
-            RecordedSettlementIdentity::retain(&source(*entity, TypeId::of::<LabelOutput>()), coordinate, 0)).collect();
+            RecordedSettlementIdentity::retain(&source(*entity, OutputBindingIdentity::declared("LabelOutput")), coordinate, 0)).collect();
         // This oracle reads Native revisions directly; it does not call the
         // marking verifier or derive expected ordinals from actor postings.
         let old_revisions: Vec<_> = entities.iter().map(|entity| {
@@ -114,7 +115,7 @@ fn run_population(population: usize) -> LogicalMarkingCounts {
                 "actual Native registration must stay within the installed capacity");
         }
         let downstream = RecordedSettlementIdentity::retain(
-            &source(entities[0], TypeId::of::<DownstreamOutput>()), coordinate, 0,
+            &source(entities[0], OutputBindingIdentity::declared("DownstreamOutput")), coordinate, 0,
         );
         register(owner, downstream.clone(), Arc::from([]), &before,
             OrdSet::unit(identities[0].clone()));
@@ -145,7 +146,7 @@ fn run_population(population: usize) -> LogicalMarkingCounts {
         assert!(owner.native_marking_report(&before, &mut owner.edit_admission()).unwrap().is_none(),
             "a historical image cannot report the newer Native delivery");
         let late = RecordedSettlementIdentity::retain(
-            &source(entities[0], TypeId::of::<LateOutput>()), coordinate, 0,
+            &source(entities[0], OutputBindingIdentity::declared("LateOutput")), coordinate, 0,
         );
         register(owner, late, Arc::from([field_fact(runtime, &after_handle, entities[0], label.clone())]),
             &after, OrdSet::new());

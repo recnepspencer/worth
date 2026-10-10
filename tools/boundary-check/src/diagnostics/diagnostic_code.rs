@@ -28,6 +28,7 @@ pub(crate) enum DiagnosticCode {
     Bc7006LifecycleStateDefault,
     Bc7007ThreadingBoundary,
     Bc7008RequestConstruction,
+    Bc7009CanonicalOrder,
     Bc8001SnapshotBaseline,
     Bc8002FacadeSnapshotDrift,
     Bc8003CrateDagSnapshotDrift,
@@ -37,7 +38,7 @@ pub(crate) enum DiagnosticCode {
 
 impl DiagnosticCode {
     #[cfg(test)]
-    pub(crate) const ALL: [Self; 30] = [
+    pub(crate) const ALL: [Self; 31] = [
         Self::Bc1001IllegalCrateName,
         Self::Bc1002UnreservedDomain,
         Self::Bc2001BandDependencyViolation,
@@ -63,6 +64,7 @@ impl DiagnosticCode {
         Self::Bc7006LifecycleStateDefault,
         Self::Bc7007ThreadingBoundary,
         Self::Bc7008RequestConstruction,
+        Self::Bc7009CanonicalOrder,
         Self::Bc8001SnapshotBaseline,
         Self::Bc8002FacadeSnapshotDrift,
         Self::Bc8003CrateDagSnapshotDrift,
@@ -97,6 +99,7 @@ impl DiagnosticCode {
             Self::Bc7006LifecycleStateDefault => "BC7006_LIFECYCLE_STATE_DEFAULT",
             Self::Bc7007ThreadingBoundary => "BC7007_THREADING_BOUNDARY",
             Self::Bc7008RequestConstruction => "BC7008_REQUEST_CONSTRUCTION",
+            Self::Bc7009CanonicalOrder => "BC7009_CANONICAL_ORDER",
             Self::Bc8001SnapshotBaseline => "BC8001_SNAPSHOT_BASELINE",
             Self::Bc8002FacadeSnapshotDrift => "BC8002_FACADE_SNAPSHOT_DRIFT",
             Self::Bc8003CrateDagSnapshotDrift => "BC8003_CRATE_DAG_SNAPSHOT_DRIFT",
@@ -124,6 +127,7 @@ impl DiagnosticCode {
             Self::Bc7006LifecycleStateDefault => "tools/boundary-check/config/road1.toml [[truth_type_denials]]; name the variant at each construction site instead of a Default",
             Self::Bc7007ThreadingBoundary => "tools/boundary-check/config/road1.toml [[threading_sites]]; parallel work belongs in worth-execution, while every non-compute thread needs an exact category and reason",
             Self::Bc7008RequestConstruction => "tools/boundary-check/config/road1.toml [[request_constructor_denials]]; borrow the caller request or construct backing only at the declared policy-taking host entry",
+            Self::Bc7009CanonicalOrder => "tools/boundary-check/src/source_rules/analysis/canonical_order.rs; order Query Execution by declared identity; named TypeId containers are membership only",
             Self::Bc8001SnapshotBaseline | Self::Bc8002FacadeSnapshotDrift | Self::Bc8003CrateDagSnapshotDrift => "tools/boundary-check/snapshots/; regenerate the governed snapshot explicitly with boundary-check --update-snapshots",
             Self::Bc8004FacadeDocMissing | Self::Bc8005FacadeDocDebtStale => "tools/boundary-check/snapshots/facade-doc-debt.toml; document the named definition with a `///` comment, or delete the paid debt entry",
         };

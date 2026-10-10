@@ -1,5 +1,6 @@
 //! A pending upstream cannot hide a conclusive change to a candidate's own output.
 use super::*;
+use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 use crate::domain_computation::primary_graph::{
     application_attempt::WorthQueryCheckpointOutputRole,
     invariant_projection::{
@@ -49,10 +50,13 @@ fn pending_candidate_rejects_changed_own_evidence_without_certifying_upstream() 
         output_binding,
     }
     };
-    let a =
-        RecordedSettlementIdentity::retain(&source(TypeId::of::<StatusOutput>()), coordinate, 0);
+    let a = RecordedSettlementIdentity::retain(
+        &source(OutputBindingIdentity::declared("StatusOutput")),
+        coordinate,
+        0,
+    );
     let b = RecordedSettlementIdentity::retain(
-        &source(TypeId::of::<DownstreamOutput>()),
+        &source(OutputBindingIdentity::declared("DownstreamOutput")),
         coordinate,
         0,
     );

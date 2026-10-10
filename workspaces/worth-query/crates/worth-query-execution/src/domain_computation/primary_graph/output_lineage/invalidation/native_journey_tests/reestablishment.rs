@@ -1,6 +1,7 @@
 //! A fully compared expired closure clears delivery-only pending edges upstream-first.
 use super::*;
 use crate::domain_computation::execution_runtime::WorthQueryInvalidationResourceInstallation;
+use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 use crate::domain_computation::primary_graph::tests::fixture::{
     AccountBlocked, PrincipalIdentityField,
 };
@@ -49,7 +50,7 @@ fn full_comparison_clears_expired_pending_edges_only_after_the_upstream_is_clean
     let source = SemanticSource { runtime_authority: world.application.runtime.authority_identity().as_u64(),
         schema: world.application.installed_schema.binding_identity(),
         scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(account),
-        output_binding: TypeId::of::<StatusOutput>() };
+        output_binding: OutputBindingIdentity::declared("StatusOutput") };
     let upstream = RecordedSettlementIdentity::retain(&source, coordinate, 0);
     let consumer = RecordedSettlementIdentity::retain(&source, coordinate, 1);
     let graph = world.application.runtime.primary_graph().unwrap();

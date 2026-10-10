@@ -34,7 +34,7 @@ impl WorthQueryApplicationOutputLineage {
             runtime_authority,
             schema,
             scope,
-            output_binding,
+            output_binding: self.binding_identity(output_binding)?,
         };
         let occurrence = observation.lifecycle_incarnation();
         let generation = observation.reference_generation().get();
@@ -124,7 +124,7 @@ impl WorthQueryApplicationOutputLineage {
             runtime_authority,
             schema,
             scope,
-            output_binding,
+            output_binding: self.binding_identity(output_binding)?,
         };
         let occurrence = observation.lifecycle_incarnation();
         let generation_number = observation.reference_generation().get();
@@ -279,7 +279,9 @@ impl WorthQueryApplicationOutputLineage {
             runtime_authority,
             schema,
             scope,
-            output_binding,
+            output_binding: self
+                .binding_identity(output_binding)
+                .expect("recovered binding is installed"),
         };
         // Recovery supplies an initial prior correspondence, never a newer
         // publication than one already retained for this partition.

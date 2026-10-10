@@ -192,6 +192,7 @@ where
                         owner_lease: None,
                         counts: ComponentBasisDependencyCounts::zero(),
                         lease_identity: entry.lease_identity,
+                        basis_order: entry.basis_order,
                     },
                 );
                 state.active_obligations -= 1;
@@ -219,6 +220,7 @@ where
                         owner_lease: None,
                         counts: ComponentBasisDependencyCounts::zero(),
                         lease_identity: entry.lease_identity,
+                        basis_order: entry.basis_order,
                     },
                 );
                 state.active_obligations -= 1;
@@ -235,7 +237,7 @@ where
 
     fn abandon_claim(&self, claim: ComponentBasisPinClaim) {
         let key = claim.key.clone();
-        let (lease, flight, lease_identity) = {
+        let (lease, flight, lease_identity, basis_order) = {
             let mut state = self.lock();
             if claim.owner != state.owner_identity {
                 return;
@@ -269,7 +271,7 @@ where
             state.active_obligations -= 1;
             state.costs.dependency_releases = state.costs.dependency_releases.saturating_add(1);
             state.costs.owner_drop_releases = state.costs.owner_drop_releases.saturating_add(1);
-            (lease, flight, entry.lease_identity)
+            (lease, flight, entry.lease_identity, entry.basis_order)
         };
         drop(lease);
         let mut state = self.lock();
@@ -280,6 +282,7 @@ where
                 owner_lease: None,
                 counts: ComponentBasisDependencyCounts::zero(),
                 lease_identity,
+                basis_order,
             },
         );
         flight.finish(FlightCompletion::Released);

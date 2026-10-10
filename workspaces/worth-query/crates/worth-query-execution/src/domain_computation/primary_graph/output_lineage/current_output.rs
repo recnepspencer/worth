@@ -36,11 +36,14 @@ impl WorthQueryApplicationOutputLineage {
         source_partition_identity: [u8; 32],
         maximum_work: usize,
     ) -> Result<(Option<WorthQueryProducerLineageHead>, usize), ()> {
+        let Some(output_binding) = self.binding_identity(TypeId::of::<Binding>()) else {
+            return (maximum_work > 0).then_some((None, 1)).ok_or(());
+        };
         let source = SemanticSource {
             runtime_authority: scope.runtime_authority(),
             schema: scope.binding_identity().clone(),
             scope: scope.scope(),
-            output_binding: TypeId::of::<Binding>(),
+            output_binding,
         };
         if !self.by_source.contains_key(&source) {
             return (maximum_work > 0).then_some((None, 1)).ok_or(());
@@ -104,6 +107,9 @@ impl WorthQueryApplicationOutputLineage {
             return Ok(None);
         };
         let partition = receipt.idempotency_binding().source_partition_identity();
+        let Some(output_binding) = self.binding_identity(output_binding) else {
+            return Ok(None);
+        };
         let source = SemanticSource {
             runtime_authority,
             schema: schema.clone(),
@@ -167,6 +173,9 @@ impl WorthQueryApplicationOutputLineage {
             return Ok(None);
         };
         let Some(output_binding) = settlement.output_correspondence.binding_type() else {
+            return Ok(None);
+        };
+        let Some(output_binding) = self.binding_identity(output_binding) else {
             return Ok(None);
         };
         let source = SemanticSource {

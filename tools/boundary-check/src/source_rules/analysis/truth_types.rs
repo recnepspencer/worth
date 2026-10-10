@@ -10,6 +10,7 @@
 #[cfg(test)]
 mod tests;
 
+mod hash_walk_configuration;
 mod lifecycle_default;
 mod lint_levels;
 mod sealed_construction;
@@ -105,4 +106,8 @@ fn disallowed_methods_in(text: &str) -> Result<BTreeSet<String>, String> {
                 .ok_or_else(|| format!("disallowed-methods entry {entry} names no path"))
         })
         .collect()
+}
+
+pub(super) fn check_hash_walk_configuration(root: &Path) -> Result<Vec<Diagnostic>, String> {
+    hash_walk_configuration::check(root)
 }

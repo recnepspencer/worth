@@ -179,7 +179,7 @@ impl WorthQueryOutputDemandRegistry {
                     false
                 };
                 if !live {
-                    // Activation uses this same registry â†’ token order. A new
+                    // Activation uses this same registry-to-token order. A new
                     // interest cannot reopen the row before deactivation.
                     selected.membership.set_required(false);
                 }
@@ -317,7 +317,7 @@ pub(in crate::domain_computation::primary_graph::application_output_demand::regi
         usize::BITS as usize - state.required_budget_bytes.max(1).leading_zeros() as usize;
     let work = 11usize
         .checked_mul(maximum_levels)
-        .and_then(|comparisons| comparisons.checked_mul(key.producer.len().checked_add(6)?))
+        .and_then(|comparisons| comparisons.checked_mul(key.comparison_work()?))
         .and_then(|work| work.checked_add(1))
         .ok_or_else(work_denial)?;
     admission

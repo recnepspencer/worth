@@ -1,3 +1,8 @@
+#![cfg_attr(
+    not(test),
+    deny(clippy::iter_over_hash_type, clippy::disallowed_methods)
+)]
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 //! Installed Query execution authority.
 //!
 //! Admission decides resource eligibility. This package consumes that proof,

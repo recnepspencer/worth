@@ -4,6 +4,7 @@ use super::super::super::WorthQueryApplicationOutputPosture;
 use super::super::*;
 use super::{checkpoint_identity, source_facts};
 use crate::domain_computation::primary_graph::application_contribution::PriorAbsence;
+use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 use worth_relational::facade::identity::{EntityId, PartitionId};
 
 mod checkpoint_locator_copy;
@@ -62,8 +63,12 @@ impl Court {
             panic!("real child occurrence");
         };
         let mut lineage = WorthQueryApplicationOutputLineage::default();
+        lineage.fixture_binding(std::any::TypeId::of::<Initial>(), "Initial");
+        lineage.fixture_binding(std::any::TypeId::of::<OtherRole>(), "OtherRole");
+        lineage.fixture_binding(std::any::TypeId::of::<Preserve>(), "Preserve");
+
         lineage.install_output_families(BTreeMap::from([(
-            "family".to_owned(),
+            "family".to_owned().into(),
             vec![
                 (TypeId::of::<Initial>(), "output".to_owned()),
                 (TypeId::of::<Preserve>(), "output".to_owned()),
@@ -75,7 +80,7 @@ impl Court {
                 runtime_authority: world.application.runtime.authority_identity().as_u64(),
                 schema: world.application.installed_schema.binding_identity().clone(),
                 scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(entity(1)),
-                output_binding: TypeId::of::<Initial>(),
+                output_binding: OutputBindingIdentity::declared("Initial"),
             },
             coordinate: ProductCoordinate { occurrence: observation.lifecycle_incarnation(), generation: 10 },
             child: child.lifecycle_incarnation(),
@@ -91,17 +96,20 @@ impl Court {
         facts: bool,
     ) -> Arc<WorthQueryApplicationOutputCorrespondence> {
         let source = SemanticSource {
-            output_binding: TypeId::of::<Binding>(),
+            output_binding: self
+                .lineage
+                .binding_identity(TypeId::of::<Binding>())
+                .unwrap(),
             ..self.source.clone()
         };
-        let role = if source.output_binding == TypeId::of::<OtherRole>() {
+        let role = if TypeId::of::<Binding>() == TypeId::of::<OtherRole>() {
             "other"
         } else {
             "output"
         };
         let correspondence = Arc::new(
             WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
-                source.output_binding,
+                TypeId::of::<Binding>(),
                 TypeId::of::<()>(),
                 BTreeSet::new(),
                 vec![WorthQueryCheckpointOutputRole {
@@ -192,8 +200,9 @@ impl Court {
         origin_generation: u64,
     ) {
         let base_source = self.source.clone();
+        let bindings = &self.lineage.binding_identities;
         let source = |binding| SemanticSource {
-            output_binding: binding,
+            output_binding: bindings.identity(binding).unwrap(),
             ..base_source.clone()
         };
         let origin = self.lineage.by_source[&source(TypeId::of::<Origin>())]
