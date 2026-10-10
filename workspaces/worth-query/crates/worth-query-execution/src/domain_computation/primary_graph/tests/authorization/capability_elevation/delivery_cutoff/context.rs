@@ -67,11 +67,7 @@ impl ElevatedQueryContext {
     }
 }
 
-pub(super) fn context(
-    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    live: bool,
-) -> ElevatedQueryContext {
+pub(super) fn context(live: bool) -> ElevatedQueryContext {
     let world = if live {
         installed_elevated_capability_live_world(CapabilityElevationScenario::Active)
     } else {
@@ -81,40 +77,45 @@ pub(super) fn context(
         .authorization_time
         .script(std::iter::repeat_n(time(100), 64));
     let request = live_scope();
-    let requested = super::super::request_support::commit_exact_request(
-        &phase_custody.phase_for_application(&world.application),
-        &world,
-        &request,
-    );
-    super::super::request_support::resolve_exact_request_identities(
-        &(phase_custody.phase_for_application(&world.application)).test_host_request(),
-        &world,
-        &request,
-    );
-    let approved = super::super::approval_transition::approve_exact_request(
-        phase_custody,
-        &world,
-        &request,
-        requested,
-    );
-    let principal = authenticated_principal(&(phase_custody).test_host_request(), &world, &request);
-    let committer =
-        super::super::approval_transition::authenticated(phase_custody, &world, "carol", &request);
-    let account = world
+    let requested = super::super::request_support::commit_exact_request(&world, &request);
+    super::super::request_support::resolve_exact_request_identities(&world, &request);
+    let approved =
+        super::super::approval_transition::approve_exact_request(&world, &request, requested);
+    let (principal, committer, account) = world
         .application
-        .select_product_branch(
-            execution,
-            world.application.product_runtime().default_branch(),
-        )
-        .expect("the selected product branch remains admitted")
-        .resolve_entity(
-            &phase_custody.phase_for_application(&world.application),
-            AccountIdentity::reference(),
-            "account-1".to_owned(),
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+        .with_application_advancement(&request, |phase| {
+            let custody = phase.test_host_request();
+            let phase_custody = &custody;
+            let borrowed_execution = phase
+                .execution_request_for(&world.application.product_runtime)
+                .expect("the context read belongs to its installed world");
+            let execution = &borrowed_execution;
+            let principal =
+                authenticated_principal(&(phase_custody).test_host_request(), &world, &request);
+            let committer = super::super::approval_transition::authenticated(
+                phase_custody,
+                &world,
+                "carol",
+                &request,
+            );
+            let account = world
+                .application
+                .select_product_branch(
+                    execution,
+                    world.application.product_runtime().default_branch(),
+                )
+                .expect("the selected product branch remains admitted")
+                .resolve_entity(
+                    &phase_custody.phase_for_application(&world.application),
+                    AccountIdentity::reference(),
+                    "account-1".to_owned(),
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap();
+            (principal, committer, account)
+        })
+        .expect("the context read owns its host call");
     let query = world
         .application
         .installed_schema()

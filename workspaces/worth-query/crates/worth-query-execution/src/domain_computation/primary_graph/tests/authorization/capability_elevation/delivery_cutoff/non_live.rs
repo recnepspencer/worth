@@ -11,129 +11,171 @@ use crate::domain_computation::primary_graph::{
 
 #[test]
 fn revocation_after_cursor_denies_the_next_page_from_current_truth() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
-        let mut context = context(
-            &host_custody,
-            &host_custody.borrowed_request_for_test(),
-            false,
-        );
-        context.script_current_time();
-        let access =
-            WorthQueryApplicationQueryAccessContext::new(&context.principal, &context.account);
-        let first = context.elevated_access(&host_custody);
-        let plan = context
-            .world
-            .selected_product(&host_custody)
-            .admit_governed_application_query_continuation(
-                &host_custody.phase_for_application(&context.world.application),
-                &context.query,
-                &access,
-                first,
-                elevated_account_activity_parameters("account-1"),
-                crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
-                    one(),
-                    buffer_limit(),
-                    &context.request,
-                ),
+    let mut context = { context(false) };
+    context.script_current_time();
+    let access = WorthQueryApplicationQueryAccessContext::new(&context.principal, &context.account);
+    let first = context
+        .world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            context.elevated_access(&host_custody)
+        })
+        .expect("the fixture read owns its installed host call");
+    let plan = context
+        .world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            context
+                .world
+                .selected_product(&host_custody)
+                .admit_governed_application_query_continuation(
+                    &host_custody.phase_for_application(&context.world.application),
+                    &context.query,
+                    &access,
+                    first,
+                    elevated_account_activity_parameters("account-1"),
+                    crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
+                        one(),
+                        buffer_limit(),
+                        &context.request,
+                    ),
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
+    let page = context
+        .world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            context
+                .world
+                .application
+                .execute_application_query_continuation_page(
+                    &host_custody.phase_for_application(&context.world.application),
+                    plan,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
+    let (rows, continuation, receipt) = page.into_parts();
+    assert_eq!(rows[0].account(), "account-1");
+    assert_eq!(rows[0].activities(), &[("activity-primary".to_owned(), 11)]);
+    assert!(receipt.basis_released());
+    let continuation = continuation.expect("the first activity page must mint a cursor");
+    let pending = context
+        .world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            context.elevated_access(
+                &(host_custody.phase_for_application(&context.world.application))
+                    .test_host_request(),
             )
-            .unwrap();
-        let page = context
-            .world
-            .application
-            .execute_application_query_continuation_page(
-                &host_custody.phase_for_application(&context.world.application),
-                plan,
-            )
-            .unwrap();
-        let (rows, continuation, receipt) = page.into_parts();
-        assert_eq!(rows[0].account(), "account-1");
-        assert_eq!(rows[0].activities(), &[("activity-primary".to_owned(), 11)]);
-        assert!(receipt.basis_released());
-        let continuation = continuation.expect("the first activity page must mint a cursor");
-        let pending = context.elevated_access(
-            &(host_custody.phase_for_application(&context.world.application)).test_host_request(),
-        );
+        })
+        .expect("the fixture read owns its installed host call");
 
-        let approved = context.approved.take().unwrap();
-        close_elevation(
-            &(host_custody.phase_for_application(&context.world.application)).test_host_request(),
-            &context.world,
-            &context.request,
-            approved,
-        );
-        let denial = context
-            .world
-            .application
-            .readmit_governed_application_query_continuation(
-                &host_custody.phase_for_application(&context.world.application),
-                &context.query,
-                &access,
-                pending,
-                elevated_account_activity_parameters("account-1"),
-                continuation,
-                WorthQueryApplicationQueryResumeControls::new(
-                    one(),
-                    buffer_limit(),
-                    &context.request,
-                ),
-            )
-            .err()
-            .expect("revocation after the cursor must deny readmission");
+    let approved = context.approved.take().unwrap();
+    {
+        close_elevation(&context.world, &context.request, approved)
+    };
+    let denial = context
+        .world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            context
+                .world
+                .application
+                .readmit_governed_application_query_continuation(
+                    &host_custody.phase_for_application(&context.world.application),
+                    &context.query,
+                    &access,
+                    pending,
+                    elevated_account_activity_parameters("account-1"),
+                    continuation,
+                    WorthQueryApplicationQueryResumeControls::new(
+                        one(),
+                        buffer_limit(),
+                        &context.request,
+                    ),
+                )
+                .err()
+                .expect("revocation after the cursor must deny readmission")
+        })
+        .expect("the fixture read owns its installed host call");
 
-        assert_eq!(
-            denial.kind(),
-            WorthQueryApplicationQueryAdmissionDenialKind::Authorization(
-                WorthQueryOperationAuthorizationDenialKind::StaleAuthorization,
-            )
-        );
-        assert_resources_released(&context.world);
-    })
+    assert_eq!(
+        denial.kind(),
+        WorthQueryApplicationQueryAdmissionDenialKind::Authorization(
+            WorthQueryOperationAuthorizationDenialKind::StaleAuthorization,
+        )
+    );
+    assert_resources_released(&context.world);
 }
 
 #[test]
 fn revocation_after_selected_plan_denies_before_result_delivery() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
-        let mut context = context(
-            &host_custody,
-            &host_custody.borrowed_request_for_test(),
-            false,
-        );
-        context.script_current_time();
-        let access =
-            WorthQueryApplicationQueryAccessContext::new(&context.principal, &context.account);
-        let capability = context.elevated_access(&host_custody);
-        let plan = context
-            .world
-            .selected_product(&host_custody)
-            .admit_governed_application_query(
-                &host_custody.phase_for_application(&context.world.application),
-                &context.query,
-                &access,
-                capability,
-                elevated_account_activity_parameters("account-1"),
-                crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
-                    one(),
-                    buffer_limit(),
-                    &context.request,
-                ),
-            )
-            .unwrap();
+    let mut context = { context(false) };
+    context.script_current_time();
+    let access = WorthQueryApplicationQueryAccessContext::new(&context.principal, &context.account);
+    let capability = context
+        .world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            context.elevated_access(&host_custody)
+        })
+        .expect("the fixture read owns its installed host call");
+    let plan = context
+        .world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            context
+                .world
+                .selected_product(&host_custody)
+                .admit_governed_application_query(
+                    &host_custody.phase_for_application(&context.world.application),
+                    &context.query,
+                    &access,
+                    capability,
+                    elevated_account_activity_parameters("account-1"),
+                    crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
+                        one(),
+                        buffer_limit(),
+                        &context.request,
+                    ),
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
 
-        let approved = context.approved.take().unwrap();
-        close_elevation(&host_custody, &context.world, &context.request, approved);
-        let denial = context
-            .world
-            .application
-            .execute_application_query_one_shot(
-                &host_custody.phase_for_application(&context.world.application),
-                plan,
-            )
-            .err()
-            .expect("selected data must not pin elevation authority");
+    let approved = context.approved.take().unwrap();
+    {
+        close_elevation(&context.world, &context.request, approved)
+    };
+    let denial = context
+        .world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            context
+                .world
+                .application
+                .execute_application_query_one_shot(
+                    &host_custody.phase_for_application(&context.world.application),
+                    plan,
+                )
+                .err()
+                .expect("selected data must not pin elevation authority")
+        })
+        .expect("the fixture read owns its installed host call");
 
-        assert_stale_authorization(denial.kind());
-        assert_resources_released(&context.world);
-    })
+    assert_stale_authorization(denial.kind());
+    assert_resources_released(&context.world);
 }
 
 fn assert_stale_authorization(kind: WorthQueryApplicationOneShotDenialKind) {
@@ -146,17 +188,11 @@ fn assert_stale_authorization(kind: WorthQueryApplicationOneShotDenialKind) {
 }
 
 fn close_elevation(
-    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     world: &AuthorizationWorld,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     approved: WorthQueryApprovedElevation,
 ) {
-    let mandatory = super::super::terminal_lifecycle_support::close_exact(
-        phase_custody,
-        world,
-        request,
-        approved,
-    );
+    let mandatory = super::super::terminal_lifecycle_support::close_exact(world, request, approved);
     assert_eq!(
         mandatory.closure_kind(),
         WorthQueryElevationClosureKind::Revoked

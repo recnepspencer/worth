@@ -185,17 +185,22 @@ mod close_reads;
 pub(super) use close_reads::close_reads;
 
 pub(super) fn close_exact(
-    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     world: &World,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     approved: WorthQueryApprovedElevation,
 ) -> WorthQueryMandatoryReview {
-    let program = materialize_close(
-        &(phase_custody).test_host_request(),
-        world,
-        request,
-        approved,
-    );
+    let program = world
+        .application
+        .with_application_advancement(request, |phase| {
+            let phase_custody = phase.test_host_request();
+            materialize_close(
+                &(phase_custody).test_host_request(),
+                world,
+                request,
+                approved,
+            )
+        })
+        .expect("the lifecycle materialization owns its host call");
     match world
         .application
         .compare_and_commit_elevation_close(program, idempotency(173, 173))
@@ -285,12 +290,17 @@ pub(super) fn review_reads(
 }
 
 pub(super) fn review_exact(
-    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     world: &World,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     mandatory: WorthQueryMandatoryReview,
 ) -> WorthQueryReviewedElevation {
-    let program = materialize_review(phase_custody, world, request, mandatory);
+    let program = world
+        .application
+        .with_application_advancement(request, |phase| {
+            let phase_custody = phase.test_host_request();
+            materialize_review(&phase_custody, world, request, mandatory)
+        })
+        .expect("the lifecycle materialization owns its host call");
     match world
         .application
         .compare_and_commit_mandatory_review(program, idempotency(174, 174))

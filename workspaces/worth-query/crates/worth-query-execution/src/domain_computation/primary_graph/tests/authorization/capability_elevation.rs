@@ -139,34 +139,42 @@ fn governed_capability_without_elevation_preserves_required_explanation() {
 
 #[test]
 fn resource_selector_cannot_substitute_for_the_declared_elevation_identity() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
-        let (world, request, approved) = approval_transition::exact_approved_world(&host_custody);
-        let principal = authenticated_principal(&host_custody, &world, &request);
-        let capability = installed_capability(&world);
-        let mut input = elevated_input(Some("elevation-2"));
-        input.substitute_resource_selector = true;
+    let (world, request, approved) = approval_transition::exact_approved_world();
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            authenticated_principal(&host_custody, &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let capability = installed_capability(&world);
+    let mut input = elevated_input(Some("elevation-2"));
+    input.substitute_resource_selector = true;
 
-        let Err(denial) = world
-            .selected_product(&host_custody)
-            .admit_approved_elevation_access(
-                &host_custody.phase_for_application(&world.application),
-                &approved,
-                &principal,
-                &capability,
-                input,
-                &request,
-            )
-        else {
-            panic!(
-                "a selector for another installed entity kind must not open elevation authority"
-            );
-        };
+    let Err(denial) = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .selected_product(&host_custody)
+                .admit_approved_elevation_access(
+                    &host_custody.phase_for_application(&world.application),
+                    &approved,
+                    &principal,
+                    &capability,
+                    input,
+                    &request,
+                )
+        })
+        .expect("the fixture read owns its installed host call")
+    else {
+        panic!("a selector for another installed entity kind must not open elevation authority");
+    };
 
-        assert_eq!(
-            denial.kind(),
-            WorthQueryOperationAuthorizationDenialKind::ElevationProjectionRejected
-        );
-    })
+    assert_eq!(
+        denial.kind(),
+        WorthQueryOperationAuthorizationDenialKind::ElevationProjectionRejected
+    );
 }
 
 #[path = "capability_elevation/non_governed_capability_rejects_an_elevation_selector.rs"]
@@ -174,38 +182,55 @@ mod non_governed_capability_rejects_an_elevation_selector;
 
 #[test]
 fn revoked_approved_elevation_cannot_open_active_authority() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
-        let (world, request, approved) = approval_transition::exact_approved_world(&host_custody);
-        world.authorization_time.script([time(100)]);
-        let principal = authenticated_principal(&host_custody, &world, &request);
-        mutation::set_status(
-            &host_custody,
-            &host_custody.borrowed_request_for_test(),
-            &world,
-            "elevation-2",
-            CapabilityElevationStatus::Revoked,
-        );
+    let (world, request, approved) = approval_transition::exact_approved_world();
+    world.authorization_time.script([time(100)]);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            authenticated_principal(&host_custody, &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            mutation::set_status(
+                &host_custody,
+                &host_custody.borrowed_request_for_test(),
+                &world,
+                "elevation-2",
+                CapabilityElevationStatus::Revoked,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
 
-        let Err(denial) = admit(
-            &host_custody,
-            &world,
-            &approved,
-            &principal,
-            &request,
-            Some("elevation-2"),
-        ) else {
-            panic!("revoked approved authority must not open active use");
-        };
+    let Err(denial) = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            admit(
+                &host_custody,
+                &world,
+                &approved,
+                &principal,
+                &request,
+                Some("elevation-2"),
+            )
+        })
+        .expect("the fixture read owns its installed host call")
+    else {
+        panic!("revoked approved authority must not open active use");
+    };
 
-        assert_eq!(
-            denial.kind(),
-            WorthQueryOperationAuthorizationDenialKind::ElevationInactive
-        );
-        assert_eq!(
-            denial.explanation_cause(),
-            Some(WorthQueryApplicationAuthorizationExplanationCause::ElevationDenied)
-        );
-    })
+    assert_eq!(
+        denial.kind(),
+        WorthQueryOperationAuthorizationDenialKind::ElevationInactive
+    );
+    assert_eq!(
+        denial.explanation_cause(),
+        Some(WorthQueryApplicationAuthorizationExplanationCause::ElevationDenied)
+    );
 }
 
 #[path = "capability_elevation/elevation_status_drift_after_admission_is_stale_at_operation_pro.rs"]
@@ -213,46 +238,69 @@ mod elevation_status_drift_after_admission_is_stale_at_operation_pro;
 
 #[test]
 fn approver_drift_after_admission_is_stale_before_operation_authority() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
-        let (world, request, approved) = approval_transition::exact_approved_world(&host_custody);
-        world.authorization_time.script([time(100), time(100)]);
-        let principal = authenticated_principal(&host_custody, &world, &request);
-        let access = admit(
-            &host_custody,
-            &world,
-            &approved,
-            &principal,
-            &request,
-            Some("elevation-2"),
-        )
+    let (world, request, approved) = approval_transition::exact_approved_world();
+    world.authorization_time.script([time(100), time(100)]);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            authenticated_principal(&host_custody, &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let access = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            admit(
+                &host_custody,
+                &world,
+                &approved,
+                &principal,
+                &request,
+                Some("elevation-2"),
+            )
+            .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            mutation::add_self_approver(
+                &host_custody,
+                &host_custody.borrowed_request_for_test(),
+                &world,
+                "elevation-2",
+                principal.principal_entity_id(),
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    let operation = world
+        .application
+        .installed_schema()
+        .installed_operation(ElevatedCapabilityTouchOperation::reference())
         .unwrap();
-        mutation::add_self_approver(
-            &host_custody,
-            &host_custody.borrowed_request_for_test(),
-            &world,
-            "elevation-2",
-            principal.principal_entity_id(),
-        );
-        let operation = world
-            .application
-            .installed_schema()
-            .installed_operation(ElevatedCapabilityTouchOperation::reference())
-            .unwrap();
 
-        let Err(denial) = world.application.authorize_capability_operation(
-            &host_custody.phase_for_application(&world.application),
-            access,
-            &operation,
-            Default::default(),
-        ) else {
-            panic!("changed exact approver relationships must stale admitted elevation evidence");
-        };
+    let Err(denial) = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world.application.authorize_capability_operation(
+                &host_custody.phase_for_application(&world.application),
+                access,
+                &operation,
+                Default::default(),
+            )
+        })
+        .expect("the fixture read owns its installed host call")
+    else {
+        panic!("changed exact approver relationships must stale admitted elevation evidence");
+    };
 
-        assert_eq!(
-            denial.kind(),
-            WorthQueryOperationAuthorizationDenialKind::StaleAuthorization
-        );
-    })
+    assert_eq!(
+        denial.kind(),
+        WorthQueryOperationAuthorizationDenialKind::StaleAuthorization
+    );
 }
 
 fn admit(

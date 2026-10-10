@@ -35,47 +35,66 @@ pub(super) type Access = WorthQueryAdmittedApplicationCapabilityAccess<
 
 #[test]
 fn exact_request_approval_reobserves_lifecycle_and_commits_two_derived_effects() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
-        let (world, request, requested) =
-            requested_world(&host_custody, CapabilityElevationScenario::Active);
-        let approver = authenticated(&host_custody, &world, "bob", &request);
-        let program = materialize_exact_approval(&host_custody, &world, &request, requested);
+    let (world, request, requested) = requested_world(CapabilityElevationScenario::Active);
+    let approver = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            authenticated(&host_custody, &world, "bob", &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let program = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            materialize_exact_approval(&host_custody, &world, &request, requested)
+        })
+        .expect("the fixture read owns its installed host call");
 
-        let WorthQueryElevationApprovalOutcome::Approved(approved) = world
-            .application
-            .compare_and_commit_elevation_approval(program, idempotency(172, 172))
-        else {
-            panic!("the exact approval transition must commit");
-        };
-        assert_approved(&approved, &approver);
-    })
+    let WorthQueryElevationApprovalOutcome::Approved(approved) = world
+        .application
+        .compare_and_commit_elevation_approval(program, idempotency(172, 172))
+    else {
+        panic!("the exact approval transition must commit");
+    };
+    assert_approved(&approved, &approver);
 }
 
 #[test]
 fn requester_and_conflicted_approver_cannot_enter_approval_progression() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
-        for (scenario, subject, expected) in [
-            (
-                CapabilityElevationScenario::Active,
-                "alice",
-                WorthQueryOperationAuthorizationDenialKind::CapabilityAuthorizationMissing,
-            ),
-            (
-                CapabilityElevationScenario::ConflictedApprover,
-                "bob",
-                WorthQueryOperationAuthorizationDenialKind::ConflictRuleMatched,
-            ),
-        ] {
-            let (world, request, _requested) = requested_world(&host_custody, scenario);
-            let principal = authenticated(&host_custody, &world, subject, &request);
-            let denial = approval_access(&host_custody, &world, &principal, &request)
-                .err()
-                .expect("actor policy must deny before lifecycle authority");
-            assert_eq!(denial.kind(), expected);
-            assert!(denial.identity().is_some());
-            assert_eq!(denial.causes(), [expected]);
-        }
-    })
+    for (scenario, subject, expected) in [
+        (
+            CapabilityElevationScenario::Active,
+            "alice",
+            WorthQueryOperationAuthorizationDenialKind::CapabilityAuthorizationMissing,
+        ),
+        (
+            CapabilityElevationScenario::ConflictedApprover,
+            "bob",
+            WorthQueryOperationAuthorizationDenialKind::ConflictRuleMatched,
+        ),
+    ] {
+        let (world, request, _requested) = requested_world(scenario);
+        let principal = world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+                authenticated(&host_custody, &world, subject, &request)
+            })
+            .expect("the fixture read owns its installed host call");
+        let denial = world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+                approval_access(&host_custody, &world, &principal, &request)
+                    .err()
+                    .expect("actor policy must deny before lifecycle authority")
+            })
+            .expect("the fixture read owns its installed host call");
+        assert_eq!(denial.kind(), expected);
+        assert!(denial.identity().is_some());
+        assert_eq!(denial.causes(), [expected]);
+    }
 }
 
 #[path = "approval_transition/approval_after_the_exact_request_window_returns_the_request_rece.rs"]
@@ -85,22 +104,16 @@ mod approval_after_the_exact_request_window_returns_the_request_rece;
 mod approval_command_cannot_select_a_different_elevation_subject;
 
 pub(super) fn requested_world(
-    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     scenario: CapabilityElevationScenario,
 ) -> (
     World,
     worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     WorthQueryRequestedElevation,
 ) {
-    requested_world_with_input(
-        phase_custody,
-        scenario,
-        super::request_transition::honest_input(),
-    )
+    requested_world_with_input(scenario, super::request_transition::honest_input())
 }
 
 pub(super) fn requested_world_with_input(
-    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     scenario: CapabilityElevationScenario,
     input: super::super::super::fixture::RequestElevationInput,
 ) -> (
@@ -111,8 +124,8 @@ pub(super) fn requested_world_with_input(
     let world = installed_elevated_capability_world(scenario);
     world.authorization_time.hold(time(100));
     let request = live_scope();
-    let requested = super::request_support::commit_request(phase_custody, &world, &request, input);
-    super::request_support::resolve_exact_request_identities(phase_custody, &world, &request);
+    let requested = super::request_support::commit_request(&world, &request, input);
+    super::request_support::resolve_exact_request_identities(&world, &request);
     (world, request, requested)
 }
 
@@ -273,36 +286,33 @@ fn assert_approved(approved: &WorthQueryApprovedElevation, approver: &Authentica
     assert!(approved.commits_share_branch());
 }
 
-pub(super) fn exact_approved_world(
-    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
-) -> (
+pub(super) fn exact_approved_world() -> (
     World,
     worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     WorthQueryApprovedElevation,
 ) {
-    let (world, request, requested) =
-        requested_world(phase_custody, CapabilityElevationScenario::Active);
-    let approved = approve_exact_request(
-        &(phase_custody).test_host_request(),
-        &world,
-        &request,
-        requested,
-    );
+    let (world, request, requested) = requested_world(CapabilityElevationScenario::Active);
+    let approved = approve_exact_request(&world, &request, requested);
     (world, request, approved)
 }
 
 pub(super) fn approve_exact_request(
-    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     world: &World,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     requested: WorthQueryRequestedElevation,
 ) -> WorthQueryApprovedElevation {
-    let program = materialize_exact_approval(
-        &(phase_custody).test_host_request(),
-        world,
-        request,
-        requested,
-    );
+    let program = world
+        .application
+        .with_application_advancement(request, |phase| {
+            let phase_custody = phase.test_host_request();
+            materialize_exact_approval(
+                &(phase_custody).test_host_request(),
+                world,
+                request,
+                requested,
+            )
+        })
+        .expect("the approval materialization owns its host call");
     match world
         .application
         .compare_and_commit_elevation_approval(program, idempotency(172, 172))

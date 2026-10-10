@@ -7,29 +7,35 @@ use crate::domain_computation::primary_graph::{
 type World = super::super::super::fixture::AuthorizationWorld;
 
 pub(super) fn commit_exact_request(
-    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     world: &World,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
 ) -> WorthQueryRequestedElevation {
-    commit_request(
-        &(phase_custody).test_host_request(),
-        world,
-        request,
-        super::request_transition::honest_input(),
-    )
+    commit_request(world, request, super::request_transition::honest_input())
 }
 
 pub(super) fn commit_request(
-    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     world: &World,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     input: RequestElevationInput,
 ) -> WorthQueryRequestedElevation {
-    let principal = authenticated_principal(&(phase_custody).test_host_request(), world, request);
-    let program =
-        super::request_transition::request_reads(phase_custody, world, &principal, request, input)
+    let program = world
+        .application
+        .with_application_advancement(request, |phase| {
+            let custody = phase.test_host_request();
+            let phase_custody = &custody;
+            let principal =
+                authenticated_principal(&(phase_custody).test_host_request(), world, request);
+            super::request_transition::request_reads(
+                phase_custody,
+                world,
+                &principal,
+                request,
+                input,
+            )
             .materialize_elevation_request_program()
-            .unwrap();
+            .unwrap()
+        })
+        .expect("the request materialization owns its host call");
     match world
         .application
         .compare_and_commit_elevation_request(program, idempotency(171, 171))
@@ -40,14 +46,20 @@ pub(super) fn commit_request(
 }
 
 pub(super) fn resolve_exact_request_identities(
-    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     world: &World,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
 ) {
-    super::request_transition::resolve_created_identities(
-        phase_custody,
-        &phase_custody.borrowed_request_for_test(),
-        world,
-        request,
-    );
+    world
+        .application
+        .with_application_advancement(request, |phase| {
+            let custody = phase.test_host_request();
+            let phase_custody = &custody;
+            super::request_transition::resolve_created_identities(
+                phase_custody,
+                &phase_custody.borrowed_request_for_test(),
+                world,
+                request,
+            );
+        })
+        .expect("the identity read owns its host call");
 }
