@@ -13,6 +13,7 @@ installation workspaces/worth-query/crates/worth-query-execution/src/domain_comp
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/derived_view/registration/collection/pair/reconstruct_parallel/read_ceiling_tests/query_ceiling.rs
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/governance_affinity_tests.rs
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/live/lease/delivery_tests.rs
+installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/live/lease/foreign_phase_tests.rs
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/live/lease/lifecycle_tests.rs
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/live/lease/reservation_race_tests.rs
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/live/lease/sibling_delivery_tests.rs
