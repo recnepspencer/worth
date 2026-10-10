@@ -12,10 +12,7 @@ fn weak_entry_and_live_lane_share_one_refundable_retained_claim() {
     let world = installed_capability_authorization_world();
     let selected = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.selected_product(&(phase).test_host_request())
-        })
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
         .expect("the fixture read owns its installed host call");
     let observation = selected.product().observation();
     let occurrence = observation.lifecycle_incarnation();
@@ -51,10 +48,7 @@ fn admitted_lane_denies_before_creating_a_weak_entry() {
     let world = installed_capability_authorization_world();
     let selected = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.selected_product(&(phase).test_host_request())
-        })
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
         .expect("the fixture read owns its installed host call");
     let observation = selected.product().observation();
     let owner = Coordinator::new(usize::MAX);
@@ -88,10 +82,7 @@ fn expired_weak_replacement_keeps_the_entry_claim_until_retirement() {
     let world = installed_capability_authorization_world();
     let selected = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.selected_product(&(phase).test_host_request())
-        })
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
         .expect("the fixture read owns its installed host call");
     let observation = selected.product().observation();
     let owner = Coordinator::new(usize::MAX);

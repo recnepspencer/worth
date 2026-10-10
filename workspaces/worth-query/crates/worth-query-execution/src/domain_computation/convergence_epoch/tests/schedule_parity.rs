@@ -56,15 +56,18 @@ fn same_runtime_yield_and_readmission_preserve_the_semantic_convergence_result()
             WorthQueryDirectConvergenceYieldOutcome::Yielded(yielded) => yielded,
             _ => panic!("eligible convergence iteration must preserve yielded authority"),
         };
-        let resumed = match {
-            let installed_fixture_phase = yielded.fixture_phase(active_request);
-            yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
-        } {
-            WorthQueryDirectConvergenceReadmissionOutcome::Readmitted(readmitted) => {
-                assert_committed_readmission_evidence(readmitted.readmission_evidence());
-                readmitted.into_started()
+        let resumed = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = yielded.fixture_phase(active_request);
+                yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+            };
+            match fixture_phase_result {
+                WorthQueryDirectConvergenceReadmissionOutcome::Readmitted(readmitted) => {
+                    assert_committed_readmission_evidence(readmitted.readmission_evidence());
+                    readmitted.into_started()
+                }
+                _ => panic!("same-runtime convergence readmission must restore the provider"),
             }
-            _ => panic!("same-runtime convergence readmission must restore the provider"),
         };
         let outcome = match resumed.advance(execution) {
             WorthQueryDirectConvergenceStepOutcome::Completed(outcome) => outcome,
@@ -156,15 +159,18 @@ fn workflow_yield_and_readmission_preserve_the_semantic_convergence_result() {
             WorthQueryWorkflowConvergenceYieldOutcome::Yielded(yielded) => yielded,
             _ => panic!("eligible workflow iteration must preserve yielded authority"),
         };
-        let resumed = match {
-            let installed_fixture_phase = yielded.fixture_phase(active_request);
-            yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
-        } {
-            WorthQueryWorkflowConvergenceReadmissionOutcome::Readmitted(readmitted) => {
-                assert_committed_readmission_evidence(readmitted.readmission_evidence());
-                readmitted.into_started()
+        let resumed = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = yielded.fixture_phase(active_request);
+                yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+            };
+            match fixture_phase_result {
+                WorthQueryWorkflowConvergenceReadmissionOutcome::Readmitted(readmitted) => {
+                    assert_committed_readmission_evidence(readmitted.readmission_evidence());
+                    readmitted.into_started()
+                }
+                _ => panic!("same-runtime workflow readmission must restore the provider"),
             }
-            _ => panic!("same-runtime workflow readmission must restore the provider"),
         };
         let outcome = match resumed.advance(execution) {
             WorthQueryWorkflowConvergenceStepOutcome::Completed(outcome) => outcome,

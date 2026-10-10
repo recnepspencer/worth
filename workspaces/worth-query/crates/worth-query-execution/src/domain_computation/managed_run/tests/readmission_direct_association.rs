@@ -116,16 +116,19 @@ fn direct_recovery_cleanup(
 ) -> crate::domain_computation::WorthQueryDirectReadmissionCleanupRequired {
     let active_request = execution;
 
-    match {
-        let installed_fixture_phase = yielded.fixture_phase(active_request);
-        yielded.readmit_same_runtime(&installed_fixture_phase, runtime, bridge)
-    } {
+    {
+        let fixture_phase_result = {
+            let installed_fixture_phase = yielded.fixture_phase(active_request);
+            yielded.readmit_same_runtime(&installed_fixture_phase, runtime, bridge)
+        };
+        match fixture_phase_result {
         crate::domain_computation::WorthQueryDirectReadmissionOutcome::RecoveryRequired(
             crate::domain_computation::WorthQueryDirectReadmissionRecoveryRequired::TerminalCleanup(
                 recovery,
             ),
         ) => recovery.into_cleanup(),
         _ => panic!("restore panic must produce direct terminal cleanup"),
+    }
     }
 }
 
@@ -211,32 +214,41 @@ fn same_scope_peer_inspection_survives_denial_while_the_other_owner_cleans_up() 
         );
 
         let foreign_bridge = causal_fixture::managed_admission_context().bridge;
-        let first = match {
-            let installed_fixture_phase = first.fixture_phase(active_request);
-            first.readmit_same_runtime(&installed_fixture_phase, &runtime, &foreign_bridge)
-        } {
-            crate::domain_computation::WorthQueryDirectReadmissionOutcome::Denied(denied) => {
-                denied.into_yielded()
+        let first = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = first.fixture_phase(active_request);
+                first.readmit_same_runtime(&installed_fixture_phase, &runtime, &foreign_bridge)
+            };
+            match fixture_phase_result {
+                crate::domain_computation::WorthQueryDirectReadmissionOutcome::Denied(denied) => {
+                    denied.into_yielded()
+                }
+                _ => panic!("foreign Bridge must deny the exact direct yielded owner"),
             }
-            _ => panic!("foreign Bridge must deny the exact direct yielded owner"),
         };
         assert_eq!(first.inspection(), &first_inspection);
 
-        let active = match {
-            let installed_fixture_phase = first.fixture_phase(active_request);
-            first.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
-        } {
-            crate::domain_computation::WorthQueryDirectReadmissionOutcome::Readmitted(
-                readmitted,
-            ) => readmitted.into_active(),
-            _ => panic!("rightful Bridge must readmit the returned direct owner"),
+        let active = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = first.fixture_phase(active_request);
+                first.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+            };
+            match fixture_phase_result {
+                crate::domain_computation::WorthQueryDirectReadmissionOutcome::Readmitted(
+                    readmitted,
+                ) => readmitted.into_active(),
+                _ => panic!("rightful Bridge must readmit the returned direct owner"),
+            }
         };
-        let terminal = match {
-            let installed_fixture_phase = active.fixture_phase(execution);
-            active.advance(&installed_fixture_phase)
-        } {
-            WorthQueryDirectGraphStepOutcome::Completed(completion) => completion,
-            _ => panic!("rightfully readmitted direct owner must complete"),
+        let terminal = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = active.fixture_phase(execution);
+                active.advance(&installed_fixture_phase)
+            };
+            match fixture_phase_result {
+                WorthQueryDirectGraphStepOutcome::Completed(completion) => completion,
+                _ => panic!("rightfully readmitted direct owner must complete"),
+            }
         }
         .into_running()
         .completed()
@@ -301,12 +313,15 @@ fn yield_peer(
         )
     }
     .expect("shared peer provider should begin");
-    let paused = match {
-        let installed_fixture_phase = active.fixture_phase(execution);
-        active.advance(&installed_fixture_phase)
-    } {
-        WorthQueryDirectGraphStepOutcome::Continue(paused) => paused,
-        _ => panic!("shared peer provider did not pause"),
+    let paused = {
+        let fixture_phase_result = {
+            let installed_fixture_phase = active.fixture_phase(execution);
+            active.advance(&installed_fixture_phase)
+        };
+        match fixture_phase_result {
+            WorthQueryDirectGraphStepOutcome::Continue(paused) => paused,
+            _ => panic!("shared peer provider did not pause"),
+        }
     };
     match paused.yield_run() {
         crate::domain_computation::WorthQueryDirectYieldOutcome::Yielded(yielded) => yielded,

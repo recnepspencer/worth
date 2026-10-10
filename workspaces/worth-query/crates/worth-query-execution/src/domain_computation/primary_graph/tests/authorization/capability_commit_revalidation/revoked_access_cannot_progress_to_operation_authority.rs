@@ -9,14 +9,12 @@ fn revoked_access_cannot_progress_to_operation_authority() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let access = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_capability_access(
                 &(phase).test_host_request(),
                 &world,
@@ -29,10 +27,7 @@ fn revoked_access_cannot_progress_to_operation_authority() {
         .expect("the fixture read owns its installed host call");
     world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            revoke_grant(&phase, &world)
-        })
+        .with_host_advancement(|phase| revoke_grant(&phase, &world))
         .expect("the fixture read owns its installed host call");
     let operation = world
         .application
@@ -43,7 +38,6 @@ fn revoked_access_cannot_progress_to_operation_authority() {
     let Err(denial) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world.application.authorize_capability_operation(
                 &phase,
                 access,

@@ -37,12 +37,15 @@ pub(super) fn yielded_direct_for_binding(
         )
     }
     .expect("yield provider should begin");
-    let paused = match {
-        let installed_fixture_phase = active.fixture_phase(execution);
-        active.advance(&installed_fixture_phase)
-    } {
-        WorthQueryDirectGraphStepOutcome::Continue(paused) => paused,
-        _ => panic!("yield provider did not pause"),
+    let paused = {
+        let fixture_phase_result = {
+            let installed_fixture_phase = active.fixture_phase(execution);
+            active.advance(&installed_fixture_phase)
+        };
+        match fixture_phase_result {
+            WorthQueryDirectGraphStepOutcome::Continue(paused) => paused,
+            _ => panic!("yield provider did not pause"),
+        }
     };
     let yielded = match paused.yield_run() {
         crate::domain_computation::WorthQueryDirectYieldOutcome::Yielded(yielded) => yielded,
@@ -182,14 +185,17 @@ fn direct_readmission_mints_fresh_attempts_and_transfers_capacity() {
         let resource_attempt = yielded.inspection().yielded_attempt_identity().to_owned();
         let provider_session = yielded.inspection().provider_session_identity().to_owned();
         let reservation_count = yielded.inspection().retained_capacity_reservation_count();
-        let readmitted = match {
-            let installed_fixture_phase = yielded.fixture_phase(active_request);
-            yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
-        } {
-            crate::domain_computation::WorthQueryDirectReadmissionOutcome::Readmitted(
-                readmitted,
-            ) => readmitted,
-            _ => panic!("same-runtime readmission should succeed"),
+        let readmitted = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = yielded.fixture_phase(active_request);
+                yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+            };
+            match fixture_phase_result {
+                crate::domain_computation::WorthQueryDirectReadmissionOutcome::Readmitted(
+                    readmitted,
+                ) => readmitted,
+                _ => panic!("same-runtime readmission should succeed"),
+            }
         };
         let active = readmitted.into_active();
         assert_eq!(active.logical_run_identity(), logical);
@@ -204,12 +210,15 @@ fn direct_readmission_mints_fresh_attempts_and_transfers_capacity() {
         assert!(!active.provider_call_identity().is_empty());
         let readmitted_provider_session = active.provider_session_identity().to_owned();
 
-        let completion = match {
-            let installed_fixture_phase = active.fixture_phase(execution);
-            active.advance(&installed_fixture_phase)
-        } {
-            WorthQueryDirectGraphStepOutcome::Completed(completion) => completion,
-            _ => panic!("restored provider did not complete"),
+        let completion = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = active.fixture_phase(execution);
+                active.advance(&installed_fixture_phase)
+            };
+            match fixture_phase_result {
+                WorthQueryDirectGraphStepOutcome::Completed(completion) => completion,
+                _ => panic!("restored provider did not complete"),
+            }
         };
         let terminal = completion.into_running().completed().unwrap();
         assert_eq!(terminal.logical_run_identity(), logical);
@@ -244,12 +253,17 @@ fn query_preflight_denial_returns_the_exact_yielded_capability_without_fresh_wor
         let checkpoint = yielded.inspection().checkpoint().identity().to_owned();
         let resource_attempt = yielded.inspection().yielded_attempt_identity().to_owned();
         let foreign_runtime = query_runtime();
-        let denied = match {
-            let installed_fixture_phase = yielded.fixture_phase(active_request);
-            yielded.readmit_same_runtime(&installed_fixture_phase, &foreign_runtime, &bridge)
-        } {
-            crate::domain_computation::WorthQueryDirectReadmissionOutcome::Denied(denied) => denied,
-            _ => panic!("foreign Query runtime should deny"),
+        let denied = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = yielded.fixture_phase(active_request);
+                yielded.readmit_same_runtime(&installed_fixture_phase, &foreign_runtime, &bridge)
+            };
+            match fixture_phase_result {
+                crate::domain_computation::WorthQueryDirectReadmissionOutcome::Denied(denied) => {
+                    denied
+                }
+                _ => panic!("foreign Query runtime should deny"),
+            }
         };
         assert_eq!(
             denied.kind(),
@@ -268,21 +282,27 @@ fn query_preflight_denial_returns_the_exact_yielded_capability_without_fresh_wor
             resource_attempt
         );
 
-        let active = match {
-            let installed_fixture_phase = yielded.fixture_phase(active_request);
-            yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
-        } {
-            crate::domain_computation::WorthQueryDirectReadmissionOutcome::Readmitted(
-                readmitted,
-            ) => readmitted.into_active(),
-            _ => panic!("returned yielded capability should remain readmittable"),
+        let active = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = yielded.fixture_phase(active_request);
+                yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+            };
+            match fixture_phase_result {
+                crate::domain_computation::WorthQueryDirectReadmissionOutcome::Readmitted(
+                    readmitted,
+                ) => readmitted.into_active(),
+                _ => panic!("returned yielded capability should remain readmittable"),
+            }
         };
-        let completion = match {
-            let installed_fixture_phase = active.fixture_phase(execution);
-            active.advance(&installed_fixture_phase)
-        } {
-            WorthQueryDirectGraphStepOutcome::Completed(completion) => completion,
-            _ => panic!("restored provider did not complete"),
+        let completion = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = active.fixture_phase(execution);
+                active.advance(&installed_fixture_phase)
+            };
+            match fixture_phase_result {
+                WorthQueryDirectGraphStepOutcome::Completed(completion) => completion,
+                _ => panic!("restored provider did not complete"),
+            }
         };
         assert!(completion
             .into_running()
@@ -305,12 +325,17 @@ fn provider_restore_denial_preserves_the_exact_checkpoint_and_capacity_package()
         let checkpoint = yielded.inspection().checkpoint().identity().to_owned();
         let resource_attempt = yielded.inspection().yielded_attempt_identity().to_owned();
         let reservations = yielded.inspection().retained_capacity_reservation_count();
-        let denied = match {
-            let installed_fixture_phase = yielded.fixture_phase(active_request);
-            yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
-        } {
-            crate::domain_computation::WorthQueryDirectReadmissionOutcome::Denied(denied) => denied,
-            _ => panic!("ordinary provider restore failure should deny"),
+        let denied = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = yielded.fixture_phase(active_request);
+                yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+            };
+            match fixture_phase_result {
+                crate::domain_computation::WorthQueryDirectReadmissionOutcome::Denied(denied) => {
+                    denied
+                }
+                _ => panic!("ordinary provider restore failure should deny"),
+            }
         };
         assert_eq!(
             denied.kind(),

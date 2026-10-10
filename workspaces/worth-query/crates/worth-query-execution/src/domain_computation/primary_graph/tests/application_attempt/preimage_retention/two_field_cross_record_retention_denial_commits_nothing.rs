@@ -8,30 +8,24 @@ fn two_field_cross_record_retention_denial_commits_nothing() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let unrelated = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "unrelated", &request)
         })
         .expect("the fixture read owns its installed host call");
     let before = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            relational_head(&phase, &world)
-        })
+        .with_host_advancement(|phase| relational_head(&phase, &world))
         .expect("the fixture read owns its installed host call");
     let operation = world
         .application
@@ -41,7 +35,6 @@ fn two_field_cross_record_retention_denial_commits_nothing() {
     let admission = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .authorize_operation(
@@ -58,7 +51,6 @@ fn two_field_cross_record_retention_denial_commits_nothing() {
     let (_, projection, _) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .invariant
                 .project_admitted_operation(
@@ -87,7 +79,6 @@ fn two_field_cross_record_retention_denial_commits_nothing() {
     let reads = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .begin_projected_application_read_attempt(
@@ -102,7 +93,6 @@ fn two_field_cross_record_retention_denial_commits_nothing() {
     let mut effects = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             reads
                 .complete_projected_dependencies(
                     &phase,
@@ -133,9 +123,6 @@ fn two_field_cross_record_retention_denial_commits_nothing() {
     assert_retention_denied(&outcome);
     world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            assert_eq!(relational_head(&phase, &world), before)
-        })
+        .with_host_advancement(|phase| assert_eq!(relational_head(&phase, &world), before))
         .expect("the fixture read owns its installed host call");
 }

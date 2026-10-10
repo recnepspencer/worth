@@ -11,15 +11,11 @@ fn declared_public_occurrence_query_reads_only_its_typed_scope() {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let selected = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.selected_product(&(phase).test_host_request())
-        })
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
         .expect("the fixture read owns its installed host call");
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             selected
                 .resolve_authenticated_principal(
                     &phase,
@@ -34,7 +30,6 @@ fn declared_public_occurrence_query_reads_only_its_typed_scope() {
     let open = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             selected
                 .resolve_entity(
                     &phase,
@@ -58,7 +53,6 @@ fn declared_public_occurrence_query_reads_only_its_typed_scope() {
     > = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .execute_application_query_one_shot(

@@ -8,21 +8,18 @@ fn lifecycle_replay_resolvers_have_no_replay_for_an_ordinary_admission() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let first = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program(&phase, &world, &principal, &account, &request, "lifecycle")
         })
         .expect("the fixture read owns its installed host call");
@@ -40,7 +37,6 @@ fn lifecycle_replay_resolvers_have_no_replay_for_an_ordinary_admission() {
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "lifecycle", &request)
         })
         .expect("the fixture read owns its installed host call");
@@ -52,7 +48,6 @@ fn lifecycle_replay_resolvers_have_no_replay_for_an_ordinary_admission() {
     let mut admission = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .authorize_operation(
@@ -70,7 +65,6 @@ fn lifecycle_replay_resolvers_have_no_replay_for_an_ordinary_admission() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             assert!(matches!(
                 application.resolve_admitted_elevation_close_replay(
                     &phase,
@@ -84,7 +78,6 @@ fn lifecycle_replay_resolvers_have_no_replay_for_an_ordinary_admission() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             assert!(matches!(
                 application.resolve_admitted_elevation_approval_replay(
                     &phase,
@@ -98,7 +91,6 @@ fn lifecycle_replay_resolvers_have_no_replay_for_an_ordinary_admission() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             assert!(matches!(
                 application.resolve_admitted_mandatory_review_replay(
                     &phase,
@@ -116,7 +108,6 @@ fn lifecycle_replay_resolvers_have_no_replay_for_an_ordinary_admission() {
         world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
                 let operation = application
                     .installed_schema()
                     .installed_operation(super::super::TouchAccountOperation::reference())

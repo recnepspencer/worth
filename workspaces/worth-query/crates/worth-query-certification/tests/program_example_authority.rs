@@ -1,7 +1,5 @@
 #[path = "../examples/product_workflow_support/mod.rs"]
 pub mod product_workflow_support;
-#[path = "support/execution_policy.rs"]
-mod test_request_policy;
 
 mod execution_memory;
 mod mutation_attempt_report;

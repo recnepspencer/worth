@@ -41,7 +41,6 @@ fn admission_from_an_equivalent_foreign_runtime_opens_no_application_door() {
     let admission = source_world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             source_world
                 .selected_product(&(phase).test_host_request())
                 .authorize_operation(
@@ -59,7 +58,6 @@ fn admission_from_an_equivalent_foreign_runtime_opens_no_application_door() {
     let idempotency_denial = target_world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             target_world
                 .application
                 .resolve_admitted_application_idempotency(&phase, &admission, idempotency(16, 16))
@@ -93,7 +91,6 @@ fn admission_from_an_equivalent_foreign_runtime_opens_no_application_door() {
     let projected_admission = source_world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             source_world
                 .selected_product(&(phase).test_host_request())
                 .authorize_operation(
@@ -110,7 +107,6 @@ fn admission_from_an_equivalent_foreign_runtime_opens_no_application_door() {
     let projected_denial = target_world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             target_world
                 .invariant
                 .project_admitted_operation(
@@ -142,21 +138,18 @@ fn cancellation_after_program_preparation_prevents_provider_commit() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let program = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program(
                 &phase,
                 &world,
@@ -181,7 +174,6 @@ fn cancellation_after_program_preparation_prevents_provider_commit() {
     let _still_open = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &fresh_request)
         })
         .expect("the fixture read owns its installed host call");
@@ -198,14 +190,12 @@ fn cancelled_admission_cannot_inspect_provider_idempotency() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
@@ -217,7 +207,6 @@ fn cancelled_admission_cannot_inspect_provider_idempotency() {
     let admission = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .authorize_operation(
@@ -236,7 +225,6 @@ fn cancelled_admission_cannot_inspect_provider_idempotency() {
     let denial = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .resolve_admitted_application_idempotency(&phase, &admission, idempotency(18, 18))

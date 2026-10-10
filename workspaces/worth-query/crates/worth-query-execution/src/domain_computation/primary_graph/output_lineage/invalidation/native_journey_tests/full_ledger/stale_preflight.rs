@@ -15,7 +15,6 @@ fn a_stale_preflight_after_an_unindexed_fork_winner_cannot_poison_later_writes()
     let entity = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &live_scope())
                 .entity_id()
         })

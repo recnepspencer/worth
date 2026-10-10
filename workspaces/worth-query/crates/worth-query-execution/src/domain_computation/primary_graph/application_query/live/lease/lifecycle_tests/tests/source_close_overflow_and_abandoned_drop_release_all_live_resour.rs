@@ -57,14 +57,14 @@ fn source_close_overflow_and_abandoned_drop_release_all_live_resources() {
         .application
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request();
-            ({
+            {
                 let installed_fixture_phase = overflow.fixture_phase(&host_custody);
                 overflow.next(
                     &installed_fixture_phase,
                     &overflow_context.principal,
                     &overflow_context.request,
                 )
-            })
+            }
         })
         .expect("the fixture read owns its installed host call")
     else {

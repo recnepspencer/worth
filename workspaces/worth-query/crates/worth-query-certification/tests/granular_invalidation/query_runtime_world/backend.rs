@@ -32,7 +32,7 @@ impl PrimarySnapshotAdapter {
 impl runtime::WorthQueryRuntimeSnapshotIdentityAdapter for PrimarySnapshotAdapter {
     fn current_snapshot_identity(
         &self,
-        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> foundation::WorthQuerySnapshotIdentity {
         let branch =
             worth_runtime_bridge::facade::TruthBranchIdentity::from_relational_branch_id("main");

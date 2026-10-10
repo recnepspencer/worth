@@ -26,10 +26,7 @@ fn an_indexed_selection_the_width_cannot_pay_for_is_not_kept() {
     let world = installed_authorization_world(true);
     let selection = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            indexed_selection(&phase, &world)
-        })
+        .with_host_advancement(|phase| indexed_selection(&phase, &world))
         .expect("the fixture read owns its installed host call");
     world
         .application
@@ -96,10 +93,7 @@ fn only_a_comparison_that_cannot_answer_is_undecidable() {
     let world = installed_authorization_world(true);
     let (entity, locator) = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            account_note(&phase, &world, "account-1")
-        })
+        .with_host_advancement(|phase| account_note(&phase, &world, "account-1"))
         .expect("the fixture read owns its installed host call");
     let kind = world
         .application
@@ -143,7 +137,6 @@ fn only_a_comparison_that_cannot_answer_is_undecidable() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             assert_eq!(
                 rebase_result_within(&phase, execution, &world, vec![gone_read.clone()], 64),
                 RebasedSourceFacts::SupersededByOwnEffect {
@@ -166,7 +159,6 @@ fn only_a_comparison_that_cannot_answer_is_undecidable() {
     let RebasedSourceFacts::VerificationRequired { own_effect, .. } = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             rebase_result_within(&phase, execution, &world, vec![uncomparable], 64)
         })
         .expect("the fixture read owns its installed host call")

@@ -14,7 +14,6 @@ fn admitted_external_identity_resolves_through_certified_index_and_freshness() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .resolve_authenticated_principal(
@@ -36,7 +35,6 @@ fn admitted_external_identity_resolves_through_certified_index_and_freshness() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .validate_authenticated_principal(&phase, &principal, &scope)

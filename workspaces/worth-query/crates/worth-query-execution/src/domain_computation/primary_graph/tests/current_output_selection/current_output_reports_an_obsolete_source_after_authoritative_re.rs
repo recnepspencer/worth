@@ -7,7 +7,6 @@ fn current_output_reports_an_obsolete_source_after_authoritative_retirement() {
     let obsolete = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .invariant
                 .project(
@@ -24,23 +23,17 @@ fn current_output_reports_an_obsolete_source_after_authoritative_retirement() {
                 .0
         })
         .expect("the fixture read owns its installed host call");
-    {
-        retire_open_account(&world)
-    };
+    retire_open_account(&world);
 
     let request = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let selected = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.selected_product(&(phase).test_host_request())
-        })
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
         .expect("the fixture read owns its installed host call");
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             selected
                 .resolve_authenticated_principal(
                     &phase,
@@ -55,7 +48,6 @@ fn current_output_reports_an_obsolete_source_after_authoritative_retirement() {
     let surviving_scope = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             selected
                 .resolve_entity(
                     &phase,
@@ -75,7 +67,6 @@ fn current_output_reports_an_obsolete_source_after_authoritative_retirement() {
     let admission = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             selected
                 .authorize_operation(
                     &phase,
@@ -92,7 +83,6 @@ fn current_output_reports_an_obsolete_source_after_authoritative_retirement() {
     let completed = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .invariant
                 .project_admitted_operation(

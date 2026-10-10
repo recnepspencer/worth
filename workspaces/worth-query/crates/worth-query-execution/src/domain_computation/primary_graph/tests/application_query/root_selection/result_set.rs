@@ -11,7 +11,6 @@ fn empty_path_union_stales_when_a_matching_edge_is_inserted() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .resolve_authenticated_principal(
@@ -27,7 +26,6 @@ fn empty_path_union_stales_when_a_matching_edge_is_inserted() {
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .resolve_entity(
@@ -53,10 +51,7 @@ fn empty_path_union_stales_when_a_matching_edge_is_inserted() {
         .kind;
     let selected = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.selected_product(&(phase).test_host_request())
-        })
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
         .expect("the fixture read owns its installed host call");
     let (relations, primary_target) = world
         .application
@@ -125,7 +120,6 @@ fn empty_path_union_stales_when_a_matching_edge_is_inserted() {
     let empty = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .execute_application_query_one_shot(
@@ -183,10 +177,7 @@ fn empty_path_union_stales_when_a_matching_edge_is_inserted() {
         .expect("the fixture read owns its installed host call");
     let current = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.selected_product(&(phase).test_host_request())
-        })
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
         .expect("the fixture read owns its installed host call");
     world
         .application
@@ -211,7 +202,6 @@ fn empty_path_union_stales_when_a_matching_edge_is_inserted() {
     let matching = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .execute_application_query_one_shot(

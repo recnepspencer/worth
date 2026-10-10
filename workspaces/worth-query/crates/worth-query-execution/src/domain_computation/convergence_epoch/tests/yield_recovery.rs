@@ -219,12 +219,15 @@ fn direct_paused(
         epoch.begin_iteration(&installed_fixture_phase, call(call_identity))
     }
     .unwrap_or_else(|_| panic!("direct recovery iteration must start"));
-    let paused = match {
-        let installed_fixture_phase = started.fixture_phase(execution);
-        started.advance(&installed_fixture_phase)
-    } {
-        WorthQueryDirectConvergenceStepOutcome::Continue(paused) => paused,
-        _ => panic!("direct recovery fixture must reach a safe point"),
+    let paused = {
+        let fixture_phase_result = {
+            let installed_fixture_phase = started.fixture_phase(execution);
+            started.advance(&installed_fixture_phase)
+        };
+        match fixture_phase_result {
+            WorthQueryDirectConvergenceStepOutcome::Continue(paused) => paused,
+            _ => panic!("direct recovery fixture must reach a safe point"),
+        }
     };
     (identity, paused)
 }
@@ -249,12 +252,15 @@ fn workflow_paused(
         )
     }
     .unwrap_or_else(|_| panic!("workflow recovery iteration must start"));
-    let paused = match {
-        let installed_fixture_phase = started.fixture_phase(execution);
-        started.advance(&installed_fixture_phase)
-    } {
-        WorthQueryWorkflowConvergenceStepOutcome::Continue(paused) => paused,
-        _ => panic!("workflow recovery fixture must reach a safe point"),
+    let paused = {
+        let fixture_phase_result = {
+            let installed_fixture_phase = started.fixture_phase(execution);
+            started.advance(&installed_fixture_phase)
+        };
+        match fixture_phase_result {
+            WorthQueryWorkflowConvergenceStepOutcome::Continue(paused) => paused,
+            _ => panic!("workflow recovery fixture must reach a safe point"),
+        }
     };
     (identity, paused)
 }

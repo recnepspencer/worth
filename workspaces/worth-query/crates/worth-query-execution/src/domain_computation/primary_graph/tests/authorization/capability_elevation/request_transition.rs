@@ -45,14 +45,12 @@ fn ordinary_compare_and_commit_cannot_publish_a_lifecycle_program() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let ordinary = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             request_reads(
                 &(phase).test_host_request(),
                 &world,

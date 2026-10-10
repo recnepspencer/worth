@@ -24,13 +24,13 @@ fn same_semantic_direct_peers_bind_distinct_report_histories() {
             direct_admission_fixture_with_report_history_probe(FixtureDisposition::Converged);
         let left_started = {
             let fixture_state = left_fixture.admit();
-            let installed_fixture_phase = fixture_state.fixture_phase(&execution);
+            let installed_fixture_phase = fixture_state.fixture_phase(execution);
             fixture_state.begin_iteration(&installed_fixture_phase, request("same-report-scope"))
         }
         .unwrap_or_else(|_| panic!("left direct peer must begin"));
         let right_started = {
             let fixture_state = right_fixture.admit();
-            let installed_fixture_phase = fixture_state.fixture_phase(&execution);
+            let installed_fixture_phase = fixture_state.fixture_phase(execution);
             fixture_state.begin_iteration(&installed_fixture_phase, request("same-report-scope"))
         }
         .unwrap_or_else(|_| panic!("right direct peer must begin"));
@@ -68,7 +68,7 @@ fn same_stage_workflow_peers_bind_distinct_report_histories() {
             workflow_admission_fixture_with_report_history_probe(FixtureDisposition::Converged);
         let left_started = {
             let fixture_state = left_fixture.admit();
-            let installed_fixture_phase = fixture_state.fixture_phase(&execution);
+            let installed_fixture_phase = fixture_state.fixture_phase(execution);
             fixture_state.begin_stage_iteration(
                 &installed_fixture_phase,
                 WORKFLOW_STAGE,
@@ -78,7 +78,7 @@ fn same_stage_workflow_peers_bind_distinct_report_histories() {
         .unwrap_or_else(|_| panic!("left workflow peer must begin"));
         let right_started = {
             let fixture_state = right_fixture.admit();
-            let installed_fixture_phase = fixture_state.fixture_phase(&execution);
+            let installed_fixture_phase = fixture_state.fixture_phase(execution);
             fixture_state.begin_stage_iteration(
                 &installed_fixture_phase,
                 WORKFLOW_STAGE,

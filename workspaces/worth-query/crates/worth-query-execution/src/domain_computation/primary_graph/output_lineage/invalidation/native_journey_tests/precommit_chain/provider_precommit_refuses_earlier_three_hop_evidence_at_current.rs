@@ -10,15 +10,11 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
     let world = installed_authorization_world(true);
     let selected = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.selected_product(&(phase).test_host_request())
-        })
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
         .expect("the fixture read owns its installed host call");
     let entity = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             selected
                 .resolve_entity(
                     &phase,
@@ -279,7 +275,6 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
     let product_before = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .product()
@@ -311,7 +306,6 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             assert_eq!(
                 world
                     .selected_product(&(phase).test_host_request(),)

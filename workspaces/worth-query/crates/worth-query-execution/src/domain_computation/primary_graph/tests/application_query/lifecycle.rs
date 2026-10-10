@@ -71,7 +71,6 @@ fn foreign_runtime_rejects_plan_and_releases_its_basis() {
     let plan = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .admit_application_query(
@@ -92,7 +91,6 @@ fn foreign_runtime_rejects_plan_and_releases_its_basis() {
     let denial = foreign
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             foreign
                 .application
                 .execute_application_query_one_shot(&phase, plan)
@@ -114,15 +112,11 @@ fn exact_query_observation_reuses_its_live_snapshot_for_fresh_security_stages() 
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let selected = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.selected_product(&(phase).test_host_request())
-        })
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
         .expect("the fixture read owns its installed host call");
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             selected
                 .resolve_authenticated_principal(
                     &phase,
@@ -137,7 +131,6 @@ fn exact_query_observation_reuses_its_live_snapshot_for_fresh_security_stages() 
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             selected
                 .resolve_entity(
                     &phase,
@@ -156,7 +149,6 @@ fn exact_query_observation_reuses_its_live_snapshot_for_fresh_security_stages() 
     let plan = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             selected
                 .admit_application_query(
                     &phase,
@@ -174,7 +166,6 @@ fn exact_query_observation_reuses_its_live_snapshot_for_fresh_security_stages() 
     let result = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .execute_application_query_one_shot(&phase, plan)
@@ -243,7 +234,6 @@ fn cancellation_after_admission_releases_basis_before_projection() {
     let plan = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .admit_application_query(
@@ -266,7 +256,6 @@ fn cancellation_after_admission_releases_basis_before_projection() {
     let denial = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .execute_application_query_one_shot(&phase, plan)

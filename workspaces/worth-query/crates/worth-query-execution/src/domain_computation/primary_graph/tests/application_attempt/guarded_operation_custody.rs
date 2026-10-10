@@ -14,14 +14,12 @@ fn guarded_operation_custody_recovers_only_the_exact_committed_mutation() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
@@ -33,7 +31,6 @@ fn guarded_operation_custody_recovers_only_the_exact_committed_mutation() {
     let admission = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .authorize_operation(
@@ -50,7 +47,6 @@ fn guarded_operation_custody_recovers_only_the_exact_committed_mutation() {
     let program = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program(&phase, &world, &principal, &account, &request, "committed")
         })
         .expect("the fixture read owns its installed host call");
@@ -154,14 +150,12 @@ fn guarded_operation_custody_retains_world_issued_unpublished_recovery() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
@@ -173,7 +167,6 @@ fn guarded_operation_custody_retains_world_issued_unpublished_recovery() {
     let admission = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .authorize_operation(
@@ -190,7 +183,6 @@ fn guarded_operation_custody_retains_world_issued_unpublished_recovery() {
     let program = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program(
                 &phase,
                 &world,
@@ -265,14 +257,12 @@ fn reserved_publication_custody_is_indeterminate_until_its_owner_releases_it() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
@@ -284,7 +274,6 @@ fn reserved_publication_custody_is_indeterminate_until_its_owner_releases_it() {
     let admission = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .authorize_operation(
@@ -303,7 +292,6 @@ fn reserved_publication_custody_is_indeterminate_until_its_owner_releases_it() {
     let reservation = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .primary_provider

@@ -78,21 +78,27 @@ fn workflow_terminal_with_live_cleanup_artifact(
         )
     }
     .unwrap_or_else(|_| panic!("artifact workflow iteration must start"));
-    let paused = match {
-        let installed_fixture_phase = started.fixture_phase(execution);
-        started.advance(&installed_fixture_phase)
-    } {
-        WorthQueryWorkflowConvergenceStepOutcome::Continue(paused) => paused,
-        _ => panic!("artifact workflow must expose its retained safe point"),
+    let paused = {
+        let fixture_phase_result = {
+            let installed_fixture_phase = started.fixture_phase(execution);
+            started.advance(&installed_fixture_phase)
+        };
+        match fixture_phase_result {
+            WorthQueryWorkflowConvergenceStepOutcome::Continue(paused) => paused,
+            _ => panic!("artifact workflow must expose its retained safe point"),
+        }
     };
-    let terminal = match {
-        let installed_fixture_phase = paused.fixture_phase(execution);
-        paused.advance(&installed_fixture_phase)
-    } {
-        WorthQueryWorkflowConvergenceStepOutcome::Completed(
-            WorthQueryWorkflowConvergenceIterationOutcome::Converged(terminal),
-        ) => terminal,
-        _ => panic!("second artifact workflow step must converge"),
+    let terminal = {
+        let fixture_phase_result = {
+            let installed_fixture_phase = paused.fixture_phase(execution);
+            paused.advance(&installed_fixture_phase)
+        };
+        match fixture_phase_result {
+            WorthQueryWorkflowConvergenceStepOutcome::Completed(
+                WorthQueryWorkflowConvergenceIterationOutcome::Converged(terminal),
+            ) => terminal,
+            _ => panic!("second artifact workflow step must converge"),
+        }
     };
     (terminal, artifact_receiver)
 }

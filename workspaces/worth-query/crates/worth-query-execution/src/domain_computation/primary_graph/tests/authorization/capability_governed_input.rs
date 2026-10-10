@@ -40,7 +40,6 @@ fn every_capability_admission_reports_its_one_governed_input_derivation() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
@@ -48,7 +47,6 @@ fn every_capability_admission_reports_its_one_governed_input_derivation() {
     let (first, first_admission) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_capability_program(&phase, &world, &principal, &request, "canonical-work")
         })
         .expect("the fixture read owns its installed host call");
@@ -56,7 +54,6 @@ fn every_capability_admission_reports_its_one_governed_input_derivation() {
     let (retry, retry_admission) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_capability_program(&phase, &world, &principal, &request, "canonical-work")
         })
         .expect("the fixture read owns its installed host call");
@@ -95,7 +92,6 @@ fn governed_input_identity_drift_under_a_reused_key_is_denied() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
@@ -103,7 +99,6 @@ fn governed_input_identity_drift_under_a_reused_key_is_denied() {
     let (first, _) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_capability_program(&phase, &world, &principal, &request, "governed-input")
         })
         .expect("the fixture read owns its installed host call");
@@ -112,7 +107,6 @@ fn governed_input_identity_drift_under_a_reused_key_is_denied() {
     let (drifted, _) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_capability_program_for_input(
                 &phase,
                 &world,

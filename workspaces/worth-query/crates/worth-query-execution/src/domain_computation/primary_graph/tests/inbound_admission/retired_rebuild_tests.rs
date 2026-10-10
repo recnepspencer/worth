@@ -25,7 +25,6 @@ fn retired_original_incarnation_rebuilds_from_world_and_canonical_relational_pat
     let branch = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .branches()
@@ -57,7 +56,7 @@ fn retired_original_incarnation_rebuilds_from_world_and_canonical_relational_pat
             (correlation, original)
         }
     };
-    world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); assert!(matches!(
+    world.application.with_host_advancement(|phase| {  assert!(matches!(
         world.application.on_branch(branch).close(&phase, ),
         Err(crate::domain_computation::primary_graph::WorthQueryApplicationProductBranchCloseDenial::OwnerCleanupPending(_))
     )) }).expect("the fixture read owns its installed host call");

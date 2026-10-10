@@ -11,21 +11,18 @@ fn response_loss_and_interleaving_preserve_one_preimage_and_outbox_bundle() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let unrelated = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "unrelated", &request)
         })
         .expect("the fixture read owns its installed host call");
@@ -47,7 +44,6 @@ fn response_loss_and_interleaving_preserve_one_preimage_and_outbox_bundle() {
     let first = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             retained_status_program(
                 &(phase).test_host_request(),
                 &world,
@@ -62,7 +58,6 @@ fn response_loss_and_interleaving_preserve_one_preimage_and_outbox_bundle() {
     let retry = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             retained_status_program(
                 &(phase).test_host_request(),
                 &world,
@@ -77,7 +72,6 @@ fn response_loss_and_interleaving_preserve_one_preimage_and_outbox_bundle() {
     let interleaved = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             retained_status_program(
                 &(phase).test_host_request(),
                 &world,
@@ -93,7 +87,6 @@ fn response_loss_and_interleaving_preserve_one_preimage_and_outbox_bundle() {
     let readmitted_interleave = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             retained_status_program(
                 &(phase).test_host_request(),
                 &world,

@@ -9,10 +9,7 @@ fn producer_decision_field_uses_native_revision_after_value_aba() {
     let world = installed_authorization_world(true);
     let (entity, locator) = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            account_note(&phase, &world, "account-1")
-        })
+        .with_host_advancement(|phase| account_note(&phase, &world, "account-1"))
         .expect("the fixture read owns its installed host call");
     let field = WorthQueryApplicationObservedFact::Field {
         entity_id: entity,
@@ -69,7 +66,6 @@ fn producer_decision_field_uses_native_revision_after_value_aba() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             assert!(matches!(
                 output_selection(&phase, execution, &world, &durable),
                 OutputDependencySelection::Reuse
@@ -79,7 +75,6 @@ fn producer_decision_field_uses_native_revision_after_value_aba() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             assert_eq!(
                 currentness(&phase, execution, &world, &field),
                 Err(WorthQuerySourceCurrentnessFailure::Unavailable),
@@ -129,7 +124,6 @@ fn producer_decision_field_uses_native_revision_after_value_aba() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             assert!(matches!(
                 output_selection(&phase, execution, &world, &durable),
                 OutputDependencySelection::FreshRequired

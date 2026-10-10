@@ -79,7 +79,7 @@ impl WorthQueryRuntimeSourceAdapter for PublicSourceAdapter {
 
     fn live_entities_for_target(
         &self,
-        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         target: &WorthQueryLiveArtifactTarget,
     ) -> Vec<WorthQueryEntity> {
         let state = self.state.borrow();
@@ -287,7 +287,7 @@ impl PublicSnapshotIdentityAdapter {
 impl WorthQueryRuntimeSnapshotIdentityAdapter for PublicSnapshotIdentityAdapter {
     fn current_snapshot_identity(
         &self,
-        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> WorthQuerySnapshotIdentity {
         let state = self.state.borrow();
         match state.current_snapshot_parts {

@@ -98,12 +98,15 @@ fn complete_direct_peer(
     execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     started: WorthQueryStartedDirectConvergenceIteration,
 ) -> String {
-    let outcome = match {
-        let installed_fixture_phase = started.fixture_phase(execution);
-        started.advance(&installed_fixture_phase)
-    } {
-        WorthQueryDirectConvergenceStepOutcome::Completed(outcome) => outcome,
-        _ => panic!("real direct peer must complete"),
+    let outcome = {
+        let fixture_phase_result = {
+            let installed_fixture_phase = started.fixture_phase(execution);
+            started.advance(&installed_fixture_phase)
+        };
+        match fixture_phase_result {
+            WorthQueryDirectConvergenceStepOutcome::Completed(outcome) => outcome,
+            _ => panic!("real direct peer must complete"),
+        }
     };
     let terminal = match outcome {
         WorthQueryDirectConvergenceIterationOutcome::Converged(terminal) => terminal,

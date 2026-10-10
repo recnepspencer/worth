@@ -26,7 +26,6 @@ fn exhausted_currentness_while_reverifying_a_marked_fact_selects_fresh_without_s
     let entity = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .resolve_entity(

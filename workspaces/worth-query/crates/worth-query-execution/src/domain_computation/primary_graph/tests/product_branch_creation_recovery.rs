@@ -53,7 +53,6 @@ fn real_sibling_denial_is_inspectable_releasable_and_leaves_no_recovery_orphan()
     let error = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .branches()
@@ -164,7 +163,6 @@ fn real_sibling_denial_is_inspectable_releasable_and_leaves_no_recovery_orphan()
     let close = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .on_branch(occupied_branch)
@@ -182,7 +180,6 @@ fn cleanup_capacity_denial_precedes_world_retirement() {
     let branch = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .branches()
@@ -204,7 +201,6 @@ fn cleanup_capacity_denial_precedes_world_retirement() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             assert!(matches!(
                 world.application.on_branch(branch).close(&phase,),
                 Err(WorthQueryApplicationProductBranchCloseDenial::Product(
@@ -216,7 +212,6 @@ fn cleanup_capacity_denial_precedes_world_retirement() {
     let selected = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .on_branch(branch)
@@ -229,7 +224,6 @@ fn cleanup_capacity_denial_precedes_world_retirement() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             assert!(world
                 .application
                 .on_branch(branch)
@@ -246,7 +240,6 @@ fn unwind_after_retirement_install_leaves_discoverable_cleanup() {
     let branch = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .branches()
@@ -265,7 +258,6 @@ fn unwind_after_retirement_install_leaves_discoverable_cleanup() {
     let unwind = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                 let _ = world.application.on_branch(branch).close(&phase);
             }))
@@ -279,7 +271,6 @@ fn unwind_after_retirement_install_leaves_discoverable_cleanup() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             assert!(world.application.on_branch(branch).select(&phase,).is_err())
         })
         .expect("the fixture read owns its installed host call");
@@ -309,7 +300,6 @@ fn retry_unwind_restores_progress_without_repeating_owner_retirement() {
     let branch = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .branches()
@@ -328,7 +318,6 @@ fn retry_unwind_restores_progress_without_repeating_owner_retirement() {
     let unwind = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                 let _ = world.application.on_branch(branch).close(&phase);
             }))

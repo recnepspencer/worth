@@ -8,14 +8,12 @@ fn optional_fields_preserve_empty_zero_and_lawful_absence_through_query() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             super::super::authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             super::super::resolved_account(
                 &(phase).test_host_request(),
                 &world,
@@ -28,7 +26,6 @@ fn optional_fields_preserve_empty_zero_and_lawful_absence_through_query() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             assert_eq!(
                 query(
                     &phase,
@@ -46,7 +43,6 @@ fn optional_fields_preserve_empty_zero_and_lawful_absence_through_query() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             assert_eq!(
                 query(
                     &phase,
@@ -65,7 +61,6 @@ fn optional_fields_preserve_empty_zero_and_lawful_absence_through_query() {
     let set = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             program(
                 &phase,
                 &world,
@@ -88,7 +83,6 @@ fn optional_fields_preserve_empty_zero_and_lawful_absence_through_query() {
     let present = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             query(
                 &phase,
                 &(phase).borrowed_request_for_test(),
@@ -105,7 +99,6 @@ fn optional_fields_preserve_empty_zero_and_lawful_absence_through_query() {
     let current = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             super::super::resolved_account(
                 &(phase).test_host_request(),
                 &world,
@@ -117,7 +110,6 @@ fn optional_fields_preserve_empty_zero_and_lawful_absence_through_query() {
     let clear = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             program(&phase, &world, &principal, &current, &request, None, None)
         })
         .expect("the fixture read owns its installed host call");
@@ -132,7 +124,6 @@ fn optional_fields_preserve_empty_zero_and_lawful_absence_through_query() {
     let absent = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             query(
                 &phase,
                 &(phase).borrowed_request_for_test(),

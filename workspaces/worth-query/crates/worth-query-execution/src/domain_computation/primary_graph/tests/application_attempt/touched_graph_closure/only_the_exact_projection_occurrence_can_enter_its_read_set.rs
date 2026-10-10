@@ -8,21 +8,18 @@ fn only_the_exact_projection_occurrence_can_enter_its_read_set() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let other_account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "unrelated", &request)
         })
         .expect("the fixture read owns its installed host call");
@@ -35,7 +32,6 @@ fn only_the_exact_projection_occurrence_can_enter_its_read_set() {
     let admission = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .authorize_operation(
@@ -52,7 +48,6 @@ fn only_the_exact_projection_occurrence_can_enter_its_read_set() {
     let other_admission = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .authorize_operation(
@@ -69,7 +64,6 @@ fn only_the_exact_projection_occurrence_can_enter_its_read_set() {
     let (_, other_projection, _) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .invariant
                 .project_admitted_operation(
@@ -85,7 +79,6 @@ fn only_the_exact_projection_occurrence_can_enter_its_read_set() {
     let mismatch = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .begin_projected_application_read_attempt(
@@ -106,7 +99,6 @@ fn only_the_exact_projection_occurrence_can_enter_its_read_set() {
     let first_equivalent = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .authorize_operation(
@@ -123,7 +115,6 @@ fn only_the_exact_projection_occurrence_can_enter_its_read_set() {
     let second_equivalent = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .authorize_operation(
@@ -145,7 +136,6 @@ fn only_the_exact_projection_occurrence_can_enter_its_read_set() {
     let (_, first_projection, _) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .invariant
                 .project_admitted_operation(
@@ -161,7 +151,6 @@ fn only_the_exact_projection_occurrence_can_enter_its_read_set() {
     let equivalent_mismatch = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .begin_projected_application_read_attempt(

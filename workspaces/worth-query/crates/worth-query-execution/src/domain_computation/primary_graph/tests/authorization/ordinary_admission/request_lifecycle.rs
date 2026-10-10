@@ -62,7 +62,6 @@ fn cancelled_request_cannot_reuse_otherwise_current_authority() {
     let denial = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .authorize_operation(
@@ -139,7 +138,6 @@ fn admitted_operation_retains_expiry_and_cancellation_authority() {
     let expiring = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .authorize_operation(
@@ -166,7 +164,6 @@ fn admitted_operation_retains_expiry_and_cancellation_authority() {
     let expired_projection = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .invariant
                 .project_admitted_operation(
@@ -217,7 +214,6 @@ fn admitted_operation_retains_expiry_and_cancellation_authority() {
     let cancellable = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .authorize_operation(
@@ -240,7 +236,6 @@ fn admitted_operation_retains_expiry_and_cancellation_authority() {
     let cancelled_projection = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .invariant
                 .project_admitted_operation(

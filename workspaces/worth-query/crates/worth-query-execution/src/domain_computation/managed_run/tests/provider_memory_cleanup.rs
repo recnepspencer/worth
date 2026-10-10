@@ -338,12 +338,15 @@ fn complete_call(
         )
     }
     .expect("provider call should start");
-    match {
-        let installed_fixture_phase = active.fixture_phase(execution);
-        active.advance(&installed_fixture_phase)
-    } {
-        WorthQueryDirectGraphStepOutcome::Completed(completion) => completion.into_running(),
-        _ => panic!("escaping-memory provider did not complete"),
+    {
+        let fixture_phase_result = {
+            let installed_fixture_phase = active.fixture_phase(execution);
+            active.advance(&installed_fixture_phase)
+        };
+        match fixture_phase_result {
+            WorthQueryDirectGraphStepOutcome::Completed(completion) => completion.into_running(),
+            _ => panic!("escaping-memory provider did not complete"),
+        }
     }
 }
 
@@ -364,12 +367,15 @@ fn complete_workflow_memory_call(
         )
     }
     .expect("workflow memory provider call should start");
-    match {
-        let installed_fixture_phase = active.fixture_phase(execution);
-        active.advance(&installed_fixture_phase)
-    } {
-        WorthQueryWorkflowGraphStepOutcome::Completed(completion) => completion.into_running(),
-        _ => panic!("workflow memory provider did not complete"),
+    {
+        let fixture_phase_result = {
+            let installed_fixture_phase = active.fixture_phase(execution);
+            active.advance(&installed_fixture_phase)
+        };
+        match fixture_phase_result {
+            WorthQueryWorkflowGraphStepOutcome::Completed(completion) => completion.into_running(),
+            _ => panic!("workflow memory provider did not complete"),
+        }
     }
 }
 

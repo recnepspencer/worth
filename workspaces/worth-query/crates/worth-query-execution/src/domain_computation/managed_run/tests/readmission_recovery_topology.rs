@@ -12,14 +12,17 @@ fn checkpoint_release_panic_reports_exact_non_retryable_physical_posture() {
             YieldProvider::checkpoint_drop_panic(),
         );
         let checkpoint = yielded.inspection().checkpoint().identity().to_owned();
-        let recovery = match {
-            let installed_fixture_phase = yielded.fixture_phase(active_request);
-            yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
-        } {
-            crate::domain_computation::WorthQueryDirectReadmissionOutcome::RecoveryRequired(
-                recovery,
-            ) => recovery,
-            _ => panic!("checkpoint release panic must require recovery"),
+        let recovery = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = yielded.fixture_phase(active_request);
+                yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+            };
+            match fixture_phase_result {
+                crate::domain_computation::WorthQueryDirectReadmissionOutcome::RecoveryRequired(
+                    recovery,
+                ) => recovery,
+                _ => panic!("checkpoint release panic must require recovery"),
+            }
         };
         assert_eq!(
         recovery.kind(),
@@ -80,15 +83,19 @@ fn checkpoint_and_restored_execution_drop_panics_preserve_both_physical_disposit
             execution,
             YieldProvider::checkpoint_and_restored_execution_drop_panic(7),
         );
-        let recovery = match {
-            let installed_fixture_phase = yielded.fixture_phase(active_request);
-            yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
-        } {
+        let recovery =
+            {
+                let fixture_phase_result = {
+                    let installed_fixture_phase = yielded.fixture_phase(active_request);
+                    yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+                };
+                match fixture_phase_result {
             crate::domain_computation::WorthQueryDirectReadmissionOutcome::RecoveryRequired(
                 recovery,
             ) => recovery,
             _ => panic!("causal checkpoint and replacement cleanup panics must require recovery"),
-        };
+        }
+            };
         assert_eq!(
         recovery.kind(),
         crate::domain_computation::WorthQueryDirectReadmissionRecoveryKind::CheckpointReleasePanicked

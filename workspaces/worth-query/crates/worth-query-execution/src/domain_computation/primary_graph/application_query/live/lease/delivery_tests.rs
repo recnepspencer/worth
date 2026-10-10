@@ -104,7 +104,6 @@ fn governed_live_delivery_reuses_only_query_owned_current_authority() {
     let capability = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admit_touch_account_capability(
                 &(phase).test_host_request(),
                 &world,
@@ -117,7 +116,6 @@ fn governed_live_delivery_reuses_only_query_owned_current_authority() {
     let mut lease = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
         .selected_product(&(phase).test_host_request(), )
         .open_governed_application_query_live::<
@@ -147,10 +145,7 @@ fn governed_live_delivery_reuses_only_query_owned_current_authority() {
 
     let WorthQueryApplicationLiveOutcome::Delivered(update) = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            lease.next(&phase, &principal, &request)
-        })
+        .with_host_advancement(|phase| lease.next(&phase, &principal, &request))
         .expect("the fixture read owns its installed host call")
     else {
         panic!("current governed authority must deliver the committed cause");
@@ -254,7 +249,6 @@ fn revoked_capability_stops_governed_live_delivery_before_projection() {
     let capability = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admit_touch_account_capability(
                 &(phase).test_host_request(),
                 &world,
@@ -267,7 +261,6 @@ fn revoked_capability_stops_governed_live_delivery_before_projection() {
     let mut lease = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
         .selected_product(&(phase).test_host_request(), )
         .open_governed_application_query_live::<
@@ -308,10 +301,7 @@ fn revoked_capability_stops_governed_live_delivery_before_projection() {
 
     let outcome = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            lease.next(&phase, &principal, &request)
-        })
+        .with_host_advancement(|phase| lease.next(&phase, &principal, &request))
         .expect("the fixture read owns its installed host call");
     let WorthQueryApplicationLiveOutcome::AuthorizationDenied(denial) = outcome else {
         let posture = match outcome {

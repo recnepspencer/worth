@@ -9,14 +9,12 @@ fn approver_reenable_does_not_revive_older_approval() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let admission = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_capability_operation(
                 &(phase).test_host_request(),
                 &world,

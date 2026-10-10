@@ -8,14 +8,12 @@ fn cumulative_variable_width_payloads_are_denied_before_provider_commit() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
@@ -27,7 +25,6 @@ fn cumulative_variable_width_payloads_are_denied_before_provider_commit() {
     let admission = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .authorize_operation(
@@ -44,7 +41,6 @@ fn cumulative_variable_width_payloads_are_denied_before_provider_commit() {
     let (_, projection, _) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .invariant
                 .project_admitted_operation(
@@ -64,7 +60,6 @@ fn cumulative_variable_width_payloads_are_denied_before_provider_commit() {
     let reads = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .begin_projected_application_read_attempt(
@@ -79,7 +74,6 @@ fn cumulative_variable_width_payloads_are_denied_before_provider_commit() {
     let mut effects = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             reads
                 .complete_projected_dependencies(
                     &phase,

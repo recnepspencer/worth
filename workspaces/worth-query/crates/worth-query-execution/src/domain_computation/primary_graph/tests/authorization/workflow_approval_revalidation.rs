@@ -112,14 +112,12 @@ fn durable_approval_readmission_rejects_changed_lineage_shape() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let admission = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_capability_operation(
                 &(phase).test_host_request(),
                 &world,
@@ -163,14 +161,12 @@ fn durable_approval_readmission_denies_revoked_grant() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let admission = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_capability_operation(
                 &(phase).test_host_request(),
                 &world,
@@ -196,10 +192,7 @@ fn durable_approval_readmission_denies_revoked_grant() {
         .expect("the fixture read owns its installed host call");
     world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            revoke_grant(&phase, &world)
-        })
+        .with_host_advancement(|phase| revoke_grant(&phase, &world))
         .expect("the fixture read owns its installed host call");
     let denial = world
         .application
@@ -241,14 +234,12 @@ fn durable_approval_readmission_denies_expired_grant() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let admission = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_capability_operation(
                 &(phase).test_host_request(),
                 &world,
@@ -304,14 +295,12 @@ fn durable_approval_readmission_denies_revoked_delegation_parent() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let admission = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_capability_operation(
                 &(phase).test_host_request(),
                 &world,
@@ -337,10 +326,7 @@ fn durable_approval_readmission_denies_revoked_delegation_parent() {
         .expect("the fixture read owns its installed host call");
     world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            revoke_parent(&phase, &world)
-        })
+        .with_host_advancement(|phase| revoke_parent(&phase, &world))
         .expect("the fixture read owns its installed host call");
     let denial = world
         .application

@@ -260,7 +260,7 @@ impl WorthQueryRuntimeSourceAdapter for CountCollectionSourceAdapter {
 
     fn live_entities_for_target(
         &self,
-        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         target: &WorthQueryLiveArtifactTarget,
     ) -> Vec<WorthQueryEntity> {
         if self.declared_targets.contains(target) {

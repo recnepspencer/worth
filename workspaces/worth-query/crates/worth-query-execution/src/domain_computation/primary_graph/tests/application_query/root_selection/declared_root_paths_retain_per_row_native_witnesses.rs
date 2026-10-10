@@ -60,7 +60,6 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
     let plan = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .admit_application_query(
@@ -92,7 +91,6 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
     let result = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .execute_application_query_one_shot(&phase, plan)
@@ -178,10 +176,7 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
     let kind = first.adjacencies[0].relation_kind;
     let selected = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.selected_product(&(phase).test_host_request())
-        })
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
         .expect("the fixture read owns its installed host call");
     let (relation_id, target) = world
         .application
@@ -244,10 +239,7 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
     };
     let current = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.selected_product(&(phase).test_host_request())
-        })
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
         .expect("the fixture read owns its installed host call");
     world
         .application
@@ -275,7 +267,6 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
     let refreshed = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .execute_application_query_one_shot(

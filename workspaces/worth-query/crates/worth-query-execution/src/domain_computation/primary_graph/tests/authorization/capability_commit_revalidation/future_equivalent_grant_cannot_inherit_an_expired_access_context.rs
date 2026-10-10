@@ -22,16 +22,12 @@ fn future_equivalent_grant_cannot_inherit_an_expired_access_context() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let (first, retry) = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            equivalent_programs(&phase, &world, &principal, &request)
-        })
+        .with_host_advancement(|phase| equivalent_programs(&phase, &world, &principal, &request))
         .expect("the fixture read owns its installed host call");
     commit_first(&world, first, 56);
     world.authorization_time.script([time(120)]);

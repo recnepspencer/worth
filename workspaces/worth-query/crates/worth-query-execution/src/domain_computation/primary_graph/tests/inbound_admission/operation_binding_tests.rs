@@ -118,7 +118,6 @@ fn duplicate_callback_keeps_the_original_terminal_out_of_a_sibling_fork() {
     let fork = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .branches()

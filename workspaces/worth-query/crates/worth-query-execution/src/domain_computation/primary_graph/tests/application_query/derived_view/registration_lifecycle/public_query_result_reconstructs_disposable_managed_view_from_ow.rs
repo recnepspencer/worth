@@ -8,15 +8,11 @@ fn public_query_result_reconstructs_disposable_managed_view_from_owner_observati
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let selected = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.selected_product(&(phase).test_host_request())
-        })
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
         .expect("the fixture read owns its installed host call");
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             selected
                 .resolve_authenticated_principal(
                     &phase,
@@ -31,7 +27,6 @@ fn public_query_result_reconstructs_disposable_managed_view_from_owner_observati
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             selected
                 .resolve_entity(
                     &phase,
@@ -57,7 +52,6 @@ fn public_query_result_reconstructs_disposable_managed_view_from_owner_observati
     let result = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .execute_application_query_one_shot(
@@ -79,16 +73,12 @@ fn public_query_result_reconstructs_disposable_managed_view_from_owner_observati
         .expect("the fixture read owns its installed host call");
     let retained_product = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.selected_product(&(phase).test_host_request())
-        })
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
         .expect("the fixture read owns its installed host call");
     let foreign = installed_authorization_world(true);
     foreign
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             assert_eq!(
                 world
                     .application
@@ -189,15 +179,11 @@ fn public_query_result_reconstructs_disposable_managed_view_from_owner_observati
     ));
     let selected = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.selected_product(&(phase).test_host_request())
-        })
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
         .expect("the fixture read owns its installed host call");
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             selected
                 .resolve_authenticated_principal(
                     &phase,
@@ -212,7 +198,6 @@ fn public_query_result_reconstructs_disposable_managed_view_from_owner_observati
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             selected
                 .resolve_entity(
                     &phase,
@@ -228,7 +213,6 @@ fn public_query_result_reconstructs_disposable_managed_view_from_owner_observati
     let fresh = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .execute_application_query_one_shot(
@@ -250,10 +234,7 @@ fn public_query_result_reconstructs_disposable_managed_view_from_owner_observati
         .expect("the fixture read owns its installed host call");
     let fresh_product = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.selected_product(&(phase).test_host_request())
-        })
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
         .expect("the fixture read owns its installed host call");
     world
         .application

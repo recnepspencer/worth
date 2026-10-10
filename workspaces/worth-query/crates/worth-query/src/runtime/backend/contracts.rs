@@ -90,7 +90,7 @@ pub trait WorthQueryRuntimeBackend:
 
     fn current_snapshot_identity(
         &self,
-        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> WorthQuerySnapshotIdentity {
         super::unavailable_snapshot_identity()
     }

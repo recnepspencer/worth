@@ -59,7 +59,6 @@ fn two_bindings_sharing_key_namespace_operation_and_input_type_never_replay_each
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
@@ -80,14 +79,12 @@ fn two_bindings_sharing_key_namespace_operation_and_input_type_never_replay_each
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let first = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program(&phase, &world, &principal, &account, &request, "committed")
         })
         .expect("the fixture read owns its installed host call");
@@ -103,14 +100,12 @@ fn two_bindings_sharing_key_namespace_operation_and_input_type_never_replay_each
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "committed", &request)
         })
         .expect("the fixture read owns its installed host call");
     let retry = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program(&phase, &world, &principal, &account, &request, "committed")
         })
         .expect("the fixture read owns its installed host call");
@@ -129,7 +124,6 @@ fn two_bindings_sharing_key_namespace_operation_and_input_type_never_replay_each
     let crossed = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program(&phase, &world, &principal, &account, &request, "committed")
         })
         .expect("the fixture read owns its installed host call");
@@ -155,14 +149,12 @@ fn a_binding_the_schema_never_installed_is_refused_instead_of_panicking() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
@@ -174,7 +166,6 @@ fn a_binding_the_schema_never_installed_is_refused_instead_of_panicking() {
     let admission = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .authorize_operation(

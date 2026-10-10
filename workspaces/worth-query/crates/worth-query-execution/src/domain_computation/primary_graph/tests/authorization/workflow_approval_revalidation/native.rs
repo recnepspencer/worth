@@ -10,14 +10,12 @@ fn grant_expiry_aba_does_not_revive_older_approval() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let admission = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_capability_operation(
                 &(phase).test_host_request(),
                 &world,
@@ -34,7 +32,6 @@ fn grant_expiry_aba_does_not_revive_older_approval() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             update_grant_field(
                 &phase,
                 &world,
@@ -47,7 +44,6 @@ fn grant_expiry_aba_does_not_revive_older_approval() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             update_grant_field(
                 &phase,
                 &world,

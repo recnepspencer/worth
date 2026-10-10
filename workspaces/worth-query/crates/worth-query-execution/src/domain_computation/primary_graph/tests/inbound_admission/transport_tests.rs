@@ -97,7 +97,6 @@ fn transport_candidate_rejects_another_owner_and_terminal_matches_later_attempt(
     let first_owner = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .observe_committed_dispatch_outbox(&phase, &first_receipt)
@@ -130,7 +129,6 @@ fn transport_candidate_rejects_another_owner_and_terminal_matches_later_attempt(
     let other_owner = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .observe_committed_dispatch_outbox(&phase, &other_receipt)
@@ -207,7 +205,6 @@ fn two_real_completed_attempts_share_the_first_world_terminal() {
     let owner = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .observe_committed_dispatch_outbox(&phase, &receipt)

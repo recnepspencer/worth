@@ -238,8 +238,8 @@ pub(super) fn review_reads(
     mandatory: WorthQueryMandatoryReview,
 ) -> ReviewReads {
     let reviewer =
-        super::approval_transition::authenticated(&phase_custody, world, "carol", request);
-    let access = review_access(&phase_custody, world, &reviewer, request).unwrap();
+        super::approval_transition::authenticated(phase_custody, world, "carol", request);
+    let access = review_access(phase_custody, world, &reviewer, request).unwrap();
     let operation = world
         .application
         .installed_schema()

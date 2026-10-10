@@ -9,21 +9,18 @@ fn stale_identity_is_refused_before_counted_native_field_provider_work() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let other = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "unrelated", &request)
         })
         .expect("the fixture read owns its installed host call");
@@ -35,7 +32,6 @@ fn stale_identity_is_refused_before_counted_native_field_provider_work() {
     let admission = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .authorize_operation(
@@ -52,7 +48,6 @@ fn stale_identity_is_refused_before_counted_native_field_provider_work() {
     let (_, projection, _) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .invariant
                 .project_admitted_operation(
@@ -72,7 +67,6 @@ fn stale_identity_is_refused_before_counted_native_field_provider_work() {
     let mutation = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             super::super::admitted_program(
                 &phase, &world, &principal, &account, &request, "changed",
             )
@@ -89,14 +83,12 @@ fn stale_identity_is_refused_before_counted_native_field_provider_work() {
     let newer = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "changed", &request)
         })
         .expect("the fixture read owns its installed host call");
     let mut attempt = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .begin_projected_application_read_attempt(

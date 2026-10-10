@@ -14,21 +14,18 @@ fn pre_effect_index_budget_denial_leaves_no_effect_and_retries_through_query() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let denied = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program(
                 &phase,
                 &world,
@@ -70,7 +67,6 @@ fn pre_effect_index_budget_denial_leaves_no_effect_and_retries_through_query() {
     let _still_open = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &live_scope())
         })
         .expect("the fixture read owns its installed host call");
@@ -78,7 +74,6 @@ fn pre_effect_index_budget_denial_leaves_no_effect_and_retries_through_query() {
     let retry = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program(
                 &phase,
                 &world,
@@ -108,7 +103,6 @@ fn pre_effect_index_budget_denial_leaves_no_effect_and_retries_through_query() {
     let _committed = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(
                 &(phase).test_host_request(),
                 &world,

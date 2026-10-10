@@ -65,7 +65,6 @@ fn matching_prohibited_path_denies_only_through_bridge_decision_authority() {
     let outcome = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .authorize_operation(

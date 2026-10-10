@@ -85,12 +85,15 @@ fn direct_denied_peer(
     }
     .unwrap_or_else(|_| panic!("direct yield-denial peer must start"));
     let epoch_identity = started.epoch_identity().to_owned();
-    let paused = match {
-        let installed_fixture_phase = started.fixture_phase(execution);
-        started.advance(&installed_fixture_phase)
-    } {
-        WorthQueryDirectConvergenceStepOutcome::Continue(paused) => paused,
-        _ => panic!("direct denial peer must reach its safe point"),
+    let paused = {
+        let fixture_phase_result = {
+            let installed_fixture_phase = started.fixture_phase(execution);
+            started.advance(&installed_fixture_phase)
+        };
+        match fixture_phase_result {
+            WorthQueryDirectConvergenceStepOutcome::Continue(paused) => paused,
+            _ => panic!("direct denial peer must reach its safe point"),
+        }
     };
     let denied = match paused.yield_iteration() {
         WorthQueryDirectConvergenceYieldOutcome::Denied(denied) => denied,
@@ -132,12 +135,15 @@ fn workflow_denied_peer(
     }
     .unwrap_or_else(|_| panic!("workflow yield-denial stage must start"));
     let epoch_identity = started.epoch_identity().to_owned();
-    let paused = match {
-        let installed_fixture_phase = started.fixture_phase(execution);
-        started.advance(&installed_fixture_phase)
-    } {
-        WorthQueryWorkflowConvergenceStepOutcome::Continue(paused) => paused,
-        _ => panic!("workflow denial peer must reach its safe point"),
+    let paused = {
+        let fixture_phase_result = {
+            let installed_fixture_phase = started.fixture_phase(execution);
+            started.advance(&installed_fixture_phase)
+        };
+        match fixture_phase_result {
+            WorthQueryWorkflowConvergenceStepOutcome::Continue(paused) => paused,
+            _ => panic!("workflow denial peer must reach its safe point"),
+        }
     };
     let denied = match paused.yield_iteration() {
         WorthQueryWorkflowConvergenceYieldOutcome::Denied(denied) => denied,
@@ -155,15 +161,18 @@ fn complete_direct_peer(
     execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     peer: DirectDeniedPeer,
 ) -> CompletedPeer {
-    let terminal = match {
-        let fixture_state = peer.denied.retry();
-        let installed_fixture_phase = fixture_state.fixture_phase(&execution);
-        fixture_state.advance(&installed_fixture_phase)
-    } {
-        WorthQueryDirectConvergenceStepOutcome::Completed(
-            WorthQueryDirectConvergenceIterationOutcome::Converged(terminal),
-        ) => terminal,
-        _ => panic!("rightful direct denial owner must converge"),
+    let terminal = {
+        let fixture_phase_result = {
+            let fixture_state = peer.denied.retry();
+            let installed_fixture_phase = fixture_state.fixture_phase(execution);
+            fixture_state.advance(&installed_fixture_phase)
+        };
+        match fixture_phase_result {
+            WorthQueryDirectConvergenceStepOutcome::Completed(
+                WorthQueryDirectConvergenceIterationOutcome::Converged(terminal),
+            ) => terminal,
+            _ => panic!("rightful direct denial owner must converge"),
+        }
     };
     assert_eq!(terminal.identity(), peer.epoch_identity);
     assert_eq!(peer.probe.suspension_attempt_count(), 0);
@@ -181,15 +190,18 @@ fn complete_workflow_peer(
     execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     peer: WorkflowDeniedPeer,
 ) -> CompletedPeer {
-    let terminal = match {
-        let fixture_state = peer.denied.retry();
-        let installed_fixture_phase = fixture_state.fixture_phase(&execution);
-        fixture_state.advance(&installed_fixture_phase)
-    } {
-        WorthQueryWorkflowConvergenceStepOutcome::Completed(
-            WorthQueryWorkflowConvergenceIterationOutcome::Converged(terminal),
-        ) => terminal,
-        _ => panic!("rightful workflow denial owner must converge"),
+    let terminal = {
+        let fixture_phase_result = {
+            let fixture_state = peer.denied.retry();
+            let installed_fixture_phase = fixture_state.fixture_phase(execution);
+            fixture_state.advance(&installed_fixture_phase)
+        };
+        match fixture_phase_result {
+            WorthQueryWorkflowConvergenceStepOutcome::Completed(
+                WorthQueryWorkflowConvergenceIterationOutcome::Converged(terminal),
+            ) => terminal,
+            _ => panic!("rightful workflow denial owner must converge"),
+        }
     };
     assert_eq!(terminal.identity(), peer.epoch_identity);
     assert_eq!(peer.probe.suspension_attempt_count(), 0);

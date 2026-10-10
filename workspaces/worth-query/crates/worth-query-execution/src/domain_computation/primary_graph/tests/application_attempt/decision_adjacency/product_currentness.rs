@@ -66,14 +66,12 @@ fn unrelated_adjacency_growth_preserves_prepared_decision_facts() {
     let first_account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let second_account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "unrelated", &request)
         })
         .expect("the fixture read owns its installed host call");
@@ -95,7 +93,6 @@ fn unrelated_adjacency_growth_preserves_prepared_decision_facts() {
     let alice_program = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             link_program(
                 &phase,
                 &world,
@@ -111,7 +108,6 @@ fn unrelated_adjacency_growth_preserves_prepared_decision_facts() {
     let bob_program = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             link_program(
                 &phase,
                 &world,
@@ -160,7 +156,6 @@ fn unrelated_adjacency_growth_preserves_prepared_decision_facts() {
     let readmitted = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             link_program(
                 &phase,
                 &world,

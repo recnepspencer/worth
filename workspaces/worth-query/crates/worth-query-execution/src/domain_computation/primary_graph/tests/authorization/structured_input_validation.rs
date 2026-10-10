@@ -14,7 +14,6 @@ fn structured_input_validation_is_enforced_by_capability_admission() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
@@ -31,7 +30,6 @@ fn structured_input_validation_is_enforced_by_capability_admission() {
     let Err(denial) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .admit_capability_access(&phase, &principal, &capability, input, &request)

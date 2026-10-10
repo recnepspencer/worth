@@ -117,12 +117,15 @@ fn complete_workflow_peer(
     execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     started: WorthQueryStartedWorkflowConvergenceIteration,
 ) -> String {
-    let outcome = match {
-        let installed_fixture_phase = started.fixture_phase(execution);
-        started.advance(&installed_fixture_phase)
-    } {
-        WorthQueryWorkflowConvergenceStepOutcome::Completed(outcome) => outcome,
-        _ => panic!("real workflow peer must complete"),
+    let outcome = {
+        let fixture_phase_result = {
+            let installed_fixture_phase = started.fixture_phase(execution);
+            started.advance(&installed_fixture_phase)
+        };
+        match fixture_phase_result {
+            WorthQueryWorkflowConvergenceStepOutcome::Completed(outcome) => outcome,
+            _ => panic!("real workflow peer must complete"),
+        }
     };
     let terminal = match outcome {
         WorthQueryWorkflowConvergenceIterationOutcome::Converged(terminal) => terminal,

@@ -38,7 +38,6 @@ fn transport_winner_retains_compact_signed_meaning_until_cutoff() {
     let owner = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .observe_committed_dispatch_outbox(&phase, &receipt)

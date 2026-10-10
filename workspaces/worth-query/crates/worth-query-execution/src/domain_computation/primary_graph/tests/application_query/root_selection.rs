@@ -87,7 +87,6 @@ fn exact_scope_root_executes_without_an_invented_predicate() {
     let plan = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .admit_application_query(
@@ -111,7 +110,6 @@ fn exact_scope_root_executes_without_an_invented_predicate() {
     let result = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .execute_application_query_one_shot(&phase, plan)

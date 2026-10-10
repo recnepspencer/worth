@@ -36,7 +36,6 @@ fn completed_transport_recovery_publishes_without_a_second_physical_attempt() {
     let owner = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .observe_committed_dispatch_outbox(&phase, &receipt)
@@ -139,7 +138,6 @@ fn host_maintenance_recovers_unpublished_transport_after_request_is_gone() {
     let owner = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .observe_committed_dispatch_outbox(&phase, &receipt)
@@ -230,7 +228,6 @@ fn callback_winner_is_recognized_before_transport_world_publication() {
     let owner = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .observe_committed_dispatch_outbox(&phase, &receipt)

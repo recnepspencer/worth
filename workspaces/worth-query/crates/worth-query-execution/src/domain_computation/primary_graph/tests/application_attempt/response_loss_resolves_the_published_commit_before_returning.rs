@@ -8,21 +8,18 @@ fn response_loss_resolves_the_published_commit_before_returning() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let first = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program_with_expected_status(
                 &phase,
                 &world,
@@ -36,7 +33,6 @@ fn response_loss_resolves_the_published_commit_before_returning() {
     let retry = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program_with_expected_status(
                 &phase,
                 &world,

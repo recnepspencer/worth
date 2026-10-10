@@ -176,9 +176,9 @@ fn approval_reads(
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     requested: WorthQueryRequestedElevation,
 ) -> Reads {
-    let approver = super::approval_transition::authenticated(&phase_custody, world, "bob", request);
+    let approver = super::approval_transition::authenticated(phase_custody, world, "bob", request);
     let access =
-        super::approval_transition::approval_access(&phase_custody, world, &approver, request)
+        super::approval_transition::approval_access(phase_custody, world, &approver, request)
             .unwrap();
     let operation = super::approval_transition::approval_operation(world);
     let admission = world

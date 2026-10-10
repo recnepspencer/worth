@@ -45,9 +45,7 @@ pub(in super::super) fn route_consumer_stop_class(
     error: &WorthQueryRuntimeError,
 ) -> ConsumerStopRoute {
     match error.stop_class() {
-        WorthQueryStopClass::Advancement { denial } => {
-            ConsumerStopRoute::Advancement(denial.clone())
-        }
+        WorthQueryStopClass::Advancement { denial } => ConsumerStopRoute::Advancement(*denial),
         WorthQueryStopClass::ForeignPhase { denial } => ConsumerStopRoute::ForeignPhase(*denial),
         WorthQueryStopClass::InstalledDomainAuthorityDenied { denial } => {
             ConsumerStopRoute::InstalledDomainAuthorityDenied(denial.kind())

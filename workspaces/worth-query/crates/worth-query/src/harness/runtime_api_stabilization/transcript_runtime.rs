@@ -104,7 +104,7 @@ struct TranscriptSnapshotIdentity;
 impl WorthQueryRuntimeSnapshotIdentityAdapter for TranscriptSnapshotIdentity {
     fn current_snapshot_identity(
         &self,
-        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> WorthQuerySnapshotIdentity {
         WorthQuerySnapshotIdentity::preview(
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::RuntimeStateSnapshot)
@@ -159,7 +159,7 @@ impl WorthQueryRuntimeSourceAdapter for TranscriptSourceAdapter {
 
     fn live_entities_for_target(
         &self,
-        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         _target: &WorthQueryLiveArtifactTarget,
     ) -> Vec<WorthQueryEntity> {
         Vec::new()

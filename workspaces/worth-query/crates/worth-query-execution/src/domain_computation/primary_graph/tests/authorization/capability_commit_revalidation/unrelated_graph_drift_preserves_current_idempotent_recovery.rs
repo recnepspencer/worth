@@ -8,22 +8,17 @@ fn unrelated_graph_drift_preserves_current_idempotent_recovery() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let (first, retry) = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            equivalent_programs(&phase, &world, &principal, &request)
-        })
+        .with_host_advancement(|phase| equivalent_programs(&phase, &world, &principal, &request))
         .expect("the fixture read owns its installed host call");
     let committed = commit_first(&world, first, 55);
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             change_account_label(&phase, &world, "account-2", "independently-updated")
         })
         .expect("the fixture read owns its installed host call");

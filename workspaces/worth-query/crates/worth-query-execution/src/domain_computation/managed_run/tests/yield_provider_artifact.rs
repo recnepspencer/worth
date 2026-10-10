@@ -194,12 +194,15 @@ fn yielded_cleanup_releases_artifacts_owned_by_the_provider_checkpoint() {
             )
         }
         .unwrap();
-        let paused = match {
-            let installed_fixture_phase = active.fixture_phase(execution);
-            active.advance(&installed_fixture_phase)
-        } {
-            WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused,
-            _ => panic!("checkpoint-artifact provider did not pause"),
+        let paused = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = active.fixture_phase(execution);
+                active.advance(&installed_fixture_phase)
+            };
+            match fixture_phase_result {
+                WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused,
+                _ => panic!("checkpoint-artifact provider did not pause"),
+            }
         };
         let yielded = match paused.yield_run() {
             crate::domain_computation::WorthQueryWorkflowYieldOutcome::Yielded(yielded) => yielded,

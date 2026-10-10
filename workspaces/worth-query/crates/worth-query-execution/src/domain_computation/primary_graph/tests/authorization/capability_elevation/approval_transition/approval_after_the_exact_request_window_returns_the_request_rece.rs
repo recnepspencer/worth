@@ -9,9 +9,7 @@ fn approval_after_the_exact_request_window_returns_the_request_receipt() {
         .script(std::iter::repeat_n(time(100), 12));
     let request = live_scope();
     let requested = { super::super::request_support::commit_exact_request(&world, &request) };
-    {
-        super::super::request_support::resolve_exact_request_identities(&world, &request)
-    };
+    super::super::request_support::resolve_exact_request_identities(&world, &request);
     world.authorization_time.script([time(106), time(106)]);
     let approver = world
         .application
@@ -23,14 +21,12 @@ fn approval_after_the_exact_request_window_returns_the_request_receipt() {
     let access = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             approval_access(&(phase).test_host_request(), &world, &approver, &request).unwrap()
         })
         .expect("the fixture read owns its installed host call");
     let denial = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .authorize_elevation_approval(

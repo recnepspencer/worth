@@ -7,7 +7,6 @@ fn compile_capability_cannot_widen_the_installed_relation_manifest() {
     let actor = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated(
                 &phase,
                 &(phase).borrowed_request_for_test(),
@@ -20,7 +19,6 @@ fn compile_capability_cannot_widen_the_installed_relation_manifest() {
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
@@ -32,7 +30,6 @@ fn compile_capability_cannot_widen_the_installed_relation_manifest() {
     let admission = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .authorize_operation(
@@ -49,7 +46,6 @@ fn compile_capability_cannot_widen_the_installed_relation_manifest() {
     let projected = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .invariant
                 .project_admitted_operation(

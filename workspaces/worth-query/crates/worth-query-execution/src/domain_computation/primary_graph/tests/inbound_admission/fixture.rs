@@ -166,8 +166,8 @@ impl InboundWorld {
                 effects
                     .emit_external(NoticeEffect::reference(), Notice(text.to_owned()))
                     .unwrap();
-                let program = effects.finish().unwrap();
-                program
+
+                effects.finish().unwrap()
             })
             .expect("the fixture preparation owns its host call");
         let mut key = [0_u8; 32];
@@ -322,8 +322,8 @@ impl InboundWorld {
                         .emit_external(NoticeEffect::reference(), Notice(text.to_owned()))
                         .unwrap();
                 }
-                let program = effects.finish().unwrap();
-                program
+
+                effects.finish().unwrap()
             })
             .expect("the fixture preparation owns its host call");
         self.application.compare_and_commit_application(

@@ -79,7 +79,6 @@ fn invariant_entity_identity_exposes_the_resolved_instance() {
     let completed = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .invariant
                 .project(
@@ -108,7 +107,6 @@ fn locked_projection_uses_indexes_and_directional_adjacency_without_graph_scans(
     let completed = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .invariant
                 .project(
@@ -163,7 +161,6 @@ fn optional_locked_resolution_distinguishes_absence_from_ambiguity_and_counts_wo
     let completed = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .invariant
                 .project(
@@ -198,7 +195,6 @@ fn panicking_projection_releases_its_snapshot_without_poisoning_the_graph() {
     let panic = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                 let _ = world.invariant.project::<()>(
                     &phase,
@@ -217,7 +213,6 @@ fn panicking_projection_releases_its_snapshot_without_poisoning_the_graph() {
     let completed = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .invariant
                 .project(
@@ -286,7 +281,6 @@ fn admitted_projection_supplies_its_exact_root_without_an_equality_lookup() {
     let admission = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .authorize_operation(
@@ -304,7 +298,6 @@ fn admitted_projection_supplies_its_exact_root_without_an_equality_lookup() {
     let completed = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .invariant
                 .project_admitted_operation(

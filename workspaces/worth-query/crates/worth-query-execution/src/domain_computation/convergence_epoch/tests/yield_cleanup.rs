@@ -252,12 +252,15 @@ fn workflow_yield_with_pending_artifact(
         )
     }
     .unwrap_or_else(|_| panic!("artifact workflow iteration must start"));
-    let paused = match {
-        let installed_fixture_phase = started.fixture_phase(execution);
-        started.advance(&installed_fixture_phase)
-    } {
-        WorthQueryWorkflowConvergenceStepOutcome::Continue(paused) => paused,
-        _ => panic!("artifact workflow must reach a yield safe point"),
+    let paused = {
+        let fixture_phase_result = {
+            let installed_fixture_phase = started.fixture_phase(execution);
+            started.advance(&installed_fixture_phase)
+        };
+        match fixture_phase_result {
+            WorthQueryWorkflowConvergenceStepOutcome::Continue(paused) => paused,
+            _ => panic!("artifact workflow must reach a yield safe point"),
+        }
     };
     let artifact = artifact_receiver
         .recv()
@@ -304,12 +307,15 @@ fn direct_yield_with_disposition(
         epoch.begin_iteration(&installed_fixture_phase, call(call_identity))
     }
     .unwrap_or_else(|_| panic!("direct convergence iteration must start"));
-    let paused = match {
-        let installed_fixture_phase = started.fixture_phase(execution);
-        started.advance(&installed_fixture_phase)
-    } {
-        WorthQueryDirectConvergenceStepOutcome::Continue(paused) => paused,
-        _ => panic!("direct yield fixture must reach a safe point"),
+    let paused = {
+        let fixture_phase_result = {
+            let installed_fixture_phase = started.fixture_phase(execution);
+            started.advance(&installed_fixture_phase)
+        };
+        match fixture_phase_result {
+            WorthQueryDirectConvergenceStepOutcome::Continue(paused) => paused,
+            _ => panic!("direct yield fixture must reach a safe point"),
+        }
     };
     match paused.yield_iteration() {
         WorthQueryDirectConvergenceYieldOutcome::Yielded(yielded) => yielded,
@@ -357,12 +363,15 @@ fn workflow_yield_with_disposition(
         )
     }
     .unwrap_or_else(|_| panic!("workflow convergence iteration must start"));
-    let paused = match {
-        let installed_fixture_phase = started.fixture_phase(execution);
-        started.advance(&installed_fixture_phase)
-    } {
-        WorthQueryWorkflowConvergenceStepOutcome::Continue(paused) => paused,
-        _ => panic!("workflow yield fixture must reach a safe point"),
+    let paused = {
+        let fixture_phase_result = {
+            let installed_fixture_phase = started.fixture_phase(execution);
+            started.advance(&installed_fixture_phase)
+        };
+        match fixture_phase_result {
+            WorthQueryWorkflowConvergenceStepOutcome::Continue(paused) => paused,
+            _ => panic!("workflow yield fixture must reach a safe point"),
+        }
     };
     match paused.yield_iteration() {
         WorthQueryWorkflowConvergenceYieldOutcome::Yielded(yielded) => yielded,

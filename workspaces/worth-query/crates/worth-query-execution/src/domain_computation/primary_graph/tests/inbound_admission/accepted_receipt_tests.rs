@@ -17,9 +17,6 @@ use crate::domain_computation::primary_graph::{
 
 #[test]
 fn verified_second_callback_is_accepted_while_publication_slot_is_busy() {
-    let host_request = crate::test_request_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
     let world = installed_world();
     let operation = world
         .application

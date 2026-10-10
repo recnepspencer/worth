@@ -16,7 +16,6 @@ fn current_output_source_adjacency_tracks_actual_anchor_retirement_and_budget() 
     let (_, _, account, _) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_touch_parts(&phase, &(phase).borrowed_request_for_test(), &world)
         })
         .expect("the fixture read owns its installed host call");
@@ -28,10 +27,7 @@ fn current_output_source_adjacency_tracks_actual_anchor_retirement_and_budget() 
         .kind;
     let original = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.selected_product(&(phase).test_host_request())
-        })
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
         .expect("the fixture read owns its installed host call");
     let fact = world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); graph.integration_handle().with_runtime(request_execution, |runtime| {
         let revision = runtime
@@ -70,15 +66,10 @@ fn current_output_source_adjacency_tracks_actual_anchor_retirement_and_budget() 
             Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded)
         );
     }) }).expect("the fixture read owns its installed host call");
-    {
-        retire_open_account(&world)
-    };
+    retire_open_account(&world);
     let retired = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.selected_product(&(phase).test_host_request())
-        })
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
         .expect("the fixture read owns its installed host call");
     world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); graph.integration_handle().with_runtime(request_execution, |runtime| {
         let snapshot = retired.application_basis().snapshot_handle();

@@ -12,9 +12,6 @@ use worth_relational::facade::{
 #[test]
 fn neutral_native_population_keeps_logical_marking_local_and_matches_revision_oracle() {
     {
-        let host_request = crate::test_request_policy::serial_request();
-        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
         let mut expected_counts = None;
         for population in [1, 10, 100, 1000] {
             let counts = run_population(population);

@@ -141,7 +141,6 @@ mod tests {
         let sibling = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
                 application
                     .branches()
                     .fork(root)
@@ -154,17 +153,11 @@ mod tests {
             .expect("the fixture read owns its installed host call");
         let security = world
             .application
-            .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
-                application.on_branch(sibling).select(&phase).unwrap()
-            })
+            .with_host_advancement(|phase| application.on_branch(sibling).select(&phase).unwrap())
             .expect("the fixture read owns its installed host call");
         let retained = world
             .application
-            .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
-                application.on_branch(root).select(&phase).unwrap()
-            })
+            .with_host_advancement(|phase| application.on_branch(root).select(&phase).unwrap())
             .expect("the fixture read owns its installed host call");
         let scope = live_scope();
         let controls = WorthQueryProductQueryControls::new(

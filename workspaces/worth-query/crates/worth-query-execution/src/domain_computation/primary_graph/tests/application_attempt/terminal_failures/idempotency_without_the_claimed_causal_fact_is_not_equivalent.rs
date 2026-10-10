@@ -10,21 +10,18 @@ fn idempotency_without_the_claimed_causal_fact_is_not_equivalent() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let first = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program(
                 &phase,
                 &world,
@@ -38,7 +35,6 @@ fn idempotency_without_the_claimed_causal_fact_is_not_equivalent() {
     let retry = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program(
                 &phase,
                 &world,
@@ -52,7 +48,6 @@ fn idempotency_without_the_claimed_causal_fact_is_not_equivalent() {
     let parent = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .product()

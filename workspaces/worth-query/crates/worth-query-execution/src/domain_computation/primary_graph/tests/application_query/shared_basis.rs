@@ -24,10 +24,7 @@ fn shared_basis_keeps_one_exact_native_owner_until_last_explicit_release() {
     let mut meter = admission(100_000, 100_000);
     let selected = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.selected_product(&(phase).test_host_request())
-        })
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
         .expect("the fixture read owns its installed host call");
     let snapshot = selected.application_basis().snapshot_handle().clone();
     let identity = selected.application_basis().identity().clone();
@@ -95,10 +92,7 @@ fn shared_basis_promotion_refuses_before_allocation_and_returns_exclusive_custod
     let world = installed_authorization_world(true);
     let selected = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.selected_product(&(phase).test_host_request())
-        })
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
         .expect("the fixture read owns its installed host call");
     let identity = selected.application_basis().identity().clone();
     let mut denied = admission(100, 0);
@@ -131,7 +125,6 @@ fn denied_identity_copy_and_foreign_owner_leave_no_hidden_shared_custody() {
     let shared = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             match world
                 .selected_product(&(phase).test_host_request())
                 .prepare_shared_query_basis(&mut funded)
@@ -204,10 +197,7 @@ fn shared_basis_drop_releases_the_final_native_owner() {
     let mut meter = admission(100_000, 100_000);
     let selected = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.selected_product(&(phase).test_host_request())
-        })
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
         .expect("the fixture read owns its installed host call");
     let snapshot = selected.application_basis().snapshot_handle().clone();
     let shared = match selected.prepare_shared_query_basis(&mut meter) {
@@ -252,7 +242,6 @@ fn shared_basis_real_query_completes_without_claiming_physical_release() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .resolve_authenticated_principal(
@@ -268,7 +257,6 @@ fn shared_basis_real_query_completes_without_claiming_physical_release() {
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .resolve_entity(
@@ -287,7 +275,6 @@ fn shared_basis_real_query_completes_without_claiming_physical_release() {
     let shared = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             match world
                 .selected_product(&(phase).test_host_request())
                 .prepare_shared_query_basis(&mut meter)
@@ -331,7 +318,6 @@ fn shared_basis_real_query_completes_without_claiming_physical_release() {
     let result = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .execute_application_query_one_shot(&phase, plan)

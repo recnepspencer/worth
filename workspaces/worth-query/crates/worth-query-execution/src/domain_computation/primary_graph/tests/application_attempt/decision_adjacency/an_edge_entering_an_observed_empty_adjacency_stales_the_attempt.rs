@@ -8,7 +8,6 @@ fn an_edge_entering_an_observed_empty_adjacency_stales_the_attempt() {
     let actor = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated(
                 &phase,
                 &(phase).borrowed_request_for_test(),
@@ -34,14 +33,12 @@ fn an_edge_entering_an_observed_empty_adjacency_stales_the_attempt() {
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let losing = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             link_program(
                 &phase, &world, &actor, &principal, &account, &request, "open", "losing",
             )
@@ -50,7 +47,6 @@ fn an_edge_entering_an_observed_empty_adjacency_stales_the_attempt() {
     let winner = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             link_program(
                 &phase, &world, &actor, &principal, &account, &request, "open", "winner",
             )

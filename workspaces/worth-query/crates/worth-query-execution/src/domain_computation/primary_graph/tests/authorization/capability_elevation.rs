@@ -81,7 +81,6 @@ fn selector_only_admission_cannot_bypass_the_approval_transition() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
@@ -89,7 +88,6 @@ fn selector_only_admission_cannot_bypass_the_approval_transition() {
     let Err(denial) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admit_raw(&phase, &world, &principal, &request, Some("elevation-1"))
         })
         .expect("the fixture read owns its installed host call")
@@ -111,17 +109,13 @@ fn governed_capability_without_elevation_preserves_required_explanation() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
 
     let Err(denial) = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            admit_raw(&phase, &world, &principal, &request, None)
-        })
+        .with_host_advancement(|phase| admit_raw(&phase, &world, &principal, &request, None))
         .expect("the fixture read owns its installed host call")
     else {
         panic!("a governed capability cannot omit elevation")

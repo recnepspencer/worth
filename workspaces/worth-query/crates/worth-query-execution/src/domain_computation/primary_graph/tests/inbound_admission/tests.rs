@@ -86,7 +86,6 @@ fn performed_inbound_completion_closes_later_dispatch_admission() {
     let committed = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .observe_committed_dispatch_outbox(&phase, &dispatch)

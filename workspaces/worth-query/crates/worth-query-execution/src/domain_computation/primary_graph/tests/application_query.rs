@@ -189,7 +189,6 @@ fn execution_runtime_mints_plan_from_exact_mapped_principal_and_typed_scope() {
     let plan = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .admit_application_query(
@@ -228,7 +227,6 @@ fn execution_runtime_mints_plan_from_exact_mapped_principal_and_typed_scope() {
     let result = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .execute_application_query_one_shot(&phase, plan)
@@ -306,7 +304,6 @@ fn mapped_stranger_cannot_admit_a_valid_foreign_account_scope() {
     let denial = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .admit_application_query(

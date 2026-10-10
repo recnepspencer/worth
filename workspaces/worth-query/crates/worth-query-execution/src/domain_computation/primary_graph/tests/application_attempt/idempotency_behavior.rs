@@ -20,21 +20,18 @@ fn equivalent_retry_prepared_at_the_original_product_recovers_exact_owner_eviden
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let selected_commit = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .product()
@@ -45,14 +42,12 @@ fn equivalent_retry_prepared_at_the_original_product_recovers_exact_owner_eviden
     let first = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program(&phase, &world, &principal, &account, &request, "committed")
         })
         .expect("the fixture read owns its installed host call");
     let stale_retry = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program(&phase, &world, &principal, &account, &request, "committed")
         })
         .expect("the fixture read owns its installed host call");
@@ -70,7 +65,6 @@ fn equivalent_retry_prepared_at_the_original_product_recovers_exact_owner_eviden
     let current_commit = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .product()
@@ -102,21 +96,18 @@ fn same_caller_intent_cannot_cross_installed_operation_identity() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let first = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program(&phase, &world, &principal, &account, &request, "committed")
         })
         .expect("the fixture read owns its installed host call");
@@ -132,7 +123,6 @@ fn same_caller_intent_cannot_cross_installed_operation_identity() {
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "committed", &request)
         })
         .expect("the fixture read owns its installed host call");
@@ -144,7 +134,6 @@ fn same_caller_intent_cannot_cross_installed_operation_identity() {
     let admission = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .authorize_operation(
@@ -161,7 +150,6 @@ fn same_caller_intent_cannot_cross_installed_operation_identity() {
     let resolution = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .resolve_admitted_application_idempotency(&phase, &admission, idempotency(10, 10))
@@ -182,21 +170,18 @@ fn same_operation_intent_cannot_cross_an_admitted_scope() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let first_account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let first = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program(
                 &phase,
                 &world,
@@ -219,21 +204,18 @@ fn same_operation_intent_cannot_cross_an_admitted_scope() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let second_account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "unrelated", &request)
         })
         .expect("the fixture read owns its installed host call");
     let second = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program(
                 &phase,
                 &world,

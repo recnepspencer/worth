@@ -44,14 +44,12 @@ fn current_capability_progresses_through_the_real_application_commit() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let (program, evidence) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_capability_program(&phase, &world, &principal, &request, "updated")
         })
         .expect("the fixture read owns its installed host call");
@@ -96,10 +94,8 @@ fn admitted_access_is_runtime_affine_at_operation_progression() {
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request();
             let principal = authenticated_principal(&host_custody, &source, &request);
-            let access =
-                admitted_capability_access(&host_custody, &source, &principal, &request, 100)
-                    .unwrap();
-            access
+
+            admitted_capability_access(&host_custody, &source, &principal, &request, 100).unwrap()
         })
         .expect("the source access read owns its host call");
     target
@@ -136,7 +132,6 @@ fn missing_grant_membership_mints_no_access_authority() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
@@ -144,7 +139,6 @@ fn missing_grant_membership_mints_no_access_authority() {
     let Err(denial) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_capability_access(
                 &(phase).test_host_request(),
                 &world,
@@ -357,8 +351,7 @@ pub(super) fn admitted_capability_operation(
     principal: &WorthQueryAuthenticatedPrincipal<IdentityExecutionSchema, Principal, u64>,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
 ) -> Admission {
-    let access =
-        admitted_capability_access(&phase_custody, world, principal, request, 100).unwrap();
+    let access = admitted_capability_access(phase_custody, world, principal, request, 100).unwrap();
     let operation = world
         .application
         .installed_schema()

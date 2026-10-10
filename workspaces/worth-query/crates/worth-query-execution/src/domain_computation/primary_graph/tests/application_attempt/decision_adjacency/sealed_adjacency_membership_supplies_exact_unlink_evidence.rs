@@ -8,7 +8,6 @@ fn sealed_adjacency_membership_supplies_exact_unlink_evidence() {
     let actor = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated(
                 &phase,
                 &(phase).borrowed_request_for_test(),
@@ -34,14 +33,12 @@ fn sealed_adjacency_membership_supplies_exact_unlink_evidence() {
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let program = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             unlink_program(&phase, &world, &actor, &principal, &account, &request)
         })
         .expect("the fixture read owns its installed host call");
@@ -58,7 +55,6 @@ fn sealed_adjacency_membership_supplies_exact_unlink_evidence() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             assert_membership_absent(
                 &phase, &world, &actor, &principal, &account, &request, "open",
             )

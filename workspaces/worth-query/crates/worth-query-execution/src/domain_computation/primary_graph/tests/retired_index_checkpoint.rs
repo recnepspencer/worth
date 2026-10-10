@@ -42,10 +42,7 @@ fn a_store_holding_the_retired_correlation_index_opens_and_runs() {
     let world = installed_world(&[("alice", WorthQueryPrincipalMappingStatus::Enabled)]);
     let principal = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            resolve_alice(&(phase).test_host_request(), &world, 1)
-        })
+        .with_host_advancement(|phase| resolve_alice(&(phase).test_host_request(), &world, 1))
         .expect("the fixture read owns its installed host call");
     world
         .application

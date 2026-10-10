@@ -22,7 +22,6 @@ fn delegated_chain_expiry_between_access_and_governed_query_sessions_denies() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             update_grant_field(
                 &phase,
                 &world,
@@ -35,7 +34,6 @@ fn delegated_chain_expiry_between_access_and_governed_query_sessions_denies() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             update_grant_field(
                 &phase,
                 &world,
@@ -49,14 +47,12 @@ fn delegated_chain_expiry_between_access_and_governed_query_sessions_denies() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let capability = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admit_touch_account_capability(
                 &(phase).test_host_request(),
                 &world,
@@ -97,7 +93,6 @@ fn delegated_chain_expiry_between_access_and_governed_query_sessions_denies() {
     let Err(denial) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .admit_governed_application_query(

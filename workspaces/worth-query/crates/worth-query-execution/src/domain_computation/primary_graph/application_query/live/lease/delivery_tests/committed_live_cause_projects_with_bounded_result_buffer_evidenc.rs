@@ -7,10 +7,7 @@ fn committed_live_cause_projects_with_bounded_result_buffer_evidence() {
     let request = live_scope();
     let retained_predecessor = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.selected_product(&(phase).test_host_request())
-        })
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
         .expect("the fixture read owns its installed host call");
     let predecessor_commit = retained_predecessor.product().selected_commit().clone();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
@@ -65,7 +62,6 @@ fn committed_live_cause_projects_with_bounded_result_buffer_evidence() {
     let mut lease = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
         .selected_product(&(phase).test_host_request(), )
         .open_application_query_live::<
@@ -96,7 +92,6 @@ fn committed_live_cause_projects_with_bounded_result_buffer_evidence() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             retained_predecessor
                 .resolve_entity(
                     &phase,
@@ -111,10 +106,7 @@ fn committed_live_cause_projects_with_bounded_result_buffer_evidence() {
 
     let WorthQueryApplicationLiveOutcome::Delivered(update) = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            lease.next(&phase, &principal, &request)
-        })
+        .with_host_advancement(|phase| lease.next(&phase, &principal, &request))
         .expect("the fixture read owns its installed host call")
     else {
         panic!("the committed installed live cause must deliver");

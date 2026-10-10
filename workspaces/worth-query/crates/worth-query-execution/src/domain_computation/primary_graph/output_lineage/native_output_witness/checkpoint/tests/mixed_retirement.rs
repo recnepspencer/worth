@@ -11,16 +11,12 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
     let world = installed_authorization_world(true);
     let selected = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.selected_product(&(phase).test_host_request())
-        })
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
         .expect("the fixture read owns its installed host call");
     let resolve = |key: &str| {
         world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
                 selected
                     .resolve_entity(
                         &phase,
@@ -44,10 +40,7 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
     let foreign = installed_authorization_world(true);
     let foreign_selected = foreign
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            foreign.selected_product(&(phase).test_host_request())
-        })
+        .with_host_advancement(|phase| foreign.selected_product(&(phase).test_host_request()))
         .expect("the fixture read owns its installed host call");
     world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); handle.with_runtime_mut(request_execution, |runtime| {
         let before = snapshot(runtime);

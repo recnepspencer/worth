@@ -20,18 +20,21 @@ fn direct_report_origin_matches_the_installed_provider_observation() {
             direct_admission_fixture_with_report_history_probe(FixtureDisposition::Converged);
         let started = {
             let fixture_state = fixture.admit();
-            let installed_fixture_phase = fixture_state.fixture_phase(&execution);
+            let installed_fixture_phase = fixture_state.fixture_phase(execution);
             fixture_state.begin_iteration(&installed_fixture_phase, request("direct-report-origin"))
         }
         .unwrap_or_else(|_| panic!("direct report origin iteration must start"));
-        let terminal = match {
-            let installed_fixture_phase = started.fixture_phase(execution);
-            started.advance(&installed_fixture_phase)
-        } {
-            WorthQueryDirectConvergenceStepOutcome::Completed(
-                WorthQueryDirectConvergenceIterationOutcome::Converged(terminal),
-            ) => terminal,
-            _ => panic!("direct report origin fixture must converge"),
+        let terminal = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = started.fixture_phase(execution);
+                started.advance(&installed_fixture_phase)
+            };
+            match fixture_phase_result {
+                WorthQueryDirectConvergenceStepOutcome::Completed(
+                    WorthQueryDirectConvergenceIterationOutcome::Converged(terminal),
+                ) => terminal,
+                _ => panic!("direct report origin fixture must converge"),
+            }
         };
         assert_report_origin(
             terminal
@@ -53,7 +56,7 @@ fn workflow_report_origin_matches_the_installed_provider_observation() {
             workflow_admission_fixture_with_report_history_probe(FixtureDisposition::Converged);
         let started = {
             let fixture_state = fixture.admit();
-            let installed_fixture_phase = fixture_state.fixture_phase(&execution);
+            let installed_fixture_phase = fixture_state.fixture_phase(execution);
             fixture_state.begin_stage_iteration(
                 &installed_fixture_phase,
                 WORKFLOW_STAGE,
@@ -61,14 +64,17 @@ fn workflow_report_origin_matches_the_installed_provider_observation() {
             )
         }
         .unwrap_or_else(|_| panic!("workflow report origin iteration must start"));
-        let terminal = match {
-            let installed_fixture_phase = started.fixture_phase(execution);
-            started.advance(&installed_fixture_phase)
-        } {
-            WorthQueryWorkflowConvergenceStepOutcome::Completed(
-                WorthQueryWorkflowConvergenceIterationOutcome::Converged(terminal),
-            ) => terminal,
-            _ => panic!("workflow report origin fixture must converge"),
+        let terminal = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = started.fixture_phase(execution);
+                started.advance(&installed_fixture_phase)
+            };
+            match fixture_phase_result {
+                WorthQueryWorkflowConvergenceStepOutcome::Completed(
+                    WorthQueryWorkflowConvergenceIterationOutcome::Converged(terminal),
+                ) => terminal,
+                _ => panic!("workflow report origin fixture must converge"),
+            }
         };
         assert_report_origin(
             terminal

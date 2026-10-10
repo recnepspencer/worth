@@ -123,7 +123,7 @@ fn stalled_consumer_cancellation_releases_the_chunk_before_terminal_cleanup() {
                     advances: Arc::clone(&advances),
                 },
             );
-            let installed_fixture_phase = fixture_state.fixture_phase(&execution);
+            let installed_fixture_phase = fixture_state.fixture_phase(execution);
             fixture_state.advance(&installed_fixture_phase)
         });
         pending
@@ -159,7 +159,7 @@ fn foreign_consumer_failure_preserves_queue_occupancy_for_owner_cleanup() {
                     advances: Arc::new(AtomicUsize::new(0)),
                 },
             );
-            let installed_fixture_phase = fixture_state.fixture_phase(&execution);
+            let installed_fixture_phase = fixture_state.fixture_phase(execution);
             fixture_state.advance(&installed_fixture_phase)
         });
         let terminal = std::thread::spawn(move || match pending.acknowledge() {
@@ -303,7 +303,7 @@ fn pending_and_paused_abandonment_release_queue_and_output_retention() {
                     advances: Arc::clone(&advances),
                 },
             );
-            let installed_fixture_phase = fixture_state.fixture_phase(&execution);
+            let installed_fixture_phase = fixture_state.fixture_phase(execution);
             fixture_state.advance(&installed_fixture_phase)
         });
         let terminal = match pending.abandon() {
@@ -322,7 +322,7 @@ fn pending_and_paused_abandonment_release_queue_and_output_retention() {
                     advances: Arc::new(AtomicUsize::new(0)),
                 },
             );
-            let installed_fixture_phase = fixture_state.fixture_phase(&execution);
+            let installed_fixture_phase = fixture_state.fixture_phase(execution);
             fixture_state.advance(&installed_fixture_phase)
         });
         let paused = match pending.acknowledge() {

@@ -78,9 +78,7 @@ fn revocation_after_cursor_denies_the_next_page_from_current_truth() {
         .expect("the fixture read owns its installed host call");
 
     let approved = context.approved.take().unwrap();
-    {
-        close_elevation(&context.world, &context.request, approved)
-    };
+    close_elevation(&context.world, &context.request, approved);
     let denial = context
         .world
         .application
@@ -154,9 +152,7 @@ fn revocation_after_selected_plan_denies_before_result_delivery() {
         .expect("the fixture read owns its installed host call");
 
     let approved = context.approved.take().unwrap();
-    {
-        close_elevation(&context.world, &context.request, approved)
-    };
+    close_elevation(&context.world, &context.request, approved);
     let denial = context
         .world
         .application

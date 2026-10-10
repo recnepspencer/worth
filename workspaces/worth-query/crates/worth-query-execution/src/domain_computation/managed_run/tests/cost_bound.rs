@@ -140,12 +140,15 @@ fn direct_readmission_work(
 
     let (yielded, bridge, runtime) = super::readmission_direct::yielded_direct(execution);
     let (unrelated, disposed) = unrelated_authority(&runtime, unrelated_width);
-    let readmitted = match {
-        let installed_fixture_phase = yielded.fixture_phase(active_request);
-        yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
-    } {
-        WorthQueryDirectReadmissionOutcome::Readmitted(readmitted) => readmitted,
-        _ => panic!("direct cost target should readmit"),
+    let readmitted = {
+        let fixture_phase_result = {
+            let installed_fixture_phase = yielded.fixture_phase(active_request);
+            yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+        };
+        match fixture_phase_result {
+            WorthQueryDirectReadmissionOutcome::Readmitted(readmitted) => readmitted,
+            _ => panic!("direct cost target should readmit"),
+        }
     };
     let evidence = readmitted.readmission_evidence();
     let terminal = match readmitted.into_active().abandon() {
@@ -170,12 +173,15 @@ fn workflow_readmission_work(
         super::yield_fixture::YieldProvider::installed(7),
     );
     let (unrelated, disposed) = unrelated_authority(&runtime, unrelated_width);
-    let readmitted = match {
-        let installed_fixture_phase = yielded.fixture_phase(active_request);
-        yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
-    } {
-        WorthQueryWorkflowReadmissionOutcome::Readmitted(readmitted) => readmitted,
-        _ => panic!("workflow cost target should readmit"),
+    let readmitted = {
+        let fixture_phase_result = {
+            let installed_fixture_phase = yielded.fixture_phase(active_request);
+            yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+        };
+        match fixture_phase_result {
+            WorthQueryWorkflowReadmissionOutcome::Readmitted(readmitted) => readmitted,
+            _ => panic!("workflow cost target should readmit"),
+        }
     };
     let evidence = readmitted.readmission_evidence();
     drop(old_producer);
@@ -200,12 +206,15 @@ fn denied_readmission_work(
     let (yielded, bridge, runtime) = super::readmission_direct::yielded_direct(execution);
     let (unrelated, disposed) = unrelated_authority(&runtime, unrelated_width);
     let foreign = query_runtime();
-    let denial = match {
-        let installed_fixture_phase = yielded.fixture_phase(active_request);
-        yielded.readmit_same_runtime(&installed_fixture_phase, &foreign, &bridge)
-    } {
-        WorthQueryDirectReadmissionOutcome::Denied(denial) => denial,
-        _ => panic!("foreign Query runtime should deny readmission"),
+    let denial = {
+        let fixture_phase_result = {
+            let installed_fixture_phase = yielded.fixture_phase(active_request);
+            yielded.readmit_same_runtime(&installed_fixture_phase, &foreign, &bridge)
+        };
+        match fixture_phase_result {
+            WorthQueryDirectReadmissionOutcome::Denied(denial) => denial,
+            _ => panic!("foreign Query runtime should deny readmission"),
+        }
     };
     let evidence = denial.readmission_evidence();
     complete_direct_yield_cleanup(denial.into_yielded());

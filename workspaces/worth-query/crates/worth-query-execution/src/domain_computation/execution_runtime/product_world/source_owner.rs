@@ -69,7 +69,7 @@ impl WorthQueryRelationalSourceOwner {
     }
 
     /// Construction reads only the owner's stable branch identity.
-
+    ///
     /// Resolve only a branch identity here; Native alone selects the current
     /// head while excluding publication through the prepaid lookup install.
     pub(in crate::domain_computation) fn mint_mark_cell_at_head(

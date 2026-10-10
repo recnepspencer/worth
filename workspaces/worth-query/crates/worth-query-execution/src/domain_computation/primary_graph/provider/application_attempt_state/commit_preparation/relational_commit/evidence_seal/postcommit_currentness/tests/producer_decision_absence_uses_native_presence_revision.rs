@@ -9,10 +9,7 @@ fn producer_decision_absence_uses_native_presence_revision() {
     let world = installed_authorization_world(true);
     let (entity, locator) = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            account_note(&phase, &world, "account-2")
-        })
+        .with_host_advancement(|phase| account_note(&phase, &world, "account-2"))
         .expect("the fixture read owns its installed host call");
     let fact = WorthQueryApplicationObservedFact::AbsentField {
         entity_id: entity,
@@ -60,7 +57,6 @@ fn producer_decision_absence_uses_native_presence_revision() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             assert!(matches!(
                 output_selection(&phase, execution, &world, &facts),
                 OutputDependencySelection::Reuse
@@ -95,7 +91,6 @@ fn producer_decision_absence_uses_native_presence_revision() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             assert!(matches!(
                 output_selection(&phase, execution, &world, &facts),
                 OutputDependencySelection::FreshRequired

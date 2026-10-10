@@ -11,7 +11,6 @@ fn transport_publication_and_recovery_obey_shared_operation_capacity() {
     let owner = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .observe_committed_dispatch_outbox(&phase, &receipt)

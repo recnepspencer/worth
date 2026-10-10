@@ -132,12 +132,15 @@ fn yielded_cleanup_maps_double_artifact_release_panic_into_recovery_evidence() {
             )
         }
         .expect("double-panic yield provider should begin");
-        let paused = match {
-            let installed_fixture_phase = active.fixture_phase(execution);
-            active.advance(&installed_fixture_phase)
-        } {
-            WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused,
-            _ => panic!("double-panic yield provider did not expose its safe point"),
+        let paused = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = active.fixture_phase(execution);
+                active.advance(&installed_fixture_phase)
+            };
+            match fixture_phase_result {
+                WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused,
+                _ => panic!("double-panic yield provider did not expose its safe point"),
+            }
         };
         let yielded = match paused.yield_run() {
             crate::domain_computation::WorthQueryWorkflowYieldOutcome::Yielded(yielded) => yielded,

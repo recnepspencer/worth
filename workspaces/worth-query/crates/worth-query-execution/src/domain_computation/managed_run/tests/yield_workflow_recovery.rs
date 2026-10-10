@@ -246,12 +246,15 @@ fn terminalize_recovery_world(
         )
     }
     .expect("recovery provider should begin");
-    let paused = match {
-        let installed_fixture_phase = active.fixture_phase(execution);
-        active.advance(&installed_fixture_phase)
-    } {
-        WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused,
-        _ => panic!("recovery provider did not reach its safe point"),
+    let paused = {
+        let fixture_phase_result = {
+            let installed_fixture_phase = active.fixture_phase(execution);
+            active.advance(&installed_fixture_phase)
+        };
+        match fixture_phase_result {
+            WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused,
+            _ => panic!("recovery provider did not reach its safe point"),
+        }
     };
     let recovery = match paused.yield_run() {
         crate::domain_computation::WorthQueryWorkflowYieldOutcome::RecoveryRequired(recovery) => {

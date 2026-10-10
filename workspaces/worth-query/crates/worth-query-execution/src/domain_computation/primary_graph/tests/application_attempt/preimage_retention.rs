@@ -38,23 +38,18 @@ fn right_record_wrong_field_retention_denial_commits_nothing() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let before = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            relational_head(&phase, &world)
-        })
+        .with_host_advancement(|phase| relational_head(&phase, &world))
         .expect("the fixture read owns its installed host call");
     let operation = world
         .application
@@ -64,7 +59,6 @@ fn right_record_wrong_field_retention_denial_commits_nothing() {
     let admission = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .authorize_operation(
@@ -81,7 +75,6 @@ fn right_record_wrong_field_retention_denial_commits_nothing() {
     let (_, projection, _) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .invariant
                 .project_admitted_operation(
@@ -104,7 +97,6 @@ fn right_record_wrong_field_retention_denial_commits_nothing() {
     let reads = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .begin_projected_application_read_attempt(
@@ -119,7 +111,6 @@ fn right_record_wrong_field_retention_denial_commits_nothing() {
     let mut effects = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             reads
                 .complete_projected_dependencies(
                     &phase,
@@ -146,10 +137,7 @@ fn right_record_wrong_field_retention_denial_commits_nothing() {
     assert_retention_denied(&outcome);
     let after = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            relational_head(&phase, &world)
-        })
+        .with_host_advancement(|phase| relational_head(&phase, &world))
         .expect("the fixture read owns its installed host call");
     assert_eq!(
         after, before,
@@ -167,14 +155,12 @@ fn two_field_same_record_retains_one_exact_prior_truth() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
@@ -186,7 +172,6 @@ fn two_field_same_record_retains_one_exact_prior_truth() {
     let admission = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .authorize_operation(
@@ -203,7 +188,6 @@ fn two_field_same_record_retains_one_exact_prior_truth() {
     let (_, projection, _) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .invariant
                 .project_admitted_operation(
@@ -226,7 +210,6 @@ fn two_field_same_record_retains_one_exact_prior_truth() {
     let reads = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .begin_projected_application_read_attempt(
@@ -241,7 +224,6 @@ fn two_field_same_record_retains_one_exact_prior_truth() {
     let mut effects = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             reads
                 .complete_projected_dependencies(
                     &phase,

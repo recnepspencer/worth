@@ -77,7 +77,6 @@ fn a_capability_workflow_encodes_its_input_and_key_once_each_first_and_replayed(
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");

@@ -23,7 +23,6 @@ fn lease_opened_after_reservation_receives_the_exact_committed_successor() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .resolve_authenticated_principal(
@@ -44,7 +43,6 @@ fn lease_opened_after_reservation_receives_the_exact_committed_successor() {
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .resolve_entity(
@@ -71,7 +69,6 @@ fn lease_opened_after_reservation_receives_the_exact_committed_successor() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             std::thread::scope(|scope| {
                 let committed = scope.spawn(|| commit_live_activity(&world, &principal, &request));
                 parked_rx.recv().unwrap();
@@ -133,7 +130,6 @@ fn publication_without_a_joining_subscriber_releases_marker_and_observation() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .resolve_authenticated_principal(
@@ -149,7 +145,6 @@ fn publication_without_a_joining_subscriber_releases_marker_and_observation() {
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .resolve_entity(

@@ -20,7 +20,6 @@ fn cancelled_before_admission_never_enters_the_raw_callback() {
     let result = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             projection::with_reader(&phase, &world, &request, |reader| {
                 let scope = reader.scope().clone();
                 source.cancel();
@@ -51,7 +50,6 @@ fn cancellation_during_preflight_is_observable_without_reborrowing_reader() {
     let result = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             projection::with_reader(&phase, &world, &request, |reader| {
                 let scope = reader.scope().clone();
                 reader.field_with_predecode_admission(
@@ -88,7 +86,6 @@ fn deadline_during_preflight_preserves_its_distinct_request_reason() {
     let result = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             projection::with_reader(&phase, &world, &request, |reader| {
                 let scope = reader.scope().clone();
                 reader.field_with_predecode_admission(

@@ -242,12 +242,3 @@ fn primary_graph_refresh_merge_error(
     )
         .into()
 }
-
-fn foreign_phase_workspace_error(
-    cause: worth_query_execution::facade::application_contribution::WorthQueryForeignAdvancementPhase,
-) -> WorthQueryWorkspaceError {
-    WorthQueryWorkspaceError::with_kind(
-        crate::memory_workspace::WorthQueryWorkspaceErrorKind::ForeignPhase(cause),
-        "foreign advancement phase",
-    )
-}

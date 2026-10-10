@@ -9,22 +9,17 @@ fn unrelated_published_actor_drift_preserves_the_prepared_product_mutation() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let program = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            composed_program(&phase, &world, &principal, &request)
-        })
+        .with_host_advancement(|phase| composed_program(&phase, &world, &principal, &request))
         .expect("the fixture read owns its installed host call");
 
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             add_action_policy_relation(
                 &phase,
                 &world,
@@ -37,7 +32,6 @@ fn unrelated_published_actor_drift_preserves_the_prepared_product_mutation() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             add_action_policy_relation(
                 &phase,
                 &world,

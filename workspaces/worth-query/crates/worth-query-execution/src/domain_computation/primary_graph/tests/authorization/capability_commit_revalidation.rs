@@ -42,24 +42,17 @@ fn equivalent_retry_denies_before_receipt_after_grant_revocation() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let (first, retry) = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            equivalent_programs(&phase, &world, &principal, &request)
-        })
+        .with_host_advancement(|phase| equivalent_programs(&phase, &world, &principal, &request))
         .expect("the fixture read owns its installed host call");
     commit_first(&world, first, 51);
     world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            revoke_grant(&phase, &world)
-        })
+        .with_host_advancement(|phase| revoke_grant(&phase, &world))
         .expect("the fixture read owns its installed host call");
 
     assert_readmission_denial(world.application.compare_and_commit_application(
@@ -79,16 +72,12 @@ fn equivalent_retry_denies_before_receipt_after_capability_expiry() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let (first, retry) = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            equivalent_programs(&phase, &world, &principal, &request)
-        })
+        .with_host_advancement(|phase| equivalent_programs(&phase, &world, &principal, &request))
         .expect("the fixture read owns its installed host call");
     commit_first(&world, first, 53);
     world.authorization_time.script([time(300)]);
@@ -113,24 +102,17 @@ fn equivalent_retry_denies_before_receipt_after_resource_workflow_drift() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let (first, retry) = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            equivalent_programs(&phase, &world, &principal, &request)
-        })
+        .with_host_advancement(|phase| equivalent_programs(&phase, &world, &principal, &request))
         .expect("the fixture read owns its installed host call");
     commit_first(&world, first, 54);
     world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            change_account_status(&phase, &world, "account-1", "closed")
-        })
+        .with_host_advancement(|phase| change_account_status(&phase, &world, "account-1", "closed"))
         .expect("the fixture read owns its installed host call");
 
     assert_readmission_denial(world.application.compare_and_commit_application(

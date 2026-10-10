@@ -86,7 +86,6 @@ fn root_result_limit_does_not_cap_nested_dependency_records() {
     let plan = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .admit_application_query(
@@ -105,7 +104,6 @@ fn root_result_limit_does_not_cap_nested_dependency_records() {
     let result = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .execute_application_query_one_shot(&phase, plan)
@@ -175,7 +173,6 @@ fn invented_selector_contract_denies_domain_projection() {
     let plan = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .admit_application_query(
@@ -195,7 +192,6 @@ fn invented_selector_contract_denies_domain_projection() {
     let denial = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .execute_application_query_one_shot(&phase, plan)
@@ -267,7 +263,6 @@ fn variable_width_scalar_overflow_denies_and_releases_the_result_buffer() {
     let plan = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .admit_application_query(
@@ -291,7 +286,6 @@ fn variable_width_scalar_overflow_denies_and_releases_the_result_buffer() {
     let denial = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .execute_application_query_one_shot(&phase, plan)

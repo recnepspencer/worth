@@ -162,12 +162,15 @@ fn advance_direct(
         epoch.begin_iteration(&installed_fixture_phase, request(identity))
     }
     .unwrap_or_else(|_| panic!("direct report history iteration must start"));
-    match {
-        let installed_fixture_phase = started.fixture_phase(execution);
-        started.advance(&installed_fixture_phase)
-    } {
-        WorthQueryDirectConvergenceStepOutcome::Completed(outcome) => outcome,
-        _ => panic!("direct report history provider must complete"),
+    {
+        let fixture_phase_result = {
+            let installed_fixture_phase = started.fixture_phase(execution);
+            started.advance(&installed_fixture_phase)
+        };
+        match fixture_phase_result {
+            WorthQueryDirectConvergenceStepOutcome::Completed(outcome) => outcome,
+            _ => panic!("direct report history provider must complete"),
+        }
     }
 }
 
@@ -182,11 +185,14 @@ fn advance_workflow(
         epoch.begin_stage_iteration(&installed_fixture_phase, WORKFLOW_STAGE, request(identity))
     }
     .unwrap_or_else(|_| panic!("workflow report history iteration must start"));
-    match {
-        let installed_fixture_phase = started.fixture_phase(execution);
-        started.advance(&installed_fixture_phase)
-    } {
-        WorthQueryWorkflowConvergenceStepOutcome::Completed(outcome) => outcome,
-        _ => panic!("workflow report history provider must complete"),
+    {
+        let fixture_phase_result = {
+            let installed_fixture_phase = started.fixture_phase(execution);
+            started.advance(&installed_fixture_phase)
+        };
+        match fixture_phase_result {
+            WorthQueryWorkflowConvergenceStepOutcome::Completed(outcome) => outcome,
+            _ => panic!("workflow report history provider must complete"),
+        }
     }
 }

@@ -27,7 +27,7 @@ mod unknown_disabled_cancelled_and_cross_runtime_resolution_fail_clo;
 
 #[test]
 fn ambiguous_index_and_changed_mapping_revoke_application_principal_proof() {
-    let mut world = installed_world(&[("alice", WorthQueryPrincipalMappingStatus::Enabled)]);
+    let world = installed_world(&[("alice", WorthQueryPrincipalMappingStatus::Enabled)]);
     world
         .application
         .with_host_advancement(|phase| {
@@ -40,7 +40,6 @@ fn ambiguous_index_and_changed_mapping_revoke_application_principal_proof() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             assert_eq!(
                 world
                     .selected_product(&(phase).test_host_request(),)
@@ -58,13 +57,12 @@ fn ambiguous_index_and_changed_mapping_revoke_application_principal_proof() {
         })
         .expect("the fixture read owns its installed host call");
 
-    let mut fresh_world = installed_world(&[("carol", WorthQueryPrincipalMappingStatus::Enabled)]);
+    let fresh_world = installed_world(&[("carol", WorthQueryPrincipalMappingStatus::Enabled)]);
     let fresh_scope = live_scope();
     let external = fresh_world.authenticate("carol", Duration::from_secs(60), &fresh_scope);
     let principal = fresh_world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             fresh_world
                 .selected_product(&(phase).test_host_request())
                 .resolve_authenticated_principal(
@@ -91,7 +89,6 @@ fn ambiguous_index_and_changed_mapping_revoke_application_principal_proof() {
     fresh_world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             assert_eq!(
                 fresh_world
                     .selected_product(&(phase).test_host_request(),)
@@ -112,7 +109,6 @@ fn application_principal_proof_expires_with_its_external_authentication() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .resolve_authenticated_principal(
@@ -129,7 +125,6 @@ fn application_principal_proof_expires_with_its_external_authentication() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             assert_eq!(
                 world
                     .selected_product(&(phase).test_host_request(),)
@@ -144,13 +139,12 @@ fn application_principal_proof_expires_with_its_external_authentication() {
 
 #[test]
 fn changed_typed_principal_identity_revokes_the_resolved_proof() {
-    let mut world = installed_world(&[("erin", WorthQueryPrincipalMappingStatus::Enabled)]);
+    let world = installed_world(&[("erin", WorthQueryPrincipalMappingStatus::Enabled)]);
     let scope = live_scope();
     let external = world.authenticate("erin", Duration::from_secs(60), &scope);
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .resolve_authenticated_principal(
@@ -179,7 +173,6 @@ fn changed_typed_principal_identity_revokes_the_resolved_proof() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             assert_eq!(
                 world
                     .selected_product(&(phase).test_host_request(),)

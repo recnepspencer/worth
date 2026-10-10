@@ -19,10 +19,7 @@ fn direct_admission_rejects_a_same_relational_different_signal_product() {
     let world = installed_authorization_world(true);
     let (exact, substitute) = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            hostile_product_twins(&phase, &world.application)
-        })
+        .with_host_advancement(|phase| hostile_product_twins(&phase, &world.application))
         .expect("the fixture read owns its installed host call");
     let plan = admitted_plan("direct-product-affinity", 8);
     let operation =
@@ -69,10 +66,7 @@ fn workflow_admission_rejects_a_same_relational_different_signal_product() {
     let world = installed_authorization_world(true);
     let (exact, substitute) = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            hostile_product_twins(&phase, &world.application)
-        })
+        .with_host_advancement(|phase| hostile_product_twins(&phase, &world.application))
         .expect("the fixture read owns its installed host call");
     let operation_plan = admitted_plan("workflow-product-affinity", 8);
     let stage_plan = admitted_plan("workflow-product-affinity:stage", 4);

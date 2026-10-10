@@ -16,10 +16,7 @@ fn checkpoint_retirement_requires_this_commits_changed_entity_and_deleted_snapsh
     let world = installed_authorization_world(true);
     let (owned, _, facts) = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            reads(&phase, execution, &world, "account-2")
-        })
+        .with_host_advancement(|phase| reads(&phase, execution, &world, "account-2"))
         .expect("the fixture read owns its installed host call");
     // This isolates owner checkpoint selector admission. Typed write/delete agreement
     // is protected by retire_role_requires_the_matching_delete_effect.
@@ -29,7 +26,6 @@ fn checkpoint_retirement_requires_this_commits_changed_entity_and_deleted_snapsh
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             assert!(
                 sealed_rebase(
                     &phase,
@@ -54,7 +50,6 @@ fn checkpoint_retirement_requires_this_commits_changed_entity_and_deleted_snapsh
     let exact = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             sealed_rebase(
                 &phase,
                 execution,
@@ -68,15 +63,11 @@ fn checkpoint_retirement_requires_this_commits_changed_entity_and_deleted_snapsh
     assert_eq!(exact.len(), facts.len());
     world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            assert!(selection(&phase, execution, &world, &exact))
-        })
+        .with_host_advancement(|phase| assert!(selection(&phase, execution, &world, &exact)))
         .expect("the fixture read owns its installed host call");
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             for (correspondence, changed) in [
                 (&retirement, Vec::new()),
                 (

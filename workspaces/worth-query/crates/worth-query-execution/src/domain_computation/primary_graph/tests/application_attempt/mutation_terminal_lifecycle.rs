@@ -23,21 +23,18 @@ fn committed_terminal() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let program = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program(
                 &phase,
                 &world,
@@ -70,21 +67,18 @@ fn stale_terminal() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let winner = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program(
                 &phase,
                 &world,
@@ -98,7 +92,6 @@ fn stale_terminal() {
     let stale = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program(
                 &phase,
                 &world,
@@ -143,21 +136,18 @@ fn cancelled_terminal() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let program = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program(
                 &phase,
                 &world,
@@ -189,10 +179,7 @@ fn provider_denial_terminal() {
     let baseline = baselines(request_execution, &world);
     let program = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            program(&phase, &world, "terminal-denied")
-        })
+        .with_host_advancement(|phase| program(&phase, &world, "terminal-denied"))
         .expect("the fixture read owns its installed host call");
     world.faults.reject_next_session_prepare();
     assert!(matches!(
@@ -214,10 +201,7 @@ fn aborted_terminal() {
     let baseline = baselines(request_execution, &world);
     let program = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            program(&phase, &world, "terminal-abort")
-        })
+        .with_host_advancement(|phase| program(&phase, &world, "terminal-abort"))
         .expect("the fixture read owns its installed host call");
     world.faults.reject_next_commit_before_transaction();
     assert!(matches!(
@@ -240,10 +224,7 @@ fn skipped_owner_admission_is_a_denied_terminal() {
     let baseline = baselines(request_execution, &world);
     let program = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            program(&phase, &world, "terminal-skipped-owner")
-        })
+        .with_host_advancement(|phase| program(&phase, &world, "terminal-skipped-owner"))
         .expect("the fixture read owns its installed host call");
     world.faults.skip_next_invariant_owner_execution();
     assert!(matches!(
@@ -265,10 +246,7 @@ fn response_loss_terminal() {
     let baseline = baselines(request_execution, &world);
     let program = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            program(&phase, &world, "terminal-response-loss")
-        })
+        .with_host_advancement(|phase| program(&phase, &world, "terminal-response-loss"))
         .expect("the fixture read owns its installed host call");
     world.faults.lose_next_commit_response();
     assert!(matches!(
@@ -291,17 +269,11 @@ fn idempotent_retry_terminal() {
     let baseline = baselines(request_execution, &world);
     let first = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            program(&phase, &world, "terminal-idempotent")
-        })
+        .with_host_advancement(|phase| program(&phase, &world, "terminal-idempotent"))
         .expect("the fixture read owns its installed host call");
     let retry = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            program(&phase, &world, "terminal-idempotent")
-        })
+        .with_host_advancement(|phase| program(&phase, &world, "terminal-idempotent"))
         .expect("the fixture read owns its installed host call");
     assert!(matches!(
         world.application.compare_and_commit_application(

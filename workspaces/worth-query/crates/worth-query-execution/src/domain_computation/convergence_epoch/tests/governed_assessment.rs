@@ -114,12 +114,15 @@ fn indeterminate_terminal_with_probe(
         )
     }
     .unwrap_or_else(|_| panic!("governed probe iteration must start"));
-    let outcome = match {
-        let installed_fixture_phase = started.fixture_phase(execution);
-        started.advance(&installed_fixture_phase)
-    } {
-        WorthQueryDirectConvergenceStepOutcome::Completed(outcome) => outcome,
-        _ => panic!("governed probe provider must complete"),
+    let outcome = {
+        let fixture_phase_result = {
+            let installed_fixture_phase = started.fixture_phase(execution);
+            started.advance(&installed_fixture_phase)
+        };
+        match fixture_phase_result {
+            WorthQueryDirectConvergenceStepOutcome::Completed(outcome) => outcome,
+            _ => panic!("governed probe provider must complete"),
+        }
     };
     let terminal = match outcome {
         WorthQueryDirectConvergenceIterationOutcome::Indeterminate(terminal) => terminal,

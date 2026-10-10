@@ -7,14 +7,12 @@ fn ordinary_operation_progression_cannot_authorize_a_lifecycle_request() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let access = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             request_access(
                 &(phase).test_host_request(),
                 &world,
@@ -30,7 +28,6 @@ fn ordinary_operation_progression_cannot_authorize_a_lifecycle_request() {
     let denial = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .authorize_capability_operation(&phase, access, &operation, Default::default())

@@ -28,14 +28,12 @@ fn distinct_absent_predicates_survive_sealing_and_compare_only_their_own_matches
     let actor = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
@@ -47,7 +45,6 @@ fn distinct_absent_predicates_survive_sealing_and_compare_only_their_own_matches
     let admission = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .authorize_operation(
@@ -64,7 +61,6 @@ fn distinct_absent_predicates_survive_sealing_and_compare_only_their_own_matches
     let (_, projection, work) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .invariant
                 .project_admitted_operation(
@@ -93,7 +89,6 @@ fn distinct_absent_predicates_survive_sealing_and_compare_only_their_own_matches
     let reads = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .begin_projected_application_read_attempt(
@@ -154,10 +149,7 @@ fn distinct_absent_predicates_survive_sealing_and_compare_only_their_own_matches
 
     world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            set_unrelated_status(&phase, &world, "missing-a")
-        })
+        .with_host_advancement(|phase| set_unrelated_status(&phase, &world, "missing-a"))
         .expect("the fixture read owns its installed host call");
     let results = world
         .application

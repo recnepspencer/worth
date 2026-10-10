@@ -90,7 +90,6 @@ fn installed_precondition_entry_and_byte_budgets_fail_closed() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             assert_precondition_rejected(
                 world
                     .selected_product(&(phase).test_host_request())
@@ -116,7 +115,6 @@ fn installed_precondition_entry_and_byte_budgets_fail_closed() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             assert_precondition_rejected(
                 world
                     .selected_product(&(phase).test_host_request())

@@ -8,9 +8,6 @@ use crate::domain_computation::primary_graph::{
 
 #[test]
 fn lawful_request_approve_close_review_sequence_commits_exact_distinct_actors() {
-    let host_request = crate::test_request_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
     let (world, request, approved) = super::approval_transition::exact_approved_world();
     world
         .authorization_time

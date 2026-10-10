@@ -252,12 +252,15 @@ fn prepared_target(
         )
     }
     .expect("yield cost provider should begin");
-    let paused = match {
-        let installed_fixture_phase = active.fixture_phase(execution);
-        active.advance(&installed_fixture_phase)
-    } {
-        WorthQueryDirectGraphStepOutcome::Continue(paused) => paused,
-        _ => panic!("yield cost provider did not pause"),
+    let paused = {
+        let fixture_phase_result = {
+            let installed_fixture_phase = active.fixture_phase(execution);
+            active.advance(&installed_fixture_phase)
+        };
+        match fixture_phase_result {
+            WorthQueryDirectGraphStepOutcome::Continue(paused) => paused,
+            _ => panic!("yield cost provider did not pause"),
+        }
     };
     (paused, unrelated, suspension_count, retained_probe_count)
 }

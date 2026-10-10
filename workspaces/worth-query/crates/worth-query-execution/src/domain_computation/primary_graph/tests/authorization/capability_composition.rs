@@ -41,7 +41,6 @@ fn lawful_combination_is_one_decision_over_presence_and_absence_facts() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
@@ -49,7 +48,6 @@ fn lawful_combination_is_one_decision_over_presence_and_absence_facts() {
     let access = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admit_composed_access(&phase, &world, &principal, &request).unwrap()
         })
         .expect("the fixture read owns its installed host call");
@@ -71,7 +69,6 @@ fn unrelated_actor_records_do_not_poison_the_selected_transition() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
@@ -79,7 +76,6 @@ fn unrelated_actor_records_do_not_poison_the_selected_transition() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admit_composed_access(&phase, &world, &principal, &request).unwrap()
         })
         .expect("the fixture read owns its installed host call");
@@ -93,14 +89,12 @@ fn required_assignment_loss_denies_at_operation_progression() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let access = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admit_composed_access(&phase, &world, &principal, &request).unwrap()
         })
         .expect("the fixture read owns its installed host call");
@@ -120,10 +114,7 @@ fn required_assignment_loss_denies_at_operation_progression() {
 
     world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            assert_stale_at_operation(&phase, &world, access)
-        })
+        .with_host_advancement(|phase| assert_stale_at_operation(&phase, &world, access))
         .expect("the fixture read owns its installed host call");
 }
 
@@ -135,14 +126,12 @@ fn new_conflict_denies_at_operation_progression() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let access = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admit_composed_access(&phase, &world, &principal, &request).unwrap()
         })
         .expect("the fixture read owns its installed host call");
@@ -150,7 +139,6 @@ fn new_conflict_denies_at_operation_progression() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             add_policy_relation(
                 &phase,
                 &world,
@@ -162,10 +150,7 @@ fn new_conflict_denies_at_operation_progression() {
 
     world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            assert_stale_at_operation(&phase, &world, access)
-        })
+        .with_host_advancement(|phase| assert_stale_at_operation(&phase, &world, access))
         .expect("the fixture read owns its installed host call");
 }
 
@@ -177,22 +162,17 @@ fn new_prior_actor_denies_final_commit_before_effect_authority() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let program = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            composed_program(&phase, &world, &principal, &request)
-        })
+        .with_host_advancement(|phase| composed_program(&phase, &world, &principal, &request))
         .expect("the fixture read owns its installed host call");
 
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             add_action_policy_relation(
                 &phase,
                 &world,

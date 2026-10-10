@@ -9,7 +9,6 @@ fn caller_time_cannot_substitute_for_the_query_owned_sample() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
@@ -17,7 +16,6 @@ fn caller_time_cannot_substitute_for_the_query_owned_sample() {
     let Err(denial) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_capability_access(
                 &(phase).test_host_request(),
                 &world,

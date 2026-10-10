@@ -13,7 +13,6 @@ fn recovery_capacity_denies_before_any_selected_product_head_moves() {
     let sibling_a_branch = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .branches()
@@ -26,7 +25,6 @@ fn recovery_capacity_denies_before_any_selected_product_head_moves() {
     let sibling_b_branch = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .branches()
@@ -38,15 +36,11 @@ fn recovery_capacity_denies_before_any_selected_product_head_moves() {
         .expect("the fixture read owns its installed host call");
     let root = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.selected_product(&(phase).test_host_request())
-        })
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
         .expect("the fixture read owns its installed host call");
     let sibling_a = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .on_branch(sibling_a_branch)
@@ -57,7 +51,6 @@ fn recovery_capacity_denies_before_any_selected_product_head_moves() {
     let sibling_b = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .on_branch(sibling_b_branch)
@@ -69,14 +62,12 @@ fn recovery_capacity_denies_before_any_selected_product_head_moves() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
@@ -121,7 +112,6 @@ fn recovery_capacity_denies_before_any_selected_product_head_moves() {
     let denied_program = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program_on_selected(
                 &phase,
                 &world,
@@ -158,7 +148,6 @@ fn recovery_capacity_denies_before_any_selected_product_head_moves() {
     let after_denial = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .on_branch(sibling_b_branch)
@@ -205,7 +194,6 @@ fn recovery_capacity_denies_before_any_selected_product_head_moves() {
     let fresh = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program_on_selected(
                 &phase,
                 &world,
@@ -246,7 +234,6 @@ fn recovery_capacity_denies_before_any_selected_product_head_moves() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             assert!(world
                 .application
                 .on_branch(sibling_a_branch)
@@ -258,7 +245,6 @@ fn recovery_capacity_denies_before_any_selected_product_head_moves() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             assert!(world
                 .application
                 .on_branch(sibling_b_branch)

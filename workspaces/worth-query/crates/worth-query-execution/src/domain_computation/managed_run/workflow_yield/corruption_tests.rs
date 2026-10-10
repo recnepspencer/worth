@@ -21,14 +21,17 @@ fn workflow_checkpoint_failure_and_generation_disruption_become_cleanup_only_aut
             .expect("workflow rollback fixture registry slot must remain available") =
             Some(registry);
 
-        let recovery = match {
-            let installed_fixture_phase = yielded.fixture_phase(active_request);
-            yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
-        } {
+        let recovery = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = yielded.fixture_phase(active_request);
+                yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+            };
+            match fixture_phase_result {
             crate::domain_computation::WorthQueryWorkflowReadmissionOutcome::RecoveryRequired(
                 recovery,
             ) => recovery,
             _ => panic!("coupled checkpoint and generation failure must require recovery"),
+        }
         };
         assert_eq!(
         recovery.kind(),
@@ -102,14 +105,17 @@ fn workflow_generation_mismatch_denies_before_fresh_authority_and_rolls_back_cle
             .registry()
             .prepare_next_generation()
             .expect("test delta should place the registry in a pending generation");
-        let denied = match {
-            let installed_fixture_phase = yielded.fixture_phase(active_request);
-            yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
-        } {
-            crate::domain_computation::WorthQueryWorkflowReadmissionOutcome::Denied(denied) => {
-                denied
+        let denied = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = yielded.fixture_phase(active_request);
+                yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+            };
+            match fixture_phase_result {
+                crate::domain_computation::WorthQueryWorkflowReadmissionOutcome::Denied(denied) => {
+                    denied
+                }
+                _ => panic!("non-frozen yielded generation should deny during preflight"),
             }
-            _ => panic!("non-frozen yielded generation should deny during preflight"),
         };
         assert_eq!(
         denied.kind(),
@@ -130,21 +136,27 @@ fn workflow_generation_mismatch_denies_before_fresh_authority_and_rolls_back_cle
                 .production_generation(),
             generation
         );
-        let active = match {
-            let installed_fixture_phase = yielded.fixture_phase(active_request);
-            yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
-        } {
-            crate::domain_computation::WorthQueryWorkflowReadmissionOutcome::Readmitted(
-                readmitted,
-            ) => readmitted.into_active(),
-            _ => panic!("generation rollback should restore exact retry authority"),
+        let active = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = yielded.fixture_phase(active_request);
+                yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+            };
+            match fixture_phase_result {
+                crate::domain_computation::WorthQueryWorkflowReadmissionOutcome::Readmitted(
+                    readmitted,
+                ) => readmitted.into_active(),
+                _ => panic!("generation rollback should restore exact retry authority"),
+            }
         };
-        let completion = match {
-            let installed_fixture_phase = active.fixture_phase(execution);
-            active.advance(&installed_fixture_phase)
-        } {
-            WorthQueryWorkflowGraphStepOutcome::Completed(completion) => completion,
-            _ => panic!("restored workflow provider should complete"),
+        let completion = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = active.fixture_phase(execution);
+                active.advance(&installed_fixture_phase)
+            };
+            match fixture_phase_result {
+                WorthQueryWorkflowGraphStepOutcome::Completed(completion) => completion,
+                _ => panic!("restored workflow provider should complete"),
+            }
         };
         match completion.into_running().completed().unwrap().cleanup() {
             WorthQueryWorkflowRunCleanupOutcome::Complete(_) => {}

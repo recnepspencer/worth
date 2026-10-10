@@ -17,7 +17,6 @@ fn ready_output_reopens_and_only_its_exact_restored_predecessor_refreshes_it() {
     let observation = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .product()

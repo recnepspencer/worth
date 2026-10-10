@@ -8,7 +8,6 @@ fn capability_relation_traversal_does_not_enter_sealed_decision_dependencies() {
     let actor = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated(
                 &phase,
                 &(phase).borrowed_request_for_test(),
@@ -39,7 +38,6 @@ fn capability_relation_traversal_does_not_enter_sealed_decision_dependencies() {
     let admission = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .authorize_operation(
@@ -56,7 +54,6 @@ fn capability_relation_traversal_does_not_enter_sealed_decision_dependencies() {
     let (_, projection, _) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .invariant
                 .project_admitted_operation(
@@ -82,7 +79,6 @@ fn capability_relation_traversal_does_not_enter_sealed_decision_dependencies() {
     let reads = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .begin_projected_application_read_attempt(
@@ -97,7 +93,6 @@ fn capability_relation_traversal_does_not_enter_sealed_decision_dependencies() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             reads
                 .complete_projected_dependencies(
                     &phase,

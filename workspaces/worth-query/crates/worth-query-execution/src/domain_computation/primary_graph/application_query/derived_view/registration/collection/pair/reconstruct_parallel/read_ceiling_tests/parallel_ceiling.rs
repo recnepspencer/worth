@@ -11,16 +11,12 @@ fn parallel_work_exhaustion_retains_only_the_declared_completed_root_prefix() {
     let scope = live_scope();
     let selected = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.selected_product(&(phase).test_host_request())
-        })
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
         .expect("the fixture read owns its installed host call");
     let external = world.authenticate("alice", Duration::from_secs(60), &scope);
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             selected
                 .resolve_authenticated_principal(
                     &phase,
@@ -35,7 +31,6 @@ fn parallel_work_exhaustion_retains_only_the_declared_completed_root_prefix() {
     let roots = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             ["open", "unrelated"].map(|status| {
                 selected
                     .resolve_entity(

@@ -8,8 +8,8 @@ pub(in super::super) fn close_reads(
     approved: WorthQueryApprovedElevation,
 ) -> CloseReads {
     let closer =
-        super::super::approval_transition::authenticated(&phase_custody, world, "bob", request);
-    let access = close_access(&phase_custody, world, &closer, request).unwrap();
+        super::super::approval_transition::authenticated(phase_custody, world, "bob", request);
+    let access = close_access(phase_custody, world, &closer, request).unwrap();
     let operation = world
         .application
         .installed_schema()

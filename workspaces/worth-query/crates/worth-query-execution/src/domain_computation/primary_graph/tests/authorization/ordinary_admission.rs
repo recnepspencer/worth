@@ -76,7 +76,6 @@ fn current_installed_membership_mints_exact_operation_admission() {
     let admitted = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .authorize_operation(
@@ -93,7 +92,6 @@ fn current_installed_membership_mints_exact_operation_admission() {
     let retried = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .authorize_operation(
@@ -214,7 +212,6 @@ fn caller_marker_cannot_widen_the_installed_precondition_contract() {
     let denial = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .authorize_operation(
@@ -290,7 +287,6 @@ fn missing_membership_and_crossed_runtime_scope_open_no_operation_authority() {
     let missing_membership = denied_world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             denied_world
                 .selected_product(&(phase).test_host_request())
                 .authorize_operation(
@@ -335,7 +331,6 @@ fn missing_membership_and_crossed_runtime_scope_open_no_operation_authority() {
     let crossed_scope = denied_world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             denied_world
                 .selected_product(&(phase).test_host_request())
                 .authorize_operation(

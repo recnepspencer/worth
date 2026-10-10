@@ -8,16 +8,12 @@ fn equivalent_retry_denies_before_receipt_after_principal_disablement() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let (first, retry) = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            equivalent_programs(&phase, &world, &principal, &request)
-        })
+        .with_host_advancement(|phase| equivalent_programs(&phase, &world, &principal, &request))
         .expect("the fixture read owns its installed host call");
     commit_first(&world, first, 52);
     world

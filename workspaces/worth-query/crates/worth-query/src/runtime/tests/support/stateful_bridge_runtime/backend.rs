@@ -57,7 +57,7 @@ impl WorthQueryRuntimeBackend for StatefulBridgeRuntimeBackend {
 
     fn current_snapshot_identity(
         &self,
-        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> WorthQuerySnapshotIdentity {
         let state = self.state.borrow();
         WorthQuerySnapshotIdentity::preview(
@@ -103,7 +103,7 @@ impl WorthQueryRuntimeBackend for StatefulBridgeRuntimeBackend {
 
     fn write(
         &mut self,
-        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         mutation: WorthQueryBackendAdmissibleMutation,
     ) -> Result<WorthQueryMutationReceipt, WorthQueryWorkspaceError> {
         execute_write(&self.state, mutation)
@@ -185,7 +185,7 @@ impl WorthQueryRuntimeBackend for StatefulBridgeRuntimeBackend {
 
     fn execute_intent(
         &mut self,
-        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         _declaration: &WorthQueryIntentDeclaration,
     ) -> Result<WorthQueryIntentExecution, WorthQueryRuntimeError> {
         Err(WorthQueryRuntimeError::MissingIntentAuthority)
@@ -253,7 +253,7 @@ impl WorthQueryRuntimeBackend for StatefulBridgeRuntimeBackend {
 
     fn live_entities_for_target(
         &self,
-        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         target: &WorthQueryLiveArtifactTarget,
     ) -> Vec<WorthQueryEntity> {
         let state = self.state.borrow();

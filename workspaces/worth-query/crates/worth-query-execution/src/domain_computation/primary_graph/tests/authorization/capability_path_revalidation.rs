@@ -25,14 +25,12 @@ fn final_commit_rejects_a_replacement_policy_path_for_the_same_grant() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let mut admission = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_capability_operation(
                 &(phase).test_host_request(),
                 &world,

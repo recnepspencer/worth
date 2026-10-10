@@ -31,14 +31,12 @@ fn ordinary_and_optional_writes_to_one_entity_commit_as_one_native_patch() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             super::authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             super::resolved_account(&(phase).test_host_request(), &world, "unrelated", &request)
         })
         .expect("the fixture read owns its installed host call");
@@ -50,7 +48,6 @@ fn ordinary_and_optional_writes_to_one_entity_commit_as_one_native_patch() {
     let admission = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .authorize_operation(
@@ -67,7 +64,6 @@ fn ordinary_and_optional_writes_to_one_entity_commit_as_one_native_patch() {
     let (_, projection, _) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .invariant
                 .project_admitted_operation(
@@ -90,7 +86,6 @@ fn ordinary_and_optional_writes_to_one_entity_commit_as_one_native_patch() {
     let reads = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .begin_projected_application_read_attempt(
@@ -105,7 +100,6 @@ fn ordinary_and_optional_writes_to_one_entity_commit_as_one_native_patch() {
     let mut effects = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             reads
                 .complete_projected_dependencies(
                     &phase,
@@ -141,7 +135,6 @@ fn ordinary_and_optional_writes_to_one_entity_commit_as_one_native_patch() {
     let result = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             query(
                 &phase,
                 &(phase).borrowed_request_for_test(),
@@ -163,21 +156,18 @@ fn absent_field_decision_facts_stale_after_a_competing_presence_change() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             super::authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             super::resolved_account(&(phase).test_host_request(), &world, "unrelated", &request)
         })
         .expect("the fixture read owns its installed host call");
     let winner = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             program(
                 &phase,
                 &world,
@@ -192,7 +182,6 @@ fn absent_field_decision_facts_stale_after_a_competing_presence_change() {
     let loser = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             program(
                 &phase,
                 &world,
@@ -224,7 +213,6 @@ fn absent_field_decision_facts_stale_after_a_competing_presence_change() {
     let result = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             query(
                 &phase,
                 &(phase).borrowed_request_for_test(),

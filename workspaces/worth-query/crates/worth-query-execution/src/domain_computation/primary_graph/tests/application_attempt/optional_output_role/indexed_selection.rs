@@ -95,9 +95,6 @@ fn handler_absence_selection_competes_at_the_real_commit_boundary() {
 
 #[test]
 fn handler_predicate_rebases_and_its_codec_compares_against_the_reopened_world() {
-    let host_request = crate::test_request_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
     let world = installed_authorization_world(true);
     let (execution, key) = { execute(&world, OptionalOutputPlan::RequiredAfterIndexedAbsence) };
     let Ok(HandlerResult::Completed(completed)) = execution else {

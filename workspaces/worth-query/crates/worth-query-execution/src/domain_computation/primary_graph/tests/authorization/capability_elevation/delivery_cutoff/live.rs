@@ -60,9 +60,7 @@ fn revocation_after_a_queued_live_cause_terminates_delivery() {
         .expect("the fixture read owns its installed host call");
     commit_live_activity(&context.world, &context.committer, &context.request);
     let approved = context.approved.take().unwrap();
-    {
-        close_elevation(&context.world, &context.request, approved)
-    };
+    close_elevation(&context.world, &context.request, approved);
 
     context
         .world

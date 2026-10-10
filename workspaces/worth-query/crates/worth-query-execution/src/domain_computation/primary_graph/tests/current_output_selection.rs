@@ -34,7 +34,6 @@ fn current_output_rejects_a_foreign_producer_identity_with_its_typed_cause() {
     let foreign_account = foreign
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             foreign
                 .invariant
                 .project(
@@ -54,14 +53,12 @@ fn current_output_rejects_a_foreign_producer_identity_with_its_typed_cause() {
     let (request, principal, scope, operation) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_touch_parts(&phase, &(phase).borrowed_request_for_test(), &world)
         })
         .expect("the fixture read owns its installed host call");
     let admission = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .authorize_operation(
@@ -79,7 +76,6 @@ fn current_output_rejects_a_foreign_producer_identity_with_its_typed_cause() {
     let completed = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .invariant
                 .project_admitted_operation(
@@ -108,14 +104,12 @@ fn current_output_exhaustion_denies_the_admitted_projection() {
     let (request, principal, scope, operation) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_touch_parts(&phase, &(phase).borrowed_request_for_test(), &world)
         })
         .expect("the fixture read owns its installed host call");
     let admission = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .authorize_operation(
@@ -133,7 +127,6 @@ fn current_output_exhaustion_denies_the_admitted_projection() {
     let projected = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world.invariant.project_admitted_operation(
                 &phase,
                 &admission,
@@ -216,8 +209,8 @@ fn retire_open_account(world: &super::fixture::AuthorizationWorld) {
             effects
                 .delete_entity(Account::reference(), &account)
                 .unwrap();
-            let program = effects.finish().unwrap();
-            program
+
+            effects.finish().unwrap()
         })
         .expect("the retirement preparation owns its host call");
     let outcome = world.application.compare_and_commit_application(

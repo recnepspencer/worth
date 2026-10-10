@@ -182,12 +182,15 @@ fn advance(
         )
     }
     .unwrap_or_else(|_| panic!("report history iteration must start"));
-    match {
-        let installed_fixture_phase = started.fixture_phase(execution);
-        started.advance(&installed_fixture_phase)
-    } {
-        WorthQueryDirectConvergenceStepOutcome::Completed(outcome) => outcome,
-        _ => panic!("report history provider must complete in one step"),
+    {
+        let fixture_phase_result = {
+            let installed_fixture_phase = started.fixture_phase(execution);
+            started.advance(&installed_fixture_phase)
+        };
+        match fixture_phase_result {
+            WorthQueryDirectConvergenceStepOutcome::Completed(outcome) => outcome,
+            _ => panic!("report history provider must complete in one step"),
+        }
     }
 }
 

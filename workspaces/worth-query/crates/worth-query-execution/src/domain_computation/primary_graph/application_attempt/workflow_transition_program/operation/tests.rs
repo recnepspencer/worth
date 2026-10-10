@@ -43,14 +43,12 @@ fn workflow_operation_custody_requires_the_exact_same_runtime_commit_proof() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(
                 &(phase).test_host_request(),
                 &world,
@@ -67,7 +65,6 @@ fn workflow_operation_custody_requires_the_exact_same_runtime_commit_proof() {
     let admission = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .authorize_operation(
@@ -84,17 +81,11 @@ fn workflow_operation_custody_requires_the_exact_same_runtime_commit_proof() {
 
     let first = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            recover(&phase, &world, &first_receipt, &admission)
-        })
+        .with_host_advancement(|phase| recover(&phase, &world, &first_receipt, &admission))
         .expect("the fixture read owns its installed host call");
     let second = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            recover(&phase, &world, &second_receipt, &admission)
-        })
+        .with_host_advancement(|phase| recover(&phase, &world, &second_receipt, &admission))
         .expect("the fixture read owns its installed host call");
     assert_eq!(transport.0.load(Ordering::Acquire), 2);
     assert!(operation_receipt_requires_recovery(&first_receipt));

@@ -13,14 +13,12 @@ fn admitted_ordinary_recovery_uses_the_original_commit_and_exact_world_successor
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
@@ -37,7 +35,6 @@ fn admitted_ordinary_recovery_uses_the_original_commit_and_exact_world_successor
     let program = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program(&phase, &world, &principal, &account, &request, "recovered")
         })
         .expect("the fixture read owns its installed host call");
@@ -58,7 +55,6 @@ fn admitted_ordinary_recovery_uses_the_original_commit_and_exact_world_successor
     let fresh = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_operation(&phase, &world, &principal, &account, &request)
         })
         .expect("the fixture read owns its installed host call");
@@ -112,14 +108,12 @@ fn dropped_partial_is_rediscovered_and_idempotent_retry_cannot_promote_owner_row
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
@@ -141,7 +135,6 @@ fn dropped_partial_is_rediscovered_and_idempotent_retry_cannot_promote_owner_row
     let program = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program(
                 &phase,
                 &world,
@@ -155,7 +148,6 @@ fn dropped_partial_is_rediscovered_and_idempotent_retry_cannot_promote_owner_row
     let retry_before = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program(
                 &phase,
                 &world,
@@ -169,7 +161,6 @@ fn dropped_partial_is_rediscovered_and_idempotent_retry_cannot_promote_owner_row
     let retry_after = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program(
                 &phase,
                 &world,

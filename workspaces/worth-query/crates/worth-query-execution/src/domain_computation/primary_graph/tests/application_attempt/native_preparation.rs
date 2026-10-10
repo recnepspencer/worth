@@ -19,21 +19,18 @@ fn native_preparation_cancellation_leaves_head_and_key_available_for_fresh_retry
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let head = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .product()
@@ -44,7 +41,6 @@ fn native_preparation_cancellation_leaves_head_and_key_available_for_fresh_retry
     let program = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program(
                 &phase,
                 &world,
@@ -70,7 +66,6 @@ fn native_preparation_cancellation_leaves_head_and_key_available_for_fresh_retry
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             assert_eq!(
                 &head,
                 world
@@ -91,7 +86,6 @@ fn native_preparation_cancellation_leaves_head_and_key_available_for_fresh_retry
     let unchanged = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &fresh)
         })
         .expect("the fixture read owns its installed host call");
@@ -99,14 +93,12 @@ fn native_preparation_cancellation_leaves_head_and_key_available_for_fresh_retry
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &fresh)
         })
         .expect("the fixture read owns its installed host call");
     let retry = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program(
                 &phase,
                 &world,
@@ -136,7 +128,6 @@ fn native_preparation_cancellation_leaves_head_and_key_available_for_fresh_retry
     let landed = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(
                 &(phase).test_host_request(),
                 &world,

@@ -106,7 +106,7 @@ impl WorthQueryRuntimeSourceAdapter for TestSourceAdapter {
 
     fn live_entities_for_target(
         &self,
-        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         _target: &WorthQueryLiveArtifactTarget,
     ) -> Vec<WorthQueryEntity> {
         Vec::new()
@@ -234,7 +234,7 @@ pub(in crate::runtime::tests) struct TestSnapshotIdentityAdapter;
 impl WorthQueryRuntimeSnapshotIdentityAdapter for TestSnapshotIdentityAdapter {
     fn current_snapshot_identity(
         &self,
-        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> WorthQuerySnapshotIdentity {
         WorthQuerySnapshotIdentity::preview(
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::RuntimeStateSnapshot)
@@ -256,7 +256,7 @@ pub(in crate::runtime::tests) struct DriftingSnapshotIdentityAdapter {
 impl WorthQueryRuntimeSnapshotIdentityAdapter for DriftingSnapshotIdentityAdapter {
     fn current_snapshot_identity(
         &self,
-        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> WorthQuerySnapshotIdentity {
         let snapshot_sequence = self.snapshot_sequence.get().saturating_add(1);
         self.snapshot_sequence.set(snapshot_sequence);

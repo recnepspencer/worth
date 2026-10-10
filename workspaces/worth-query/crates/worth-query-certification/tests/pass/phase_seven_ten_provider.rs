@@ -132,7 +132,7 @@ impl provider::WorthQueryDecisionFactProvider for ConsumerCombinedProvider {
 
     fn compare_decision_fact(
         &self,
-        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         _session: provider::WorthQueryProviderSessionView<'_>,
         evidence: provider::WorthQueryDecisionFactEvidenceView<'_>,
         admission: provider::WorthQueryDecisionFactComparisonAdmission,

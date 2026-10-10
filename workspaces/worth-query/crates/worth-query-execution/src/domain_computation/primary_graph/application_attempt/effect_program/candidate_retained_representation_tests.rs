@@ -31,24 +31,17 @@ fn external_encoded_width_participates_in_candidate_denial() {
     let request = live_scope();
     let principal = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            authenticated_principal(&phase, &world, &request)
-        })
+        .with_host_advancement(|phase| authenticated_principal(&phase, &world, &request))
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            resolved_account(&phase, &world, "open", &request)
-        })
+        .with_host_advancement(|phase| resolved_account(&phase, &world, "open", &request))
         .expect("the fixture read owns its installed host call");
     let requirement = requirements(0, 0, 0, 0, 0, 1, 2);
 
     let mut accepted = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             reserved_external_builder(&phase, &world, &principal, &account, &request, requirement)
         })
         .expect("the fixture read owns its installed host call");
@@ -62,7 +55,6 @@ fn external_encoded_width_participates_in_candidate_denial() {
     let mut denied = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             reserved_external_builder(&phase, &world, &principal, &account, &request, requirement)
         })
         .expect("the fixture read owns its installed host call");
@@ -105,23 +97,16 @@ fn foreign_delete_denial_preserves_capacity_for_valid_delete() {
     let request = live_scope();
     let principal = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            authenticated_principal(&phase, &world, &request)
-        })
+        .with_host_advancement(|phase| authenticated_principal(&phase, &world, &request))
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            resolved_account(&phase, &world, "open", &request)
-        })
+        .with_host_advancement(|phase| resolved_account(&phase, &world, "open", &request))
         .expect("the fixture read owns its installed host call");
     let requirement = requirements(0, 1, 0, 0, 0, 0, 0);
     let foreign_builder = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             reserved_touch_builder(&phase, &world, &principal, &account, &request, requirement)
         })
         .expect("the fixture read owns its installed host call");
@@ -129,7 +114,6 @@ fn foreign_delete_denial_preserves_capacity_for_valid_delete() {
     let mut candidate = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             reserved_touch_builder(&phase, &world, &principal, &account, &request, requirement)
         })
         .expect("the fixture read owns its installed host call");

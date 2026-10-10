@@ -104,13 +104,19 @@ fn workflow_recovery_cleanup(
 ) -> crate::domain_computation::WorthQueryWorkflowReadmissionCleanupRequired {
     let active_request = execution;
 
-    match { let installed_fixture_phase = yielded.fixture_phase(active_request); yielded.readmit_same_runtime(&installed_fixture_phase, runtime, bridge) } {
+    {
+        let fixture_phase_result = {
+            let installed_fixture_phase = yielded.fixture_phase(active_request);
+            yielded.readmit_same_runtime(&installed_fixture_phase, runtime, bridge)
+        };
+        match fixture_phase_result {
         crate::domain_computation::WorthQueryWorkflowReadmissionOutcome::RecoveryRequired(
             crate::domain_computation::WorthQueryWorkflowReadmissionRecoveryRequired::TerminalCleanup(
                 recovery,
             ),
         ) => recovery.into_cleanup(),
         _ => panic!("restore panic must produce workflow terminal cleanup"),
+    }
     }
 }
 

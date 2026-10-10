@@ -8,21 +8,18 @@ fn pretransaction_commit_failure_is_proved_aborted_and_applies_nothing() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let rejected = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program(
                 &phase,
                 &world,
@@ -46,7 +43,6 @@ fn pretransaction_commit_failure_is_proved_aborted_and_applies_nothing() {
     let _still_open = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &live_scope())
         })
         .expect("the fixture read owns its installed host call");
@@ -54,7 +50,6 @@ fn pretransaction_commit_failure_is_proved_aborted_and_applies_nothing() {
     let retry = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program(
                 &phase,
                 &world,

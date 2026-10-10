@@ -19,7 +19,6 @@ fn sibling_commit_wakes_only_its_exact_product_partition() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .resolve_authenticated_principal(
@@ -65,7 +64,6 @@ fn sibling_commit_wakes_only_its_exact_product_partition() {
     let source_account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .resolve_entity(
@@ -86,7 +84,6 @@ fn sibling_commit_wakes_only_its_exact_product_partition() {
     let mut source_live = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
         .selected_product(&(phase).test_host_request(), )
         .open_application_query_live::<
@@ -165,7 +162,6 @@ fn sibling_commit_wakes_only_its_exact_product_partition() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             assert!(matches!(
                 source_live.next(&phase, &principal, &request),
                 WorthQueryApplicationLiveOutcome::Pending
@@ -174,10 +170,7 @@ fn sibling_commit_wakes_only_its_exact_product_partition() {
         .expect("the fixture read owns its installed host call");
     let WorthQueryApplicationLiveOutcome::Delivered(update) = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            sibling_live.next(&phase, &principal, &request)
-        })
+        .with_host_advancement(|phase| sibling_live.next(&phase, &principal, &request))
         .expect("the fixture read owns its installed host call")
     else {
         panic!("the sibling live partition must receive its own commit")

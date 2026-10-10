@@ -92,7 +92,7 @@ impl WorthQueryReadOnlyPreviewRequest {
 impl WorthQueryPromotionEligiblePreviewRequest {
     pub fn open_and_close(
         self,
-        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         workspace: &mut WorthQueryWorkspace,
     ) -> WorthQueryPreviewJourneyOutcome {

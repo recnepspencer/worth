@@ -54,7 +54,6 @@ fn foreign_scope_and_missing_disclosure_governance_open_no_plan_authority() {
     let denial = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .admit_application_query(
@@ -101,7 +100,6 @@ fn foreign_scope_and_missing_disclosure_governance_open_no_plan_authority() {
     let denial = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .admit_application_query(

@@ -24,14 +24,12 @@ fn commit_authorization_rechecks_cancellation_when_governed() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let mut admission = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_capability_operation(
                 &(phase).test_host_request(),
                 &world,
@@ -89,14 +87,12 @@ fn commit_basis_cannot_be_paired_with_a_different_admitted_operation() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let mut source = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_capability_operation(
                 &(phase).test_host_request(),
                 &world,
@@ -108,7 +104,6 @@ fn commit_basis_cannot_be_paired_with_a_different_admitted_operation() {
     let target = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_capability_operation(
                 &(phase).test_host_request(),
                 &world,

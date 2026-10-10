@@ -116,7 +116,6 @@ fn discarded_ordered_generation_rebuilds_without_reviving_old_query_cursors() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             assert_resume_denial(
                 &phase,
                 &context,
@@ -142,7 +141,6 @@ fn discarded_ordered_generation_rebuilds_without_reviving_old_query_cursors() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             assert_resume_denial(
                 &phase,
                 &context,
@@ -165,10 +163,7 @@ fn discarded_ordered_generation_rebuilds_without_reviving_old_query_cursors() {
     context
         .world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            assert_fresh_pages(&phase, &context)
-        })
+        .with_host_advancement(|phase| assert_fresh_pages(&phase, &context))
         .expect("the fixture read owns its installed host call");
     context.assert_resource_baseline();
 }

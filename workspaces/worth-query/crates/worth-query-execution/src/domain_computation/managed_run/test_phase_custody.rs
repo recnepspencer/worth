@@ -34,7 +34,7 @@ impl WorthQueryRunningWorkflowRun {
         &self,
         host: &TestHostRequest<'scope>,
     ) -> WorthQueryAdvancementPhase<'scope> {
-        host.phase_for_managed(&self.relational_basis())
+        host.phase_for_managed(self.relational_basis())
     }
 }
 
@@ -43,7 +43,7 @@ impl WorthQueryActiveWorkflowGraphExecution {
         &self,
         host: &TestHostRequest<'scope>,
     ) -> WorthQueryAdvancementPhase<'scope> {
-        host.phase_for_managed(&self.running.relational_basis())
+        host.phase_for_managed(self.running.relational_basis())
     }
 }
 
@@ -52,6 +52,6 @@ impl WorthQueryPausedWorkflowGraphExecution {
         &self,
         host: &TestHostRequest<'scope>,
     ) -> WorthQueryAdvancementPhase<'scope> {
-        host.phase_for_managed(&self.active.running.relational_basis())
+        host.phase_for_managed(self.active.running.relational_basis())
     }
 }

@@ -53,7 +53,6 @@ fn retained_continuation_releases_the_query_registry_basis() {
     let plan = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .admit_application_query_continuation(
@@ -77,7 +76,6 @@ fn retained_continuation_releases_the_query_registry_basis() {
     let page = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .execute_application_query_continuation_page(&phase, plan)

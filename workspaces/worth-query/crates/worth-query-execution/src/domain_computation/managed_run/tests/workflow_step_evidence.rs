@@ -357,12 +357,15 @@ fn complete_observe_call(
         )
     }
     .expect("multi-call provider should start");
-    match {
-        let installed_fixture_phase = active.fixture_phase(execution);
-        active.advance(&installed_fixture_phase)
-    } {
-        WorthQueryWorkflowGraphStepOutcome::Completed(completion) => completion,
-        _ => panic!("multi-call provider did not complete"),
+    {
+        let fixture_phase_result = {
+            let installed_fixture_phase = active.fixture_phase(execution);
+            active.advance(&installed_fixture_phase)
+        };
+        match fixture_phase_result {
+            WorthQueryWorkflowGraphStepOutcome::Completed(completion) => completion,
+            _ => panic!("multi-call provider did not complete"),
+        }
     }
 }
 

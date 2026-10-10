@@ -48,24 +48,30 @@ fn deny_cross_direct_owners(
 
     let epoch_identity = yielded.epoch_identity().to_owned();
     let graph_identity = yielded.graph_authority_identity().to_owned();
-    let denied = match {
-        let installed_fixture_phase = yielded.fixture_phase(active_request);
-        yielded.readmit_same_runtime(&installed_fixture_phase, foreign_runtime, foreign_bridge)
-    } {
-        WorthQueryDirectConvergenceReadmissionOutcome::Denied(denied) => denied,
-        _ => panic!("foreign direct peer must not readmit the yielded owner"),
+    let denied = {
+        let fixture_phase_result = {
+            let installed_fixture_phase = yielded.fixture_phase(active_request);
+            yielded.readmit_same_runtime(&installed_fixture_phase, foreign_runtime, foreign_bridge)
+        };
+        match fixture_phase_result {
+            WorthQueryDirectConvergenceReadmissionOutcome::Denied(denied) => denied,
+            _ => panic!("foreign direct peer must not readmit the yielded owner"),
+        }
     };
     assert_foreign_query_denial(denied.readmission_evidence());
     let yielded = denied.into_yielded();
     assert_eq!(yielded.epoch_identity(), epoch_identity);
     assert_eq!(yielded.graph_authority_identity(), graph_identity);
 
-    let denied = match {
-        let installed_fixture_phase = yielded.fixture_phase(active_request);
-        yielded.readmit_same_runtime(&installed_fixture_phase, owner_runtime, foreign_bridge)
-    } {
-        WorthQueryDirectConvergenceReadmissionOutcome::Denied(denied) => denied,
-        _ => panic!("foreign Bridge peer must not readmit the direct yielded owner"),
+    let denied = {
+        let fixture_phase_result = {
+            let installed_fixture_phase = yielded.fixture_phase(active_request);
+            yielded.readmit_same_runtime(&installed_fixture_phase, owner_runtime, foreign_bridge)
+        };
+        match fixture_phase_result {
+            WorthQueryDirectConvergenceReadmissionOutcome::Denied(denied) => denied,
+            _ => panic!("foreign Bridge peer must not readmit the direct yielded owner"),
+        }
     };
     assert_foreign_bridge_denial(denied.readmission_evidence());
     let yielded = denied.into_yielded();
@@ -86,24 +92,30 @@ fn deny_cross_workflow_owners(
 
     let epoch_identity = yielded.epoch_identity().to_owned();
     let graph_identity = yielded.graph_authority_identity().to_owned();
-    let denied = match {
-        let installed_fixture_phase = yielded.fixture_phase(active_request);
-        yielded.readmit_same_runtime(&installed_fixture_phase, foreign_runtime, foreign_bridge)
-    } {
-        WorthQueryWorkflowConvergenceReadmissionOutcome::Denied(denied) => denied,
-        _ => panic!("foreign workflow peer must not readmit the yielded owner"),
+    let denied = {
+        let fixture_phase_result = {
+            let installed_fixture_phase = yielded.fixture_phase(active_request);
+            yielded.readmit_same_runtime(&installed_fixture_phase, foreign_runtime, foreign_bridge)
+        };
+        match fixture_phase_result {
+            WorthQueryWorkflowConvergenceReadmissionOutcome::Denied(denied) => denied,
+            _ => panic!("foreign workflow peer must not readmit the yielded owner"),
+        }
     };
     assert_foreign_query_denial(denied.readmission_evidence());
     let yielded = denied.into_yielded();
     assert_eq!(yielded.epoch_identity(), epoch_identity);
     assert_eq!(yielded.graph_authority_identity(), graph_identity);
 
-    let denied = match {
-        let installed_fixture_phase = yielded.fixture_phase(active_request);
-        yielded.readmit_same_runtime(&installed_fixture_phase, owner_runtime, foreign_bridge)
-    } {
-        WorthQueryWorkflowConvergenceReadmissionOutcome::Denied(denied) => denied,
-        _ => panic!("foreign Bridge peer must not readmit the workflow yielded owner"),
+    let denied = {
+        let fixture_phase_result = {
+            let installed_fixture_phase = yielded.fixture_phase(active_request);
+            yielded.readmit_same_runtime(&installed_fixture_phase, owner_runtime, foreign_bridge)
+        };
+        match fixture_phase_result {
+            WorthQueryWorkflowConvergenceReadmissionOutcome::Denied(denied) => denied,
+            _ => panic!("foreign Bridge peer must not readmit the workflow yielded owner"),
+        }
     };
     assert_foreign_bridge_denial(denied.readmission_evidence());
     let yielded = denied.into_yielded();
@@ -122,25 +134,31 @@ fn complete_direct_peer(
     let active_request = execution;
 
     let epoch_identity = yielded.epoch_identity().to_owned();
-    let started = match {
-        let installed_fixture_phase = yielded.fixture_phase(active_request);
-        yielded.readmit_same_runtime(&installed_fixture_phase, runtime, bridge)
-    } {
-        WorthQueryDirectConvergenceReadmissionOutcome::Readmitted(readmitted) => {
-            let evidence = readmitted.readmission_evidence();
-            assert_committed_owner_readmission(evidence, 0);
-            readmitted.into_started()
+    let started = {
+        let fixture_phase_result = {
+            let installed_fixture_phase = yielded.fixture_phase(active_request);
+            yielded.readmit_same_runtime(&installed_fixture_phase, runtime, bridge)
+        };
+        match fixture_phase_result {
+            WorthQueryDirectConvergenceReadmissionOutcome::Readmitted(readmitted) => {
+                let evidence = readmitted.readmission_evidence();
+                assert_committed_owner_readmission(evidence, 0);
+                readmitted.into_started()
+            }
+            _ => panic!("rightful direct peer must readmit"),
         }
-        _ => panic!("rightful direct peer must readmit"),
     };
-    let terminal = match {
-        let installed_fixture_phase = started.fixture_phase(execution);
-        started.advance(&installed_fixture_phase)
-    } {
-        WorthQueryDirectConvergenceStepOutcome::Completed(
-            WorthQueryDirectConvergenceIterationOutcome::Converged(terminal),
-        ) => terminal,
-        _ => panic!("rightfully readmitted direct peer must converge"),
+    let terminal = {
+        let fixture_phase_result = {
+            let installed_fixture_phase = started.fixture_phase(execution);
+            started.advance(&installed_fixture_phase)
+        };
+        match fixture_phase_result {
+            WorthQueryDirectConvergenceStepOutcome::Completed(
+                WorthQueryDirectConvergenceIterationOutcome::Converged(terminal),
+            ) => terminal,
+            _ => panic!("rightfully readmitted direct peer must converge"),
+        }
     };
     assert_eq!(terminal.identity(), epoch_identity);
     assert_eq!(terminal.counters().yield_count(), 1);
@@ -165,25 +183,31 @@ fn complete_workflow_peer(
     let active_request = execution;
 
     let epoch_identity = yielded.epoch_identity().to_owned();
-    let started = match {
-        let installed_fixture_phase = yielded.fixture_phase(active_request);
-        yielded.readmit_same_runtime(&installed_fixture_phase, runtime, bridge)
-    } {
-        WorthQueryWorkflowConvergenceReadmissionOutcome::Readmitted(readmitted) => {
-            let evidence = readmitted.readmission_evidence();
-            assert_committed_owner_readmission(evidence, 1);
-            readmitted.into_started()
+    let started = {
+        let fixture_phase_result = {
+            let installed_fixture_phase = yielded.fixture_phase(active_request);
+            yielded.readmit_same_runtime(&installed_fixture_phase, runtime, bridge)
+        };
+        match fixture_phase_result {
+            WorthQueryWorkflowConvergenceReadmissionOutcome::Readmitted(readmitted) => {
+                let evidence = readmitted.readmission_evidence();
+                assert_committed_owner_readmission(evidence, 1);
+                readmitted.into_started()
+            }
+            _ => panic!("rightful workflow peer must readmit"),
         }
-        _ => panic!("rightful workflow peer must readmit"),
     };
-    let terminal = match {
-        let installed_fixture_phase = started.fixture_phase(execution);
-        started.advance(&installed_fixture_phase)
-    } {
-        WorthQueryWorkflowConvergenceStepOutcome::Completed(
-            WorthQueryWorkflowConvergenceIterationOutcome::Converged(terminal),
-        ) => terminal,
-        _ => panic!("rightfully readmitted workflow peer must converge"),
+    let terminal = {
+        let fixture_phase_result = {
+            let installed_fixture_phase = started.fixture_phase(execution);
+            started.advance(&installed_fixture_phase)
+        };
+        match fixture_phase_result {
+            WorthQueryWorkflowConvergenceStepOutcome::Completed(
+                WorthQueryWorkflowConvergenceIterationOutcome::Converged(terminal),
+            ) => terminal,
+            _ => panic!("rightfully readmitted workflow peer must converge"),
+        }
     };
     assert_eq!(terminal.identity(), epoch_identity);
     assert_eq!(terminal.counters().yield_count(), 1);
@@ -220,12 +244,15 @@ fn direct_yielded_peer(
         epoch.begin_iteration(&installed_fixture_phase, call())
     }
     .unwrap_or_else(|_| panic!("direct peer iteration must start"));
-    let paused = match {
-        let installed_fixture_phase = started.fixture_phase(execution);
-        started.advance(&installed_fixture_phase)
-    } {
-        WorthQueryDirectConvergenceStepOutcome::Continue(paused) => paused,
-        _ => panic!("direct peer must reach the yield safe point"),
+    let paused = {
+        let fixture_phase_result = {
+            let installed_fixture_phase = started.fixture_phase(execution);
+            started.advance(&installed_fixture_phase)
+        };
+        match fixture_phase_result {
+            WorthQueryDirectConvergenceStepOutcome::Continue(paused) => paused,
+            _ => panic!("direct peer must reach the yield safe point"),
+        }
     };
     let yielded = match paused.yield_iteration() {
         WorthQueryDirectConvergenceYieldOutcome::Yielded(yielded) => yielded,
@@ -260,12 +287,15 @@ fn workflow_yielded_peer(
         epoch.begin_stage_iteration(&installed_fixture_phase, WORKFLOW_STAGE, call())
     }
     .unwrap_or_else(|_| panic!("workflow peer iteration must start"));
-    let paused = match {
-        let installed_fixture_phase = started.fixture_phase(execution);
-        started.advance(&installed_fixture_phase)
-    } {
-        WorthQueryWorkflowConvergenceStepOutcome::Continue(paused) => paused,
-        _ => panic!("workflow peer must reach the yield safe point"),
+    let paused = {
+        let fixture_phase_result = {
+            let installed_fixture_phase = started.fixture_phase(execution);
+            started.advance(&installed_fixture_phase)
+        };
+        match fixture_phase_result {
+            WorthQueryWorkflowConvergenceStepOutcome::Continue(paused) => paused,
+            _ => panic!("workflow peer must reach the yield safe point"),
+        }
     };
     let yielded = match paused.yield_iteration() {
         WorthQueryWorkflowConvergenceYieldOutcome::Yielded(yielded) => yielded,

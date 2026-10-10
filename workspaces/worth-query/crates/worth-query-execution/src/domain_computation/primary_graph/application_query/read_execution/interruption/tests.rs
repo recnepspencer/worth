@@ -60,15 +60,11 @@ fn cancellation_during_real_nested_materialization_releases_all_read_resources()
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let selected = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.selected_product(&(phase).test_host_request())
-        })
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
         .expect("the fixture read owns its installed host call");
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             selected
                 .resolve_authenticated_principal(
                     &phase,
@@ -83,7 +79,6 @@ fn cancellation_during_real_nested_materialization_releases_all_read_resources()
     let scope = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             selected
                 .resolve_entity(
                     &phase,
@@ -104,7 +99,6 @@ fn cancellation_during_real_nested_materialization_releases_all_read_resources()
     let plan = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             selected
                 .admit_application_query(
                     &phase,
@@ -137,7 +131,6 @@ fn cancellation_during_real_nested_materialization_releases_all_read_resources()
     let denial = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .execute_application_query_one_shot(&phase, plan)
@@ -182,15 +175,11 @@ fn direct_query_admission_cannot_bypass_host_work_policy() {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let selected = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.selected_product(&(phase).test_host_request())
-        })
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
         .expect("the fixture read owns its installed host call");
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             selected
                 .resolve_authenticated_principal(
                     &phase,
@@ -205,7 +194,6 @@ fn direct_query_admission_cannot_bypass_host_work_policy() {
     let scope = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             selected
                 .resolve_entity(
                     &phase,
@@ -226,7 +214,6 @@ fn direct_query_admission_cannot_bypass_host_work_policy() {
     let denial = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             selected
                 .admit_application_query(
                     &phase,

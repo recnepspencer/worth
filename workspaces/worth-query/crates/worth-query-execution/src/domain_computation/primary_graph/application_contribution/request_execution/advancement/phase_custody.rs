@@ -223,11 +223,4 @@ impl<'scope> WorthQueryAdvancementPhase<'scope> {
     pub(crate) fn borrowed_request_for_test(&self) -> ExecutionRequest<'_, '_> {
         self.admitted_request()
     }
-
-    /// Internal installation fixtures borrow their existing test request, without opening again.
-    pub(crate) fn bootstrap_for_test(&self) -> super::WorthQueryBootstrapAdvancementPhase<'_> {
-        super::WorthQueryBootstrapAdvancementPhase {
-            active: self.active,
-        }
-    }
 }

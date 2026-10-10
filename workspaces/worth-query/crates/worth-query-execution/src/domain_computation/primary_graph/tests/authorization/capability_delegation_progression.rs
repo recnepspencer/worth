@@ -18,24 +18,19 @@ fn parent_revocation_after_program_admission_denies_final_commit() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let program = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_capability_program(&phase, &world, &principal, &request, "denied").0
         })
         .expect("the fixture read owns its installed host call");
 
     world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            revoke_parent(&phase, &world)
-        })
+        .with_host_advancement(|phase| revoke_parent(&phase, &world))
         .expect("the fixture read owns its installed host call");
 
     assert_decision_read_set_denial(world.application.compare_and_commit_application(
@@ -53,21 +48,18 @@ fn parent_revocation_denies_idempotency_receipt_inspection() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let first = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_capability_program(&phase, &world, &principal, &request, "committed").0
         })
         .expect("the fixture read owns its installed host call");
     let retry = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_capability_program(&phase, &world, &principal, &request, "committed").0
         })
         .expect("the fixture read owns its installed host call");
@@ -83,10 +75,7 @@ fn parent_revocation_denies_idempotency_receipt_inspection() {
 
     world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            revoke_parent(&phase, &world)
-        })
+        .with_host_advancement(|phase| revoke_parent(&phase, &world))
         .expect("the fixture read owns its installed host call");
 
     assert_decision_read_set_denial(world.application.compare_and_commit_application(

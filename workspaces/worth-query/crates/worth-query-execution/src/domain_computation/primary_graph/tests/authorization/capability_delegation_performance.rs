@@ -88,7 +88,6 @@ fn exact_pair_population_overflow_denies_before_authority() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
@@ -96,7 +95,6 @@ fn exact_pair_population_overflow_denies_before_authority() {
     let Err(denial) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_capability_access(
                 &(phase).test_host_request(),
                 &world,

@@ -36,10 +36,7 @@ fn a_source_revision_the_effect_moved_is_kept_and_reported_superseded() {
     let world = installed_authorization_world(true);
     let (entity, locator) = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            account_note(&phase, &world, "account-1")
-        })
+        .with_host_advancement(|phase| account_note(&phase, &world, "account-1"))
         .expect("the fixture read owns its installed host call");
     let read = world
         .application
@@ -120,10 +117,7 @@ fn unavailable_native_revision_never_authorizes_output_reuse() {
     let world = installed_authorization_world(true);
     let (entity, note) = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            account_note(&phase, &world, "account-1")
-        })
+        .with_host_advancement(|phase| account_note(&phase, &world, "account-1"))
         .expect("the fixture read owns its installed host call");
     let undeclared = AspectFieldLocator::new(
         LocatorAuthority::Planned,

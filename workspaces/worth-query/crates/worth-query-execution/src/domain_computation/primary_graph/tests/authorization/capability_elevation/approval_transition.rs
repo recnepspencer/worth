@@ -333,8 +333,8 @@ pub(super) fn materialize_exact_approval(
     ApproveElevationInput,
     Account,
 > {
-    let approver = authenticated(&phase_custody, world, "bob", request);
-    let access = approval_access(&phase_custody, world, &approver, request).unwrap();
+    let approver = authenticated(phase_custody, world, "bob", request);
+    let access = approval_access(phase_custody, world, &approver, request).unwrap();
     let operation = approval_operation(world);
     let admission = world
         .application

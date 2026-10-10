@@ -20,14 +20,12 @@ fn governed_upper_bound_support_is_revalidated_at_request_commit() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let program = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             super::request_transition::request_reads(
                 &(phase).test_host_request(),
                 &world,
@@ -78,14 +76,12 @@ fn provider_time_rejects_a_request_program_after_its_exact_window_expires() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let program = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             super::request_transition::request_reads(
                 &(phase).test_host_request(),
                 &world,

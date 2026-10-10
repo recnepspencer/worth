@@ -27,20 +27,14 @@ fn a_demand_records_the_row_it_verified_on_its_own_meter() {
     let world = installed_authorization_world(true);
     let (entity, identity) = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            primed_output(&phase, &world)
-        })
+        .with_host_advancement(|phase| primed_output(&phase, &world))
         .expect("the fixture read owns its installed host call");
     let graph = world.application.runtime.primary_graph().unwrap();
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
     let selected = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.selected_product(&(phase).test_host_request())
-        })
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
         .expect("the fixture read owns its installed host call");
     world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); handle.with_runtime(request_execution, |runtime| {
         let snapshot = selected.application_basis().snapshot_handle();
@@ -88,20 +82,14 @@ fn a_verification_records_the_row_it_compared_on_its_own_meter() {
     let world = installed_authorization_world(true);
     let (entity, identity) = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            primed_output(&phase, &world)
-        })
+        .with_host_advancement(|phase| primed_output(&phase, &world))
         .expect("the fixture read owns its installed host call");
     let graph = world.application.runtime.primary_graph().unwrap();
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
     let selected = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.selected_product(&(phase).test_host_request())
-        })
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
         .expect("the fixture read owns its installed host call");
     world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); handle.with_runtime(request_execution, |runtime| {
         let snapshot = selected.application_basis().snapshot_handle();
@@ -170,10 +158,7 @@ fn a_commit_meter_that_cannot_record_a_restored_output_stops_the_commit() {
     let world = installed_authorization_world(true);
     let (_, identity) = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            primed_output(&phase, &world)
-        })
+        .with_host_advancement(|phase| primed_output(&phase, &world))
         .expect("the fixture read owns its installed host call");
     let graph = world.application.runtime.primary_graph().unwrap();
     let handle = graph.integration_handle();

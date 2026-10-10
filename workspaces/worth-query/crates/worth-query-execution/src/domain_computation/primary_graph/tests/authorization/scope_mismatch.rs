@@ -66,7 +66,6 @@ fn explicit_scope_mismatch_preserves_its_exact_explanation_cause() {
     let Err(denial) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .authorize_operation(

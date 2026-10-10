@@ -53,7 +53,6 @@ fn nested_projection_preserves_sibling_slots_cardinality_and_direction() {
     let plan = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .admit_application_query(
@@ -75,7 +74,6 @@ fn nested_projection_preserves_sibling_slots_cardinality_and_direction() {
     let outcome = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .execute_application_query_one_shot(&phase, plan)
@@ -115,8 +113,7 @@ fn nested_projection_preserves_sibling_slots_cardinality_and_direction() {
     assert!(result.receipt().total_work_units() <= 10_000);
     let buffer = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+        .with_host_advancement(|_phase| {
             result
                 .receipt()
                 .result_buffer()

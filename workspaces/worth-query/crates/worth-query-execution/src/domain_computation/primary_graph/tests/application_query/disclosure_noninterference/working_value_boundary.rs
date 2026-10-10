@@ -71,7 +71,6 @@ fn hidden_ordering_material_is_consumed_before_domain_projection() {
     let capability = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admit_touch_account_capability(
                 &(phase).test_host_request(),
                 &world,
@@ -85,7 +84,6 @@ fn hidden_ordering_material_is_consumed_before_domain_projection() {
     let plan = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .admit_governed_application_query(
@@ -106,7 +104,6 @@ fn hidden_ordering_material_is_consumed_before_domain_projection() {
     let result = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .execute_application_query_one_shot(&phase, plan)

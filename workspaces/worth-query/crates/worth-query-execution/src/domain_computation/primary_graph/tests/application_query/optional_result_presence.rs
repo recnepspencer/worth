@@ -28,20 +28,14 @@ fn optional_result_field_distinguishes_present_value_from_lawful_absence() {
 
     let present = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            execute(&phase, &world, "account-1")
-        })
+        .with_host_advancement(|phase| execute(&phase, &world, "account-1"))
         .expect("the fixture read owns its installed host call");
     assert_eq!(present.note(), Some("reviewed"));
     assert_eq!(present.score(), None);
     assert_eq!(present.annotation(), None);
     let absent = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            execute(&phase, &world, "account-2")
-        })
+        .with_host_advancement(|phase| execute(&phase, &world, "account-2"))
         .expect("the fixture read owns its installed host call");
     assert_eq!(absent.note(), None);
     assert_eq!(absent.score(), None);
@@ -211,7 +205,6 @@ fn present_optional_source_denies_equal_value_after_aba() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             assert_eq!(
                 execute(&phase, &world, "account-1").note(),
                 Some("reviewed")

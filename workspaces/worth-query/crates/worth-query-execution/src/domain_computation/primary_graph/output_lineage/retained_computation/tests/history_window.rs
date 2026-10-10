@@ -47,7 +47,6 @@ fn a_superseded_pinned_parent_stays_charged_until_it_leaves_the_history_window()
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
         .selected_product(&(phase).test_host_request(), )
         .resolve_entity(&phase,

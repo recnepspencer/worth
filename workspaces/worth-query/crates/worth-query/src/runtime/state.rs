@@ -150,7 +150,7 @@ pub(crate) fn snapshot_live_view_name(
 impl<T> WorthQueryRuntimeStateTarget for &WorthQueryLiveView<T> {
     fn into_state_snapshot(
         self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &WorthQueryRuntime,
     ) -> Result<WorthQueryRuntimeStateSnapshot, WorthQueryRuntimeError> {
         snapshot_live_view_name(runtime, self.name())
@@ -179,7 +179,7 @@ impl<T> WorthQueryRuntimeStateTarget for &WorthQueryDerivedViewHandle<T> {
 impl WorthQueryRuntimeStateTarget for WorthQueryRuntimeFacadeFamily {
     fn into_state_snapshot(
         self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &WorthQueryRuntime,
     ) -> Result<WorthQueryRuntimeStateSnapshot, WorthQueryRuntimeError> {
         let contract = runtime.public_api_contract();

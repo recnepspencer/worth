@@ -28,14 +28,12 @@ fn installed_absence_projection_refuses_before_retention_and_releases_snapshot()
     let actor = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request_scope)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request_scope)
         })
         .expect("the fixture read owns its installed host call");
@@ -47,7 +45,6 @@ fn installed_absence_projection_refuses_before_retention_and_releases_snapshot()
     let admission = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .authorize_operation(
@@ -65,7 +62,6 @@ fn installed_absence_projection_refuses_before_retention_and_releases_snapshot()
     let denial = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             match world.invariant.project_admitted_operation(
                 &phase,
                 &admission,
@@ -109,7 +105,6 @@ fn installed_absence_projection_refuses_before_retention_and_releases_snapshot()
     let (_, snapshot, work) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .invariant
                 .project_admitted_operation(

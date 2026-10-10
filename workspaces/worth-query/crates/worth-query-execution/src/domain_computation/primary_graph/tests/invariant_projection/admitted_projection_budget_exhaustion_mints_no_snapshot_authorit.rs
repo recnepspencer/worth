@@ -60,7 +60,6 @@ fn admitted_projection_budget_exhaustion_mints_no_snapshot_authority() {
     let admission = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .authorize_operation(
@@ -79,7 +78,6 @@ fn admitted_projection_budget_exhaustion_mints_no_snapshot_authority() {
     let denial = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .invariant
                 .project_admitted_operation(

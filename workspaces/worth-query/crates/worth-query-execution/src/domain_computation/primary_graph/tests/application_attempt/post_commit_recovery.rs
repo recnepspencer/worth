@@ -17,10 +17,7 @@ fn first_post_commit_admission_failure_retains_exact_idempotent_recovery_evidenc
     let world = installed_authorization_world(true);
     let selected = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.selected_product(&(phase).test_host_request())
-        })
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
         .expect("the fixture read owns its installed host call");
     let _live = world
         .application
@@ -30,14 +27,12 @@ fn first_post_commit_admission_failure_retains_exact_idempotent_recovery_evidenc
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
@@ -55,7 +50,6 @@ fn first_post_commit_admission_failure_retains_exact_idempotent_recovery_evidenc
     let first = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program_with_emit(
                 &phase,
                 &world,
@@ -70,7 +64,6 @@ fn first_post_commit_admission_failure_retains_exact_idempotent_recovery_evidenc
     let retry = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program(
                 &phase,
                 &world,

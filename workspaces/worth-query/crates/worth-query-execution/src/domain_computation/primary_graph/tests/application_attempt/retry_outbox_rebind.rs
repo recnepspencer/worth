@@ -41,15 +41,9 @@ fn response_loss_retry_performs_no_second_managed_application_attempt() {
         .install_external_effect_transport(transport.clone())
         .unwrap();
     let original = { commit_response_lost(&world, &transport) };
-    {
-        retry_without_managed_work(&world, &transport, &original)
-    };
-    {
-        consume_armed_session_and_invariant_sentinels(&world)
-    };
-    {
-        assert_unseen_commit_uses_the_managed_path(&world)
-    };
+    retry_without_managed_work(&world, &transport, &original);
+    consume_armed_session_and_invariant_sentinels(&world);
+    assert_unseen_commit_uses_the_managed_path(&world);
 }
 
 fn commit_response_lost(

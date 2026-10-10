@@ -37,7 +37,6 @@ fn empty_indexed_root_set_stales_when_its_scoped_guard_becomes_a_match() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .resolve_authenticated_principal(
@@ -53,7 +52,6 @@ fn empty_indexed_root_set_stales_when_its_scoped_guard_becomes_a_match() {
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .resolve_entity(
@@ -75,15 +73,11 @@ fn empty_indexed_root_set_stales_when_its_scoped_guard_becomes_a_match() {
     };
     let initial = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.selected_product(&(phase).test_host_request())
-        })
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
         .expect("the fixture read owns its installed host call");
     let empty = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .execute_application_query_one_shot(
@@ -130,10 +124,7 @@ fn empty_indexed_root_set_stales_when_its_scoped_guard_becomes_a_match() {
         .expect("the fixture read owns its installed host call");
     let current = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.selected_product(&(phase).test_host_request())
-        })
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
         .expect("the fixture read owns its installed host call");
     let graph = world.application.runtime.primary_graph().unwrap();
     world
@@ -159,7 +150,6 @@ fn empty_indexed_root_set_stales_when_its_scoped_guard_becomes_a_match() {
     let matching = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .execute_application_query_one_shot(
@@ -196,10 +186,7 @@ fn empty_indexed_root_set_stales_when_its_scoped_guard_becomes_a_match() {
         .expect("the fixture read owns its installed host call");
     let reopened = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.selected_product(&(phase).test_host_request())
-        })
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
         .expect("the fixture read owns its installed host call");
     world
         .application
@@ -224,7 +211,6 @@ fn empty_indexed_root_set_stales_when_its_scoped_guard_becomes_a_match() {
     let reopened_result = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .execute_application_query_one_shot(

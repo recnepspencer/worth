@@ -15,30 +15,24 @@ fn unrelated_product_drift_preserves_the_prepared_attempt_and_changed_facts_stal
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let unrelated = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "unrelated", &request)
         })
         .expect("the fixture read owns its installed host call");
     let selected = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.selected_product(&(phase).test_host_request())
-        })
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
         .expect("the fixture read owns its installed host call");
     let commit_count = || {
         world
@@ -54,28 +48,24 @@ fn unrelated_product_drift_preserves_the_prepared_attempt_and_changed_facts_stal
     let first = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program(&phase, &world, &principal, &account, &request, "first")
         })
         .expect("the fixture read owns its installed host call");
     let fresh = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program(&phase, &world, &principal, &account, &request, "first")
         })
         .expect("the fixture read owns its installed host call");
     let losing = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program(&phase, &world, &principal, &account, &request, "losing")
         })
         .expect("the fixture read owns its installed host call");
     let unrelated_program = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program(
                 &phase,
                 &world,
@@ -101,10 +91,7 @@ fn unrelated_product_drift_preserves_the_prepared_attempt_and_changed_facts_stal
     );
     let current = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.selected_product(&(phase).test_host_request())
-        })
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
         .expect("the fixture read owns its installed host call");
     assert_ne!(
         selected.product().selected_commit(),
@@ -123,7 +110,6 @@ fn unrelated_product_drift_preserves_the_prepared_attempt_and_changed_facts_stal
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             assert_ne!(
                 world
                     .selected_product(&(phase).test_host_request(),)

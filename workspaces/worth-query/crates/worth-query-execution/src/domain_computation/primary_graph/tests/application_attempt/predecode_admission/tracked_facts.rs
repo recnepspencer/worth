@@ -20,28 +20,24 @@ fn present_predecode_field_stales_after_a_competing_actual_change() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let admission = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_operation(&phase, &world, &principal, &account, &request)
         })
         .expect("the fixture read owns its installed host call");
     let (_, snapshot, work) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .invariant
                 .project_admitted_operation(
@@ -69,7 +65,6 @@ fn present_predecode_field_stales_after_a_competing_actual_change() {
     let reads = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .begin_projected_application_read_attempt(
@@ -84,7 +79,6 @@ fn present_predecode_field_stales_after_a_competing_actual_change() {
     let mut effects = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             reads
                 .complete_projected_dependencies(
                     &phase,
@@ -102,7 +96,6 @@ fn present_predecode_field_stales_after_a_competing_actual_change() {
     let winner = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program_with_expected_status(
                 &phase,
                 &world,
@@ -137,18 +130,12 @@ fn absence_skips_admission_and_stales_after_a_competing_presence_change() {
     let called = Cell::new(false);
     let loser = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            optional_program(&phase, &world, "loser", &called)
-        })
+        .with_host_advancement(|phase| optional_program(&phase, &world, "loser", &called))
         .expect("the fixture read owns its installed host call");
     assert!(!called.get(), "absence never invokes scalar admission");
     let winner = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            optional_program(&phase, &world, "winner", &called)
-        })
+        .with_host_advancement(|phase| optional_program(&phase, &world, "winner", &called))
         .expect("the fixture read owns its installed host call");
     assert!(matches!(
         world.application.compare_and_commit_application(

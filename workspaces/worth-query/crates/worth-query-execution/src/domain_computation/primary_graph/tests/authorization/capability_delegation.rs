@@ -23,7 +23,6 @@ fn lawful_multi_link_delegation_is_one_composite_exact_authorization_fact() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
@@ -31,7 +30,6 @@ fn lawful_multi_link_delegation_is_one_composite_exact_authorization_fact() {
     let access = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_capability_access(
                 &(phase).test_host_request(),
                 &world,
@@ -81,7 +79,6 @@ fn exact_parent_policy_cannot_borrow_an_alternate_grant_path() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
@@ -89,7 +86,6 @@ fn exact_parent_policy_cannot_borrow_an_alternate_grant_path() {
     let Err(denial) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_capability_access(
                 &(phase).test_host_request(),
                 &world,

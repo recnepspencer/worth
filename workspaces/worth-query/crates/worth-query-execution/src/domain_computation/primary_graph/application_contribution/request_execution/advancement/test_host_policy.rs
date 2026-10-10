@@ -41,15 +41,6 @@ impl<'scope> TestHostRequest<'scope> {
         Ok(self.borrowed_request_for_test())
     }
 
-    pub(crate) fn request_for_managed(
-        &self,
-        observation: &crate::domain_computation::managed_run::WorthQueryManagedRelationalObservation,
-    ) -> Result<ExecutionRequest<'_, '_>, WorthQueryForeignAdvancementPhase> {
-        self.phase_for_managed(observation)
-            .request_for_managed(observation)?;
-        Ok(self.borrowed_request_for_test())
-    }
-
     pub(crate) fn bootstrap_for_test(&self) -> WorthQueryBootstrapAdvancementPhase<'_> {
         WorthQueryBootstrapAdvancementPhase {
             active: self.active,
@@ -121,7 +112,7 @@ impl<'scope> TestHostRequest<'scope> {
         )
     }
 
-    pub(crate) fn phase_for_managed(
+    pub(in crate::domain_computation) fn phase_for_managed(
         &self,
         observation: &crate::domain_computation::managed_run::WorthQueryManagedRelationalObservation,
     ) -> WorthQueryAdvancementPhase<'scope> {

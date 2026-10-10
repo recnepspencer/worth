@@ -73,7 +73,6 @@ fn nested_query_total_work_exhaustion_returns_no_plan_authority() {
     let denial = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .admit_application_query(
@@ -156,7 +155,6 @@ fn caller_work_cannot_widen_the_installed_index_profile() {
     let denial = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .admit_application_query(
@@ -246,7 +244,6 @@ fn installer_profile_changes_admission_without_changing_query_identity() {
     let plan = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .admit_application_query(

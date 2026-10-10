@@ -17,7 +17,6 @@ fn prepared_decision_selection_preserves_scalar_results_and_rejects_foreign_proj
     let prepared = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             projection::with_reader(&phase, &world, &request, |reader| {
                 let denied = reader
                     .prepare_entity_selection(AccountLabel::reference())
@@ -56,7 +55,6 @@ fn prepared_decision_selection_preserves_scalar_results_and_rejects_foreign_proj
     let denied = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             projection::with_reader(&phase, &world, &request, |reader| {
                 reader.select_entities_prepared(&prepared, "open".to_owned(), 2)
             })
@@ -83,7 +81,6 @@ fn prepared_decision_selection_observes_cancellation_after_preparation() {
     let result = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             projection::try_with_reader(&phase, &world, &request, |reader| {
                 let prepared = reader
                     .prepare_entity_selection(AccountStatus::reference())

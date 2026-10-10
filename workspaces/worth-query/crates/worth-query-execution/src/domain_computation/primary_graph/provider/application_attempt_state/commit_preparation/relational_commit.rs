@@ -63,7 +63,7 @@ pub(in crate::domain_computation::primary_graph::provider) fn publish_recovered(
     let evidence = evidence_seal::seal(execution, provider, &mut committed);
     provider
         .graph
-        .with_runtime_mut_unwind_isolated(&execution, |runtime| {
+        .with_runtime_mut_unwind_isolated(execution, |runtime| {
             committed.publish_and_encode(execution, provider, runtime, evidence)
         })
 }

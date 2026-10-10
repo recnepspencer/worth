@@ -18,7 +18,6 @@ mod retirement;
 mod runtime;
 mod shared_root;
 mod source_head;
-pub use source_head::WorthQuerySourceHeadDenial;
 mod source_installation;
 mod source_owner;
 

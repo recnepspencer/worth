@@ -104,9 +104,6 @@ fn one_cleanup_page_reclaims_one_of_two_terminals_but_never_pending_custody() {
 
 #[test]
 fn expired_settled_terminal_reclaims_one_finite_accepted_slot() {
-    let host_request = crate::test_request_policy::serial_request();
-    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
     let world = installed_world();
     {
         let first = world.commit_dispatch(41, "notice-short-validity");
@@ -178,7 +175,6 @@ fn expired_settled_terminal_reclaims_one_finite_accepted_slot() {
         let commits_after_turnover = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
                 super::tests::owner_commits(&phase.borrowed_request_for_test(), &world)
             })
             .expect("the fixture read owns its installed host call");
@@ -194,7 +190,6 @@ fn expired_settled_terminal_reclaims_one_finite_accepted_slot() {
         world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
                 assert_eq!(
                     super::tests::owner_commits(&phase.borrowed_request_for_test(), &world),
                     commits_after_turnover
@@ -227,7 +222,6 @@ fn expired_settled_terminal_reclaims_one_finite_accepted_slot() {
         world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
                 assert_eq!(
                     super::tests::owner_commits(&phase.borrowed_request_for_test(), &world),
                     commits_after_turnover

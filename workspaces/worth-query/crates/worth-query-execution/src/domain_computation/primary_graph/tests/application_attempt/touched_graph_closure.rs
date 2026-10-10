@@ -11,14 +11,12 @@ fn incomplete_mandatory_decision_reads_cannot_form_an_effect_program() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
@@ -30,7 +28,6 @@ fn incomplete_mandatory_decision_reads_cannot_form_an_effect_program() {
     let admission = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .authorize_operation(
@@ -76,14 +73,12 @@ fn sealed_projection_completion_accepts_the_exact_empty_dependency_set() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
@@ -95,7 +90,6 @@ fn sealed_projection_completion_accepts_the_exact_empty_dependency_set() {
     let admission = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .authorize_operation(
@@ -112,7 +106,6 @@ fn sealed_projection_completion_accepts_the_exact_empty_dependency_set() {
     let (_, projection, _) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .invariant
                 .project_admitted_operation(
@@ -128,7 +121,6 @@ fn sealed_projection_completion_accepts_the_exact_empty_dependency_set() {
     let attempt = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .begin_projected_application_read_attempt(
@@ -144,7 +136,6 @@ fn sealed_projection_completion_accepts_the_exact_empty_dependency_set() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             attempt
                 .complete_projected_dependencies(
                     &phase,
@@ -162,14 +153,12 @@ fn same_type_entity_outside_the_admitted_root_cannot_enter_an_unprojected_read_s
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
@@ -181,7 +170,6 @@ fn same_type_entity_outside_the_admitted_root_cannot_enter_an_unprojected_read_s
     let admission = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .authorize_operation(
@@ -212,7 +200,6 @@ fn same_type_entity_outside_the_admitted_root_cannot_enter_an_unprojected_read_s
     let Err(denial) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             attempt.resolve_entity(&phase, AccountStatus::reference(), "unrelated".to_string())
         })
         .expect("the fixture read owns its installed host call")

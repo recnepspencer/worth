@@ -120,7 +120,7 @@ impl ContinuationTestContext {
         let access = WorthQueryApplicationQueryAccessContext::new(&self.principal, &self.account);
         let plan = self
             .world
-            .selected_product(&phase_custody)
+            .selected_product(phase_custody)
             .admit_application_query_continuation(
                 &phase_custody.phase_for_application(&self.world.application),
                 &self.query,

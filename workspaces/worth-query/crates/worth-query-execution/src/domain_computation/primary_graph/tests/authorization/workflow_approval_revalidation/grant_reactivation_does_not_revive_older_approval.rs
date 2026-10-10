@@ -9,14 +9,12 @@ fn grant_reactivation_does_not_revive_older_approval() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let admission = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_capability_operation(
                 &(phase).test_host_request(),
                 &world,
@@ -28,15 +26,11 @@ fn grant_reactivation_does_not_revive_older_approval() {
     let basis = durable_approval_basis(&admission);
     world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            revoke_grant(&phase, &world)
-        })
+        .with_host_advancement(|phase| revoke_grant(&phase, &world))
         .expect("the fixture read owns its installed host call");
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             update_grant_field(
                 &phase,
                 &world,

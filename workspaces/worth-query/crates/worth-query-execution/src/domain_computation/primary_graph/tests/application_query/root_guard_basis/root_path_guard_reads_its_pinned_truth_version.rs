@@ -58,10 +58,7 @@ fn root_path_guard_reads_its_pinned_truth_version() {
         .unwrap();
     let pinned = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.selected_product(&(phase).test_host_request())
-        })
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
         .expect("the fixture read owns its installed host call");
     world
         .application
@@ -79,7 +76,6 @@ fn root_path_guard_reads_its_pinned_truth_version() {
     let pinned_plan = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             pinned
                 .admit_application_query(
                     &phase,
@@ -98,7 +94,6 @@ fn root_path_guard_reads_its_pinned_truth_version() {
     let pinned_result = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .execute_application_query_one_shot(&phase, pinned_plan)
@@ -108,7 +103,6 @@ fn root_path_guard_reads_its_pinned_truth_version() {
     let current_plan = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .admit_application_query(
@@ -124,7 +118,6 @@ fn root_path_guard_reads_its_pinned_truth_version() {
     let current_result = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .execute_application_query_one_shot(&phase, current_plan)
@@ -158,10 +151,7 @@ fn root_path_guard_reads_its_pinned_truth_version() {
     };
     let current = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.selected_product(&(phase).test_host_request())
-        })
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
         .expect("the fixture read owns its installed host call");
     let graph = world.application.runtime.primary_graph().unwrap();
     let unavailable = WorthQueryApplicationObservedFact::SourceFieldRevision {
@@ -244,10 +234,7 @@ fn root_path_guard_reads_its_pinned_truth_version() {
         .expect("the fixture read owns its installed host call");
     let reopened = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.selected_product(&(phase).test_host_request())
-        })
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
         .expect("the fixture read owns its installed host call");
     world
         .application
@@ -276,7 +263,6 @@ fn root_path_guard_reads_its_pinned_truth_version() {
     let reopened_result = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .execute_application_query_one_shot(

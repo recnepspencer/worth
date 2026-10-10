@@ -55,21 +55,18 @@ fn program_activation_changed_after_preparation_cannot_readmit_the_old_program()
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let program = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program_required_program(
                 &phase,
                 &world,
@@ -103,7 +100,6 @@ fn program_activation_changed_after_preparation_cannot_readmit_the_old_program()
     let before = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .product()
@@ -133,7 +129,6 @@ fn program_activation_changed_after_preparation_cannot_readmit_the_old_program()
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             assert_eq!(
                 world
                     .selected_product(&(phase).test_host_request(),)
@@ -155,21 +150,18 @@ fn a_program_action_on_an_unseeded_occurrence_names_the_unresolved_activation() 
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let predecessor = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .product()
@@ -180,7 +172,6 @@ fn a_program_action_on_an_unseeded_occurrence_names_the_unresolved_activation() 
     let program = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program_required_program(
                 &phase,
                 &world,
@@ -220,7 +211,6 @@ fn a_program_action_on_an_unseeded_occurrence_names_the_unresolved_activation() 
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             assert_eq!(
                 world
                     .selected_product(&(phase).test_host_request(),)
@@ -242,21 +232,18 @@ fn a_required_output_source_on_an_unseeded_occurrence_is_gated_like_its_siblings
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let predecessor = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .selected_product(&(phase).test_host_request())
                 .product()
@@ -267,7 +254,6 @@ fn a_required_output_source_on_an_unseeded_occurrence_is_gated_like_its_siblings
     let program = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             admitted_program_required_program(
                 &phase,
                 &world,
@@ -308,7 +294,6 @@ fn a_required_output_source_on_an_unseeded_occurrence_is_gated_like_its_siblings
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             assert_eq!(
                 world
                     .selected_product(&(phase).test_host_request(),)
