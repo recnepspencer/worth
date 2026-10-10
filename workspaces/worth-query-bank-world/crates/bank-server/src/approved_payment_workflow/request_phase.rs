@@ -79,6 +79,7 @@ fn admitted(before: u64) {
 }
 #[test]
 fn owner_acceptance_and_recovery_doors_open_before_their_first_reader() {
+    let _observation = worth_query_host::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
         let _restore = Restore(place(placement), bound(None));
         let ready = ReadyPaymentWorld::new(
@@ -193,6 +194,7 @@ fn owner_acceptance_and_recovery_doors_open_before_their_first_reader() {
 
 #[test]
 fn committed_owner_custody_is_accepted_in_one_request() {
+    let _observation = worth_query_host::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
         let _restore = Restore(place(placement), bound(None));
         let ready = ReadyPaymentWorld::new("workflow-committed-custody", FaultScript::Succeed);
