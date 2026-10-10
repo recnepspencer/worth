@@ -100,6 +100,10 @@ fn certified_alias_chain_discharge_is_exact_and_later_native_change_repends() {
         let prior = SnapshotAlignedMarkState::observe_image(&historical_image, &changed).unwrap();
         assert!(matches!(prior.currentness(&b), SettlementCurrentness::PendingUpstream(edges) if edges.contains(&a0)));
         assert_source_only_alias_verification(owner, runtime, &changed_handle, &changed, &before, &a0, &old_a_fact);
+        // Late registration consumes the already-certified clean successor,
+        // rather than recreating a pending edge from the dirty predecessor.
+        register(owner, Arc::clone(&b), Arc::from([]), &changed, OrdSet::unit(Arc::clone(&a0)));
+        assert!(matches!(currentness(owner, &changed, &b), SourceSettlementCurrentness::Clean));
 
         write_field(runtime, entity, status.clone(), "again");
         let (next_handle, next) = snapshot(runtime);
