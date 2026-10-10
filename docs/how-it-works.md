@@ -331,8 +331,11 @@ not redefine it.
 - **A branch root** is complete, immutable state. Readers never see a
   partially installed root. Roots are copy-on-write, and forking copies no
   truth bytes.
-- **The branch reference cell is the unit of exclusion**, not the runtime.
-  Unrelated branches make progress concurrently.
+- **The branch reference cell is the unit of blocking exclusion**, not the
+  runtime. A publication enters the critical section of its own branch and
+  waits on no other branch. One runtime-wide reservation, held only for the
+  moment the reference moves, orders published patches. A publisher that
+  finds it taken is `Deferred`; it does not wait.
 
 **The write path.**
 
@@ -384,11 +387,12 @@ restarts belongs to Store ([section 15](#15-durability-and-the-other-surfaces)).
 
 ### 6.2 Signal: derived computation
 
-Signal is a deterministic, incremental runtime for derived work. Its rule
-is: *Signal never owns source data.* Under Query, Relational owns it. Signal owns dependency tracking,
+Signal is a deterministic, incremental runtime for derived work. Under Query,
+source data stays in Relational, and Signal receives it as the snapshots and
+committed patches the Bridge reads from there. Signal owns dependency tracking,
 invalidation, recompute, rollback, diagnostics, replay, installed condition
 decisions, and the decision about whether an output changed meaningfully.
-Signal is never truth. It consumes snapshots and emits derived refreshes.
+It consumes snapshots and emits derived refreshes.
 
 - **Graph.** `SignalGraph` is the map of what depends on what, and
   `SignalRuntime` executes it.
@@ -398,9 +402,11 @@ Signal is never truth. It consumes snapshots and emits derived refreshes.
   need recomputing. It does not claim the producer emitted a semantic change.
 - **Scoped invalidation.** Only a meaningful difference in committed output
   creates downstream causes. The producer declares output equivalence, and the
-  consumer declares a dependency comparator. A downstream hop starts only
-  after a node commits its own output. Nothing is marked transitively ahead
-  of time.
+  consumer declares a dependency comparator. Invalidation marks only the
+  changed sources it is given. A node's causes for its direct subscribers
+  are derived from its own committed output delta and published with that
+  commit, so a downstream hop starts only after the node above it commits.
+  A change the consumer's comparator finds not meaningful yields no cause.
 - **Transactions and rollback.** A failed transaction rolls back cleanly.
   Observers are notified only after a successful commit.
 - **Receipts.** `SignalInvalidationExecutionReceipt` proves what Signal
@@ -429,10 +435,11 @@ causality. It does not become a second truth runtime or a second scheduler.
   Signal contract, together with a set of providers. A missing or extra
   provider denies installation.
 - **Authoritative delivery.** A committed Relational change carries its aspect
-  identity and revision, binding, change kind, field path, precision, source,
-  and commit identity. It must match an installed correspondence before any
-  Signal target updates. Labels, equal numeric slots, and digests cannot
-  authorize delivery.
+  identity and revision, binding, change kind, field path, and precision. The
+  envelope that carries it holds the source and commit identity. The Bridge
+  checks the source and the commit, then matches each change against the
+  installed correspondence, all before any Signal target updates. A change
+  that matches no installed correspondence delivers nothing to Signal.
 - **Evidence.** Signal decides whether output changed. The Bridge returns
   Signal's evidence without restamping it.
 - **Indexes.** The correspondence allocation index can be rebuilt. It is
@@ -524,11 +531,21 @@ deliver change ─────────────────────�
 If the commit also changes a conditional definition, the Signal leg runs
 inside the World's order, after Relational settlement.
 
+Two different things follow a commit, and they sit at different points in
+this order. *Query's native marking*, the record of which settled outputs
+the commit made stale ([§10.5](#105-marking-and-currentness)), is part of
+step 3. It is prepared before Relational enters the branch's critical
+section and installed in the same cutover that moves the branch cell. It is
+therefore in place before Relational settles, before the product
+compare-and-swap, and before any Bridge delivery. *Signal delivery* is step
+5. It runs after the product publication has performed, and Query can start
+it only with the receipt a performed publication produces.
+
 **What is atomic, and what is not.**
 
 | Atomic | Not atomic |
 |---|---|
-| One Relational branch-cell move | A combined Relational-plus-Signal publication |
+| One Relational branch-cell move, together with Query's native marking for that commit | A combined Relational-plus-Signal publication |
 | One Signal branch advance (it rolls back cleanly before commit) | The sequence of owners as a whole: it is *ordered*, not atomic |
 | One World product-head compare-and-swap | Signal delivery, which follows the commit as a separate delivery step |
 
@@ -626,6 +643,29 @@ let runtime = in_memory_program(
 
 - `in_memory_program` installs an application with a program. This is the
   ordinary path.
+- `initial_state` is a closure that seeds the primary graph. Installation
+  calls it once, before the first publication, with three arguments and
+  expects `Ok(())` or a `WorthQueryPrimaryGraphInstallationDenial`:
+
+  ```rust
+  |_phase, graph, installed| {
+      // _phase:    &WorthQueryBootstrapAdvancementPhase<'_>
+      // graph:     &mut WorthQueryPrimaryGraphBootstrap<Schema>
+      // installed: &WorthQueryInstalledApplicationSchema<Schema>
+      Ok(())
+  }
+  ```
+
+  The phase is installation's own execution custody
+  ([§9.9](#99-resources-execution-and-cost)). It is borrowed for the call
+  and cannot be kept. `graph` receives the seeded records. `installed`
+  resolves installed names, such as a principal binding, for the seed. The
+  types are exported from the host facade modules
+  `application_contribution`, `primary_graph`, and `domain`, in that order.
+  Compiled uses:
+  `workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/contribution_installation.rs`
+  and
+  `workspaces/worth-query-bank-world/crates/bank-server/src/identity_runtime/installation.rs`.
 - `in_memory_rostered_program` supports several program revisions against one
   installed schema.
 - `in_memory` installs schema meaning without a program.
@@ -778,7 +818,7 @@ The receipt, `WorthQueryApplicationCommitReceipt`, says what happened:
 |---|---|
 | Which branch and commit? | `product_branch()`, `commit_reference()`, `committed_product_publication()`, `basis_descriptor()` |
 | What changed? | `committed_changes()`, `changed_record_count()`, `emitted_effect_count()` |
-| Which records did the commit actually touch? | `mutation_work()` → `touched_records()` |
+| Which records did the commit actually touch? | `mutation_work()`, an `Option`, then `touched_records()` on the evidence inside |
 | What must be sent to the outside world? | `dispatch_outbox()`, `external_dispatch()` |
 | Under what authority? | `authority_binding()`, `installed_operation()`, `principal_scope()`, `idempotency_binding()` |
 | What can be undone? | `published_aftermath_posture()`, `retained_preimage()`, `aftermath_causality()` |
@@ -798,12 +838,16 @@ descriptive history.
   `advance(&fresh_request)` returns `Pending` or `Settled`, or a typed denial.
   One call can settle a dependency chain and progress other queued required
   outputs within its budget. `Pending` means work remains for a further
-  admitted call. No background sweeper runs: the authenticated request stays
-  the principal.
+  admitted call. `settle(&fresh_request)` repeats that step inside one
+  request, up to the attempt count in the demand's controls, and returns as
+  soon as the demand settles. No background sweeper runs: the authenticated
+  request stays the principal.
 - **Required outputs.** After `execute_performed`, `start_required_outputs`
-  opens the outputs the operation requires, and `recover_required_outputs`
-  resumes that work. Those outputs join the required set until their demand
-  closes. The continuation owns its source custody independently of the starting
+  opens the outputs the operation requires. `recover_required_outputs` is
+  called on a fresh request with the commit receipt. It re-enters the required
+  outputs the runtime retained for that commit and returns a new handle; it
+  does not revive a handle the caller dropped. Those outputs join the required
+  set until their demand closes. The continuation owns its source custody independently of the starting
   request. Starting and advancing it supply the original installed program runtime
   and a fresh request explicitly. Unpublished source recovery retains the native
   preparation and effects; it never repeats the original mutation handler.
@@ -815,16 +859,25 @@ descriptive history.
   the next step. A refusal leaves that state available for retry; it does not
   rerun the mutation. Discovery and binding remain fixed at the retained source
   observation. Only an unadmitted root whose linear disclosure was consumed
-  reacquires that disclosure there. Completion releases the prepared source;
+  reacquires that disclosure there. A continuation started by recovery also
+  reads each root's current source and validates the retained source against
+  it before admitting the root. Completion releases the prepared source;
   a commit receipt alone does not prove output completion.
   Open demands contribute membership to the required set; closing one demand
   does not remove another demand's obligation.
 - **Reuse.** An output whose settlement is unmarked on a continuous basis can
   be reused without contacting its producer or re-running its source query.
-  Reuse also requires the producer's reader and context contracts to permit it.
+  That clean reuse depends on the marks alone; no producer contract gates it.
   A dirty output re-verifies its marked facts. Equal declared input can avoid
-  producer execution (input cutoff). Stable republication of that retained
-  output can clear pending marks below the producer without calling consumers.
+  producer execution (input cutoff). Input cutoff is opt-in per producer: the
+  producer declares a `WorthQueryProducerInputReuseContract` in its
+  `INPUT_REUSE` constant, which is `None` unless declared. The contract names
+  the producer's determinism and which of the key, the principal, and the
+  scope its result depends on. Only canonical-bitwise determinism qualifies.
+  A run that reads through a raw reader, or uses a context value the contract
+  did not declare, leaves nothing to reuse. Stable republication of the
+  output that input cutoff kept can clear pending marks below the producer
+  without calling consumers.
   [§10.5](#105-marking-and-currentness) gives the rules.
 
 ### 9.9 Resources, execution, and cost
@@ -852,14 +905,65 @@ The governed controls include:
 - candidate reservations.
 
 **Execution authority.** A process constructs one execution authority. It owns
-its computation workers and the process memory ledger. An installed execution
+its computation workers and the process memory ledger. On a `wasm32` target
+it builds no worker pool. An installed execution
 policy admits request leases with worker, charged-memory, and work ceilings.
 Child leases share ancestor worker and memory limits. Nested work inherits
 its caller's remaining work. Under leased placement, managed partition
 execution draws a child from the handler's request lease; nested partition
 work must descend from the active lease. An unrelated lease, or a run without
 a lease nested under a leased parent, is denied. Under serial placement,
-execution runs on the caller thread without a lease.
+execution runs on the caller thread without a lease. Serial placement is the
+same request with a serial backing, not an unbounded mode: the policy's
+memory limit, the request's cancellation and deadline, and every declared
+work ceiling still bind it, and it has one worker.
+
+**One request per advancement.** An *advancement* is the work of one public
+request entry: a query, a mutation, a live read, an adoption step, or one
+`advance` of a demand. Query opens one execution request for it, and every
+runtime below works under that request.
+
+- **Opening.** The request takes its cancellation and deadline from the
+  caller's request and its ceilings from the installed execution policy. It
+  is opened before the advancement's first read. A policy that grants no
+  work or no memory refuses the advancement there, before any read.
+- **Placement.** The host decides placement when it builds the Runtime
+  World: it installs an execution policy, and optionally the process
+  authority. With an authority whose limits admit the policy, every
+  advancement is *leased*: it holds a request lease from that authority.
+  With none, every advancement is *serial*. Query reads the placement from
+  the World and never chooses it per request.
+- **One work ceiling.** The policy's work ceiling bounds the whole
+  advancement in both placements. Nested computations draw from what
+  remains.
+- **Custody.** Code inside the advancement reaches the request only through
+  a *phase*: a value borrowed for the duration of one callback. It cannot be
+  returned, stored, or handed to a product, and each of those is a compile
+  error. A phase lends its request only to the installed runtime that opened
+  it; another runtime is refused with `ForeignPhase`. A public call that
+  tries to open a second advancement on the same thread is refused with
+  `NestedOpening`. Custody is per thread, so another thread's public call
+  owns its own request.
+- **Seams.** A seam is a function where one runtime calls another. Every
+  seam on the request's path takes the request as a required argument, so
+  work cannot start outside it. The Bridge takes it to read a committed
+  patch or a snapshot and to deliver a change. Signal takes it to advance a
+  branch and to receive a committed patch. The Runtime World takes it to run
+  a publication, and hands it to the Relational and Signal legs. Relational
+  takes the request's lease in its leased doors for commit, preparation,
+  validation, and index build; a lease-free caller of Relational supplies an
+  allocation policy and runs on the calling thread.
+- **Closing.** The request closes when the callback returns. Delivery of a
+  performed change through the Bridge needs the phase, so the final delivery
+  happens inside the advancement.
+- **Demand calls.** `advance` opens one advancement per call. `settle` opens
+  one advancement and repeats the same step inside it, up to the attempt
+  count in the demand's controls, returning `Settled` as soon as the demand
+  settles and `Pending` otherwise.
+- **Installation.** Installation is not an advancement of the installed
+  runtime. It runs serially under the host's memory and work bounds, and the
+  phase handed to `initial_state` cannot open an installed runtime's public
+  entries.
 
 Admission checks capacity before dispatching kernels. A memory refusal means
 the run could not reserve its declared bytes within the applicable limit; it
@@ -891,14 +995,197 @@ also contribute their own charged costs. The execution layer exposes work and
 span in its execution report. A managed partitioned computation exposes
 charged work; its application-facing result does not expose span.
 
+**Partitioned managed computation.** A *partitioned managed computation*
+splits one input into partitions, computes each partition on its own, and
+reduces the partition results to one result. An installed *owner* supplies
+its functions; the
+[build guide](build-an-application.md#36-declare-and-install-a-partitioned-managed-computation)
+shows how to write one. The *calling thread* is the thread on which the
+operation handler runs the computation.
+
+| Owner function | Runs | Does |
+|---|---|---|
+| `partitions` | Calling thread, once | Names the input's items. Each item has a stable identity of its own, never its position, so a reordered input plans the same partitions. |
+| `partition_key` | Calling thread, once per item, in ascending item identity | Returns the key of the partition the item belongs to. |
+| `gather` | Calling thread, once per partition, in ascending partition identity | Reads one partition's data. |
+| `compute_partition` | Any worker, once per partition | Computes one partition from what `gather` returned. It is handed no reader. |
+| `reducer` | Calling thread | Supplies the identity value and the `combine` function that merge partition results. |
+| `complete` | Calling thread, once | Turns the reduced result into the output. |
+
+The first three functions read through the handler's reader, and Query
+records which call read which fact. What `partitions` reads is a *membership
+fact*: a change to it changes which items there are. What `partition_key`
+reads is that item's *key fact*: a change to it can move the item to another
+partition. What `gather` reads is that partition's fact, and a fact two
+partitions read is a fact of both.
+
+A partition's identity is derived from the digest of its key's canonical
+encoding. Two keys are one partition exactly when their digests are equal.
+The reduction runs over a canonical tree that the set of partitions fixes,
+and `combine` sees partitions in partition identity order. That order is
+deterministic and is not chosen by the author. A result that depends on
+association, such as a floating-point sum, therefore has the same bits on
+every run and at every worker count.
+
+No partition is computed unless every partition gathers. A run that computes
+every partition dispatches them through one execution map: on a child of the
+request's lease under leased placement, or serially within the request's
+policy. Either way, partitions settle in identity order with the charges any
+worker count would settle on.
+
 **Partition execution and advancement.** Kernels within one partitioned managed
 computation can run concurrently. A completed producer run keeps its partition
 state with the output it recorded. The next run of the same installed producer,
-on an equal input value, gathers and computes only the partitions whose facts
-changed. A first run, a restored record, a reinstalled owner, a changed input
-value, a changed fact behind partition membership or a key, or state too large
-to keep computes every partition. Reuse requires the [owner's purity contract](build-an-application.md#36-declare-and-install-a-partitioned-managed-computation).
+at the same producer edition and on an equal input value, gathers and computes
+only the partitions whose facts changed. A changed fact behind partition
+membership or behind an item's key redoes only that membership or that key,
+and regathers only the partitions an item left or joined. A first run, a
+restored record, a reinstalled owner, a changed input value, or state too
+large to keep computes every partition; *Per-partition reuse* below lists
+every cause. Reuse requires the [owner's purity contract](build-an-application.md#36-declare-and-install-a-partitioned-managed-computation).
 The advancement driver runs producer handlers synchronously.
+
+**Per-partition reuse.** A *producer* is an installed binding between an
+output and the operation that produces it. When a producer's handler runs a
+partitioned computation, the run keeps its state, and the producer's next run
+recomputes only what changed. A run that no producer started keeps nothing
+and is never compared.
+
+- **What is kept.** A completed run leaves its state on the output record its
+  attempt published: its items and their digests, the routing of items to
+  partitions, each partition's key, the work every owner call charged, each
+  kernel's work, the reduction tree, and the facts the owner calls read.
+- **When it applies.** The next run compares against that state only when
+  three things match: the installation of the owner, the producer edition,
+  and the digest of the input value. A reinstall is another installation even
+  when its types and declaration are the same. The *producer edition* is the
+  meaning of the installed producer declaration: its declared contract and
+  the types bound to it.
+- **What is redone.** Each retained fact is compared as it stands at this
+  attempt's snapshot, at three levels:
+  - *Membership.* `partitions` is called again when a fact it read changed.
+  - *Item.* An item is keyed and routed again when it is new, its digest
+    changed, or a fact its key read changed. Every other item keeps its
+    route.
+  - *Partition.* A partition is gathered and computed again when an item left
+    or joined it, one of its items' digests changed, or a fact its gathering
+    read changed.
+
+  Every other call is *carried*: its retained answer stands in for the call.
+- **Reduction.** The next tree is the retained tree with departed partitions
+  deleted, new partitions inserted, and each changed path recombined. A
+  recomputed result with the same canonical bits as the retained one replaces
+  nothing. When the declared work cannot fit the edits, the tree is built
+  again from every leaf, so the run fails where a full run fails.
+- **Dispatch.** Each recomputed partition is dispatched on its own, in
+  partition identity order, under the request's execution.
+- **Cost.** An outcome never depends on reuse. A carried call charges what it
+  charged, at the place a full run makes that call, so a work ceiling stops
+  at the partition a full run would name. A call the remaining work would not
+  pass is made instead, and fails as a full run fails. Comparing a retained
+  fact is charged to no one, because a full run would not compare it; the
+  declared work bounds the comparison instead. `charged_work()` reports
+  carried and recomputed partitions alike.
+- **Seal.** When the attempt seals its reads, every fact a carried call read
+  must still be the fact the prior run read. If one changed, the attempt is
+  denied.
+- **Full runs.** Every other run gathers and computes every partition. The
+  causes are: no output record is published at this address; the record came
+  from a checkpoint restore or from a stable republication, neither of which
+  keeps computation state; the prior run stopped before it completed, or ran
+  no partitioned computation; the installation, the producer edition, or the
+  input value differs; the handler ran several partitioned computations, or
+  an earlier call in the same handler already consumed the prior state; the
+  state could not be measured, or policy chose not to retain it; retained
+  capacity refused it, or a successor record took its reservation; comparing
+  its facts would exceed the run's declared work; or routing met a partition
+  identity collision. Neither the handler nor the owner is told which kind
+  of run it was.
+- **Retention bounds.** Kept state is charged by its bytes against a bounded
+  retention ledger: a maximum number of bytes that output records may keep.
+  A refusal drops only the incoming state, and existing holders keep theirs. A successor record
+  takes over its predecessor's reservation when it is the sole holder. A
+  record that a forked branch shares keeps its own reservation, and the
+  successor reserves in full. A branch with no record of its own takes its
+  prior state from the record at its fork point, and the same three matches
+  and fact comparisons still decide what is carried.
+- **Identity collision.** Two different keys that derive one partition
+  identity deny every run while both keys are in the input
+  (`PartitionIdentityCollision`). An incremental run that meets one starts
+  over as a full run, so the collision is named as a first run names it.
+
+*Example.* A telemetry rollup computes one mean per station. Its input value
+is the reporting window. `partitions` reads the window's readings from the
+graph, `partition_key` returns each reading's station, and `gather` reads
+that station's calibration record. One station's calibration changes: that
+station alone is gathered and computed again, every other station's mean is
+carried, and one path of the tree is recombined. A new reading arrives: the
+membership fact changed, so `partitions` runs again, the new reading is
+keyed and routed, and the one station it joins is gathered again. The window
+changes: the input value differs, so every station is computed.
+
+**Workflow frontier.** A *staged run* executes one installed domain operation
+as named stages. A *frontier* is two or more of those stages advanced by one
+call. The engine opens one execution request for the whole frontier and
+takes every stage through three phases that its types keep apart.
+
+| Phase | Runs | Sees |
+|---|---|---|
+| Prepare | Owner, in canonical stage order | The stage's input facts, fixed before the frontier starts. No executor, no execution context, and no workspace. It returns an owned task. |
+| Compute | Any worker | Its task and a meter that offers checkpoints only. It is a plain function pointer, never a closure over owner state, and it cannot start nested work. |
+| Apply | Owner, in canonical stage order | The owner and the computed result. Every effect happens here. |
+
+- **Canonical order** is ascending stage identity. A frontier with fewer than
+  two stages, or with one stage named twice, is denied.
+- **What runs in parallel.** Only the compute steps. They go through one
+  owned-map dispatch under the frontier's request, in serial placement too.
+- **Least failure.** Preparation stops at the first stage in canonical order
+  that fails to prepare. Later stages are neither prepared nor computed;
+  earlier stages compute exactly once. Application then runs the canonical
+  prefix through the least failure across all three phases. A failing
+  application keeps the partial owner effects it made. Computation is
+  charged for the canonical prefix through its least failure, and a later
+  application failure does not refund it.
+- **Purity.** Prepare and compute must be pure functions of the values they
+  are given: no clock, no static or global state, no environment, no
+  interior-mutable state shared with the owner or another stage, and no
+  effects. The types remove the executor, the context, and the workspace.
+  They cannot remove ambient state, so an impure function makes results
+  depend on execution order and worker count.
+- **Determinism and interruption.** With sufficient memory, worker count
+  changes neither results nor charged work when no cancellation or deadline
+  arrives during compute. One that arrives during compute can change how far
+  the frontier gets. Application is then a canonical prefix that ends at or
+  before the interrupted stage, with the receipts and effects a serial run
+  produces for that prefix, and the cause stays cancellation or deadline.
+- **Stop causes.** Cancellation, deadline, work exhaustion, a nested stop, a
+  panic, result capacity, and admission each surface as their own cause.
+
+*Example.* A document review advances three stages together: `citations`,
+`layout`, and `spelling`. Each prepares from the document revision fixed when
+the frontier starts. The three computes run on workers. Findings are applied
+in the order `citations`, `layout`, `spelling`, whatever order the computes
+finished in. If `layout` fails in compute, `citations` is applied, the
+failure is recorded as `layout`'s result, and `spelling` is not applied even
+if it finished first.
+
+The staged-run surface belongs to the engine beneath the consumer facades,
+which do not export it. It is not the workflow kernel of
+[§13](#13-workflows), which takes one step per request.
+
+**Parallelism at each layer.** Every row runs under the advancement's one
+execution request. "Ordered" names what stays canonical whatever the worker
+count.
+
+| Layer | Runs in parallel | Stays ordered |
+|---|---|---|
+| Execution | A map's kernels and a fork-join's children. A leased run under automatic posture uses workers; every other run is serial. | A scan carries one value through ordered items. Rounds are a sequence of barriers. A map settles its results in canonical partition order. |
+| Relational | With a lease: the packets of a query plan, index builds (one packet per index definition), and the invariant packets of commit validation. | Each merges in one ordered pass on the calling thread, and index generations publish there afterward. Without a lease, packets run in order on the calling thread. |
+| Signal | Within one stage: read preparation for the tasks that need computing, and application of tasks, each declaring its write keys. | The request is one ordered pass over stages. The owner reduces after the join: commits in task order, snapshots in stage order. A stage below the configured task minimum runs serially. |
+| Query: partitioned computation | Partition kernels (`compute_partition`). | Naming, keying, gathering, and completing run on the calling thread. Results settle in partition identity order. |
+| Query: workflow frontier | The compute steps of a frontier's stages. | Prepare and apply run on the owner in canonical stage order. |
+| Query: derived collections | Rebuilding a derived collection dispatches one partition per unique root through a map. | The map supplies canonical order, charging, and one execution authority. It does not make native reads concurrent: reads serialize at the Relational owner. Projection and link checks run on the calling thread in entity identity order. Only the canonical completed prefix reaches the owner, and retention changes only on success. |
+| Query: advancement | — | The advancement driver runs producer handlers synchronously. |
 
 Sessions, runs, subscriptions, continuations, leases, checkpoints, recovery
 handles, and admitted capacity are *managed resources*. Close them explicitly.
@@ -909,14 +1196,26 @@ handles, and admitted capacity are *managed resources*. Close them explicitly.
 
 The touched graph is the exact set of changes a commit made. Relational seals
 changed records, aspect field paths, adjacency changes, observable revision
-bumps, and old/new index keys into its published patch envelope. Every writer
-contributes that commit evidence. It also supplies the cause of invalidation:
-the runtime intersects it with consumed facts to determine affected consumers.
-A producer that declares coarser precision carries and reports the widening.
+bumps, and old/new index keys into the canonical commit envelope, beside the
+patch. An ordinary commit seals this exact graph, and so does a merge
+executed under native merge authority. A commit that carries a schema
+transition seals none, and neither does a merge without that authority. For
+such a commit Query records a *discontinuity* in place of marks: a point its
+marks do not cover, across which readers fully verify
+([§10.5](#105-marking-and-currentness)). The touched graph also supplies the
+cause of invalidation: the runtime intersects it with consumed facts to
+determine affected consumers.
 
-Scope paths narrow precision within touched records. Shards determine
-placement. Signal's `Visited` observation tier reports consideration during
-transaction processing; the commit's touched graph reports actual changes.
+Widening, the delivery of a change at a coarser precision than it was made,
+exists only in a Bridge correspondence that declares it
+([§6.3](#63-runtime-bridge-correspondence-and-causality)). Query installs its
+application field mappings in the Bridge with widening disallowed.
+
+Scope paths belong to Signal. A scope path is a host-defined semantic
+locality that a Signal subscription names exactly or by subtree; it is never
+a work partition. Signal's `Visited` observation tier reports consideration
+during transaction processing; the commit's touched graph reports actual
+changes.
 
 "What did this operation change?" has three answers in WORTH. They are
 different questions, and the platform keeps them apart.
@@ -925,7 +1224,7 @@ different questions, and the platform keeps them apart.
 |---|---|---|---|
 | 1. Declared ceiling | What *may* this operation change? | `WorthQueryOperationTouchContract` | Installation, from the operation declaration |
 | 2. Admitted candidate touches | What does this candidate *propose* to change, and is it within the ceiling? | Checked by `admit_validated_application_touches` | Relational validation of the candidate, then Query touch admission |
-| 3. Commit-sealed touched records | What *did* the commit change? | `WorthQueryTouchedRecordIdentity`, read through `receipt.mutation_work().touched_records()` | The commit seal, from Relational's changed records |
+| 3. Commit-sealed touched records | What *did* the commit change? | `WorthQueryTouchedRecordIdentity`, read through `receipt.mutation_work().map(\|work\| work.touched_records())` | The commit seal, from Relational's changed records |
 
 The law, in one sentence: **declared touches are the legal ceiling, candidate
 validation is not performed evidence, and only commit-sealed touched records
@@ -954,8 +1253,9 @@ records which declared reads intersect which declared touches:
 | Relation | `LinkRelation` / `UnlinkRelation` | Same schema, relation, and endpoints |
 | Anything else | — | Never |
 
-Each touch contract also produces a sealed graph-obligation row of kind
-`MutationTouch`, whose terminal requirement is touched-scope evidence.
+Each operation whose touch contract is `Declared` also produces one
+graph-obligation row of kind `MutationTouch`, whose terminal requirement is
+touched-scope evidence. A `NotRequired` contract produces no row.
 
 ### 10.2 Layer 2: candidate admission
 
@@ -1006,8 +1306,13 @@ their marks agree, whoever the writer was.
 - **Reverse index.** When an output settles, Query indexes its consumed facts:
   field revisions, index keys, selection and absence facts, and consumed
   upstream outputs. A settlement recorded against an older read replays
-  retained deliveries since that read. Facts come from native query,
-  adjacency, or indexed-selection evidence at the smallest sound scope.
+  retained deliveries since that read. Each graph fact is indexed under
+  the exact keys a commit can touch: an entity's lifecycle, an entity or
+  relation kind, an aspect or field revision, a predicate field, a relation
+  membership, an adjacency, an index membership, or an index definition.
+  A consumed upstream output is an edge to that output's settlement, not a
+  key. A fact that has no key, such as a retired output entity, cannot be
+  marked, so an output that consumed one always verifies in full.
 - **Marking.** Delivery looks up the touched fact keys and marks matched
   settlements dirty. Settlements that consumed their outputs become
   pending-upstream, transitively. The index selects affected settlements and
@@ -1016,8 +1321,10 @@ their marks agree, whoever the writer was.
   If retained marking cannot cover a delivery, currentness requires full
   verification rather than treating missing marks as clean.
 - **Clean reuse.** On a continuous retained basis, an unmarked settlement can
-  certify currentness without re-reading its consumed facts, subject to the
-  [producer reuse contracts](#98-publication-live-reads-and-output-demand).
+  certify currentness without re-reading its consumed facts. The marks alone
+  decide this. The producer's
+  [input reuse contract](#98-publication-live-reads-and-output-demand)
+  gates input cutoff, not clean reuse.
 - **Cutoff.** Dirty verification compares marked facts. Unchanged facts can
   establish currentness without recomputation. Equal declared input can avoid
   calling a producer. Stable republication of the retained output then clears
@@ -1029,12 +1336,20 @@ their marks agree, whoever the writer was.
   currentness compares all consumed facts. Checkpoint restore
   can require this path. Verification is counted and budgeted.
 - **Commit checks.** A commit re-compares its attempt's consumed read facts.
+  A fact that changed ends the attempt as stale, with nothing committed.
   Demand-time marking does not replace that check.
 - **Certification.** An optional certification mode compares marking with
   full verification and rejects disagreement.
 
 Query's native marking is distinct from Signal delivery after product
-publication.
+publication. Native marking is part of commit publication: Relational
+prepares it before entering the branch's critical section and installs it in
+the cutover that moves the branch cell. The number of readers a commit
+affects never refuses a legal writer. A commit whose marking exceeds the
+installed marking ceiling or the retained capacity is recorded as a counted
+discontinuity, and readers verify in full across it. Signal delivery is a
+later step
+([§7](#7-one-change-through-the-whole-stack)).
 
 ---
 
@@ -1183,9 +1498,16 @@ workflow runtime value, `WorthQueryWorkflowApplicationRuntime`):
   and a fresh authentication event signs it. The
   kernel authorizes and records these control steps itself. No handler may
   serve one: registering a handler for one is refused.
-- **Progress is caller-pumped.** There is no background scheduler, no callback,
-  and no inbound-completion API. Each advance is one request. An unauthorized
+- **Progress is caller-pumped.** There is no background scheduler, and no
+  timer advances an instance. Each advance is one request. An unauthorized
   caller sees `AwaitingActor`.
+- **An inbound completion never runs a step.** A definition can wait at an
+  `await_inbound` node for the external effect of an earlier operation node.
+  The installed inbound source completes that original operation. It does
+  not run a workflow node, and neither callback bytes nor a correlation
+  token can resume the instance. Until the owner accepts the operation's
+  receipt, advance returns `AwaitingOperation`. A later advance observes the
+  terminal result at the node and may enter its successor.
 - **Advance names what it waits for.** `WorkflowProgressOutcome` returns
   `Completed` when a step was recorded, or one of `AwaitingActor`,
   `AwaitingAssessment`, `AwaitingCondition`, `AwaitingOperation`,
@@ -1379,10 +1701,13 @@ to see the two facades used end to end.
 | "One commit updates everything atomically." | Each owner's step is atomic. The whole is ordered, and a gap is a named, recoverable partial. |
 | "Conflicts are detected per record." | Relational conflicts are per branch. Any movement since your observation is `Stale`. |
 | "The runtime retries or rebases for me." | It never does. Start a fresh transaction or request. |
-| "Signal invalidation is part of the commit." | It is a separate delivery step after the product publication performs. |
+| "Signal invalidation is part of the commit." | It is a separate delivery step after the product publication performs. Query's native marking is the part that moves with the commit: it is installed in the cutover that moves the branch cell. |
 | "The Bridge decides whether output changed." | Signal decides. The Bridge carries the evidence. |
 | "A branch token is a capability." | It names a branch and grants nothing. |
 | "The declared touch ceiling says what changed." | Only commit-sealed touched records say that. |
+| "A clean output is reused only if its producer allows it." | Clean reuse depends on the marks alone. The producer's `INPUT_REUSE` contract gates input cutoff, a different saving. |
+| "Serial placement is unbounded." | It is the same request with one worker. The policy's memory limit, the request's cancellation and deadline, and every work ceiling still bind it. |
+| "Reuse makes a partitioned computation cheaper to charge." | An outcome never depends on reuse. A carried partition charges what it charged in a full run. |
 | "`Indeterminate` means it failed." | It means unresolved. Recover. |
 | "Committed means the email was sent." | Commit records the outbox entry. External dispatch has its own posture. |
 | "Canceling a workflow undoes its work." | Cancellation names performed effects and stops. It does not roll back. |
@@ -1409,8 +1734,16 @@ to see the two facades used end to end.
 - Never treat a report, token, digest, receipt clone, or discovery answer as
   authority.
 - Read touched records, external dispatch posture, and aftermath from the
-  receipt. Do not infer them.
+  receipt. Do not infer them. Touched records sit behind
+  `receipt.mutation_work()`, which is an `Option`.
 - Workflows move only when a request pumps them. Plan for `Awaiting*` outcomes.
+  An inbound completion finishes an operation; it never runs a step.
+- Keep `partition_key`, `gather`, and `compute_partition` pure. A partition
+  whose facts did not change keeps its last result without being gathered or
+  computed again, so an impure function yields a stale result.
+- Expect one execution request per public call. Worker count never changes a
+  result or its charged work; cancellation and deadlines can change how far a
+  call gets.
 - When a name you need is not on the audience facades, the answer is a
   missing platform capability to report. It is not a reason to reach into an
   internal crate.
