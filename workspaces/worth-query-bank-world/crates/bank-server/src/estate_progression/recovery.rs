@@ -129,76 +129,29 @@ impl BankIdentityRuntime {
         action: EstateAction,
         request: &WorthQueryRequestScope,
     ) -> Result<BankRecoverySafeRetryReceipt, BankRecoverySafeRetryDenial> {
-        let mut retained = Some(handle);
-        match self
+        let performed = self
             .application_runtime()
             .with_application_advancement(request, |phase| {
-                let handle = retained.take().expect("one admitted retry");
-
                 if matches!(action, EstateAction::DisburseEstate(_)) {
                     let admission =
-                        match self.admit_estate_disbursement(&phase, principal, action, request) {
-                            Ok(admission) => admission,
-                            Err(denial) => {
-                                return Err(BankRecoverySafeRetryDenial::retained(denial, handle));
-                            }
-                        };
-                    return self.safe_retry_admitted_commit_recovery(&phase, handle, admission);
+                        self.admit_estate_disbursement(&phase, principal, action, request)?;
+                    return self.redispatch_admitted_commit_recovery(&phase, &handle, admission);
                 }
                 let admission =
-                    match self.admit_notification_operation(&phase, principal, action, request) {
-                        Ok(admission) => admission,
-                        Err(denial) => {
-                            return Err(BankRecoverySafeRetryDenial::retained(denial, handle));
-                        }
-                    };
-                self.safe_retry_admitted_commit_recovery(&phase, handle, admission)
-            }) {
-            Ok(outcome) => outcome,
-            Err(cause) => Err(BankRecoverySafeRetryDenial::retained(
-                BankEstateProgressionDenial::ApplicationEntry(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause)),
-                retained.expect("refusal precedes admission"),
+                    self.admit_notification_operation(&phase, principal, action, request)?;
+                self.redispatch_admitted_commit_recovery(&phase, &handle, admission)
+            });
+        let (authority, redispatch) = match performed {
+            Ok(Ok(performed)) => performed,
+            Ok(Err(denial)) => return Err(BankRecoverySafeRetryDenial::retained(denial, handle)),
+            Err(cause) => return Err(BankRecoverySafeRetryDenial::retained(
+                BankEstateProgressionDenial::ApplicationEntry(
+                    worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause),
+                ),
+                handle,
             )),
-        }
-    }
-
-    fn safe_retry_admitted_commit_recovery<Operation>(
-        &self,
-        phase: &worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
-        handle: BankCommitRecoveryHandle,
-        admission: WorthQueryAdmittedApplicationOperation<
-            BankSchema,
-            Operation,
-            EstateAction,
-            EstateCase,
-        >,
-    ) -> Result<BankRecoverySafeRetryReceipt, BankRecoverySafeRetryDenial> {
-        let authority = match self
-            .application_runtime()
-            .admit_recovery_effect_authority(handle.query(), &admission)
-        {
-            Ok(authority) => authority,
-            Err(denial) => {
-                return Err(BankRecoverySafeRetryDenial::retained(
-                    BankEstateProgressionDenial::from_recovery(denial),
-                    handle,
-                ));
-            }
         };
-        let redispatch = match self
-            .application_runtime()
-            .redispatch_admitted_external_effect(phase, handle.query(), &authority, &admission)
-        {
-            Ok(redispatch) => redispatch,
-            Err(denial) => {
-                let denial: worth_query_host::facade::primary_graph::WorthQueryRecoveryHandleDenial =
-                    denial.into();
-                return Err(BankRecoverySafeRetryDenial::retained(
-                    BankEstateProgressionDenial::from_recovery(denial),
-                    handle,
-                ));
-            }
-        };
+        // Only consumed recovery evidence remains; no source read follows the host call.
         safe_retry_recovery_handle(handle.query, &authority, redispatch)
             .map(BankRecoverySafeRetryReceipt::from_query)
             .map_err(|denial| {
@@ -212,5 +165,36 @@ impl BankIdentityRuntime {
                     None => BankRecoverySafeRetryDenial::Terminal(denial),
                 }
             })
+    }
+
+    fn redispatch_admitted_commit_recovery<Operation>(
+        &self,
+        phase: &worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
+        handle: &BankCommitRecoveryHandle,
+        admission: WorthQueryAdmittedApplicationOperation<
+            BankSchema,
+            Operation,
+            EstateAction,
+            EstateCase,
+        >,
+    ) -> Result<
+        (
+            worth_query_host::facade::primary_graph::WorthQueryRecoveryEffectAuthority,
+            worth_query_host::facade::primary_graph::WorthQueryPerformedExternalRedispatch,
+        ),
+        BankEstateProgressionDenial,
+    > {
+        let authority = self
+            .application_runtime()
+            .admit_recovery_effect_authority(handle.query(), &admission)
+            .map_err(BankEstateProgressionDenial::from_recovery)?;
+        let redispatch = self.application_runtime()
+            .redispatch_admitted_external_effect(phase, handle.query(), &authority, &admission)
+            .map_err(|denial| {
+                let denial: worth_query_host::facade::primary_graph::WorthQueryRecoveryHandleDenial =
+                    denial.into();
+                BankEstateProgressionDenial::from_recovery(denial)
+            })?;
+        Ok((authority, redispatch))
     }
 }
