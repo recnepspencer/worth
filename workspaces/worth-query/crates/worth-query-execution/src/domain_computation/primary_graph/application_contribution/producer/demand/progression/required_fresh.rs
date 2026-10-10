@@ -37,6 +37,7 @@ where
             FamilySourceQuery<Schema, Family>,
             FamilySourceValue<Schema, Family>,
         >,
+        readiness: required_wave::performed::FreshReadiness,
         shared: &SharedSelectedProductOperation<'_, Schema>,
         claim: SelectedRequiredRefreshClaim,
         installed: &super::super::super::registry::InstalledProducerProvider<Schema>,
@@ -45,6 +46,7 @@ where
         delivery_branch: crate::basis::WorthQueryProductBranch,
         matched_predecessors: Option<MatchedRequiredPredecessors<'_>>,
         admission: &mut InvalidationEditAdmission,
+        performed: &mut PerformedMembers,
     ) -> Result<RequiredFreshProgress<Schema>, WorthQueryOutputDemandDenial>
     where
         Family: WorthQueryProducerOutputFamily<Schema> + 'static,
@@ -72,17 +74,31 @@ where
         // The mode was prepared from this exact claim before registration. It
         // must be on the real admitted demand before any scheduling or effect.
         slot.bind_admitted(&mut successor);
-        let transfer = self.output_demands.finish_replaced_interest(
-            slot.claim().interest(),
-            successor
-                .interest
-                .as_ref()
-                .expect("admitted required successor retains its issued Interest"),
-            Family::IDENTITY,
-            admission,
-        );
+        let transfer = performed
+            .attach_successor(
+                readiness,
+                successor
+                    .interest
+                    .as_ref()
+                    .expect("admitted required successor retains its issued Interest")
+                    .key(),
+                admission,
+            )
+            .and_then(|readiness| {
+                self.output_demands
+                    .finish_replaced_interest(
+                        slot.claim().interest(),
+                        successor
+                            .interest
+                            .as_ref()
+                            .expect("admitted required successor retains its issued Interest"),
+                        Family::IDENTITY,
+                        admission,
+                    )
+                    .map(|()| readiness)
+            });
         let outcome = match transfer {
-            Ok(()) => {
+            Ok(readiness) => {
                 match u64::try_from(std::mem::size_of::<
                     super::super::super::WorthQueryProducerCommitAuthority,
                 >())
@@ -103,6 +119,7 @@ where
                             self.advance_validated_required_fresh_on_selected(
                                 execution,
                                 phase,
+                                readiness,
                                 &mut successor,
                                 principal,
                                 request_scope,
@@ -113,6 +130,7 @@ where
                                 shared,
                                 matched_predecessors,
                                 admission,
+                                performed,
                             )
                         })
                     }

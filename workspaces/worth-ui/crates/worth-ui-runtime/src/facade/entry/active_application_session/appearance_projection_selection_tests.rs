@@ -18,26 +18,21 @@ fn mounted_selection_keys_share_an_owner_without_crossing_neighborhoods() {
             certification::WorthUiCollectionProjectionSeedPosture::Complete,
         );
     let domain = query.worth_ui().unwrap();
-    let registration =
-        UiCollectionProjectionRegistration::text(
-            domain.projection_view(fixture::PROJECTION).unwrap(),
-            UiProjectionFieldRequirement::identity_id(),
-            [UiProjectionFieldRequirement::query_text_status()],
-            false,
-            false,
-        )
-        .unwrap()
-        .with_unsigned64_application_item_key_field(
-            UiProjectionFieldRequirement::collection_item_key(),
-        );
+    let registration = fixture::selection_registration(&domain);
     let UiCollectionProjectionBindingAdmission::Ready(binding) = registration.clone().admit(&query)
     else {
         panic!("Query binding")
     };
-    let UiCollectionProjectionOpenOutcome::Opened(opened) = binding.open(
-        UiCollectionProjectionBudget::new(2, 2, 0, 1024).unwrap(),
-        &mut query,
-    ) else {
+    let UiCollectionProjectionOpenOutcome::Opened(opened) = query
+        .with_execution_request_mut(|request_execution, workspace| {
+            binding.open(
+                request_execution,
+                UiCollectionProjectionBudget::new(2, 2, 0, 1024).unwrap(),
+                workspace,
+            )
+        })
+        .expect("fixture workspace host call opens")
+    else {
         panic!("Query collection")
     };
     let (mut live, fact) = opened.into_parts();
@@ -254,8 +249,10 @@ fn mounted_selection_keys_share_an_owner_without_crossing_neighborhoods() {
         .unwrap()
         .cloned();
     certification::update_projection_identity(&mut query, entities[1].clone(), "00-beta");
-    let UiCollectionProjectionRefreshOutcome::Applied(reordered) =
-        live.refresh(&mut query).unwrap()
+    let UiCollectionProjectionRefreshOutcome::Applied(reordered) = query
+        .with_execution_request_mut(|execution, workspace| live.refresh(execution, workspace))
+        .expect("fixture workspace host call opens")
+        .unwrap()
     else {
         panic!("real reorder delivers")
     };
@@ -305,7 +302,10 @@ fn mounted_selection_keys_share_an_owner_without_crossing_neighborhoods() {
         .unwrap()
         .appearance_owner_snapshot();
     certification::remove_projection_entity(&mut query, entities[0].clone());
-    let UiCollectionProjectionRefreshOutcome::Applied(removed) = live.refresh(&mut query).unwrap()
+    let UiCollectionProjectionRefreshOutcome::Applied(removed) = query
+        .with_execution_request_mut(|execution, workspace| live.refresh(execution, workspace))
+        .expect("fixture workspace host call opens")
+        .unwrap()
     else {
         panic!("real removal delivers")
     };

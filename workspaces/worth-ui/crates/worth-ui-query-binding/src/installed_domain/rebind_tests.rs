@@ -64,22 +64,26 @@ fn success_retains_query_semantic_equivalence_receipt() {
 fn installed_measurement_workspace(
     name: &str,
 ) -> worth_query::facade::runtime::WorthQueryWorkspace {
-    crate::install_worth_ui_test_operation_executors(
-        in_memory_test_runtime()
-            .with_schema(measurement_schema())
-            .domain_package(crate::worth_ui_domain_package()),
-    )
-    .workspace(name)
-    .expect("Worth UI rebind workspace should build")
+    crate::certification::request_custody::with_bootstrap_request(|execution| {
+        crate::install_worth_ui_test_operation_executors(
+            in_memory_test_runtime()
+                .with_schema(measurement_schema())
+                .domain_package(crate::worth_ui_domain_package()),
+        )
+        .workspace(execution, name)
+        .expect("Worth UI rebind workspace should build")
+    })
 }
 
 fn measurement_workspace_without_domain(
     name: &str,
 ) -> worth_query::facade::runtime::WorthQueryWorkspace {
-    in_memory_test_runtime()
-        .with_schema(measurement_schema())
-        .workspace(name)
-        .expect("Query workspace without Worth UI should build")
+    crate::certification::request_custody::with_bootstrap_request(|execution| {
+        in_memory_test_runtime()
+            .with_schema(measurement_schema())
+            .workspace(execution, name)
+            .expect("Query workspace without Worth UI should build")
+    })
 }
 
 fn measurement_schema() -> WorthQueryTestBackendSchema {

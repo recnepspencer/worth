@@ -31,10 +31,16 @@ fn projection_fact_selects_only_its_declared_content_consumer() {
             panic!("real projection binding must admit: {stop:?}")
         }
     };
-    let opened = match binding.open(
-        UiCollectionProjectionBudget::new(2, 2, 0, 1024).unwrap(),
-        &mut workspace,
-    ) {
+    let opened = match workspace
+        .with_execution_request_mut(|execution, mut workspace| {
+            binding.open(
+                execution,
+                UiCollectionProjectionBudget::new(2, 2, 0, 1024).unwrap(),
+                &mut workspace,
+            )
+        })
+        .expect("workspace host call opens")
+    {
         UiCollectionProjectionOpenOutcome::Opened(opened) => opened,
         UiCollectionProjectionOpenOutcome::Stopped(stop) => {
             panic!("real collection projection must open: {stop:?}")

@@ -39,10 +39,16 @@ fn real_collection_snapshot_compiles_distinct_keyed_mounted_rows() {
             panic!("real collection binding must admit: {stop:?}")
         }
     };
-    let opened = match binding.open(
-        UiCollectionProjectionBudget::new(2, 2, 0, 1024).unwrap(),
-        &mut workspace,
-    ) {
+    let opened = match workspace
+        .with_execution_request_mut(|request_execution, workspace| {
+            binding.open(
+                request_execution,
+                UiCollectionProjectionBudget::new(2, 2, 0, 1024).unwrap(),
+                workspace,
+            )
+        })
+        .expect("fixture workspace host call opens")
+    {
         UiCollectionProjectionOpenOutcome::Opened(opened) => opened,
         UiCollectionProjectionOpenOutcome::Stopped(stop) => {
             panic!("real collection projection must open: {stop:?}")
@@ -88,7 +94,11 @@ fn real_collection_snapshot_compiles_distinct_keyed_mounted_rows() {
         entities[1].clone(),
         "Bravo updated",
     );
-    let refreshed = match live.refresh(&mut workspace).unwrap() {
+    let refreshed = match workspace
+        .with_execution_request_mut(|execution, workspace| live.refresh(execution, workspace))
+        .expect("fixture workspace host call opens")
+        .unwrap()
+    {
         worth_ui_query_binding::UiCollectionProjectionRefreshOutcome::Applied(receipt) => receipt,
         worth_ui_query_binding::UiCollectionProjectionRefreshOutcome::NoSemanticDelivery => {
             panic!("the Query update must deliver its exact patch")

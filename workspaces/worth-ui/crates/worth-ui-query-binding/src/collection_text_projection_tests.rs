@@ -151,29 +151,38 @@ fn insert_status(
     status: &str,
 ) {
     workspace
-        .insert("WorthUiProjectionText", |entity| {
-            entity
-                .set_aspect(
-                    WorthQueryAspectTouch::from_authoring_ingress_text("identity.id").unwrap(),
-                    WorthQueryAuthoredAspectValue::string(identity),
-                )
-                .set_aspect(
-                    WorthQueryAspectTouch::from_authoring_ingress_text("collection_item.status")
-                        .unwrap(),
-                    WorthQueryAuthoredAspectValue::string(status),
-                )
-                .set_aspect(
-                    WorthQueryAspectTouch::from_authoring_ingress_text("collection_item.key")
-                        .unwrap(),
-                    WorthQueryAuthoredAspectValue::native(AspectValue::UInt64(
-                        identity
-                            .bytes()
-                            .fold(1_u64, |key, byte| key.wrapping_mul(31) + u64::from(byte))
-                            .max(1),
-                    )),
-                )
+        .with_execution_request_mut(|execution, mut workspace| {
+            workspace
+                .insert(execution, "WorthUiProjectionText", |entity| {
+                    entity
+                        .set_aspect(
+                            WorthQueryAspectTouch::from_authoring_ingress_text("identity.id")
+                                .unwrap(),
+                            WorthQueryAuthoredAspectValue::string(identity),
+                        )
+                        .set_aspect(
+                            WorthQueryAspectTouch::from_authoring_ingress_text(
+                                "collection_item.status",
+                            )
+                            .unwrap(),
+                            WorthQueryAuthoredAspectValue::string(status),
+                        )
+                        .set_aspect(
+                            WorthQueryAspectTouch::from_authoring_ingress_text(
+                                "collection_item.key",
+                            )
+                            .unwrap(),
+                            WorthQueryAuthoredAspectValue::native(AspectValue::UInt64(
+                                identity
+                                    .bytes()
+                                    .fold(1_u64, |key, byte| key.wrapping_mul(31) + u64::from(byte))
+                                    .max(1),
+                            )),
+                        )
+                })
+                .expect("projection text insertion")
         })
-        .expect("projection text insertion");
+        .expect("workspace host call opens");
 }
 
 fn collection_breadth(

@@ -19,7 +19,6 @@ use super::{
 impl<'runtime, 'principal, 'scope> BankApprovedPaymentWorkflow<'runtime, 'principal, 'scope> {
     pub fn accept_applied(
         &self,
-        phase: &worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
         instance: PublishedWorkflowInstanceRef,
         required: &RequiredWorkflowOperation,
         authority: ApprovePayment,
@@ -45,13 +44,12 @@ impl<'runtime, 'principal, 'scope> BankApprovedPaymentWorkflow<'runtime, 'princi
             .idempotency(command_key)
             .prepare_workflow_advance(self.runtime.approved_payment_workflow_runtime(), instance)
             .map_err(BankApprovedPaymentWorkflowError::Advance)?
-            .accept_operation_from_owner(phase, required, operation)
+            .accept_operation_from_owner(required, operation)
             .map_err(BankApprovedPaymentWorkflowError::OperationOwnerAcceptance)
     }
 
     pub fn prepare_apply_recovery(
         &self,
-        phase: &worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
         required: &RequiredWorkflowOperation,
         operation: ApprovePayment,
         perform_key: &BankIdempotencyKey,
@@ -67,14 +65,13 @@ impl<'runtime, 'principal, 'scope> BankApprovedPaymentWorkflow<'runtime, 'princi
                 required,
             )
             .map_err(BankApprovedPaymentWorkflowError::OperationBinding)?
-            .prepare_workflow_operation_recovery_from_owner(phase, required)
+            .prepare_workflow_operation_recovery_from_owner(required)
             .map_err(BankApprovedPaymentWorkflowError::OperationRecoveryPreparation)
     }
 
     #[allow(clippy::too_many_arguments)]
     pub fn accept_recovered_applied(
         &self,
-        phase: &worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
         instance: PublishedWorkflowInstanceRef,
         required: &RequiredWorkflowOperation,
         authority: ApprovePayment,
@@ -101,7 +98,7 @@ impl<'runtime, 'principal, 'scope> BankApprovedPaymentWorkflow<'runtime, 'princi
             .idempotency(command_key)
             .prepare_workflow_advance(self.runtime.approved_payment_workflow_runtime(), instance)
             .map_err(BankApprovedPaymentWorkflowError::Advance)?
-            .accept_recovered_operation_from_owner(phase, required, operation, recovery)
+            .accept_recovered_operation_from_owner(required, operation, recovery)
             .map_err(BankApprovedPaymentWorkflowError::OperationOwnerAcceptance)
     }
 }

@@ -42,6 +42,7 @@ mod required_cue;
 mod selected;
 mod selected_public;
 mod source_readmission;
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) use source_readmission::ready_currentness_denial;
 use selected::InstalledSelectedProducerExecutor;
 use super::demand::disclosure::{
     FreshOutputDisclosure, ValidatedOutputDisclosure, ValidatedProducerInput,
@@ -57,9 +58,10 @@ use input_identity::encode_input;
 use input_reuse::{prepared_key, require_selected_program};
 pub(super) use installed::TypedInstalledProducer;
 use outcome::PreparedProducerExecutionOutcome;
-pub(super) use outcome::ProducerExecutionOutcome;
+pub(super) use outcome::{ProducerCommitReceipt, ProducerExecutionOutcome};
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use required_cue::RequiredCueProgress;
-use outcome::{commit_receipt, completed_handler};
+pub(super) use outcome::commit_receipt;
+use outcome::completed_handler;
 use source_readmission::readmit_source;
 
 type Operation<Schema, Binding> =

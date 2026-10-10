@@ -69,7 +69,12 @@ fn open_with_application_item_key(
     };
     let budget =
         UiCollectionProjectionBudget::new(1, 1, 0, 1_024).expect("single-row collection budget");
-    let UiCollectionProjectionOpenOutcome::Opened(opened) = binding.open(budget, workspace) else {
+    let UiCollectionProjectionOpenOutcome::Opened(opened) = workspace
+        .with_execution_request_mut(|execution, workspace| {
+            binding.open(execution, budget, workspace)
+        })
+        .expect("workspace host call opens")
+    else {
         panic!("typed collection projection must reach fact materialization")
     };
     opened.into_parts().1

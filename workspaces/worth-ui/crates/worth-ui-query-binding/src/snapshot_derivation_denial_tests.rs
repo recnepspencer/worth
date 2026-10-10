@@ -60,16 +60,23 @@ fn invalid_null_and_non_float_values_stop_at_query_mutation_contract() {
 }
 
 fn invalid_measurement_write(value: runtime::WorthQueryAuthoredAspectValue) -> String {
-    let mut workspace = installed_builder()
-        .workspace("invalid-measurement-shape")
-        .unwrap();
+    let mut workspace =
+        crate::certification::request_custody::with_bootstrap_request(|execution| {
+            installed_builder()
+                .workspace(execution, "invalid-measurement-shape")
+                .unwrap()
+        });
     let error = workspace
-        .insert("WorthUiMeasurement", |measurement| {
-            measurement
-                .set_aspect(identity_touch(), "invalid-measurement")
-                .set_aspect(measurement_touch(), value)
+        .with_execution_request_mut(|execution, mut workspace| {
+            workspace
+                .insert(execution, "WorthUiMeasurement", |measurement| {
+                    measurement
+                        .set_aspect(identity_touch(), "invalid-measurement")
+                        .set_aspect(measurement_touch(), value)
+                })
+                .expect_err("Query must reject a value outside the installed Float32 contract")
         })
-        .expect_err("Query must reject a value outside the installed Float32 contract");
+        .expect("workspace host call opens");
     let runtime::WorthQueryRuntimeError::MutationContractDenied(denial) = error else {
         panic!("invalid native shape must retain Query's mutation-contract denial")
     };
@@ -78,12 +85,19 @@ fn invalid_measurement_write(value: runtime::WorthQueryAuthoredAspectValue) -> S
 }
 
 fn workspace_with_identity_only(label: &str) -> runtime::WorthQueryWorkspace {
-    let mut workspace = installed_builder().workspace(label).unwrap();
+    let mut workspace =
+        crate::certification::request_custody::with_bootstrap_request(|execution| {
+            installed_builder().workspace(execution, label).unwrap()
+        });
     workspace
-        .insert("WorthUiMeasurement", |measurement| {
-            measurement.set_aspect(identity_touch(), "measurement-without-value")
+        .with_execution_request_mut(|execution, mut workspace| {
+            workspace
+                .insert(execution, "WorthUiMeasurement", |measurement| {
+                    measurement.set_aspect(identity_touch(), "measurement-without-value")
+                })
+                .unwrap()
         })
-        .unwrap();
+        .expect("workspace host call opens");
     workspace
 }
 

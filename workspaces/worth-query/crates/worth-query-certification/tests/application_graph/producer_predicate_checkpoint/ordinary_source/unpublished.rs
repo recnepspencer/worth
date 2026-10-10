@@ -5,9 +5,7 @@ use crate::document_retention_model::retention_entry::{
 };
 use std::time::{Duration, Instant};
 use worth_query_host::facade::{
-    admission::authenticated_principal::{
-        WorthQueryCancellationSource, WorthQueryRequestInterruption, WorthQueryRequestScope,
-    },
+    admission::authenticated_principal::{WorthQueryCancellationSource, WorthQueryRequestScope},
     application_entry::{
         WorthQueryApplicationRecoveryRequestDenial, WorthQueryDiscoveredRecoveryProgress,
     },
@@ -116,40 +114,31 @@ fn initial_required_partial_recovers_original_demand_without_handler_reexecution
     );
     cancellation.cancel();
     assert!(matches!(
-        host.with_host_advancement(|host_phase| host
-            .request(&principal, &stopped)
+        host.request(&principal, &stopped)
             .mutate(intent.clone())
             .without_source()
             .idempotency(&key)
-            .recover_unpublished_required_in_program(&host_phase, &mut recovery, &host))
-            .expect("installed host call opens"),
-        Err(WorthQueryApplicationRecoveryRequestDenial::Interrupted(
-            WorthQueryRequestInterruption::Cancelled
-        ))
+            .recover_unpublished_required_in_program(&mut recovery, &host),
+        Err(WorthQueryApplicationRecoveryRequestDenial::Recovery(worth_query_host::facade::primary_graph::WorthQueryManagedApplicationRecoveryDenial::ExecutionDenied(worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial::Interrupted(worth_query_host::facade::application_contribution::WorthQueryManagedComputationInterruption::Cancelled))))
     ));
     assert!(recovery.performed().is_none());
     assert_eq!(
-        host.with_host_advancement(|host_phase| host
-            .request(&principal, &scope)
+        host.request(&principal, &scope)
             .mutate(intent.clone())
             .without_source()
             .idempotency(&key)
-            .recover_unpublished_required_in_program(&host_phase, &mut recovery, &host)
-            .unwrap())
-            .expect("installed host call opens"),
+            .recover_unpublished_required_in_program(&mut recovery, &host)
+            .unwrap(),
         WorthQueryDiscoveredRecoveryProgress::Performed
     );
     let (source, initial, performed, prior) = host
-        .with_host_advancement(|host_phase| {
-            host.request(&principal, &scope)
-                .mutate(intent)
-                .without_source()
-                .idempotency(&key)
-                .promote_recovered_required_outputs(&host_phase, recovery, &host)
-                .unwrap_or_else(|(denial, _)| panic!("native promotion: {denial:?}"))
-                .into_parts()
-        })
-        .expect("installed host call opens");
+        .request(&principal, &scope)
+        .mutate(intent)
+        .without_source()
+        .idempotency(&key)
+        .promote_recovered_required_outputs(recovery, &host)
+        .unwrap_or_else(|(denial, _)| panic!("native promotion: {denial:?}"))
+        .into_parts();
     assert_eq!(initial, ProductUnpublishedCause::SettlementPending);
     assert!(prior.is_empty());
     let (read, publication, cleanup) = performed.into_parts();

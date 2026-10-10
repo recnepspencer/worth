@@ -35,6 +35,7 @@ dependencies = [
     "worth-query-execution",
     "worth-query-installation",
     "worth-query-publication",
+    "worth-relational",
 ]
 
 [[packages]]

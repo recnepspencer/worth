@@ -6,6 +6,7 @@ use super::{
 };
 
 pub(super) fn open_collection_projection(
+    request_execution: &worth_runtime_bridge::facade::ExecutionRequest<'_, '_>,
     mut binding: crate::UiCollectionProjectionBinding,
     budget: crate::UiCollectionProjectionBudget,
     workspace: &mut worth_query::facade::runtime::WorthQueryWorkspace,
@@ -111,7 +112,10 @@ pub(super) fn open_collection_projection(
             budget,
         },
     );
-    let promoted = match settled.into_lifecycle().promote(workspace) {
+    let promoted = match settled
+        .into_lifecycle()
+        .promote(request_execution, workspace)
+    {
         observation::WorthQueryProjectionPromotionOutcome::Promoted(value) => value,
         observation::WorthQueryProjectionPromotionOutcome::Denied(_) => {
             return stopped(&binding, StopKind::PromotionDenied);

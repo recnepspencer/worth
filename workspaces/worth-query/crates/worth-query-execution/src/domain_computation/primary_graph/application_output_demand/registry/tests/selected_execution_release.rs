@@ -2,9 +2,10 @@ use super::*;
 
 #[test]
 fn selected_release_refuses_before_running_then_releases_without_new_allowance() {
+    let demand_key = key("selected-request-rejection", 1, 1);
+    let product_occurrence = occurrence();
     crate::domain_computation::primary_graph::with_test_advancement(|_active_phase| {
         let registry = WorthQueryOutputDemandRegistry::default();
-        let demand_key = key("selected-request-rejection", 1, 1);
         let scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(root(1));
         let admit = || {
             registry
@@ -12,7 +13,7 @@ fn selected_release_refuses_before_running_then_releases_without_new_allowance()
                     demand_key.clone(),
                     None,
                     scope,
-                    occurrence(),
+                    product_occurrence,
                     super::super::DemandAdmissionKind::Ordinary,
                     None,
                     None,
@@ -86,6 +87,8 @@ fn selected_release_refuses_before_running_then_releases_without_new_allowance()
 /// the next claim; only a stop intrinsic to the row fails it for every peer.
 #[test]
 fn selected_execution_failure_fails_the_row_only_for_an_intrinsic_stop() {
+    let demand_key = key("selected-execution-failure", 1, 1);
+    let product_occurrence = occurrence();
     crate::domain_computation::primary_graph::with_test_advancement(|_active_phase| {
         use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind as Authorization;
         use crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind as Read;
@@ -110,10 +113,10 @@ fn selected_execution_failure_fails_the_row_only_for_an_intrinsic_stop() {
             let admit = || {
                 registry
                 .admit(
-                    key("selected-execution-failure", 1, 1),
+                    demand_key.clone(),
                     None,
                     crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(root(1)),
-                    occurrence(),
+                    product_occurrence,
                     super::super::DemandAdmissionKind::Ordinary,
                     None,
                     None,

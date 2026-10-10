@@ -6,6 +6,7 @@
 //! stop that returned its row to the Ready it reopened ends it instead: the
 //! next wave claims that refresh again, after the entry frees its custody.
 
+use super::progression::PerformedMembers;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use std::any::{Any, TypeId};
 
@@ -38,7 +39,7 @@ use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
 };
 
-pub(in crate::domain_computation::primary_graph) use held::{
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) use held::{
     resume_held_upstream, ContinuationCustody, HeldUpstream,
 };
 
@@ -87,6 +88,7 @@ trait ErasedRequiredSuccessor<Schema: ApplicationSchema>: Send + Sync {
         request: &WorthQueryRequestScope,
         branch: crate::basis::WorthQueryProductBranch,
         admission: &mut InvalidationEditAdmission,
+        performed: &mut PerformedMembers,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>;
     fn into_any(self: Box<Self>) -> Box<dyn Any>;
 }
@@ -257,6 +259,7 @@ where
         request: &WorthQueryRequestScope,
         branch: crate::basis::WorthQueryProductBranch,
         admission: &mut InvalidationEditAdmission,
+        performed: &mut PerformedMembers,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial> {
         let execution = phase.execution_request_for(&runtime.product_runtime).map_err(|_| {
             WorthQueryOutputDemandDenial::new(
@@ -265,7 +268,7 @@ where
                 "required successor advancement phase")
         })?;
         self.run_again(
-            &execution, phase, runtime, principal, request, branch, admission,
+            &execution, phase, runtime, principal, request, branch, admission, performed,
         )
     }
 

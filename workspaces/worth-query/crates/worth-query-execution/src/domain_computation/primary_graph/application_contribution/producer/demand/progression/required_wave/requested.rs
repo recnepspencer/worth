@@ -20,6 +20,7 @@ pub(in super::super) fn advance_requested_output<Schema, Family>(
     branch: WorthQueryProductBranch,
     authority: &super::super::super::super::WorthQueryProducerCommitAuthority,
     stop: &mut WorthQueryOutputDemandDenial,
+    performed: &mut performed::PerformedMembers,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<Option<WorthQueryOutputDemandAdvance>, WorthQueryOutputDemandDenial>
 where
@@ -52,6 +53,7 @@ where
                 ContinuationCustody::Queue(&mut demand.required_continuations),
                 &head,
                 admission,
+                performed,
             )? {
                 HeldUpstream::Ready(ready) => {
                     let (shared, positioned) =
@@ -90,6 +92,7 @@ where
         wave,
         &mut queue,
         &mut frame_custody,
+        performed,
         admission,
     );
     frame_custody.hold_unfinished(&runtime.output_demands);

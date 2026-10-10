@@ -8,12 +8,15 @@ use worth_query_host::facade::application_entry::WorthQueryApplicationOutputDema
 /// Commits the retained window holds.
 const WINDOW: usize = 8;
 
+const CHAIN: [&str; 4] = ["anchor-a", "anchor-b", "anchor-c", "anchor-source-b"];
+
 /// A demand stop: its kind, and what it tells the caller about asking again.
 type Stop = (WorthQueryOutputDemandDenialKind, Posture);
 
 /// What one index left of the chain's journey.
 #[derive(Debug)]
 struct Journey {
+    refused_advances: Vec<AdvanceObservation>,
     /// Every stop an advance met.
     stops: Vec<Stop>,
     refused_consumers: usize,
@@ -26,27 +29,17 @@ struct Journey {
 }
 
 /// Advances `demand` once. A demand stop is recorded.
-macro_rules! advance_recording {
-    ($stops:expr, $demand:expr, $request:expr) => {{
-        let advanced = $demand.advance(&$request);
-        bounded!();
-        match advanced {
-            Ok(progress) => Some(progress),
-            Err(WorthQueryApplicationOutputDemandDenial::Demand(denial)) => {
-                if $stops.is_empty()
-                    && denial.kind() != WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
-                {
-                    return Err(Attempt::Below(
-                        "producer unavailable before index admission",
-                    ));
-                }
-                $stops.push((denial.kind(), denial.recovery_posture()));
-                None
-            }
-            Err(other) => panic!("the advance stops as a demand: {other:?}"),
-        }
-    }};
+#[derive(Debug)]
+struct AdvanceObservation {
+    decisions: Vec<String>,
+    published: bool,
+    producer_attempts: u64,
+    member_attempts: Vec<u64>,
+    member_publications: Vec<u64>,
 }
+#[path = "exhausted_index/advance_observation.rs"]
+mod advance_observation;
+use advance_observation::advance_recording;
 
 /// Settle the chain, change its root four times, and advance every demand.
 /// Source writes always commit, even when the derived index is evicted.
@@ -55,11 +48,32 @@ macro_rules! advance_recording {
 /// claim settles is not a law here: a native window write must also fund
 /// coexistence of old and new inherited roots.
 fn chain_journey(invalidation_bytes: u64) -> Result<Journey, Attempt> {
+    observed_chain_journey(invalidation_bytes, false)
+}
+
+fn observed_chain_journey(invalidation_bytes: u64, observe: bool) -> Result<Journey, Attempt> {
     let (application, invalidation) =
         limited_application(4 * 1_024 * 1_024, invalidation_bytes, WINDOW);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
+    let roots = if observe {
+        CHAIN
+            .map(|body_key| {
+                request
+                    .query(PlanarRead {
+                        body_key: body_key.to_owned(),
+                    })
+                    .execute()
+                    .unwrap()
+                    .observed_sources()[0]
+                    .root_entity_for_test()
+            })
+            .to_vec()
+    } else {
+        Vec::new()
+    };
     let mut stops = Vec::new();
+    let mut refused_advances = Vec::new();
     let mut a = request
         .demand(PlanarOutputDemand::new("anchor-a"))
         .start_in_program::<program::ChainProgram, program::ChainRoot>(&application)
@@ -79,7 +93,14 @@ fn chain_journey(invalidation_bytes: u64) -> Result<Journey, Attempt> {
     macro_rules! settle_recording {
         ($demand:expr) => {
             for _ in 0..256 {
-                match advance_recording!(stops, $demand, request) {
+                match advance_recording!(
+                    stops,
+                    $demand,
+                    request,
+                    refused_advances,
+                    application,
+                    roots
+                ) {
                     Some(WorthQueryApplicationOutputDemandProgress::Pending) => {
                         bounded!();
                     }
@@ -120,10 +141,10 @@ fn chain_journey(invalidation_bytes: u64) -> Result<Journey, Attempt> {
         writes_y!(request, application, "anchor-a", y, 0x9176_3e00_u64 + cycle);
         bounded!();
         refused = [
-            advance_recording!(stops, d, request).is_none(),
-            advance_recording!(stops, c, request).is_none(),
-            advance_recording!(stops, b, request).is_none(),
-            advance_recording!(stops, a, request).is_none(),
+            advance_recording!(stops, d, request, refused_advances, application, roots).is_none(),
+            advance_recording!(stops, c, request, refused_advances, application, roots).is_none(),
+            advance_recording!(stops, b, request, refused_advances, application, roots).is_none(),
+            advance_recording!(stops, a, request, refused_advances, application, roots).is_none(),
         ];
     }
     let before_window_bytes = invalidation.retained_capacity_bytes();
@@ -147,7 +168,14 @@ fn chain_journey(invalidation_bytes: u64) -> Result<Journey, Attempt> {
         ($demand:expr, $refused:expr, $consumer:expr) => {
             if $refused {
                 let settled = matches!(
-                    advance_recording!(stops, $demand, request),
+                    advance_recording!(
+                        stops,
+                        $demand,
+                        request,
+                        refused_advances,
+                        application,
+                        roots
+                    ),
                     Some(WorthQueryApplicationOutputDemandProgress::Settled(_))
                 );
                 unrecovered_consumers += usize::from($consumer && !settled);
@@ -164,6 +192,7 @@ fn chain_journey(invalidation_bytes: u64) -> Result<Journey, Attempt> {
         .filter(|(scope, _)| matches!(scope.as_str(), "anchor-b" | "anchor-c"))
         .count();
     Ok(Journey {
+        refused_advances,
         stops,
         refused_consumers,
         unrecovered_consumers,
@@ -177,8 +206,9 @@ fn chain_journey(invalidation_bytes: u64) -> Result<Journey, Attempt> {
 
 /// A recorded journey's first stop is the index's own refusal; the recorder
 /// answers any other first stop as no index journey. After it a consumer whose
-/// upstream has no output is denied by the fixture's handler, and a row that
-/// refusal failed answers that its producer is unavailable. Nothing else
+/// upstream has no output is denied by the fixture's handler. A current-output
+/// retention refusal without a requested-output witness reaches a kept
+/// unavailable row through ExecutionDenied. Nothing else
 /// stops an advance, and no stop offers a retry.
 fn assert_index_stops(capacity: u64, stops: &[Stop]) {
     use WorthQueryOutputDemandDenialKind::{
@@ -297,3 +327,5 @@ fn a_consumer_with_incomplete_registration_settles_by_a_fresh_decision_after_cap
     )
     .require_hit("fresh consumer registration");
 }
+
+mod attempts;

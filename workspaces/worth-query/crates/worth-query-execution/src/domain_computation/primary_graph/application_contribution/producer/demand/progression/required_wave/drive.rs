@@ -1,4 +1,5 @@
-//! One required wave: the caller's Ready, then dirty records as queued frames.
+//! One wave's required chain: the caller's own Ready first, then the dirty
+//! records popped from the shared queue as frames.
 
 use super::super::super::required_continuations::{
     resume_held_upstream, ContinuationCustody, HeldUpstream, RequiredContinuations,
@@ -10,13 +11,18 @@ use super::super::{
 use super::queued::RequiredQueueFrames;
 #[macro_use]
 mod held_resume;
+#[macro_use]
+mod rejoin;
 mod requested_refusal;
 use super::selection::committed_ready;
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::producer::WorthQueryProducerCommitAuthority;
 
-/// The caller's chain runs first; its errors end the call. Queued records use the remaining request.
-/// Each queue item is acknowledged only when Current on this wave; otherwise it is held for a later advance.
+/// The caller's own chain runs first; its errors end the call.
+/// Dirty required records popped from the shared queue then run as frames
+/// with the rest of the request. A queue chain never promotes or settles the
+/// caller: its item is acknowledged when the item itself is Current on this
+/// wave and is otherwise held for a later advance.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn drive_required_wave<'runtime, Schema, Family>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -29,13 +35,15 @@ pub(super) fn drive_required_wave<'runtime, Schema, Family>(
     mut wave: RequiredWaveSelection<'runtime, Schema>,
     queue: &mut RequiredQueueFrames,
     frame_custody: &mut RequiredContinuations<Schema>,
+    performed: &mut performed::PerformedMembers,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<Option<WorthQueryOutputDemandAdvance>, WorthQueryOutputDemandDenial>
 where
     Schema: ApplicationSchema + 'static,
     Family: WorthQueryProducerOutputFamily<Schema>,
 {
-    // Only consumed-output edges extend this closure; downstream rows wait while their producer settles.
+    // Only an actual consumed-output edge can extend this closure. Initial
+    // downstream B/C rows are irrelevant while their producer A is settling.
     let mut stack = RequiredWaveStack::new();
     let mut current: Option<SelectedReadyReadmission> = None;
     let mut current_contacts = 0usize;
@@ -149,6 +157,7 @@ where
             resolved.as_ref(),
             producer_contacts_in_this_demand,
             refresh_permission,
+            performed,
             installation.admission(),
         );
         if let (true, Ok(RequiredWaveStep::Fresh(progress))) = (caller_execution, &mut result) {
@@ -310,7 +319,7 @@ where
                                     phase, execution;
                                     runtime, principal, request_scope;
                                     wave, resolved_on_wave, queue, frame_custody;
-                                    demand, admission;
+                                    demand, admission, performed;
                                     hold_queue_frame, finish_caller, stopped)
                             }
                             requested_refusal::RequestedRefusal::Unavailable => {}
@@ -318,67 +327,11 @@ where
                         stopped!('required, selected.key(), stop)
                     }
                 }
-                loop {
-                    // Rejoin the actual successor after each real
-                    // Published/Delivered stage. A deferred stage leaves its
-                    // checkpoint installed and returns Pending without
-                    // spinning or reexecuting.
-                    admission
-                        .charge_external_work(2)
-                        .map_err(|_| work_denial())?;
-                    let custody = if queue.active() {
-                        &mut *frame_custody
-                    } else {
-                        &mut demand.required_continuations
-                    };
-                    let successor = custody
-                        .last()
-                        .expect("the prepared slot installed one successor");
-                    if let Some(ready) = runtime
-                        .output_demands
-                        .interest_ready_readmission(successor.interest(), admission)?
-                    {
-                        runtime
-                            .output_demands
-                            .clear_required_stop(successor.interest().key());
-                        current_contacts = if wave.target == RequiredWaveTarget::Caller
-                            && successor_role == FrameRole::CallerSuccessor
-                        {
-                            demand.producer_contacts_in_this_demand
-                        } else {
-                            successor.producer_contacts()
-                        };
-                        if committed_ready(&ready, admission)? {
-                            wave = reselect_required_wave(execution, runtime, wave, admission)?;
-                            resolved_on_wave.clear();
-                            queue.wave_moved();
-                        }
-                        current = Some(ready);
-                        current_role = successor_role;
-                        continue 'required;
-                    }
-                    admission
-                        .charge_external_work(1)
-                        .map_err(|_| work_denial())?;
-                    let successor = custody
-                        .last_mut()
-                        .expect("the prepared slot installed one successor");
-                    let progressed = match successor.advance_checkpoint(
-                        phase,
-                        runtime,
-                        request_scope,
-                        admission,
-                    ) {
-                        Ok(progressed) => progressed,
-                        Err(stop) => stopped!('required, successor.interest().key(), stop),
-                    };
-                    if !progressed {
-                        if queue.active() {
-                            hold_queue_frame!('required, None)
-                        }
-                        finish_caller!('required, WorthQueryOutputDemandAdvance::Pending)
-                    }
-                }
+                rejoin_successor!('required;
+                    phase, execution; runtime, principal, request_scope;
+                    wave, resolved_on_wave, queue, frame_custody;
+                    demand, admission; current, current_contacts, current_role, successor_role;
+                    hold_queue_frame, finish_caller, stopped)
             }
             RequiredWaveStep::Held(head) => {
                 drop(slot);
@@ -386,7 +339,7 @@ where
                                     phase, execution;
                                     runtime, principal, request_scope;
                                     wave, resolved_on_wave, queue, frame_custody;
-                                    demand, admission;
+                                    demand, admission, performed;
                                     hold_queue_frame, finish_caller, stopped)
             }
             RequiredWaveStep::Pending => {

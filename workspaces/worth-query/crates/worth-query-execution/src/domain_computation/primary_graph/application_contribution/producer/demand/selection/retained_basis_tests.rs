@@ -13,11 +13,8 @@ fn owner_retained_program_basis_survives_a_new_head_without_admitting_foreign_or
     let world = installed_authorization_world(true);
     let selected = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.selected_product(&(phase).test_host_request())
-        })
-        .expect("the fixture read owns its installed host call");
+        .with_host_advancement(|host_phase| world.selected_product(&host_phase.test_host_request()))
+        .expect("installed host call opens");
     let source =
         WorthQueryProductBranchReadIdentity::from_observation(selected.product().observation());
     let retained = selected.retain_application_read();
@@ -25,12 +22,11 @@ fn owner_retained_program_basis_survives_a_new_head_without_admitting_foreign_or
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+        .with_host_advancement(|host_phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&host_phase.test_host_request())
                 .resolve_authenticated_principal(
-                    &phase,
+                    &host_phase,
                     &world.binding,
                     &external,
                     &request,
@@ -38,56 +34,38 @@ fn owner_retained_program_basis_survives_a_new_head_without_admitting_foreign_or
                 )
                 .expect("the source owner authenticates")
         })
-        .expect("the fixture read owns its installed host call");
+        .expect("installed host call opens");
     commit_live_activity(&world, &principal, &request);
-    let current = world
+    let selected_current = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            WorthQueryProductBranchReadIdentity::from_observation(
-                world
-                    .selected_product(&(phase).test_host_request())
-                    .product()
-                    .observation(),
-            )
-        })
-        .expect("the fixture read owns its installed host call");
-    assert_ne!(source, current);
-    world
+        .with_host_advancement(|host_phase| world.selected_product(&host_phase.test_host_request()))
+        .expect("installed host call opens");
+    let current = selected_current.product().observation();
+    assert!(!source.matches_observation(current));
+    assert!(world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            assert!(world
-                .application
-                .select_application_read_observation(&phase, &retained)
-                .is_ok())
-        })
-        .expect("the fixture read owns its installed host call");
-    assert!(source_basis_is_admitted(&source, &current, true));
-    assert!(!source_basis_is_admitted(&source, &current, false));
+        .with_host_advancement(|host_phase| world
+            .application
+            .select_application_read_observation(&host_phase, &retained)
+            .is_ok())
+        .expect("installed host call opens"));
+    assert!(source_basis_is_admitted(&source, current, true));
+    assert!(!source_basis_is_admitted(&source, current, false));
 
     let foreign = installed_authorization_world(true);
-    let foreign_current = foreign
+    let selected_foreign = world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            WorthQueryProductBranchReadIdentity::from_observation(
-                foreign
-                    .selected_product(&(phase).test_host_request())
-                    .product()
-                    .observation(),
-            )
+        .with_host_advancement(|host_phase| {
+            foreign.selected_product(&host_phase.test_host_request())
         })
-        .expect("the fixture read owns its installed host call");
-    assert!(!source_basis_is_admitted(&source, &foreign_current, true));
-    foreign
+        .expect("installed host call opens");
+    let foreign_current = selected_foreign.product().observation();
+    assert!(!source_basis_is_admitted(&source, foreign_current, true));
+    assert!(foreign
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            assert!(foreign
-                .application
-                .select_application_read_observation(&phase, &retained)
-                .is_err())
-        })
-        .expect("the fixture read owns its installed host call");
+        .with_host_advancement(|host_phase| foreign
+            .application
+            .select_application_read_observation(&host_phase, &retained)
+            .is_err())
+        .expect("installed host call opens"));
 }

@@ -19,8 +19,7 @@ use worth_query_host::facade::{
     },
     runtime::{
         CancellationToken, ExecutionAllocationDenial, ExecutionAllocationDenialKind,
-        ExecutionAllocationPolicy as Policy, ExecutionAuthority, ExecutionAuthorityConfig,
-        ExecutionResourceLease, LeaseDenial, LeaseRequest,
+        ExecutionAllocationPolicy as Policy, ExecutionResourceLease, LeaseDenial, LeaseRequest,
     },
 };
 
@@ -76,13 +75,8 @@ fn assert_all_budget_available(lease: &ExecutionResourceLease<'_>) {
 
 #[test]
 fn ordinary_mutation_preserves_leased_backing_typed_refusals_and_replay_before_allocation() {
-    // One actual process authority in this filtered test. The ordinary fixture
-    // has no World authority; supplying a process lease is physical admission.
-    let authority = ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
-        max_workers: NonZeroUsize::new(1).unwrap(),
-        charged_memory_bytes: Some(PAYLOAD_BUDGET),
-    })
-    .expect("one process authority");
+    // Obtain the process authority; the lease owns this proof's payload limit.
+    let authority = worth_query_host::facade::primary_graph::test_execution_authority();
     let parent = authority
         .request_lease(lease_request(PAYLOAD_BUDGET, CancellationToken::new()))
         .unwrap();

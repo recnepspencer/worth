@@ -34,7 +34,6 @@ impl WorthUiRuntimeQueryBinding {
 
     pub fn refresh_operation_live(
         &mut self,
-        execution: &worth_runtime_bridge::facade::ExecutionRequest<'_, '_>,
         request: crate::WorthUiOperationLiveRefreshRequest<'_>,
     ) -> Result<crate::WorthUiOperationLiveRefreshOutcome, crate::WorthUiOperationLiveRefreshError>
     {
@@ -44,7 +43,11 @@ impl WorthUiRuntimeQueryBinding {
                 crate::WorthUiOperationLiveRefreshDenial::ResourceNotRetained,
             )),
             Self::Installed(binding) => {
-                binding.refresh_operation_live(execution, &reference, workspace)
+                workspace.with_execution_request_mut(|execution, workspace| {
+                    binding.refresh_operation_live(execution, &reference, workspace)
+                }).map_err(|error| crate::WorthUiOperationLiveRefreshError::Drain(Box::new(
+                    worth_query::facade::installed::observation::WorthQuerySharedProjectionDrainStop::new(error, Default::default())
+                )))?
             }
         }
     }

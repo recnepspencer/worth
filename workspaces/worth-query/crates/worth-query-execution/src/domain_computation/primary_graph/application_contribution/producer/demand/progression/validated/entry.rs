@@ -104,6 +104,7 @@ where
         >,
         entry: &InstalledProducerProvider<Schema>,
         commit_authority: WorthQueryProducerCommitAuthority,
+        performed: &mut super::super::required_wave::performed::PerformedMembers,
         request_admission: &mut InvalidationEditAdmission,
     ) -> Result<
         CallerPass<FamilySourceQuery<Schema, Family>, FamilySourceValue<Schema, Family>>,
@@ -129,6 +130,7 @@ where
             commit_authority,
             ScheduleProgression::Ordinary,
             request_admission,
+            performed,
         )? {
             OwnStages::Answer(advance) => return Ok(CallerPass::Answer(advance)),
             OwnStages::Refreshed(disclosure) => return Ok(CallerPass::Refreshed(disclosure)),
@@ -159,6 +161,16 @@ where
                 _ => return Ok(waiting()),
             }
         };
+        performed.capture_ordinary(
+            demand
+                .interest
+                .as_ref()
+                .expect("Ready retains its Interest")
+                .key(),
+            &completion,
+            self,
+            request_admission,
+        )?;
         if matches!(checkpoint_progress, CheckpointProgress::Published(_)) {
             return self.settle_own_ready(
                 execution,
@@ -180,6 +192,7 @@ where
             request_scope,
             delivery_branch,
             &wave_authority,
+            performed,
             request_admission,
         )? {
             return Ok(CallerPass::Answer(advance));
@@ -200,6 +213,7 @@ where
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
+        readiness: super::super::required_wave::performed::PublicationReadiness,
 
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
@@ -214,6 +228,7 @@ where
         shared: &crate::domain_computation::primary_graph::product_operation::SharedSelectedProductOperation<'_, Schema>,
         matched_predecessors: Option<MatchedRequiredPredecessors<'_>>,
         request_admission: &mut InvalidationEditAdmission,
+        performed: &mut PerformedMembers,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
@@ -236,8 +251,10 @@ where
                 ScheduleProgression::Selected {
                     shared,
                     matched_predecessors,
+                    readiness,
                 },
                 request_admission,
+                performed,
             )? {
                 OwnStages::Answer(advance) => advance,
                 // A selected pass never refreshes: its Ready waits on the

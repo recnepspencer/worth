@@ -133,7 +133,12 @@ fn refresh_and_publish(
     request: u64,
     expectation: &str,
 ) {
-    let fact = match live.refresh(workspace).unwrap() {
+    let fact = match workspace
+        .with_execution_request_mut(|execution, workspace| {
+            live.refresh(execution, workspace).unwrap()
+        })
+        .expect("workspace host call opens")
+    {
         worth_ui_query_binding::UiCollectionProjectionRefreshOutcome::Applied(receipt) => {
             receipt.into_fact()
         }
@@ -207,10 +212,16 @@ fn open_live_collection(
             panic!("real collection binding admits: {stop:?}")
         }
     };
-    match binding.open(
-        UiCollectionProjectionBudget::new(2, 2, 0, 1024).unwrap(),
-        workspace,
-    ) {
+    match workspace
+        .with_execution_request_mut(|execution, workspace| {
+            binding.open(
+                execution,
+                UiCollectionProjectionBudget::new(2, 2, 0, 1024).unwrap(),
+                workspace,
+            )
+        })
+        .expect("workspace host call opens")
+    {
         UiCollectionProjectionOpenOutcome::Opened(opened) => opened,
         UiCollectionProjectionOpenOutcome::Stopped(stop) => {
             panic!("real collection projection opens: {stop:?}")

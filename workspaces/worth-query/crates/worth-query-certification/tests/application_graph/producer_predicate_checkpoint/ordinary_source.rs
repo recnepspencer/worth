@@ -164,7 +164,11 @@ fn performed_mutation_attempt_report_preserves_source_custody() {
         recovered.finish_unavailable(&host, &runtime.request(&principal, &stopped)),
         Err(worth_query_host::facade::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand(
             worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(denial)
-        )) if denial.kind() == worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind::Cancelled
+        )) if denial.kind() == worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(
+            worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial::Interrupted(
+                worth_query_host::facade::application_contribution::WorthQueryManagedComputationInterruption::Cancelled
+            )
+        )
     ));
     let WorthQueryApplicationProgramOutputProgress::Settled(settled) =
         recovered.settle(&host, &request).unwrap()

@@ -171,3 +171,10 @@ fn run(entry: Entry, placement: Placement, refusal: Option<bool>) {
     }
     bound(None);
 }
+
+#[allow(
+    dead_code,
+    reason = "the workflow proof reuses real Bank journey fixtures across test targets"
+)]
+#[path = "../approved_payment_workflow/request_phase.rs"]
+mod workflow_owner;

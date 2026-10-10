@@ -25,6 +25,9 @@ pub(in crate::application_entry::mutation) enum RecoveredCarrier {
 impl ProgramSourceRecoveryPhase {
     pub(in crate::application_entry::mutation) fn advance<Schema, Operation, Input, Scope>(
         &mut self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
@@ -43,6 +46,7 @@ impl ProgramSourceRecoveryPhase {
             .try_reserve(1)
             .map_err(|_| WorthQueryManagedApplicationRecoveryDenial::ProviderCapacity)?;
         let (outcome, carrier) = runtime.recover_admitted_unpublished_program_source(
+            phase,
             &worth_query_execution::publication_boundary::program_publication_access(),
             partial,
             admission,

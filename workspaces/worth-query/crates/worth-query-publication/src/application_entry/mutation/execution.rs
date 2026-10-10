@@ -330,9 +330,7 @@ where
 
     pub(super) fn resolve_idempotency(
         &self,
-        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
-            '_,
-        >,
+        phase: &AdvancementPhase<'_>,
         admission: &WorthQueryAdmittedApplicationOperation<
             Schema,
             <Intent::Binding as ApplicationMutationBinding<Schema>>::Operation,
@@ -349,6 +347,12 @@ where
         >,
         WorthQueryApplicationRequestMutationDenial,
     > {
+        self.request
+            .application
+            .validate_application_advancement(phase)
+            .map_err(|cause| {
+                WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause.into())
+            })?;
         let resolution = match self
             .request
             .application

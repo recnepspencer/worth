@@ -107,12 +107,14 @@ impl std::fmt::Debug for WorthUiOperationLiveOpenError {
 }
 
 pub(crate) fn open_operation_live_resource(
+    request_execution: &worth_runtime_bridge::facade::ExecutionRequest<'_, '_>,
     reference: WorthUiInstalledQueryBindingReference,
     request: WorthUiOperationLiveOpenRequest,
     workspace: &mut runtime::WorthQueryWorkspace,
 ) -> Result<WorthUiOperationLiveResource, WorthUiOperationLiveOpenError> {
     let settled = settle_once(&reference, request.requirements, workspace)?;
     WorthUiOperationLiveResource::open(
+        request_execution,
         WorthUiOperationLiveSources {
             installed_reference: reference,
             settlement: settled,

@@ -388,7 +388,12 @@ fn open_live(workspace: &mut WorthQueryWorkspace, max_rows: u32) -> UiLiveCollec
     };
     let budget = UiCollectionProjectionBudget::new(max_rows, 128, 1, 1_048_576)
         .expect("collection patch budget");
-    let UiCollectionProjectionOpenOutcome::Opened(opened) = binding.open(budget, workspace) else {
+    let UiCollectionProjectionOpenOutcome::Opened(opened) = workspace
+        .with_execution_request_mut(|execution, workspace| {
+            binding.open(execution, budget, workspace)
+        })
+        .expect("workspace host call opens")
+    else {
         panic!("collection projection must open");
     };
     opened.into_parts().0

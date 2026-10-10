@@ -16,14 +16,16 @@ pub(super) fn partial_measurement_workspace(label: &str) -> runtime::WorthQueryW
 }
 
 pub(super) fn unsupported_measurement_workspace(label: &str) -> runtime::WorthQueryWorkspace {
-    worth_ui_query_binding::install_worth_ui_test_operation_executors(
+    crate::request_custody::with_bootstrap_request(|execution| {
+        worth_ui_query_binding::install_worth_ui_test_operation_executors(
         measurement_runtime_builder().consumer_support_posture(
             worth_query::facade::domain::WorthQueryConsumerSupportDimension::ProjectionConsumption,
             worth_query::facade::domain::WorthQueryConsumerSupportPosture::Unsupported,
         ),
     )
-    .workspace(label)
+    .workspace(execution, label)
     .expect("unsupported Query workspace")
+    })
 }
 
 fn installed_measurement_workspace_with(
@@ -36,7 +38,11 @@ fn installed_measurement_workspace_with(
     } else {
         worth_ui_query_binding::install_worth_ui_test_operation_executors(builder)
     };
-    let mut workspace = builder.workspace(label).expect("installed Query workspace");
+    let mut workspace = crate::request_custody::with_bootstrap_request(|execution| {
+        builder
+            .workspace(execution, label)
+            .expect("installed Query workspace")
+    });
     insert_measurement(&mut workspace);
     workspace
 }
@@ -77,24 +83,30 @@ fn measurement_runtime_builder(
 
 fn insert_measurement(workspace: &mut runtime::WorthQueryWorkspace) {
     workspace
-        .insert("WorthUiMeasurement", |measurement| {
-            measurement
-                .set_aspect(
-                    runtime::WorthQueryAspectTouch::from_authoring_ingress_text("identity.id")
-                        .expect("identity touch"),
-                    runtime::WorthQueryAuthoredAspectValue::string("measurement"),
-                )
-                .set_aspect(
-                    runtime::WorthQueryAspectTouch::from_authoring_ingress_text(
-                        "measurement.value",
-                    )
-                    .expect("measurement touch"),
-                    runtime::WorthQueryAuthoredAspectValue::native(AspectValue::Float32(
-                        CanonicalF32::from_f32(240.0),
-                    )),
-                )
+        .with_execution_request_mut(|execution, workspace| {
+            workspace
+                .insert(execution, "WorthUiMeasurement", |measurement| {
+                    measurement
+                        .set_aspect(
+                            runtime::WorthQueryAspectTouch::from_authoring_ingress_text(
+                                "identity.id",
+                            )
+                            .expect("identity touch"),
+                            runtime::WorthQueryAuthoredAspectValue::string("measurement"),
+                        )
+                        .set_aspect(
+                            runtime::WorthQueryAspectTouch::from_authoring_ingress_text(
+                                "measurement.value",
+                            )
+                            .expect("measurement touch"),
+                            runtime::WorthQueryAuthoredAspectValue::native(AspectValue::Float32(
+                                CanonicalF32::from_f32(240.0),
+                            )),
+                        )
+                })
+                .expect("measurement insertion")
         })
-        .expect("measurement insertion");
+        .expect("workspace host call opens");
 }
 
 pub(super) fn interactive_borrowed_collection_requirements() -> WorthUiQueryConsumerRequirements {

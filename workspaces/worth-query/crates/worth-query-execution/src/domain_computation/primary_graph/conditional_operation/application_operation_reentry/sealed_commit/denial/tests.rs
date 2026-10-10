@@ -26,36 +26,61 @@ fn resources() -> Vec<Resource> {
     causes
 }
 
-fn kinds() -> Vec<Session> {
-    let mut kinds = vec![
-        Session::ExecutionWorkerPanicked {
-            partition_identity: Some(7),
-        },
-        Session::ExecutionNestedPatternStopped {
-            partition_identity: Some(7),
-        },
-        Session::ExecutionUncheckedCustomKernel {
-            partition_identity: Some(7),
-        },
-        Session::ExecutionIdentitiesNotCanonical {
-            partition_identity: Some(7),
-        },
+fn execution_cases() -> Vec<(Session, Kind)> {
+    let mut cases = vec![
+        (
+            Session::ExecutionWorkerPanicked {
+                partition_identity: Some(7),
+            },
+            Kind::ExecutionWorkerPanicked {
+                partition_identity: Some(7),
+            },
+        ),
+        (
+            Session::ExecutionNestedPatternStopped {
+                partition_identity: Some(7),
+            },
+            Kind::ExecutionNestedPatternStopped {
+                partition_identity: Some(7),
+            },
+        ),
+        (
+            Session::ExecutionUncheckedCustomKernel {
+                partition_identity: Some(7),
+            },
+            Kind::ExecutionUncheckedCustomKernel {
+                partition_identity: Some(7),
+            },
+        ),
+        (
+            Session::ExecutionIdentitiesNotCanonical {
+                partition_identity: Some(7),
+            },
+            Kind::ExecutionIdentitiesNotCanonical {
+                partition_identity: Some(7),
+            },
+        ),
     ];
-    kinds.extend(
-        resources()
-            .into_iter()
-            .map(|denial| Session::ExecutionResource {
+    cases.extend(resources().into_iter().map(|denial| {
+        (
+            Session::ExecutionResource {
                 denial,
                 partition_identity: Some(7),
                 policy_ancestor: None,
-            }),
-    );
-    kinds
+            },
+            Kind::ExecutionResource {
+                denial,
+                partition_identity: Some(7),
+                policy_ancestor: None,
+            },
+        )
+    }));
+    cases
 }
 
 #[test]
 fn every_head_reachable_preparation_category_retries_without_folding() {
-    for session in kinds() {
+    for (session, _) in execution_cases() {
         let denial = provider_session_denied(
             crate::domain_computation::WorthQueryProviderSessionFailure::new(
                 session,
@@ -94,9 +119,9 @@ fn unreachable_child_policy_causes_and_non_relational_retained_state_stay_termin
 #[test]
 fn pending_and_invariant_keep_head_category_stage_and_terminal_posture() {
     for stage in [Stage::Idempotency, Stage::InvariantExecution] {
-        for kind in kinds() {
+        for (kind, expected) in execution_cases() {
             let denial = provider_session_kind_denied(kind, stage, "owner supplied detail");
-            assert_eq!(denial.kind(), Kind::ProviderRejected);
+            assert_eq!(denial.kind(), expected);
             assert_eq!(denial.stage(), stage);
             assert_eq!(denial.detail(), Some("owner supplied detail"));
             assert_eq!(denial.execution_denial_cause(), Some(Ok(kind)));

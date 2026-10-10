@@ -20,6 +20,7 @@ use crate::domain_computation::primary_graph::{
 mod equivalence;
 mod pending_dependency;
 mod publication_recovery;
+pub(in crate::domain_computation::primary_graph) use publication_recovery::PublicationRecoveryStop;
 mod rebound;
 mod requested_read;
 #[cfg(test)]

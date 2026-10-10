@@ -42,10 +42,16 @@ pub(super) fn run_capacity_boundary() {
             panic!("collection binding admits: {stop:?}")
         }
     };
-    let opened = match binding.open(
-        UiCollectionProjectionBudget::new(2, 3, 0, 2048).unwrap(),
-        &mut workspace,
-    ) {
+    let opened = match workspace
+        .with_execution_request_mut(|execution, mut workspace| {
+            binding.open(
+                execution,
+                UiCollectionProjectionBudget::new(2, 3, 0, 2048).unwrap(),
+                &mut workspace,
+            )
+        })
+        .expect("workspace host call opens")
+    {
         UiCollectionProjectionOpenOutcome::Opened(opened) => opened,
         UiCollectionProjectionOpenOutcome::Stopped(stop) => {
             panic!("collection projection opens: {stop:?}")
@@ -136,7 +142,12 @@ fn refresh_fact(
     live: &mut worth_ui_query_binding::UiLiveCollectionProjection,
     workspace: &mut worth_query::facade::runtime::WorthQueryWorkspace,
 ) -> worth_ui_query_binding::UiCollectionProjectionFactReceipt {
-    match live.refresh(workspace).unwrap() {
+    match workspace
+        .with_execution_request_mut(|execution, mut workspace| {
+            live.refresh(execution, workspace).unwrap()
+        })
+        .expect("workspace host call opens")
+    {
         worth_ui_query_binding::UiCollectionProjectionRefreshOutcome::Applied(receipt) => {
             receipt.into_fact()
         }

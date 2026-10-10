@@ -5,6 +5,7 @@ mod operation_live_fixture;
 mod operation_semantic_facts;
 mod projection_world_fixture;
 mod query_row_reference_fixture;
+pub(crate) mod request_custody;
 mod scalar_native_authority_attack;
 mod scalar_native_authority_projection;
 

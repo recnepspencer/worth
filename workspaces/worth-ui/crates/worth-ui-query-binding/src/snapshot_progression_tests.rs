@@ -63,13 +63,15 @@ fn one_bound_operation_cannot_mint_a_second_consumer_contract() {
 
 #[test]
 fn unsupported_projection_consumption_is_a_query_denial() {
-    let workspace = installed_builder()
-        .consumer_support_posture(
-            domain::WorthQueryConsumerSupportDimension::ProjectionConsumption,
-            domain::WorthQueryConsumerSupportPosture::Unsupported,
-        )
-        .workspace("query-owned-support-denial")
-        .unwrap();
+    let workspace = crate::certification::request_custody::with_bootstrap_request(|execution| {
+        installed_builder()
+            .consumer_support_posture(
+                domain::WorthQueryConsumerSupportDimension::ProjectionConsumption,
+                domain::WorthQueryConsumerSupportPosture::Unsupported,
+            )
+            .workspace(execution, "query-owned-support-denial")
+            .unwrap()
+    });
     let reference = installed_reference(&workspace);
     let denial = reference
         .enter_snapshot_attempt(&workspace)
@@ -334,9 +336,12 @@ fn binding_plan(
 }
 
 fn installed_workspace(label: &str) -> worth_query::facade::runtime::WorthQueryWorkspace {
-    let mut workspace = installed_builder().workspace(label).unwrap();
-    workspace
-        .insert("WorthUiMeasurement", |measurement| {
+    let mut workspace =
+        crate::certification::request_custody::with_bootstrap_request(|execution| {
+            installed_builder().workspace(execution, label).unwrap()
+        });
+    workspace.with_execution_request_mut(|execution, mut workspace| workspace
+        .insert(execution, "WorthUiMeasurement", |measurement| {
             measurement
                 .set_aspect(
                     worth_query::facade::runtime::WorthQueryAspectTouch::from_authoring_ingress_text(
@@ -359,7 +364,7 @@ fn installed_workspace(label: &str) -> worth_query::facade::runtime::WorthQueryW
                     ),
                 )
         })
-        .unwrap();
+        .unwrap()).expect("workspace host call opens");
     workspace
 }
 

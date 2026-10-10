@@ -15,9 +15,7 @@ use crate::document_retention_model::{
 };
 use std::time::{Duration, Instant};
 use worth_query_host::facade::{
-    admission::authenticated_principal::{
-        WorthQueryCancellationSource, WorthQueryRequestInterruption, WorthQueryRequestScope,
-    },
+    admission::authenticated_principal::{WorthQueryCancellationSource, WorthQueryRequestScope},
     application_contribution::WorthQueryApplicationProducerProvider,
     application_entry::{
         WorthQueryApplicationMutationOutcome as Outcome,
@@ -150,18 +148,9 @@ fn recover_original_source(
     );
     cancellation.cancel();
     assert!(matches!(
-        host.with_host_advancement(|host_phase| request!(
-            &principal,
-            &stopped,
-            intent.clone(),
-            &key,
-            result_set
-        )
-        .recover_unpublished_in_program(&host_phase, &recovery, &host))
-            .expect("installed host call opens"),
-        Err(WorthQueryApplicationRecoveryRequestDenial::Interrupted(
-            WorthQueryRequestInterruption::Cancelled
-        ))
+        request!(&principal, &stopped, intent.clone(), &key, result_set)
+            .recover_unpublished_in_program(&recovery, &host),
+        Err(WorthQueryApplicationRecoveryRequestDenial::Recovery(worth_query_host::facade::primary_graph::WorthQueryManagedApplicationRecoveryDenial::ExecutionDenied(worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial::Interrupted(worth_query_host::facade::application_contribution::WorthQueryManagedComputationInterruption::Cancelled))))
     ));
     assert!(recovery.inspect().unwrap().relational_requires_settlement());
     let fresh_scope = request_scope();
@@ -175,15 +164,8 @@ fn recover_original_source(
         (intent.clone(), &key, !result_set),
     ] {
         assert!(matches!(
-            host.with_host_advancement(|host_phase| request!(
-                &fresh_principal,
-                &fresh_scope,
-                input,
-                request_key,
-                as_set
-            )
-            .recover_unpublished_in_program(&host_phase, &recovery, &host))
-                .expect("installed host call opens"),
+            request!(&fresh_principal, &fresh_scope, input, request_key, as_set)
+                .recover_unpublished_in_program(&recovery, &host),
             Err(WorthQueryApplicationRecoveryRequestDenial::Recovery(
                 WorthQueryManagedApplicationRecoveryDenial::BindingMismatch
             ))
@@ -192,19 +174,15 @@ fn recover_original_source(
         assert_eq!(ordinary_counts(retention), (1, 1));
     }
 
-    let outcome = host
-        .with_host_advancement(|host_phase| {
-            request!(
-                &fresh_principal,
-                &fresh_scope,
-                intent.clone(),
-                &key,
-                result_set
-            )
-            .recover_unpublished_in_program(&host_phase, &recovery, &host)
-            .unwrap()
-        })
-        .expect("installed host call opens");
+    let outcome = request!(
+        &fresh_principal,
+        &fresh_scope,
+        intent.clone(),
+        &key,
+        result_set
+    )
+    .recover_unpublished_in_program(&recovery, &host)
+    .unwrap();
     let WorthQueryManagedApplicationRecoveryOutcome::Performed(performed) = outcome else {
         panic!("original source must recover its retained performed effects");
     };
@@ -257,15 +235,11 @@ fn recover_original_source(
     } else {
         changed_request.expect_source(changed.observed_sources()[0].clone())
     };
-    let changed_resolution = host
-        .with_host_advancement(|host_phase| {
-            changed_request
-                .idempotency(&key)
-                .resolve_idempotency_in_program(&host_phase, &host)
-                .unwrap()
-                .into_resolution()
-        })
-        .expect("installed host call opens");
+    let changed_resolution = changed_request
+        .idempotency(&key)
+        .resolve_idempotency_in_program(&host)
+        .unwrap()
+        .into_resolution();
     if result_set {
         let Resolution::AlreadyCommitted(unchanged_membership) = changed_resolution else {
             panic!("unchanged set membership resolved as {changed_resolution:?}");
@@ -281,13 +255,9 @@ fn recover_original_source(
         );
     }
     let final_head = observe_head(runtime, branch).selected_commit().clone();
-    let resolved = host
-        .with_host_advancement(|host_phase| {
-            request!(&fresh_principal, &fresh_scope, intent, &key, result_set)
-                .resolve_idempotency_in_program(&host_phase, &host)
-                .unwrap()
-        })
-        .expect("installed host call opens");
+    let resolved = request!(&fresh_principal, &fresh_scope, intent, &key, result_set)
+        .resolve_idempotency_in_program(&host)
+        .unwrap();
     let Resolution::AlreadyCommitted(replayed) = resolved.into_resolution() else {
         panic!("original source remains the exact keyed historical request");
     };

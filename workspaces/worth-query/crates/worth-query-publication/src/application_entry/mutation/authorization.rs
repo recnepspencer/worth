@@ -4,6 +4,7 @@ use worth_query_declaration::facade::application_operation::{
     ApplicationMutationScopeResolution, ApplicationMutationSourceExpectation,
 };
 use worth_query_declaration::facade::application_schema::TypedMutationPreconditions;
+use worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase as AdvancementPhase;
 use worth_query_execution::facade::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryApplicationIdempotencyBinding,
     WorthQueryPrincipalResolutionMode, WorthQuerySelectedProductOperation,
@@ -58,7 +59,7 @@ where
 }
 
 pub(super) fn assess<Schema, Intent, SourcePreparation>(
-    phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
+    phase: &AdvancementPhase<'_>,
     request: &mut WorthQueryApplicationMutationRequest<
         '_,
         '_,
@@ -79,7 +80,7 @@ where
 }
 
 fn authorize<Schema, Intent, SourcePreparation>(
-    phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
+    phase: &AdvancementPhase<'_>,
     request: &WorthQueryApplicationMutationRequest<'_, '_, '_, Schema, Intent, SourcePreparation>,
     preconditions: Preconditions<Schema, Intent>,
 ) -> Result<
@@ -92,6 +93,12 @@ where
     <IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::ScopeBinding:
         ApplicationMutationScopeResolution<Schema, IntentPrincipal<Schema, Intent>>,
 {
+    request
+        .application
+        .validate_application_advancement(phase)
+        .map_err(|cause| {
+            WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause.into())
+        })?;
     let selected = request
         .application
         .on_branch(request.branch)
@@ -101,7 +108,7 @@ where
 }
 
 fn authorize_selected<Schema, Intent, SourcePreparation>(
-    phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
+    _phase: &AdvancementPhase<'_>,
     request: &WorthQueryApplicationMutationRequest<'_, '_, '_, Schema, Intent, SourcePreparation>,
     preconditions: Preconditions<Schema, Intent>,
     selected: &WorthQuerySelectedProductOperation<'_, Schema>,
@@ -122,7 +129,7 @@ where
         .map_err(WorthQueryApplicationRequestMutationDenial::BindingInstallation)?;
     let principal = selected
         .resolve_authenticated_principal(
-            phase,
+            _phase,
             binding.principal_binding(),
             request.principal,
             request.scope,
@@ -136,7 +143,7 @@ where
     let principal_identity = principal.principal_identity().clone();
     let scope = selected
         .resolve_entity(
-            phase,
+            _phase,
             scope_field,
             scope_value,
             request.scope,
@@ -145,7 +152,7 @@ where
         .map_err(WorthQueryApplicationRequestMutationDenial::ScopeResolution)?;
     let admission = selected
         .authorize_operation(
-            phase,
+            _phase,
             &principal,
             &scope,
             binding.operation(),
@@ -175,7 +182,7 @@ type Request<'a, 'p, 's, 'k, Schema, Intent, SourcePreparation> =
     >;
 
 pub(in crate::application_entry) fn prepare<Schema, Intent, SourcePreparation>(
-phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
+    phase: &AdvancementPhase<'_>,
     request: &Request<'_, '_, '_, '_, Schema, Intent, SourcePreparation>,
     identities: &Identities<'_, Schema, Intent>,
     staged: WorthQueryStagedMutation<Schema, Intent>,
@@ -194,7 +201,7 @@ where
 }
 
 pub(super) fn prepare_selected<Schema, Intent, SourcePreparation>(
-phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
+    phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
     request: &Request<'_, '_, '_, '_, Schema, Intent, SourcePreparation>,
     identities: &Identities<'_, Schema, Intent>,
     staged: WorthQueryStagedMutation<Schema, Intent>,

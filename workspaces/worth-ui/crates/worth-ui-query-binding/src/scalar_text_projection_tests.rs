@@ -16,26 +16,34 @@ use crate::{
 fn installed_scalar_text_meaning_executes_and_consumes_native_status() {
     let mut workspace = projection_workspace(true);
     let write = workspace
-        .insert("WorthUiProjectionText", |entity| {
-            entity
-                .set_aspect(
-                    WorthQueryAspectTouch::from_authoring_ingress_text("identity.id")
-                        .expect("identity touch"),
-                    WorthQueryAuthoredAspectValue::string("platform.pulse.status"),
-                )
-                .set_aspect(
-                    WorthQueryAspectTouch::from_authoring_ingress_text("query_text.status")
-                        .expect("projection status touch"),
-                    WorthQueryAuthoredAspectValue::string("Ready"),
-                )
+        .with_execution_request_mut(|execution, mut workspace| {
+            workspace
+                .insert(execution, "WorthUiProjectionText", |entity| {
+                    entity
+                        .set_aspect(
+                            WorthQueryAspectTouch::from_authoring_ingress_text("identity.id")
+                                .expect("identity touch"),
+                            WorthQueryAuthoredAspectValue::string("platform.pulse.status"),
+                        )
+                        .set_aspect(
+                            WorthQueryAspectTouch::from_authoring_ingress_text("query_text.status")
+                                .expect("projection status touch"),
+                            WorthQueryAuthoredAspectValue::string("Ready"),
+                        )
+                })
+                .expect("projection text insertion")
         })
-        .expect("projection text insertion");
+        .expect("workspace host call opens");
     assert_eq!(write.declared_aspect_operations().len(), 2);
     assert!(write
         .declared_aspect_operations()
         .iter()
         .any(|operation| operation.aspect_touch().native_aspect_key().as_str() == "query_text"));
-    assert_independent_detail_read(&mut workspace);
+    workspace
+        .with_execution_request_mut(|execution, mut workspace| {
+            assert_independent_detail_read(execution, &mut workspace)
+        })
+        .expect("workspace host call opens");
     let installed = workspace.worth_ui().expect("Worth UI domain installed");
     let bound = workspace
         .observe_operating_world(workspace.current_world())
@@ -83,6 +91,7 @@ fn installed_scalar_text_meaning_executes_and_consumes_native_status() {
 }
 
 fn assert_independent_detail_read(
+    request_execution: &worth_runtime_bridge::facade::ExecutionRequest<'_, '_>,
     workspace: &mut worth_query::facade::runtime::WorthQueryWorkspace,
 ) {
     let declaration = read::declare(|builder| {
@@ -136,7 +145,7 @@ fn assert_independent_detail_read(
     .expect("test-owned detail declaration");
     let completion = declaration
         .using(read::current())
-        .run(workspace)
+        .run(request_execution, workspace)
         .into_result()
         .expect("test-owned detail read");
     let rows = completion.result().rows();

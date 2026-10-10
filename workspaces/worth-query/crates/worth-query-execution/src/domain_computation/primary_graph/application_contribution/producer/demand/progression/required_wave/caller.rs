@@ -30,6 +30,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     request_scope: &WorthQueryRequestScope,
     branch: WorthQueryProductBranch,
     commit_authority: &WorthQueryProducerCommitAuthority,
+    performed: &mut performed::PerformedMembers,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<Option<WorthQueryOutputDemandAdvance>, WorthQueryOutputDemandDenial>
 where
@@ -165,6 +166,7 @@ where
         wave,
         &mut queue,
         &mut frame_custody,
+        performed,
         admission,
     );
     frame_custody.hold_unfinished(&runtime.output_demands);

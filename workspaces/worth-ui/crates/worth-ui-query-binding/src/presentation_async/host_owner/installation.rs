@@ -97,9 +97,29 @@ impl WorthUiPresentationAsyncHostCompletion {
         installation: runtime::WorthQueryExecutionRuntimeInstallation,
     ) -> Result<WorthUiPresentationAsyncInstallation, WorthUiPresentationAsyncInstallationError>
     {
-        let runtime = self.inner.complete(installation).map_err(|error| {
-            WorthUiPresentationAsyncInstallationError::Completion(Box::new(error))
-        })?;
+        worth_query_host::facade::application_contribution::with_bootstrap_advancement(
+            crate::query_runtime_resources::UI_EXECUTION_POLICY,
+            |phase| self.complete_in_request(&phase.execution_request(), installation),
+        )
+        .map_err(|denial| {
+            WorthUiPresentationAsyncInstallationError::Runtime(Box::new(
+                runtime::WorthQueryRuntimeError::Advancement(denial),
+            ))
+        })?
+    }
+
+    fn complete_in_request(
+        self,
+        request_execution: &worth_runtime_bridge::facade::ExecutionRequest<'_, '_>,
+        installation: runtime::WorthQueryExecutionRuntimeInstallation,
+    ) -> Result<WorthUiPresentationAsyncInstallation, WorthUiPresentationAsyncInstallationError>
+    {
+        let runtime = self
+            .inner
+            .complete(request_execution, installation)
+            .map_err(|error| {
+                WorthUiPresentationAsyncInstallationError::Completion(Box::new(error))
+            })?;
         let workspace = runtime
             .workspace("worth-ui-mounted-presentation")
             .map_err(|error| WorthUiPresentationAsyncInstallationError::Runtime(Box::new(error)))?;

@@ -152,6 +152,7 @@ where
                 &observed_source,
                 source_epoch,
                 source_scope,
+                retained_program_basis.is_some(),
                 registry_admission,
             )?
         } else {

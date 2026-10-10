@@ -213,7 +213,12 @@ pub(super) fn open_collection(
         admission => panic!("real collection binding admits: {admission:?}"),
     };
     let budget = UiCollectionProjectionBudget::new(2, 2, 0, 1024).unwrap();
-    let UiCollectionProjectionOpenOutcome::Opened(opened) = binding.open(budget, query) else {
+    let UiCollectionProjectionOpenOutcome::Opened(opened) = query
+        .with_execution_request_mut(|execution, workspace| {
+            binding.open(execution, budget, workspace)
+        })
+        .expect("workspace host call opens")
+    else {
         panic!("real collection projection opens")
     };
     opened.into_parts()
@@ -223,7 +228,13 @@ fn refresh_collection(
     live: &mut UiLiveCollectionProjection,
     query: &mut WorthQueryWorkspace,
 ) -> UiCollectionProjectionFactReceipt {
-    match live.refresh(query).expect("real Query refresh completes") {
+    match query
+        .with_execution_request_mut(|execution, workspace| {
+            live.refresh(execution, workspace)
+                .expect("real Query refresh completes")
+        })
+        .expect("workspace host call opens")
+    {
         worth_ui_query_binding::UiCollectionProjectionRefreshOutcome::Applied(receipt) => {
             receipt.into_fact()
         }

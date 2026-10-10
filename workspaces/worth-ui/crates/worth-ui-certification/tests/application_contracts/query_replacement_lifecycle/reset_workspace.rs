@@ -18,9 +18,11 @@ pub(crate) fn installed_workspace_without_collection_entity_lookup(
             .domain_package(worth_ui_domain_package()),
     )
     .without_collection_entity_lookup();
-    let mut workspace = worth_ui_query_binding::install_worth_ui_test_operation_executors(builder)
-        .workspace(label)
-        .expect("installed reset-capable Query workspace");
+    let mut workspace = crate::request_custody::with_bootstrap_request(|execution| {
+        worth_ui_query_binding::install_worth_ui_test_operation_executors(builder)
+            .workspace(execution, label)
+            .expect("installed reset-capable Query workspace")
+    });
     let measurement = super::scenario::insert_measurement(&mut workspace);
     (workspace, measurement)
 }

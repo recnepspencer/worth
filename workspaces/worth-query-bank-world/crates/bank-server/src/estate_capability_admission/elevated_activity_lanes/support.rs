@@ -119,20 +119,29 @@ pub(super) fn approve_first(world: &ActivityWorld, requested: BankRequestedEstat
 }
 
 pub(super) fn revoke_exact_support(world: &ActivityWorld, seed: u8) {
-    let outcome = world
-        .fixture
-        .runtime
-        .revoke_estate_capability_with_key(
-            &world.requester,
-            EstateAction::RevokeCapability {
-                estate: ESTATE,
-                grant: GRANT,
-            },
-            &BankIdempotencyKey::new(format!("activity-support-revocation-{seed}")).unwrap(),
-            &request_scope(),
-        )
-        .expect("the exact activity support revocation should commit");
-    assert!(matches!(outcome, BankMutationCommitOutcome::Committed(_)));
+    let runtime = &world.fixture.runtime;
+    let principal = &world.requester;
+    // The revoker is a separate host caller while the admitted read stays open.
+    std::thread::scope(|callers| {
+        callers
+            .spawn(move || {
+                let outcome = runtime
+                    .revoke_estate_capability_with_key(
+                        principal,
+                        EstateAction::RevokeCapability {
+                            estate: ESTATE,
+                            grant: GRANT,
+                        },
+                        &BankIdempotencyKey::new(format!("activity-support-revocation-{seed}"))
+                            .unwrap(),
+                        &request_scope(),
+                    )
+                    .expect("the exact activity support revocation should commit");
+                assert!(matches!(outcome, BankMutationCommitOutcome::Committed(_)));
+            })
+            .join()
+            .expect("the concurrent revocation caller completes");
+    });
 }
 
 pub(super) fn assert_exact_revoked_alternate_active(world: &ActivityWorld) {

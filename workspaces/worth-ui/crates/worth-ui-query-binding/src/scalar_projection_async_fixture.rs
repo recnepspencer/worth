@@ -83,45 +83,53 @@ pub(crate) fn scalar_async_view(
     request: &AdmittedBridgeAsyncRequestIdentity,
 ) -> runtime::WorthQueryLiveView<runtime::WorthQueryUnrefinedLiveShape> {
     workspace
-        .declare_bridge_async_live_view(
-            "platform.pulse.status",
-            foundation::DeclarativeLiveQueryRequest::new(
-                "WorthUiProjectionText",
-                foundation::DeclarativeLiveViewShape::table(),
-            )
-            .project(
-                foundation::DeclarativeProjectionField::new(
-                    foundation::AspectFieldKey::from_authoring_parts("identity", "id")
-                        .expect("valid identity projection field"),
-                )
-                .delivered_as("identity.id"),
-            )
-            .project(
-                foundation::DeclarativeProjectionField::new(
-                    foundation::AspectFieldKey::from_authoring_parts("query_text", "status")
-                        .expect("valid status projection field"),
-                )
-                .delivered_as("query_text.status"),
-            ),
-            read::QuerySchemaView::new(
-                "worth-ui-scalar-async",
-                [
-                    read::SchemaFieldView::new(
-                        read::AspectName::new("identity").expect("valid identity aspect"),
-                        read::FieldName::new("id").expect("valid identity field"),
-                        ScalarAspectType::String,
+        .with_execution_request_mut(|execution, mut workspace| {
+            workspace
+                .declare_bridge_async_live_view(
+                    execution,
+                    "platform.pulse.status",
+                    foundation::DeclarativeLiveQueryRequest::new(
+                        "WorthUiProjectionText",
+                        foundation::DeclarativeLiveViewShape::table(),
+                    )
+                    .project(
+                        foundation::DeclarativeProjectionField::new(
+                            foundation::AspectFieldKey::from_authoring_parts("identity", "id")
+                                .expect("valid identity projection field"),
+                        )
+                        .delivered_as("identity.id"),
+                    )
+                    .project(
+                        foundation::DeclarativeProjectionField::new(
+                            foundation::AspectFieldKey::from_authoring_parts(
+                                "query_text",
+                                "status",
+                            )
+                            .expect("valid status projection field"),
+                        )
+                        .delivered_as("query_text.status"),
                     ),
-                    read::SchemaFieldView::new(
-                        read::AspectName::new("query_text").expect("valid text aspect"),
-                        read::FieldName::new("status").expect("valid status field"),
-                        ScalarAspectType::String,
+                    read::QuerySchemaView::new(
+                        "worth-ui-scalar-async",
+                        [
+                            read::SchemaFieldView::new(
+                                read::AspectName::new("identity").expect("valid identity aspect"),
+                                read::FieldName::new("id").expect("valid identity field"),
+                                ScalarAspectType::String,
+                            ),
+                            read::SchemaFieldView::new(
+                                read::AspectName::new("query_text").expect("valid text aspect"),
+                                read::FieldName::new("status").expect("valid status field"),
+                                ScalarAspectType::String,
+                            ),
+                        ],
+                        [],
                     ),
-                ],
-                [],
-            ),
-            request,
-        )
-        .expect("Bridge-backed scalar async view must declare")
+                    request,
+                )
+                .expect("Bridge-backed scalar async view must declare")
+        })
+        .expect("workspace host call opens")
 }
 
 pub(crate) fn admitted_async_request_and_completion(

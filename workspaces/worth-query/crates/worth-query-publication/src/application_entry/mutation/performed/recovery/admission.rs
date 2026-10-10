@@ -62,6 +62,13 @@ where
                 RootConnection<Schema, Root>,
             >,
     {
+        self.request
+            .application
+            .validate_application_advancement(phase)
+            .map_err(|cause| {
+                WorthQueryApplicationRecoveryRequestDenial::advancement(cause.into())
+            })?;
+
         if <Intent::Binding as ApplicationMutationBinding<Schema>>::WORKFLOW_CONTROL
             || <Intent::Binding as ApplicationMutationBinding<Schema>>::REQUIRES_WORKFLOW_AUTHORITY
             || self.workflow_transition_identity.is_some()
@@ -70,7 +77,7 @@ where
         {
             return Err(WorthQueryApplicationRecoveryRequestDenial::WorkflowUnsupported);
         }
-        self.check_required_recovery_liveness()?;
+        self.check_recovery_liveness()?;
         if !std::ptr::eq(application.runtime(), self.request.application) {
             return Err(
                 WorthQueryApplicationRequestMutationDenial::ApplicationProgramMismatch.into(),
@@ -109,18 +116,7 @@ where
                     WorthQueryManagedApplicationRecoveryDenial::Demand(denial),
                 )
             })?;
-        self.check_required_recovery_liveness()?;
+        self.check_recovery_liveness()?;
         Ok(prepared)
-    }
-
-    pub(in crate::application_entry::mutation::performed) fn check_required_recovery_liveness(
-        &self,
-    ) -> Result<(), WorthQueryApplicationRecoveryRequestDenial> {
-        match self.request.scope.interruption() {
-            Some(stop) => Err(WorthQueryApplicationRecoveryRequestDenial::Interrupted(
-                stop,
-            )),
-            None => Ok(()),
-        }
     }
 }
