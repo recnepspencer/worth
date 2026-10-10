@@ -44,7 +44,7 @@ impl WorthQueryExternalEffectTransport for CompletingTransport {
 
 #[test]
 fn inbound_publication_consumers_keep_real_execution_refusals_and_retry_posture() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+    {
         isolated(
             concat!(
                 module_path!(),
@@ -54,19 +54,22 @@ fn inbound_publication_consumers_keep_real_execution_refusals_and_retry_posture(
                 // No lease is threaded into production here. The candidate-result seam
                 // receives a real Relational refusal; transport evidence is owner-issued.
                 let world = installed_world();
-                let receipt = world.commit_dispatch(
-                    &host_custody.phase_for_application(&world.application),
-                    71,
-                    "completion-execution-refusal",
-                );
+                let receipt = world.commit_dispatch(71, "completion-execution-refusal");
                 let owner = world
                     .application
-                    .observe_committed_dispatch_outbox(
-                        &host_custody.phase_for_application(&world.application),
-                        &receipt,
-                    )
-                    .unwrap()
-                    .unwrap();
+                    .with_host_advancement(|phase| {
+                        let host_custody = phase.test_host_request();
+
+                        world
+                            .application
+                            .observe_committed_dispatch_outbox(
+                                &host_custody.phase_for_application(&world.application),
+                                &receipt,
+                            )
+                            .unwrap()
+                            .unwrap()
+                    })
+                    .expect("the fixture read owns its installed host call");
                 let admitted = world
                     .application
                     .admit_external_dispatch_attempt(owner.clone())
@@ -226,5 +229,5 @@ fn inbound_publication_consumers_keep_real_execution_refusals_and_retry_posture(
                 }
             },
         );
-    })
+    }
 }

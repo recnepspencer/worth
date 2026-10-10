@@ -12,13 +12,7 @@ fn retained_world_unpublished_completion_settles_and_publishes_without_recreatin
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let world = installed_world();
-    let dispatch = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.commit_dispatch(&phase, 41, "notice-recovery")
-        })
-        .expect("the fixture read owns its installed host call");
+    let dispatch = { world.commit_dispatch(41, "notice-recovery") };
     let record = dispatch.dispatch_outbox().unwrap();
     let envelope = signed_envelope(record, [0xa1; 32], record.payload(), false);
     let before_relational = owner_commits(execution, &world);
@@ -84,13 +78,7 @@ fn revoked_source_preserves_accepted_world_recovery_without_new_consumption() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let world = installed_world();
-    let dispatch = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.commit_dispatch(&phase, 42, "notice-revoked-recovery")
-        })
-        .expect("the fixture read owns its installed host call");
+    let dispatch = { world.commit_dispatch(42, "notice-revoked-recovery") };
     let record = dispatch.dispatch_outbox().unwrap();
     let envelope = signed_envelope(record, [0xa2; 32], record.payload(), false);
     let request = super::super::fixture::live_scope();
@@ -170,13 +158,7 @@ fn owner_maintenance_finishes_accepted_recovery_after_signed_envelope_expires() 
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let world = installed_world();
-    let dispatch = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.commit_dispatch(&phase, 43, "notice-expired-recovery")
-        })
-        .expect("the fixture read owns its installed host call");
+    let dispatch = { world.commit_dispatch(43, "notice-expired-recovery") };
     let record = dispatch.dispatch_outbox().unwrap();
     let envelope = signed_envelope_for_seconds(record, [0xa3; 32], record.payload(), false, 1);
     let request = super::super::fixture::live_scope();

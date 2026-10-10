@@ -19,13 +19,7 @@ fn empty_operation_program_denial_has_no_inbound_reservation_or_lookup_work() {
         .application
         .observe_inbound_cost(&world.verifier)
         .unwrap();
-    let outcome = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.attempt_empty_program(&phase, 70)
-        })
-        .expect("the fixture read owns its installed host call");
+    let outcome = { world.attempt_empty_program(70) };
     assert!(
         matches!(outcome, WorthQueryApplicationCommitOutcome::Denied(_)),
         "{outcome:?}"
@@ -91,14 +85,10 @@ fn post_preparation_cancellation_releases_inbound_dispatch_reservation() {
 
 #[test]
 fn one_and_one_hundred_exact_duplicates_add_only_bounded_verifier_work() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+    {
         for duplicates in [1_u64, 100] {
             let world = installed_world();
-            let dispatch = world.commit_dispatch(
-                &host_custody.phase_for_application(&world.application),
-                71,
-                "cost-selected",
-            );
+            let dispatch = world.commit_dispatch(71, "cost-selected");
             let record = dispatch.dispatch_outbox().unwrap();
             let envelope = signed_envelope(record, [0x77; 32], record.payload(), false);
             let request = super::super::fixture::live_scope();
@@ -111,8 +101,14 @@ fn one_and_one_hundred_exact_duplicates_add_only_bounded_verifier_work() {
                 .application
                 .observe_inbound_cost(&world.verifier)
                 .unwrap();
-            let commits =
-                super::tests::owner_commits(&host_custody.borrowed_request_for_test(), &world);
+            let commits = world
+                .application
+                .with_host_advancement(|phase| {
+                    let host_custody = phase.test_host_request();
+
+                    super::tests::owner_commits(&host_custody.borrowed_request_for_test(), &world)
+                })
+                .expect("the fixture read owns its installed host call");
             for _ in 0..duplicates {
                 assert_eq!(
                     world
@@ -159,17 +155,27 @@ fn one_and_one_hundred_exact_duplicates_add_only_bounded_verifier_work() {
                 before.accepted_charged_bytes()
             );
             assert_eq!(after.outstanding_dispatches(), 0);
-            assert_eq!(
-                super::tests::owner_commits(&host_custody.borrowed_request_for_test(), &world),
-                commits
-            );
+            world
+                .application
+                .with_host_advancement(|phase| {
+                    let host_custody = phase.test_host_request();
+
+                    assert_eq!(
+                        super::tests::owner_commits(
+                            &host_custody.borrowed_request_for_test(),
+                            &world
+                        ),
+                        commits
+                    )
+                })
+                .expect("the fixture read owns its installed host call");
         }
-    })
+    }
 }
 
 #[test]
 fn signed_receive_selects_one_effect_among_inbound_bound_dispatches() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+    {
         for population in [10_u64, 1_000] {
             let world = installed_world();
             let wide_operation = world
@@ -182,11 +188,7 @@ fn signed_receive_selects_one_effect_among_inbound_bound_dispatches() {
                 .install_inbound_occurrence_verifier(&wide_operation, Arc::new(TestVerifier))
                 .unwrap();
             for seed in 0..population {
-                world.commit_wide_dispatch(
-                    &host_custody.phase_for_application(&world.application),
-                    seed + 1,
-                    &format!("unrelated-inbound-{seed}"),
-                );
+                world.commit_wide_dispatch(seed + 1, &format!("unrelated-inbound-{seed}"));
             }
             assert_eq!(
                 world
@@ -197,11 +199,7 @@ fn signed_receive_selects_one_effect_among_inbound_bound_dispatches() {
                 population,
                 "the unrelated dispatches must occupy the inbound owner index",
             );
-            let dispatch = world.commit_dispatch(
-                &host_custody.phase_for_application(&world.application),
-                72,
-                "cost-selected",
-            );
+            let dispatch = world.commit_dispatch(72, "cost-selected");
             let record = dispatch.dispatch_outbox().unwrap();
             let envelope = signed_envelope(record, [0x78; 32], record.payload(), false);
             let before = world
@@ -246,5 +244,5 @@ fn signed_receive_selects_one_effect_among_inbound_bound_dispatches() {
                 1
             );
         }
-    })
+    }
 }

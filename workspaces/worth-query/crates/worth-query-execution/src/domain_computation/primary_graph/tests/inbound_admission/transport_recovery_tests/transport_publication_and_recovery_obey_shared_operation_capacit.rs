@@ -7,13 +7,7 @@ fn transport_publication_and_recovery_obey_shared_operation_capacity() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let world = installed_world();
-    let receipt = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.commit_dispatch(&phase, 99, "transport-publication-capacity")
-        })
-        .expect("the fixture read owns its installed host call");
+    let receipt = { world.commit_dispatch(99, "transport-publication-capacity") };
     let owner = world
         .application
         .with_host_advancement(|phase| {

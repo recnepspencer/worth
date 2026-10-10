@@ -25,95 +25,81 @@ fn one_cleanup_page_reclaims_one_of_two_terminals_but_never_pending_custody() {
         .application
         .install_inbound_occurrence_verifier(&wide_operation, Arc::new(TestVerifier))
         .unwrap();
-    world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-
-            for (seed, message) in [(51_u64, [0xc1; 32]), (52, [0xc2; 32])] {
-                let completed = world.commit_wide_dispatch(
-                    &host_custody.phase_for_application(&world.application),
-                    seed,
-                    "settled-short",
-                );
-                let record = completed.dispatch_outbox().unwrap();
-                let envelope =
-                    signed_envelope_for_seconds(record, message, record.payload(), false, 1);
-                assert_eq!(
-                    world
-                        .application
-                        .receive_inbound_occurrence(&wide_handle, &envelope, &request)
-                        .unwrap()
-                        .posture(),
-                    WorthQueryInboundReceiptPosture::Performed,
-                );
-            }
-            let pending = world.commit_wide_dispatch(
-                &host_custody.phase_for_application(&world.application),
-                53,
-                "pending-same-operation",
+    {
+        for (seed, message) in [(51_u64, [0xc1; 32]), (52, [0xc2; 32])] {
+            let completed = world.commit_wide_dispatch(seed, "settled-short");
+            let record = completed.dispatch_outbox().unwrap();
+            let envelope = signed_envelope_for_seconds(record, message, record.payload(), false, 1);
+            assert_eq!(
+                world
+                    .application
+                    .receive_inbound_occurrence(&wide_handle, &envelope, &request)
+                    .unwrap()
+                    .posture(),
+                WorthQueryInboundReceiptPosture::Performed,
             );
-            let pending_record = pending.dispatch_outbox().unwrap();
-            let pending_envelope =
-                signed_envelope(pending_record, [0xc3; 32], pending_record.payload(), false);
-            assert!(world
+        }
+        let pending = world.commit_wide_dispatch(53, "pending-same-operation");
+        let pending_record = pending.dispatch_outbox().unwrap();
+        let pending_envelope =
+            signed_envelope(pending_record, [0xc3; 32], pending_record.payload(), false);
+        assert!(world
+            .application
+            .admit_inbound_occurrence(&wide_handle, &pending_envelope)
+            .is_ok());
+        assert_eq!(
+            world
                 .application
-                .admit_inbound_occurrence(&wide_handle, &pending_envelope)
-                .is_ok());
-            assert_eq!(
-                world
-                    .application
-                    .observe_inbound_cost(&wide_handle)
-                    .unwrap()
-                    .accepted_occurrences(),
-                3
-            );
+                .observe_inbound_cost(&wide_handle)
+                .unwrap()
+                .accepted_occurrences(),
+            3
+        );
 
-            std::thread::sleep(Duration::from_secs(2));
-            let page = NonZeroUsize::new(1).unwrap();
-            assert_eq!(
-                world
-                    .application
-                    .cleanup_completed_inbound_occurrences(&wide_handle, page)
-                    .unwrap()
-                    .reclaimed(),
-                1
-            );
-            assert_eq!(
-                world
-                    .application
-                    .observe_inbound_cost(&wide_handle)
-                    .unwrap()
-                    .accepted_occurrences(),
-                2,
-                "one-work page leaves the second eligible terminal and pending slot charged",
-            );
-            assert_eq!(
-                world
-                    .application
-                    .cleanup_completed_inbound_occurrences(&wide_handle, page)
-                    .unwrap()
-                    .reclaimed(),
-                1
-            );
-            assert_eq!(
-                world
-                    .application
-                    .cleanup_completed_inbound_occurrences(&wide_handle, page)
-                    .unwrap()
-                    .reclaimed(),
-                0
-            );
-            assert_eq!(
-                world
-                    .application
-                    .observe_inbound_cost(&wide_handle)
-                    .unwrap()
-                    .accepted_occurrences(),
-                1
-            );
-        })
-        .expect("the fixture block owns its installed host call")
+        std::thread::sleep(Duration::from_secs(2));
+        let page = NonZeroUsize::new(1).unwrap();
+        assert_eq!(
+            world
+                .application
+                .cleanup_completed_inbound_occurrences(&wide_handle, page)
+                .unwrap()
+                .reclaimed(),
+            1
+        );
+        assert_eq!(
+            world
+                .application
+                .observe_inbound_cost(&wide_handle)
+                .unwrap()
+                .accepted_occurrences(),
+            2,
+            "one-work page leaves the second eligible terminal and pending slot charged",
+        );
+        assert_eq!(
+            world
+                .application
+                .cleanup_completed_inbound_occurrences(&wide_handle, page)
+                .unwrap()
+                .reclaimed(),
+            1
+        );
+        assert_eq!(
+            world
+                .application
+                .cleanup_completed_inbound_occurrences(&wide_handle, page)
+                .unwrap()
+                .reclaimed(),
+            0
+        );
+        assert_eq!(
+            world
+                .application
+                .observe_inbound_cost(&wide_handle)
+                .unwrap()
+                .accepted_occurrences(),
+            1
+        );
+    }
 }
 
 #[test]
@@ -122,14 +108,8 @@ fn expired_settled_terminal_reclaims_one_finite_accepted_slot() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let world = installed_world();
-    world.application.with_host_advancement(|phase| {
-let host_custody = phase.test_host_request();
-
-let first = world.commit_dispatch(
-            &host_custody.phase_for_application(&world.application),
-            41,
-            "notice-short-validity",
-        );
+    {
+        let first = world.commit_dispatch(41, "notice-short-validity");
         let first_record = first.dispatch_outbox().unwrap();
         let first_envelope =
             signed_envelope_for_seconds(first_record, [0xa1; 32], first_record.payload(), false, 1);
@@ -175,11 +155,7 @@ let first = world.commit_dispatch(
             "a duplicate holding an Arc across cleanup gets a typed gone result",
         );
         assert!(!retryable);
-        let second = world.commit_dispatch(
-            &host_custody.phase_for_application(&world.application),
-            42,
-            "notice-after-turnover",
-        );
+        let second = world.commit_dispatch(42, "notice-after-turnover");
         let second_record = second.dispatch_outbox().unwrap();
         let second_envelope =
             signed_envelope(second_record, [0xa2; 32], second_record.payload(), false);
@@ -199,7 +175,13 @@ let first = world.commit_dispatch(
 
         let fresh_identity =
             signed_envelope(first_record, [0xa3; 32], first_record.payload(), false);
-        let commits_after_turnover = super::tests::owner_commits(&phase.borrowed_request_for_test(), &world);
+        let commits_after_turnover = world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+                super::tests::owner_commits(&phase.borrowed_request_for_test(), &world)
+            })
+            .expect("the fixture read owns its installed host call");
         assert_eq!(
             world
                 .application
@@ -209,7 +191,16 @@ let first = world.commit_dispatch(
             WorthQueryInboundReceiptPosture::AlreadyCompleted,
             "a new signed message for the completed effect must find terminal history",
         );
-        assert_eq!(super::tests::owner_commits(&phase.borrowed_request_for_test(), &world), commits_after_turnover);
+        world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+                assert_eq!(
+                    super::tests::owner_commits(&phase.borrowed_request_for_test(), &world),
+                    commits_after_turnover
+                )
+            })
+            .expect("the fixture read owns its installed host call");
 
         let reused_message_identity =
             signed_envelope(first_record, [0xa1; 32], first_record.payload(), false);
@@ -233,7 +224,15 @@ let first = world.commit_dispatch(
             Err(WorthQueryInboundAdmissionDenial::AuthenticatedPermanent(proof))
                 if proof.kind() == crate::domain_computation::primary_graph::WorthQueryInboundPermanentDenialKind::CorrelationAlreadyOwned,
         ));
-        assert_eq!(super::tests::owner_commits(&phase.borrowed_request_for_test(), &world), commits_after_turnover);
-
-}).expect("the fixture block owns its installed host call")
+        world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+                assert_eq!(
+                    super::tests::owner_commits(&phase.borrowed_request_for_test(), &world),
+                    commits_after_turnover
+                )
+            })
+            .expect("the fixture read owns its installed host call");
+    }
 }

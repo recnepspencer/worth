@@ -53,7 +53,6 @@ pub(super) fn installed_world() -> InboundWorld {
 impl InboundWorld {
     pub fn commit_other_dispatch(
         &self,
-        phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         seed: u64,
         text: &str,
     ) -> WorthQueryApplicationCommitReceipt {
@@ -62,19 +61,11 @@ impl InboundWorld {
             .installed_schema()
             .installed_operation(OtherNotifyOperation::reference())
             .unwrap();
-        self.commit_nonselected_dispatch(
-            phase_custody,
-            &phase_custody.borrowed_request_for_test(),
-            operation,
-            seed,
-            text,
-        )
+        self.commit_nonselected_dispatch(operation, seed, text)
     }
 
     fn commit_nonselected_dispatch<Operation, Input>(
         &self,
-        phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
         operation: WorthQueryInstalledApplicationOperation<InboundTestSchema, Operation, Input>,
         seed: u64,
         text: &str,
@@ -84,89 +75,101 @@ impl InboundWorld {
         NoticeEffect: OperationEmits<Operation>,
         Input: Clone + Send + Sync + 'static,
     {
-        let branch = self.application.current_world();
-        let identity = self
+        let default_request = super::super::fixture::live_scope();
+        let request = &default_request;
+        let program = self
             .application
-            .product_runtime()
-            .admit_product_occurrence(branch.occurrence())
-            .unwrap()
-            .branch_identity()
-            .clone();
-        let request = super::super::fixture::live_scope();
-        let external = authenticate(self.application.installed_schema(), &request);
-        let selected = self
-            .application
-            .select_product_branch(execution, &identity)
-            .unwrap();
-        let binding = self
-            .application
-            .installed_schema()
-            .principal_binding(IdentityBinding::reference())
-            .unwrap();
-        let principal = selected
-            .resolve_authenticated_principal(
-                phase_custody,
-                &binding,
-                &external,
-                &request,
-                WorthQueryPrincipalResolutionMode::Ordinary,
-            )
-            .unwrap();
-        let target = self
-            .application
-            .select_product_branch(execution, &identity)
-            .unwrap()
-            .resolve_entity(
-                phase_custody,
-                TargetKey::reference(),
-                "target".to_owned(),
-                &request,
-                WorthQueryPrincipalResolutionMode::Ordinary,
-            )
-            .unwrap();
-        let admission = self
-            .application
-            .select_product_branch(execution, &identity)
-            .unwrap()
-            .authorize_operation(
-                phase_custody,
-                &principal,
-                &target,
-                &operation,
-                TypedMutationPreconditions::new(),
-                &request,
-            )
-            .unwrap();
-        let (_, projection, _) = self
-            .invariant
-            .project_admitted_operation(
-                phase_custody,
-                &admission,
-                |_, _| {},
-                AllocationPolicy::SystemAllocation,
-            )
-            .unwrap()
-            .into_parts();
-        let reads = self
-            .application
-            .begin_projected_application_read_attempt(
-                phase_custody,
-                admission,
-                projection,
-                AllocationPolicy::SystemAllocation,
-            )
-            .unwrap();
-        let mut effects = reads
-            .complete_projected_dependencies(
-                phase_custody,
-                ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .unwrap()
-            .begin_effect_program();
-        effects
-            .emit_external(NoticeEffect::reference(), Notice(text.to_owned()))
-            .unwrap();
-        let program = effects.finish().unwrap();
+            .with_application_advancement(request, |phase| {
+                let phase_custody = &phase;
+                let execution = &phase
+                    .execution_request_for(self.application.product_runtime())
+                    .expect("fixture phase belongs to its application");
+                let branch = self.application.current_world();
+                let identity = self
+                    .application
+                    .product_runtime()
+                    .admit_product_occurrence(branch.occurrence())
+                    .unwrap()
+                    .branch_identity()
+                    .clone();
+                let request = super::super::fixture::live_scope();
+                let external = authenticate(self.application.installed_schema(), &request);
+                let selected = self
+                    .application
+                    .select_product_branch(execution, &identity)
+                    .unwrap();
+                let binding = self
+                    .application
+                    .installed_schema()
+                    .principal_binding(IdentityBinding::reference())
+                    .unwrap();
+                let principal = selected
+                    .resolve_authenticated_principal(
+                        phase_custody,
+                        &binding,
+                        &external,
+                        &request,
+                        WorthQueryPrincipalResolutionMode::Ordinary,
+                    )
+                    .unwrap();
+                let target = self
+                    .application
+                    .select_product_branch(execution, &identity)
+                    .unwrap()
+                    .resolve_entity(
+                        phase_custody,
+                        TargetKey::reference(),
+                        "target".to_owned(),
+                        &request,
+                        WorthQueryPrincipalResolutionMode::Ordinary,
+                    )
+                    .unwrap();
+                let admission = self
+                    .application
+                    .select_product_branch(execution, &identity)
+                    .unwrap()
+                    .authorize_operation(
+                        phase_custody,
+                        &principal,
+                        &target,
+                        &operation,
+                        TypedMutationPreconditions::new(),
+                        &request,
+                    )
+                    .unwrap();
+                let (_, projection, _) = self
+                    .invariant
+                    .project_admitted_operation(
+                        phase_custody,
+                        &admission,
+                        |_, _| {},
+                        AllocationPolicy::SystemAllocation,
+                    )
+                    .unwrap()
+                    .into_parts();
+                let reads = self
+                    .application
+                    .begin_projected_application_read_attempt(
+                        phase_custody,
+                        admission,
+                        projection,
+                        AllocationPolicy::SystemAllocation,
+                    )
+                    .unwrap();
+                let mut effects = reads
+                    .complete_projected_dependencies(
+                        phase_custody,
+                        ExecutionAllocationPolicy::SystemAllocation,
+                    )
+                    .unwrap()
+                    .begin_effect_program();
+                effects
+                    .emit_external(NoticeEffect::reference(), Notice(text.to_owned()))
+                    .unwrap();
+                let program = effects.finish().unwrap();
+                program
+            })
+            .expect("the fixture preparation owns its host call");
         let mut key = [0_u8; 32];
         key[..8].copy_from_slice(&seed.to_be_bytes());
         key[8] = 1;
@@ -182,23 +185,17 @@ impl InboundWorld {
         }
     }
 
-    pub fn commit_dispatch(
-        &self,
-        phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
-        seed: u8,
-        text: &str,
-    ) -> WorthQueryApplicationCommitReceipt {
-        self.commit_dispatch_on(phase_custody, self.application.current_world(), seed, text)
+    pub fn commit_dispatch(&self, seed: u8, text: &str) -> WorthQueryApplicationCommitReceipt {
+        self.commit_dispatch_on(self.application.current_world(), seed, text)
     }
 
     pub fn commit_dispatch_on(
         &self,
-        phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         branch: crate::basis::WorthQueryProductBranch,
         seed: u8,
         text: &str,
     ) -> WorthQueryApplicationCommitReceipt {
-        match self.attempt_dispatch_on(phase_custody, branch, seed, text) {
+        match self.attempt_dispatch_on(branch, seed, text) {
             WorthQueryApplicationCommitOutcome::Committed(receipt) => receipt,
             other => panic!("fixture must issue a genuine World dispatch: {other:?}"),
         }
@@ -206,29 +203,14 @@ impl InboundWorld {
 
     pub fn attempt_dispatch_on(
         &self,
-        phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         branch: crate::basis::WorthQueryProductBranch,
         seed: u8,
         text: &str,
     ) -> WorthQueryApplicationCommitOutcome {
-        self.attempt_operation_on(
-            phase_custody,
-            &phase_custody.borrowed_request_for_test(),
-            branch,
-            seed,
-            text,
-            true,
-            None,
-        )
+        self.attempt_operation_on(branch, seed, text, true, None)
     }
-    pub fn attempt_empty_program(
-        &self,
-        phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
-        seed: u8,
-    ) -> WorthQueryApplicationCommitOutcome {
+    pub fn attempt_empty_program(&self, seed: u8) -> WorthQueryApplicationCommitOutcome {
         self.attempt_operation_on(
-            phase_custody,
-            &phase_custody.borrowed_request_for_test(),
             self.application.current_world(),
             seed,
             "unused",
@@ -238,104 +220,112 @@ impl InboundWorld {
     }
     fn attempt_operation_on(
         &self,
-        phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
         branch: crate::basis::WorthQueryProductBranch,
         seed: u8,
         text: &str,
         emit_external: bool,
         request: Option<&WorthQueryRequestScope>,
     ) -> WorthQueryApplicationCommitOutcome {
-        let identity = self
-            .application
-            .product_runtime()
-            .admit_product_occurrence(branch.occurrence())
-            .unwrap()
-            .branch_identity()
-            .clone();
         let default_request = super::super::fixture::live_scope();
         let request = request.unwrap_or(&default_request);
-        let external = authenticate(self.application.installed_schema(), request);
-        let selected = self
+        let program = self
             .application
-            .select_product_branch(execution, &identity)
-            .unwrap();
-        let binding = self
-            .application
-            .installed_schema()
-            .principal_binding(IdentityBinding::reference())
-            .unwrap();
-        let principal = selected
-            .resolve_authenticated_principal(
-                phase_custody,
-                &binding,
-                &external,
-                request,
-                WorthQueryPrincipalResolutionMode::Ordinary,
-            )
-            .unwrap();
-        let target = self
-            .application
-            .select_product_branch(execution, &identity)
-            .unwrap()
-            .resolve_entity(
-                phase_custody,
-                TargetKey::reference(),
-                "target".to_owned(),
-                request,
-                WorthQueryPrincipalResolutionMode::Ordinary,
-            )
-            .unwrap();
-        let operation = self
-            .application
-            .installed_schema()
-            .installed_operation(NotifyOperation::reference())
-            .unwrap();
-        let admission = self
-            .application
-            .select_product_branch(execution, &identity)
-            .unwrap()
-            .authorize_operation(
-                phase_custody,
-                &principal,
-                &target,
-                &operation,
-                TypedMutationPreconditions::new(),
-                request,
-            )
-            .unwrap();
-        let (_, projection, _) = self
-            .invariant
-            .project_admitted_operation(
-                phase_custody,
-                &admission,
-                |_, _| {},
-                AllocationPolicy::SystemAllocation,
-            )
-            .unwrap()
-            .into_parts();
-        let reads = self
-            .application
-            .begin_projected_application_read_attempt(
-                phase_custody,
-                admission,
-                projection,
-                AllocationPolicy::SystemAllocation,
-            )
-            .unwrap();
-        let mut effects = reads
-            .complete_projected_dependencies(
-                phase_custody,
-                ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .unwrap()
-            .begin_effect_program();
-        if emit_external {
-            effects
-                .emit_external(NoticeEffect::reference(), Notice(text.to_owned()))
-                .unwrap();
-        }
-        let program = effects.finish().unwrap();
+            .with_application_advancement(request, |phase| {
+                let phase_custody = &phase;
+                let execution = &phase
+                    .execution_request_for(self.application.product_runtime())
+                    .expect("fixture phase belongs to its application");
+                let identity = self
+                    .application
+                    .product_runtime()
+                    .admit_product_occurrence(branch.occurrence())
+                    .unwrap()
+                    .branch_identity()
+                    .clone();
+                let external = authenticate(self.application.installed_schema(), request);
+                let selected = self
+                    .application
+                    .select_product_branch(execution, &identity)
+                    .unwrap();
+                let binding = self
+                    .application
+                    .installed_schema()
+                    .principal_binding(IdentityBinding::reference())
+                    .unwrap();
+                let principal = selected
+                    .resolve_authenticated_principal(
+                        phase_custody,
+                        &binding,
+                        &external,
+                        request,
+                        WorthQueryPrincipalResolutionMode::Ordinary,
+                    )
+                    .unwrap();
+                let target = self
+                    .application
+                    .select_product_branch(execution, &identity)
+                    .unwrap()
+                    .resolve_entity(
+                        phase_custody,
+                        TargetKey::reference(),
+                        "target".to_owned(),
+                        request,
+                        WorthQueryPrincipalResolutionMode::Ordinary,
+                    )
+                    .unwrap();
+                let operation = self
+                    .application
+                    .installed_schema()
+                    .installed_operation(NotifyOperation::reference())
+                    .unwrap();
+                let admission = self
+                    .application
+                    .select_product_branch(execution, &identity)
+                    .unwrap()
+                    .authorize_operation(
+                        phase_custody,
+                        &principal,
+                        &target,
+                        &operation,
+                        TypedMutationPreconditions::new(),
+                        request,
+                    )
+                    .unwrap();
+                let (_, projection, _) = self
+                    .invariant
+                    .project_admitted_operation(
+                        phase_custody,
+                        &admission,
+                        |_, _| {},
+                        AllocationPolicy::SystemAllocation,
+                    )
+                    .unwrap()
+                    .into_parts();
+                let reads = self
+                    .application
+                    .begin_projected_application_read_attempt(
+                        phase_custody,
+                        admission,
+                        projection,
+                        AllocationPolicy::SystemAllocation,
+                    )
+                    .unwrap();
+                let mut effects = reads
+                    .complete_projected_dependencies(
+                        phase_custody,
+                        ExecutionAllocationPolicy::SystemAllocation,
+                    )
+                    .unwrap()
+                    .begin_effect_program();
+                if emit_external {
+                    effects
+                        .emit_external(NoticeEffect::reference(), Notice(text.to_owned()))
+                        .unwrap();
+                }
+                let program = effects.finish().unwrap();
+                program
+            })
+            .expect("the fixture preparation owns its host call");
         self.application.compare_and_commit_application(
             program,
             WorthQueryApplicationIdempotencyBinding::new([seed; 32], [seed.wrapping_add(1); 32]),

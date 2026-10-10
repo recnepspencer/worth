@@ -4,13 +4,7 @@ use super::*;
 #[test]
 fn lost_terminal_index_denies_until_bounded_owner_reconstruction() {
     let world = installed_world();
-    let dispatch = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.commit_dispatch(&phase, 31, "notice-index-rebuild")
-        })
-        .expect("the fixture read owns its installed host call");
+    let dispatch = { world.commit_dispatch(31, "notice-index-rebuild") };
     let record = dispatch.dispatch_outbox().unwrap();
     let correlation = *record.correlation();
     let envelope = signed_envelope(record, [0x96; 32], record.payload(), false);

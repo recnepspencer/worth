@@ -12,13 +12,7 @@ use crate::domain_computation::primary_graph::{
 #[test]
 fn equal_contract_on_another_operation_cannot_claim_the_original_dispatch() {
     let world = installed_world();
-    let receipt = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.commit_other_dispatch(&phase, 117, "second-operation-original")
-        })
-        .expect("the fixture read owns its installed host call");
+    let receipt = { world.commit_other_dispatch(117, "second-operation-original") };
     let outbox = receipt
         .dispatch_outbox()
         .expect("the second operation really committed");
@@ -61,20 +55,8 @@ fn equal_contract_on_another_operation_cannot_claim_the_original_dispatch() {
 #[test]
 fn workflow_settlement_joins_the_original_committed_operation_to_world_terminal() {
     let world = installed_world();
-    let original = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.commit_dispatch(&phase, 118, "workflow-original")
-        })
-        .expect("the fixture read owns its installed host call");
-    let other = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.commit_dispatch(&phase, 119, "workflow-other")
-        })
-        .expect("the fixture read owns its installed host call");
+    let original = { world.commit_dispatch(118, "workflow-original") };
+    let other = { world.commit_dispatch(119, "workflow-other") };
     let record = original
         .dispatch_outbox()
         .expect("original dispatch outbox");
@@ -132,13 +114,7 @@ fn duplicate_callback_keeps_the_original_terminal_out_of_a_sibling_fork() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let world = installed_world();
-    let original = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.commit_dispatch(&phase, 120, "same-meaning-on-two-branches")
-        })
-        .expect("the fixture read owns its installed host call");
+    let original = { world.commit_dispatch(120, "same-meaning-on-two-branches") };
     let fork = world
         .application
         .with_host_advancement(|phase| {
@@ -152,13 +128,7 @@ fn duplicate_callback_keeps_the_original_terminal_out_of_a_sibling_fork() {
                 .expect("the sibling product branch publishes")
         })
         .expect("the fixture read owns its installed host call");
-    let sibling = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.commit_dispatch_on(&phase, fork, 121, "same-meaning-on-two-branches")
-        })
-        .expect("the fixture read owns its installed host call");
+    let sibling = { world.commit_dispatch_on(fork, 121, "same-meaning-on-two-branches") };
     let original_record = original.dispatch_outbox().unwrap();
     let sibling_record = sibling.dispatch_outbox().unwrap();
     assert_eq!(original_record.payload(), sibling_record.payload());

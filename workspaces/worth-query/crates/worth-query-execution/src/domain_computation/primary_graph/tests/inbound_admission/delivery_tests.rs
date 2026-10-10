@@ -12,13 +12,7 @@ use crate::domain_computation::primary_graph::WorthQueryInboundReceiptPosture;
 #[test]
 fn performed_completion_reaches_the_canonical_subscription_once_and_terminal_turns_over() {
     let world = installed_world();
-    let dispatch = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.commit_dispatch(&phase, 51, "route-observed-notice")
-        })
-        .expect("the fixture read owns its installed host call");
+    let dispatch = { world.commit_dispatch(51, "route-observed-notice") };
     let outbox = dispatch.dispatch_outbox().unwrap();
     let owner = &world
         .application
@@ -91,13 +85,7 @@ fn performed_completion_reaches_the_canonical_subscription_once_and_terminal_tur
         1,
         "delivered terminal no longer pins the accepted slot",
     );
-    let next = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.commit_dispatch(&phase, 52, "after-route-turnover")
-        })
-        .expect("the fixture read owns its installed host call");
+    let next = { world.commit_dispatch(52, "after-route-turnover") };
     let next_outbox = next.dispatch_outbox().unwrap();
     assert_eq!(
         world

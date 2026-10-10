@@ -9,20 +9,12 @@ impl InboundWorld {
         text: &str,
         request: &WorthQueryRequestScope,
     ) -> WorthQueryApplicationCommitOutcome {
-        self.application
-            .with_application_advancement(request, |phase| {
-                self.attempt_operation_on(
-                    &phase,
-                    &phase
-                        .execution_request_for(self.application.product_runtime())
-                        .expect("phase belongs to application"),
-                    self.application.current_world(),
-                    seed,
-                    text,
-                    true,
-                    Some(request),
-                )
-            })
-            .expect("installed host call opens")
+        self.attempt_operation_on(
+            self.application.current_world(),
+            seed,
+            text,
+            true,
+            Some(request),
+        )
     }
 }

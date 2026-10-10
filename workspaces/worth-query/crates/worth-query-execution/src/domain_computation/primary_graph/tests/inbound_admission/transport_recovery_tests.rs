@@ -32,13 +32,7 @@ fn completed_transport_recovery_publishes_without_a_second_physical_attempt() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let world = installed_world();
-    let receipt = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.commit_dispatch(&phase, 95, "unpublished-transport")
-        })
-        .expect("the fixture read owns its installed host call");
+    let receipt = { world.commit_dispatch(95, "unpublished-transport") };
     let owner = world
         .application
         .with_host_advancement(|phase| {
@@ -141,13 +135,7 @@ fn host_maintenance_recovers_unpublished_transport_after_request_is_gone() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let world = installed_world();
-    let receipt = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.commit_dispatch(&phase, 0xa1, "transport-host-continuation")
-        })
-        .expect("the fixture read owns its installed host call");
+    let receipt = { world.commit_dispatch(0xa1, "transport-host-continuation") };
     let owner = world
         .application
         .with_host_advancement(|phase| {
@@ -238,13 +226,7 @@ fn host_maintenance_recovers_unpublished_transport_after_request_is_gone() {
 #[test]
 fn callback_winner_is_recognized_before_transport_world_publication() {
     let world = installed_world();
-    let receipt = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.commit_dispatch(&phase, 96, "callback-winner")
-        })
-        .expect("the fixture read owns its installed host call");
+    let receipt = { world.commit_dispatch(96, "callback-winner") };
     let owner = world
         .application
         .with_host_advancement(|phase| {

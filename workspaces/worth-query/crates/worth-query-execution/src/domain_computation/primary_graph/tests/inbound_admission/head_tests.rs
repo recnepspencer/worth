@@ -11,20 +11,8 @@ fn accepted_completion_uses_original_incarnation_and_current_world_head() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let world = installed_world();
-    let first = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.commit_dispatch(&phase, 181, "first-dispatch")
-        })
-        .expect("the fixture read owns its installed host call");
-    let second = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.commit_dispatch(&phase, 182, "later-dispatch")
-        })
-        .expect("the fixture read owns its installed host call");
+    let first = { world.commit_dispatch(181, "first-dispatch") };
+    let second = { world.commit_dispatch(182, "later-dispatch") };
     assert_eq!(
         first.committed_product_publication().product_incarnation(),
         second.committed_product_publication().product_incarnation()

@@ -35,33 +35,28 @@ fn retired_original_incarnation_rebuilds_from_world_and_canonical_relational_pat
                 .expect("forked application product must publish")
         })
         .expect("the fixture read owns its installed host call");
-    let (correlation, original_world_commit) = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            {
-                let dispatch =
-                    world.commit_dispatch_on(&phase, branch, 71, "notice-retired-terminal");
-                let record = dispatch.dispatch_outbox().unwrap();
-                let correlation = *record.correlation();
-                let envelope = signed_envelope(record, [0xb1; 32], record.payload(), false);
-                let request = super::super::fixture::live_scope();
-                assert_eq!(
-                    world
-                        .application
-                        .receive_inbound_occurrence(&world.verifier, &envelope, &request,)
-                        .unwrap()
-                        .posture(),
-                    WorthQueryInboundReceiptPosture::Performed
-                );
-                let original = dispatch
-                    .committed_product_publication()
-                    .composite_commit()
-                    .clone();
-                (correlation, original)
-            }
-        })
-        .expect("the fixture read owns its installed host call");
+    let (correlation, original_world_commit) = {
+        {
+            let dispatch = world.commit_dispatch_on(branch, 71, "notice-retired-terminal");
+            let record = dispatch.dispatch_outbox().unwrap();
+            let correlation = *record.correlation();
+            let envelope = signed_envelope(record, [0xb1; 32], record.payload(), false);
+            let request = super::super::fixture::live_scope();
+            assert_eq!(
+                world
+                    .application
+                    .receive_inbound_occurrence(&world.verifier, &envelope, &request,)
+                    .unwrap()
+                    .posture(),
+                WorthQueryInboundReceiptPosture::Performed
+            );
+            let original = dispatch
+                .committed_product_publication()
+                .composite_commit()
+                .clone();
+            (correlation, original)
+        }
+    };
     world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); assert!(matches!(
         world.application.on_branch(branch).close(&phase, ),
         Err(crate::domain_computation::primary_graph::WorthQueryApplicationProductBranchCloseDenial::OwnerCleanupPending(_))

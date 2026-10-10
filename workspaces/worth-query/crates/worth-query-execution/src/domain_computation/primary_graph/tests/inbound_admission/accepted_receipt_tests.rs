@@ -30,13 +30,7 @@ fn verified_second_callback_is_accepted_while_publication_slot_is_busy() {
         .application
         .install_inbound_occurrence_verifier(&operation, Arc::new(TestVerifier))
         .unwrap();
-    let first = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.commit_wide_dispatch(&phase, 151, "first-held-publication")
-        })
-        .expect("the fixture read owns its installed host call");
+    let first = { world.commit_wide_dispatch(151, "first-held-publication") };
     let first_record = first.dispatch_outbox().unwrap();
     let first_envelope = signed_envelope(first_record, [0xd1; 32], first_record.payload(), false);
     let WorthQueryInboundAdmission::New(first_accepted, true) = world
@@ -46,13 +40,7 @@ fn verified_second_callback_is_accepted_while_publication_slot_is_busy() {
     else {
         panic!("first authenticated owner must reserve the publication slot");
     };
-    let second = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.commit_wide_dispatch(&phase, 152, "second-queued-publication")
-        })
-        .expect("the fixture read owns its installed host call");
+    let second = { world.commit_wide_dispatch(152, "second-queued-publication") };
     let second_record = second.dispatch_outbox().unwrap();
     let second_envelope =
         signed_envelope(second_record, [0xd2; 32], second_record.payload(), false);
@@ -139,13 +127,7 @@ fn verified_second_callback_is_accepted_while_publication_slot_is_busy() {
 #[test]
 fn signed_validity_span_exceeding_installed_window_is_not_called_expired() {
     let world = installed_world();
-    let dispatched = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.commit_dispatch(&phase, 153, "excess-validity-span")
-        })
-        .expect("the fixture read owns its installed host call");
+    let dispatched = { world.commit_dispatch(153, "excess-validity-span") };
     let record = dispatched.dispatch_outbox().unwrap();
     let envelope = signed_envelope_for_seconds(record, [0xd3; 32], record.payload(), false, 61);
     let request = super::super::fixture::live_scope();
@@ -166,13 +148,7 @@ fn signed_validity_span_exceeding_installed_window_is_not_called_expired() {
 #[test]
 fn retained_public_correlation_cannot_accept_after_signed_cutoff() {
     let world = installed_world();
-    let dispatched = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.commit_dispatch(&phase, 155, "phase-cutoff")
-        })
-        .expect("the fixture read owns its installed host call");
+    let dispatched = { world.commit_dispatch(155, "phase-cutoff") };
     let record = dispatched.dispatch_outbox().unwrap();
     let envelope = signed_envelope_for_seconds(record, [0xd5; 32], record.payload(), false, 1);
     let correlated = world
@@ -208,13 +184,7 @@ fn dropping_admitted_public_phase_releases_publication_slot_but_keeps_custody() 
         .application
         .install_inbound_occurrence_verifier(&operation, Arc::new(TestVerifier))
         .unwrap();
-    let first = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.commit_wide_dispatch(&phase, 156, "abandoned-public-phase")
-        })
-        .expect("the fixture read owns its installed host call");
+    let first = { world.commit_wide_dispatch(156, "abandoned-public-phase") };
     let record = first.dispatch_outbox().unwrap();
     let envelope = signed_envelope(record, [0xd6; 32], record.payload(), false);
     let admitted = world
@@ -234,13 +204,7 @@ fn dropping_admitted_public_phase_releases_publication_slot_but_keeps_custody() 
             .accepted_occurrences(),
         1
     );
-    let second = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.commit_wide_dispatch(&phase, 157, "next-publication")
-        })
-        .expect("the fixture read owns its installed host call");
+    let second = { world.commit_wide_dispatch(157, "next-publication") };
     let second_record = second.dispatch_outbox().unwrap();
     let second_envelope =
         signed_envelope(second_record, [0xd7; 32], second_record.payload(), false);
@@ -276,13 +240,7 @@ fn dropping_admitted_public_phase_releases_publication_slot_but_keeps_custody() 
 #[test]
 fn old_executed_phase_drop_cannot_release_a_new_publication_claim() {
     let world = installed_world();
-    let dispatched = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world.commit_dispatch(&phase, 158, "reclaimed-publication-claim")
-        })
-        .expect("the fixture read owns its installed host call");
+    let dispatched = { world.commit_dispatch(158, "reclaimed-publication-claim") };
     let record = dispatched.dispatch_outbox().unwrap();
     let envelope = signed_envelope(record, [0xd8; 32], record.payload(), false);
     let mut old_phase = world
