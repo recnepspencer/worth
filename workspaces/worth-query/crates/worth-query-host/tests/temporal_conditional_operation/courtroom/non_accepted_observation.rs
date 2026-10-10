@@ -140,13 +140,16 @@ fn following_reading_emits_consumed_invalidation_once(
 }
 
 fn write_gate(world: &CourtroomWorld, gate: String) {
-    world.application.publish_native_field_write_for_test(
-        world.application.current_world(),
-        world.intent_record_identity(),
-        IntentGateField::reference(),
-        gate,
-        &request_scope(),
-    );
+    world
+        .application
+        .publish_native_field_write_for_test(
+            world.application.current_world(),
+            world.intent_record_identity(),
+            IntentGateField::reference(),
+            gate,
+            &request_scope(),
+        )
+        .expect("the fixture native write performs");
 }
 
 fn accepted(outcome: Outcome) -> Receipt {

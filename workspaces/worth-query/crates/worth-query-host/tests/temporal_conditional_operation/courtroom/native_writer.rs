@@ -27,13 +27,16 @@ pub fn native_writer_commit_reconsiders_a_suppressed_wake(
         wake_evidence(&suppressed)
     );
 
-    world.application.publish_native_field_write_for_test(
-        world.application.current_world(),
-        world.intent_record_identity(),
-        IntentGateField::reference(),
-        "ready".to_string(),
-        &request_scope(),
-    );
+    world
+        .application
+        .publish_native_field_write_for_test(
+            world.application.current_world(),
+            world.intent_record_identity(),
+            IntentGateField::reference(),
+            "ready".to_string(),
+            &request_scope(),
+        )
+        .expect("the fixture native write performs");
 
     let mut reconsidered = observe(request_execution, &world);
     assert_eq!(
@@ -101,21 +104,27 @@ pub fn busy_branch_heals_a_lagging_cursor_inside_observation(
                 .relational_record_identity_parts()
         })
         .expect("installed host call opens");
-    world.application.publish_native_field_write_for_test(
-        branch,
-        world.intent_record_identity(),
-        IntentGateField::reference(),
-        "ready".to_string(),
-        &request_scope(),
-    );
-    for value in 1..=UNRELATED_COMMITS {
-        world.application.publish_native_field_write_for_test(
+    world
+        .application
+        .publish_native_field_write_for_test(
             branch,
-            unrelated,
-            UnrelatedValueField::reference(),
-            value,
+            world.intent_record_identity(),
+            IntentGateField::reference(),
+            "ready".to_string(),
             &request_scope(),
-        );
+        )
+        .expect("the fixture native write performs");
+    for value in 1..=UNRELATED_COMMITS {
+        world
+            .application
+            .publish_native_field_write_for_test(
+                branch,
+                unrelated,
+                UnrelatedValueField::reference(),
+                value,
+                &request_scope(),
+            )
+            .expect("the fixture native write performs");
     }
 
     let healed = raw_observe(request_execution, &world);
