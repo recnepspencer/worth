@@ -116,7 +116,7 @@ where
     }
 
     pub(in crate::application_entry) fn prepare_workflow_publication_in_advancement<Spec>(
-        mut self, _phase: &AdvancementPhase<'_>,
+        mut self, phase: &AdvancementPhase<'_>,
         contract: WorthQueryInstalledWorkflowDefinitionContract<Schema, Spec>,
         expected_predecessor: WorkflowDefinitionExpectedPredecessor,
     ) -> Result<
@@ -145,7 +145,7 @@ where
         let identities = self.identities().map_err(
             WorthQueryWorkflowDefinitionPublicationPreparationDenial::RequestAdmission,
         )?;
-        let mutation = authorization::prepare_capability_selected(&self, &identities, staged, &selected).map_err(
+        let mutation = authorization::prepare_capability_selected(phase, &self, &identities, staged, &selected).map_err(
             WorthQueryWorkflowDefinitionPublicationPreparationDenial::RequestAdmission,
         )?;
         let prepared = WorthQueryWorkflowDefinitionPublicationAdapter::prepare::<

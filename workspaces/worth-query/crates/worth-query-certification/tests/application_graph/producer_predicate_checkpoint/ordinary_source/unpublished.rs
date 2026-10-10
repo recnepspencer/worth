@@ -5,9 +5,7 @@ use crate::document_retention_model::retention_entry::{
 };
 use std::time::{Duration, Instant};
 use worth_query_host::facade::{
-    admission::authenticated_principal::{
-        WorthQueryCancellationSource, WorthQueryRequestInterruption, WorthQueryRequestScope,
-    },
+    admission::authenticated_principal::{WorthQueryCancellationSource, WorthQueryRequestScope},
     application_entry::{
         WorthQueryApplicationRecoveryRequestDenial, WorthQueryDiscoveredRecoveryProgress,
     },
@@ -118,9 +116,7 @@ fn initial_required_partial_recovers_original_demand_without_handler_reexecution
             .without_source()
             .idempotency(&key)
             .recover_unpublished_required_in_program(&mut recovery, &host),
-        Err(WorthQueryApplicationRecoveryRequestDenial::Interrupted(
-            WorthQueryRequestInterruption::Cancelled
-        ))
+        Err(WorthQueryApplicationRecoveryRequestDenial::Recovery(worth_query_host::facade::primary_graph::WorthQueryManagedApplicationRecoveryDenial::ExecutionDenied(worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial::Interrupted(worth_query_host::facade::application_contribution::WorthQueryManagedComputationInterruption::Cancelled))))
     ));
     assert!(recovery.performed().is_none());
     assert_eq!(

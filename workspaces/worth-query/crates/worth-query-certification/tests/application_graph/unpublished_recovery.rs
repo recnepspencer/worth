@@ -3,7 +3,7 @@
 use std::time::{Duration, Instant};
 
 use worth_query_host::facade::admission::authenticated_principal::{
-    WorthQueryCancellationSource, WorthQueryRequestInterruption, WorthQueryRequestScope,
+    WorthQueryCancellationSource, WorthQueryRequestScope,
 };
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationMutationOutcome as Outcome, WorthQueryApplicationRecoveryRequestDenial,
@@ -85,9 +85,7 @@ fn fresh_request_recovers_the_actual_unpublished_commit_without_rerunning_handle
             .without_source()
             .idempotency(&key)
             .recover_unpublished_in_program(&recovery, &host),
-        Err(WorthQueryApplicationRecoveryRequestDenial::Interrupted(
-            WorthQueryRequestInterruption::Cancelled
-        ))
+        Err(WorthQueryApplicationRecoveryRequestDenial::Recovery(worth_query_host::facade::primary_graph::WorthQueryManagedApplicationRecoveryDenial::ExecutionDenied(worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial::Interrupted(worth_query_host::facade::application_contribution::WorthQueryManagedComputationInterruption::Cancelled))))
     ));
     assert!(recovery.inspect().unwrap().relational_requires_settlement());
 

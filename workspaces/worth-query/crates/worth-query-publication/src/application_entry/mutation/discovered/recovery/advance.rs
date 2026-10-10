@@ -59,16 +59,26 @@ where
         RootConnection<Schema, Root>:
             WorthQueryApplicationDiscoveredOutputConnection<Schema, Source = Intent::Binding>,
     {
-        let prepared =
-            self.authorize_discovered_source::<Program, Root>(application, &recovery.source)?;
-        recovery
-            .phase
-            .advance(
-                self.request.application,
-                &prepared.admission,
-                prepared.idempotency,
-                &mut recovery.prior_cleanup,
-            )
-            .map_err(WorthQueryApplicationRecoveryRequestDenial::Recovery)
+        let runtime = self.request.application;
+        let scope = self.request.scope.clone();
+        runtime
+            .with_application_advancement(&scope, |phase| {
+                let prepared = self.authorize_discovered_source::<Program, Root>(
+                    &phase,
+                    application,
+                    &recovery.source,
+                )?;
+                recovery
+                    .phase
+                    .advance(
+                        &phase,
+                        self.request.application,
+                        &prepared.admission,
+                        prepared.idempotency,
+                        &mut recovery.prior_cleanup,
+                    )
+                    .map_err(WorthQueryApplicationRecoveryRequestDenial::Recovery)
+            })
+            .map_err(WorthQueryApplicationRecoveryRequestDenial::advancement)?
     }
 }

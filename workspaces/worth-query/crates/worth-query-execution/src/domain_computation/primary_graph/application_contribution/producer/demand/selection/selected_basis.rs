@@ -104,15 +104,15 @@ where
     }
 }
 
-pub(super) fn source_basis_is_admitted(
+pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) fn source_basis_is_admitted(
     source: &crate::basis::WorthQueryProductBranchReadIdentity,
-    current: &crate::basis::WorthQueryProductBranchReadIdentity,
+    current: &worth_runtime_world::facade::ProductBranchObservation,
     owner_retained_program_basis: bool,
 ) -> bool {
     if owner_retained_program_basis {
-        source.same_branch_occurrence(current)
+        source.same_branch_occurrence_observation(current)
     } else {
-        source == current
+        source.matches_observation(current)
     }
 }
 

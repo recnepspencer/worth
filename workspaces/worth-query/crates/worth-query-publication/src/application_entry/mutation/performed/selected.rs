@@ -192,7 +192,7 @@ where
             .execute_with_preparation_and_commit_report(phase,
                 move |request, identities, staged| {
                     crate::application_entry::mutation::authorization::prepare_selected(
-                        request, identities, staged, &selected,
+                        phase, request, identities, staged, &selected,
                     )
                 },
                 |_, program, binding| {

@@ -39,6 +39,14 @@ pub(super) fn take_decisions(scope_key: &str) -> Vec<Vec<u64>> {
         .collect()
 }
 
+/// Observe the existing decision ledger without consuming another oracle's evidence.
+pub(super) fn decisions_snapshot() -> Vec<(String, Vec<u64>)> {
+    DECISIONS
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .clone()
+}
+
 /// Every decision since the last take, in order: its scope and the upstream
 /// Lengths it read.
 pub(super) fn take_all_decisions() -> Vec<(String, Vec<u64>)> {

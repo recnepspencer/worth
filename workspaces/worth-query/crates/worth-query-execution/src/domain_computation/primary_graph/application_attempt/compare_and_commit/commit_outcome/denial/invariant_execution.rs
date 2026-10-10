@@ -30,6 +30,7 @@ impl WorthQueryApplicationCommitDenial {
                 Kind::RetentionCapacityExhausted => CommitKind::RetentionCapacityExhausted,
                 Kind::RetentionIdentityExhausted => CommitKind::RetentionIdentityExhausted,
                 Kind::ProductBasisStale => CommitKind::ProductBasisStale,
+                Kind::ExecutionDenied(kind) => super::execution::execution_kind(Ok(kind)),
                 _ => CommitKind::ProviderRejected,
             }
         };

@@ -143,10 +143,12 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
         .advance(&world.application, &request)
         .err()
         .unwrap();
-    assert!(
-        matches!(error, WorthQueryRequiredOutputPreparationDenial::DemandExecution(ref denial)
-        if denial.kind() == WorthQueryOutputDemandDenialKind::Cancelled)
-    );
+    assert!(matches!(error,
+            WorthQueryRequiredOutputPreparationDenial::Demand(
+                worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(ref denial))
+            if denial.kind() == WorthQueryOutputDemandDenialKind::ExecutionRequest(
+                worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial::Interrupted(
+                    worth_query_host::facade::application_contribution::WorthQueryManagedComputationInterruption::Cancelled))));
     assert_eq!(
         world.application.output_readiness_attempt_count_for_test(),
         attempts

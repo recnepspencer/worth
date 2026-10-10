@@ -76,10 +76,10 @@ where
     {
         let request_scope = self.request_scope().clone();
         let runtime = self.application_runtime();
-        runtime.with_application_advancement(&request_scope, |_phase| {
+        runtime.with_application_advancement(&request_scope, |phase| {
 
         let (application, prepared, idempotency) =
-            self.prepare_instance(workflow, |selected, installed, key, admission| {
+            self.prepare_instance(&phase, workflow, |selected, installed, key, admission| {
                 WorthQueryWorkflowInstanceAdapter::prepare_cancellation::<
                     Schema,
                     <IntentBinding<Schema, Intent> as ApplicationCapabilityMutationBinding<Schema>>::Capability,

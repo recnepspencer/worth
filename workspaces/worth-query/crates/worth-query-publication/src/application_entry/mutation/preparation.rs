@@ -85,7 +85,9 @@ where
         let principal_identity = prepared.principal_identity;
         let mut admission = prepared.admission;
         let commit_binding = WorthQueryMutationCommitBinding::new(&identities, prepared.extension);
-        if let Some(outcome) = self.resolve_idempotency(&admission, commit_binding.idempotency())? {
+        if let Some(outcome) =
+            self.resolve_idempotency(phase, &admission, commit_binding.idempotency())?
+        {
             return Ok(CandidatePreparation::Settled(outcome));
         }
         if let Some(pending) = prepared.pending_source {

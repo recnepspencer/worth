@@ -46,6 +46,7 @@ pub(super) use requested::advance_requested_output;
 mod cycles;
 mod drive;
 mod frame;
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) mod performed;
 use frame::{FrameRole, RequiredWaveFrame};
 mod queued;
 mod resolved;
@@ -234,6 +235,7 @@ pub(super) fn certify_required_ready<Schema>(
     resolved: Option<&ResolvedRequiredPredecessors<'_, Schema>>,
     producer_contacts_in_this_demand: usize,
     refresh_permission: Result<(), WorthQueryOutputDemandDenial>,
+    performed: &mut performed::PerformedMembers,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<RequiredWaveStep<Schema>, WorthQueryOutputDemandDenial>
 where
@@ -264,6 +266,7 @@ where
     // Only the caller's exact Interest→Ready join may reuse the installed
     // entry retained when that same demand was admitted. Other cues still
     // resolve their own producer through the installed table.
+    performed.capture(selected, candidate.as_ref(), admission)?;
     let installed = match caller_installed {
         Some(entry) => entry,
         None => installed_for_selected_cue(runtime, selected.producer_identity(), admission)?,
@@ -284,6 +287,7 @@ where
             wave.branch,
             producer_contacts_in_this_demand,
             refresh_permission,
+            performed,
             admission,
         )
         .map_err(|stop| match stop {

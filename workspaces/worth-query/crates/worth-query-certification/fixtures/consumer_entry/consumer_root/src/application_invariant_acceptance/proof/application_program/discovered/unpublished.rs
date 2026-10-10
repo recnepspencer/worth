@@ -3,9 +3,7 @@
 use super::*;
 use std::time::{Duration, Instant};
 use worth_query_host::facade::{
-    admission::authenticated_principal::{
-        WorthQueryCancellationSource, WorthQueryRequestInterruption, WorthQueryRequestScope,
-    },
+    admission::authenticated_principal::{WorthQueryCancellationSource, WorthQueryRequestScope},
     application_entry::{
         WorthQueryApplicationRecoveryRequestDenial, WorthQueryDiscoveredRecoveryProgress,
     },
@@ -90,9 +88,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
     assert!(matches!(
         original_request!(&stopped, intent.clone(), &key)
             .recover_unpublished_discovered_in_program(&mut recovery, &world.application),
-        Err(WorthQueryApplicationRecoveryRequestDenial::Interrupted(
-            WorthQueryRequestInterruption::Cancelled
-        ))
+        Err(WorthQueryApplicationRecoveryRequestDenial::Recovery(worth_query_host::facade::primary_graph::WorthQueryManagedApplicationRecoveryDenial::ExecutionDenied(worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial::Interrupted(worth_query_host::facade::application_contribution::WorthQueryManagedComputationInterruption::Cancelled))))
     ));
     let fresh_scope = authentication::request_scope();
     let wrong_key = key + 1;

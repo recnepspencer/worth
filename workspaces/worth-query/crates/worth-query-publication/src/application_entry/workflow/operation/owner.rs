@@ -12,6 +12,7 @@ use worth_query_installation::facade::ApplicationSchema;
 
 use crate::application_entry::mutation::{
     authorization, WorthQueryApplicationMutationRequestWithIdempotency,
+    WorthQueryApplicationRecoveryRequestDenial,
 };
 use crate::application_entry::{
     WorthQueryApplicationRequestMutationDenial, WorthQueryWorkflowAdvanceRequest,
@@ -41,6 +42,7 @@ pub enum WorthQueryWorkflowOperationOwnerPosture {
 pub enum WorthQueryWorkflowOperationOwnerAcceptanceDenial {
     Binding(WorthQueryWorkflowOperationBindingDenial),
     Request(WorthQueryApplicationRequestMutationDenial),
+    Opening(WorthQueryApplicationRecoveryRequestDenial),
     Inspection(
         worth_query_execution::facade::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial,
     ),
@@ -56,6 +58,7 @@ impl std::fmt::Display for WorthQueryWorkflowOperationOwnerAcceptanceDenial {
                 write!(formatter, "workflow operation binding denied: {denial:?}")
             }
             Self::Request(denial) => denial.fmt(formatter),
+            Self::Opening(denial) => denial.fmt(formatter),
             Self::Inspection(denial) => denial.fmt(formatter),
             Self::Owner(posture) => {
                 write!(formatter, "workflow operation owner custody: {posture:?}")
@@ -110,27 +113,38 @@ where
                 <Intent::Binding as ApplicationMutationBinding<Schema>>::PrincipalIdentity,
             >,
     {
-        let (prepared, custody) = resolve_owner(&self, required, &mut operation)?;
-        match custody {
-            WorthQueryGuardedWorkflowOperationCustody::Committed(receipt)
-            | WorthQueryGuardedWorkflowOperationCustody::ExternallySettled(receipt) => self
-                .accept_custody::<Intent::Binding, _, _, _>(
-                    required,
-                    &receipt,
-                    None,
-                    &prepared.admission,
-                    prepared.idempotency,
+        let application = self.application;
+        let scope = self.scope.clone();
+        application
+            .with_application_advancement(&scope, |phase| {
+                let (prepared, custody) = resolve_owner(&phase, &self, required, &mut operation)?;
+                match custody {
+                    WorthQueryGuardedWorkflowOperationCustody::Committed(receipt)
+                    | WorthQueryGuardedWorkflowOperationCustody::ExternallySettled(receipt) => self
+                        .accept_custody::<Intent::Binding, _, _, _>(
+                            &phase,
+                            required,
+                            &receipt,
+                            None,
+                            &prepared.admission,
+                            prepared.idempotency,
+                        )
+                        .map_err(WorthQueryWorkflowOperationOwnerAcceptanceDenial::Acceptance),
+                    WorthQueryGuardedWorkflowOperationCustody::DispatchPending(_) => {
+                        Err(WorthQueryWorkflowOperationOwnerAcceptanceDenial::Owner(
+                            WorthQueryWorkflowOperationOwnerPosture::DispatchPending,
+                        ))
+                    }
+                    other => Err(WorthQueryWorkflowOperationOwnerAcceptanceDenial::Owner(
+                        other_custody(other),
+                    )),
+                }
+            })
+            .map_err(|cause| {
+                WorthQueryWorkflowOperationOwnerAcceptanceDenial::Opening(
+                    WorthQueryApplicationRecoveryRequestDenial::advancement(cause),
                 )
-                .map_err(WorthQueryWorkflowOperationOwnerAcceptanceDenial::Acceptance),
-            WorthQueryGuardedWorkflowOperationCustody::DispatchPending(_) => {
-                Err(WorthQueryWorkflowOperationOwnerAcceptanceDenial::Owner(
-                    WorthQueryWorkflowOperationOwnerPosture::DispatchPending,
-                ))
-            }
-            other => Err(WorthQueryWorkflowOperationOwnerAcceptanceDenial::Owner(
-                other_custody(other),
-            )),
-        }
+            })?
     }
 
     pub fn accept_recovered_operation_from_owner<Intent, SourcePreparation>(
@@ -157,29 +171,41 @@ where
                 <Intent::Binding as ApplicationMutationBinding<Schema>>::PrincipalIdentity,
             >,
     {
-        let (prepared, custody) = resolve_owner(&self, required, &mut operation)?;
-        match custody {
-            WorthQueryGuardedWorkflowOperationCustody::DispatchPending(receipt)
-            | WorthQueryGuardedWorkflowOperationCustody::ExternallySettled(receipt) => self
-                .accept_custody::<Intent::Binding, _, _, _>(
-                    required,
-                    &receipt,
-                    Some(recovery),
-                    &prepared.admission,
-                    prepared.idempotency,
+        let application = self.application;
+        let scope = self.scope.clone();
+        application
+            .with_application_advancement(&scope, |phase| {
+                let (prepared, custody) = resolve_owner(&phase, &self, required, &mut operation)?;
+                match custody {
+                    WorthQueryGuardedWorkflowOperationCustody::DispatchPending(receipt)
+                    | WorthQueryGuardedWorkflowOperationCustody::ExternallySettled(receipt) => self
+                        .accept_custody::<Intent::Binding, _, _, _>(
+                            &phase,
+                            required,
+                            &receipt,
+                            Some(recovery),
+                            &prepared.admission,
+                            prepared.idempotency,
+                        )
+                        .map_err(WorthQueryWorkflowOperationOwnerAcceptanceDenial::Acceptance),
+                    WorthQueryGuardedWorkflowOperationCustody::Committed(_) => {
+                        Err(WorthQueryWorkflowOperationOwnerAcceptanceDenial::RecoveryNotRequired)
+                    }
+                    other => Err(WorthQueryWorkflowOperationOwnerAcceptanceDenial::Owner(
+                        other_custody(other),
+                    )),
+                }
+            })
+            .map_err(|cause| {
+                WorthQueryWorkflowOperationOwnerAcceptanceDenial::Opening(
+                    WorthQueryApplicationRecoveryRequestDenial::advancement(cause),
                 )
-                .map_err(WorthQueryWorkflowOperationOwnerAcceptanceDenial::Acceptance),
-            WorthQueryGuardedWorkflowOperationCustody::Committed(_) => {
-                Err(WorthQueryWorkflowOperationOwnerAcceptanceDenial::RecoveryNotRequired)
-            }
-            other => Err(WorthQueryWorkflowOperationOwnerAcceptanceDenial::Owner(
-                other_custody(other),
-            )),
-        }
+            })?
     }
 }
 
 fn resolve_owner<Schema, Spec, Operation, Input, Scope, Intent, SourcePreparation>(
+    phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
     advance: &WorthQueryWorkflowAdvanceRequest<'_, '_, '_, Schema, Spec, Operation, Input, Scope>,
     required: &RequiredWorkflowOperation,
     operation: &mut WorthQueryApplicationMutationRequestWithIdempotency<
@@ -227,7 +253,7 @@ where
             WorthQueryWorkflowOperationBindingDenial::RequirementMismatch,
         ));
     }
-    let prepared = authorization::prepare(operation, &identities, staged)
+    let prepared = authorization::prepare(phase, operation, &identities, staged)
         .map_err(WorthQueryWorkflowOperationOwnerAcceptanceDenial::Request)?;
     let custody = WorthQueryWorkflowAdvanceAdapter::resolve_guarded_operation_custody(
         advance.application,

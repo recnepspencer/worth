@@ -8,9 +8,7 @@ use worth_query_host::facade::application_entry::{
     WorthQueryApplicationPerformedMutationOutcome, WorthQueryApplicationProgramOutputProgress,
 };
 use worth_query_host::facade::{
-    admission::authenticated_principal::{
-        WorthQueryCancellationSource, WorthQueryRequestInterruption, WorthQueryRequestScope,
-    },
+    admission::authenticated_principal::{WorthQueryCancellationSource, WorthQueryRequestScope},
     application_entry::{
         WorthQueryApplicationRecoveryRequestDenial, WorthQueryDiscoveredRecoveryProgress,
     },
@@ -99,9 +97,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
     assert!(matches!(
         original_request!(&stopped, intent.clone(), &key)
             .recover_unpublished_required_in_program(&mut recovery, &world.application),
-        Err(WorthQueryApplicationRecoveryRequestDenial::Interrupted(
-            WorthQueryRequestInterruption::Cancelled
-        ))
+        Err(WorthQueryApplicationRecoveryRequestDenial::Recovery(worth_query_host::facade::primary_graph::WorthQueryManagedApplicationRecoveryDenial::ExecutionDenied(worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial::Interrupted(worth_query_host::facade::application_contribution::WorthQueryManagedComputationInterruption::Cancelled))))
     ));
     let fresh_scope = authentication::request_scope();
     let wrong_key = key + 1;
@@ -261,7 +257,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
         matches!(outputs.advance(&world.application, &stopped_request),
         Err(worth_query_host::facade::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand(
             worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(ref denial)))
-        if denial.kind() == worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind::Cancelled)
+        if denial.kind() == worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial::Interrupted(worth_query_host::facade::application_contribution::WorthQueryManagedComputationInterruption::Cancelled)))
     );
     assert_eq!(
         world.application.retained_source_custody_count_for_test(),

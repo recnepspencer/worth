@@ -45,6 +45,9 @@ where
         Root,
     >(
         &mut self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
         source: &worth_query_execution::facade::application_installation::WorthQueryUnpublishedProgramOutputSource,
     ) -> Result<PreparedMutation<Schema, Intent::Binding>, WorthQueryApplicationRecoveryRequestDenial>
@@ -55,6 +58,13 @@ where
         RootConnection<Schema, Root>:
             WorthQueryApplicationDiscoveredOutputConnection<Schema, Source = Intent::Binding>,
     {
+        self.request
+            .application
+            .validate_application_advancement(phase)
+            .map_err(|cause| {
+                WorthQueryApplicationRecoveryRequestDenial::advancement(cause.into())
+            })?;
+
         if <Intent::Binding as ApplicationMutationBinding<Schema>>::WORKFLOW_CONTROL
             || <Intent::Binding as ApplicationMutationBinding<Schema>>::REQUIRES_WORKFLOW_AUTHORITY
             || self.workflow_transition_identity.is_some()
@@ -63,7 +73,7 @@ where
         {
             return Err(WorthQueryApplicationRecoveryRequestDenial::WorkflowUnsupported);
         }
-        self.check_discovered_recovery_liveness()?;
+        self.check_recovery_liveness()?;
         if !std::ptr::eq(application.runtime(), self.request.application) {
             return Err(
                 WorthQueryApplicationRequestMutationDenial::ApplicationProgramMismatch.into(),
@@ -83,6 +93,7 @@ where
         // Only bind the original source proof. The retained native attempt owns
         // its original facts; pending_source must not author another candidate.
         let prepared = crate::application_entry::mutation::authorization::prepare_selected(
+            phase,
             self,
             &identities,
             staged,
@@ -101,18 +112,7 @@ where
                     WorthQueryManagedApplicationRecoveryDenial::Demand(denial),
                 )
             })?;
-        self.check_discovered_recovery_liveness()?;
+        self.check_recovery_liveness()?;
         Ok(prepared)
-    }
-
-    pub(in crate::application_entry::mutation::discovered) fn check_discovered_recovery_liveness(
-        &self,
-    ) -> Result<(), WorthQueryApplicationRecoveryRequestDenial> {
-        match self.request.scope.interruption() {
-            Some(stop) => Err(WorthQueryApplicationRecoveryRequestDenial::Interrupted(
-                stop,
-            )),
-            None => Ok(()),
-        }
     }
 }

@@ -31,7 +31,50 @@ where
     /// Only a genuine committed retention refusal can re-enter this path.
     /// Every failed admission or transfer returns the complete owned failure.
     pub fn retry_required_output_retention<Program, Root>(
+        self,
+        failure: WorthQueryRequiredOutputRetentionFailure<Schema, Intent, Program, Root>,
+        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+    ) -> Result<
+        WorthQueryPerformedApplicationMutation<Schema, Intent, Program, Root>,
+        (
+            WorthQueryApplicationRecoveryRequestDenial,
+            WorthQueryRequiredOutputRetentionFailure<Schema, Intent, Program, Root>,
+        ),
+    >
+    where
+        Program: ApplicationProgramDefinition<Schema>,
+        Program::Outputs: ApplicationProgramOutputsShape<Schema>,
+        Root: ApplicationOutputGraphShape<Schema>
+            + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
+        RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
+        Intent::Binding:
+            WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
+    {
+        let runtime = self.request.application;
+        let scope = self.request.scope.clone();
+        let mut retained = Some(failure);
+        match runtime.with_application_advancement(&scope, |phase| {
+            self.retry_required_output_retention_in_advancement(
+                &phase,
+                retained
+                    .take()
+                    .expect("opened request owns recovery custody"),
+                application,
+            )
+        }) {
+            Ok(outcome) => outcome,
+            Err(cause) => Err((
+                WorthQueryApplicationRecoveryRequestDenial::advancement(cause),
+                retained.take().expect("refused request retains custody"),
+            )),
+        }
+    }
+
+    fn retry_required_output_retention_in_advancement<Program, Root>(
         mut self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
         mut failure: WorthQueryRequiredOutputRetentionFailure<Schema, Intent, Program, Root>,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
     ) -> Result<
@@ -52,14 +95,13 @@ where
     {
         let admitted = (|| {
             let custody = failure.custody.as_ref().ok_or_else(mismatch)?;
-            let prepared =
-                self.authorize_required_source::<Program, Root>(application, custody.source())?;
-            let read = self
-                .request
-                .application
-                .resolve_admitted_application_idempotency(&prepared.admission, prepared.idempotency)
-                .map_err(WorthQueryApplicationRecoveryRequestDenial::Idempotency)?;
-            self.check_required_recovery_liveness()?;
+            let prepared = self.authorize_required_source::<Program, Root>(
+                phase,
+                application,
+                custody.source(),
+            )?;
+            let read = self.read_recovery_idempotency(phase, &prepared)?;
+            self.check_recovery_liveness()?;
             match read.into_resolution() {
                 WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => {
                     Ok(receipt)

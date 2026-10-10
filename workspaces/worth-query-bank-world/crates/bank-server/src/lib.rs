@@ -121,3 +121,13 @@ pub use principal_seed::BankPrincipalSeed;
 pub use program_adoption::{BankProgramAdoptionPreparationDenial, BankProgramInspectionDenial};
 pub use world_seed::{BankBusinessOwnerSeed, BankEmployeeAssignmentSeed, BankWorldSeed};
 mod approved_payment_workflow;
+
+#[cfg(test)]
+extern crate self as bank_server;
+#[cfg(test)]
+#[allow(
+    dead_code,
+    reason = "shared integration fixture support is reused by the workflow request proof"
+)]
+#[path = "../tests/support/mod.rs"]
+mod support;
