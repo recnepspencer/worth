@@ -73,6 +73,7 @@ fn uncommitted_upstream_never_admits_a_prepared_member() {
             .admit_current_outputs(
                 (selected.runtime_instance_id(), selected.root_id()),
                 std::iter::once(&consumed),
+                &owner,
                 &mut admission,
             )
             .err()
@@ -82,5 +83,10 @@ fn uncommitted_upstream_never_admits_a_prepared_member() {
             WorthQueryOutputDemandDenialKind::SchedulingDeferred,
             "a sealed read alone cannot substitute for committed upstream delivery"
         );
+        let requested = denied.clone().take_requested_output().expect(
+            "an unfinished delivery retains its actual read for owner-side checkpoint resumption",
+        );
+        assert_eq!(requested.identity(), consumed.identity().as_ref());
+        assert_eq!(requested.selected(), selected.as_ref());
     }
 }

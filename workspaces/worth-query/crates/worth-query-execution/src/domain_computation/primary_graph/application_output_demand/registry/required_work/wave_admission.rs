@@ -30,9 +30,10 @@ impl WorthQueryOutputDemandRegistry {
     pub(in crate::domain_computation::primary_graph) fn admit_prepared_inputs(
         &self,
         inputs: PreparedCurrentInputs<'_>,
+        owner: &crate::domain_computation::primary_graph::SourceInvalidationOwner,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<PreparedRequiredInputs, WorthQueryOutputDemandDenial> {
-        self.admit_current_outputs(inputs.native_basis(), inputs.consumed(), admission)
+        self.admit_current_outputs(inputs.native_basis(), inputs.consumed(), owner, admission)
     }
 
     // Only this registry owner can interpret sealed current-output evidence.
@@ -42,6 +43,7 @@ impl WorthQueryOutputDemandRegistry {
         &self,
         (runtime, root): (u64, u64),
         consumed: impl Iterator<Item = &'a crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence>,
+        owner: &crate::domain_computation::primary_graph::SourceInvalidationOwner,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<PreparedRequiredInputs, WorthQueryOutputDemandDenial> {
         let state = self
@@ -74,7 +76,15 @@ impl WorthQueryOutputDemandRegistry {
             admission
                 .charge_external_work(1)
                 .map_err(|_| work_denial())?;
-            require_committed(record)?;
+            if let Err(denied) = require_committed(record) {
+                // Current native data can precede its managed Ready delivery.
+                // Carry the exact funded read so the wave owner resumes that
+                // checkpoint, then verifies again before dispatching compute.
+                let requested = consumed
+                    .requested_read(owner, admission)
+                    .map_err(requested_read_denial)?;
+                return Err(denied.with_requested_output(requested));
+            }
         }
         Ok(PreparedRequiredInputs {
             runtime,
@@ -94,6 +104,36 @@ fn foreign_denial() -> WorthQueryOutputDemandDenial {
         WorthQueryOutputDemandDenialKind::ForeignSettlement,
         "required wave inputs do not belong to the selected basis",
     )
+}
+
+fn requested_read_denial(
+    stop: worth_relational::facade::mvcc::CompanionPreflightStop,
+) -> WorthQueryOutputDemandDenial {
+    use worth_relational::facade::mvcc::{
+        CompanionPreflightStop as Stop, RelationalOperationInterruption,
+    };
+    let kind = match stop {
+        Stop::WorkExhausted { .. } | Stop::WorkCounterOverflow => {
+            WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
+        }
+        Stop::PreparationMemoryExhausted { .. }
+        | Stop::PreparationMemoryCounterOverflow
+        | Stop::RetainedCompanionCapacityExhausted { .. } => {
+            WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
+        }
+        Stop::Interrupted(event) => match event.interruption() {
+            RelationalOperationInterruption::Cancelled => {
+                WorthQueryOutputDemandDenialKind::Cancelled
+            }
+            RelationalOperationInterruption::TimedOut => WorthQueryOutputDemandDenialKind::TimedOut,
+        },
+        Stop::TopologyPending
+        | Stop::SelectedSourceMismatch
+        | Stop::SelectedPositionUnavailable { .. }
+        | Stop::ForeignCell
+        | Stop::RegistrationChanged => WorthQueryOutputDemandDenialKind::ForeignSettlement,
+    };
+    WorthQueryOutputDemandDenial::new(kind, "required wave requested-read custody refused")
 }
 
 /// The sole required-wave dispatch input. Its selected basis stays borrowed

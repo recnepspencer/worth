@@ -213,7 +213,15 @@ where
         crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
     );
     let (requests, completion, inputs) = match prepared {
-        Ok(prepared) => prepared.into_parts(&runtime.output_demands, request_admission)?,
+        Ok(prepared) => prepared.into_parts(
+            &runtime.output_demands,
+            &runtime
+                .primary_provider
+                .graph
+                .source_owner
+                .invalidation_owner,
+            request_admission,
+        )?,
         Err(report) => {
             return Ok(super::super::prepared_plan::ProducerExecutionPlan::new(
                 Vec::new(),
