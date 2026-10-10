@@ -1,20 +1,14 @@
 //! Advancement readings keep lifetime counters inside their owning handle.
 use super::Cost;
 
-#[derive(Default)]
-pub(super) struct Reading {
-    contacts: usize,
-}
+pub(super) use super::super::contact_readings::Reading;
 
 impl Reading {
     /// The handle's contacts since its preceding reading and the source queries
     /// during this advance. Queries used to judge the answer are outside it.
     pub(super) fn measure<T>(&mut self, advance: impl FnOnce() -> (T, usize)) -> (T, Cost) {
         let ((answer, lifetime), source_queries) = Self::queries(advance);
-        let producer_contacts = lifetime
-            .checked_sub(self.contacts)
-            .expect("a handle's lifetime contact count never decreases");
-        self.contacts = lifetime;
+        let producer_contacts = self.contacts(lifetime);
         (
             answer,
             Cost {

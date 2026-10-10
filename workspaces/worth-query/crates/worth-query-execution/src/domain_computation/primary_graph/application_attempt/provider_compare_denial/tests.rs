@@ -319,6 +319,23 @@ fn native_cause_context_and_commit_log_survive_application_kind_mapping() {
     );
     assert_eq!(earlier.stage(), Stage::Idempotency);
     assert_eq!(earlier.native_preparation_error(), Some(&error));
+    let invariant_failure = crate::domain_computation::WorthQueryInvariantExecutionFailure::new(
+        crate::domain_computation::WorthQueryInvariantExecutionDenialKind::ExecutionDenied(cause),
+        error.detail(),
+    );
+    let invariant = super::Denial::invariant_execution_denied(
+        Stage::InvariantExecution,
+        invariant_failure.clone(),
+    );
+    assert_eq!(invariant.kind(), denial.kind());
+    assert_eq!(
+        invariant.execution_denial_cause(),
+        denial.execution_denial_cause()
+    );
+    assert_eq!(
+        invariant.invariant_execution_failure(),
+        Some(&invariant_failure)
+    );
     assert_eq!(denial.stage(), Stage::ProviderCommit);
     assert_eq!(denial.detail(), Some(error.detail().as_str()));
     assert_eq!(denial.native_preparation_error(), Some(&error));

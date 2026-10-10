@@ -8,7 +8,7 @@ pub(crate) struct SharedMapIter<'a, K: Ord + Copy, V: Clone> {
 impl<'a, K: Ord + Copy, V: Clone> SharedMapIter<'a, K, V> {
     pub(super) fn new(root: Option<&'a MapNode<K, V>>) -> Self {
         let mut iterator = Self {
-            pending: Vec::new(),
+            pending: Vec::with_capacity(root.map_or(0, |_| MAXIMUM_ADDRESSABLE_AVL_HEIGHT)),
             remaining: root.map_or(0, |node| node.len),
         };
         iterator.descend(root);
@@ -72,3 +72,9 @@ impl<'a, K: Ord + Copy, V: Clone> Iterator for SharedMapIter<'a, K, V> {
     }
 }
 impl<K: Ord + Copy, V: Clone> ExactSizeIterator for SharedMapIter<'_, K, V> {}
+
+// Every two AVL levels at least double the minimum node count plus one.
+// A tree whose length fits in usize therefore cannot exceed this height.
+// Reserve the addressable bound rather than the current height: unvisited
+// fanout must not grow the allocation of an ordinary bounded traversal.
+const MAXIMUM_ADDRESSABLE_AVL_HEIGHT: usize = 2 * usize::BITS as usize;
