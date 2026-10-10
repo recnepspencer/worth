@@ -33,6 +33,7 @@ mod ready;
 mod ready_on_selected;
 mod selected_fresh;
 pub(super) use current_product::is_current_selected_product;
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) use ready::ready_currentness_denial;
 pub(super) use ready::ready_resource_denial;
 pub(super) use ready_on_selected::certify_ready_on_selected_with_disclosure;
 pub(super) use selected_fresh::disclose_prepared_on_selected;

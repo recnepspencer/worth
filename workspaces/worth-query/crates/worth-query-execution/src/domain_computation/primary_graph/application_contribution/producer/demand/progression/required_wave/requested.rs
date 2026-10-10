@@ -19,6 +19,7 @@ pub(in super::super) fn advance_requested_output<Schema, Family>(
     branch: WorthQueryProductBranch,
     authority: &super::super::super::super::WorthQueryProducerCommitAuthority,
     stop: &mut WorthQueryOutputDemandDenial,
+    performed: &mut performed::PerformedMembers,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<Option<WorthQueryOutputDemandAdvance>, WorthQueryOutputDemandDenial>
 where
@@ -87,6 +88,7 @@ where
         wave,
         &mut queue,
         &mut frame_custody,
+        performed,
         admission,
     );
     frame_custody.hold_unfinished(&runtime.output_demands);

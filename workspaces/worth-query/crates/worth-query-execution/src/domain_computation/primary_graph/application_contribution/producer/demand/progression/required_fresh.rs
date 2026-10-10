@@ -36,6 +36,7 @@ where
             FamilySourceQuery<Schema, Family>,
             FamilySourceValue<Schema, Family>,
         >,
+        readiness: required_wave::performed::FreshReadiness,
         shared: &SharedSelectedProductOperation<'_, Schema>,
         claim: SelectedRequiredRefreshClaim,
         installed: &super::super::super::registry::InstalledProducerProvider<Schema>,
@@ -96,6 +97,7 @@ where
                         .and_then(|fresh| {
                             self.advance_validated_required_fresh_on_selected(
                                 phase,
+                                readiness,
                                 &mut successor,
                                 principal,
                                 request_scope,

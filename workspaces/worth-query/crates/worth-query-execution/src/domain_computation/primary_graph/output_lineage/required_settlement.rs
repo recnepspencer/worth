@@ -53,6 +53,7 @@ impl From<FullVerificationReason> for Unresolved {
 
 /// Only exact accepted authority resolution can mint this candidate. A prior
 /// partition lookup cannot substitute a newer row or certify current demand.
+#[derive(Clone)]
 pub(in crate::domain_computation::primary_graph) struct AcceptedCurrentCandidate {
     selected: RetainedInputCutoffCandidate,
     ready: ReadyCompletion,

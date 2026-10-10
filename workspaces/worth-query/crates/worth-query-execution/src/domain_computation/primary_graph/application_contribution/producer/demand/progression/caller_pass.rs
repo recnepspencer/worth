@@ -73,6 +73,7 @@ where
         FamilySourceValue<Schema, Family>: 'static,
         FamilySourceQuery<Schema, Family>: 'static,
     {
+        let mut performed = required_wave::performed::PerformedMembers::start();
         let mut pass = AdvancePass::Initial;
         loop {
             let result = self.advance_caller_pass(
@@ -83,6 +84,7 @@ where
                 delivery_branch,
                 &mut disclosure,
                 pass,
+                &mut performed,
                 commit_authority.clone(),
                 request_admission,
             );
@@ -119,6 +121,7 @@ where
             WorthQueryOutputDemandDenial,
         >,
         pass: AdvancePass<FamilySourceQuery<Schema, Family>, FamilySourceValue<Schema, Family>>,
+        performed: &mut required_wave::performed::PerformedMembers,
         commit_authority: WorthQueryProducerCommitAuthority,
         request_admission: &mut InvalidationEditAdmission,
     ) -> Result<
@@ -209,6 +212,7 @@ where
                 request_scope,
                 delivery_branch,
                 &commit_authority,
+                performed,
                 request_admission,
             )? {
                 return Ok(AdvancePassProgress::Answer(advance));
@@ -247,6 +251,7 @@ where
                         disclosed,
                         entry,
                         commit_authority,
+                        performed,
                         request_admission,
                     )?;
                     match answer {
@@ -274,6 +279,7 @@ where
                         disclosed,
                         entry,
                         commit_authority,
+                        performed,
                         request_admission,
                     )?;
                     match answer {
@@ -315,6 +321,7 @@ where
                         disclosed,
                         entry,
                         commit_authority,
+                        performed,
                         request_admission,
                     )?;
                     match answer {
@@ -337,6 +344,7 @@ where
                         disclosed,
                         entry,
                         commit_authority,
+                        performed,
                         request_admission,
                     )?;
                     match answer {
@@ -358,6 +366,7 @@ where
                 delivery_branch,
                 &requested_authority,
                 &mut stop,
+                performed,
                 request_admission,
             )? {
                 Some(WorthQueryOutputDemandAdvance::Settled(_)) if !final_disclosure => {
