@@ -8,6 +8,7 @@ pub(super) struct RequiredMemberKey {
     producer: String,
     source: WorthQueryObservedSourceEpoch,
     pub index: usize,
+    pub inspection: super::performed::InspectionStamp,
 }
 impl RequiredMemberKey {
     pub fn comparison_work(&self, other: &Self) -> Result<u64, WorthQueryOutputDemandDenial> {
@@ -23,6 +24,7 @@ impl RequiredMemberKey {
     pub fn retain(
         index: usize,
         ready: &SelectedReadyReadmission,
+        inspection: super::performed::InspectionStamp,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<Self, WorthQueryOutputDemandDenial> {
         let producer = ready.producer_identity();
@@ -40,6 +42,7 @@ impl RequiredMemberKey {
             producer: producer.to_owned(),
             source: ready.key().source_epoch().clone(),
             index,
+            inspection,
         })
     }
 }

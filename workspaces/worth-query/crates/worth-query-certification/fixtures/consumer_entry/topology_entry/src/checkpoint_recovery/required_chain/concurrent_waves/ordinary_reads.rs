@@ -115,12 +115,17 @@ fn run(workers: usize) -> History {
             .unwrap();
     }
     let schedule = Schedule::new(roots.clone(), None, false);
-    arm(Some(schedule));
+    arm(Some(schedule.clone()));
     observations();
     for _ in 0..8 {
         caller.advance(&request).unwrap();
     }
     arm(None);
+    assert_eq!(
+        schedule.state.lock().unwrap().runs,
+        [1, 2],
+        "A publishes once; that publication pays exactly one reinspection of stale M"
+    );
     let records = observations();
     let commits: Vec<_> = records
         .into_iter()

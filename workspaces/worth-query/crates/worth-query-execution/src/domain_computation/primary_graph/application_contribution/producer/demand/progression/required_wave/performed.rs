@@ -13,6 +13,7 @@ use crate::domain_computation::primary_graph::{
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct PerformedMembers
 {
     entries: Vec<PerformedMember>,
+    publication_generation: u64,
 }
 struct PerformedMember {
     key: WorthQueryOutputDemandKey,
@@ -20,6 +21,7 @@ struct PerformedMember {
     source: WorthQueryObservedSourceEpoch,
     input: CapturedDecisionInput,
     performed: bool,
+    published_at: u64,
 }
 
 /// Only this owner can mint permission to enter the authoritative Fresh path.
@@ -54,7 +56,9 @@ mod member_keys;
 use captured_input::CapturedDecisionInput;
 mod ordinary;
 mod publication;
+mod reinspection;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use ordinary::DecisionInput;
+pub(super) use reinspection::{InspectionStamp, ReinspectionCredit};
 #[cfg(test)]
 mod tests;
 
@@ -63,6 +67,7 @@ impl PerformedMembers {
     ) -> Self {
         Self {
             entries: Vec::new(),
+            publication_generation: 0,
         }
     }
 
@@ -184,6 +189,7 @@ impl PerformedMembers {
             source,
             input: CapturedDecisionInput::Uncaptured,
             performed: false,
+            published_at: 0,
         });
         Ok(Some(FreshReadiness {
             member: index,

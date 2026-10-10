@@ -141,8 +141,9 @@ where
                     if failure.stop.kind()
                         == WorthQueryOutputDemandDenialKind::PublicationStale =>
                 {
-                    // The commit owner refused changed read facts. Discard this
-                    // plan and inspect the member again at the current basis.
+                    // Failed completion custody is discarded on both paths.
+                    // The caller returns its refusal; only another publication
+                    // since inspection can lend a queued member another turn.
                     if installed {
                         if frontier.members[failure.index].caller {
                             caller_storage.discard_last();
@@ -150,8 +151,34 @@ where
                             queue_storage.discard_last();
                         }
                     }
-                    frontier.members[failure.index].state = MemberState::Inspect;
-                    moved = true;
+                    if frontier.members[failure.index].caller {
+                        return Err(failure);
+                    }
+                    let credit = performed
+                        .borrow()
+                        .reinspection(
+                            frontier.members[failure.index].key(),
+                            key.inspection,
+                            admission,
+                        )
+                        .map_err(|stop| MemberStop {
+                            index: failure.index,
+                            stop,
+                        })?;
+                    if credit.is_some() {
+                        if let Some(slot) = frontier.members[failure.index].queued {
+                            queue.discard_selection(slot);
+                        }
+                    }
+                    if frontier
+                        .queued_member(failure.index)
+                        .expect("only a queued member can retry")
+                        .refused(credit)
+                    {
+                        moved = true;
+                    } else {
+                        queued_stops.push((failure.index, failure.stop));
+                    }
                     Ok(())
                 }
                 Err(failure) if !frontier.members[failure.index].caller => {

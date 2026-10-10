@@ -93,6 +93,7 @@ where
                     *ready = Some(selected);
                 }
             }
+            let inspection = performed.borrow().inspection();
             admission
                 .charge_external_work(9)
                 .map_err(|_| work_denial())?;
@@ -239,6 +240,7 @@ where
                     let key = RequiredMemberKey::retain(
                         index,
                         frontier.members[index].ready.selected(),
+                        inspection,
                         admission,
                     )?;
                     let slot_bytes = std::mem::size_of::<(

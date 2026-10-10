@@ -1,5 +1,6 @@
 //! Required members and their actual unresolved consumed-output edges.
 use super::*;
+mod reinspection;
 mod selection;
 pub(super) use selection::MemberInput;
 
