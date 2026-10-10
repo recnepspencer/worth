@@ -59,6 +59,7 @@ pub(in crate::domain_computation::primary_graph) struct InstalledMutationHandler
 
 #[derive(Clone, Copy)]
 struct ManagedComputationExpectation {
+    feature_identity: &'static str,
     identity: &'static str,
     feature_type: TypeId,
     computation_type: TypeId,
@@ -255,13 +256,16 @@ impl<Schema> InstalledMutationHandlerRegistry<Schema> {
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         let mut declared = Vec::new();
         let mut positions = HashMap::<TypeId, usize>::new();
-        for computation in features
-            .iter()
-            .flat_map(|feature| feature.managed_computations())
-        {
+        for (feature, computation) in features.iter().flat_map(|feature| {
+            feature
+                .managed_computations()
+                .iter()
+                .map(move |computation| (feature, computation))
+        }) {
             let entry = (
                 computation.computation_type(),
                 ManagedComputationExpectation {
+                    feature_identity: feature.identity(),
                     identity: computation.identity(),
                     feature_type: computation.feature_type(),
                     computation_type: computation.computation_type(),
@@ -284,7 +288,8 @@ fn validate_managed_computation_inventory(
     declared: &[(TypeId, ManagedComputationExpectation)],
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
     let mut computations: Vec<_> = declared.iter().collect();
-    computations.sort_by_key(|(_, computation)| computation.identity);
+    computations
+        .sort_by_key(|(_, computation)| (computation.feature_identity, computation.identity));
     for (computation_type, computation) in computations {
         let owner = installed.get(computation_type).ok_or_else(|| {
             denial(

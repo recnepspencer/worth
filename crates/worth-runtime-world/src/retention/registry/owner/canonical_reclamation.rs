@@ -1,4 +1,4 @@
-//! Canonical maintenance selects complete equal-description groups.
+//! Canonical maintenance selects the prefix of the total declared key.
 use super::{RetainedComponentPins, RuntimeWorldRetentionOwner};
 use crate::retention::registry::RetentionReclamationReport;
 use crate::retention::unique_component_pin::ExactComponentBasisKey;
@@ -43,22 +43,9 @@ fn canonical_candidates(
 ) -> Vec<ExactComponentBasisKey> {
     // This maintenance pass visits the carried order in O(n) time and scratch.
     // Ordinary exact admission lookup remains hash-indexed, without a walk.
-    let ordered: Vec<_> = entries.by_declared_basis().collect();
-    let mut count = 0;
-    while count < ordered.len() {
-        let basis = &ordered[count].1.basis_order;
-        let end =
-            count + ordered[count..].partition_point(|(_, entry)| &entry.basis_order == basis);
-        // Distinct admission tokens can describe the same basis. A bounded
-        // request never chooses one by address: either the whole group fits,
-        // or this prefix stops before it, without exceeding the requested cap.
-        if end > maximum {
-            break;
-        }
-        count = end;
-    }
-    ordered[..count]
-        .iter()
-        .map(|(key, _)| (*key).clone())
+    entries
+        .by_declared_basis()
+        .take(maximum)
+        .map(|(key, _)| key.clone())
         .collect()
 }
